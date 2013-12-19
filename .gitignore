@@ -17,4 +17,7 @@ m4/
 missing
 src/.deps/
 src/Makefile
-src/Makefile.in
+src/Makefile.i
+include/config.h
+include/config.h.in
+include/stamp-h1

@@ -2,20 +2,23 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SHADEROMATIC, 0.0.9, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.0.1, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE()
+AC_CONFIG_HEADERS([include/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
 AC_PROG_CC
 
+CXXFLAGS="$CFLAGS -std=gnu++0x"
+
 # Check for header files
 AC_HEADER_STDC
 
 # GLFW
-PKG_CHECK_MODULES([LIBGLFW], [libglfw >= 2.7.4])
+PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
 if test "x${have_glfw}" = "xfalse" ; then
     AC_MSG_ERROR([Missing glfw])
 fi
