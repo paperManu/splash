@@ -1,0 +1,3 @@
+[submodule "external/GLV"]
+	path = external/GLV
+	url = git@github.com:AlloSphere-Research-Group/GLV.git
