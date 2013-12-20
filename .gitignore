@@ -18,6 +18,5 @@ missing
 src/.deps/
 src/Makefile
 src/Makefile.i
-include/config.h
-include/config.h.in
+include/config.h*
 include/stamp-h1

@@ -1,0 +1,10 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include/OpenMesh
+Name: openmesh
+Description: OpenMesh is a generic and efficient data structure for representing and manipulating polygonal meshes
+Version: 3.0.0
+Requires:
+Libs: -L${libdir} -lOpenMeshCore
+Cflags: -I${includedir}

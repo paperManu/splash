@@ -14,6 +14,8 @@ AC_PROG_CC
 
 CXXFLAGS="$CFLAGS -std=gnu++0x"
 
+export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
+
 # Check for header files
 AC_HEADER_STDC
 
@@ -27,6 +29,18 @@ fi
 PKG_CHECK_MODULES([GL], [gl >= 2.3])
 if test "x${have_gl}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opengl])
+fi
+
+# OpenMesh
+PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
+if test "x${have_openmesh}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing openmesh])
+fi
+
+# OpenImageIO
+PKG_CHECK_MODULES([OPENIMAGEIO], [openimageio >= 1.3.0])
+if test "x${have_openimageio}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing openimageio])
 fi
 
 AC_CONFIG_FILES([
