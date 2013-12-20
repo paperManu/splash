@@ -21,3 +21,11 @@
  * @splash.cpp
  * The main program from the Splash suite.
  */
+
+#include "splash.h"
+
+/*************/
+int main(int argc, char** argv)
+{
+    return 0;
+}

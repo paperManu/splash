@@ -21,3 +21,8 @@
  * @splash.h
  * The splash App main class.
  */
+
+ #ifndef SPLASH_H
+ #define SPLASH_H
+
+ #endif // SPLASH_H
