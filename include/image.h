@@ -25,17 +25,19 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-class Image {
-   public:
-       /**
-        * Constructor
-        */
-       Image();
+#include <config.h>
 
-       /**
-        * Destructor
-        */
-      ~Image();
+class Image {
+    public:
+        /**
+         * Constructor
+         */
+        Image();
+
+        /**
+         * Destructor
+         */
+        ~Image();
 
 };
 

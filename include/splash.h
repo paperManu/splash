@@ -25,4 +25,6 @@
  #ifndef SPLASH_H
  #define SPLASH_H
 
+#include <config.h>
+
  #endif // SPLASH_H

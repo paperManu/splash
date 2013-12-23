@@ -18,26 +18,53 @@
  */
 
 /*
- * @scene.h
- * The Scene class
+ * @camera.h
+ * The Camera base class
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef CAMERA_H
+#define CAMERA_H
 
 #include <config.h>
 
-class Scene {
+#include <memory>
+#include <vector>
+
+#include "texture.h"
+
+class Camera
+{
     public:
         /**
          * Constructor
          */
-        Scene();
+        Camera();
 
         /**
          * Destructor
          */
-        ~Scene();
+        ~Camera();
+
+        /**
+         * Get pointers to this camera textures
+         */
+        std::vector<TexturePtr> getTextures() const {return _textures;}
+
+        /**
+         * Render this camera into its textures
+         */
+        void render();
+
+        /**
+         * Set the resolution of this camera
+         */
+        void setSize(int width, int, height);
+
+    private:
+        GLuint _fbo;
+        std::vector<TexturePtr> _textures;
 };
 
-#endif // SCENE_H
+typedef std::shared_ptr<Camera> CameraPtr;
+
+#endif // CAMERA_H

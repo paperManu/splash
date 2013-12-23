@@ -25,17 +25,19 @@
 #ifndef MESH_H
 #define MESH_H
 
-class Mesh {
-   public:
-       /**
-        * Constructor
-        */
-       Mesh();
+#include <config.h>
 
-       /**
-        * Destructor
-        */
-      ~Mesh();
+class Mesh {
+    public:
+        /**
+         * Constructor
+         */
+        Mesh();
+
+        /**
+         * Destructor
+         */
+        ~Mesh();
 
 };
 

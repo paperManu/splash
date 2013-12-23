@@ -18,34 +18,63 @@
  */
 
 /*
- * @object.h
- * The Object class
+ * @shader.h
+ * The Shader class
  */
 
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef SHADER_H
+#define SHADER_H
 
 #include <config.h>
 
 #include <memory>
+#include <string>
+#include <vector>
 
-class Object {
+#include "texture.h"
+
+class Shader {
     public:
+        enum ShaderType
+        {
+            vertex = 0,
+            geometry,
+            fragment
+        };
+
         /**
          * Constructor
          */
-        Object();
+        Shader();
 
         /**
          * Destructor
          */
-        ~Object();
+        ~Shader();
+
+        /**
+         * Activates this shader
+         */
+        void activate(const ObjectPtr object);
+
+        /**
+         * Set a shader source
+         */
+        void setSource(const std::string src, const ShaderType type);
+
+        /**
+         * Add a new texture to use
+         */
+        void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string name);
 
     private:
-        ShaderPtr _shader;
-        std::vector<TexturePtr> _textures;
+        GLuint _vertex;
+        GLuint _geometry;
+        GLuint _fragment;
+        GLuint _program;
+        bool _isLinked;
 };
 
-typedef std::shared_ptr<Object> ObjectPtr;
+typedef std::shared_ptr<Shader> ShaderPtr;
 
-#endif // OBJECT_H
+#endif // SHADER_H

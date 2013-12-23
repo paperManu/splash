@@ -18,26 +18,36 @@
  */
 
 /*
- * @scene.h
- * The Scene class
+ * @window.h
+ * The Window class
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef WINDOW_H
+#define WINDOW_H
 
 #include <config.h>
 
-class Scene {
+#include <memory>
+#include <vector>
+
+#include "shader.h"
+
+class Window {
     public:
         /**
          * Constructor
          */
-        Scene();
+        Window();
 
         /**
          * Destructor
          */
-        ~Scene();
+        ~Window();
+
+    private:
+        ObjectPtr _screen;
 };
 
-#endif // SCENE_H
+typedef std::shared_ptr<Window> WindowPtr;
+
+#endif // WINDOW_H
