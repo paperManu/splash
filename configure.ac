@@ -31,6 +31,15 @@ if test "x${have_gl}" = "xfalse" ; then
     AC_MSG_ERROR([Missing opengl])
 fi
 
+# GLM
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADER([glm/glm.hpp],
+    [HAVE_GLM=true],
+    [HAVE_GLM=false])
+if test "$HAVE_GLM" = "false" ; then
+    AC_MSG_ERROR([Missing glm])
+fi
+
 # OpenMesh
 PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
 if test "x${have_openmesh}" = "xfalse" ; then
