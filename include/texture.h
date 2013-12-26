@@ -33,7 +33,10 @@
 #include <memory>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
+
+#include "log.h"
 
 using namespace OIIO_NAMESPACE;
 
@@ -56,7 +59,7 @@ class Texture
          * Sets the specified buffer as the texture on the device
          */
         template<typename DataType>
-        Texture& operator=(const ImageBuf img);
+        Texture& operator=(const ImageBuf& img);
 
         /**
          * Get the id of the gl texture
@@ -77,7 +80,8 @@ class Texture
                    GLint border, GLenum format, GLenum type, const GLvoid* data);
 
     private:
-        GLuint _glTex;
+        GLuint _glTex = {0};
+        ImageSpec _spec;
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;

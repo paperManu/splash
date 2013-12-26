@@ -22,6 +22,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/camera.h \
     $(top_srcdir)/include/geometry.h \
     $(top_srcdir)/include/image.h \
+    $(top_srcdir)/include/log.h \
     $(top_srcdir)/include/mesh.h \
     $(top_srcdir)/include/object.h \
     $(top_srcdir)/include/scene.h \
