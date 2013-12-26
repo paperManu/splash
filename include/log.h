@@ -72,12 +72,41 @@ class Log {
             strftime(time_c, 64, "%T", std::localtime(&now_c));
 
             std::string timedMsg;
-            timedMsg = std::string(time_c) + std::string(" - ") + msg;
+            std::string type;
+            if (p == MESSAGE)
+                type = std::string("MESSAGE");
+            else if (p == DEBUG)
+                type = std::string("DEBUG");
+            else if (p == WARNING)
+                type = std::string("WARNING");
+            else if (p == ERROR)
+                type = std::string("ERROR");
+                
+            timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("] - ") + msg;
 
             if (_verbose)
                 toConsole(timedMsg, p);
 
             _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
+
+            if (_logs.size() > _logLength)
+                _logs.erase(_logs.begin());
+        }
+
+        /**
+         * Shortcut for any type of log
+         */
+        void operator()(std::string msg, Priority p = MESSAGE)
+        {
+            rec(msg, p);
+        }
+
+        /**
+         * Shortcut for setting MESSAGE log
+         */
+        void operator<<(std::string msg)
+        {
+            rec(msg);
         }
 
         /**
@@ -94,6 +123,9 @@ class Log {
         std::vector<std::string> getLogs(Priority p)
         {
             std::vector<std::string> logs;
+            for (auto log : _logs)
+                if (log.second == p)
+                    logs.push_back(log.first);
 
             return logs;
         }

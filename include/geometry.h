@@ -27,6 +27,7 @@
 
 #include <config.h>
 
+#include "log.h"
 #include "mesh.h"
 
 namespace Splash {
