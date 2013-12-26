@@ -33,6 +33,8 @@
 #include "object.h"
 #include "texture.h"
 
+namespace Splash {
+
 class Window {
     public:
         /**
@@ -51,5 +53,7 @@ class Window {
 };
 
 typedef std::shared_ptr<Window> WindowPtr;
+
+} // end of namespace
 
 #endif // WINDOW_H

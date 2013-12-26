@@ -33,6 +33,8 @@
 #include "object.h"
 #include "texture.h"
 
+namespace Splash {
+
 class Camera
 {
     public:
@@ -68,5 +70,7 @@ class Camera
 };
 
 typedef std::shared_ptr<Camera> CameraPtr;
+
+} // end of namespace
 
 #endif // CAMERA_H

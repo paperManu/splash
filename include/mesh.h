@@ -30,6 +30,8 @@
 #include <memory>
 #include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
 
+namespace Splash {
+
 class Mesh {
     public:
         /**
@@ -45,5 +47,7 @@ class Mesh {
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;
+
+} // end of namespace
 
 #endif // MESH_H

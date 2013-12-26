@@ -29,6 +29,8 @@
 
 #include "mesh.h"
 
+namespace Splash {
+
 class Geometry
 {
     public:
@@ -47,5 +49,7 @@ class Geometry
 };
 
 typedef std::shared_ptr<Geometry> GeometryPtr;
+
+} // end of namespace
 
 #endif // GEOMETRY_H

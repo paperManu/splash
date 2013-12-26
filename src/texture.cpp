@@ -1,5 +1,7 @@
 #include "texture.h"
 
+namespace Splash {
+
 /*************/
 Texture::Texture()
 {
@@ -27,3 +29,5 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
                     GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
 }
+
+} // end of namespace

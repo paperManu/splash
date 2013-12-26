@@ -1,5 +1,7 @@
 #include "camera.h"
 
+namespace Splash {
+
 /*************/
 Camera::Camera()
 {
@@ -19,3 +21,5 @@ void Camera::render()
 void Camera::setSize(int width, int height)
 {
 }
+
+} // end of namespace

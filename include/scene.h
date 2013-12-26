@@ -35,6 +35,8 @@
 #include "texture.h"
 #include "window.h"
 
+namespace Splash {
+
 class Scene {
     public:
         /**
@@ -55,5 +57,7 @@ class Scene {
         std::vector<CameraPtr> _cameras;
         std::vector<WindowPtr> _windows;
 };
+
+} // end of namespace
 
 #endif // SCENE_H

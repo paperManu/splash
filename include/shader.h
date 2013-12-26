@@ -34,6 +34,8 @@
 #include "geometry.h"
 #include "texture.h"
 
+namespace Splash {
+
 class Shader {
     public:
         enum ShaderType
@@ -77,5 +79,7 @@ class Shader {
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;
+
+} // end of namespace
 
 #endif // SHADER_H

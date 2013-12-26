@@ -37,6 +37,8 @@
 
 using namespace OIIO_NAMESPACE;
 
+namespace Splash {
+
 class Texture
 {
     public:
@@ -79,5 +81,7 @@ class Texture
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;
+
+} // end of namespace
 
 #endif // TEXTURE_H

@@ -27,6 +27,8 @@
 
 #include <config.h>
 
+namespace Splash {
+
 class Image {
     public:
         /**
@@ -40,5 +42,7 @@ class Image {
         ~Image();
 
 };
+
+} // end of namespace
 
 #endif // IMAGE_H

@@ -22,9 +22,13 @@
  * The splash App main class.
  */
 
- #ifndef SPLASH_H
- #define SPLASH_H
+#ifndef SPLASH_H
+#define SPLASH_H
 
-#include <config.h>
+#include "config.h"
 
- #endif // SPLASH_H
+#include "world.h"
+
+using namespace Splash;
+
+#endif // SPLASH_H

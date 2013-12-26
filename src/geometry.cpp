@@ -1,14 +1,14 @@
-#include "mesh.h"
+#include "geometry.h"
 
 namespace Splash {
 
 /*************/
-Mesh::Mesh()
+Geometry::Geometry()
 {
 }
 
 /*************/
-Mesh::~Mesh()
+Geometry::~Geometry()
 {
 }
 

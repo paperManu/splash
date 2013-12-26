@@ -7,6 +7,7 @@ bin_PROGRAMS = splash
 splash_SOURCES = \
     splash.cpp \
     camera.cpp \
+    geometry.cpp \
     image.cpp \
     mesh.cpp \
     object.cpp \
@@ -19,6 +20,7 @@ splash_SOURCES = \
 noinst_HEADERS = \
     $(top_srcdir)/include/splash.h \
     $(top_srcdir)/include/camera.h \
+    $(top_srcdir)/include/geometry.h \
     $(top_srcdir)/include/image.h \
     $(top_srcdir)/include/mesh.h \
     $(top_srcdir)/include/object.h \

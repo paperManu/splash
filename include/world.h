@@ -25,7 +25,9 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <config.h>
+#include "config.h"
+
+namespace Splash {
 
 class World {
     public:
@@ -39,5 +41,7 @@ class World {
          */
         ~World();
 };
+
+} // end of namespace
 
  #endif // WORLD_H

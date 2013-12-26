@@ -34,6 +34,8 @@
 #include "texture.h"
 #include "geometry.h"
 
+namespace Splash {
+
 class Object {
     public:
         /**
@@ -53,5 +55,7 @@ class Object {
 };
 
 typedef std::shared_ptr<Object> ObjectPtr;
+
+} // end of namespace
 
 #endif // OBJECT_H
