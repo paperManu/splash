@@ -30,7 +30,8 @@
 #include <memory>
 #include <vector>
 
-#include "shader.h"
+#include "object.h"
+#include "texture.h"
 
 class Window {
     public:
@@ -46,6 +47,7 @@ class Window {
 
     private:
         ObjectPtr _screen;
+        std::vector<TexturePtr> _inTextures;
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

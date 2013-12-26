@@ -30,6 +30,7 @@
 #include <memory>
 #include <vector>
 
+#include "object.h"
 #include "texture.h"
 
 class Camera
@@ -48,7 +49,7 @@ class Camera
         /**
          * Get pointers to this camera textures
          */
-        std::vector<TexturePtr> getTextures() const {return _textures;}
+        std::vector<TexturePtr> getTextures() const {return _outTextures;}
 
         /**
          * Render this camera into its textures
@@ -58,11 +59,12 @@ class Camera
         /**
          * Set the resolution of this camera
          */
-        void setSize(int width, int, height);
+        void setSize(int width, int height);
 
     private:
         GLuint _fbo;
-        std::vector<TexturePtr> _textures;
+        std::vector<TexturePtr> _outTextures;
+        std::vector<ObjectPtr> _objects;
 };
 
 typedef std::shared_ptr<Camera> CameraPtr;

@@ -18,42 +18,34 @@
  */
 
 /*
- * @scene.h
- * The Scene class
+ * @texture.h
+ * The Geometry base class
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
 
-#include "config.h"
+#include <config.h>
 
-#include <vector>
+#include "mesh.h"
 
-#include "camera.h"
-#include "geometry.h"
-#include "object.h"
-#include "texture.h"
-#include "window.h"
-
-class Scene {
+class Geometry
+{
     public:
         /**
          * Constructor
          */
-        Scene();
+        Geometry();
 
         /**
          * Destructor
          */
-        ~Scene();
+        ~Geometry();
 
     private:
-        std::vector<ObjectPtr> _objects;
-        std::vector<GeometryPtr> _geometries;
-        std::vector<TexturePtr> _textures;
-
-        std::vector<CameraPtr> _cameras;
-        std::vector<WindowPtr> _windows;
+        MeshPtr _mesh;
 };
 
-#endif // SCENE_H
+typedef std::shared_ptr<Geometry> GeometryPtr;
+
+#endif // GEOMETRY_H

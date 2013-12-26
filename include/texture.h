@@ -33,11 +33,7 @@
 #include <memory>
 #include <vector>
 #include <GLFW/glfw3.h>
-#include <imageio.h>
-
-#include "camera.h"
-#include "object.h"
-#include "window.h"
+#include <OpenImageIO/imagebuf.h>
 
 using namespace OIIO_NAMESPACE;
 

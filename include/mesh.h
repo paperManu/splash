@@ -25,7 +25,10 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include <config.h>
+#include "config.h"
+
+#include <memory>
+#include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
 
 class Mesh {
     public:
@@ -40,5 +43,7 @@ class Mesh {
         ~Mesh();
 
 };
+
+typedef std::shared_ptr<Mesh> MeshPtr;
 
 #endif // MESH_H

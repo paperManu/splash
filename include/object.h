@@ -28,6 +28,11 @@
 #include <config.h>
 
 #include <memory>
+#include <vector>
+
+#include "shader.h"
+#include "texture.h"
+#include "geometry.h"
 
 class Object {
     public:
@@ -44,6 +49,7 @@ class Object {
     private:
         ShaderPtr _shader;
         std::vector<TexturePtr> _textures;
+        std::vector<GeometryPtr> _geometries;
 };
 
 typedef std::shared_ptr<Object> ObjectPtr;

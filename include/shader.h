@@ -31,6 +31,7 @@
 #include <string>
 #include <vector>
 
+#include "geometry.h"
 #include "texture.h"
 
 class Shader {
@@ -55,7 +56,7 @@ class Shader {
         /**
          * Activates this shader
          */
-        void activate(const ObjectPtr object);
+        void activate(const GeometryPtr geometry);
 
         /**
          * Set a shader source

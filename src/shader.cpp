@@ -11,7 +11,7 @@ Shader::~Shader()
 }
 
 /*************/
-void Shader::activate()
+void Shader::activate(const GeometryPtr geometry)
 {
 }
 
