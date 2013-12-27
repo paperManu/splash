@@ -55,6 +55,18 @@ class Camera
         ~Camera();
 
         /**
+         * No copy constructor, but a move one
+         */
+        Camera(const Camera&) = delete;
+        Camera(Camera&& c)
+        {
+            _fbo = c._fbo;
+            _status = c._status;
+            _outTextures = c._outTextures;
+            _objects = c._objects;
+        }
+
+        /**
          * Get pointers to this camera textures
          */
         std::vector<TexturePtr> getTextures() const {return _outTextures;}

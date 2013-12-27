@@ -63,8 +63,8 @@ class Geometry
     private:
         MeshPtr _mesh;
 
-        GLuint _vertexCoords;
-        GLuint _texCoords;
+        GLuint _vertexCoords = {0};
+        GLuint _texCoords = {0};
 };
 
 typedef std::shared_ptr<Geometry> GeometryPtr;

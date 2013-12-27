@@ -56,6 +56,16 @@ class Texture
         ~Texture();
 
         /**
+         * No copy constructor, but a move one
+         */
+        Texture(const Texture&) = delete;
+        Texture(Texture&& t)
+        {
+            _glTex = t._glTex;
+            _spec = t._spec;
+        }
+
+        /**
          * Sets the specified buffer as the texture on the device
          */
         Texture& operator=(const ImageBuf& img);
