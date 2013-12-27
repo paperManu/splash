@@ -48,6 +48,11 @@ class Object {
          */
         ~Object();
 
+        /**
+         * Get the shader
+         */
+        ShaderPtr getShader() const {return _shader;}
+
     private:
         ShaderPtr _shader;
         std::vector<TexturePtr> _textures;

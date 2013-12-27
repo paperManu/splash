@@ -17,7 +17,6 @@ Texture::~Texture()
 }
 
 /*************/
-template<typename DataType>
 Texture& Texture::operator=(const ImageBuf& pImg)
 {
     if (!pImg.initialized())
@@ -70,7 +69,6 @@ Texture& Texture::operator=(const ImageBuf& pImg)
 }
 
 /*************/
-template<typename DataType>
 ImageBuf Texture::getBuffer() const
 {
 }
@@ -79,6 +77,23 @@ ImageBuf Texture::getBuffer() const
 void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei width, GLsizei height,
                     GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
+    if (width > 0 && height > 0)
+    {
+        glDeleteTextures(1, &_glTex);
+        glGenTextures(1, &_glTex);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        glTexImage2D(target, pLevel, internalFormat, width, height, border, format, type, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }
 
 } // end of namespace

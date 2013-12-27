@@ -25,11 +25,17 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#define GLFW_NO_GLU
+#define GL_GLEXT_PROTOTYPES
+
 #include <config.h>
 
 #include <memory>
+#include <string>
 #include <vector>
+#include <GLFW/glfw3.h>
 
+#include "log.h"
 #include "object.h"
 #include "texture.h"
 
@@ -59,12 +65,18 @@ class Camera
         void render();
 
         /**
+         * Set the number of output buffers for this camera
+         */
+        void setOutputNbr(int nbr);
+
+        /**
          * Set the resolution of this camera
          */
-        void setSize(int width, int height);
+        void setOutputSize(int width, int height);
 
     private:
         GLuint _fbo;
+        GLenum _status;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 };

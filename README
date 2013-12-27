@@ -21,3 +21,8 @@ Sponsors
 --------
 This project is made possible thanks to the Society for Arts and Technologies. [SAT] http://www.sat.qc.ca/
 Thanks to the Ministère du Développement économique, de l'Innovation et de l'Exportation du Québec (MDEIE).
+
+Installation notes
+------------------
+- OpenMesh: compile without the apps
+- OpenImageIO: checkout a tagged version, release 1.2.3 worked for me, and disable the building of the unit tests

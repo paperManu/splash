@@ -58,7 +58,6 @@ class Texture
         /**
          * Sets the specified buffer as the texture on the device
          */
-        template<typename DataType>
         Texture& operator=(const ImageBuf& img);
 
         /**
@@ -69,8 +68,12 @@ class Texture
         /**
          * Get the buffer on the host
          */
-        template<typename DataType>
         ImageBuf getBuffer() const;
+
+        /**
+         * Get spec of the texture
+         */
+        ImageSpec getSpec() const {return _spec;}
 
         /**
          * Set the buffer size / type / internal format
