@@ -25,7 +25,12 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#define GLFW_NO_GLU
+#define GL_GLEXT_PROTOTYPES
+
 #include <config.h>
+
+#include <GLFW/glfw3.h>
 
 #include "log.h"
 #include "mesh.h"
@@ -45,8 +50,21 @@ class Geometry
          */
         ~Geometry();
 
+        /**
+         * Get the texture coords
+         */
+        GLuint getTextureCoords() const {return _texCoords;}
+
+        /**
+         * Get the vertex coords
+         */
+        GLuint getVertexCoords() const {return _vertexCoords;}
+
     private:
         MeshPtr _mesh;
+
+        GLuint _vertexCoords;
+        GLuint _texCoords;
 };
 
 typedef std::shared_ptr<Geometry> GeometryPtr;

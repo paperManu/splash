@@ -25,13 +25,19 @@
 #ifndef SHADER_H
 #define SHADER_H
 
+#define GLFW_NO_GLU
+#define GL_GLEXT_PROTOTYPES
+
 #include <config.h>
 
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
+#include <GLFW/glfw3.h>
 
 #include "geometry.h"
+#include "log.h"
 #include "texture.h"
 
 namespace Splash {
@@ -56,6 +62,18 @@ class Shader {
         ~Shader();
 
         /**
+         * No copy constructor, but a move one
+         */
+        Shader(const Shader&) = delete;
+        Shader(Shader&& s)
+        {
+            _shaders = s._shaders;
+            _program = s._program;
+            _isLinked = s._isLinked;
+            _geometry = s._geometry;
+        }
+
+        /**
          * Activates this shader
          */
         void activate(const GeometryPtr geometry);
@@ -63,19 +81,21 @@ class Shader {
         /**
          * Set a shader source
          */
-        void setSource(const std::string src, const ShaderType type);
+        void setSource(const std::string& src, const ShaderType type);
 
         /**
          * Add a new texture to use
          */
-        void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string name);
+        void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name);
 
     private:
-        GLuint _vertex;
-        GLuint _geometry;
-        GLuint _fragment;
+        std::map<ShaderType, GLuint> _shaders;
         GLuint _program;
-        bool _isLinked;
+        bool _isLinked = {false};
+        GeometryPtr _geometry;
+
+        void compileProgram();
+        bool linkProgram();
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;
