@@ -49,15 +49,15 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     GLint status;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (status)
-        gLog(string(__FUNCTION__) + string(" - Shader compiled successfully"), Log::DEBUG);
+        gLog(Log::DEBUG, __FUNCTION__," - Shader compiled successfully");
     else
     {
-        gLog(string(__FUNCTION__) + string(" - Error while compiling a shader:"), Log::WARNING);
+        gLog(Log::WARNING, __FUNCTION__, " - Error while compiling a shader:");
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetShaderInfoLog(shader, length, &length, log);
-        gLog(string(__FUNCTION__) + string(" - Error log: \n") + string(log), Log::WARNING);
+        gLog(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
         free(log);
     }
 
@@ -89,7 +89,7 @@ void Shader::compileProgram()
             if (status == GL_TRUE)
             {
                 glAttachShader(_program, shader.second);
-                gLog(string(__FUNCTION__) + string(" - Shader successfully attacher to the program"), Log::DEBUG);
+                gLog(Log::DEBUG, __FUNCTION__, " - Shader successfully attacher to the program");
             }
         }
     }
@@ -103,19 +103,19 @@ bool Shader::linkProgram()
     glGetProgramiv(_program, GL_LINK_STATUS, &status);
     if (status == GL_TRUE)
     {
-        gLog(string(__FUNCTION__) + string(" - Shader program linked successfully"), Log::DEBUG);
+        gLog(Log::DEBUG, __FUNCTION__, " - Shader program linked successfully");
         _isLinked = true;
         return true;
     }
     else
     {
-        gLog(string(__FUNCTION__) + string(" - Error while linking the shader program"), Log::WARNING);
+        gLog(Log::WARNING, __FUNCTION__, " - Error while linking the shader program");
         
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_program, length, &length, log);
-        gLog(string(__FUNCTION__) + string(" - Error log: \n") + string(log), Log::WARNING);
+        gLog(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
         free(log);
 
         _isLinked = false;

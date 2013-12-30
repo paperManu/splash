@@ -64,7 +64,8 @@ class Log {
         /**
          * Set a new log message
          */
-        void rec(std::string msg, Priority p = MESSAGE)
+        template<typename ... T>
+        void rec(Priority p, T ... args)
         {
             std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
             std::time_t now_c = std::chrono::system_clock::to_time_t(now);
@@ -81,14 +82,16 @@ class Log {
                 type = std::string("WARNING");
             else if (p == ERROR)
                 type = std::string("ERROR");
-                
-            timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("] - ") + msg;
 
-            if (_verbose)
-                toConsole(timedMsg, p);
+            timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("] - ");
+
+            auto values = {args...};
+            for (auto v : values)
+            {
+                timedMsg += std::string(v);
+            }
 
             _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
-
             if (_logs.size() > _logLength)
                 _logs.erase(_logs.begin());
         }
@@ -96,9 +99,10 @@ class Log {
         /**
          * Shortcut for any type of log
          */
-        void operator()(std::string msg, Priority p = MESSAGE)
+        template<typename ... T>
+        void operator()(Priority p, T ... args)
         {
-            rec(msg, p);
+            rec(p, args...);
         }
 
         /**
@@ -106,7 +110,7 @@ class Log {
          */
         void operator<<(std::string msg)
         {
-            rec(msg);
+            rec(MESSAGE, msg);
         }
 
         /**

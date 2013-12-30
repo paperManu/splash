@@ -13,9 +13,9 @@ Camera::Camera()
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        gLog(string(__FUNCTION__) + string(" - Error while initializing framebuffer object"), Log::WARNING);
+        gLog(Log::WARNING, __FUNCTION__, " - Error while initializing framebuffer object");
     else
-        gLog(string(__FUNCTION__) + string(" - Framebuffer object successfully initialized"), Log::DEBUG);
+        gLog(Log::WARNING, __FUNCTION__, " - Framebuffer object successfully initialized");
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
