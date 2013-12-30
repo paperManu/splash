@@ -91,6 +91,8 @@ class Log {
                 timedMsg += std::string(v);
             }
 
+            toConsole(timedMsg);
+
             _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
             if (_logs.size() > _logLength)
                 _logs.erase(_logs.begin());
@@ -139,7 +141,7 @@ class Log {
         int _logLength = {500};
         bool _verbose = {true};
 
-        void toConsole(std::string msg, Priority p)
+        void toConsole(std::string msg)
         {
             std::cout << msg << std::endl;
         }

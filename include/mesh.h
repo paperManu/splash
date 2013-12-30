@@ -28,12 +28,18 @@
 #include "config.h"
 
 #include <memory>
-#include <OpenMesh/Core/Mesh/PolyMesh_ArrayKernelT.hh>
+#include <vector>
+#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+
+#include "log.h"
 
 namespace Splash {
 
 class Mesh {
     public:
+        typedef std::vector<unsigned char> SerializedObject;
+        typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
+
         /**
          * Constructor
          */
@@ -44,6 +50,33 @@ class Mesh {
          */
         ~Mesh();
 
+        /**
+         * Get a 1D vector of all points in the mesh, in normalized coordinates
+         */
+        std::vector<float> getVertCoords() const;
+
+        /**
+         * Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
+         */
+        std::vector<float> getUVCoords() const;
+
+        /**
+         * Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
+         */
+        std::vector<float> getNormals() const;
+
+        /**
+         * Get a serialized representation of the mesh
+         */
+        SerializedObject serialize() const;
+
+        /**
+         * Set the mesh from a serialized representation
+         */
+        bool deserialize(SerializedObject& obj);
+
+    private:
+        MeshContainer _mesh;
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;
