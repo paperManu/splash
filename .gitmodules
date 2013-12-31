@@ -1,3 +1,6 @@
 [submodule "external/GLV"]
 	path = external/GLV
 	url = git@github.com:AlloSphere-Research-Group/GLV.git
+[submodule "external/bandit"]
+	path = external/bandit
+	url = git@github.com:joakimkarlsson/bandit.git
