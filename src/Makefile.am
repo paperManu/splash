@@ -1,6 +1,7 @@
 AM_CPPFLAGS = \
     -I$(top_srcdir)/include \
-    -I$(top_srcdir)/external/GLV
+    -I$(top_srcdir)/external/GLV \
+    -I$(top_srcdir)/external/bandit
 
 bin_PROGRAMS = splash
 
