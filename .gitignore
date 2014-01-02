@@ -1,5 +1,9 @@
 *.swp
 *.o
+*.lo
+*.la
+*.libs
+*.deps
 aclocal.m4
 Makefile
 Makefile.in
@@ -21,3 +25,4 @@ src/Makefile
 src/Makefile.i
 include/config.h*
 include/stamp-h1
+tests/check_mesh
