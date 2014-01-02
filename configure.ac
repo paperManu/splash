@@ -10,7 +10,7 @@ AC_CONFIG_HEADERS([include/config.h])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
-AC_PROG_CC
+AC_PROG_CC_C_O
 
 CXXFLAGS="$CFLAGS -std=gnu++0x"
 

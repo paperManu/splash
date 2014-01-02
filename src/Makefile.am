@@ -44,3 +44,15 @@ splash_LDADD = \
 	$(GL_LIBS) \
     $(OPENIMAGEIO_LIBS) \
     $(OPENMESH_LIBS)
+
+lib_LTLIBRARIES = \
+	libsplash.la
+
+libsplash_la_SOURCES = \
+	$(splash_SOURCES)
+
+libsplash_la_CXXFLAGS = \
+	$(splash_CXXFLAGS)
+
+libsplash_la_LIBADD = \
+	$(splash_LDADD)

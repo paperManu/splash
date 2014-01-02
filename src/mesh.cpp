@@ -116,7 +116,7 @@ bool Mesh::deserialize(SerializedObject& obj)
         return false;
 
     // First, we get the number of vertices
-    float nbrVertices;
+    int nbrVertices;
     unsigned char* ptr = reinterpret_cast<unsigned char*>(&nbrVertices);
 
     auto currentObjPtr = obj.data();

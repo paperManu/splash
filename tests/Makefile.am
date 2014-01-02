@@ -3,10 +3,20 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/external/GLV \
     -I$(top_srcdir)/external/bandit
 
+AM_LDFLAGS = \
+    $(GLFW_LIBS) \
+	$(GL_LIBS) \
+    $(OPENIMAGEIO_LIBS) \
+    $(OPENMESH_LIBS) \
+	$(top_srcdir)/src/libsplash.la
+
 check_PROGRAMS = \
 	check_mesh
 
 check_mesh_SOURCES = \
 	check_mesh.cpp
+
+check_mesh_CXXFLAGS = \
+    $(OPENMESH_CFLAGS)
 
 TESTS = $(check_PROGRAMS)
