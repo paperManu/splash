@@ -3,10 +3,11 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/external/GLV \
     -I$(top_srcdir)/external/bandit
 
-bin_PROGRAMS = splash
+#*************#
+lib_LTLIBRARIES = \
+	libsplash.la
 
-splash_SOURCES = \
-    splash.cpp \
+libsplash_la_SOURCES = \
     camera.cpp \
     geometry.cpp \
     image.cpp \
@@ -17,6 +18,25 @@ splash_SOURCES = \
     texture.cpp \
     window.cpp \
     world.cpp
+
+libsplash_la_CXXFLAGS = \
+    $(GLFW_CFLAGS) \
+	$(GL_CFLAGS) \
+    $(GLM_CFLAGS) \
+    $(OPENIMAGEIO_CFLAGS) \
+    $(OPENMESH_CFLAGS)
+
+libsplash_la_LIBADD = \
+    $(GLFW_LIBS) \
+	$(GL_LIBS) \
+    $(OPENIMAGEIO_LIBS) \
+    $(OPENMESH_LIBS)
+
+#*************#
+bin_PROGRAMS = splash
+
+splash_SOURCES = \
+    splash.cpp
 
 noinst_HEADERS = \
     $(top_srcdir)/include/splash.h \
@@ -45,14 +65,5 @@ splash_LDADD = \
     $(OPENIMAGEIO_LIBS) \
     $(OPENMESH_LIBS)
 
-lib_LTLIBRARIES = \
-	libsplash.la
-
-libsplash_la_SOURCES = \
-	$(splash_SOURCES)
-
-libsplash_la_CXXFLAGS = \
-	$(splash_CXXFLAGS)
-
-libsplash_la_LIBADD = \
-	$(splash_LDADD)
+splash_LDFLAGS = \
+    $(top_srcdir)/src/libsplash.la

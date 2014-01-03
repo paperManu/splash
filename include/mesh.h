@@ -48,7 +48,7 @@ class Mesh {
         /**
          * Destructor
          */
-        ~Mesh();
+        virtual ~Mesh();
 
         /**
          * Get a 1D vector of all points in the mesh, in normalized coordinates
@@ -77,6 +77,8 @@ class Mesh {
 
     private:
         MeshContainer _mesh;
+
+        void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;
