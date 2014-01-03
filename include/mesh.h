@@ -29,8 +29,7 @@
 
 #include <memory>
 #include <vector>
-//#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
-#include <pcl/TextureMesh.h>
+#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
 #include "log.h"
 
@@ -39,7 +38,7 @@ namespace Splash {
 class Mesh {
     public:
         typedef std::vector<unsigned char> SerializedObject;
-        //typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
+        typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
 
         /**
          * Constructor
@@ -77,8 +76,7 @@ class Mesh {
         bool deserialize(SerializedObject& obj);
 
     private:
-        //MeshContainer _mesh;
-        pcl::TextureMesh _mesh;
+        MeshContainer _mesh;
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;

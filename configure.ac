@@ -46,14 +46,8 @@ if test "x${have_openmesh}" = "xfalse" ; then
     AC_MSG_ERROR([Missing openmesh])
 fi
 
-# PCL
-PKG_CHECK_MODULES([PCL], [pcl_geometry-1.7 eigen3])
-if test "x${have_pcl}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing PCL])
-fi
-
 # OpenImageIO
-PKG_CHECK_MODULES([OPENIMAGEIO], [openimageio >= 1.3.0])
+PKG_CHECK_MODULES([OPENIMAGEIO], [openimageio])
 if test "x${have_openimageio}" = "xfalse" ; then
     AC_MSG_ERROR([Missing openimageio])
 fi

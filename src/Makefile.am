@@ -37,15 +37,13 @@ splash_CXXFLAGS = \
 	$(GL_CFLAGS) \
     $(GLM_CFLAGS) \
     $(OPENIMAGEIO_CFLAGS) \
-    $(OPENMESH_CFLAGS) \
-	$(PCL_CFLAGS)
+    $(OPENMESH_CFLAGS)
 
 splash_LDADD = \
     $(GLFW_LIBS) \
 	$(GL_LIBS) \
     $(OPENIMAGEIO_LIBS) \
-    $(OPENMESH_LIBS) \
-	$(PCL_LIBS)
+    $(OPENMESH_LIBS)
 
 lib_LTLIBRARIES = \
 	libsplash.la
