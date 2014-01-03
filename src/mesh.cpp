@@ -1,5 +1,8 @@
 #include "mesh.h"
 
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
 using namespace std;
 
 namespace Splash {
@@ -18,18 +21,34 @@ Mesh::~Mesh()
 vector<float> Mesh::getVertCoords() const
 {
     vector<float> coords;
-    coords.resize(_mesh.n_faces() * 3 * 4);
+    int meshSize = 0;
+    // We consider that the object has only one material, and triangle faces
+    for (auto face : _mesh.tex_polygons[0])
+        meshSize += face.vertices.size();
+    coords.resize(meshSize * 4);
 
-    for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle face)
+    pcl::PointCloud<pcl::PointXYZ> cloud;
+    pcl::fromPCLPointCloud2(_mesh.cloud, cloud);
+    for (auto face : _mesh.tex_polygons[0])
     {
-        for_each (_mesh.cfv_iter(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle vertex)
+        for (auto vertex : face.vertices)
         {
-            auto point = _mesh.point(vertex);
             for (int i = 0; i < 3; ++i)
-                coords.push_back(point[i]);
-            coords.push_back(1.f); // We add this to get normalized coordinates
-        });
-    });
+//                coords.push_back(vertex[i]);
+            coords.push_back(1.f);
+        }
+    }
+
+    //for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle face)
+    //{
+    //    for_each (_mesh.cfv_iter(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle vertex)
+    //    {
+    //        auto point = _mesh.point(vertex);
+    //        for (int i = 0; i < 3; ++i)
+    //            coords.push_back(point[i]);
+    //        coords.push_back(1.f); // We add this to get normalized coordinates
+    //    });
+    //});
 
     return coords;
 }
@@ -38,17 +57,17 @@ vector<float> Mesh::getVertCoords() const
 vector<float> Mesh::getUVCoords() const
 {
     vector<float> coords;
-    coords.resize(_mesh.n_faces() * 3 * 2);
+    //coords.resize(_mesh.n_faces() * 3 * 2);
 
-    for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle face)
-    {
-        for_each (_mesh.cfv_iter(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle vertex)
-        {
-            auto point = _mesh.texcoord2D(vertex);
-            for (int i = 0; i < 2; ++i)
-                coords.push_back(point[i]);
-        });
-    });
+    //for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle face)
+    //{
+    //    for_each (_mesh.cfv_iter(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle vertex)
+    //    {
+    //        auto point = _mesh.texcoord2D(vertex);
+    //        for (int i = 0; i < 2; ++i)
+    //            coords.push_back(point[i]);
+    //    });
+    //});
 
     return coords;
 }
@@ -57,18 +76,18 @@ vector<float> Mesh::getUVCoords() const
 vector<float> Mesh::getNormals() const
 {
     vector<float> normals;
-    normals.resize(_mesh.n_faces() * 3 * 4);
+    //normals.resize(_mesh.n_faces() * 3 * 4);
 
-    for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle face)
-    {
-        for_each (_mesh.cfv_iter(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle vertex)
-        {
-            auto point = _mesh.normal(vertex);
-            for (int i = 0; i < 3; ++i)
-                normals.push_back(point[i]);
-            normals.push_back(1.f); // We add this to get normalized coordinates
-        });
-    });
+    //for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle face)
+    //{
+    //    for_each (_mesh.cfv_iter(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle vertex)
+    //    {
+    //        auto point = _mesh.normal(vertex);
+    //        for (int i = 0; i < 3; ++i)
+    //            normals.push_back(point[i]);
+    //        normals.push_back(1.f); // We add this to get normalized coordinates
+    //    });
+    //});
 
     return normals;
 }
@@ -139,21 +158,21 @@ bool Mesh::deserialize(SerializedObject& obj)
         }
 
         // Next step: use these values to reset the _mesh
-        _mesh.clear();
-        for (int face = 0; face < nbrVertices / 3; ++face)
-        {
-            MeshContainer::VertexHandle vertices[3];
-            vertices[0] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 0], data[0][face * 3 * 4 + 1], data[0][face * 3 * 4 + 2]));
-            vertices[1] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 4], data[0][face * 3 * 4 + 5], data[0][face * 3 * 4 + 6]));
-            vertices[2] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 8], data[0][face * 3 * 4 + 9], data[0][face * 3 * 4 + 10]));
+        //_mesh.clear();
+        //for (int face = 0; face < nbrVertices / 3; ++face)
+        //{
+        //    MeshContainer::VertexHandle vertices[3];
+        //    vertices[0] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 0], data[0][face * 3 * 4 + 1], data[0][face * 3 * 4 + 2]));
+        //    vertices[1] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 4], data[0][face * 3 * 4 + 5], data[0][face * 3 * 4 + 6]));
+        //    vertices[2] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 8], data[0][face * 3 * 4 + 9], data[0][face * 3 * 4 + 10]));
 
-            vector<MeshContainer::VertexHandle> faceHandle;
-            faceHandle.clear();
-            faceHandle.push_back(vertices[0]);
-            faceHandle.push_back(vertices[1]);
-            faceHandle.push_back(vertices[2]);
-            _mesh.add_face(faceHandle);
-        }
+        //    vector<MeshContainer::VertexHandle> faceHandle;
+        //    faceHandle.clear();
+        //    faceHandle.push_back(vertices[0]);
+        //    faceHandle.push_back(vertices[1]);
+        //    faceHandle.push_back(vertices[2]);
+        //    _mesh.add_face(faceHandle);
+        //}
     }
     catch (...)
     {
