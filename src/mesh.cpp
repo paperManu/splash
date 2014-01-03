@@ -16,6 +16,14 @@ Mesh::~Mesh()
 }
 
 /*************/
+bool Mesh::operator==(Mesh& otherMesh) const
+{
+    if (_timestamp != otherMesh.getTimestamp())
+        return false;
+    return true;
+}
+
+/*************/
 vector<float> Mesh::getVertCoords() const
 {
     vector<float> coords;
@@ -176,9 +184,12 @@ bool Mesh::deserialize(SerializedObject& obj)
             });
             faceIdx++;
         });
+
+        updateTimestamp();
     }
     catch (...)
     {
+        createDefaultMesh();
         gLog(Log::ERROR, __FUNCTION__, " - Unable to deserialize the given object");
         return false;
     }
@@ -224,6 +235,14 @@ void Mesh::createDefaultMesh()
     _mesh.set_texcoord2D(vertices[1], MeshContainer::TexCoord2D(1, 0));
     _mesh.set_texcoord2D(vertices[2], MeshContainer::TexCoord2D(1, 1));
     _mesh.set_texcoord2D(vertices[3], MeshContainer::TexCoord2D(0, 1));
+
+    updateTimestamp();
+}
+
+/*************/
+void Mesh::updateTimestamp()
+{
+    _timestamp = chrono::high_resolution_clock::now();
 }
 
 } // end of namespace

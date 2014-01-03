@@ -27,6 +27,7 @@
 
 #include "config.h"
 
+#include <chrono>
 #include <memory>
 #include <vector>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -51,6 +52,11 @@ class Mesh {
         virtual ~Mesh();
 
         /**
+         * Compare meshes based on their timestamps
+         */
+        bool operator==(Mesh& otherMesh) const;
+
+        /**
          * Get a 1D vector of all points in the mesh, in normalized coordinates
          */
         std::vector<float> getVertCoords() const;
@@ -66,6 +72,11 @@ class Mesh {
         std::vector<float> getNormals() const;
 
         /**
+         * Get the timestamp for the current mesh
+         */
+        std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
+
+        /**
          * Get a serialized representation of the mesh
          */
         SerializedObject serialize() const;
@@ -77,8 +88,10 @@ class Mesh {
 
     private:
         MeshContainer _mesh;
+        std::chrono::high_resolution_clock::time_point _timestamp;
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
+        void updateTimestamp();
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;

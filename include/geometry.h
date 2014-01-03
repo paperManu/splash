@@ -30,6 +30,8 @@
 
 #include <config.h>
 
+#include <chrono>
+#include <vector>
 #include <GLFW/glfw3.h>
 
 #include "log.h"
@@ -51,6 +53,17 @@ class Geometry
         ~Geometry();
 
         /**
+         * No copy constructor, but a move one
+         */
+        Geometry(const Geometry&) = delete;
+        Geometry(Geometry&& g)
+        {
+            _mesh = g._mesh;
+            _vertexCoords = g._vertexCoords;
+            _texCoords = g._texCoords;
+        }
+
+        /**
          * Get the texture coords
          */
         GLuint getTextureCoords() const {return _texCoords;}
@@ -60,8 +73,19 @@ class Geometry
          */
         GLuint getVertexCoords() const {return _vertexCoords;}
 
+        /**
+         * Set the mesh for this object
+         */
+        void setMesh(MeshPtr mesh) {_mesh = std::move(mesh);}
+
+        /**
+         * Updates the object
+         */
+        void update();
+
     private:
         MeshPtr _mesh;
+        std::chrono::high_resolution_clock::time_point _timestamp;
 
         GLuint _vertexCoords = {0};
         GLuint _texCoords = {0};
