@@ -33,6 +33,7 @@
 #include <iostream>
 #include <utility>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace Splash {
@@ -85,12 +86,7 @@ class Log {
 
             timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("] - ");
 
-            auto values = {args...};
-            for (auto v : values)
-            {
-                timedMsg += std::string(v);
-            }
-
+            addToString(timedMsg, args...);
             toConsole(timedMsg);
 
             _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
@@ -141,6 +137,34 @@ class Log {
         int _logLength = {500};
         bool _verbose = {true};
 
+        /*****/
+        template <typename T, typename... Ts>
+        void addToString(std::string& str, const T& t, Ts& ... args)
+        {
+            str += std::to_string(t);
+            addToString(str, args...);
+        }
+
+        template <typename... Ts>
+        void addToString(std::string& str, const std::string& s, Ts& ...args)
+        {
+            str += s;
+            addToString(str, args...);
+        }
+
+        template <typename... Ts>
+        void addToString(std::string& str, const char* s, Ts& ...args)
+        {
+            str += std::string(s);
+            addToString(str, args...);
+        }
+
+        void addToString(std::string& str)
+        {
+            return;
+        }
+
+        /*****/
         void toConsole(std::string msg)
         {
             std::cout << msg << std::endl;
