@@ -48,6 +48,11 @@ class Log {
             ERROR = 3
         };
 
+        enum Action
+        {
+            end = 0
+        };
+
         /**
          * Constructor
          */
@@ -106,9 +111,28 @@ class Log {
         /**
          * Shortcut for setting MESSAGE log
          */
-        void operator<<(std::string msg)
+        Log& operator<<(std::string msg)
         {
-            rec(MESSAGE, msg);
+            //rec(MESSAGE, msg);
+            addToString(_tempString, msg);
+            return *this;
+        }
+
+        Log& operator<<(Log::Action action)
+        {
+            if (action == end)
+            {
+                rec(_tempPriority, _tempString);
+                _tempString.clear();
+                _tempPriority = MESSAGE;
+            }
+            return *this;
+        }
+
+        Log& operator<<(Log::Priority p)
+        {
+            _tempPriority = p;
+            return *this;
         }
 
         /**
@@ -134,32 +158,35 @@ class Log {
 
     private:
         std::vector<std::pair<std::string, Priority>> _logs;
-        int _logLength = {500};
-        bool _verbose = {true};
+        int _logLength {500};
+        bool _verbose {true};
+
+        std::string _tempString;
+        Priority _tempPriority {MESSAGE};
 
         /*****/
         template <typename T, typename... Ts>
-        void addToString(std::string& str, const T& t, Ts& ... args)
+        void addToString(std::string& str, const T& t, Ts& ... args) const
         {
             str += std::to_string(t);
             addToString(str, args...);
         }
 
         template <typename... Ts>
-        void addToString(std::string& str, const std::string& s, Ts& ...args)
+        void addToString(std::string& str, const std::string& s, Ts& ...args) const
         {
             str += s;
             addToString(str, args...);
         }
 
         template <typename... Ts>
-        void addToString(std::string& str, const char* s, Ts& ...args)
+        void addToString(std::string& str, const char* s, Ts& ...args) const
         {
             str += std::string(s);
             addToString(str, args...);
         }
 
-        void addToString(std::string& str)
+        void addToString(std::string& str) const
         {
             return;
         }
