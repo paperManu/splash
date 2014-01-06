@@ -49,9 +49,24 @@ class Object {
         ~Object();
 
         /**
+         * Activate this object for rendering
+         */
+        void activate();
+
+        /**
          * Get the shader
          */
         ShaderPtr getShader() const {return _shader;}
+
+        /**
+         * Add a geometry to this object
+         */
+        void addGeometry(GeometryPtr geometry) {_geometries.push_back(geometry);}
+
+        /**
+         * Add a texture to this object
+         */
+        void addTexture(TexturePtr texture) {_textures.push_back(texture);}
 
     private:
         ShaderPtr _shader;

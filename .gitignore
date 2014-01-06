@@ -26,3 +26,4 @@ src/Makefile.i
 include/config.h*
 include/stamp-h1
 tests/check_mesh
+tests/check_scene

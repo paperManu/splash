@@ -5,19 +5,36 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Camera::Camera()
+Camera::Camera(GlWindowPtr w)
 {
+    if (w.get() == nullptr)
+        return;
+
+    _window = w;
+    glfwMakeContextCurrent(_window->get());
+
+    glGetError();
     glGenFramebuffers(1, &_fbo);
     setOutputNbr(1);
 
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-    _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        gLog(Log::WARNING, __FUNCTION__, " - Error while initializing framebuffer object");
+        gLog << Log::WARNING << __FUNCTION__ << " - Error while initializing framebuffer object" << Log::endl;
     else
-        gLog(Log::WARNING, __FUNCTION__, " - Framebuffer object successfully initialized");
+        gLog << Log::MESSAGE << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    GLenum error = glGetError();
+    if (error)
+    {
+        gLog << Log::WARNING << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
+        _isInitialized = false;
+    }
+    else
+        _isInitialized = true;
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -28,6 +45,8 @@ Camera::~Camera()
 /*************/
 void Camera::render()
 {
+    glfwMakeContextCurrent(_window->get());
+
     if (_outTextures.size() < 1)
         return;
           
@@ -37,6 +56,8 @@ void Camera::render()
     for (auto obj : _objects)
     {
     }
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/

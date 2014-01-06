@@ -30,24 +30,57 @@
 #include <memory>
 #include <vector>
 
+#include "coretypes.h"
+#include "geometry.h"
 #include "object.h"
 #include "texture.h"
 
 namespace Splash {
 
-class Window {
+class Window : public BaseObject
+{
     public:
         /**
          * Constructor
          */
-        Window();
+        Window(GlWindowPtr w);
 
         /**
          * Destructor
          */
         ~Window();
 
+        /**
+         * No copy constructor, but a move one
+         */
+        Window(const Window&) = delete;
+        Window(Window&& w)
+        {
+            _isInitialized = w._isInitialized;
+            _window = w._window;
+            _screen = w._screen;
+            _inTextures = w._inTextures;
+        }
+
+        /**
+         * Check wether it is initialized
+         */
+        bool isInitialized() const {return _isInitialized;}
+
+        /**
+         * Render this window to screen
+         */
+        void render();
+
+        /**
+         * Set a new texture to draw
+         */
+        void setTexture(TexturePtr tex);
+
     private:
+        bool _isInitialized {false};
+        GlWindowPtr _window;
+
         ObjectPtr _screen;
         std::vector<TexturePtr> _inTextures;
 };

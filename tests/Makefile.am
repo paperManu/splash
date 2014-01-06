@@ -11,9 +11,12 @@ AM_LDFLAGS = \
 	$(top_srcdir)/src/libsplash.la
 
 check_PROGRAMS = \
-	check_mesh
+	check_mesh \
+    check_scene
 
 check_mesh_SOURCES = check_mesh.cpp
 check_mesh_CXXFLAGS = $(OPENMESH_CFLAGS)
+
+check_scene_SOURCES = check_scene.cpp
 
 TESTS = $(check_PROGRAMS)

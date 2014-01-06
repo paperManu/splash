@@ -25,18 +25,30 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#define GLFW_NO_GLU
+#define GL_GLEXT_PROTOTYPES
+
+#define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
+#define SPLASH_GL_CONTEXT_VERSION_MINOR 2
+#define SPLASH_GL_DEBUG false
+
 #include "config.h"
 
+#include <cstddef>
 #include <vector>
+#include <GLFW/glfw3.h>
 
 #include "camera.h"
+#include "coretypes.h"
 #include "geometry.h"
+#include "log.h"
 #include "object.h"
 #include "texture.h"
 #include "window.h"
 
 namespace Splash {
 
+/*************/
 class Scene {
     public:
         /**
@@ -49,13 +61,53 @@ class Scene {
          */
         ~Scene();
 
-    private:
-        std::vector<ObjectPtr> _objects;
-        std::vector<GeometryPtr> _geometries;
-        std::vector<TexturePtr> _textures;
+        /**
+         * Add an object of the given type, with the given name
+         */
+        BaseObjectPtr add(std::string type, std::string name = std::string());
 
-        std::vector<CameraPtr> _cameras;
-        std::vector<WindowPtr> _windows;
+        /**
+         * Check wether it is initialized
+         */
+        bool isInitialized() const {return _isInitialized;}
+
+        /**
+         * Render everything
+         */
+        void render();
+
+    private:
+        bool _isInitialized {false};
+        GlWindowPtr _mainWindow;
+        unsigned long _nextId {0};
+
+        std::map<std::string, ObjectPtr> _objects;
+        std::map<std::string, GeometryPtr> _geometries;
+        std::map<std::string, MeshPtr> _meshes;
+        std::map<std::string, TexturePtr> _textures;
+
+        std::map<std::string, CameraPtr> _cameras;
+        std::map<std::string, WindowPtr> _windows;
+
+        /**
+         * Get a glfw window sharing the same context as _mainWindow
+         */
+        GlWindowPtr getNewSharedWindow();
+
+        /**
+         * Set up the context and everything
+         */
+        void init();
+
+        /**
+         * Get the next available id
+         */
+        unsigned long getId() {return ++_nextId;}
+
+        /**
+         * Callback for GLFW errors
+         */
+        static void glfwErrorCallback(int code, const char* msg);
 };
 
 } // end of namespace

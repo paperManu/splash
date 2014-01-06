@@ -43,14 +43,15 @@ class Log {
         enum Priority
         {
             MESSAGE = 0,
-            DEBUG = 1,
-            WARNING = 2,
-            ERROR = 3
+            DEBUG,
+            WARNING,
+            ERROR,
+            NONE
         };
 
         enum Action
         {
-            end = 0
+            endl = 0
         };
 
         /**
@@ -92,7 +93,9 @@ class Log {
             timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("] - ");
 
             addToString(timedMsg, args...);
-            toConsole(timedMsg);
+
+            if (p >= _verbosity)
+                toConsole(timedMsg);
 
             _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
             if (_logs.size() > _logLength)
@@ -113,14 +116,13 @@ class Log {
          */
         Log& operator<<(std::string msg)
         {
-            //rec(MESSAGE, msg);
             addToString(_tempString, msg);
             return *this;
         }
 
         Log& operator<<(Log::Action action)
         {
-            if (action == end)
+            if (action == endl)
             {
                 rec(_tempPriority, _tempString);
                 _tempString.clear();
@@ -156,10 +158,18 @@ class Log {
             return logs;
         }
 
+        /**
+         * Set the verbosity of the console output
+         */
+        void setVerbosity(Priority p)
+        {
+            _verbosity = p;
+        }
+
     private:
         std::vector<std::pair<std::string, Priority>> _logs;
         int _logLength {500};
-        bool _verbose {true};
+        Priority _verbosity {MESSAGE};
 
         std::string _tempString;
         Priority _tempPriority {MESSAGE};

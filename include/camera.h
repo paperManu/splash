@@ -35,19 +35,20 @@
 #include <vector>
 #include <GLFW/glfw3.h>
 
+#include "coretypes.h"
 #include "log.h"
 #include "object.h"
 #include "texture.h"
 
 namespace Splash {
 
-class Camera
+class Camera : public BaseObject
 {
     public:
         /**
          * Constructor
          */
-        Camera();
+        Camera(GlWindowPtr w);
 
         /**
          * Destructor
@@ -60,8 +61,9 @@ class Camera
         Camera(const Camera&) = delete;
         Camera(Camera&& c)
         {
+            _isInitialized = c._isInitialized;
+            _window = c._window;
             _fbo = c._fbo;
-            _status = c._status;
             _outTextures = c._outTextures;
             _objects = c._objects;
         }
@@ -70,6 +72,11 @@ class Camera
          * Get pointers to this camera textures
          */
         std::vector<TexturePtr> getTextures() const {return _outTextures;}
+
+        /**
+         * Check wether it is initialized
+         */
+        bool isInitialized() const {return _isInitialized;}
 
         /**
          * Render this camera into its textures
@@ -87,8 +94,10 @@ class Camera
         void setOutputSize(int width, int height);
 
     private:
+        bool _isInitialized {false};
+        GlWindowPtr _window;
+
         GLuint _fbo;
-        GLenum _status;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 };

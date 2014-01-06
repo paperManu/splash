@@ -7,7 +7,8 @@ namespace Splash {
 /*************/
 Geometry::Geometry()
 {
-    _timestamp = chrono::high_resolution_clock::now();
+    _mesh.reset(new Mesh());
+    _timestamp = _mesh->getTimestamp();
 }
 
 /*************/
