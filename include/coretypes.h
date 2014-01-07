@@ -29,6 +29,7 @@
 #define GL_GLEXT_PROTOTYPES
 
 #include <memory>
+#include <string>
 #include <GLFW/glfw3.h>
 
 #include "config.h"
@@ -74,9 +75,11 @@ class BaseObject
     public:
         unsigned long getId() const {return _id;}
         void setId(unsigned long id) {_id = id;}
+        std::string getType() const {return _type;}
 
     protected:
         unsigned long _id;
+        std::string _type {"baseobject"};
 };
 
 typedef std::shared_ptr<BaseObject> BaseObjectPtr;

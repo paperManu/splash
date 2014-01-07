@@ -1,5 +1,8 @@
 #include "camera.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace std;
 
 namespace Splash {
@@ -7,6 +10,8 @@ namespace Splash {
 /*************/
 Camera::Camera(GlWindowPtr w)
 {
+    _type = "camera";
+
     if (w.get() == nullptr)
         return;
 
@@ -25,6 +30,7 @@ Camera::Camera(GlWindowPtr w)
         SLog::log << Log::MESSAGE << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     GLenum error = glGetError();
     if (error)
     {
@@ -43,6 +49,12 @@ Camera::~Camera()
 }
 
 /*************/
+void Camera::addObject(ObjectPtr& obj)
+{
+    _objects.push_back(obj);
+}
+
+/*************/
 void Camera::render()
 {
     glfwMakeContextCurrent(_window->get());
@@ -50,12 +62,21 @@ void Camera::render()
     if (_outTextures.size() < 1)
         return;
           
+    glGetError();
     ImageSpec spec = _outTextures[0]->getSpec();
     glViewport(0, 0, spec.width, spec.height);
 
     for (auto obj : _objects)
     {
+        obj->activate();
+        obj->setViewProjectionMatrix(glm::ortho(-1.f, 1.f, -1.f, 1.f));
+        obj->draw();
+        obj->deactivate();
     }
+
+    GLenum error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 
     glfwMakeContextCurrent(NULL);
 }

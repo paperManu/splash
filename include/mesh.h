@@ -32,11 +32,13 @@
 #include <vector>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
+#include "coretypes.h"
 #include "log.h"
 
 namespace Splash {
 
-class Mesh {
+class Mesh : public BaseObject
+{
     public:
         typedef std::vector<unsigned char> SerializedObject;
         typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;

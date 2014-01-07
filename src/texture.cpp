@@ -9,6 +9,7 @@ namespace Splash {
 /*************/
 Texture::Texture()
 {
+    _type = "texture";
 }
 
 /*************/

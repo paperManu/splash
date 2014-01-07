@@ -8,6 +8,8 @@ namespace Splash {
 /*************/
 Window::Window(GlWindowPtr w)
 {
+    _type = "window";
+
     if (w.get() == nullptr)
         return;
 
@@ -62,7 +64,7 @@ void Window::render()
 
     GLenum error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
+        SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 
     glfwMakeContextCurrent(NULL);
 }

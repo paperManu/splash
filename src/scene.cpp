@@ -18,6 +18,8 @@ Scene::~Scene()
 /*************/
 BaseObjectPtr Scene::add(string type, string name)
 {
+    glfwMakeContextCurrent(_mainWindow->get());
+
     if (type == string("camera"))
     {
         CameraPtr camera(new Camera(getNewSharedWindow()));
@@ -38,6 +40,90 @@ BaseObjectPtr Scene::add(string type, string name)
             _windows[name] = window;
         return dynamic_pointer_cast<BaseObject>(window);
     }
+    else if (type == string("object"))
+    {
+        ObjectPtr object(new Object());
+        object->setId(getId());
+        if (name == string())
+            _objects[to_string(object->getId())] = object;
+        else
+            _objects[name] = object;
+        return dynamic_pointer_cast<BaseObject>(object);
+    }
+    else if (type == string("geometry"))
+    {
+        GeometryPtr geometry(new Geometry());
+        geometry->setId(getId());
+        if (name == string())
+            _geometries[to_string(geometry->getId())] = geometry;
+        else
+            _geometries[name] = geometry;
+        return dynamic_pointer_cast<BaseObject>(geometry);
+    }
+    else if (type == string("mesh"))
+    {
+        MeshPtr mesh(new Mesh());
+        mesh->setId(getId());
+        if (name == string())
+            _meshes[to_string(mesh->getId())] = mesh;
+        else
+            _meshes[name] = mesh;
+        return dynamic_pointer_cast<BaseObject>(mesh);
+    }
+    else
+        return BaseObjectPtr();
+
+    glfwMakeContextCurrent(NULL);
+}
+
+/*************/
+bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
+{
+    glfwMakeContextCurrent(_mainWindow->get());
+
+    if (first->getType() == string("texture"))
+    {
+    }
+    else if (first->getType() == string("object"))
+    {
+        if (second->getType() == string("camera"))
+        {
+            ObjectPtr obj = static_pointer_cast<Object>(first);
+            CameraPtr cam = static_pointer_cast<Camera>(second);
+            cam->addObject(obj);
+        }
+    }
+    else if (first->getType() == string("mesh"))
+    {
+        if (second->getType() == string("geometry"))
+        {
+            MeshPtr mesh = static_pointer_cast<Mesh>(first);
+            GeometryPtr geom = static_pointer_cast<Geometry>(second);
+            geom->setMesh(mesh);
+        }
+    }
+    else if (first->getType() == string("geometry"))
+    {
+        if (second->getType() == string("object"))
+        {
+            GeometryPtr geom = static_pointer_cast<Geometry>(first);
+            ObjectPtr obj = static_pointer_cast<Object>(second);
+            obj->addGeometry(geom);
+        }
+    }
+    else if (first->getType() == string("camera"))
+    {
+        if (second->getType() == string("window"))
+        {
+            CameraPtr cam = static_pointer_cast<Camera>(first);
+            WindowPtr win = static_pointer_cast<Window>(second);
+            // TODO: link all textures from cam to win
+        }
+    }
+
+    glfwMakeContextCurrent(NULL);
+
+    return true;
 }
 
 /*************/

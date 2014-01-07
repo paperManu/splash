@@ -11,6 +11,8 @@ namespace Splash {
 /*************/
 Shader::Shader()
 {
+    _type = "shader";
+
     _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
     _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
     _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);

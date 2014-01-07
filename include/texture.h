@@ -36,13 +36,14 @@
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 
+#include "coretypes.h"
 #include "log.h"
 
 using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
-class Texture
+class Texture : public BaseObject
 {
     public:
         /**

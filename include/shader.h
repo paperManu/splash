@@ -36,12 +36,14 @@
 #include <map>
 #include <GLFW/glfw3.h>
 
+#include "coretypes.h"
 #include "geometry.h"
 #include "texture.h"
 
 namespace Splash {
 
-class Shader {
+class Shader : public BaseObject
+{
     public:
         enum ShaderType
         {

@@ -50,7 +50,8 @@
 namespace Splash {
 
 /*************/
-class Scene {
+class Scene
+{
     public:
         /**
          * Constructor
@@ -71,6 +72,11 @@ class Scene {
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
+
+        /**
+         * Link an object to another, base on their types
+         */
+        bool link(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
          * Render everything

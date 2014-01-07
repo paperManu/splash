@@ -68,6 +68,11 @@ class Camera : public BaseObject
         }
 
         /**
+         * Add an object to render
+         */
+        void addObject(ObjectPtr& obj);
+
+        /**
          * Get pointers to this camera textures
          */
         std::vector<TexturePtr> getTextures() const {return _outTextures;}

@@ -22,6 +22,9 @@ go_bandit([]() {
             BaseObjectPtr obj = scene.add("camera");
             CameraPtr camera = static_pointer_cast<Camera>(obj);
             AssertThat(camera->isInitialized(), Equals(true));
+
+            vector<TexturePtr> textures = camera->getTextures();
+            AssertThat(textures.size(), Equals(1));
         });
     });
 
@@ -40,6 +43,22 @@ go_bandit([]() {
         Scene scene;
         it("should display and update the window", [&]() {
             scene.add("window", "window");
+            scene.render();
+        });
+    });
+
+    /*********/
+    describe("A setup with a single camera, no window", [&]() {
+        Scene scene;
+        it("should render the camera once", [&]() {
+            auto camera = scene.add("camera", "camera");
+            auto mesh = scene.add("mesh");
+            auto geometry = scene.add("geometry");
+            auto object = scene.add("object");
+
+            scene.link(mesh, geometry);
+            scene.link(geometry, object);
+            scene.link(object, camera);
             scene.render();
         });
     });

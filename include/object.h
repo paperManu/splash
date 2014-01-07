@@ -30,13 +30,15 @@
 #include <memory>
 #include <vector>
 
+#include "coretypes.h"
 #include "shader.h"
 #include "texture.h"
 #include "geometry.h"
 
 namespace Splash {
 
-class Object {
+class Object : public BaseObject
+{
     public:
         /**
          * Constructor

@@ -34,11 +34,12 @@
 #include <vector>
 #include <GLFW/glfw3.h>
 
+#include "coretypes.h"
 #include "mesh.h"
 
 namespace Splash {
 
-class Geometry
+class Geometry : public BaseObject
 {
     public:
         /**
@@ -90,7 +91,7 @@ class Geometry
         /**
          * Set the mesh for this object
          */
-        void setMesh(MeshPtr mesh) {_mesh = std::move(mesh);}
+        void setMesh(MeshPtr mesh) {_mesh = mesh;}
 
         /**
          * Updates the object

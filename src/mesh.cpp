@@ -7,6 +7,8 @@ namespace Splash {
 /*************/
 Mesh::Mesh()
 {
+    _type = "mesh";
+
     createDefaultMesh();
 }
 

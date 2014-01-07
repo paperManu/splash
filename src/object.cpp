@@ -7,6 +7,9 @@ namespace Splash {
 /*************/
 Object::Object()
 {
+    _type = "object";
+
+    _shader.reset(new Shader());
 }
 
 /*************/
@@ -20,11 +23,9 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
+    _geometries[0]->update();
     _geometries[0]->activate();
     _shader->activate(_geometries[0]);
-
-    glEnableVertexAttribArray(_geometries[0]->getVertexCoords());
-    glEnableVertexAttribArray(_geometries[0]->getTextureCoords());
 
     GLuint texUnit = 0;
     for (auto t : _textures)
