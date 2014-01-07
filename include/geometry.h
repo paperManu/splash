@@ -34,7 +34,6 @@
 #include <vector>
 #include <GLFW/glfw3.h>
 
-#include "log.h"
 #include "mesh.h"
 
 namespace Splash {
@@ -64,6 +63,21 @@ class Geometry
         }
 
         /**
+         * Activate the geometry for rendering
+         */
+        void activate() const {glBindVertexArray(_vertexArray);}
+
+        /**
+         * Deactivate the geometry for rendering
+         */
+        void deactivate() const {glBindVertexArray(0);}
+
+        /**
+         * Get the number of vertices for this geometry
+         */
+        int getVerticesNumber() const {return _verticesNumber;}
+
+        /**
          * Get the texture coords
          */
         GLuint getTextureCoords() const {return _texCoords;}
@@ -87,8 +101,11 @@ class Geometry
         MeshPtr _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
-        GLuint _vertexCoords = {0};
-        GLuint _texCoords = {0};
+        GLuint _vertexArray;
+        GLuint _vertexCoords {0};
+        GLuint _texCoords {0};
+
+        int _verticesNumber {0};
 };
 
 typedef std::shared_ptr<Geometry> GeometryPtr;

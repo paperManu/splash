@@ -190,7 +190,7 @@ bool Mesh::deserialize(SerializedObject& obj)
     catch (...)
     {
         createDefaultMesh();
-        gLog(Log::ERROR, __FUNCTION__, " - Unable to deserialize the given object");
+        SLog::log(Log::ERROR, __FUNCTION__, " - Unable to deserialize the given object");
         return false;
     }
 

@@ -1,5 +1,9 @@
 #include "shader.h"
 
+#include <fstream>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace std;
 
 namespace Splash {
@@ -11,6 +15,10 @@ Shader::Shader()
     _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
     _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
     _program = glCreateProgram();
+
+    setSource(DEFAULT_VERTEX_SHADER, vertex);
+    setSource(DEFAULT_FRAGMENT_SHADER, fragment);
+    compileProgram();
 }
 
 /*************/
@@ -29,13 +37,20 @@ void Shader::activate(const GeometryPtr geometry)
     if (geometry != _geometry)
     {
         glBindAttribLocation(_program, geometry->getVertexCoords(), "_vertex");
-        glBindAttribLocation(_program, geometry->getTextureCoords(), "_texture");
+        glBindAttribLocation(_program, geometry->getTextureCoords(), "_texcoord");
         _geometry = geometry;
         if (!linkProgram())
             return;
     }
 
     glUseProgram(_program);
+    _locationMVP = glGetUniformLocation(_program, "_viewProjectionMatrix");
+}
+
+/*************/
+void Shader::deactivate()
+{
+    glUseProgram(0);
 }
 
 /*************/
@@ -49,19 +64,37 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     GLint status;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (status)
-        gLog(Log::DEBUG, __FUNCTION__," - Shader compiled successfully");
+        SLog::log(Log::DEBUG, __FUNCTION__," - Shader compiled successfully");
     else
     {
-        gLog(Log::WARNING, __FUNCTION__, " - Error while compiling a shader:");
+        SLog::log(Log::WARNING, __FUNCTION__, " - Error while compiling a shader:");
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetShaderInfoLog(shader, length, &length, log);
-        gLog(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
+        SLog::log(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
         free(log);
     }
 
     _isLinked = false;
+}
+
+/*************/
+void Shader::setSourceFromFile(const std::string filename, const ShaderType type)
+{
+    ifstream in(filename, ios::in | ios::binary);
+    if (in)
+    {
+        string contents;
+        in.seekg(0, ios::end);
+        contents.resize(in.tellg());
+        in.seekg(0, ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+        setSource(contents, type);
+    }
+
+    SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
 }
 
 /*************/
@@ -71,6 +104,12 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
     glBindTexture(GL_TEXTURE_2D, texture->getTexId());
     GLint uniform = glGetUniformLocation(_program, name.c_str());
     glUniform1i(uniform, textureUnit);
+}
+
+/*************/
+void Shader::setViewProjectionMatrix(const glm::mat4& mvp)
+{
+    glUniformMatrix4fv(_locationMVP, 1, GL_FALSE, glm::value_ptr(mvp));
 }
 
 /*************/
@@ -89,7 +128,7 @@ void Shader::compileProgram()
             if (status == GL_TRUE)
             {
                 glAttachShader(_program, shader.second);
-                gLog(Log::DEBUG, __FUNCTION__, " - Shader successfully attacher to the program");
+                SLog::log(Log::DEBUG, __FUNCTION__, " - Shader successfully attacher to the program");
             }
         }
     }
@@ -103,19 +142,19 @@ bool Shader::linkProgram()
     glGetProgramiv(_program, GL_LINK_STATUS, &status);
     if (status == GL_TRUE)
     {
-        gLog(Log::DEBUG, __FUNCTION__, " - Shader program linked successfully");
+        SLog::log(Log::DEBUG, __FUNCTION__, " - Shader program linked successfully");
         _isLinked = true;
         return true;
     }
     else
     {
-        gLog(Log::WARNING, __FUNCTION__, " - Error while linking the shader program");
+        SLog::log(Log::WARNING, __FUNCTION__, " - Error while linking the shader program");
         
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_program, length, &length, log);
-        gLog(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
+        SLog::log(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
         free(log);
 
         _isLinked = false;

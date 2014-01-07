@@ -114,7 +114,8 @@ class Log {
         /**
          * Shortcut for setting MESSAGE log
          */
-        Log& operator<<(std::string msg)
+        template <typename T>
+        Log& operator<<(T msg)
         {
             addToString(_tempString, msg);
             return *this;
@@ -208,7 +209,11 @@ class Log {
         }
 };
 
-static Log gLog;
+struct SLog
+{
+    public:
+        static Log log;
+};
 
 } // end of namespace
 

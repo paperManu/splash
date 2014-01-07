@@ -42,6 +42,7 @@
 #include "coretypes.h"
 #include "geometry.h"
 #include "log.h"
+#include "mesh.h"
 #include "object.h"
 #include "texture.h"
 #include "window.h"

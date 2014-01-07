@@ -11,6 +11,7 @@ libsplash_la_SOURCES = \
     camera.cpp \
     geometry.cpp \
     image.cpp \
+    log.cpp \
     mesh.cpp \
     object.cpp \
     scene.cpp \

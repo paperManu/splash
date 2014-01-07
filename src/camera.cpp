@@ -20,15 +20,15 @@ Camera::Camera(GlWindowPtr w)
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        gLog << Log::WARNING << __FUNCTION__ << " - Error while initializing framebuffer object" << Log::endl;
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while initializing framebuffer object" << Log::endl;
     else
-        gLog << Log::MESSAGE << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        SLog::log << Log::MESSAGE << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     GLenum error = glGetError();
     if (error)
     {
-        gLog << Log::WARNING << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
         _isInitialized = false;
     }
     else

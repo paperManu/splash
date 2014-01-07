@@ -36,7 +36,6 @@
 #include <GLFW/glfw3.h>
 
 #include "coretypes.h"
-#include "log.h"
 #include "object.h"
 #include "texture.h"
 

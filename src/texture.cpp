@@ -43,7 +43,7 @@ Texture& Texture::operator=(const ImageBuf& pImg)
 
         if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
         {
-            gLog(Log::DEBUG, __FUNCTION__, "Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR");
+            SLog::log(Log::DEBUG, __FUNCTION__, "Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR");
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, pImg.localpixels());
         }
 

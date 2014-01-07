@@ -37,7 +37,6 @@
 #include <GLFW/glfw3.h>
 
 #include "geometry.h"
-#include "log.h"
 #include "texture.h"
 
 namespace Splash {
@@ -74,9 +73,14 @@ class Shader {
         }
 
         /**
-         * Activates this shader
+         * Activate this shader
          */
         void activate(const GeometryPtr geometry);
+
+        /**
+         * Deactivate this shader
+         */
+        void deactivate();
 
         /**
          * Set a shader source
@@ -84,18 +88,60 @@ class Shader {
         void setSource(const std::string& src, const ShaderType type);
 
         /**
+         * Set a shader source from file
+         */
+        void setSourceFromFile(const std::string filename, const ShaderType type);
+
+        /**
          * Add a new texture to use
          */
         void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name);
+
+        /**
+         * Set the view projection matrix
+         */
+        void setViewProjectionMatrix(const glm::mat4& mvp);
 
     private:
         std::map<ShaderType, GLuint> _shaders;
         GLuint _program;
         bool _isLinked = {false};
         GeometryPtr _geometry;
+        GLint _locationMVP {0};
 
         void compileProgram();
         bool linkProgram();
+
+    public:
+        const std::string DEFAULT_VERTEX_SHADER {R"(
+            #version 330 core
+
+            in vec4 _vertex;
+            in vec2 _texcoord;
+            uniform mat4 _viewProjectionMatrix;
+            smooth out vec2 finalTexCoord;
+
+            void main(void)
+            {
+                gl_Position.xyz = (_viewProjectionMatrix * _vertex).xyz;
+                finalTexCoord = _texcoord;
+            }
+        )"};
+
+        const std::string DEFAULT_FRAGMENT_SHADER {R"(
+            #version 330 core
+
+            uniform sampler2D _tex0;
+            in vec2 finalTexCoord;
+            out vec4 fragColor;
+
+            void main(void)
+            {
+                fragColor = texture(_tex0, finalTexCoord);
+                fragColor += vec4(0.5f, 0.f, 0.f, 1.f);
+            }
+        )"};
+
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;

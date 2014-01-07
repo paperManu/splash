@@ -54,19 +54,39 @@ class Object {
         void activate();
 
         /**
+         * Deactivate this object for rendering
+         */
+        void deactivate();
+
+        /**
+         * Add a geometry to this object
+         */
+        void addGeometry(const GeometryPtr geometry) {_geometries.push_back(geometry);}
+
+        /**
+         * Add a texture to this object
+         */
+        void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
+
+        /**
+         * Draw the object
+         */
+        void draw();
+
+        /**
          * Get the shader
          */
         ShaderPtr getShader() const {return _shader;}
 
         /**
-         * Add a geometry to this object
+         * Set the shader
          */
-        void addGeometry(GeometryPtr geometry) {_geometries.push_back(geometry);}
+        void setShader(const ShaderPtr shader) {_shader = shader;}
 
         /**
-         * Add a texture to this object
+         * Set the view projection matrix
          */
-        void addTexture(TexturePtr texture) {_textures.push_back(texture);}
+        void setViewProjectionMatrix(const glm::mat4& mvp);
 
     private:
         ShaderPtr _shader;

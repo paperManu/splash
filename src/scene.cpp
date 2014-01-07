@@ -45,7 +45,7 @@ GlWindowPtr Scene::getNewSharedWindow()
 {
     if (!_mainWindow)
     {
-        gLog << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
 
@@ -57,7 +57,7 @@ GlWindowPtr Scene::getNewSharedWindow()
     GLFWwindow* window = glfwCreateWindow(512, 512, "sharedWindow", NULL, _mainWindow->get());
     if (!window)
     {
-        gLog << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
     return GlWindowPtr(new GlWindow(window));
@@ -69,7 +69,7 @@ void Scene::init()
     // GLFW stuff
     if (!glfwInit())
     {
-        gLog << Log::WARNING << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
         _isInitialized = false;
         return;
     }
@@ -86,7 +86,7 @@ void Scene::init()
 
     if (!window)
     {
-        gLog << Log::WARNING << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
         _isInitialized = false;
         return;
     }
@@ -100,7 +100,7 @@ void Scene::init()
 /*************/
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
-    gLog << Log::WARNING << msg << Log::endl;
+    SLog::log << Log::WARNING << msg << Log::endl;
 }
 
 /*************/
