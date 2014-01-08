@@ -102,7 +102,7 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 /*************/
 void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
 {
-    glActiveTexture(textureUnit);
+    glActiveTexture(GL_TEXTURE0 + textureUnit);
     glBindTexture(GL_TEXTURE_2D, texture->getTexId());
     GLint uniform = glGetUniformLocation(_program, name.c_str());
     glUniform1i(uniform, textureUnit);
@@ -151,7 +151,7 @@ bool Shader::linkProgram()
     else
     {
         SLog::log(Log::WARNING, __FUNCTION__, " - Error while linking the shader program");
-        
+
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);

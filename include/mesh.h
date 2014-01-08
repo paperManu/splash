@@ -86,7 +86,7 @@ class Mesh : public BaseObject
         /**
          * Set the mesh from a serialized representation
          */
-        bool deserialize(SerializedObject& obj);
+        bool deserialize(const SerializedObject& obj);
 
     private:
         MeshContainer _mesh;

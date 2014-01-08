@@ -108,7 +108,7 @@ Mesh::SerializedObject Mesh::serialize() const
     obj.resize(totalSize);
 
     //cout << data[0].size() << " " << data[1].size() << " " << data[2].size() << endl;
-    
+
     auto currentObjPtr = obj.data();
     const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&nbrVertices);
     copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
@@ -125,7 +125,7 @@ Mesh::SerializedObject Mesh::serialize() const
 }
 
 /*************/
-bool Mesh::deserialize(SerializedObject& obj)
+bool Mesh::deserialize(const SerializedObject& obj)
 {
     if (obj.size() == 0)
         return false;

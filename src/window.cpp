@@ -27,7 +27,7 @@ Window::Window(GlWindowPtr w)
     _screen->addGeometry(virtualScreen);
     ShaderPtr shader(new Shader());
     _screen->setShader(shader);
-    
+
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the window: " << error << Log::endl;

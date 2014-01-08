@@ -1,6 +1,6 @@
 #include <bandit/bandit.h>
 
-#include "scene.h" 
+#include "scene.h"
 
 using namespace std;
 using namespace bandit;
@@ -55,10 +55,12 @@ go_bandit([]() {
             auto mesh = scene.add("mesh");
             auto geometry = scene.add("geometry");
             auto object = scene.add("object");
+            auto window = scene.add("window");
 
             scene.link(mesh, geometry);
             scene.link(geometry, object);
             scene.link(object, camera);
+            scene.link(camera, window);
             scene.render();
         });
     });
@@ -67,6 +69,6 @@ go_bandit([]() {
 /*************/
 int main(int argc, char** argv)
 {
-    //SLog::log.setVerbosity(Log::NONE);
+    SLog::log.setVerbosity(Log::NONE);
     return bandit::run(argc, argv);
 }

@@ -61,7 +61,7 @@ void Camera::render()
 
     if (_outTextures.size() < 1)
         return;
-          
+
     glGetError();
     ImageSpec spec = _outTextures[0]->getSpec();
     glViewport(0, 0, spec.width, spec.height);

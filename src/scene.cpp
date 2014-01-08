@@ -91,6 +91,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
             ObjectPtr obj = static_pointer_cast<Object>(first);
             CameraPtr cam = static_pointer_cast<Camera>(second);
             cam->addObject(obj);
+            return true;
         }
     }
     else if (first->getType() == string("mesh"))
@@ -100,6 +101,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
             MeshPtr mesh = static_pointer_cast<Mesh>(first);
             GeometryPtr geom = static_pointer_cast<Geometry>(second);
             geom->setMesh(mesh);
+            return true;
         }
     }
     else if (first->getType() == string("geometry"))
@@ -109,6 +111,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
             GeometryPtr geom = static_pointer_cast<Geometry>(first);
             ObjectPtr obj = static_pointer_cast<Object>(second);
             obj->addGeometry(geom);
+            return true;
         }
     }
     else if (first->getType() == string("camera"))
@@ -117,13 +120,15 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
         {
             CameraPtr cam = static_pointer_cast<Camera>(first);
             WindowPtr win = static_pointer_cast<Window>(second);
-            // TODO: link all textures from cam to win
+            for (auto tex : cam->getTextures())
+                win->setTexture(tex);
+            return true;
         }
     }
 
     glfwMakeContextCurrent(NULL);
 
-    return true;
+    return false;
 }
 
 /*************/

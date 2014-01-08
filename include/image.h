@@ -26,11 +26,20 @@
 #define IMAGE_H
 
 #include <config.h>
+#include <OpenImageIO/imagebuf.h>
+
+#include "coretypes.h"
+#include "log.h"
+
+using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
-class Image {
+class Image : public BaseObject
+{
     public:
+        typedef std::vector<unsigned char> SerializedObject;
+
         /**
          * Constructor
          */
@@ -39,8 +48,63 @@ class Image {
         /**
          * Destructor
          */
-        ~Image();
+        virtual ~Image();
 
+        /**
+         * Copy and move constructors
+         */
+        Image(const Image& i)
+        {
+            _image.copy(i._image);
+        }
+        
+        Image(Image&& i)
+        {
+            _image.swap(i._image);
+        }
+
+        /**
+         * = operator
+         */
+        Image& operator=(const Image& i)
+        {
+            _image.copy(i._image);
+            return *this;
+        }
+
+        /**
+         * Get the image buffer
+         */
+        ImageBuf get() const;
+
+        /**
+         * Set the image from an ImageBuf
+         */
+        void set(const ImageBuf& img);
+
+        /**
+         * Serialize the image
+         */
+        SerializedObject serialize() const;
+
+        /**
+         * Update the Image from a serialized representation
+         */
+        bool deserialize(const SerializedObject& obj);
+
+        /**
+         * Update the content of the image
+         */
+        virtual void update() {}
+
+    protected:
+        ImageBuf _image;
+
+    private:
+        /**
+         * Create a default pattern
+         */
+        void createDefaultImage();
 };
 
 } // end of namespace

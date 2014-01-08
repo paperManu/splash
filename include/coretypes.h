@@ -73,6 +73,7 @@ typedef std::shared_ptr<GlWindow> GlWindowPtr;
 class BaseObject
 {
     public:
+        virtual ~BaseObject() {}
         unsigned long getId() const {return _id;}
         void setId(unsigned long id) {_id = id;}
         std::string getType() const {return _type;}
