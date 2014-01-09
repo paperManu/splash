@@ -27,7 +27,10 @@
 
 #include <config.h>
 
+#include <deque>
 #include <memory>
+#include <mutex>
+#include <utility>
 #include <vector>
 
 #include "coretypes.h"
@@ -64,6 +67,22 @@ class Window : public BaseObject
         }
 
         /**
+         * Get the grabbed key
+         */
+        bool getKey(int key);
+        static int getKeys(GLFWwindow* win, int& key, int& action, int& mods);
+
+        /**
+         * Get the grabbed mouse action
+         */
+        static int getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods);
+
+        /**
+         * Get the mouse position
+         */
+        static void getMousePos(GLFWwindow* win, double xpos, double ypos);
+
+        /**
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
@@ -84,6 +103,18 @@ class Window : public BaseObject
 
         ObjectPtr _screen;
         std::vector<TexturePtr> _inTextures;
+
+        static std::mutex _callbackMutex;
+        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys;
+        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn;
+        static std::pair<GLFWwindow*, std::vector<double>> _mousePos;
+
+        /**
+         * Input callbacks
+         */
+        static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
+        static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
+        static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

@@ -82,7 +82,7 @@ class Scene
         /**
          * Render everything
          */
-        void render();
+        bool render();
 
     private:
         bool _isInitialized {false};

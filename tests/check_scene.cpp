@@ -43,12 +43,30 @@ go_bandit([]() {
         Scene scene;
         it("should display and update the window", [&]() {
             scene.add("window", "window");
-            scene.render();
+            while(true)
+                if (scene.render())
+                    break;
         });
     });
 
     /*********/
-    describe("A setup with a single camera, no window", [&]() {
+    describe("A single window with a texture", [&]() {
+        Scene scene;
+        it("should display and update the window", [&]() {
+            auto window = scene.add("window", "window");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
+
+            scene.link(image, texture);
+            scene.link(texture, window);
+            while(true)
+                if (scene.render())
+                    break;
+        });
+    });
+
+    /*********/
+    describe("A setup with a single camera, and a window linked to it", [&]() {
         Scene scene;
         it("should render the camera once", [&]() {
             auto camera = scene.add("camera", "camera");
@@ -65,8 +83,9 @@ go_bandit([]() {
             scene.link(camera, window);
             scene.link(image, texture);
             scene.link(texture, object);
-            while (true)
-            scene.render();
+            while(true)
+                if (scene.render())
+                    break;
         });
     });
 });
@@ -74,6 +93,6 @@ go_bandit([]() {
 /*************/
 int main(int argc, char** argv)
 {
-    //SLog::log.setVerbosity(Log::NONE);
+    SLog::log.setVerbosity(Log::NONE);
     return bandit::run(argc, argv);
 }

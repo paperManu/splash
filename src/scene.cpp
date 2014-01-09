@@ -201,6 +201,8 @@ GlWindowPtr Scene::getNewSharedWindow()
 /*************/
 void Scene::init()
 {
+    glfwSetErrorCallback(Scene::glfwErrorCallback);
+
     // GLFW stuff
     if (!glfwInit())
     {
@@ -208,8 +210,6 @@ void Scene::init()
         _isInitialized = false;
         return;
     }
-
-    glfwSetErrorCallback(Scene::glfwErrorCallback);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
@@ -235,17 +235,35 @@ void Scene::init()
 /*************/
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
-    SLog::log << Log::WARNING << msg << Log::endl;
+    SLog::log << Log::WARNING << "Scene - " << msg << Log::endl;
 }
 
 /*************/
-void Scene::render()
+bool Scene::render()
 {
+    // Update the cameras
     for (auto camera : _cameras)
         camera.second->render();
 
+    // Update the windows
     for (auto window : _windows)
         window.second->render();
+
+    // Update the user events
+    bool quit = false;
+    glfwPollEvents();
+    while (true)
+    {
+        GLFWwindow* win;
+        int key, action, mods;
+        if (!Window::getKeys(win, key, action, mods))
+            break;
+
+        if (key == GLFW_KEY_ESCAPE)
+            quit = true;
+    }
+
+    return quit;
 }
 
 } // end of namespace
