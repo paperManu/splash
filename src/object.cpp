@@ -23,24 +23,6 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
-    // Print the pixel values...
-    if (false && _textures.size() > 0)
-    {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _textures[0]->getTexId());
-        ImageBuf img(_textures[0]->getSpec());
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
-        for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
-        {
-            if (!p.exists())
-                continue;
-            for (int c = 0; c < img.nchannels(); ++c)
-                cout << p[c] << " ";
-        }
-        cout << endl;
-    }
-    //
-
     _geometries[0]->update();
     _geometries[0]->activate();
     _shader->activate(_geometries[0]);

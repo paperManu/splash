@@ -76,7 +76,7 @@ void Camera::render()
     for (auto obj : _objects)
     {
         obj->activate();
-        obj->setViewProjectionMatrix(glm::ortho(-1.1f, 1.1f, -1.1f, 1.1f));
+        obj->setViewProjectionMatrix(glm::ortho(-1.f, 1.f, -1.f, 1.f));
         obj->draw();
         obj->deactivate();
     }
