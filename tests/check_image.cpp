@@ -38,8 +38,10 @@ go_bandit([]() {
         it("should get the same image content", [&]() {
             ImageBuf srcImg = image.get();
             Image::SerializedObject obj = image.serialize();
-            image.deserialize(obj);
-            ImageBuf dstImg = image.get();
+
+            Image newImage;
+            newImage.deserialize(obj);
+            ImageBuf dstImg = newImage.get();
 
             bool isIdentical = true;
             if (srcImg.nchannels() == dstImg.nchannels())
