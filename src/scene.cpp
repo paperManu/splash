@@ -70,6 +70,26 @@ BaseObjectPtr Scene::add(string type, string name)
             _meshes[name] = mesh;
         return dynamic_pointer_cast<BaseObject>(mesh);
     }
+    else if (type == string("image"))
+    {
+        ImagePtr image(new Image());
+        image->setId(getId());
+        if (name == string())
+            _images[to_string(image->getId())] = image;
+        else
+            _images[name] = image;
+        return dynamic_pointer_cast<BaseObject>(image);
+    }
+    else if (type == string("texture"))
+    {
+        TexturePtr tex(new Texture());
+        tex->setId(getId());
+        if (name == string())
+            _textures[to_string(tex->getId())] = tex;
+        else
+            _textures[name] = tex;
+        return dynamic_pointer_cast<BaseObject>(tex);
+    }
     else
         return BaseObjectPtr();
 
@@ -83,6 +103,30 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 
     if (first->getType() == string("texture"))
     {
+        if (second->getType() == string("object"))
+        {
+            TexturePtr tex = static_pointer_cast<Texture>(first);
+            ObjectPtr obj = static_pointer_cast<Object>(second);
+            obj->addTexture(tex);
+            return true;
+        }
+        else if (second->getType() == string("window"))
+        {
+            TexturePtr tex = static_pointer_cast<Texture>(first);
+            WindowPtr win = static_pointer_cast<Window>(second);
+            win->setTexture(tex);
+            return true;
+        }
+    }
+    else if (first->getType() == string("image"))
+    {
+        if (second->getType() == string("texture"))
+        {
+            ImagePtr img = static_pointer_cast<Image>(first);
+            TexturePtr tex = static_pointer_cast<Texture>(second);
+            *tex = img->get();
+            return true;
+        }
     }
     else if (first->getType() == string("object"))
     {

@@ -31,6 +31,7 @@
 #include <vector>
 
 #include "coretypes.h"
+#include "log.h"
 #include "shader.h"
 #include "texture.h"
 #include "geometry.h"

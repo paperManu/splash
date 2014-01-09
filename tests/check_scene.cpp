@@ -56,11 +56,16 @@ go_bandit([]() {
             auto geometry = scene.add("geometry");
             auto object = scene.add("object");
             auto window = scene.add("window");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
 
             scene.link(mesh, geometry);
             scene.link(geometry, object);
             scene.link(object, camera);
             scene.link(camera, window);
+            scene.link(image, texture);
+            scene.link(texture, object);
+            while (true)
             scene.render();
         });
     });
@@ -69,6 +74,6 @@ go_bandit([]() {
 /*************/
 int main(int argc, char** argv)
 {
-    SLog::log.setVerbosity(Log::NONE);
+    //SLog::log.setVerbosity(Log::NONE);
     return bandit::run(argc, argv);
 }

@@ -66,13 +66,27 @@ void Camera::render()
     ImageSpec spec = _outTextures[0]->getSpec();
     glViewport(0, 0, spec.width, spec.height);
 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    GLenum fboBuffers[_outTextures.size()];
+    for (int i = 0; i < _outTextures.size(); ++i)
+        fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    glDrawBuffers(_outTextures.size(), fboBuffers);
+    glClear(GL_COLOR_BUFFER_BIT);
+
     for (auto obj : _objects)
     {
         obj->activate();
-        obj->setViewProjectionMatrix(glm::ortho(-1.f, 1.f, -1.f, 1.f));
+        obj->setViewProjectionMatrix(glm::ortho(-1.1f, 1.1f, -1.1f, 1.1f));
         obj->draw();
         obj->deactivate();
     }
+
+    // We need to regenerate the mipmaps for all the output textures
+    glActiveTexture(GL_TEXTURE0);
+    for (auto t : _outTextures)
+        t->generateMipmap();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
@@ -87,30 +101,27 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
+    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+
     if (nbr < _outTextures.size())
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-
         for (int i = nbr; i < _outTextures.size(); ++i)
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         _outTextures.resize(nbr);
     }
     else
     {
-        glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
-
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
             TexturePtr texture(new Texture);
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGB8, 640, 480, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            texture->reset(GL_TEXTURE_2D, 0, GL_RGB8, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
             _outTextures.push_back(texture);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
         }
-
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 /*************/

@@ -41,6 +41,7 @@
 #include "camera.h"
 #include "coretypes.h"
 #include "geometry.h"
+#include "image.h"
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
@@ -91,6 +92,7 @@ class Scene
         std::map<std::string, ObjectPtr> _objects;
         std::map<std::string, GeometryPtr> _geometries;
         std::map<std::string, MeshPtr> _meshes;
+        std::map<std::string, ImagePtr> _images;
         std::map<std::string, TexturePtr> _textures;
 
         std::map<std::string, CameraPtr> _cameras;

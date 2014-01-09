@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+using namespace std;
+
 namespace Splash {
 
 /*************/
@@ -47,6 +49,24 @@ void Window::render()
 {
     glfwMakeContextCurrent(_window->get());
 
+    // Print the pixel values...
+    if (false && _inTextures.size() > 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _inTextures[0]->getTexId());
+        ImageBuf img(_inTextures[0]->getSpec());
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
+        for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
+        {
+            if (!p.exists())
+                continue;
+            for (int c = 0; c < img.nchannels(); ++c)
+                cout << p[c] << " ";
+        }
+        cout << endl;
+    }
+    //
+
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
@@ -56,7 +76,7 @@ void Window::render()
     glClear(GL_COLOR_BUFFER_BIT);
 
     _screen->activate();
-    _screen->setViewProjectionMatrix(glm::ortho(-1.f, 1.f, -1.f, 1.f));
+    _screen->setViewProjectionMatrix(glm::ortho(-1.1f, 1.1f, -1.1f, 1.1f));
     _screen->draw();
     _screen->deactivate();
 

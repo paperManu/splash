@@ -32,6 +32,7 @@
 
 #include "coretypes.h"
 #include "geometry.h"
+#include "log.h"
 #include "object.h"
 #include "texture.h"
 

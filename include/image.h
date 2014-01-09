@@ -107,6 +107,8 @@ class Image : public BaseObject
         void createDefaultImage();
 };
 
+typedef std::shared_ptr<Image> ImagePtr;
+
 } // end of namespace
 
 #endif // IMAGE_H

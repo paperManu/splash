@@ -72,6 +72,11 @@ class Texture : public BaseObject
         Texture& operator=(const ImageBuf& img);
 
         /**
+         * Generate the mipmaps for the texture
+         */
+        void generateMipmap() const;
+
+        /**
          * Get the id of the gl texture
          */
         GLuint getTexId() const {return _glTex;}

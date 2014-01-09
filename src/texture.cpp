@@ -44,8 +44,8 @@ Texture& Texture::operator=(const ImageBuf& pImg)
 
         if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
         {
-            SLog::log(Log::DEBUG, __FUNCTION__, "Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR");
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, pImg.localpixels());
+            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR" << Log::endl;
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, pImg.localpixels());
         }
 
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -67,6 +67,14 @@ Texture& Texture::operator=(const ImageBuf& pImg)
     }
 
     return *this;
+}
+
+/*************/
+void Texture::generateMipmap() const
+{
+    glBindTexture(GL_TEXTURE_2D, _glTex);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /*************/
@@ -94,6 +102,21 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
 
         glTexImage2D(target, pLevel, internalFormat, width, height, border, format, type, data);
         glBindTexture(GL_TEXTURE_2D, 0);
+
+        _spec.width = width;
+        _spec.height = height;
+        if (format == GL_RGB && type == GL_UNSIGNED_BYTE)
+        {
+            _spec.nchannels = 3;
+            _spec.format = TypeDesc::UINT8;
+            _spec.channelnames = {"R", "G", "B"};
+        }
+        else if (format == GL_RGBA && type == GL_UNSIGNED_BYTE)
+        {
+            _spec.nchannels = 4;
+            _spec.format == TypeDesc::UINT8;
+            _spec.channelnames = {"R", "G", "B", "A"};
+        }
     }
 }
 

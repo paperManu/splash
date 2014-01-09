@@ -66,10 +66,10 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     GLint status;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (status)
-        SLog::log(Log::DEBUG, __FUNCTION__," - Shader compiled successfully");
+        SLog::log << Log::DEBUG << "Shader::" << __FUNCTION__ << " - Shader compiled successfully" << Log::endl;
     else
     {
-        SLog::log(Log::WARNING, __FUNCTION__, " - Error while compiling a shader:");
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader:" << Log::endl;
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);

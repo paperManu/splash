@@ -7,6 +7,8 @@ namespace Splash {
 /*************/
 Image::Image()
 {
+    _type = "image";
+
     createDefaultImage();
 }
 
