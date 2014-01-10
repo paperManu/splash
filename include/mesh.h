@@ -30,6 +30,7 @@
 #include <chrono>
 #include <memory>
 #include <vector>
+#include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
 #include "coretypes.h"
@@ -79,6 +80,11 @@ class Mesh : public BaseObject
         std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
 
         /**
+         * Read / update the mesh
+         */
+        virtual bool read(const std::string& filename);
+
+        /**
          * Get a serialized representation of the mesh
          */
         SerializedObject serialize() const;
@@ -88,12 +94,17 @@ class Mesh : public BaseObject
          */
         bool deserialize(const SerializedObject& obj);
 
-    private:
+    protected:
         MeshContainer _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         void updateTimestamp();
+        
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Mesh> MeshPtr;

@@ -10,6 +10,8 @@ Mesh::Mesh()
     _type = "mesh";
 
     createDefaultMesh();
+
+    registerAttributes();
 }
 
 /*************/
@@ -88,6 +90,20 @@ vector<float> Mesh::getNormals() const
     });
 
     return normals;
+}
+
+/*************/
+bool Mesh::read(const string& filename)
+{
+    MeshContainer mesh;
+    if (!OpenMesh::IO::read_mesh(mesh, filename))
+    {
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file" << Log::endl;
+        return false;
+    }
+
+    _mesh = mesh;
+    return true;
 }
 
 /*************/
@@ -245,6 +261,11 @@ void Mesh::createDefaultMesh()
 void Mesh::updateTimestamp()
 {
     _timestamp = chrono::high_resolution_clock::now();
+}
+
+/*************/
+void Mesh::registerAttributes()
+{
 }
 
 } // end of namespace

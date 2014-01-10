@@ -13,7 +13,8 @@ AM_LDFLAGS = \
 check_PROGRAMS = \
     check_image \
 	check_mesh \
-    check_scene
+    check_scene \
+    check_object
 
 check_image_SOURCES = check_image.cpp
 
@@ -21,5 +22,7 @@ check_mesh_SOURCES = check_mesh.cpp
 check_mesh_CXXFLAGS = $(OPENMESH_CFLAGS)
 
 check_scene_SOURCES = check_scene.cpp
+
+check_object_SOURCES = check_object.cpp
 
 TESTS = $(check_PROGRAMS)
