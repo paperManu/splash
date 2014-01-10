@@ -83,6 +83,65 @@ go_bandit([]() {
             scene.link(camera, window);
             scene.link(image, texture);
             scene.link(texture, object);
+
+            while(true)
+                if (scene.render())
+                    break;
+        });
+    });
+
+    /*********/
+    describe("A setup with a single camera, multiple windows", [&]() {
+        Scene scene;
+        it("should render the camera once", [&]() {
+            auto camera = scene.add("camera", "camera");
+            auto mesh = scene.add("mesh");
+            auto geometry = scene.add("geometry");
+            auto object = scene.add("object");
+            auto win1 = scene.add("window");
+            auto win2 = scene.add("window");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
+
+            scene.link(mesh, geometry);
+            scene.link(geometry, object);
+            scene.link(object, camera);
+            scene.link(camera, win1);
+            scene.link(camera, win2);
+            scene.link(image, texture);
+            scene.link(texture, object);
+
+            while(true)
+                if (scene.render())
+                    break;
+        });
+    });
+
+    /*********/
+    describe("A setup with multiple cameras, multiple windows", [&]() {
+        Scene scene;
+        it("should render the camera once", [&]() {
+            auto cam1 = scene.add("camera", "cam1");
+            auto cam2 = scene.add("camera", "cam2");
+            auto mesh = scene.add("mesh");
+            auto geometry = scene.add("geometry");
+            auto object = scene.add("object");
+            auto win1 = scene.add("window");
+            auto win2 = scene.add("window");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
+
+            scene.link(mesh, geometry);
+            scene.link(geometry, object);
+            scene.link(object, cam1);
+            scene.link(object, cam2);
+            scene.link(cam1, win1);
+            scene.link(cam2, win2);
+            scene.link(image, texture);
+            scene.link(texture, object);
+
+            scene.setAttribute("cam2", "eye", vector<float>({-1.f, 1.f, 5.f}));
+
             while(true)
                 if (scene.render())
                     break;

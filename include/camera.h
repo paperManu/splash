@@ -30,6 +30,7 @@
 
 #include <config.h>
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -104,6 +105,22 @@ class Camera : public BaseObject
         GLuint _fbo;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
+
+        // Camera parameters
+        float _fov {35};
+        float _width {512}, _height {512};
+        float _near {0.01}, _far {1000.0};
+        glm::vec3 _eye, _target;
+
+        /**
+         * Get the view projection matrix from the camera parameters
+         */
+        glm::mat4x4 computeViewProjectionMatrix();
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Camera> CameraPtr;

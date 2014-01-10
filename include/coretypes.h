@@ -28,6 +28,7 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
+#include <map>
 #include <memory>
 #include <string>
 #include <GLFW/glfw3.h>
@@ -70,17 +71,51 @@ class GlWindow
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
 
 /*************/
+struct AttributeFunctor
+{
+    public:
+        AttributeFunctor() {}
+        AttributeFunctor(std::function<void(std::vector<float>)> func) {_func = func;}
+        void operator()(std::vector<float> args) {_func(args);}
+
+    private:
+        std::function<void(std::vector<float>)> _func;
+};
+
+/*************/
 class BaseObject
 {
     public:
         virtual ~BaseObject() {}
+
+        std::string getType() const {return _type;}
+
+        /**
+         * Set and get the id of the object
+         */
         unsigned long getId() const {return _id;}
         void setId(unsigned long id) {_id = id;}
-        std::string getType() const {return _type;}
+
+        /**
+         * Register modifiable attributes
+         */
+        virtual void registerAttributes() {}
+
+        /**
+         * Set the specified attribute
+         */
+        bool setAttribute(std::string attrib, std::vector<float> args)
+        {
+            if (_attribFunctions.find(attrib) == _attribFunctions.end())
+                return false;
+        
+            _attribFunctions[attrib](args);
+        }
 
     protected:
         unsigned long _id;
         std::string _type {"baseobject"};
+        std::map<std::string, AttributeFunctor> _attribFunctions;
 };
 
 typedef std::shared_ptr<BaseObject> BaseObjectPtr;

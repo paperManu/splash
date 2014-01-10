@@ -4,6 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
+using namespace glm;
 
 namespace Splash {
 
@@ -41,6 +42,11 @@ Camera::Camera(GlWindowPtr w)
         _isInitialized = true;
 
     glfwMakeContextCurrent(NULL);
+
+    _eye = vec3(1.0, 1.0, 5.0);
+    _target = vec3(0.0, 0.0, 0.0);
+
+    registerAttributes();
 }
 
 /*************/
@@ -76,7 +82,7 @@ void Camera::render()
     for (auto obj : _objects)
     {
         obj->activate();
-        obj->setViewProjectionMatrix(glm::ortho(-1.f, 1.f, -1.f, 1.f));
+        obj->setViewProjectionMatrix(computeViewProjectionMatrix());
         obj->draw();
         obj->deactivate();
     }
@@ -131,6 +137,34 @@ void Camera::setOutputSize(int width, int height)
     {
         tex->reset(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     }
+}
+
+/*************/
+mat4x4 Camera::computeViewProjectionMatrix()
+{
+    mat4x4 viewMatrix = lookAt(_eye, _target, glm::vec3(0.0, 0.0, 1.0));
+    mat4x4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
+    mat4x4 viewProjectionMatrix = viewMatrix * projMatrix;
+
+    return viewProjectionMatrix;
+}
+
+/*************/
+void Camera::registerAttributes()
+{
+    _attribFunctions["eye"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 3)
+            return;
+
+        _eye = vec3(args[0], args[1], args[2]);
+    });
+
+    _attribFunctions["target"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 3)
+            return;
+
+        _target = vec3(args[0], args[1], args[2]);
+    });
 }
 
 } // end of namespace

@@ -36,6 +36,8 @@ libsplash_la_LIBADD = \
 #*************#
 bin_PROGRAMS = splash
 
+splash_DEPENDENCIES = libsplash.la
+
 splash_SOURCES = \
     splash.cpp
 

@@ -266,4 +266,11 @@ bool Scene::render()
     return quit;
 }
 
+/*************/
+void Scene::setAttribute(string name, string attrib, std::vector<float> args)
+{
+    if (_cameras.find(name) != _cameras.end())
+        _cameras[name]->setAttribute(attrib, args);
+}
+
 } // end of namespace
