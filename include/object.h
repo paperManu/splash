@@ -29,6 +29,7 @@
 
 #include <memory>
 #include <vector>
+#include <glm/glm.hpp>
 
 #include "coretypes.h"
 #include "log.h"
@@ -71,6 +72,7 @@ class Object : public BaseObject
          */
         void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
 
+
         /**
          * Draw the object
          */
@@ -95,6 +97,18 @@ class Object : public BaseObject
         ShaderPtr _shader;
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
+
+        glm::vec3 _position;
+
+        /**
+         * Compute the matrix corresponding to the object position
+         */
+        glm::mat4x4 computeModelMatrix();
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Object> ObjectPtr;

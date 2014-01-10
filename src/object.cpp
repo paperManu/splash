@@ -1,6 +1,9 @@
 #include "object.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 using namespace std;
+using namespace glm;
 
 namespace Splash {
 
@@ -10,6 +13,10 @@ Object::Object()
     _type = "object";
 
     _shader.reset(new Shader());
+
+    _position = vec3(0.f, 0.f, 0.f);
+
+    registerAttributes();
 }
 
 /*************/
@@ -36,6 +43,12 @@ void Object::activate()
 }
 
 /*************/
+mat4x4 Object::computeModelMatrix()
+{
+    return translate(mat4x4(1.f), _position);
+}
+
+/*************/
 void Object::deactivate()
 {
     _shader->deactivate();
@@ -51,7 +64,17 @@ void Object::draw()
 /*************/
 void Object::setViewProjectionMatrix(const glm::mat4& mvp)
 {
-    _shader->setViewProjectionMatrix(mvp);
+    _shader->setViewProjectionMatrix(mvp * computeModelMatrix());
+}
+
+/*************/
+void Object::registerAttributes()
+{
+    _attribFunctions["position"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 3)
+            return false;
+        _position = vec3(args[0], args[1], args[2]);
+    });
 }
 
 } // end of namespace

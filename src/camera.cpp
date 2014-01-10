@@ -43,7 +43,7 @@ Camera::Camera(GlWindowPtr w)
 
     glfwMakeContextCurrent(NULL);
 
-    _eye = vec3(1.0, 1.0, 5.0);
+    _eye = vec3(1.0, 0.0, 5.0);
     _target = vec3(0.0, 0.0, 0.0);
 
     registerAttributes();
@@ -144,7 +144,7 @@ mat4x4 Camera::computeViewProjectionMatrix()
 {
     mat4x4 viewMatrix = lookAt(_eye, _target, glm::vec3(0.0, 0.0, 1.0));
     mat4x4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
-    mat4x4 viewProjectionMatrix = viewMatrix * projMatrix;
+    mat4x4 viewProjectionMatrix = projMatrix * viewMatrix;
 
     return viewProjectionMatrix;
 }
@@ -163,6 +163,22 @@ void Camera::registerAttributes()
         if (args.size() < 3)
             return false;
         _target = vec3(args[0], args[1], args[2]);
+        return true;
+    });
+
+    _attribFunctions["fov"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 1)
+            return false;
+        _fov = args[0];
+        return true;
+    });
+
+    _attribFunctions["size"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 2)
+            return false;
+        _width = args[0];
+        _height = args[1];
+        setOutputSize(_width, _height);
         return true;
     });
 }

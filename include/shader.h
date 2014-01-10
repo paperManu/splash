@@ -125,7 +125,7 @@ class Shader : public BaseObject
 
             void main(void)
             {
-                gl_Position.xyz = (_viewProjectionMatrix * _vertex).xyz;
+                gl_Position = _viewProjectionMatrix * _vertex;
                 finalTexCoord = _texcoord;
             }
         )"};

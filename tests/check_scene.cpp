@@ -140,7 +140,8 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
-            scene.setAttribute("cam2", "eye", vector<float>({-1.f, 1.f, 5.f}));
+            scene.setAttribute("cam2", "eye", vector<float>({-1.f, 1.f, -5.f}));
+            scene.setAttribute("cam2", "size", vector<float>({128, 128}));
 
             while(true)
                 if (scene.render())
@@ -160,6 +161,55 @@ go_bandit([]() {
             scene.link(texture, window);
 
             scene.setAttribute("window", "fullscreen", vector<float>({0}));
+
+            while(true)
+                if (scene.render())
+                    break;
+        });
+    });
+
+    /*********/
+    describe("Two windows with a texture, fullscreen", [&]() {
+        Scene scene;
+        it("should display and update the window", [&]() {
+            auto win1 = scene.add("window", "win1");
+            auto win2 = scene.add("window", "win2");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
+
+            scene.link(image, texture);
+            scene.link(texture, win1);
+            scene.link(texture, win2);
+
+            scene.setAttribute("win1", "fullscreen", vector<float>({0}));
+            scene.setAttribute("win2", "fullscreen", vector<float>({1}));
+
+            while(true)
+                if (scene.render())
+                    break;
+        });
+    });
+    
+    /*********/
+    describe("Moving the object around", [&]() {
+        Scene scene;
+        it("should be no problem", [&]() {
+            auto camera = scene.add("camera");
+            auto mesh = scene.add("mesh");
+            auto geometry = scene.add("geometry");
+            auto object = scene.add("object", "obj");
+            auto window = scene.add("window");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
+
+            scene.link(mesh, geometry);
+            scene.link(geometry, object);
+            scene.link(object, camera);
+            scene.link(camera, window);
+            scene.link(image, texture);
+            scene.link(texture, object);
+
+            scene.setAttribute("obj", "position", vector<float>({0.5, 0.5, 0.0}));
 
             while(true)
                 if (scene.render())

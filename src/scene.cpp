@@ -273,6 +273,8 @@ void Scene::setAttribute(string name, string attrib, std::vector<float> args)
         _cameras[name]->setAttribute(attrib, args);
     else if (_windows.find(name) != _windows.end())
         _windows[name]->setAttribute(attrib, args);
+    else if (_objects.find(name) != _objects.end())
+        _objects[name]->setAttribute(attrib, args);
 }
 
 } // end of namespace

@@ -107,6 +107,11 @@ class Geometry : public BaseObject
         GLuint _texCoords {0};
 
         int _verticesNumber {0};
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Geometry> GeometryPtr;

@@ -34,6 +34,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
 #include "coretypes.h"

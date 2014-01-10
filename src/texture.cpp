@@ -86,9 +86,14 @@ ImageBuf Texture::getBuffer() const
 void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei width, GLsizei height,
                     GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
-    if (width > 0 && height > 0)
+    if (width == 0 || height == 0)
     {
-        glDeleteTextures(1, &_glTex);
+        SLog::log << Log::WARNING << "Texture::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
+        return;
+    }
+
+    if (_glTex == 0)
+    {
         glGenTextures(1, &_glTex);
 
         glActiveTexture(GL_TEXTURE0);
@@ -102,21 +107,28 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
 
         glTexImage2D(target, pLevel, internalFormat, width, height, border, format, type, data);
         glBindTexture(GL_TEXTURE_2D, 0);
+    }
+    else
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glTexImage2D(target, pLevel, internalFormat, width, height, border, format, type, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
-        _spec.width = width;
-        _spec.height = height;
-        if (format == GL_RGB && type == GL_UNSIGNED_BYTE)
-        {
-            _spec.nchannels = 3;
-            _spec.format = TypeDesc::UINT8;
-            _spec.channelnames = {"R", "G", "B"};
-        }
-        else if (format == GL_RGBA && type == GL_UNSIGNED_BYTE)
-        {
-            _spec.nchannels = 4;
-            _spec.format == TypeDesc::UINT8;
-            _spec.channelnames = {"R", "G", "B", "A"};
-        }
+    _spec.width = width;
+    _spec.height = height;
+    if (format == GL_RGB && type == GL_UNSIGNED_BYTE)
+    {
+        _spec.nchannels = 3;
+        _spec.format = TypeDesc::UINT8;
+        _spec.channelnames = {"R", "G", "B"};
+    }
+    else if (format == GL_RGBA && type == GL_UNSIGNED_BYTE)
+    {
+        _spec.nchannels = 4;
+        _spec.format == TypeDesc::UINT8;
+        _spec.channelnames = {"R", "G", "B", "A"};
     }
 }
 

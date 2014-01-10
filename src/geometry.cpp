@@ -67,4 +67,10 @@ void Geometry::update()
     }
 }
 
+
+/*************/
+void Geometry::registerAttributes()
+{
+}
+
 } // end of namespace
