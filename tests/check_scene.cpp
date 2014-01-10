@@ -159,7 +159,7 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, window);
 
-            scene.setAttribute("window", "fullscreen", vector<float>({1}));
+            scene.setAttribute("window", "fullscreen", vector<float>({0}));
 
             while(true)
                 if (scene.render())

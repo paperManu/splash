@@ -106,14 +106,17 @@ void Image::createDefaultImage()
     ImageSpec spec(512, 512, 3, TypeDesc::UINT8);
     ImageBuf img(spec);
 
-    int active = 0;
     for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
     {
-        active = (active + 1) % 2;
-        if (!p.exists() || !active)
+        if (!p.exists())
             continue;
-        for (int c = 0; c < img.nchannels(); ++c)
-            p[c] = 255;
+
+        if (p.x() % 16 > 7 && p.y() % 64 > 31)
+            for (int c = 0; c < img.nchannels(); ++c)
+                p[c] = 255;
+        else
+            for (int c = 0; c < img.nchannels(); ++c)
+                p[c] = 0;
     }
 
     _image.swap(img);
