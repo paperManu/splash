@@ -141,7 +141,7 @@ go_bandit([]() {
             scene.link(texture, object);
 
             scene.setAttribute("cam2", "eye", vector<float>({-1.f, 1.f, -5.f}));
-            scene.setAttribute("cam2", "size", vector<float>({128, 128}));
+            scene.setAttribute("cam2", "size", vector<float>({2048, 2048}));
 
             while(true)
                 if (scene.render())

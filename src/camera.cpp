@@ -69,6 +69,7 @@ void Camera::render()
         return;
 
     glGetError();
+    glEnable(GL_MULTISAMPLE);
     ImageSpec spec = _outTextures[0]->getSpec();
     glViewport(0, 0, spec.width, spec.height);
 
@@ -93,6 +94,7 @@ void Camera::render()
         t->generateMipmap();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDisable(GL_MULTISAMPLE);
 
     GLenum error = glGetError();
     if (error)

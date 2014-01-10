@@ -32,6 +32,7 @@
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
 #define SPLASH_GL_DEBUG false
 #define SPLASH_SWAP_INTERVAL 0
+#define SPLASH_SAMPLES 4
 
 #include <map>
 #include <memory>

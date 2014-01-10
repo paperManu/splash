@@ -188,6 +188,7 @@ GlWindowPtr Scene::getNewSharedWindow()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_VISIBLE, false);
     GLFWwindow* window = glfwCreateWindow(512, 512, "sharedWindow", NULL, _mainWindow->get());
     if (!window)
@@ -215,6 +216,7 @@ void Scene::init()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_VISIBLE, false);
 
     GLFWwindow* window = glfwCreateWindow(512, 512, "splash", NULL, NULL);
