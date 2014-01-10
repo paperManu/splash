@@ -154,16 +154,16 @@ void Camera::registerAttributes()
 {
     _attribFunctions["eye"] = AttributeFunctor([&](vector<float> args) {
         if (args.size() < 3)
-            return;
-
+            return false;
         _eye = vec3(args[0], args[1], args[2]);
+        return true;
     });
 
     _attribFunctions["target"] = AttributeFunctor([&](vector<float> args) {
         if (args.size() < 3)
-            return;
-
+            return false;
         _target = vec3(args[0], args[1], args[2]);
+        return true;
     });
 }
 

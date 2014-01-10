@@ -147,6 +147,25 @@ go_bandit([]() {
                     break;
         });
     });
+
+    /*********/
+    describe("A single window with a texture, fullscreen", [&]() {
+        Scene scene;
+        it("should display and update the window", [&]() {
+            auto window = scene.add("window", "window");
+            auto image = scene.add("image");
+            auto texture = scene.add("texture");
+
+            scene.link(image, texture);
+            scene.link(texture, window);
+
+            scene.setAttribute("window", "fullscreen", vector<float>({1}));
+
+            while(true)
+                if (scene.render())
+                    break;
+        });
+    });
 });
 
 /*************/

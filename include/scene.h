@@ -25,13 +25,6 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
-#define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
-#define SPLASH_GL_CONTEXT_VERSION_MINOR 2
-#define SPLASH_GL_DEBUG false
-
 #include "config.h"
 
 #include <cstddef>

@@ -20,6 +20,18 @@ Geometry::~Geometry()
 }
 
 /*************/
+void Geometry::activate() const
+{
+    glBindVertexArray(_vertexArray);
+}
+
+/*************/
+void Geometry::deactivate() const
+{
+    glBindVertexArray(0);
+}
+
+/*************/
 void Geometry::update()
 {
     if (!_mesh)

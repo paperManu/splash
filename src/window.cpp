@@ -23,35 +23,10 @@ Window::Window(GlWindowPtr w)
         return;
 
     _window = w;
-    glfwMakeContextCurrent(_window->get());
-    glfwShowWindow(w->get());
-    glfwSwapInterval(0);
-
-
-    // Setup the projection surface
-    glGetError();
-
-    _screen.reset(new Object());
-    GeometryPtr virtualScreen(new Geometry());
-    _screen->addGeometry(virtualScreen);
-    ShaderPtr shader(new Shader());
-    _screen->setShader(shader);
-
-    GLenum error = glGetError();
-    if (error)
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the window: " << error << Log::endl;
-
-    // Initialize the callbacks
-    if (!glfwSetKeyCallback(_window->get(), Window::keyCallback))
-        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up key callback" << Log::endl;
-    if (!glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback))
-        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up mouse button callback" << Log::endl;
-    if (!glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback))
-        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up mouse position callback" << Log::endl;
-
-    glfwMakeContextCurrent(NULL);
-
+    setProjectionSurface();
     _isInitialized = true;
+
+    registerAttributes();
 }
 
 /*************/
@@ -138,6 +113,66 @@ void Window::render()
 }
 
 /*************/
+bool Window::setFullscreen(int screenId)
+{
+    int count;
+    GLFWmonitor** monitors = glfwGetMonitors(&count);
+    if (screenId > count)
+        return false;
+
+    if (_window.get() == nullptr)
+        return false;
+
+    const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[screenId]);
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+    glfwWindowHint(GLFW_VISIBLE, true);
+    GLFWwindow* window = glfwCreateWindow(vidmode->width, vidmode->height, to_string(screenId).c_str(), monitors[screenId], _window->getMainWindow());
+    if (!window)
+    {
+        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to create new fullscreen shared window" << Log::endl;
+        return false;    glfwMakeContextCurrent(window);
+    glfwSwapInterval(SPLASH_SWAP_INTERVAL);
+
+    // Setup the projection surface
+    glGetError();
+
+    _screen.reset(new Object());
+    GeometryPtr virtualScreen(new Geometry());
+    _screen->addGeometry(virtualScreen);
+    ShaderPtr shader(new Shader());
+    _screen->setShader(shader);
+
+    GLenum error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the window: " << error << Log::endl;
+
+    glfwMakeContextCurrent(0);
+
+    _window = move(GlWindowPtr(new GlWindow(window, _window->getMainWindow())));
+
+    // Initialize the callbacks
+    if (!glfwSetKeyCallback(_window->get(), Window::keyCallback))
+        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up key callback" << Log::endl;
+    if (!glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback))
+        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up mouse button callback" << Log::endl;
+    if (!glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback))
+        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up mouse position callback" << Log::endl;
+    }
+
+    _window = move(GlWindowPtr(new GlWindow(window, _window->getMainWindow())));
+
+    setProjectionSurface();
+    for (auto t : _inTextures)
+        _screen->addTexture(t);
+
+    return true;
+}
+
+/*************/
 void Window::setTexture(TexturePtr tex)
 {
     bool isPresent = false;
@@ -175,6 +210,48 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
     std::vector<double> pos {xpos, ypos};
     _mousePos.first = win;
     _mousePos.second = move(pos);
+}
+
+/*************/
+void Window::registerAttributes()
+{
+    _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 1)
+            return false;
+        setFullscreen(args[0]);
+        return true;
+    });
+}
+
+/*************/
+void Window::setProjectionSurface()
+{
+    glfwMakeContextCurrent(_window->get());
+    glfwShowWindow(_window->get());
+    glfwSwapInterval(SPLASH_SWAP_INTERVAL);
+
+    // Setup the projection surface
+    glGetError();
+
+    _screen.reset(new Object());
+    GeometryPtr virtualScreen(new Geometry());
+    _screen->addGeometry(virtualScreen);
+    ShaderPtr shader(new Shader());
+    _screen->setShader(shader);
+
+    GLenum error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the window: " << error << Log::endl;
+
+    glfwMakeContextCurrent(0);
+
+    // Initialize the callbacks
+    if (!glfwSetKeyCallback(_window->get(), Window::keyCallback))
+        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up key callback" << Log::endl;
+    if (!glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback))
+        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up mouse button callback" << Log::endl;
+    if (!glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback))
+        SLog::log << Log::ERROR << "Window::" << __FUNCTION__ << " - Error while setting up mouse position callback" << Log::endl;
 }
 
 } // end of namespace

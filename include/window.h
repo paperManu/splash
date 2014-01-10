@@ -93,13 +93,18 @@ class Window : public BaseObject
         void render();
 
         /**
+         * Set the window to fullscreen
+         */
+        bool setFullscreen(int screenId);
+
+        /**
          * Set a new texture to draw
          */
         void setTexture(TexturePtr tex);
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
+        GlWindowPtr _window, _tmpWin;
 
         ObjectPtr _screen;
         std::vector<TexturePtr> _inTextures;
@@ -115,6 +120,16 @@ class Window : public BaseObject
         static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
         static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
+
+        /**
+         * Set up the projection surface
+         */
+        void setProjectionSurface();
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

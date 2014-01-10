@@ -195,7 +195,7 @@ GlWindowPtr Scene::getNewSharedWindow()
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
-    return GlWindowPtr(new GlWindow(window));
+    return GlWindowPtr(new GlWindow(window, _mainWindow->get()));
 }
 
 /*************/
@@ -226,7 +226,7 @@ void Scene::init()
         return;
     }
 
-    _mainWindow.reset(new GlWindow(window));
+    _mainWindow.reset(new GlWindow(window, window));
     glfwMakeContextCurrent(_mainWindow->get());
     _isInitialized = true;
     glfwMakeContextCurrent(NULL);
@@ -271,6 +271,8 @@ void Scene::setAttribute(string name, string attrib, std::vector<float> args)
 {
     if (_cameras.find(name) != _cameras.end())
         _cameras[name]->setAttribute(attrib, args);
+    else if (_windows.find(name) != _windows.end())
+        _windows[name]->setAttribute(attrib, args);
 }
 
 } // end of namespace

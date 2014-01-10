@@ -28,12 +28,18 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
+#define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
+#define SPLASH_GL_CONTEXT_VERSION_MINOR 2
+#define SPLASH_GL_DEBUG false
+#define SPLASH_SWAP_INTERVAL 0
+
 #include <map>
 #include <memory>
 #include <string>
 #include <GLFW/glfw3.h>
 
 #include "config.h"
+#include "log.h"
 
 namespace Splash
 {
@@ -45,9 +51,10 @@ class GlWindow
         /**
          * Constructors
          */
-        GlWindow(GLFWwindow* w)
+        GlWindow(GLFWwindow* w, GLFWwindow* mainWindow)
         {
             _window = w;
+            _mainWindow = mainWindow;
         }
 
         /**
@@ -64,8 +71,14 @@ class GlWindow
          */
         GLFWwindow* get() const {return _window;}
 
+        /**
+         * Get the pointer to the main GLFW window
+         */
+        GLFWwindow* getMainWindow() const {return _mainWindow;}
+
     private:
         GLFWwindow* _window {nullptr};
+        GLFWwindow* _mainWindow {nullptr};
 };
 
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
@@ -76,7 +89,7 @@ struct AttributeFunctor
     public:
         AttributeFunctor() {}
         AttributeFunctor(std::function<void(std::vector<float>)> func) {_func = func;}
-        void operator()(std::vector<float> args) {_func(args);}
+        bool operator()(std::vector<float> args) {_func(args);}
 
     private:
         std::function<void(std::vector<float>)> _func;
@@ -108,8 +121,7 @@ class BaseObject
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
-        
-            _attribFunctions[attrib](args);
+            return _attribFunctions[attrib](args);
         }
 
     protected:

@@ -66,12 +66,12 @@ class Geometry : public BaseObject
         /**
          * Activate the geometry for rendering
          */
-        void activate() const {glBindVertexArray(_vertexArray);}
+        void activate() const;
 
         /**
          * Deactivate the geometry for rendering
          */
-        void deactivate() const {glBindVertexArray(0);}
+        void deactivate() const;
 
         /**
          * Get the number of vertices for this geometry
