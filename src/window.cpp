@@ -117,7 +117,7 @@ bool Window::setFullscreen(int screenId)
 {
     int count;
     GLFWmonitor** monitors = glfwGetMonitors(&count);
-    if (screenId > count)
+    if (screenId >= count)
         return false;
 
     if (_window.get() == nullptr)
