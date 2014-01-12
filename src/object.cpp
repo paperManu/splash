@@ -75,6 +75,22 @@ void Object::registerAttributes()
             return false;
         _position = vec3(args[0], args[1], args[2]);
     });
+
+    _attribFunctions["sideness"] = AttributeFunctor([&](vector<float> args) {
+        if (args.size() < 1)
+            return false;
+        switch ((int)args[0])
+        {
+        case 0:
+            _shader->setSideness(Shader::doubleSided);
+            break;
+        case 1:
+            _shader->setSideness(Shader::singleSided);
+            break;
+        case 2:
+            _shader->setSideness(Shader::inverted);
+        }
+    });
 }
 
 } // end of namespace

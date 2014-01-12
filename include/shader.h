@@ -52,6 +52,13 @@ class Shader : public BaseObject
             fragment
         };
 
+        enum Sideness
+        {
+            doubleSided = 0,
+            singleSided,
+            inverted
+        };
+
         /**
          * Constructor
          */
@@ -85,6 +92,11 @@ class Shader : public BaseObject
         void deactivate();
 
         /**
+         * Set the sideness of the object
+         */
+        void setSideness(const Sideness side);
+
+        /**
          * Set a shader source
          */
         void setSource(const std::string& src, const ShaderType type);
@@ -111,38 +123,58 @@ class Shader : public BaseObject
         GeometryPtr _geometry;
         GLint _locationMVP {0};
         GLint _locationNormalMatrix {0};
+        GLint _locationSide {0};
+
+        Sideness _sideness {doubleSided};
 
         void compileProgram();
         bool linkProgram();
 
     public:
+        /**
+         * Default vertex shader
+         */
         const std::string DEFAULT_VERTEX_SHADER {R"(
             #version 330 core
 
             in vec4 _vertex;
             in vec2 _texcoord;
-            in vec3 _normals;
+            in vec3 _normal;
             uniform mat4 _viewProjectionMatrix;
+            uniform mat4 _normalMatrix;
             smooth out vec2 finalTexCoord;
+            smooth out vec3 normal;
 
             void main(void)
             {
                 gl_Position = _viewProjectionMatrix * _vertex;
+                normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
                 finalTexCoord = _texcoord;
             }
         )"};
 
+        /**
+         * Default fragment shader
+         */
         const std::string DEFAULT_FRAGMENT_SHADER {R"(
             #version 330 core
 
             uniform sampler2D _tex0;
+            uniform int _sideness;
             in vec2 finalTexCoord;
+            in vec3 normal;
             out vec4 fragColor;
 
             void main(void)
             {
-                fragColor = texture(_tex0, finalTexCoord);
-                fragColor += vec4(0.5f, 0.f, 0.f, 1.f);
+                if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1)
+                     || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+                    discard;
+                else
+                {
+                    fragColor = texture(_tex0, finalTexCoord);
+                    fragColor += vec4(0.5f, 0.f, 0.f, 1.f);
+                }
             }
         )"};
 

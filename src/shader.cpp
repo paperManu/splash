@@ -49,12 +49,20 @@ void Shader::activate(const GeometryPtr geometry)
     glUseProgram(_program);
     _locationMVP = glGetUniformLocation(_program, "_viewProjectionMatrix");
     _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
+    _locationSide = glGetUniformLocation(_program, "_sideness");
+    glUniform1i(_locationSide, _sideness);
 }
 
 /*************/
 void Shader::deactivate()
 {
     glUseProgram(0);
+}
+
+/*************/
+void Shader::setSideness(const Sideness side)
+{
+    _sideness = side;
 }
 
 /*************/
