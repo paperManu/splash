@@ -110,6 +110,7 @@ class Shader : public BaseObject
         bool _isLinked = {false};
         GeometryPtr _geometry;
         GLint _locationMVP {0};
+        GLint _locationNormalMatrix {0};
 
         void compileProgram();
         bool linkProgram();
@@ -120,6 +121,7 @@ class Shader : public BaseObject
 
             in vec4 _vertex;
             in vec2 _texcoord;
+            in vec3 _normals;
             uniform mat4 _viewProjectionMatrix;
             smooth out vec2 finalTexCoord;
 

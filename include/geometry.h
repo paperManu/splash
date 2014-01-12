@@ -80,6 +80,11 @@ class Geometry : public BaseObject
         int getVerticesNumber() const {return _verticesNumber;}
 
         /**
+         * Get the normals
+         */
+        GLuint getNormals() const {return _normals;}
+
+        /**
          * Get the texture coords
          */
         GLuint getTextureCoords() const {return _texCoords;}
@@ -106,6 +111,7 @@ class Geometry : public BaseObject
         std::map<GLFWwindow*, GLuint> _vertexArray;
         GLuint _vertexCoords {0};
         GLuint _texCoords {0};
+        GLuint _normals {0};
 
         int _verticesNumber {0};
 

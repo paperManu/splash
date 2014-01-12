@@ -74,7 +74,7 @@ vector<float> Mesh::getUVCoords() const
 vector<float> Mesh::getNormals() const
 {
     vector<float> normals;
-    normals.resize(_mesh.n_faces() * 3 * 4);
+    normals.resize(_mesh.n_faces() * 3 * 3);
 
     int idx = 0;
     for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
@@ -84,8 +84,7 @@ vector<float> Mesh::getNormals() const
             auto normal = _mesh.normal(vertex);
             for (int i = 0; i < 3; ++i)
                 normals[idx + i] = normal[i];
-            normals[idx + 3] = 1.f; // We add this to get normalized coordinates
-            idx += 4;
+            idx += 3;
         });
     });
 
@@ -208,7 +207,7 @@ bool Mesh::deserialize(const SerializedObject& obj)
             {
                 int floatIdx = faceIdx * 3 + vertexIdx;
                 _mesh.set_texcoord2D(vertex, MeshContainer::TexCoord2D(data[1][floatIdx * 2 + 0], data[1][floatIdx * 2 + 1]));
-                _mesh.set_normal(vertex, MeshContainer::Normal(data[2][floatIdx * 4 + 0], data[2][floatIdx * 4 + 1], data[2][floatIdx * 4 + 2]));
+                _mesh.set_normal(vertex, MeshContainer::Normal(data[2][floatIdx * 3 + 0], data[2][floatIdx * 3 + 1], data[2][floatIdx * 3 + 2]));
                 vertexIdx++;
             });
             faceIdx++;

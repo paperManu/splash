@@ -54,6 +54,11 @@ void Geometry::update()
         vector<float> texcoords = _mesh->getUVCoords();
         glBufferData(GL_ARRAY_BUFFER, texcoords.size() * sizeof(float), texcoords.data(), GL_STATIC_DRAW);
 
+        glGenBuffers(1, &_normals);
+        glBindBuffer(GL_ARRAY_BUFFER, _normals);
+        vector<float> normals = _mesh->getNormals();
+        glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(float), normals.data(), GL_STATIC_DRAW);
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         for (auto v : _vertexArray)
@@ -70,12 +75,19 @@ void Geometry::update()
         
         glGenVertexArrays(1, &(_vertexArray[context]));
         glBindVertexArray(_vertexArray[context]);
+
         glBindBuffer(GL_ARRAY_BUFFER, _vertexCoords);
         glVertexAttribPointer(_vertexCoords, 4, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(_vertexCoords);
+
         glBindBuffer(GL_ARRAY_BUFFER, _texCoords);
         glVertexAttribPointer(_texCoords, 2, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(_texCoords);
+
+        glBindBuffer(GL_ARRAY_BUFFER, _normals);
+        glVertexAttribPointer(_normals, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(_normals);
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }

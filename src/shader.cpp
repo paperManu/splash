@@ -40,6 +40,7 @@ void Shader::activate(const GeometryPtr geometry)
     {
         glBindAttribLocation(_program, geometry->getVertexCoords(), "_vertex");
         glBindAttribLocation(_program, geometry->getTextureCoords(), "_texcoord");
+        glBindAttribLocation(_program, geometry->getNormals(), "_normal");
         _geometry = geometry;
         if (!linkProgram())
             return;
@@ -47,6 +48,7 @@ void Shader::activate(const GeometryPtr geometry)
 
     glUseProgram(_program);
     _locationMVP = glGetUniformLocation(_program, "_viewProjectionMatrix");
+    _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
 }
 
 /*************/
@@ -112,6 +114,7 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
 void Shader::setViewProjectionMatrix(const glm::mat4& mvp)
 {
     glUniformMatrix4fv(_locationMVP, 1, GL_FALSE, glm::value_ptr(mvp));
+    glUniformMatrix4fv(_locationNormalMatrix, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(mvp))));
 }
 
 /*************/

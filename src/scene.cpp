@@ -190,7 +190,7 @@ GlWindowPtr Scene::getNewSharedWindow()
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(512, 512, "sharedWindow", NULL, _mainWindow->get());
+    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::Window", NULL, _mainWindow->get());
     if (!window)
     {
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
@@ -220,7 +220,7 @@ void Scene::init()
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
 
-    GLFWwindow* window = glfwCreateWindow(512, 512, "splash", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::Scene", NULL, NULL);
 
     if (!window)
     {
