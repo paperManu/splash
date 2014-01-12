@@ -31,6 +31,7 @@
 #include <config.h>
 
 #include <chrono>
+#include <map>
 #include <vector>
 #include <GLFW/glfw3.h>
 
@@ -66,7 +67,7 @@ class Geometry : public BaseObject
         /**
          * Activate the geometry for rendering
          */
-        void activate() const;
+        void activate();
 
         /**
          * Deactivate the geometry for rendering
@@ -102,7 +103,7 @@ class Geometry : public BaseObject
         MeshPtr _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
-        GLuint _vertexArray;
+        std::map<GLFWwindow*, GLuint> _vertexArray;
         GLuint _vertexCoords {0};
         GLuint _texCoords {0};
 
