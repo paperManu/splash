@@ -63,6 +63,11 @@ class Scene
         BaseObjectPtr add(std::string type, std::string name = std::string());
 
         /**
+         * Get the status of the scene, return true if all is well
+         */
+        bool getStatus() const {return _status;}
+
+        /**
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
@@ -84,6 +89,7 @@ class Scene
 
     private:
         bool _isInitialized {false};
+        bool _status {false}; //< Set to true if an error occured during rendering
         GlWindowPtr _mainWindow;
         unsigned long _nextId {0};
 

@@ -243,13 +243,16 @@ void Scene::glfwErrorCallback(int code, const char* msg)
 /*************/
 bool Scene::render()
 {
+    bool isError {false};
     // Update the cameras
     for (auto camera : _cameras)
-        camera.second->render();
+        isError |= camera.second->render();
 
     // Update the windows
     for (auto window : _windows)
-        window.second->render();
+        isError |= window.second->render();
+
+    _status = !isError;
 
     // Update the user events
     bool quit = false;

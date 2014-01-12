@@ -61,12 +61,12 @@ void Camera::addObject(ObjectPtr& obj)
 }
 
 /*************/
-void Camera::render()
+bool Camera::render()
 {
     glfwMakeContextCurrent(_window->get());
 
     if (_outTextures.size() < 1)
-        return;
+        return false;
 
     glGetError();
     glEnable(GL_MULTISAMPLE);
@@ -101,6 +101,8 @@ void Camera::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 
     glfwMakeContextCurrent(NULL);
+
+    return error != 0 ? true : false;
 }
 
 /*************/

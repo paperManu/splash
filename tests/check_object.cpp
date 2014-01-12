@@ -31,6 +31,7 @@ go_bandit([]() {
             while(true)
                 if (scene.render())
                     break;
+            AssertThat(scene.getStatus(), Equals(true));
         });
     });
 
@@ -60,6 +61,7 @@ go_bandit([]() {
             while(true)
                 if (scene.render())
                     break;
+            AssertThat(scene.getStatus(), Equals(true));
         });
     });
 });

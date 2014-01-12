@@ -90,7 +90,7 @@ class Window : public BaseObject
         /**
          * Render this window to screen
          */
-        void render();
+        bool render();
 
         /**
          * Set the window to fullscreen

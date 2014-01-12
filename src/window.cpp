@@ -86,7 +86,7 @@ void Window::getMousePos(GLFWwindow* win, double xpos, double ypos)
 }
 
 /*************/
-void Window::render()
+bool Window::render()
 {
     glfwMakeContextCurrent(_window->get());
 
@@ -110,6 +110,8 @@ void Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 
     glfwMakeContextCurrent(NULL);
+
+    return error != 0 ? true : false;
 }
 
 /*************/

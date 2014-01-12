@@ -87,7 +87,7 @@ class Camera : public BaseObject
         /**
          * Render this camera into its textures
          */
-        void render();
+        bool render();
 
         /**
          * Set the number of output buffers for this camera
