@@ -26,16 +26,16 @@ Camera::Camera(GlWindowPtr w)
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while initializing framebuffer object" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object" << Log::endl;
     else
-        SLog::log << Log::MESSAGE << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
         _isInitialized = false;
     }
     else
@@ -79,6 +79,8 @@ bool Camera::render()
         fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
     glDrawBuffers(_outTextures.size(), fboBuffers);
     glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 
     for (auto obj : _objects)
     {
@@ -95,6 +97,7 @@ bool Camera::render()
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDisable(GL_MULTISAMPLE);
+    glDisable(GL_DEPTH_TEST);
 
     GLenum error = glGetError();
     if (error)
@@ -113,10 +116,18 @@ void Camera::setOutputNbr(int nbr)
 
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
+    if (!_depthTexture)
+    {
+        TexturePtr texture(new Texture);
+        texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+        _depthTexture = move(texture);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+    }
+
     if (nbr < _outTextures.size())
     {
         for (int i = nbr; i < _outTextures.size(); ++i)
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
 
         _outTextures.resize(nbr);
     }
@@ -127,7 +138,7 @@ void Camera::setOutputNbr(int nbr)
             TexturePtr texture(new Texture);
             texture->reset(GL_TEXTURE_2D, 0, GL_RGB8, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
             _outTextures.push_back(texture);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
         }
     }
 
@@ -137,10 +148,13 @@ void Camera::setOutputNbr(int nbr)
 /*************/
 void Camera::setOutputSize(int width, int height)
 {
+    if (width == 0 || height == 0)
+        return;
+
+    _depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
     for (auto tex : _outTextures)
-    {
         tex->reset(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
-    }
 }
 
 /*************/

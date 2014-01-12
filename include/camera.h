@@ -104,6 +104,7 @@ class Camera : public BaseObject
         GlWindowPtr _window;
 
         GLuint _fbo;
+        TexturePtr _depthTexture;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 

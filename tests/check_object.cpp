@@ -56,7 +56,7 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
-            scene.setAttribute("camera", "eye", vector<float>({-1.f, 1.f, 5.f}));
+            scene.setAttribute("camera", "eye", vector<float>({-4.f, 2.f, 2.f}));
 
             while(true)
                 if (scene.render())
@@ -69,6 +69,6 @@ go_bandit([]() {
 /*************/
 int main(int argc, char** argv)
 {
-    //SLog::log.setVerbosity(Log::NONE);
+    SLog::log.setVerbosity(Log::NONE);
     return bandit::run(argc, argv);
 }

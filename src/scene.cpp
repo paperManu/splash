@@ -217,6 +217,7 @@ void Scene::init()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
 
     GLFWwindow* window = glfwCreateWindow(512, 512, "splash", NULL, NULL);
