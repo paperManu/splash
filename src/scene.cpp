@@ -22,7 +22,7 @@ BaseObjectPtr Scene::add(string type, string name)
 
     if (type == string("camera"))
     {
-        CameraPtr camera(new Camera(getNewSharedWindow()));
+        CameraPtr camera(new Camera(_mainWindow));
         camera->setId(getId());
         if (name == string())
             _cameras[to_string(camera->getId())] = camera;
