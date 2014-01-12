@@ -46,7 +46,7 @@ go_bandit([]() {
             auto image = scene.add("image");
             auto texture = scene.add("texture");
 
-            mesh->read("//home//manu//sphere.obj");
+            mesh->read("..//data//sphere.obj");
 
             scene.link(mesh, geometry);
             scene.link(geometry, object);
