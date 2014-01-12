@@ -95,14 +95,25 @@ vector<float> Mesh::getNormals() const
 /*************/
 bool Mesh::read(const string& filename)
 {
+    OpenMesh::IO::Options readOptions;
+    readOptions += OpenMesh::IO::Options::VertexTexCoord;
+
     MeshContainer mesh;
-    if (!OpenMesh::IO::read_mesh(mesh, filename))
+    mesh.request_vertex_texcoords2D();
+    if (!OpenMesh::IO::read_mesh(mesh, filename, readOptions))
     {
         SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file" << Log::endl;
         return false;
     }
+    
+    // Update the normals
+    mesh.request_vertex_normals();
+    mesh.request_face_normals();
+    mesh.update_normals();
+    mesh.release_face_normals();
 
     _mesh = mesh;
+    updateTimestamp();
     return true;
 }
 

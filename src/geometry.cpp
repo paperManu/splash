@@ -64,6 +64,9 @@ void Geometry::update()
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+
+        // TODO: there is a bug with this and new cameras
+        //_timestamp = _mesh->getTimestamp();
     }
 }
 

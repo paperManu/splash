@@ -38,7 +38,7 @@ go_bandit([]() {
     describe("Loading an object from a file", [&]() {
         Scene scene;
         it("should work with an obj file", [&]() {
-            auto camera = scene.add("camera");
+            auto camera = scene.add("camera", "camera");
             auto mesh = static_pointer_cast<Splash::Mesh>(scene.add("mesh"));
             auto geometry = scene.add("geometry");
             auto object = scene.add("object", "obj");
@@ -54,6 +54,8 @@ go_bandit([]() {
             scene.link(camera, window);
             scene.link(image, texture);
             scene.link(texture, object);
+
+            scene.setAttribute("camera", "eye", vector<float>({-1.f, 1.f, 5.f}));
 
             while(true)
                 if (scene.render())
