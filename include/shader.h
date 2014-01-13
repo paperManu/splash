@@ -142,14 +142,14 @@ class Shader : public BaseObject
             in vec3 _normal;
             uniform mat4 _viewProjectionMatrix;
             uniform mat4 _normalMatrix;
-            smooth out vec2 finalTexCoord;
+            smooth out vec2 texCoord;
             smooth out vec3 normal;
 
             void main(void)
             {
                 gl_Position = _viewProjectionMatrix * _vertex;
                 normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
-                finalTexCoord = _texcoord;
+                texCoord = _texcoord;
             }
         )"};
 
@@ -161,7 +161,7 @@ class Shader : public BaseObject
 
             uniform sampler2D _tex0;
             uniform int _sideness;
-            in vec2 finalTexCoord;
+            in vec2 texCoord;
             in vec3 normal;
             out vec4 fragColor;
 
@@ -171,10 +171,7 @@ class Shader : public BaseObject
                      || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
                     discard;
                 else
-                {
-                    fragColor = texture(_tex0, finalTexCoord);
-                    fragColor += vec4(0.5f, 0.f, 0.f, 1.f);
-                }
+                    fragColor = texture(_tex0, texCoord);
             }
         )"};
 
