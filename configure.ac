@@ -52,6 +52,12 @@ if test "x${have_openimageio}" = "xfalse" ; then
     AC_MSG_ERROR([Missing openimageio])
 fi
 
+# JSoncpp
+PKG_CHECK_MODULES([JSONCPP], [jsoncpp])
+if test "x${have_jsoncpp}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing jsoncpp])
+fi
+
 AC_CONFIG_FILES([
     Makefile
     src/Makefile

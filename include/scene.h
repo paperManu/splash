@@ -75,6 +75,7 @@ class Scene
         /**
          * Link an object to another, base on their types
          */
+        bool link(std::string first, std::string second);
         bool link(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
@@ -122,6 +123,8 @@ class Scene
          */
         static void glfwErrorCallback(int code, const char* msg);
 };
+
+typedef std::shared_ptr<Scene> ScenePtr;
 
 } // end of namespace
 

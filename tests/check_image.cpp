@@ -68,6 +68,6 @@ go_bandit([]() {
 /*************/
 int main(int argc, char** argv)
 {
-    //SLog::log.setVerbosity(Log::NONE);
+    SLog::log.setVerbosity(Log::NONE);
     return bandit::run(argc, argv);
 }

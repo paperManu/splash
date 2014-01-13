@@ -25,7 +25,14 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <string>
+#include <vector>
+#include <json/reader.h>
+
 #include "config.h"
+#include "coretypes.h"
+#include "log.h"
+#include "scene.h"
 
 namespace Splash {
 
@@ -34,12 +41,43 @@ class World {
         /**
          * Constructor
          */
-        World();
+        World(int argc, char** argv);
 
         /**
          * Destructor
          */
         ~World();
+
+        /**
+         * Get the status of the world
+         */
+        bool getStatus() const {return _status;}
+
+        /**
+         * Run the world
+         */
+        void run();
+
+    private:
+        bool _status {true};
+        std::map<std::string, ScenePtr> _scenes;
+
+        Json::Value _config;
+
+        /**
+         * Apply the configuration
+         */
+        void applyConfig();
+
+        /**
+         * Load the specified configuration file
+         */
+        bool loadConfig(std::string filename);
+
+        /**
+         * Parse the given arguments
+         */
+        void parseArguments(int argc, char** argv);
 };
 
 } // end of namespace

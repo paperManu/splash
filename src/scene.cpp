@@ -97,6 +97,51 @@ BaseObjectPtr Scene::add(string type, string name)
 }
 
 /*************/
+bool Scene::link(string first, string second)
+{
+    BaseObjectPtr source(nullptr);
+    BaseObjectPtr sink(nullptr);
+
+    if (_objects.find(first) != _objects.end())
+        source = _objects[first];
+    else if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+
+    if (_geometries.find(first) != _geometries.end())
+        source = _geometries[first];
+    else if (_geometries.find(second) != _geometries.end())
+        sink = _geometries[second];
+
+    if (_meshes.find(first) != _meshes.end())
+        source = _meshes[first];
+    else if (_meshes.find(second) != _meshes.end())
+        sink = _meshes[second];
+
+    if (_images.find(first) != _images.end())
+        source = _images[first];
+    else if (_images.find(second) != _images.end())
+        sink = _images[second];
+
+    if (_textures.find(first) != _textures.end())
+        source = _textures[first];
+    else if (_textures.find(second) != _textures.end())
+        sink = _textures[second];
+
+    if (_cameras.find(first) != _cameras.end())
+        source = _cameras[first];
+    else if (_cameras.find(second) != _cameras.end())
+        sink = _cameras[second];
+
+    if (_windows.find(first) != _windows.end())
+        source = _windows[first];
+    else if (_windows.find(second) != _windows.end())
+        sink = _windows[second];
+
+    if (source.get() != nullptr && sink.get() != nullptr)
+        link(source, sink);
+}
+
+/*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
     glfwMakeContextCurrent(_mainWindow->get());
@@ -176,6 +221,48 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 }
 
 /*************/
+bool Scene::render()
+{
+    bool isError {false};
+    // Update the cameras
+    for (auto camera : _cameras)
+        isError |= camera.second->render();
+
+    // Update the windows
+    for (auto window : _windows)
+        isError |= window.second->render();
+
+    _status = !isError;
+
+    // Update the user events
+    bool quit = false;
+    glfwPollEvents();
+    while (true)
+    {
+        GLFWwindow* win;
+        int key, action, mods;
+        if (!Window::getKeys(win, key, action, mods))
+            break;
+
+        if (key == GLFW_KEY_ESCAPE)
+            quit = true;
+    }
+
+    return quit;
+}
+
+/*************/
+void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
+{
+    if (_cameras.find(name) != _cameras.end())
+        _cameras[name]->setAttribute(attrib, args);
+    else if (_windows.find(name) != _windows.end())
+        _windows[name]->setAttribute(attrib, args);
+    else if (_objects.find(name) != _objects.end())
+        _objects[name]->setAttribute(attrib, args);
+}
+
+/*************/
 GlWindowPtr Scene::getNewSharedWindow()
 {
     if (!_mainWindow)
@@ -239,48 +326,6 @@ void Scene::init()
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
     SLog::log << Log::WARNING << "Scene - " << msg << Log::endl;
-}
-
-/*************/
-bool Scene::render()
-{
-    bool isError {false};
-    // Update the cameras
-    for (auto camera : _cameras)
-        isError |= camera.second->render();
-
-    // Update the windows
-    for (auto window : _windows)
-        isError |= window.second->render();
-
-    _status = !isError;
-
-    // Update the user events
-    bool quit = false;
-    glfwPollEvents();
-    while (true)
-    {
-        GLFWwindow* win;
-        int key, action, mods;
-        if (!Window::getKeys(win, key, action, mods))
-            break;
-
-        if (key == GLFW_KEY_ESCAPE)
-            quit = true;
-    }
-
-    return quit;
-}
-
-/*************/
-void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
-{
-    if (_cameras.find(name) != _cameras.end())
-        _cameras[name]->setAttribute(attrib, args);
-    else if (_windows.find(name) != _windows.end())
-        _windows[name]->setAttribute(attrib, args);
-    else if (_objects.find(name) != _objects.end())
-        _objects[name]->setAttribute(attrib, args);
 }
 
 } // end of namespace

@@ -1,0 +1,50 @@
+// Splash sample configuration file
+{
+    // Default encoding for text
+    "encoding" : "UTF-8",
+
+    "scenes" : [
+        {
+            "name" : "local",
+            "address" : "localhost"
+        }
+    ],
+
+    "local" : {
+        "cam1" : {
+            "type" : "camera",
+            "eye" : [
+                -1.0,
+                1.0,
+                4.0
+            ]
+        },
+        "cam2" : {
+            "type" : "camera",
+            "eye" : [
+                0.0,
+                1.0,
+                2.0
+            ]
+        },
+        "win1" : {"type" : "window", "fullscreen" : 0},
+        "win2" : {"type" : "window", "fullscreen" : 1},
+
+        "mesh" : {"type" : "mesh"},
+        "geometry" : {"type" : "geometry"},
+        "object" : {"type" : "object"},
+        "image" : {"type" : "image"},
+        "texture" : {"type" : "texture"},
+
+        "links" : [
+            ["mesh", "geometry"],
+            ["geometry", "object"],
+            ["object", "cam1"],
+            ["object", "cam2"],
+            ["image", "texture"],
+            ["texture", "object"],
+            ["cam1", "win1"],
+            ["cam2", "win2"]
+        ]
+    }
+}
