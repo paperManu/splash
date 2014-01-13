@@ -273,7 +273,7 @@ bool Scene::render()
 }
 
 /*************/
-void Scene::setAttribute(string name, string attrib, std::vector<float> args)
+void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
 {
     if (_cameras.find(name) != _cameras.end())
         _cameras[name]->setAttribute(attrib, args);

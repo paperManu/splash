@@ -70,16 +70,16 @@ void Object::setViewProjectionMatrix(const glm::mat4& mvp)
 /*************/
 void Object::registerAttributes()
 {
-    _attribFunctions["position"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["position"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _position = vec3(args[0], args[1], args[2]);
+        _position = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        switch ((int)args[0])
+        switch (args[0].asInt())
         {
         case 0:
             _shader->setSideness(Shader::doubleSided);

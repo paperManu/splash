@@ -170,32 +170,32 @@ mat4x4 Camera::computeViewProjectionMatrix()
 /*************/
 void Camera::registerAttributes()
 {
-    _attribFunctions["eye"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["eye"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _eye = vec3(args[0], args[1], args[2]);
+        _eye = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     });
 
-    _attribFunctions["target"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["target"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _target = vec3(args[0], args[1], args[2]);
+        _target = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     });
 
-    _attribFunctions["fov"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["fov"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        _fov = args[0];
+        _fov = args[0].asFloat();
         return true;
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
             return false;
-        _width = args[0];
-        _height = args[1];
+        _width = args[0].asInt();
+        _height = args[1].asInt();
         setOutputSize(_width, _height);
         return true;
     });

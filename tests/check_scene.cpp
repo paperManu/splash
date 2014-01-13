@@ -144,8 +144,8 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
-            scene.setAttribute("cam2", "eye", vector<float>({-1.f, 1.f, -5.f}));
-            scene.setAttribute("cam2", "size", vector<float>({2048, 2048}));
+            scene.setAttribute("cam2", "eye", vector<Value>({-1.f, 1.f, -5.f}));
+            scene.setAttribute("cam2", "size", vector<Value>({2048, 2048}));
 
             while(true)
                 if (scene.render())
@@ -165,7 +165,7 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, window);
 
-            scene.setAttribute("window", "fullscreen", vector<float>({0}));
+            scene.setAttribute("window", "fullscreen", vector<Value>({0}));
 
             while(true)
                 if (scene.render())
@@ -187,8 +187,8 @@ go_bandit([]() {
             scene.link(texture, win1);
             scene.link(texture, win2);
 
-            scene.setAttribute("win1", "fullscreen", vector<float>({0}));
-            scene.setAttribute("win2", "fullscreen", vector<float>({1}));
+            scene.setAttribute("win1", "fullscreen", vector<Value>({0}));
+            scene.setAttribute("win2", "fullscreen", vector<Value>({1}));
 
             while(true)
                 if (scene.render())

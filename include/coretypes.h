@@ -85,15 +85,72 @@ class GlWindow
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
 
 /*************/
+struct Value
+{
+    public:
+        enum Type
+        {
+            i = 0,
+            f,
+            s
+        };
+
+        Value(int v) {_i = v; _type = i;}
+        Value(float v) {_f = v; _type = f;}
+        Value(double v) {_f = (float)v; _type = f;}
+        Value(std::string v) {_s = v; _type = s;}
+
+        int asInt()
+        {
+            if (_type == i)
+                return _i;
+            else if (_type == f)
+                return (int)_f;
+            else if (_type == s)
+                try {return std::stoi(_s);}
+                catch (...) {return 0;}
+        }
+
+        float asFloat()
+        {
+            if (_type == i)
+                return (float)_i;
+            else if (_type == f)
+                return _f;
+            else if (_type == s)
+                try {return std::stof(_s);}
+                catch (...) {return 0.f;}
+        }
+
+        std::string asString()
+        {
+            if (_type == i)
+                try {return std::to_string(_i);}
+                catch (...) {return std::string();}
+            else if (_type == f)
+                try {return std::to_string(_f);}
+                catch (...) {return std::string();}
+            else if (_type == s)
+                return _s;
+        }
+
+    private:
+        Type _type;
+        int _i;
+        float _f;
+        std::string _s;
+};
+
+/*************/
 struct AttributeFunctor
 {
     public:
         AttributeFunctor() {}
-        AttributeFunctor(std::function<void(std::vector<float>)> func) {_func = func;}
-        bool operator()(std::vector<float> args) {_func(args);}
+        AttributeFunctor(std::function<void(std::vector<Value>)> func) {_func = func;}
+        bool operator()(std::vector<Value> args) {_func(args);}
 
     private:
-        std::function<void(std::vector<float>)> _func;
+        std::function<void(std::vector<Value>)> _func;
 };
 
 /*************/
@@ -118,7 +175,7 @@ class BaseObject
         /**
          * Set the specified attribute
          */
-        bool setAttribute(std::string attrib, std::vector<float> args)
+        bool setAttribute(std::string attrib, std::vector<Value> args)
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;

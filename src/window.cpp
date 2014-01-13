@@ -217,10 +217,10 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 /*************/
 void Window::registerAttributes()
 {
-    _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<float> args) {
+    _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        setFullscreen(args[0]);
+        setFullscreen(args[0].asInt());
         return true;
     });
 }

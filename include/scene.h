@@ -85,7 +85,7 @@ class Scene
         /**
          * Set a parameter for an object, given its id
          */
-        void setAttribute(std::string name, std::string attrib, std::vector<float> args);
+        void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
 
     private:
         bool _isInitialized {false};
