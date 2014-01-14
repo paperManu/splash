@@ -126,6 +126,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         context->_bufferImage.swap(img);
         context->_imageUpdated = true;
     }
+
+    shmdata_any_reader_free(shmbuf);
 }
 
 /*************/

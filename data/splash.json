@@ -14,27 +14,21 @@
         "cam1" : {
             "type" : "camera",
             "size" : [1920, 1200],
-            "eye" : [
-                -2.0,
-                2.0,
-                1.0
-            ]
+            "eye" : [-2.0, 2.0, 0.0],
+            "target" : [0.0, 0.0, 0.3]
         },
         "cam2" : {
             "type" : "camera",
-            "size" : [1280, 800],
-            "eye" : [
-                0.0,
-                1.0,
-                2.0
-            ]
+            "size" : [1920, 1200],
+            "eye" : [2.0, -2.0, 0.0],
+            "target" : [0.0, 0.0, 0.3]
         },
         "win1" : {"type" : "window", "fullscreen" : 0},
         "win2" : {"type" : "window", "fullscreen" : 1},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "geometry" : {"type" : "geometry"},
-        "object" : {"type" : "object"},
+        "object" : {"type" : "object", "sideness" : 2},
         "image" : {"type" : "image", "file" : "lightprobe.jpg"},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         "texture" : {"type" : "texture"},
