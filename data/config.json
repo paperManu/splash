@@ -36,7 +36,6 @@
         "geometry" : {"type" : "geometry"},
         "object" : {"type" : "object"},
         "image" : {"type" : "image", "file" : "../data/lightprobe.jpg"},
-        "shmimage" : {"type" : "image_shmdata", "file" : "//tmp//switcher_default_video_video-0"},
         "texture" : {"type" : "texture"},
 
         "links" : [
@@ -44,7 +43,7 @@
             ["geometry", "object"],
             ["object", "cam1"],
             ["object", "cam2"],
-            ["shmimage", "texture"],
+            ["image", "texture"],
             ["texture", "object"],
             ["cam1", "win1"],
             ["cam2", "win2"]

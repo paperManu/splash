@@ -42,8 +42,8 @@ class Log {
     public:
         enum Priority
         {
-            MESSAGE = 0,
-            DEBUG,
+            DEBUG = 0,
+            MESSAGE,
             WARNING,
             ERROR,
             NONE

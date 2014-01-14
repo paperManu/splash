@@ -105,6 +105,10 @@ void Texture::update()
     if (_img.get() == nullptr)
         return;
 
+    if (_img->getTimestamp() == _timestamp)
+        return;
+    _timestamp = _img->getTimestamp();
+
     ImageBuf img = _img->get();
     if (!img.initialized())
         return;

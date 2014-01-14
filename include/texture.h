@@ -30,6 +30,7 @@
 
 #include <config.h>
 
+#include <chrono>
 #include <memory>
 #include <vector>
 #include <GLFW/glfw3.h>
@@ -106,8 +107,10 @@ class Texture : public BaseObject
 
     private:
         GLuint _glTex = {0};
-        ImagePtr _img;
         ImageSpec _spec;
+
+        ImagePtr _img;
+        std::chrono::high_resolution_clock::time_point _timestamp;
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;
