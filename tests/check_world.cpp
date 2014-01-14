@@ -8,9 +8,9 @@ using namespace Splash;
 
 go_bandit([]() {
     /*********/
-    describe("World class", []() {
+    describe("World class", [&]() {
         int argc = 2;
-        char* argv[2] {"-f", "../data/config.json"};
+        char* argv[] = {"-f", "../data/config.json"};
 
         it("should load the configuration correctly", [&]() {
             World world(argc, argv); 
@@ -18,7 +18,6 @@ go_bandit([]() {
             AssertThat(world.getStatus(), Equals(true));
         });
     });
-
 });
 
 /*************/

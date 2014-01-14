@@ -224,12 +224,16 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 bool Scene::render()
 {
     bool isError {false};
+    // Update the textures
+    for (auto& texture : _textures)
+        texture.second->update();
+
     // Update the cameras
-    for (auto camera : _cameras)
+    for (auto& camera : _cameras)
         isError |= camera.second->render();
 
     // Update the windows
-    for (auto window : _windows)
+    for (auto& window : _windows)
         isError |= window.second->render();
 
     _status = !isError;
@@ -260,6 +264,10 @@ void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
         _windows[name]->setAttribute(attrib, args);
     else if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
+    else if (_images.find(name) != _images.end())
+        _images[name]->setAttribute(attrib, args);
+    else if (_meshes.find(name) != _meshes.end())
+        _meshes[name]->setAttribute(attrib, args);
 }
 
 /*************/

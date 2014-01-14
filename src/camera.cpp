@@ -114,6 +114,8 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
+    glfwMakeContextCurrent(_window->get());
+
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
@@ -143,6 +145,8 @@ void Camera::setOutputNbr(int nbr)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -151,10 +155,12 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
+    glfwMakeContextCurrent(_window->get());
     _depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 
     for (auto tex : _outTextures)
         tex->reset(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
