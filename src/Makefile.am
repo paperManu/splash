@@ -11,6 +11,7 @@ libsplash_la_SOURCES = \
     camera.cpp \
     geometry.cpp \
     image.cpp \
+    image_shmdata.cpp \
     log.cpp \
     mesh.cpp \
     object.cpp \
@@ -26,14 +27,16 @@ libsplash_la_CXXFLAGS = \
     $(GLM_CFLAGS) \
     $(JSONCPP_CFLAGS) \
     $(OPENIMAGEIO_CFLAGS) \
-    $(OPENMESH_CFLAGS)
+    $(OPENMESH_CFLAGS) \
+    $(SHMDATA_CFLAGS)
 
 libsplash_la_LIBADD = \
     $(GLFW_LIBS) \
 	$(GL_LIBS) \
     $(JSONCPP_LIBS) \
     $(OPENIMAGEIO_LIBS) \
-    $(OPENMESH_LIBS)
+    $(OPENMESH_LIBS) \
+    $(SHMDATA_LIBS)
 
 #*************#
 bin_PROGRAMS = splash
@@ -63,14 +66,16 @@ splash_CXXFLAGS = \
     $(GLM_CFLAGS) \
     $(JSONCPP_CFLAGS) \
     $(OPENIMAGEIO_CFLAGS) \
-    $(OPENMESH_CFLAGS)
+    $(OPENMESH_CFLAGS) \
+    $(SHMDATA_CFLAGS)
 
 splash_LDADD = \
     $(GLFW_LIBS) \
 	$(GL_LIBS) \
     $(JSONCPP_LIBS) \
     $(OPENIMAGEIO_LIBS) \
-    $(OPENMESH_LIBS)
+    $(OPENMESH_LIBS) \
+    $(SHMDATA_LIBS)
 
 splash_LDFLAGS = \
     $(top_srcdir)/src/libsplash.la

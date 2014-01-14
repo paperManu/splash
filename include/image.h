@@ -97,7 +97,7 @@ class Image : public BaseObject
         bool deserialize(const SerializedObject& obj);
 
         /**
-         * Read / update the image
+         * Set the path to read from
          */
         virtual bool read(const std::string& filename);
 
@@ -110,14 +110,14 @@ class Image : public BaseObject
         ImageBuf _image;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
-    private:
         void createDefaultImage(); //< Create a default pattern
         void updateTimestamp();
         
+    private:
         /**
          * Register new functors to modify attributes
          */
-        void registerAttributes();
+        virtual void registerAttributes();
 };
 
 typedef std::shared_ptr<Image> ImagePtr;

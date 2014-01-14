@@ -130,7 +130,7 @@ void Texture::update()
 
         if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
         {
-            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR" << Log::endl;
+            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGB" << Log::endl;
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
         }
 

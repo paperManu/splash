@@ -55,7 +55,7 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Only Images and Meshes have a counterpart on this side
-    if (type != "image" && type != "mesh")
+    if (type != "image" && type != "mesh" && type != "image_shmdata")
         return;
 
     BaseObjectPtr object;
@@ -64,6 +64,13 @@ void World::addLocally(string type, string name, string destination)
         if (type == string("image"))
         {
             ImagePtr image(new Image());
+            image->setId(getId());
+            object = dynamic_pointer_cast<BaseObject>(image);
+            _objects[name] = image;
+        }
+        else if (type == string("image_shmdata"))
+        {
+            Image_ShmdataPtr image(new Image_Shmdata());
             image->setId(getId());
             object = dynamic_pointer_cast<BaseObject>(image);
             _objects[name] = image;

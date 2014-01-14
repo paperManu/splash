@@ -35,6 +35,7 @@
 #include "coretypes.h"
 #include "geometry.h"
 #include "image.h"
+#include "image_shmdata.h"
 #include "log.h"
 #include "mesh.h"
 #include "object.h"

@@ -13,16 +13,16 @@
     "local" : {
         "cam1" : {
             "type" : "camera",
-            "size" : [1024, 1024],
+            "size" : [1920, 1200],
             "eye" : [
-                -1.0,
-                1.0,
-                4.0
+                -2.0,
+                2.0,
+                1.0
             ]
         },
         "cam2" : {
             "type" : "camera",
-            "size" : [512, 512],
+            "size" : [1280, 800],
             "eye" : [
                 0.0,
                 1.0,
@@ -36,6 +36,7 @@
         "geometry" : {"type" : "geometry"},
         "object" : {"type" : "object"},
         "image" : {"type" : "image", "file" : "../data/lightprobe.jpg"},
+        "shmimage" : {"type" : "image_shmdata", "file" : "//tmp//switcher_default_video_video-0"},
         "texture" : {"type" : "texture"},
 
         "links" : [
@@ -43,7 +44,7 @@
             ["geometry", "object"],
             ["object", "cam1"],
             ["object", "cam2"],
-            ["image", "texture"],
+            ["shmimage", "texture"],
             ["texture", "object"],
             ["cam1", "win1"],
             ["cam2", "win2"]

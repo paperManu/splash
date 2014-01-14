@@ -1,7 +1,9 @@
 AM_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/external/GLV \
-    -I$(top_srcdir)/external/bandit
+    -I$(top_srcdir)/external/bandit \
+    $(JSONCPP_CFLAGS) \
+    $(SHMDATA_CFLAGS)
 
 AM_LDFLAGS = \
     $(GLFW_LIBS) \
@@ -9,6 +11,7 @@ AM_LDFLAGS = \
     $(JSONCPP_LIBS) \
     $(OPENIMAGEIO_LIBS) \
     $(OPENMESH_LIBS) \
+    $(SHMDATA_LIBS) \
 	$(top_srcdir)/src/libsplash.la
 
 check_PROGRAMS = \
@@ -27,6 +30,5 @@ check_scene_SOURCES = check_scene.cpp
 check_object_SOURCES = check_object.cpp
 
 check_world_SOURCES = check_world.cpp
-check_world_CXXFLAGS = $(JSONCPP_CFLAGS)
 
 TESTS = $(check_PROGRAMS)

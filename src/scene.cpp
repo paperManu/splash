@@ -70,7 +70,7 @@ BaseObjectPtr Scene::add(string type, string name)
             _meshes[name] = mesh;
         return dynamic_pointer_cast<BaseObject>(mesh);
     }
-    else if (type == string("image"))
+    else if (type == string("image") || type == string("image_shmdata"))
     {
         ImagePtr image(new Image());
         image->setId(getId());
@@ -146,69 +146,69 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
     glfwMakeContextCurrent(_mainWindow->get());
 
-    if (first->getType() == string("texture"))
+    if (dynamic_pointer_cast<Texture>(first).get() != nullptr)
     {
-        if (second->getType() == string("object"))
+        if (dynamic_pointer_cast<Object>(second).get() != nullptr)
         {
-            TexturePtr tex = static_pointer_cast<Texture>(first);
-            ObjectPtr obj = static_pointer_cast<Object>(second);
+            TexturePtr tex = dynamic_pointer_cast<Texture>(first);
+            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
             obj->addTexture(tex);
             return true;
         }
-        else if (second->getType() == string("window"))
+        else if (dynamic_pointer_cast<Window>(second).get() != nullptr)
         {
-            TexturePtr tex = static_pointer_cast<Texture>(first);
-            WindowPtr win = static_pointer_cast<Window>(second);
+            TexturePtr tex = dynamic_pointer_cast<Texture>(first);
+            WindowPtr win = dynamic_pointer_cast<Window>(second);
             win->setTexture(tex);
             return true;
         }
     }
-    else if (first->getType() == string("image"))
+    else if (dynamic_pointer_cast<Image>(first).get() != nullptr)
     {
-        if (second->getType() == string("texture"))
+        if (dynamic_pointer_cast<Texture>(second).get() != nullptr)
         {
-            ImagePtr img = static_pointer_cast<Image>(first);
-            TexturePtr tex = static_pointer_cast<Texture>(second);
+            ImagePtr img = dynamic_pointer_cast<Image>(first);
+            TexturePtr tex = dynamic_pointer_cast<Texture>(second);
             *tex = img;
             return true;
         }
     }
-    else if (first->getType() == string("object"))
+    else if (dynamic_pointer_cast<Object>(first).get() != nullptr)
     {
-        if (second->getType() == string("camera"))
+        if (dynamic_pointer_cast<Camera>(second).get() != nullptr)
         {
-            ObjectPtr obj = static_pointer_cast<Object>(first);
-            CameraPtr cam = static_pointer_cast<Camera>(second);
+            ObjectPtr obj = dynamic_pointer_cast<Object>(first);
+            CameraPtr cam = dynamic_pointer_cast<Camera>(second);
             cam->addObject(obj);
             return true;
         }
     }
-    else if (first->getType() == string("mesh"))
+    else if (dynamic_pointer_cast<Mesh>(first).get() != nullptr)
     {
-        if (second->getType() == string("geometry"))
+        if (dynamic_pointer_cast<Geometry>(second).get() != nullptr)
         {
-            MeshPtr mesh = static_pointer_cast<Mesh>(first);
-            GeometryPtr geom = static_pointer_cast<Geometry>(second);
+            MeshPtr mesh = dynamic_pointer_cast<Mesh>(first);
+            GeometryPtr geom = dynamic_pointer_cast<Geometry>(second);
             geom->setMesh(mesh);
             return true;
         }
     }
-    else if (first->getType() == string("geometry"))
+    else if (dynamic_pointer_cast<Geometry>(first).get() != nullptr)
     {
-        if (second->getType() == string("object"))
+        if (dynamic_pointer_cast<Object>(second).get() != nullptr)
         {
-            GeometryPtr geom = static_pointer_cast<Geometry>(first);
-            ObjectPtr obj = static_pointer_cast<Object>(second);
+            GeometryPtr geom = dynamic_pointer_cast<Geometry>(first);
+            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
             obj->addGeometry(geom);
             return true;
         }
     }
-    else if (first->getType() == string("camera"))
+    else if (dynamic_pointer_cast<Camera>(first).get() != nullptr)
     {
-        if (second->getType() == string("window"))
+        if (dynamic_pointer_cast<Window>(second).get() != nullptr)
         {
-            CameraPtr cam = static_pointer_cast<Camera>(first);
-            WindowPtr win = static_pointer_cast<Window>(second);
+            CameraPtr cam = dynamic_pointer_cast<Camera>(first);
+            WindowPtr win = dynamic_pointer_cast<Window>(second);
             for (auto tex : cam->getTextures())
                 win->setTexture(tex);
             return true;
@@ -225,8 +225,10 @@ bool Scene::render()
 {
     bool isError {false};
     // Update the textures
+    glfwMakeContextCurrent(_mainWindow->get());
     for (auto& texture : _textures)
         texture.second->update();
+    glfwMakeContextCurrent(0);
 
     // Update the cameras
     for (auto& camera : _cameras)
