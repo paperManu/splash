@@ -25,10 +25,71 @@ void World::run()
     while (true)
     {
         bool run {true};
+
+        // Update the local objects
+        for (auto& o : _objects)
+            o.second->update();
+        // Send them the their destinations
+        for (auto& o : _objects)
+        {
+            SerializedObject obj;
+            if (dynamic_pointer_cast<Image>(o.second).get() != nullptr)
+                obj = dynamic_pointer_cast<Image>(o.second)->serialize();
+            else if (dynamic_pointer_cast<Mesh>(o.second).get() != nullptr)
+                obj = dynamic_pointer_cast<Mesh>(o.second)->serialize();
+
+            for (auto& dest : _objectDest[o.first])
+                if (_scenes.find(dest) != _scenes.end())
+                    _scenes[dest]->setFromSerializedObject(o.first, obj);
+        }
+
+        // Then render the scenes
         for (auto& s : _scenes)
             run &= !s.second->render();
         if (!run)
             break;
+    }
+}
+
+/*************/
+void World::addLocally(string type, string name, string destination)
+{
+    // Only Images and Meshes have a counterpart on this side
+    if (type != "image" && type != "mesh")
+        return;
+
+    BaseObjectPtr object;
+    if (_objects.find(name) == _objects.end())
+    {
+        if (type == string("image"))
+        {
+            ImagePtr image(new Image());
+            image->setId(getId());
+            object = dynamic_pointer_cast<BaseObject>(image);
+            _objects[name] = image;
+        }
+        else if (type == string("mesh"))
+        {
+            MeshPtr mesh(new Mesh());
+            mesh->setId(getId());
+            object = dynamic_pointer_cast<BaseObject>(mesh);
+            _objects[name] = mesh;
+        }
+    }
+
+    if (_objectDest.find(name) == _objectDest.end())
+    {
+        _objectDest[name] = vector<string>();
+        _objectDest[name].emplace_back(destination);
+    }
+    else
+    {
+        bool isPresent = false;
+        for (auto d : _objectDest[name])
+            if (d == destination)
+                isPresent = true;
+        if (!isPresent)
+            _objectDest[name].push_back(destination);
     }
 }
 
@@ -80,6 +141,9 @@ void World::applyConfig()
             string type = obj["type"].asString();
             s.second->add(type, name);
 
+            // Some objects are also created on this side, and linked with the distant one
+            addLocally(type, name, s.first);
+
             // Set their attributes
             auto objMembers = obj.getMemberNames();
             int idxAttr {0};
@@ -110,6 +174,9 @@ void World::applyConfig()
                     values.emplace_back(attr.asString());
 
                 s.second->setAttribute(name, objMembers[idxAttr], values);
+                // We also set the attribute locally, if the object exists
+                setAttribute(name, objMembers[idxAttr], values);
+
                 idxAttr++;
             }
             idx++;
@@ -183,6 +250,13 @@ void World::parseArguments(int argc, char** argv)
             idx += 2;
         }
     }
+}
+
+/*************/
+void World::setAttribute(string name, string attrib, std::vector<Value> args)
+{
+    if (_objects.find(name) != _objects.end())
+        _objects[name]->setAttribute(attrib, args);
 }
 
 }

@@ -25,13 +25,16 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <map>
 #include <string>
 #include <vector>
 #include <json/reader.h>
 
 #include "config.h"
 #include "coretypes.h"
+#include "image.h"
 #include "log.h"
+#include "mesh.h"
 #include "scene.h"
 
 namespace Splash {
@@ -62,12 +65,26 @@ class World {
         bool _status {true};
         std::map<std::string, ScenePtr> _scenes;
 
+        unsigned long _nextId {0};
+        std::map<std::string, BaseObjectPtr> _objects;
+        std::map<std::string, std::vector<std::string>> _objectDest;
+
         Json::Value _config;
+
+        /**
+         * Add an object to the world (used for Images and Meshes currently)
+         */
+        void addLocally(std::string type, std::string name, std::string destination);
 
         /**
          * Apply the configuration
          */
         void applyConfig();
+
+        /**
+         * Get the next available id
+         */
+        unsigned long getId() {return ++_nextId;}
 
         /**
          * Load the specified configuration file
@@ -78,6 +95,11 @@ class World {
          * Parse the given arguments
          */
         void parseArguments(int argc, char** argv);
+
+        /**
+         * Set a parameter for an object, given its id
+         */
+        void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
 };
 
 } // end of namespace

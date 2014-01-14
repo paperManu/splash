@@ -117,7 +117,7 @@ bool Mesh::read(const string& filename)
 }
 
 /*************/
-Mesh::SerializedObject Mesh::serialize() const
+SerializedObject Mesh::serialize() const
 {
     SerializedObject obj;
 
@@ -276,6 +276,11 @@ void Mesh::updateTimestamp()
 /*************/
 void Mesh::registerAttributes()
 {
+    _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        return read(args[0].asString());
+    });
 }
 
 } // end of namespace

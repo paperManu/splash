@@ -16,7 +16,7 @@ go_bandit([]() {
 
         it("should get the same vertex coordinates", [&]() {
             vector<float> srcVertices = mesh.getVertCoords();
-            Mesh::SerializedObject obj = mesh.serialize();
+            SerializedObject obj = mesh.serialize();
             mesh.deserialize(obj);
             vector<float> dstVertices = mesh.getVertCoords();
 
@@ -32,7 +32,7 @@ go_bandit([]() {
 
         it("should get the same texture coordinates", [&]() {
             vector<float> srcTexcoords = mesh.getUVCoords();
-            Mesh::SerializedObject obj = mesh.serialize();
+            SerializedObject obj = mesh.serialize();
             mesh.deserialize(obj);
             vector<float> dstTexcoords = mesh.getUVCoords();
 
@@ -48,7 +48,7 @@ go_bandit([]() {
 
         it("should get the same normal coordinates", [&]() {
             vector<float> src = mesh.getNormals();
-            Mesh::SerializedObject obj = mesh.serialize();
+            SerializedObject obj = mesh.serialize();
             mesh.deserialize(obj);
             vector<float> dst = mesh.getNormals();
 

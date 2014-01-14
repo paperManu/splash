@@ -263,6 +263,15 @@ void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
 }
 
 /*************/
+void Scene::setFromSerializedObject(const std::string name, const SerializedObject& obj)
+{
+    if (_images.find(name) != _images.end())
+        _images[name]->deserialize(obj);
+    else if (_meshes.find(name) != _meshes.end())
+        _meshes[name]->deserialize(obj);
+}
+
+/*************/
 GlWindowPtr Scene::getNewSharedWindow()
 {
     if (!_mainWindow)

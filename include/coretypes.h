@@ -46,6 +46,9 @@ namespace Splash
 {
 
 /*************/
+typedef std::vector<unsigned char> SerializedObject;
+
+/*************/
 class GlWindow
 {
     public:
@@ -181,6 +184,11 @@ class BaseObject
                 return false;
             return _attribFunctions[attrib](args);
         }
+        
+        /**
+         * Update the content of the object
+         */
+        virtual void update() {}
 
     protected:
         unsigned long _id;

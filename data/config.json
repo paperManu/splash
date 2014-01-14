@@ -30,7 +30,7 @@
         "win1" : {"type" : "window", "fullscreen" : 0},
         "win2" : {"type" : "window", "fullscreen" : 1},
 
-        "mesh" : {"type" : "mesh"},
+        "mesh" : {"type" : "mesh", "file" : "../data/sphere.obj"},
         "geometry" : {"type" : "geometry"},
         "object" : {"type" : "object"},
         "image" : {"type" : "image"},

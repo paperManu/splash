@@ -25,9 +25,10 @@
 #ifndef IMAGE_H
 #define IMAGE_H
 
-#include <config.h>
+#include <chrono>
 #include <OpenImageIO/imagebuf.h>
 
+#include "config.h"
 #include "coretypes.h"
 #include "log.h"
 
@@ -38,8 +39,6 @@ namespace Splash {
 class Image : public BaseObject
 {
     public:
-        typedef std::vector<unsigned char> SerializedObject;
-
         /**
          * Constructor
          */
@@ -78,6 +77,11 @@ class Image : public BaseObject
         ImageBuf get() const;
 
         /**
+         * Get the timestamp for the current mesh
+         */
+        std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
+
+        /**
          * Set the image from an ImageBuf
          */
         void set(const ImageBuf& img);
@@ -99,12 +103,15 @@ class Image : public BaseObject
 
     protected:
         ImageBuf _image;
+        std::chrono::high_resolution_clock::time_point _timestamp;
 
     private:
         /**
          * Create a default pattern
          */
         void createDefaultImage();
+
+        void updateTimestamp();
 };
 
 typedef std::shared_ptr<Image> ImagePtr;

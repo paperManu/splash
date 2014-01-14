@@ -41,7 +41,6 @@ namespace Splash {
 class Mesh : public BaseObject
 {
     public:
-        typedef std::vector<unsigned char> SerializedObject;
         typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
 
         /**
@@ -93,6 +92,11 @@ class Mesh : public BaseObject
          * Set the mesh from a serialized representation
          */
         bool deserialize(const SerializedObject& obj);
+
+        /**
+         * Update the content of the mesh
+         */
+        virtual void update() {}
 
     protected:
         MeshContainer _mesh;

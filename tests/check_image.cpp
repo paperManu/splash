@@ -16,7 +16,7 @@ go_bandit([]() {
 
         it("should get the same image specs", [&]() {
             ImageBuf srcImg = image.get();
-            Image::SerializedObject obj = image.serialize();
+            SerializedObject obj = image.serialize();
             image.deserialize(obj);
             ImageBuf dstImg = image.get();
 
@@ -37,7 +37,7 @@ go_bandit([]() {
 
         it("should get the same image content", [&]() {
             ImageBuf srcImg = image.get();
-            Image::SerializedObject obj = image.serialize();
+            SerializedObject obj = image.serialize();
 
             Image newImage;
             newImage.deserialize(obj);

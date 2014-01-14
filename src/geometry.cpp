@@ -42,6 +42,7 @@ void Geometry::update()
     {
         glDeleteBuffers(1, &_vertexCoords);
         glDeleteBuffers(1, &_texCoords);
+        glDeleteBuffers(1, &_normals);
 
         glGenBuffers(1, &_vertexCoords);
         glBindBuffer(GL_ARRAY_BUFFER, _vertexCoords);
@@ -92,7 +93,6 @@ void Geometry::update()
         glBindVertexArray(0);
     }
 }
-
 
 /*************/
 void Geometry::registerAttributes()

@@ -31,7 +31,7 @@ void Image::set(const ImageBuf& img)
 }
 
 /*************/
-Image::SerializedObject Image::serialize() const
+SerializedObject Image::serialize() const
 {
     SerializedObject obj;
 
@@ -60,7 +60,7 @@ Image::SerializedObject Image::serialize() const
 }
 
 /*************/
-bool Image::deserialize(const Image::SerializedObject& obj)
+bool Image::deserialize(const SerializedObject& obj)
 {
     if (obj.size() == 0)
         return false;
@@ -90,6 +90,8 @@ bool Image::deserialize(const Image::SerializedObject& obj)
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         _image.swap(image);
+
+        updateTimestamp();
     }
     catch (...)
     {
@@ -120,6 +122,13 @@ void Image::createDefaultImage()
     }
 
     _image.swap(img);
+    updateTimestamp();
+}
+
+/*************/
+void Image::updateTimestamp()
+{
+    _timestamp = chrono::high_resolution_clock::now();
 }
 
 } // end of namespace

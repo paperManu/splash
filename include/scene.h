@@ -88,6 +88,11 @@ class Scene
          */
         void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
 
+        /**
+         * Set an object from its serialized form
+         */
+        void setFromSerializedObject(const std::string name, const SerializedObject& obj);
+
     private:
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
