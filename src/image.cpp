@@ -1,5 +1,7 @@
 #include "image.h"
 
+#include <OpenImageIO/imageio.h>
+
 using namespace std;
 
 namespace Splash {
@@ -10,6 +12,8 @@ Image::Image()
     _type = "image";
 
     createDefaultImage();
+
+    registerAttributes();
 }
 
 /*************/
@@ -20,7 +24,8 @@ Image::~Image()
 /*************/
 ImageBuf Image::get() const
 {
-    ImageBuf img(_image);
+    ImageBuf img;
+    img.copy(_image);
     return img;
 }
 
@@ -103,6 +108,38 @@ bool Image::deserialize(const SerializedObject& obj)
 }
 
 /*************/
+bool Image::read(const string& filename)
+{
+    ImageInput* in = ImageInput::open(filename);
+    if (!in)
+    {
+        SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        return false;
+    }
+
+    const ImageSpec& spec = in->spec();
+    if (spec.format != TypeDesc::UINT8)
+    {
+        SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
+        return false;
+    }
+
+    int xres = spec.width;
+    int yres = spec.height;
+    int channels = spec.nchannels;
+    ImageBuf img(spec); 
+    in->read_image(TypeDesc::UINT8, img.localpixels());
+
+    in->close();
+    delete in;
+
+    _image.swap(img);
+    updateTimestamp();
+
+    return true;
+}
+
+/*************/
 void Image::createDefaultImage()
 {
     ImageSpec spec(512, 512, 3, TypeDesc::UINT8);
@@ -129,6 +166,16 @@ void Image::createDefaultImage()
 void Image::updateTimestamp()
 {
     _timestamp = chrono::high_resolution_clock::now();
+}
+
+/*************/
+void Image::registerAttributes()
+{
+    _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        return read(args[0].asString());
+    });
 }
 
 } // end of namespace

@@ -33,7 +33,7 @@
         "mesh" : {"type" : "mesh", "file" : "../data/sphere.obj"},
         "geometry" : {"type" : "geometry"},
         "object" : {"type" : "object"},
-        "image" : {"type" : "image"},
+        "image" : {"type" : "image", "file" : "../data/lightprobe.jpg"},
         "texture" : {"type" : "texture"},
 
         "links" : [

@@ -13,7 +13,6 @@ Object::Object()
     _type = "object";
 
     _shader.reset(new Shader());
-
     _position = vec3(0.f, 0.f, 0.f);
 
     registerAttributes();
@@ -37,6 +36,7 @@ void Object::activate()
     GLuint texUnit = 0;
     for (auto t : _textures)
     {
+        t->update();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
         texUnit++;
     }

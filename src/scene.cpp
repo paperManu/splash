@@ -169,7 +169,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
         {
             ImagePtr img = static_pointer_cast<Image>(first);
             TexturePtr tex = static_pointer_cast<Texture>(second);
-            *tex = img->get();
+            *tex = img;
             return true;
         }
     }

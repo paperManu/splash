@@ -37,6 +37,7 @@
 #include <OpenImageIO/imagebuf.h>
 
 #include "coretypes.h"
+#include "image.h"
 #include "log.h"
 
 using namespace OIIO_NAMESPACE;
@@ -69,7 +70,7 @@ class Texture : public BaseObject
         /**
          * Sets the specified buffer as the texture on the device
          */
-        Texture& operator=(const ImageBuf& img);
+        Texture& operator=(ImagePtr& img);
 
         /**
          * Generate the mipmaps for the texture
@@ -92,6 +93,11 @@ class Texture : public BaseObject
         ImageSpec getSpec() const {return _spec;}
 
         /**
+         * Update the texture according to the owned Image
+         */
+        void update();
+
+        /**
          * Set the buffer size / type / internal format
          * See glTexImage2D for information about parameters
          */
@@ -100,6 +106,7 @@ class Texture : public BaseObject
 
     private:
         GLuint _glTex = {0};
+        ImagePtr _img;
         ImageSpec _spec;
 };
 

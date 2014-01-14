@@ -18,54 +18,10 @@ Texture::~Texture()
 }
 
 /*************/
-Texture& Texture::operator=(const ImageBuf& pImg)
+Texture& Texture::operator=(ImagePtr& img)
 {
-    if (!pImg.initialized())
-        return *this;
-    if (pImg.localpixels() == NULL)
-        return *this; // Pixels are not loaded in RAM, not yet supported
-
-    ImageSpec spec = pImg.spec();
-
-    if (spec.width != _spec.width || spec.height != _spec.width
-        || spec.nchannels != _spec.nchannels || spec.format != _spec.format
-        || !glIsTexture(_glTex))
-    {
-        glDeleteTextures(1, &_glTex);
-        glGenTextures(1, &_glTex);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
-        if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
-        {
-            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR" << Log::endl;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, pImg.localpixels());
-        }
-
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        _spec = spec;
-    }
-    else
-    {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-        if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
-        {
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, pImg.localpixels());
-        }
-
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
+    _img = img;
+    update();
     return *this;
 }
 
@@ -139,6 +95,61 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
         _spec.nchannels = 4;
         _spec.format == TypeDesc::UINT8;
         _spec.channelnames = {"R", "G", "B", "A"};
+    }
+}
+
+/*************/
+void Texture::update()
+{
+    // If _img is nullptr, this texture is not set from an Image
+    if (_img.get() == nullptr)
+        return;
+
+    ImageBuf img = _img->get();
+    if (!img.initialized())
+        return;
+    if (img.localpixels() == NULL)
+        return; // Pixels are not loaded in RAM, not yet supported
+
+    ImageSpec spec = img.spec();
+
+    if (spec.width != _spec.width || spec.height != _spec.width
+        || spec.nchannels != _spec.nchannels || spec.format != _spec.format
+        || !glIsTexture(_glTex))
+    {
+        glDeleteTextures(1, &_glTex);
+        glGenTextures(1, &_glTex);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+        if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
+        {
+            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_BGR" << Log::endl;
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
+        }
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        _spec = spec;
+    }
+    else
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
+        if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
+        {
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
+        }
+
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
 
