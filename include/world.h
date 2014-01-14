@@ -33,6 +33,7 @@
 #include "config.h"
 #include "coretypes.h"
 #include "image.h"
+#include "image_shmdata.h"
 #include "log.h"
 #include "mesh.h"
 #include "scene.h"

@@ -24,8 +24,12 @@
 
 #include "splash.h"
 
+using namespace Splash;
+
 /*************/
 int main(int argc, char** argv)
 {
-    return 0;
+    World world(argc, argv);
+    world.run();
+    return world.getStatus();
 }

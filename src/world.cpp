@@ -256,6 +256,13 @@ void World::parseArguments(int argc, char** argv)
             _status &= loadConfig(filename);
             idx += 2;
         }
+        else if (string(argv[idx]) == "-d")
+        {
+            SLog::log.setVerbosity(Log::DEBUG);
+            idx++;
+        }
+        else
+            idx++;
     }
 }
 

@@ -117,9 +117,9 @@ void Texture::update()
 
     ImageSpec spec = img.spec();
 
-    if (spec.width != _spec.width || spec.height != _spec.width
+    if (spec.width != _spec.width || spec.height != _spec.height
         || spec.nchannels != _spec.nchannels || spec.format != _spec.format
-        || !glIsTexture(_glTex))
+        || !(bool)glIsTexture(_glTex))
     {
         glDeleteTextures(1, &_glTex);
         glGenTextures(1, &_glTex);

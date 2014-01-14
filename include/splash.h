@@ -26,9 +26,6 @@
 #define SPLASH_H
 
 #include "config.h"
-
 #include "world.h"
-
-using namespace Splash;
 
 #endif // SPLASH_H
