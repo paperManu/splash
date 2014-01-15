@@ -1,4 +1,5 @@
 #include "image_shmdata.h"
+#include "timer.h"
 
 #include <regex>
 
@@ -13,6 +14,7 @@ Image_Shmdata::Image_Shmdata()
     _type = "image_shmdata";
 
     registerAttributes();
+    computeLUT();
 }
 
 /*************/
@@ -44,6 +46,35 @@ void Image_Shmdata::update()
     {
         _image.swap(_bufferImage);
         _imageUpdated = false;
+    }
+}
+
+/*************/
+void Image_Shmdata::computeLUT()
+{
+    // Compute YCbCr to RGB lookup table
+    for (int y = 0; y < 256; ++y)
+    {
+        vector<vector<vector<float>>> values_1(256);
+        for (int u = 0; u < 256; ++u)
+        {
+            vector<vector<float>> values_2(256);
+            for (int v = 0; v < 256; ++v)
+            {
+                float yValue = (float)y;
+                float uValue = (float)u - 128.f;
+                float vValue = (float)v - 128.f;
+
+                vector<float> pixel(3);
+                pixel[0] = (yValue + 1.4f * vValue) / 255.f;
+                pixel[1] = (yValue - 0.343f * uValue - 0.711f * vValue) / 255.f;
+                pixel[2] = (yValue + 1.765f * uValue) / 255.f;
+
+                values_2[v] = pixel;
+            }
+            values_1[u] = values_2;
+        }
+        _yCbCrLUT.push_back(values_1);
     }
 }
 
@@ -151,34 +182,29 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         }
         else if (is420)
         {
-            vector<unsigned char> Y(width * height);
-            vector<unsigned char> U(width * height / 4);
-            vector<unsigned char> V(width * height / 4);
-
-            memcpy((unsigned char*)Y.data(), (const unsigned char*)data, width * height);
-            memcpy((unsigned char*)U.data(), (const unsigned char*)data + width * height, width * height / 4);
-            memcpy((unsigned char*)V.data(), (const unsigned char*)data + width * height * 5 / 4, width * height / 4);
-
-            for (int x = 0; x < width; ++x)
+            STimer::timer << "conversion";
+            for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
             {
-                for (int y = 0; y < height; ++y)
-                {
-                    float yValue = (float)(Y[y * width + x]);
-                    float uValue = (float)(U[y * width / 4 + x / 2]) - 128.f;
-                    float vValue = (float)(V[y * width / 4 + x / 2]) - 128.f;
+                if (!p.exists())
+                    continue;
 
-                    float pixel[3];
-                    pixel[0] = (yValue + 1.4f * vValue) / 255.f;
-                    pixel[1] = (yValue - 0.343f * uValue - 0.711f * vValue) / 255.f;
-                    pixel[2] = (yValue + 1.765f * uValue) / 255.f;
+                int x = p.x();
+                int y = p.y();
 
+                int yValue = (int)((unsigned char*)data)[y * width + x];
+                int uValue = (int)((unsigned char*)data + width * height)[y * width / 4 + x / 2];
+                int vValue = (int)((unsigned char*)data + width * height * 5 / 4)[y * width / 4 + x / 2];
 
-                    img.setpixel(x, y, 0, pixel);
-                }
+                p[0] = context->_yCbCrLUT[yValue][uValue][vValue][0];
+                p[1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
+                p[2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
             }
+            STimer::timer >> "conversion";
         }
         else
             return;
+
+        cout << "Conversion: " << STimer::timer["conversion"] << endl;
 
         lock_guard<mutex> lock(context->_mutex);
         context->_bufferImage.swap(img);
