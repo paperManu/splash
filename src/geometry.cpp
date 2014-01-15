@@ -17,6 +17,11 @@ Geometry::Geometry()
 /*************/
 Geometry::~Geometry()
 {
+    glDeleteBuffers(1, &_vertexCoords);
+    glDeleteBuffers(1, &_texCoords);
+    glDeleteBuffers(1, &_normals);
+    for (auto v : _vertexArray)
+        glDeleteVertexArrays(1, &(v.second));
 }
 
 /*************/

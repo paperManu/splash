@@ -116,6 +116,10 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
+    // We first destroy all scenes
+    if (_scenes.size() > 0)
+        _scenes.clear();
+
     vector<string> scenes;
 
     // Get the list of all scenes, and create them

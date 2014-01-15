@@ -36,6 +36,7 @@ void Texture::generateMipmap() const
 /*************/
 ImageBuf Texture::getBuffer() const
 {
+    glDeleteTextures(1, &_glTex);
 }
 
 /*************/

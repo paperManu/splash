@@ -14,6 +14,8 @@ Scene::Scene()
 /*************/
 Scene::~Scene()
 {
+    if (_mainWindow.get() != nullptr)
+        glfwDestroyWindow(_mainWindow->get());
 }
 
 /*************/
