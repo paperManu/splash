@@ -11,6 +11,7 @@ Image::Image()
 {
     _type = "image";
 
+    attribute("threads", 0); // Disable the thread limitation for OIIO
     createDefaultImage();
 
     registerAttributes();

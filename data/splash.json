@@ -41,10 +41,10 @@
             "eye" : [2.0, 2.0, 1.0],
             "target" : [0.0, 0.0, 0.3]
         },
-        "win1" : {"type" : "window"},
-        "win2" : {"type" : "window"},
-        "win3" : {"type" : "window"},
-        "win4" : {"type" : "window"},
+        "win1" : {"type" : "window", "fullscreen" : 0},
+        "win2" : {"type" : "window", "fullscreen" : 1},
+        "win3" : {"type" : "window", "fullscreen" : 2},
+        "win4" : {"type" : "window", "fullscreen" : 3},
         "win5" : {"type" : "window"},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},

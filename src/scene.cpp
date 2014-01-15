@@ -271,7 +271,6 @@ bool Scene::render()
     STimer::timer >> "events";
 
     STimer::timer >> "sceneTimer";
-    cout << STimer::timer["sceneTimer"] << endl;
 
     return quit;
 }
