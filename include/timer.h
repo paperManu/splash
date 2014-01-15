@@ -46,15 +46,17 @@ class Timer
         /**
          * Start / end a timer
          */
-        void switchTimer(std::string name)
+        void start(std::string name)
         {
-            auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-            if (_timeMap.find(name) == _timeMap.end())
-                _timeMap[name] = now;
-            else
+            _timeMap[name] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        }
+
+        void stop(std::string name)
+        {
+            if (_timeMap.find(name) != _timeMap.end())
             {
+                auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
                 _durationMap[name] = now - _timeMap[name];
-                _timeMap.erase(name);
             }
         }
 
@@ -98,7 +100,8 @@ class Timer
           */
          Timer& operator<<(std::string name)
          {
-            switchTimer(name);
+            start(name);
+            _currentDuration = 0;
             return *this;
          }
 
@@ -110,7 +113,10 @@ class Timer
 
          Timer& operator>>(std::string name)
          {
-            waitUntilDuration(name, _currentDuration);
+            if (_currentDuration > 0)
+                waitUntilDuration(name, _currentDuration);
+            else
+                stop(name);
             return *this;
          }
 

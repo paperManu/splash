@@ -22,11 +22,23 @@ Image::~Image()
 }
 
 /*************/
+const void* Image::data() const
+{
+    return _image.localpixels();
+}
+
+/*************/
 ImageBuf Image::get() const
 {
     ImageBuf img;
     img.copy(_image);
     return img;
+}
+
+/*************/
+ImageSpec Image::getSpec() const
+{
+    return _image.spec();
 }
 
 /*************/

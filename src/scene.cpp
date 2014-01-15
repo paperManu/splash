@@ -9,6 +9,8 @@ namespace Splash {
 Scene::Scene()
 {
     init();
+
+    _threadPool.reset(new ThreadPool(4));
 }
 
 /*************/
@@ -226,23 +228,34 @@ bool Scene::render()
 {
     STimer::timer << "sceneTimer";
     bool isError {false};
+
     // Update the textures
+    STimer::timer << "textures";
     glfwMakeContextCurrent(_mainWindow->get());
     for (auto& texture : _textures)
         texture.second->update();
     glfwMakeContextCurrent(0);
+    STimer::timer >> "textures";
 
     // Update the cameras
+    STimer::timer << "cameras";
     for (auto& camera : _cameras)
         isError |= camera.second->render();
+    STimer::timer >> "cameras";
 
     // Update the windows
+    STimer::timer << "windows";
     for (auto& window : _windows)
-        isError |= window.second->render();
+        _threadPool->enqueue([&]() {
+            isError |= window.second->render();
+        });
+    _threadPool->waitAllThreads();
+    STimer::timer >> "windows";
 
     _status = !isError;
 
     // Update the user events
+    STimer::timer << "events";
     bool quit = false;
     glfwPollEvents();
     while (true)
@@ -255,7 +268,10 @@ bool Scene::render()
         if (key == GLFW_KEY_ESCAPE)
             quit = true;
     }
-    STimer::timer << "sceneTimer";
+    STimer::timer >> "events";
+
+    STimer::timer >> "sceneTimer";
+    cout << STimer::timer["sceneTimer"] << endl;
 
     return quit;
 }
@@ -347,7 +363,7 @@ void Scene::init()
 /*************/
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
-    SLog::log << Log::WARNING << "Scene - " << msg << Log::endl;
+    SLog::log << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
 }
 
 } // end of namespace

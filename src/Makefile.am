@@ -18,6 +18,7 @@ libsplash_la_SOURCES = \
     scene.cpp \
     shader.cpp \
     texture.cpp \
+    threadpool.cpp \
     timer.cpp \
     window.cpp \
     world.cpp
@@ -58,6 +59,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/scene.h \
     $(top_srcdir)/include/shader.h \
     $(top_srcdir)/include/texture.h \
+    $(top_srcdir)/include/threadpool.h \
     $(top_srcdir)/include/timer.h \
     $(top_srcdir)/include/window.h \
     $(top_srcdir)/include/world.h

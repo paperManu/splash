@@ -1,4 +1,5 @@
 #include "texture.h"
+#include "timer.h"
 
 #include <string>
 
@@ -110,13 +111,7 @@ void Texture::update()
         return;
     _timestamp = _img->getTimestamp();
 
-    ImageBuf img = _img->get();
-    if (!img.initialized())
-        return;
-    if (img.localpixels() == NULL)
-        return; // Pixels are not loaded in RAM, not yet supported
-
-    ImageSpec spec = img.spec();
+    ImageSpec spec = _img->getSpec();
 
     if (spec.width != _spec.width || spec.height != _spec.height
         || spec.nchannels != _spec.nchannels || spec.format != _spec.format
@@ -136,7 +131,7 @@ void Texture::update()
         if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
         {
             SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGB" << Log::endl;
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, _img->data());
         }
 
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -149,9 +144,7 @@ void Texture::update()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _glTex);
         if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
-        {
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, img.localpixels());
-        }
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, _img->data());
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);

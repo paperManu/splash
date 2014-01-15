@@ -8,9 +8,17 @@ using namespace std;
 namespace Splash {
 
 /*************/
+mutex World::_callbackMutex;
+deque<vector<int>> World::_keys;
+deque<vector<int>> World::_mouseBtn;
+vector<double> World::_mousePos;
+
+/*************/
 World::World(int argc, char** argv)
 {
     parseArguments(argc, argv);
+
+    init();
 }
 
 /*************/
@@ -228,6 +236,74 @@ void World::applyConfig()
 }
 
 /*************/
+void World::init()
+{
+    glfwSetErrorCallback(World::glfwErrorCallback);
+
+    // GLFW stuff
+    if (!glfwInit())
+    {
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        //_isInitialized = false;
+        return;
+    }
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    glfwWindowHint(GLFW_DEPTH_BITS, 24);
+    glfwWindowHint(GLFW_VISIBLE, true);
+
+    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::World", NULL, NULL);
+
+    if (!window)
+    {
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
+        //_isInitialized = false;
+        return;
+    }
+
+    _window.reset(new GlWindow(window, window));
+    glfwMakeContextCurrent(_window->get());
+    //_isInitialized = true;
+    glfwMakeContextCurrent(NULL);
+
+    // Initialize the callbacks
+    if (!glfwSetKeyCallback(_window->get(), World::keyCallback))
+        SLog::log << Log::DEBUG << "World::" << __FUNCTION__ << " - Error while setting up key callback" << Log::endl;
+    if (!glfwSetMouseButtonCallback(_window->get(), World::mouseBtnCallback))
+        SLog::log << Log::DEBUG << "World::" << __FUNCTION__ << " - Error while setting up mouse button callback" << Log::endl;
+    if (!glfwSetCursorPosCallback(_window->get(), World::mousePosCallback))
+        SLog::log << Log::DEBUG << "World::" << __FUNCTION__ << " - Error while setting up mouse position callback" << Log::endl;
+}
+
+/*************/
+void World::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    std::vector<int> keys {key, scancode, action, mods};
+    _keys.push_back(keys);
+}
+
+/*************/
+void World::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    std::vector<int> btn {button, action, mods};
+    _mouseBtn.push_back(btn);
+}
+
+/*************/
+void World::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    std::vector<double> pos {xpos, ypos};
+    _mousePos = move(pos);
+}
+
+/*************/
 bool World::loadConfig(string filename)
 {
     ifstream in(filename, ios::in | ios::binary);
@@ -293,6 +369,12 @@ void World::setAttribute(string name, string attrib, std::vector<Value> args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
+}
+
+/*************/
+void World::glfwErrorCallback(int code, const char* msg)
+{
+    SLog::log << Log::WARNING << "World::glfwErrorCallback - " << msg << Log::endl;
 }
 
 }

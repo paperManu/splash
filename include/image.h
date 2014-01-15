@@ -72,9 +72,19 @@ class Image : public BaseObject
         }
 
         /**
+         * Get a pointer to the data
+         */
+        const void* data() const;
+
+        /**
          * Get the image buffer
          */
         ImageBuf get() const;
+
+        /**
+         * Get the image buffer specs
+         */
+        ImageSpec getSpec() const;
 
         /**
          * Get the timestamp for the current mesh

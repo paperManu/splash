@@ -26,6 +26,7 @@
 #define WORLD_H
 
 #include <map>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <json/reader.h>
@@ -63,6 +64,13 @@ class World {
         void run();
 
     private:
+        GlWindowPtr _window;
+
+        static std::mutex _callbackMutex;
+        static std::deque<std::vector<int>> _keys;
+        static std::deque<std::vector<int>> _mouseBtn;
+        static std::vector<double> _mousePos;
+
         bool _status {true};
         std::map<std::string, ScenePtr> _scenes;
 
@@ -89,6 +97,18 @@ class World {
         unsigned long getId() {return ++_nextId;}
 
         /**
+         * Initialize the GLFW window
+         */
+        void init();
+
+        /**
+         * Input callbacks
+         */
+        static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
+        static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
+        static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
+
+        /**
          * Load the specified configuration file
          */
         bool loadConfig(std::string filename);
@@ -102,6 +122,11 @@ class World {
          * Set a parameter for an object, given its id
          */
         void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
+
+        /**
+         * Callback for GLFW errors
+         */
+        static void glfwErrorCallback(int code, const char* msg);
 };
 
 } // end of namespace
