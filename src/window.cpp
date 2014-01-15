@@ -34,8 +34,6 @@ Window::Window(GlWindowPtr w)
 /*************/
 Window::~Window()
 {
-    if (_window.get() != nullptr)
-        glfwDestroyWindow(_window->get());
 }
 
 /*************/
