@@ -1,4 +1,5 @@
 #include "scene.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -223,6 +224,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 bool Scene::render()
 {
+    STimer::timer << "sceneTimer";
     bool isError {false};
     // Update the textures
     glfwMakeContextCurrent(_mainWindow->get());
@@ -253,6 +255,7 @@ bool Scene::render()
         if (key == GLFW_KEY_ESCAPE)
             quit = true;
     }
+    STimer::timer << "sceneTimer";
 
     return quit;
 }

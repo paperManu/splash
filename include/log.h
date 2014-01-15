@@ -36,9 +36,11 @@
 #include <tuple>
 #include <vector>
 
-namespace Splash {
+namespace Splash
+{
 
-class Log {
+class Log
+{
     public:
         enum Priority
         {

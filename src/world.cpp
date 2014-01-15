@@ -1,4 +1,5 @@
 #include "world.h"
+#include "timer.h"
 
 #include <fstream>
 
@@ -24,6 +25,15 @@ void World::run()
 
     while (true)
     {
+        STimer::timer << "worldLoop";
+        static float framerate = 0.f;
+        if (_showFramerate)
+        {
+            framerate *= 0.9f;
+            framerate += 0.1f * 1e6f / (float)max(STimer::timer["worldLoop"], 1ull);
+            SLog::log << Log::MESSAGE << "World::" << __FUNCTION__ << " - Framerate: " << framerate << Log::endl;
+        }
+
         bool run {true};
 
         // Update the local objects
@@ -48,6 +58,9 @@ void World::run()
             run &= !s.second->render();
         if (!run)
             break;
+
+        // Match the desired FPS
+        STimer::timer >> 1e6 / 60 >> "worldLoop";
     }
 }
 
@@ -250,7 +263,7 @@ void World::parseArguments(int argc, char** argv)
     int idx = 0;
     while (idx < argc)
     {
-        if (string(argv[idx]) == "-f" && idx + 1 < argc)
+        if ((string(argv[idx]) == "-o" || string(argv[idx]) == "--open") && idx + 1 < argc)
         {
             string filename = string(argv[idx + 1]);
             _status &= loadConfig(filename);
@@ -259,6 +272,11 @@ void World::parseArguments(int argc, char** argv)
         else if (string(argv[idx]) == "-d")
         {
             SLog::log.setVerbosity(Log::DEBUG);
+            idx++;
+        }
+        else if (string(argv[idx]) == "--fps")
+        {
+            _showFramerate = true;
             idx++;
         }
         else
