@@ -35,10 +35,17 @@
             "eye" : [2.0, 2.0, 0.0],
             "target" : [0.0, 0.0, 0.3]
         },
+        "cam5" : {
+            "type" : "camera",
+            "size" : [1920, 1200],
+            "eye" : [2.0, 2.0, 1.0],
+            "target" : [0.0, 0.0, 0.3]
+        },
         "win1" : {"type" : "window"},
         "win2" : {"type" : "window"},
         "win3" : {"type" : "window"},
         "win4" : {"type" : "window"},
+        "win5" : {"type" : "window"},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "geometry" : {"type" : "geometry"},
@@ -46,6 +53,7 @@
         "image" : {"type" : "image", "file" : "lightprobe.jpg"},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         "texture" : {"type" : "texture"},
+        "texture2" : {"type" : "texture"},
 
         "links" : [
             ["mesh", "geometry"],
@@ -54,12 +62,15 @@
             ["object", "cam2"],
             ["object", "cam3"],
             ["object", "cam4"],
+            ["object", "cam5"],
             ["shmimage", "texture"],
             ["texture", "object"],
+            ["image", "texture2"],
             ["cam1", "win1"],
             ["cam2", "win2"],
             ["cam3", "win3"],
-            ["cam4", "win4"]
+            ["cam4", "win4"],
+            ["cam5", "win5"]
         ]
     }
 }
