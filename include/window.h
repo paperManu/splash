@@ -104,7 +104,7 @@ class Window : public BaseObject
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window, _tmpWin;
+        GlWindowPtr _window;
 
         ObjectPtr _screen;
         std::vector<TexturePtr> _inTextures;

@@ -84,7 +84,7 @@ bool Camera::render()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    for (auto obj : _objects)
+    for (auto& obj : _objects)
     {
         obj->activate();
         obj->setViewProjectionMatrix(computeViewProjectionMatrix());

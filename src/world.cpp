@@ -2,7 +2,9 @@
 #include "timer.h"
 
 #include <fstream>
+#include <glm/gtc/matrix_transform.hpp>
 
+using namespace glm;
 using namespace std;
 
 namespace Splash {
@@ -19,6 +21,9 @@ World::World(int argc, char** argv)
     parseArguments(argc, argv);
 
     init();
+
+    _eye = vec3(2.0, 2.0, 1.0);
+    _target = vec3(0.0, 0.0, 0.3);
 }
 
 /*************/
@@ -38,7 +43,7 @@ void World::run()
         if (_showFramerate)
         {
             framerate *= 0.9f;
-            framerate += 0.1f * 1e6f / (float)max(STimer::timer["worldLoop"], 1ull);
+            framerate += 0.1f * 1e6f / (float)std::max(STimer::timer["worldLoop"], 1ull);
             SLog::log << Log::MESSAGE << "World::" << __FUNCTION__ << " - Framerate: " << framerate << Log::endl;
         }
 
@@ -61,9 +66,13 @@ void World::run()
                     _scenes[dest]->setFromSerializedObject(o.first, obj);
         }
 
+        // Render the local World windows
+        render();
+
         // Then render the scenes
         for (auto& s : _scenes)
             run &= !s.second->render();
+
         if (!run)
             break;
 
@@ -79,6 +88,8 @@ void World::addLocally(string type, string name, string destination)
     // We grab also Objects for showing them locally
     if (type != "image" && type != "mesh" && type != "image_shmdata" && type != "object")
         return;
+
+    glfwMakeContextCurrent(_window->get());
 
     BaseObjectPtr object;
     if (_objects.find(name) == _objects.end())
@@ -127,6 +138,8 @@ void World::addLocally(string type, string name, string destination)
         if (!isPresent)
             _objectDest[name].push_back(destination);
     }
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -245,6 +258,16 @@ void World::applyConfig()
 }
 
 /*************/
+mat4x4 World::computeViewProjectionMatrix()
+{
+    mat4x4 viewMatrix = lookAt(_eye, _target, glm::vec3(0.0, 0.0, 1.0));
+    mat4x4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
+    mat4x4 viewProjectionMatrix = projMatrix * viewMatrix;
+
+    return viewProjectionMatrix;
+}
+
+/*************/
 void World::init()
 {
     glfwSetErrorCallback(World::glfwErrorCallback);
@@ -315,6 +338,8 @@ void World::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 /*************/
 void World::linkLocally(string first, string second)
 {
+    glfwMakeContextCurrent(_window->get());
+
     if (_objects.find(first) != _objects.end() && _objects.find(second) != _objects.end())
     {
         if (dynamic_pointer_cast<Image>(_objects[first]).get() != nullptr && dynamic_pointer_cast<Object>(_objects[second]).get() != nullptr)
@@ -335,6 +360,8 @@ void World::linkLocally(string first, string second)
             dynamic_pointer_cast<Object>(_objects[second])->addGeometry(geom);
         }
     }
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -401,6 +428,42 @@ void World::parseArguments(int argc, char** argv)
 /*************/
 void World::render()
 {
+    glfwMakeContextCurrent(_window->get());
+
+    for (auto& t : _textures)
+        t->update();
+
+    int w, h;
+    glfwGetWindowSize(_window->get(), &w, &h);
+    glViewport(0, 0, w, h);
+
+    glGetError();
+    glDrawBuffer(GL_BACK);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+
+    for (auto& obj : _objects)
+    {
+        if (obj.second->getType() == "object")
+        {
+            ObjectPtr renderable = dynamic_pointer_cast<Object>(obj.second);
+            renderable->activate();
+            renderable->setViewProjectionMatrix(computeViewProjectionMatrix());
+            renderable->draw();
+            renderable->deactivate();
+        }
+    }
+
+    glDisable(GL_DEPTH_TEST);
+
+    glfwSwapBuffers(_window->get());
+
+    GLenum error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Error while rendering the World window: " << error << Log::endl;
+
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/

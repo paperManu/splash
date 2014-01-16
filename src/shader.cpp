@@ -151,19 +151,19 @@ bool Shader::linkProgram()
     glGetProgramiv(_program, GL_LINK_STATUS, &status);
     if (status == GL_TRUE)
     {
-        SLog::log(Log::DEBUG, __FUNCTION__, " - Shader program linked successfully");
+        SLog::log << Log::DEBUG << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
         _isLinked = true;
         return true;
     }
     else
     {
-        SLog::log(Log::WARNING, __FUNCTION__, " - Error while linking the shader program");
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_program, length, &length, log);
-        SLog::log(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
 
         _isLinked = false;

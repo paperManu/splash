@@ -28,7 +28,9 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
+#include <glm/glm.hpp>
 #include <json/reader.h>
 
 #include "config.h"
@@ -63,6 +65,10 @@ class World {
 
     private:
         GlWindowPtr _window;
+        glm::vec3 _eye, _target;
+        float _fov {35};
+        float _width {512}, _height {512};
+        float _near {0.01}, _far {1000.0};
 
         static std::mutex _callbackMutex;
         static std::deque<std::vector<int>> _keys;
@@ -84,6 +90,11 @@ class World {
          * Add an object to the world (used for Images and Meshes currently)
          */
         void addLocally(std::string type, std::string name, std::string destination);
+
+        /**
+         * Get the view projection matrix from the camera parameters
+         */
+        glm::mat4x4 computeViewProjectionMatrix();
 
         /**
          * Apply the configuration

@@ -46,6 +46,7 @@ void Image_Shmdata::update()
     {
         _image.swap(_bufferImage);
         _imageUpdated = false;
+        updateTimestamp();
     }
 }
 

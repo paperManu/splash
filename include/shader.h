@@ -116,7 +116,7 @@ class Shader : public BaseObject
 
     private:
         std::map<ShaderType, GLuint> _shaders;
-        GLuint _program;
+        GLuint _program {0};
         bool _isLinked = {false};
         GLint _locationMVP {0};
         GLint _locationNormalMatrix {0};
