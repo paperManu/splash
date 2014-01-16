@@ -41,7 +41,6 @@
         "win4" : {"type" : "window", "fullscreen" : 3},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
-        "geometry" : {"type" : "geometry"},
         "object" : {"type" : "object", "sideness" : 2},
         //"image" : {"type" : "image", "file" : "lightprobe.jpg"},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
@@ -49,14 +48,11 @@
         //"texture2" : {"type" : "texture"},
 
         "links" : [
-            ["mesh", "geometry"],
-            ["geometry", "object"],
+            ["mesh", "object"],
             ["object", "cam1"],
             ["object", "cam2"],
             ["object", "cam3"],
             ["object", "cam4"],
-            //["shmimage", "texture"],
-            //["texture", "object"],
             ["shmimage", "object"],
             //["image", "texture2"],
             ["cam1", "win1"],

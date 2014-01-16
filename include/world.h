@@ -33,10 +33,8 @@
 
 #include "config.h"
 #include "coretypes.h"
-#include "image.h"
 #include "image_shmdata.h"
 #include "log.h"
-#include "mesh.h"
 #include "scene.h"
 
 namespace Splash {
@@ -77,6 +75,7 @@ class World {
         unsigned long _nextId {0};
         std::map<std::string, BaseObjectPtr> _objects;
         std::map<std::string, std::vector<std::string>> _objectDest;
+        std::vector<TexturePtr> _textures;
 
         Json::Value _config;
         bool _showFramerate {false};
@@ -109,6 +108,11 @@ class World {
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
 
         /**
+         * Link objects locally
+         */
+        void linkLocally(std::string first, std::string second);
+
+        /**
          * Load the specified configuration file
          */
         bool loadConfig(std::string filename);
@@ -117,6 +121,11 @@ class World {
          * Parse the given arguments
          */
         void parseArguments(int argc, char** argv);
+
+        /**
+         * Render the local World view
+         */
+        void render();
 
         /**
          * Set a parameter for an object, given its id

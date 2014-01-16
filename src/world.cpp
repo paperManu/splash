@@ -75,8 +75,9 @@ void World::run()
 /*************/
 void World::addLocally(string type, string name, string destination)
 {
-    // Only Images and Meshes have a counterpart on this side
-    if (type != "image" && type != "mesh" && type != "image_shmdata")
+    // Images and Meshes have a counterpart on this side
+    // We grab also Objects for showing them locally
+    if (type != "image" && type != "mesh" && type != "image_shmdata" && type != "object")
         return;
 
     BaseObjectPtr object;
@@ -102,6 +103,13 @@ void World::addLocally(string type, string name, string destination)
             mesh->setId(getId());
             object = dynamic_pointer_cast<BaseObject>(mesh);
             _objects[name] = mesh;
+        }
+        else if (type == string("object"))
+        {
+            ObjectPtr obj(new Object());
+            obj->setId(getId());
+            object = dynamic_pointer_cast<BaseObject>(obj);
+            _objects[name] = obj;
         }
     }
 
@@ -229,6 +237,7 @@ void World::applyConfig()
                 if (link.size() < 2)
                     continue;
                 s.second->link(link[0].asString(), link[1].asString());
+                linkLocally(link[0].asString(), link[1].asString());
             }
             idx++;
         }
@@ -304,6 +313,31 @@ void World::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 }
 
 /*************/
+void World::linkLocally(string first, string second)
+{
+    if (_objects.find(first) != _objects.end() && _objects.find(second) != _objects.end())
+    {
+        if (dynamic_pointer_cast<Image>(_objects[first]).get() != nullptr && dynamic_pointer_cast<Object>(_objects[second]).get() != nullptr)
+        {
+            TexturePtr tex(new Texture());
+            tex->setId(getId());
+            ImagePtr img = dynamic_pointer_cast<Image>(_objects[first]);
+            *tex = img;
+            _textures.push_back(tex);
+            dynamic_pointer_cast<Object>(_objects[second])->addTexture(tex);
+        }
+        else if (dynamic_pointer_cast<Mesh>(_objects[first]).get() != nullptr && dynamic_pointer_cast<Object>(_objects[second]).get() != nullptr)
+        {
+            GeometryPtr geom(new Geometry());
+            geom->setId(getId());
+            MeshPtr mesh = dynamic_pointer_cast<Mesh>(_objects[first]);
+            geom->setMesh(mesh);
+            dynamic_pointer_cast<Object>(_objects[second])->addGeometry(geom);
+        }
+    }
+}
+
+/*************/
 bool World::loadConfig(string filename)
 {
     ifstream in(filename, ios::in | ios::binary);
@@ -362,6 +396,11 @@ void World::parseArguments(int argc, char** argv)
         else
             idx++;
     }
+}
+
+/*************/
+void World::render()
+{
 }
 
 /*************/

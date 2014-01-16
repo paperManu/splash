@@ -209,6 +209,20 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
             geom->setMesh(mesh);
             return true;
         }
+        else if (dynamic_pointer_cast<Object>(second).get() != nullptr)
+        {
+            GeometryPtr geom(new Geometry());
+            geom->setId(getId());
+            _geometries[to_string(geom->getId())] = geom;
+
+            MeshPtr mesh = dynamic_pointer_cast<Mesh>(first);
+            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
+
+            if (link(mesh, geom) && link(geom, obj))
+                return true;
+            else
+                return false;
+        }
     }
     else if (dynamic_pointer_cast<Geometry>(first).get() != nullptr)
     {
