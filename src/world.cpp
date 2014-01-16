@@ -436,6 +436,8 @@ void World::render()
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
+    _width = (float)w;
+    _height = (float)h;
 
     glGetError();
     glDrawBuffer(GL_BACK);
