@@ -31,7 +31,7 @@ void Object::activate()
 
     _geometries[0]->update();
     _geometries[0]->activate();
-    _shader->activate(_geometries[0]);
+    _shader->activate();
 
     GLuint texUnit = 0;
     for (auto t : _textures)

@@ -18,15 +18,17 @@ Camera::Camera(GlWindowPtr w)
 
     _window = w;
     glfwMakeContextCurrent(_window->get());
-
     glGetError();
     glGenFramebuffers(1, &_fbo);
+    glfwMakeContextCurrent(NULL);
+
     setOutputNbr(1);
 
+    glfwMakeContextCurrent(_window->get());
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
     else
         SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 

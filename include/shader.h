@@ -37,7 +37,6 @@
 #include <GLFW/glfw3.h>
 
 #include "coretypes.h"
-#include "geometry.h"
 #include "texture.h"
 
 namespace Splash {
@@ -78,13 +77,12 @@ class Shader : public BaseObject
             _shaders = s._shaders;
             _program = s._program;
             _isLinked = s._isLinked;
-            _geometry = s._geometry;
         }
 
         /**
          * Activate this shader
          */
-        void activate(const GeometryPtr geometry);
+        void activate();
 
         /**
          * Deactivate this shader
@@ -120,7 +118,6 @@ class Shader : public BaseObject
         std::map<ShaderType, GLuint> _shaders;
         GLuint _program;
         bool _isLinked = {false};
-        GeometryPtr _geometry;
         GLint _locationMVP {0};
         GLint _locationNormalMatrix {0};
         GLint _locationSide {0};

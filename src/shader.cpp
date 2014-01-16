@@ -34,14 +34,10 @@ Shader::~Shader()
 }
 
 /*************/
-void Shader::activate(const GeometryPtr geometry)
+void Shader::activate()
 {
-    if (geometry != _geometry)
+    if (!_isLinked)
     {
-        glBindAttribLocation(_program, geometry->getVertexCoords(), "_vertex");
-        glBindAttribLocation(_program, geometry->getTextureCoords(), "_texcoord");
-        glBindAttribLocation(_program, geometry->getNormals(), "_normal");
-        _geometry = geometry;
         if (!linkProgram())
             return;
     }
