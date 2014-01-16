@@ -137,9 +137,9 @@ class Shader : public BaseObject
         const std::string DEFAULT_VERTEX_SHADER {R"(
             #version 330 core
 
-            in vec4 _vertex;
-            in vec2 _texcoord;
-            in vec3 _normal;
+            layout(location = 0) in vec4 _vertex;
+            layout(location = 1) in vec2 _texcoord;
+            layout(location = 2) in vec3 _normal;
             uniform mat4 _viewProjectionMatrix;
             uniform mat4 _normalMatrix;
             smooth out vec2 texCoord;

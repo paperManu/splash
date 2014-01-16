@@ -66,9 +66,9 @@ void Image_Shmdata::computeLUT()
                 float vValue = (float)v - 128.f;
 
                 vector<unsigned char> pixel(3);
-                pixel[0] = (unsigned char)max(0.f, min(255.f, (yValue + 1.4f * vValue)));
-                pixel[1] = (unsigned char)max(0.f, min(255.f, (yValue - 0.343f * uValue - 0.711f * vValue)));
-                pixel[2] = (unsigned char)max(0.f, min(255.f, (yValue + 1.765f * uValue)));
+                pixel[0] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 1.596f * vValue)));
+                pixel[1] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f - 0.392f * uValue - 0.813f * vValue)));
+                pixel[2] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 2.017f * uValue)));
 
                 values_2[v] = pixel;
             }
@@ -186,7 +186,6 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             unsigned char* U = (unsigned char*)data + width * height;
             unsigned char* V = (unsigned char*)data + width * height * 5 / 4;
 
-            STimer::timer << "conversion";
             for (ImageBuf::Iterator<unsigned char, unsigned char> p(img); !p.done(); ++p)
             {
                 if (!p.exists())
@@ -200,12 +199,9 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                 p[1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
                 p[2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
             }
-            STimer::timer >> "conversion";
         }
         else
             return;
-
-        cout << "Conversion: " << STimer::timer["conversion"] << endl;
 
         lock_guard<mutex> lock(context->_mutex);
         context->_bufferImage.swap(img);

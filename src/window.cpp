@@ -14,7 +14,6 @@ mutex Window::_callbackMutex;
 deque<pair<GLFWwindow*, vector<int>>> Window::_keys;
 deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
-GeometryPtr Window::_virtualScreen;
 
 /*************/
 Window::Window(GlWindowPtr w)
@@ -212,9 +211,8 @@ void Window::setProjectionSurface()
     glGetError();
 
     _screen.reset(new Object());
-    if (_virtualScreen.get() == nullptr)
-        _virtualScreen.reset(new Geometry());
-    _screen->addGeometry(_virtualScreen);
+    GeometryPtr virtualScreen(new Geometry());
+    _screen->addGeometry(virtualScreen);
     ShaderPtr shader(new Shader());
     _screen->setShader(shader);
 

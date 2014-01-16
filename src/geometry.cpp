@@ -83,16 +83,16 @@ void Geometry::update()
         glBindVertexArray(_vertexArray[context]);
 
         glBindBuffer(GL_ARRAY_BUFFER, _vertexCoords);
-        glVertexAttribPointer(_vertexCoords, 4, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(_vertexCoords);
+        glVertexAttribPointer((GLuint)0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)0);
 
         glBindBuffer(GL_ARRAY_BUFFER, _texCoords);
-        glVertexAttribPointer(_texCoords, 2, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(_texCoords);
+        glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)1);
 
         glBindBuffer(GL_ARRAY_BUFFER, _normals);
-        glVertexAttribPointer(_normals, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(_normals);
+        glVertexAttribPointer((GLuint)2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)2);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
