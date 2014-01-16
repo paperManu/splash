@@ -175,6 +175,20 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
             *tex = img;
             return true;
         }
+        else if (dynamic_pointer_cast<Object>(second).get() != nullptr)
+        {
+            TexturePtr tex = dynamic_pointer_cast<Texture>(add("texture"));
+            tex->setId(getId());
+            _textures[to_string(tex->getId())] = tex;
+
+            ImagePtr img = dynamic_pointer_cast<Image>(first);
+            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
+
+            if (link(img, tex) && link(tex, obj))
+                return true;
+            else
+                return false;
+        }
     }
     else if (dynamic_pointer_cast<Object>(first).get() != nullptr)
     {
