@@ -55,20 +55,20 @@ void Image_Shmdata::computeLUT()
     // Compute YCbCr to RGB lookup table
     for (int y = 0; y < 256; ++y)
     {
-        vector<vector<vector<float>>> values_1(256);
+        vector<vector<vector<unsigned char>>> values_1(256);
         for (int u = 0; u < 256; ++u)
         {
-            vector<vector<float>> values_2(256);
+            vector<vector<unsigned char>> values_2(256);
             for (int v = 0; v < 256; ++v)
             {
                 float yValue = (float)y;
                 float uValue = (float)u - 128.f;
                 float vValue = (float)v - 128.f;
 
-                vector<float> pixel(3);
-                pixel[0] = (yValue + 1.4f * vValue) / 255.f;
-                pixel[1] = (yValue - 0.343f * uValue - 0.711f * vValue) / 255.f;
-                pixel[2] = (yValue + 1.765f * uValue) / 255.f;
+                vector<unsigned char> pixel(3);
+                pixel[0] = (unsigned char)max(0.f, min(255.f, (yValue + 1.4f * vValue)));
+                pixel[1] = (unsigned char)max(0.f, min(255.f, (yValue - 0.343f * uValue - 0.711f * vValue)));
+                pixel[2] = (unsigned char)max(0.f, min(255.f, (yValue + 1.765f * uValue)));
 
                 values_2[v] = pixel;
             }
@@ -182,18 +182,19 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         }
         else if (is420)
         {
+            unsigned char* Y = (unsigned char*)data;
+            unsigned char* U = (unsigned char*)data + width * height;
+            unsigned char* V = (unsigned char*)data + width * height * 5 / 4;
+
             STimer::timer << "conversion";
-            for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
+            for (ImageBuf::Iterator<unsigned char, unsigned char> p(img); !p.done(); ++p)
             {
                 if (!p.exists())
                     continue;
 
-                int x = p.x();
-                int y = p.y();
-
-                int yValue = (int)((unsigned char*)data)[y * width + x];
-                int uValue = (int)((unsigned char*)data + width * height)[y * width / 4 + x / 2];
-                int vValue = (int)((unsigned char*)data + width * height * 5 / 4)[y * width / 4 + x / 2];
+                int yValue = (int)Y[p.y() * width + p.x()];
+                int uValue = (int)U[p.y() * width / 4 + p.x() / 2];
+                int vValue = (int)V[p.y() * width / 4 + p.x() / 2];
 
                 p[0] = context->_yCbCrLUT[yValue][uValue][vValue][0];
                 p[1] = context->_yCbCrLUT[yValue][uValue][vValue][1];

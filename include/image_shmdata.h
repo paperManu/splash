@@ -72,7 +72,7 @@ class Image_Shmdata : public Image
         std::mutex _mutex;
 
         // LUT for YUV conversion
-        std::vector<std::vector<std::vector<std::vector<float>>>> _yCbCrLUT;
+        std::vector<std::vector<std::vector<std::vector<unsigned char>>>> _yCbCrLUT;
 
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)
