@@ -35,7 +35,7 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("window"))
     {
-        WindowPtr window(new Window(getNewSharedWindow()));
+        WindowPtr window(new Window(getNewSharedWindow(name)));
         window->setId(getId());
         if (name == string())
             _windows[to_string(window->getId())] = window;
@@ -274,10 +274,7 @@ bool Scene::render()
     // Update the windows
     STimer::timer << "windows";
     for (auto& window : _windows)
-        _threadPool->enqueue([&]() {
-            isError |= window.second->render();
-        });
-    _threadPool->waitAllThreads();
+        isError |= window.second->render();
     STimer::timer >> "windows";
 
     _status = !isError;
@@ -301,6 +298,19 @@ bool Scene::render()
     STimer::timer >> "sceneTimer";
 
     return quit;
+}
+
+/*************/
+void Scene::setAsWorldScene()
+{
+    // First we create a single camera linked to a single window
+    add("camera", "_camera");
+    add("window", "_window");
+    link("_camera", "_window");
+
+    // Then we need to connect all Objects to the camera
+    for (auto& obj : _objects)
+        link(obj.first, "_camera");
 }
 
 /*************/
@@ -328,8 +338,11 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow()
+GlWindowPtr Scene::getNewSharedWindow(string name)
 {
+    string windowName;
+    name.size() == 0 ? windowName = "Splash::Window" : windowName = name;
+
     if (!_mainWindow)
     {
         SLog::log << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
@@ -342,7 +355,7 @@ GlWindowPtr Scene::getNewSharedWindow()
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::Window", NULL, _mainWindow->get());
+    GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
     if (!window)
     {
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
