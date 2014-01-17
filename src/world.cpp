@@ -21,9 +21,6 @@ World::World(int argc, char** argv)
     parseArguments(argc, argv);
 
     init();
-
-    _eye = vec3(2.0, 2.0, 1.0);
-    _target = vec3(0.0, 0.0, 0.3);
 }
 
 /*************/
@@ -66,9 +63,6 @@ void World::run()
                     _scenes[dest]->setFromSerializedObject(o.first, obj);
         }
 
-        // Render the local World windows
-        render();
-
         // Then render the scenes
         for (auto& s : _scenes)
             run &= !s.second->render();
@@ -85,11 +79,8 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    // We grab also Objects for showing them locally
-    if (type != "image" && type != "mesh" && type != "image_shmdata" && type != "object")
+    if (type != "image" && type != "mesh" && type != "image_shmdata")
         return;
-
-    glfwMakeContextCurrent(_window->get());
 
     BaseObjectPtr object;
     if (_objects.find(name) == _objects.end())
@@ -115,13 +106,6 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(mesh);
             _objects[name] = mesh;
         }
-        else if (type == string("object"))
-        {
-            ObjectPtr obj(new Object());
-            obj->setId(getId());
-            object = dynamic_pointer_cast<BaseObject>(obj);
-            _objects[name] = obj;
-        }
     }
 
     if (_objectDest.find(name) == _objectDest.end())
@@ -138,8 +122,6 @@ void World::addLocally(string type, string name, string destination)
         if (!isPresent)
             _objectDest[name].push_back(destination);
     }
-
-    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -172,6 +154,12 @@ void World::applyConfig()
         }
     }
 
+    // We also create a default, local scene
+    {
+        ScenePtr scene(new Scene);
+        _scenes[SPLASH_WORLD_SCENE] = scene;
+    }
+
     // Configure each scenes
     for (auto& s : _scenes)
     {
@@ -196,6 +184,9 @@ void World::applyConfig()
 
             // Some objects are also created on this side, and linked with the distant one
             addLocally(type, name, s.first);
+            // Also, some are added to the local scene
+            if (type != "camera" && type != "window")
+                _scenes[SPLASH_WORLD_SCENE]->add(type, name);
 
             // Set their attributes
             auto objMembers = obj.getMemberNames();
@@ -229,6 +220,8 @@ void World::applyConfig()
                 s.second->setAttribute(name, objMembers[idxAttr], values);
                 // We also set the attribute locally, if the object exists
                 setAttribute(name, objMembers[idxAttr], values);
+                // As well as in the local scene
+                _scenes[SPLASH_WORLD_SCENE]->setAttribute(name, objMembers[idxAttr], values);
 
                 idxAttr++;
             }
@@ -250,118 +243,21 @@ void World::applyConfig()
                 if (link.size() < 2)
                     continue;
                 s.second->link(link[0].asString(), link[1].asString());
-                linkLocally(link[0].asString(), link[1].asString());
+                // Link also in the local scene, at least objects which are present
+                _scenes[SPLASH_WORLD_SCENE]->link(link[0].asString(), link[1].asString());
             }
             idx++;
         }
+
+        // Lastly, in the local scene, connect all Objects to the single camera present
+        // Also, this will give this scene a special behavior
+        _scenes[SPLASH_WORLD_SCENE]->setAsWorldScene();
     }
-}
-
-/*************/
-mat4x4 World::computeViewProjectionMatrix()
-{
-    mat4x4 viewMatrix = lookAt(_eye, _target, glm::vec3(0.0, 0.0, 1.0));
-    mat4x4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
-    mat4x4 viewProjectionMatrix = projMatrix * viewMatrix;
-
-    return viewProjectionMatrix;
 }
 
 /*************/
 void World::init()
 {
-    glfwSetErrorCallback(World::glfwErrorCallback);
-
-    // GLFW stuff
-    if (!glfwInit())
-    {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
-        //_isInitialized = false;
-        return;
-    }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
-    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
-    glfwWindowHint(GLFW_DEPTH_BITS, 24);
-    glfwWindowHint(GLFW_VISIBLE, true);
-
-    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::World", NULL, NULL);
-
-    if (!window)
-    {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
-        //_isInitialized = false;
-        return;
-    }
-
-    _window.reset(new GlWindow(window, window));
-    glfwMakeContextCurrent(_window->get());
-    //_isInitialized = true;
-    glfwMakeContextCurrent(NULL);
-
-    // Initialize the callbacks
-    if (!glfwSetKeyCallback(_window->get(), World::keyCallback))
-        SLog::log << Log::DEBUG << "World::" << __FUNCTION__ << " - Error while setting up key callback" << Log::endl;
-    if (!glfwSetMouseButtonCallback(_window->get(), World::mouseBtnCallback))
-        SLog::log << Log::DEBUG << "World::" << __FUNCTION__ << " - Error while setting up mouse button callback" << Log::endl;
-    if (!glfwSetCursorPosCallback(_window->get(), World::mousePosCallback))
-        SLog::log << Log::DEBUG << "World::" << __FUNCTION__ << " - Error while setting up mouse position callback" << Log::endl;
-}
-
-/*************/
-void World::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
-{
-    lock_guard<mutex> lock(_callbackMutex);
-    std::vector<int> keys {key, scancode, action, mods};
-    _keys.push_back(keys);
-}
-
-/*************/
-void World::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
-{
-    lock_guard<mutex> lock(_callbackMutex);
-    std::vector<int> btn {button, action, mods};
-    _mouseBtn.push_back(btn);
-}
-
-/*************/
-void World::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
-{
-    lock_guard<mutex> lock(_callbackMutex);
-    std::vector<double> pos {xpos, ypos};
-    _mousePos = move(pos);
-}
-
-/*************/
-void World::linkLocally(string first, string second)
-{
-    glfwMakeContextCurrent(_window->get());
-
-    if (_objects.find(first) != _objects.end() && _objects.find(second) != _objects.end())
-    {
-        if (dynamic_pointer_cast<Image>(_objects[first]).get() != nullptr && dynamic_pointer_cast<Object>(_objects[second]).get() != nullptr)
-        {
-            TexturePtr tex(new Texture());
-            tex->setId(getId());
-            ImagePtr img = dynamic_pointer_cast<Image>(_objects[first]);
-            *tex = img;
-            _textures.push_back(tex);
-            dynamic_pointer_cast<Object>(_objects[second])->addTexture(tex);
-        }
-        else if (dynamic_pointer_cast<Mesh>(_objects[first]).get() != nullptr && dynamic_pointer_cast<Object>(_objects[second]).get() != nullptr)
-        {
-            GeometryPtr geom(new Geometry());
-            geom->setId(getId());
-            MeshPtr mesh = dynamic_pointer_cast<Mesh>(_objects[first]);
-            geom->setMesh(mesh);
-            dynamic_pointer_cast<Object>(_objects[second])->addGeometry(geom);
-        }
-    }
-
-    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -423,49 +319,6 @@ void World::parseArguments(int argc, char** argv)
         else
             idx++;
     }
-}
-
-/*************/
-void World::render()
-{
-    glfwMakeContextCurrent(_window->get());
-
-    for (auto& t : _textures)
-        t->update();
-
-    int w, h;
-    glfwGetWindowSize(_window->get(), &w, &h);
-    glViewport(0, 0, w, h);
-    _width = (float)w;
-    _height = (float)h;
-
-    glGetError();
-    glDrawBuffer(GL_BACK);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
-
-    for (auto& obj : _objects)
-    {
-        if (obj.second->getType() == "object")
-        {
-            ObjectPtr renderable = dynamic_pointer_cast<Object>(obj.second);
-            renderable->activate();
-            renderable->setViewProjectionMatrix(computeViewProjectionMatrix());
-            renderable->draw();
-            renderable->deactivate();
-        }
-    }
-
-    glDisable(GL_DEPTH_TEST);
-
-    glfwSwapBuffers(_window->get());
-
-    GLenum error = glGetError();
-    if (error)
-        SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Error while rendering the World window: " << error << Log::endl;
-
-    glfwMakeContextCurrent(NULL);
 }
 
 /*************/

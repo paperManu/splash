@@ -64,12 +64,6 @@ class World {
         void run();
 
     private:
-        GlWindowPtr _window;
-        glm::vec3 _eye, _target;
-        float _fov {35};
-        float _width {512}, _height {512};
-        float _near {0.01}, _far {1000.0};
-
         static std::mutex _callbackMutex;
         static std::deque<std::vector<int>> _keys;
         static std::deque<std::vector<int>> _mouseBtn;
@@ -92,11 +86,6 @@ class World {
         void addLocally(std::string type, std::string name, std::string destination);
 
         /**
-         * Get the view projection matrix from the camera parameters
-         */
-        glm::mat4x4 computeViewProjectionMatrix();
-
-        /**
          * Apply the configuration
          */
         void applyConfig();
@@ -112,18 +101,6 @@ class World {
         void init();
 
         /**
-         * Input callbacks
-         */
-        static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
-        static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
-        static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
-
-        /**
-         * Link objects locally
-         */
-        void linkLocally(std::string first, std::string second);
-
-        /**
          * Load the specified configuration file
          */
         bool loadConfig(std::string filename);
@@ -132,11 +109,6 @@ class World {
          * Parse the given arguments
          */
         void parseArguments(int argc, char** argv);
-
-        /**
-         * Render the local World view
-         */
-        void render();
 
         /**
          * Set a parameter for an object, given its id

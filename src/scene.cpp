@@ -304,6 +304,19 @@ bool Scene::render()
 }
 
 /*************/
+void Scene::setAsWorldScene()
+{
+    // First we create a single camera linked to a single window
+    add("camera", "_camera");
+    add("window", "_window");
+    link("_camera", "_window");
+
+    // Then we need to connect all Objects to the camera
+    for (auto& obj : _objects)
+        link(obj.first, "_camera");
+}
+
+/*************/
 void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
 {
     if (_cameras.find(name) != _cameras.end())

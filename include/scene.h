@@ -85,6 +85,11 @@ class Scene
         bool render();
 
         /**
+         * Give a special behavior to the scene, making it the main window of the World
+         */
+        void setAsWorldScene();
+
+        /**
          * Set a parameter for an object, given its id
          */
         void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
