@@ -108,11 +108,15 @@ void World::addLocally(string type, string name, string destination)
         }
     }
 
+    // If the object is not registered yet, we add it with the specified destination
+    // as well as the WORLD_SCENE destination
     if (_objectDest.find(name) == _objectDest.end())
     {
         _objectDest[name] = vector<string>();
         _objectDest[name].emplace_back(destination);
+        _objectDest[name].emplace_back(SPLASH_WORLD_SCENE);
     }
+    // If it is, we only add the new destination
     else
     {
         bool isPresent = false;
@@ -120,7 +124,9 @@ void World::addLocally(string type, string name, string destination)
             if (d == destination)
                 isPresent = true;
         if (!isPresent)
-            _objectDest[name].push_back(destination);
+        {
+            _objectDest[name].emplace_back(destination);
+        }
     }
 }
 
