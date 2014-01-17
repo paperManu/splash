@@ -274,10 +274,7 @@ bool Scene::render()
     // Update the windows
     STimer::timer << "windows";
     for (auto& window : _windows)
-        _threadPool->enqueue([&]() {
-            isError |= window.second->render();
-        });
-    _threadPool->waitAllThreads();
+        isError |= window.second->render();
     STimer::timer >> "windows";
 
     _status = !isError;
