@@ -35,7 +35,7 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("window"))
     {
-        WindowPtr window(new Window(getNewSharedWindow()));
+        WindowPtr window(new Window(getNewSharedWindow(name)));
         window->setId(getId());
         if (name == string())
             _windows[to_string(window->getId())] = window;
@@ -341,8 +341,11 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow()
+GlWindowPtr Scene::getNewSharedWindow(string name)
 {
+    string windowName;
+    name.size() == 0 ? windowName = "Splash::Window" : windowName = name;
+
     if (!_mainWindow)
     {
         SLog::log << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
@@ -355,7 +358,7 @@ GlWindowPtr Scene::getNewSharedWindow()
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_VISIBLE, false);
-    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::Window", NULL, _mainWindow->get());
+    GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
     if (!window)
     {
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;

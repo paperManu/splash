@@ -119,7 +119,7 @@ class Scene
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
-        GlWindowPtr getNewSharedWindow();
+        GlWindowPtr getNewSharedWindow(std::string name = std::string());
 
         /**
          * Set up the context and everything
