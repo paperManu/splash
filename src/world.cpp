@@ -8,7 +8,6 @@ using namespace glm;
 using namespace std;
 
 namespace Splash {
-
 /*************/
 World::World(int argc, char** argv)
 {
@@ -59,10 +58,7 @@ void World::run()
 
         // Then render the scenes
         for (auto& s : _scenes)
-            //SThreadPool::pool->enqueue([&]() {
-                run &= !s.second->render();
-        //    });
-        //SThreadPool::pool->waitAllThreads();
+            run &= !s.second->render();
 
         if (!run)
             break;

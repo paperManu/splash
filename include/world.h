@@ -37,7 +37,6 @@
 #include "coretypes.h"
 #include "image_shmdata.h"
 #include "log.h"
-#include "threadpool.h"
 #include "scene.h"
 
 namespace Splash {

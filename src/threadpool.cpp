@@ -85,7 +85,3 @@ unsigned int ThreadPool::getPoolLength()
     }
     return size;
 }
-
-/*************/
-// One threadpool to do it all
-ThreadPoolPtr SThreadPool::pool(new ThreadPool(SPLASH_MAX_THREAD));
