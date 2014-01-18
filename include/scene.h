@@ -51,7 +51,7 @@ class Scene
         /**
          * Constructor
          */
-        Scene();
+        Scene(std::string name = "Splash");
 
         /**
          * Destructor
@@ -124,7 +124,7 @@ class Scene
         /**
          * Set up the context and everything
          */
-        void init();
+        void init(std::string name);
 
         /**
          * Get the next available id

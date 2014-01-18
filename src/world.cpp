@@ -147,7 +147,7 @@ void World::applyConfig()
                 return;
             }
             string name = jsScenes[i]["name"].asString();
-            ScenePtr scene(new Scene);
+            ScenePtr scene(new Scene(name));
             _scenes[name] = scene;
         }
         else
@@ -158,7 +158,7 @@ void World::applyConfig()
 
     // We also create a default, local scene
     {
-        ScenePtr scene(new Scene);
+        ScenePtr scene(new Scene(string(SPLASH_WORLD_SCENE)));
         _scenes[SPLASH_WORLD_SCENE] = scene;
     }
 

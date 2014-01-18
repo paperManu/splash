@@ -6,9 +6,9 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Scene::Scene()
+Scene::Scene(std::string name)
 {
-    init();
+    init(name);
 
     _threadPool.reset(new ThreadPool(4));
 }
@@ -267,7 +267,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name)
 }
 
 /*************/
-void Scene::init()
+void Scene::init(std::string name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
 
@@ -287,7 +287,7 @@ void Scene::init()
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
 
-    GLFWwindow* window = glfwCreateWindow(512, 512, "Splash::Scene", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
 
     if (!window)
     {
