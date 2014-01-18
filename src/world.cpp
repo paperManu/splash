@@ -58,7 +58,10 @@ void World::run()
 
         // Then render the scenes
         for (auto& s : _scenes)
-            run &= !s.second->render();
+            _threadPool->enqueue([&]() {
+                run &= !s.second->render();
+            });
+        _threadPool->waitAllThreads();
 
         if (!run)
             break;
@@ -257,6 +260,7 @@ void World::applyConfig()
 /*************/
 void World::init()
 {
+    _threadPool.reset(new ThreadPool(SPLASH_MAX_THREAD));
 }
 
 /*************/

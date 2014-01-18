@@ -38,6 +38,7 @@
 #include "image_shmdata.h"
 #include "log.h"
 #include "scene.h"
+#include "threadpool.h"
 
 namespace Splash {
 
@@ -64,6 +65,7 @@ class World {
         void run();
 
     private:
+        ThreadPoolPtr _threadPool;
         bool _status {true};
         std::map<std::string, ScenePtr> _scenes;
 

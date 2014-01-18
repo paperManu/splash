@@ -124,8 +124,6 @@ bool Window::render()
     _screen->draw();
     _screen->deactivate();
 
-    glfwSwapBuffers(_window->get());
-
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
@@ -133,6 +131,12 @@ bool Window::render()
     glfwMakeContextCurrent(NULL);
 
     return error != 0 ? true : false;
+}
+
+/*************/
+void Window::swapBuffers()
+{
+    glfwSwapBuffers(_window->get());
 }
 
 /*************/

@@ -108,6 +108,11 @@ class Window : public BaseObject
          */
         void setTexture(TexturePtr tex);
 
+        /**
+         * Swap the back and front buffers
+         */
+        void swapBuffers();
+
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
