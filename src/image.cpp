@@ -52,6 +52,7 @@ void Image::set(const ImageBuf& img)
 SerializedObject Image::serialize() const
 {
     SerializedObject obj;
+    lock_guard<mutex> lock(_mutex);
 
     // We first get the xml version of the specs, and pack them into the obj
     string xmlSpec = _image.spec().to_xml();
@@ -107,6 +108,7 @@ bool Image::deserialize(const SerializedObject& obj)
         ptr = reinterpret_cast<unsigned char*>(image.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
+        lock_guard<mutex> lock(_mutex);
         _image.swap(image);
 
         updateTimestamp();

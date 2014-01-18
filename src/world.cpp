@@ -10,12 +10,6 @@ using namespace std;
 namespace Splash {
 
 /*************/
-mutex World::_callbackMutex;
-deque<vector<int>> World::_keys;
-deque<vector<int>> World::_mouseBtn;
-vector<double> World::_mousePos;
-
-/*************/
 World::World(int argc, char** argv)
 {
     parseArguments(argc, argv);
@@ -65,7 +59,10 @@ void World::run()
 
         // Then render the scenes
         for (auto& s : _scenes)
-            run &= !s.second->render();
+            //SThreadPool::pool->enqueue([&]() {
+                run &= !s.second->render();
+        //    });
+        //SThreadPool::pool->waitAllThreads();
 
         if (!run)
             break;

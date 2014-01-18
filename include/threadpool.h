@@ -35,6 +35,9 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "config.h"
+#include "coretypes.h"
+
 /*************/
 class ThreadPool;
 
@@ -89,5 +92,11 @@ void ThreadPool::enqueue(F f)
     // Wake up one thread
     condition.notify_one();
 }
+
+struct SThreadPool
+{
+    public:
+        static ThreadPoolPtr pool;
+};
 
 #endif // THREADPOOL_H

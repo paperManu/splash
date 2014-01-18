@@ -25,7 +25,6 @@
 #ifndef IMAGE_SHMDATA_H
 #define IMAGE_SHMDATA_H
 
-#include <mutex>
 #include <shmdata/any-data-reader.h>
 
 #include "config.h"
@@ -69,7 +68,6 @@ class Image_Shmdata : public Image
         shmdata_any_reader_t* _reader {nullptr};
         ImageBuf _bufferImage;
         bool _imageUpdated {false};
-        std::mutex _mutex;
 
         // LUT for YUV conversion
         std::vector<std::vector<std::vector<std::vector<unsigned char>>>> _yCbCrLUT;

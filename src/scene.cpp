@@ -9,8 +9,6 @@ namespace Splash {
 Scene::Scene()
 {
     init();
-
-    _threadPool.reset(new ThreadPool(4));
 }
 
 /*************/
@@ -274,10 +272,10 @@ bool Scene::render()
     // Update the windows
     STimer::timer << "windows";
     for (auto& window : _windows)
-        _threadPool->enqueue([&]() {
+        SThreadPool::pool->enqueue([&]() {
             isError |= window.second->render();
         });
-    _threadPool->waitAllThreads();
+    SThreadPool::pool->waitAllThreads();
     STimer::timer >> "windows";
 
     _status = !isError;

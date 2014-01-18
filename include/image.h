@@ -26,6 +26,7 @@
 #define IMAGE_H
 
 #include <chrono>
+#include <mutex>
 #include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
@@ -119,6 +120,8 @@ class Image : public BaseObject
     protected:
         ImageBuf _image;
         std::chrono::high_resolution_clock::time_point _timestamp;
+
+        mutable std::mutex _mutex;
 
         void createDefaultImage(); //< Create a default pattern
         void updateTimestamp();

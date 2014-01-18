@@ -37,6 +37,7 @@
 #include "coretypes.h"
 #include "image_shmdata.h"
 #include "log.h"
+#include "threadpool.h"
 #include "scene.h"
 
 namespace Splash {
@@ -64,11 +65,6 @@ class World {
         void run();
 
     private:
-        static std::mutex _callbackMutex;
-        static std::deque<std::vector<int>> _keys;
-        static std::deque<std::vector<int>> _mouseBtn;
-        static std::vector<double> _mousePos;
-
         bool _status {true};
         std::map<std::string, ScenePtr> _scenes;
 

@@ -114,8 +114,6 @@ class Scene
         std::map<std::string, CameraPtr> _cameras;
         std::map<std::string, WindowPtr> _windows;
 
-        ThreadPoolPtr _threadPool;
-
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
