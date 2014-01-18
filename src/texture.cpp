@@ -101,6 +101,19 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
 }
 
 /*************/
+bool Texture::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    {
+        ImagePtr img = dynamic_pointer_cast<Image>(obj);
+        _img = img;
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
 void Texture::update()
 {
     // If _img is nullptr, this texture is not set from an Image

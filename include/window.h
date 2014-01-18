@@ -34,6 +34,7 @@
 #include <vector>
 
 #include "coretypes.h"
+#include "camera.h"
 #include "geometry.h"
 #include "log.h"
 #include "object.h"
@@ -86,6 +87,11 @@ class Window : public BaseObject
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
+
+        /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
 
         /**
          * Render this window to screen

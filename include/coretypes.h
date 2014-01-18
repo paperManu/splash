@@ -158,6 +158,9 @@ struct AttributeFunctor
         std::function<void(std::vector<Value>)> _func;
 };
 
+class BaseObject;
+typedef std::shared_ptr<BaseObject> BaseObjectPtr;
+
 /*************/
 class BaseObject
 {
@@ -171,6 +174,11 @@ class BaseObject
          */
         unsigned long getId() const {return _id;}
         void setId(unsigned long id) {_id = id;}
+
+        /**
+         * Try to link the given BaseObject to this
+         */
+        virtual bool linkTo(BaseObjectPtr obj) {return false;}
 
         /**
          * Register modifiable attributes

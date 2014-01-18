@@ -94,6 +94,11 @@ class Texture : public BaseObject
         ImageSpec getSpec() const {return _spec;}
 
         /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
+
+        /**
          * Update the texture according to the owned Image
          */
         void update();

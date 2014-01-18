@@ -85,6 +85,11 @@ class Camera : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
+
+        /**
          * Render this camera into its textures
          */
         bool render();

@@ -32,10 +32,12 @@
 #include <glm/glm.hpp>
 
 #include "coretypes.h"
+#include "image.h"
 #include "log.h"
 #include "shader.h"
 #include "texture.h"
 #include "geometry.h"
+#include "mesh.h"
 
 namespace Splash {
 
@@ -72,7 +74,6 @@ class Object : public BaseObject
          */
         void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
 
-
         /**
          * Draw the object
          */
@@ -82,6 +83,11 @@ class Object : public BaseObject
          * Get the shader
          */
         ShaderPtr getShader() const {return _shader;}
+
+        /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
 
         /**
          * Set the shader

@@ -148,107 +148,10 @@ bool Scene::link(string first, string second)
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
     glfwMakeContextCurrent(_mainWindow->get());
-
-    if (dynamic_pointer_cast<Texture>(first).get() != nullptr)
-    {
-        if (dynamic_pointer_cast<Object>(second).get() != nullptr)
-        {
-            TexturePtr tex = dynamic_pointer_cast<Texture>(first);
-            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
-            obj->addTexture(tex);
-            return true;
-        }
-        else if (dynamic_pointer_cast<Window>(second).get() != nullptr)
-        {
-            TexturePtr tex = dynamic_pointer_cast<Texture>(first);
-            WindowPtr win = dynamic_pointer_cast<Window>(second);
-            win->setTexture(tex);
-            return true;
-        }
-    }
-    else if (dynamic_pointer_cast<Image>(first).get() != nullptr)
-    {
-        if (dynamic_pointer_cast<Texture>(second).get() != nullptr)
-        {
-            ImagePtr img = dynamic_pointer_cast<Image>(first);
-            TexturePtr tex = dynamic_pointer_cast<Texture>(second);
-            *tex = img;
-            return true;
-        }
-        else if (dynamic_pointer_cast<Object>(second).get() != nullptr)
-        {
-            TexturePtr tex = dynamic_pointer_cast<Texture>(add("texture"));
-            tex->setId(getId());
-            _textures[to_string(tex->getId())] = tex;
-
-            ImagePtr img = dynamic_pointer_cast<Image>(first);
-            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
-
-            if (link(img, tex) && link(tex, obj))
-                return true;
-            else
-                return false;
-        }
-    }
-    else if (dynamic_pointer_cast<Object>(first).get() != nullptr)
-    {
-        if (dynamic_pointer_cast<Camera>(second).get() != nullptr)
-        {
-            ObjectPtr obj = dynamic_pointer_cast<Object>(first);
-            CameraPtr cam = dynamic_pointer_cast<Camera>(second);
-            cam->addObject(obj);
-            return true;
-        }
-    }
-    else if (dynamic_pointer_cast<Mesh>(first).get() != nullptr)
-    {
-        if (dynamic_pointer_cast<Geometry>(second).get() != nullptr)
-        {
-            MeshPtr mesh = dynamic_pointer_cast<Mesh>(first);
-            GeometryPtr geom = dynamic_pointer_cast<Geometry>(second);
-            geom->setMesh(mesh);
-            return true;
-        }
-        else if (dynamic_pointer_cast<Object>(second).get() != nullptr)
-        {
-            GeometryPtr geom(new Geometry());
-            geom->setId(getId());
-            _geometries[to_string(geom->getId())] = geom;
-
-            MeshPtr mesh = dynamic_pointer_cast<Mesh>(first);
-            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
-
-            if (link(mesh, geom) && link(geom, obj))
-                return true;
-            else
-                return false;
-        }
-    }
-    else if (dynamic_pointer_cast<Geometry>(first).get() != nullptr)
-    {
-        if (dynamic_pointer_cast<Object>(second).get() != nullptr)
-        {
-            GeometryPtr geom = dynamic_pointer_cast<Geometry>(first);
-            ObjectPtr obj = dynamic_pointer_cast<Object>(second);
-            obj->addGeometry(geom);
-            return true;
-        }
-    }
-    else if (dynamic_pointer_cast<Camera>(first).get() != nullptr)
-    {
-        if (dynamic_pointer_cast<Window>(second).get() != nullptr)
-        {
-            CameraPtr cam = dynamic_pointer_cast<Camera>(first);
-            WindowPtr win = dynamic_pointer_cast<Window>(second);
-            for (auto tex : cam->getTextures())
-                win->setTexture(tex);
-            return true;
-        }
-    }
-
+    bool result = second->linkTo(first);
     glfwMakeContextCurrent(NULL);
 
-    return false;
+    return result;
 }
 
 /*************/
@@ -256,14 +159,6 @@ bool Scene::render()
 {
     STimer::timer << "sceneTimer";
     bool isError {false};
-
-    // Update the textures
-    STimer::timer << "textures";
-    glfwMakeContextCurrent(_mainWindow->get());
-    for (auto& texture : _textures)
-        texture.second->update();
-    glfwMakeContextCurrent(0);
-    STimer::timer >> "textures";
 
     // Update the cameras
     STimer::timer << "cameras";

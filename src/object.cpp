@@ -29,6 +29,8 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
+    for (auto& t : _textures)
+        t->update();
     _geometries[0]->update();
     _geometries[0]->activate();
     _shader->activate();
@@ -58,6 +60,41 @@ void Object::deactivate()
 void Object::draw()
 {
     glDrawArrays(GL_TRIANGLES, 0, _geometries[0]->getVerticesNumber());
+}
+
+/*************/
+bool Object::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    {
+        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        addTexture(tex);
+        return true;
+    }
+    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    {
+        TexturePtr tex(new Texture());
+        if (tex->linkTo(obj))
+            return linkTo(tex);
+        else
+            return false;
+    }
+    else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
+    {
+        GeometryPtr geom(new Geometry());
+        if (geom->linkTo(obj))
+            return linkTo(geom);
+        else
+            return false;
+    }
+    else if (dynamic_pointer_cast<Geometry>(obj).get() != nullptr)
+    {
+        GeometryPtr geom = dynamic_pointer_cast<Geometry>(obj);
+        addGeometry(geom);
+        return true;
+    }
+
+    return false;
 }
 
 /*************/

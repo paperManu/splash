@@ -37,6 +37,19 @@ void Geometry::deactivate() const
 }
 
 /*************/
+bool Geometry::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
+    {
+        MeshPtr mesh = dynamic_pointer_cast<Mesh>(obj);
+        setMesh(mesh);
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
 void Geometry::update()
 {
     if (!_mesh)

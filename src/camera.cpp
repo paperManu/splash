@@ -63,6 +63,19 @@ void Camera::addObject(ObjectPtr& obj)
 }
 
 /*************/
+bool Camera::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    {
+        ObjectPtr obj3D = dynamic_pointer_cast<Object>(obj);
+        addObject(obj3D);
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
 bool Camera::render()
 {
     glfwMakeContextCurrent(_window->get());

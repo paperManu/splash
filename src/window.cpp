@@ -87,6 +87,26 @@ void Window::getMousePos(GLFWwindow* win, double xpos, double ypos)
 }
 
 /*************/
+bool Window::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    {
+        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        setTexture(tex);
+        return true;
+    }
+    else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    {
+        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
+        for (auto& tex : cam->getTextures())
+            setTexture(tex);
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
 bool Window::render()
 {
     glfwMakeContextCurrent(_window->get());

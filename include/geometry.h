@@ -95,6 +95,11 @@ class Geometry : public BaseObject
         GLuint getVertexCoords() const {return _vertexCoords;}
 
         /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
+
+        /**
          * Set the mesh for this object
          */
         void setMesh(MeshPtr mesh) {_mesh = mesh;}
