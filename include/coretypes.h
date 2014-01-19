@@ -49,6 +49,7 @@ namespace Splash
 
 /*************/
 typedef std::vector<unsigned char> SerializedObject;
+typedef std::shared_ptr<SerializedObject> SerializedObjectPtr;
 
 /*************/
 class GlWindow

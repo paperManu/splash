@@ -45,16 +45,19 @@ void World::run()
         // Send them the their destinations
         for (auto& o : _objects)
         {
-            SerializedObject obj;
+            SerializedObjectPtr obj(new SerializedObject);
             if (dynamic_pointer_cast<Image>(o.second).get() != nullptr)
-                obj = dynamic_pointer_cast<Image>(o.second)->serialize();
+                *obj = dynamic_pointer_cast<Image>(o.second)->serialize();
             else if (dynamic_pointer_cast<Mesh>(o.second).get() != nullptr)
-                obj = dynamic_pointer_cast<Mesh>(o.second)->serialize();
+                *obj = dynamic_pointer_cast<Mesh>(o.second)->serialize();
 
             for (auto& dest : _objectDest[o.first])
                 if (_scenes.find(dest) != _scenes.end())
-                    _scenes[dest]->setFromSerializedObject(o.first, obj);
+                    _threadPool->enqueue([=, &o]() {
+                        _scenes[dest]->setFromSerializedObject(o.first, *obj);
+                    });
         }
+        _threadPool->waitAllThreads();
 
         // Then render the scenes
         for (auto& s : _scenes)
