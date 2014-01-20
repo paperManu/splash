@@ -61,10 +61,7 @@ void World::run()
 
         // Then render the scenes
         for (auto& s : _scenes)
-            _threadPool->enqueue([&]() {
-                run &= !s.second->render();
-            });
-        _threadPool->waitAllThreads();
+            run &= !s.second->render();
 
         if (!run)
             break;
@@ -113,7 +110,6 @@ void World::addLocally(string type, string name, string destination)
     {
         _objectDest[name] = vector<string>();
         _objectDest[name].emplace_back(destination);
-        _objectDest[name].emplace_back(SPLASH_WORLD_SCENE);
     }
     // If it is, we only add the new destination
     else
@@ -159,12 +155,6 @@ void World::applyConfig()
         }
     }
 
-    // We also create a default, local scene
-    {
-        ScenePtr scene(new Scene(string(SPLASH_WORLD_SCENE)));
-        _scenes[SPLASH_WORLD_SCENE] = scene;
-    }
-
     // Configure each scenes
     for (auto& s : _scenes)
     {
@@ -189,9 +179,6 @@ void World::applyConfig()
 
             // Some objects are also created on this side, and linked with the distant one
             addLocally(type, name, s.first);
-            // Also, some are added to the local scene
-            if (type != "camera" && type != "window")
-                _scenes[SPLASH_WORLD_SCENE]->add(type, name);
 
             // Set their attributes
             auto objMembers = obj.getMemberNames();
@@ -225,8 +212,6 @@ void World::applyConfig()
                 s.second->setAttribute(name, objMembers[idxAttr], values);
                 // We also set the attribute locally, if the object exists
                 setAttribute(name, objMembers[idxAttr], values);
-                // As well as in the local scene
-                _scenes[SPLASH_WORLD_SCENE]->setAttribute(name, objMembers[idxAttr], values);
 
                 idxAttr++;
             }
@@ -248,15 +233,11 @@ void World::applyConfig()
                 if (link.size() < 2)
                     continue;
                 s.second->link(link[0].asString(), link[1].asString());
-                // Link also in the local scene, at least objects which are present
-                _scenes[SPLASH_WORLD_SCENE]->link(link[0].asString(), link[1].asString());
             }
             idx++;
         }
 
         // Lastly, in the local scene, connect all Objects to the single camera present
-        // Also, this will give this scene a special behavior
-        _scenes[SPLASH_WORLD_SCENE]->setAsWorldScene();
     }
 }
 

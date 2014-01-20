@@ -34,7 +34,6 @@
 #define SPLASH_SWAP_INTERVAL 1
 #define SPLASH_SAMPLES 4
 #define SPLASH_MAX_THREAD 4
-#define SPLASH_WORLD_SCENE "World"
 
 #include <map>
 #include <memory>

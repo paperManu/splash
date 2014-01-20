@@ -169,7 +169,10 @@ bool Scene::render()
     // Update the windows
     STimer::timer << "windows";
     for (auto& window : _windows)
-        isError |= window.second->render();
+        _threadPool->enqueue([&]() {
+            isError |= window.second->render();
+        });
+    _threadPool->waitAllThreads();
     STimer::timer >> "windows";
 
     // Swap all buffers at once
