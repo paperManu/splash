@@ -34,6 +34,7 @@
 #include "camera.h"
 #include "coretypes.h"
 #include "geometry.h"
+#include "gui.h"
 #include "image.h"
 #include "log.h"
 #include "mesh.h"
@@ -106,8 +107,6 @@ class Scene
         unsigned long _nextId {0};
 
         std::map<std::string, BaseObjectPtr> _objects;
-
-        ThreadPoolPtr _threadPool;
 
         /**
          * Get a glfw window sharing the same context as _mainWindow

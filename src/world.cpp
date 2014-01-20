@@ -43,6 +43,7 @@ void World::run()
         for (auto& o : _objects)
             o.second->update();
         // Send them the their destinations
+        vector<unsigned int> threadIds;
         for (auto& o : _objects)
         {
             SerializedObjectPtr obj(new SerializedObject);
@@ -53,11 +54,11 @@ void World::run()
 
             for (auto& dest : _objectDest[o.first])
                 if (_scenes.find(dest) != _scenes.end())
-                    _threadPool->enqueue([=, &o]() {
+                    threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                         _scenes[dest]->setFromSerializedObject(o.first, *obj);
-                    });
+                    }));
         }
-        _threadPool->waitAllThreads();
+        SThread::pool.waitThreads(threadIds);
 
         // Then render the scenes
         for (auto& s : _scenes)
@@ -244,7 +245,6 @@ void World::applyConfig()
 /*************/
 void World::init()
 {
-    _threadPool.reset(new ThreadPool(SPLASH_MAX_THREAD));
 }
 
 /*************/

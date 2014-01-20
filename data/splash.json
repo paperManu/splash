@@ -42,8 +42,8 @@
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
-        "image" : {"type" : "image", "file" : "lightprobe.jpg"},
-        //"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
+        //"image" : {"type" : "image", "file" : "lightprobe.jpg"},
+        "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         //"texture" : {"type" : "texture"},
         //"texture2" : {"type" : "texture"},
 
@@ -53,7 +53,7 @@
             ["object", "cam2"],
             ["object", "cam3"],
             ["object", "cam4"],
-            ["image", "object"],
+            ["shmimage", "object"],
             //["image", "texture2"],
             ["cam1", "win1"],
             ["cam2", "win2"],

@@ -9,8 +9,6 @@ namespace Splash {
 Scene::Scene(std::string name)
 {
     init(name);
-
-    _threadPool.reset(new ThreadPool(4));
 }
 
 /*************/
@@ -134,35 +132,30 @@ bool Scene::render()
     STimer::timer << "cameras";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
-        {
-            //cout << "CAMERA " << obj.first << endl;
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-        }
     STimer::timer >> "cameras";
 
     // Update the windows
     STimer::timer << "windows";
+    vector<unsigned int> threadIds;
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-        {
-            //cout << "WINDOW " << obj.first << endl;
-            _threadPool->enqueue([&]() {
+            threadIds.push_back(SThread::pool.enqueue([&]() {
                 isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-            });
-        }
-    _threadPool->waitAllThreads();
+            }));
+    SThread::pool.waitThreads(threadIds);
     STimer::timer >> "windows";
 
     // Swap all buffers at once
+    STimer::timer << "swap";
+    threadIds.clear();
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-        {
-            //cout << "WINDOW " << obj.first << " SWAP" << endl;
-            _threadPool->enqueue([&]() {
+            threadIds.push_back(SThread::pool.enqueue([&]() {
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-            });
-        }
-    _threadPool->waitAllThreads();
+            }));
+    SThread::pool.waitThreads(threadIds);
+    STimer::timer >> "swap";
 
     _status = !isError;
 

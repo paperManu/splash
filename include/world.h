@@ -65,7 +65,6 @@ class World {
         void run();
 
     private:
-        ThreadPoolPtr _threadPool;
         bool _status {true};
         std::map<std::string, ScenePtr> _scenes;
 

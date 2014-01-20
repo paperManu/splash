@@ -35,6 +35,9 @@
 #include <mutex>
 #include <condition_variable>
 
+#include "config.h"
+#include "coretypes.h"
+
 /*************/
 class ThreadPool;
 
@@ -56,8 +59,9 @@ class ThreadPool
         ThreadPool(size_t);
         ~ThreadPool();
 
-        template<class F> void enqueue(F f);
+        template<class F> unsigned int enqueue(F f);
         void waitAllThreads();
+        void waitThreads(std::vector<unsigned int>);
         unsigned int getPoolLength();
 
     private:
@@ -65,29 +69,47 @@ class ThreadPool
 
         std::vector<std::thread> workers;
         std::deque<std::function<void()> > tasks;
+        std::deque<unsigned int> tasksId;
+        std::deque<unsigned int> tasksFinished;
 
         std::atomic_uint workingThreads;
         std::mutex queue_mutex;
         std::condition_variable condition;
         bool stop;
+
+        std::atomic_uint nextId {1};
 };
 
 typedef std::shared_ptr<ThreadPool> ThreadPoolPtr;
 
 /*************/
 template<class F>
-void ThreadPool::enqueue(F f)
+unsigned int ThreadPool::enqueue(F f)
 {
+    unsigned int id;
     {
         // Acquire lock
         std::unique_lock<std::mutex> lock(queue_mutex);
 
+        id = std::atomic_fetch_add(&nextId, 1u);
+
         // Add the task
         tasks.push_back(std::function<void()>(f));
+        tasksId.push_back(id);
     }
 
     // Wake up one thread
     condition.notify_one();
+
+    return id;
 }
+
+/*************/
+// Global thread pool
+struct SThread
+{
+    public:
+        static ThreadPool pool;
+};
 
 #endif // THREADPOOL_H

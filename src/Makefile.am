@@ -10,6 +10,7 @@ lib_LTLIBRARIES = \
 libsplash_la_SOURCES = \
     camera.cpp \
     geometry.cpp \
+    gui.cpp \
     image.cpp \
     image_shmdata.cpp \
     log.cpp \
@@ -52,6 +53,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/splash.h \
     $(top_srcdir)/include/camera.h \
     $(top_srcdir)/include/geometry.h \
+    $(top_srcdir)/include/gui.h \
     $(top_srcdir)/include/image.h \
     $(top_srcdir)/include/log.h \
     $(top_srcdir)/include/mesh.h \
