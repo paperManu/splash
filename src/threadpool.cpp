@@ -73,12 +73,15 @@ void ThreadPool::waitAllThreads()
     nap.tv_sec = 0;
     nap.tv_nsec = 1e5;
 
-    bool waiting = true;
-    while (waiting)
+    while (true)
     {
         nanosleep(&nap, NULL);
         if (workingThreads == 0 && tasks.size() == 0)
-            waiting = false;
+        {
+            unique_lock<mutex> lock(queue_mutex);
+            tasksFinished.clear();
+            break;
+        }
     }
 }
 
@@ -89,8 +92,7 @@ void ThreadPool::waitThreads(vector<unsigned int> list)
     nap.tv_sec = 0;
     nap.tv_nsec = 1e5;
 
-    bool waiting = true;
-    while (waiting)
+    while (true)
     {
         nanosleep(&nap, NULL);
         if (list.size() == 0 || workingThreads == 0)
