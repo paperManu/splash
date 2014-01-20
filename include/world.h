@@ -25,6 +25,9 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include "config.h"
+#include "coretypes.h"
+
 #include <map>
 #include <mutex>
 #include <string>
@@ -33,8 +36,6 @@
 #include <glm/glm.hpp>
 #include <json/reader.h>
 
-#include "config.h"
-#include "coretypes.h"
 #include "image_shmdata.h"
 #include "log.h"
 #include "scene.h"

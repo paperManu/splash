@@ -28,6 +28,7 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
+#define SPLASH
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 2
 #define SPLASH_GL_DEBUG false
@@ -39,6 +40,7 @@
 #include <memory>
 #include <string>
 #include <GLFW/glfw3.h>
+#include <glv.h>
 
 #include "config.h"
 #include "log.h"

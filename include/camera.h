@@ -28,7 +28,8 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include <config.h>
+#include "config.h"
+#include "coretypes.h"
 
 #include <functional>
 #include <memory>
@@ -37,7 +38,6 @@
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 
-#include "coretypes.h"
 #include "object.h"
 #include "texture.h"
 

@@ -25,7 +25,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <config.h>
+#include "config.h"
+#include "coretypes.h"
 
 #include <deque>
 #include <memory>
@@ -33,8 +34,6 @@
 #include <utility>
 #include <vector>
 
-#include "coretypes.h"
-#include "camera.h"
 #include "geometry.h"
 #include "log.h"
 #include "object.h"

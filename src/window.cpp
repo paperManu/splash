@@ -1,4 +1,6 @@
 #include "window.h"
+#include "camera.h"
+#include "gui.h"
 
 #include <functional>
 #include <glm/glm.hpp>
@@ -100,6 +102,12 @@ bool Window::linkTo(BaseObjectPtr obj)
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
         for (auto& tex : cam->getTextures())
             setTexture(tex);
+        return true;
+    }
+    else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
+    {
+        GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
+        setTexture(gui->getTexture());
         return true;
     }
 

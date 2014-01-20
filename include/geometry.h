@@ -28,14 +28,14 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include <config.h>
+#include "config.h"
+#include "coretypes.h"
 
 #include <chrono>
 #include <map>
 #include <vector>
 #include <GLFW/glfw3.h>
 
-#include "coretypes.h"
 #include "mesh.h"
 
 namespace Splash {

@@ -40,6 +40,12 @@ if test "$HAVE_GLM" = "false" ; then
     AC_MSG_ERROR([Missing glm])
 fi
 
+# Glew, needed by the embedded GLV library
+PKG_CHECK_MODULES([GLEW], [glew])
+if test "x${have_glew}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing GLEW])
+fi
+
 # OpenMesh
 PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
 if test "x${have_openmesh}" = "xfalse" ; then

@@ -31,26 +31,6 @@ BaseObjectPtr Scene::add(string type, string name)
             _objects[name] = camera;
         return dynamic_pointer_cast<BaseObject>(camera);
     }
-    else if (type == string("window"))
-    {
-        WindowPtr window(new Window(getNewSharedWindow(name)));
-        window->setId(getId());
-        if (name == string())
-            _objects[to_string(window->getId())] = window;
-        else
-            _objects[name] = window;
-        return dynamic_pointer_cast<BaseObject>(window);
-    }
-    else if (type == string("object"))
-    {
-        ObjectPtr object(new Object());
-        object->setId(getId());
-        if (name == string())
-            _objects[to_string(object->getId())] = object;
-        else
-            _objects[name] = object;
-        return dynamic_pointer_cast<BaseObject>(object);
-    }
     else if (type == string("geometry"))
     {
         GeometryPtr geometry(new Geometry());
@@ -61,15 +41,15 @@ BaseObjectPtr Scene::add(string type, string name)
             _objects[name] = geometry;
         return dynamic_pointer_cast<BaseObject>(geometry);
     }
-    else if (type == string("mesh"))
+    else if (type == string("gui"))
     {
-        MeshPtr mesh(new Mesh());
-        mesh->setId(getId());
+        GuiPtr gui(new Gui(_mainWindow));
+        gui->setId(getId());
         if (name == string())
-            _objects[to_string(mesh->getId())] = mesh;
+            _objects[to_string(gui->getId())] = gui;
         else
-            _objects[name] = mesh;
-        return dynamic_pointer_cast<BaseObject>(mesh);
+            _objects[name] = gui;
+        return dynamic_pointer_cast<BaseObject>(gui);
     }
     else if (type == string("image") || type == string("image_shmdata"))
     {
@@ -81,6 +61,26 @@ BaseObjectPtr Scene::add(string type, string name)
             _objects[name] = image;
         return dynamic_pointer_cast<BaseObject>(image);
     }
+    else if (type == string("mesh"))
+    {
+        MeshPtr mesh(new Mesh());
+        mesh->setId(getId());
+        if (name == string())
+            _objects[to_string(mesh->getId())] = mesh;
+        else
+            _objects[name] = mesh;
+        return dynamic_pointer_cast<BaseObject>(mesh);
+    }
+    else if (type == string("object"))
+    {
+        ObjectPtr object(new Object());
+        object->setId(getId());
+        if (name == string())
+            _objects[to_string(object->getId())] = object;
+        else
+            _objects[name] = object;
+        return dynamic_pointer_cast<BaseObject>(object);
+    }
     else if (type == string("texture"))
     {
         TexturePtr tex(new Texture());
@@ -90,6 +90,16 @@ BaseObjectPtr Scene::add(string type, string name)
         else
             _objects[name] = tex;
         return dynamic_pointer_cast<BaseObject>(tex);
+    }
+    else if (type == string("window"))
+    {
+        WindowPtr window(new Window(getNewSharedWindow(name)));
+        window->setId(getId());
+        if (name == string())
+            _objects[to_string(window->getId())] = window;
+        else
+            _objects[name] = window;
+        return dynamic_pointer_cast<BaseObject>(window);
     }
     else
         return BaseObjectPtr();
@@ -128,11 +138,13 @@ bool Scene::render()
     STimer::timer << "sceneTimer";
     bool isError {false};
 
-    // Update the cameras
+    // Update the cameras and the guis
     STimer::timer << "cameras";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
+        else if (obj.second->getType() == "gui")
+            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "cameras";
 
     // Update the windows
