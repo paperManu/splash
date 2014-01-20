@@ -30,7 +30,7 @@
 
 #define SPLASH
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
-#define SPLASH_GL_CONTEXT_VERSION_MINOR 2
+#define SPLASH_GL_CONTEXT_VERSION_MINOR 3
 #define SPLASH_GL_DEBUG false
 #define SPLASH_SWAP_INTERVAL 1
 #define SPLASH_SAMPLES 4
@@ -40,7 +40,6 @@
 #include <memory>
 #include <string>
 #include <GLFW/glfw3.h>
-#include <glv.h>
 
 #include "config.h"
 #include "log.h"

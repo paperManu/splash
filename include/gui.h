@@ -28,13 +28,14 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include <memory>
-#include <glm/glm.hpp>
-#include <glv.h>
-#include <GLFW/glfw3.h>
-
 #include "config.h"
 #include "coretypes.h"
+
+#include <memory>
+#include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
+#include <glv.h>
+
 #include "object.h"
 #include "texture.h"
 
