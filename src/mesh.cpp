@@ -34,17 +34,26 @@ vector<float> Mesh::getVertCoords() const
     coords.resize(_mesh.n_faces() * 3 * 4);
 
     int idx = 0;
-    for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
+
+    try
     {
-        for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
         {
-            auto point = _mesh.point(vertex);
-            for (int i = 0; i < 3; ++i)
-                coords[idx + i] = point[i];
-            coords[idx + 3] = 1.f; // We add this to get normalized coordinates
-            idx += 4;
+            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+            {
+                auto point = _mesh.point(vertex);
+                for (int i = 0; i < 3; ++i)
+                    coords[idx + i] = point[i];
+                coords[idx + 3] = 1.f; // We add this to get normalized coordinates
+                idx += 4;
+            });
         });
-    });
+    }
+    catch (...)
+    {
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
+        return vector<float>();
+    }
 
     return coords;
 }
@@ -56,16 +65,26 @@ vector<float> Mesh::getUVCoords() const
     coords.resize(_mesh.n_faces() * 3 * 2);
 
     int idx = 0;
-    for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
+    try
     {
-        for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
         {
-            auto tex = _mesh.texcoord2D(vertex);
-            for (int i = 0; i < 2; ++i)
-                coords[idx + i] = tex[i];
-            idx += 2;
+            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+            {
+                auto tex = _mesh.texcoord2D(vertex);
+                for (int i = 0; i < 2; ++i)
+                    coords[idx + i] = tex[i];
+                idx += 2;
+            });
         });
-    });
+    }
+    catch (...)
+    {
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
+        return vector<float>();
+    }
+
+
 
     return coords;
 }
@@ -77,16 +96,26 @@ vector<float> Mesh::getNormals() const
     normals.resize(_mesh.n_faces() * 3 * 3);
 
     int idx = 0;
-    for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
+    try
     {
-        for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
         {
-            auto normal = _mesh.normal(vertex);
-            for (int i = 0; i < 3; ++i)
-                normals[idx + i] = normal[i];
-            idx += 3;
+            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+            {
+                auto normal = _mesh.normal(vertex);
+                for (int i = 0; i < 3; ++i)
+                    normals[idx + i] = normal[i];
+                idx += 3;
+            });
         });
-    });
+    }
+    catch (...)
+    {
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
+        return vector<float>();
+    }
+
+
 
     return normals;
 }
@@ -132,8 +161,6 @@ SerializedObject Mesh::serialize() const
     for (auto d : data)
         totalSize += d.size() * sizeof(d[0]);
     obj.resize(totalSize);
-
-    //cout << data[0].size() << " " << data[1].size() << " " << data[2].size() << endl;
 
     auto currentObjPtr = obj.data();
     const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&nbrVertices);
