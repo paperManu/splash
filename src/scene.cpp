@@ -28,9 +28,9 @@ BaseObjectPtr Scene::add(string type, string name)
         CameraPtr camera(new Camera(_mainWindow));
         camera->setId(getId());
         if (name == string())
-            _cameras[to_string(camera->getId())] = camera;
+            _objects[to_string(camera->getId())] = camera;
         else
-            _cameras[name] = camera;
+            _objects[name] = camera;
         return dynamic_pointer_cast<BaseObject>(camera);
     }
     else if (type == string("window"))
@@ -38,9 +38,9 @@ BaseObjectPtr Scene::add(string type, string name)
         WindowPtr window(new Window(getNewSharedWindow(name)));
         window->setId(getId());
         if (name == string())
-            _windows[to_string(window->getId())] = window;
+            _objects[to_string(window->getId())] = window;
         else
-            _windows[name] = window;
+            _objects[name] = window;
         return dynamic_pointer_cast<BaseObject>(window);
     }
     else if (type == string("object"))
@@ -58,9 +58,9 @@ BaseObjectPtr Scene::add(string type, string name)
         GeometryPtr geometry(new Geometry());
         geometry->setId(getId());
         if (name == string())
-            _geometries[to_string(geometry->getId())] = geometry;
+            _objects[to_string(geometry->getId())] = geometry;
         else
-            _geometries[name] = geometry;
+            _objects[name] = geometry;
         return dynamic_pointer_cast<BaseObject>(geometry);
     }
     else if (type == string("mesh"))
@@ -68,9 +68,9 @@ BaseObjectPtr Scene::add(string type, string name)
         MeshPtr mesh(new Mesh());
         mesh->setId(getId());
         if (name == string())
-            _meshes[to_string(mesh->getId())] = mesh;
+            _objects[to_string(mesh->getId())] = mesh;
         else
-            _meshes[name] = mesh;
+            _objects[name] = mesh;
         return dynamic_pointer_cast<BaseObject>(mesh);
     }
     else if (type == string("image") || type == string("image_shmdata"))
@@ -78,9 +78,9 @@ BaseObjectPtr Scene::add(string type, string name)
         ImagePtr image(new Image());
         image->setId(getId());
         if (name == string())
-            _images[to_string(image->getId())] = image;
+            _objects[to_string(image->getId())] = image;
         else
-            _images[name] = image;
+            _objects[name] = image;
         return dynamic_pointer_cast<BaseObject>(image);
     }
     else if (type == string("texture"))
@@ -88,9 +88,9 @@ BaseObjectPtr Scene::add(string type, string name)
         TexturePtr tex(new Texture());
         tex->setId(getId());
         if (name == string())
-            _textures[to_string(tex->getId())] = tex;
+            _objects[to_string(tex->getId())] = tex;
         else
-            _textures[name] = tex;
+            _objects[name] = tex;
         return dynamic_pointer_cast<BaseObject>(tex);
     }
     else
@@ -107,38 +107,8 @@ bool Scene::link(string first, string second)
 
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
-    else if (_objects.find(second) != _objects.end())
+    if (_objects.find(second) != _objects.end())
         sink = _objects[second];
-
-    if (_geometries.find(first) != _geometries.end())
-        source = _geometries[first];
-    else if (_geometries.find(second) != _geometries.end())
-        sink = _geometries[second];
-
-    if (_meshes.find(first) != _meshes.end())
-        source = _meshes[first];
-    else if (_meshes.find(second) != _meshes.end())
-        sink = _meshes[second];
-
-    if (_images.find(first) != _images.end())
-        source = _images[first];
-    else if (_images.find(second) != _images.end())
-        sink = _images[second];
-
-    if (_textures.find(first) != _textures.end())
-        source = _textures[first];
-    else if (_textures.find(second) != _textures.end())
-        sink = _textures[second];
-
-    if (_cameras.find(first) != _cameras.end())
-        source = _cameras[first];
-    else if (_cameras.find(second) != _cameras.end())
-        sink = _cameras[second];
-
-    if (_windows.find(first) != _windows.end())
-        source = _windows[first];
-    else if (_windows.find(second) != _windows.end())
-        sink = _windows[second];
 
     if (source.get() != nullptr && sink.get() != nullptr)
         link(source, sink);
@@ -162,24 +132,36 @@ bool Scene::render()
 
     // Update the cameras
     STimer::timer << "cameras";
-    for (auto& camera : _cameras)
-        isError |= camera.second->render();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+        {
+            //cout << "CAMERA " << obj.first << endl;
+            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
+        }
     STimer::timer >> "cameras";
 
     // Update the windows
     STimer::timer << "windows";
-    for (auto& window : _windows)
-        _threadPool->enqueue([&]() {
-            isError |= window.second->render();
-        });
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+        {
+            //cout << "WINDOW " << obj.first << endl;
+            _threadPool->enqueue([&]() {
+                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+            });
+        }
     _threadPool->waitAllThreads();
     STimer::timer >> "windows";
 
     // Swap all buffers at once
-    for (auto& window : _windows)
-        _threadPool->enqueue([&]() {
-            window.second->swapBuffers();
-        });
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+        {
+            //cout << "WINDOW " << obj.first << " SWAP" << endl;
+            _threadPool->enqueue([&]() {
+                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+            });
+        }
     _threadPool->waitAllThreads();
 
     _status = !isError;
@@ -221,25 +203,17 @@ void Scene::setAsWorldScene()
 /*************/
 void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
 {
-    if (_cameras.find(name) != _cameras.end())
-        _cameras[name]->setAttribute(attrib, args);
-    else if (_windows.find(name) != _windows.end())
-        _windows[name]->setAttribute(attrib, args);
-    else if (_objects.find(name) != _objects.end())
+    if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
-    else if (_images.find(name) != _images.end())
-        _images[name]->setAttribute(attrib, args);
-    else if (_meshes.find(name) != _meshes.end())
-        _meshes[name]->setAttribute(attrib, args);
 }
 
 /*************/
 void Scene::setFromSerializedObject(const std::string name, const SerializedObject& obj)
 {
-    if (_images.find(name) != _images.end())
-        _images[name]->deserialize(obj);
-    else if (_meshes.find(name) != _meshes.end())
-        _meshes[name]->deserialize(obj);
+    if (_objects.find(name) != _objects.end() && _objects[name]->getType() == "image")
+        dynamic_pointer_cast<Image>(_objects[name])->deserialize(obj);
+    else if (_objects.find(name) != _objects.end() && _objects[name]->getType() == "mesh")
+        dynamic_pointer_cast<Mesh>(_objects[name])->deserialize(obj);
 }
 
 /*************/

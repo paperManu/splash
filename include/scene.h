@@ -105,14 +105,7 @@ class Scene
         GlWindowPtr _mainWindow;
         unsigned long _nextId {0};
 
-        std::map<std::string, ObjectPtr> _objects;
-        std::map<std::string, GeometryPtr> _geometries;
-        std::map<std::string, MeshPtr> _meshes;
-        std::map<std::string, ImagePtr> _images;
-        std::map<std::string, TexturePtr> _textures;
-
-        std::map<std::string, CameraPtr> _cameras;
-        std::map<std::string, WindowPtr> _windows;
+        std::map<std::string, BaseObjectPtr> _objects;
 
         ThreadPoolPtr _threadPool;
 
