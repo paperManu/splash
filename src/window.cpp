@@ -255,12 +255,9 @@ void Window::setProjectionSurface()
     glfwMakeContextCurrent(0);
 
     // Initialize the callbacks
-    if (!glfwSetKeyCallback(_window->get(), Window::keyCallback))
-        SLog::log << Log::DEBUG << "Window::" << __FUNCTION__ << " - Error while setting up key callback" << Log::endl;
-    if (!glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback))
-        SLog::log << Log::DEBUG << "Window::" << __FUNCTION__ << " - Error while setting up mouse button callback" << Log::endl;
-    if (!glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback))
-        SLog::log << Log::DEBUG << "Window::" << __FUNCTION__ << " - Error while setting up mouse position callback" << Log::endl;
+    glfwSetKeyCallback(_window->get(), Window::keyCallback);
+    glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
+    glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
 }
 
 } // end of namespace
