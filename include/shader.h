@@ -121,8 +121,10 @@ class Shader : public BaseObject
         GLint _locationMVP {0};
         GLint _locationNormalMatrix {0};
         GLint _locationSide {0};
+        GLint _locationTextureNbr {0};
 
         Sideness _sideness {doubleSided};
+        int _textureNbr {0};
 
         void compileProgram();
         bool linkProgram();
@@ -157,18 +159,26 @@ class Shader : public BaseObject
             #version 330 core
 
             uniform sampler2D _tex0;
+            uniform sampler2D _tex1;
             uniform int _sideness;
+            uniform int _textureNbr;
             in vec2 texCoord;
             in vec3 normal;
             out vec4 fragColor;
 
             void main(void)
             {
-                if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1)
-                     || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+                if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
                     discard;
-                else
+
+                if (_textureNbr > 0)
                     fragColor = texture(_tex0, texCoord);
+                if (_textureNbr > 1)
+                {
+                    vec4 color = texture(_tex1, texCoord);
+                    if (color != vec4(0.0, 1.0, 1.0, 1.0))
+                        fragColor = fragColor * 0.2 + color * 0.8;
+                }
             }
         )"};
 

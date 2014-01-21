@@ -40,13 +40,17 @@ void Shader::activate()
     {
         if (!linkProgram())
             return;
+        _locationMVP = glGetUniformLocation(_program, "_viewProjectionMatrix");
+        _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
+        _locationSide = glGetUniformLocation(_program, "_sideness");
+        _locationTextureNbr = glGetUniformLocation(_program, "_textureNbr");
     }
 
     glUseProgram(_program);
-    _locationMVP = glGetUniformLocation(_program, "_viewProjectionMatrix");
-    _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
-    _locationSide = glGetUniformLocation(_program, "_sideness");
+
     glUniform1i(_locationSide, _sideness);
+    _textureNbr = 0;
+    glUniform1i(_locationTextureNbr, _textureNbr);
 }
 
 /*************/
@@ -112,6 +116,9 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
     glBindTexture(GL_TEXTURE_2D, texture->getTexId());
     GLint uniform = glGetUniformLocation(_program, name.c_str());
     glUniform1i(uniform, textureUnit);
+
+    _textureNbr++;
+    glUniform1i(_locationTextureNbr, _textureNbr);
 }
 
 /*************/

@@ -25,6 +25,9 @@
 #ifndef GUI_H
 #define GUI_H
 
+#define SPLASH_GLV_TEXTCOLOR 1.0, 1.0, 1.0
+#define SPLASH_GLV_FONTSIZE 1.5
+
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
@@ -41,6 +44,13 @@
 
 namespace Splash {
 
+/*************/
+class GlvTextBox : public glv::View
+{
+    void onDraw(glv::GLV& g);
+};
+
+/*************/
 class Gui : public BaseObject
 {
     public:
@@ -95,13 +105,21 @@ class Gui : public BaseObject
         TexturePtr _depthTexture;
         TexturePtr _outTexture;
         std::vector<ObjectPtr> _objects;
+        float _width {512}, _height {512};
 
+        // GLV related attributes
         glv::GLV _glv;
+        GlvTextBox _glvLog;
         
         /**
          * Initialize GLV
          */
-        void initGLV();
+        void initGLV(int width, int height);
+
+        /**
+         * Update the content of the GLV widgets
+         */
+        void updateGLV();
 
         /**
          * Register new functors to modify attributes
