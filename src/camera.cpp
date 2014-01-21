@@ -110,7 +110,7 @@ bool Camera::render()
     for (auto t : _outTextures)
         t->generateMipmap();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glDisable(GL_MULTISAMPLE);
     glDisable(GL_DEPTH_TEST);
 

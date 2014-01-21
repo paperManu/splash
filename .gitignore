@@ -31,3 +31,4 @@ tests/check_mesh
 tests/check_scene
 tests/check_object
 tests/check_world
+tests/check_gui

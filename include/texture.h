@@ -28,7 +28,8 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include <config.h>
+#include "config.h"
+#include "coretypes.h"
 
 #include <chrono>
 #include <memory>
@@ -37,7 +38,6 @@
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 
-#include "coretypes.h"
 #include "image.h"
 #include "log.h"
 

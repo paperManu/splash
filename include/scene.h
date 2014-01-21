@@ -26,13 +26,13 @@
 #define SCENE_H
 
 #include "config.h"
+#include "coretypes.h"
 
 #include <cstddef>
 #include <vector>
 #include <GLFW/glfw3.h>
 
 #include "camera.h"
-#include "coretypes.h"
 #include "geometry.h"
 #include "gui.h"
 #include "image.h"

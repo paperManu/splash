@@ -28,12 +28,14 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
+#include "config.h"
+#include "coretypes.h"
+
 #include <memory>
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
+#include <glv.h>
 
-#include "config.h"
-#include "coretypes.h"
 #include "object.h"
 #include "texture.h"
 
@@ -61,14 +63,14 @@ class Gui : public BaseObject
             _isInitialized = c._isInitialized;
             _window = c._window;
             _fbo = c._fbo;
-            _outTextures = c._outTextures;
+            _outTexture = c._outTexture;
             _objects = c._objects;
         }
 
         /**
          * Get pointers to this camera textures
          */
-        std::vector<TexturePtr> getTextures() const {return _outTextures;}
+        TexturePtr getTexture() const {return _outTexture;}
 
         /**
          * Check wether it is initialized
@@ -91,8 +93,10 @@ class Gui : public BaseObject
 
         GLuint _fbo;
         TexturePtr _depthTexture;
-        std::vector<TexturePtr> _outTextures;
+        TexturePtr _outTexture;
         std::vector<ObjectPtr> _objects;
+
+        glv::GLV _glv;
 
         /**
          * Register new functors to modify attributes

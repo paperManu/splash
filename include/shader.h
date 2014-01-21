@@ -28,7 +28,8 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include <config.h>
+#include "config.h"
+#include "coretypes.h"
 
 #include <memory>
 #include <string>
@@ -36,7 +37,6 @@
 #include <map>
 #include <GLFW/glfw3.h>
 
-#include "coretypes.h"
 #include "texture.h"
 
 namespace Splash {
