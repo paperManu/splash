@@ -1,7 +1,8 @@
 AM_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/external/GLV/GLV \
-    -I$(top_srcdir)/external/bandit
+    -I$(top_srcdir)/external/bandit \
+	-DGLV_GLFW
 
 #*************#
 lib_LTLIBRARIES = \
