@@ -54,6 +54,20 @@ Gui::~Gui()
 }
 
 /*************/
+void Gui::key(int& key, int& action, int& mods)
+{
+    switch (key)
+    {
+    default:
+        break;
+    case GLFW_KEY_TAB:
+        if (action == GLFW_PRESS)
+            _isVisible = !_isVisible;
+        break;
+    }
+}
+
+/*************/
 bool Gui::render()
 {
     glfwMakeContextCurrent(_window->get());
@@ -72,8 +86,8 @@ bool Gui::render()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     
-    
-    _glv.drawWidgets(spec.width, spec.height, 0.016);
+    if (_isVisible) 
+        _glv.drawWidgets(spec.width, spec.height, 0.016);
 
     glActiveTexture(GL_TEXTURE0);
     _outTexture->generateMipmap();

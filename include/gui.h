@@ -88,6 +88,11 @@ class Gui : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Forward a key event
+         */
+        void key(int& key, int& action, int& mods);
+
+        /**
          * Render this camera into its textures
          */
         bool render();
@@ -108,6 +113,7 @@ class Gui : public BaseObject
         float _width {512}, _height {512};
 
         // GLV related attributes
+        bool _isVisible {false};
         glv::GLV _glv;
         GlvTextBox _glvLog;
         

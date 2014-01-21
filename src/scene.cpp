@@ -184,6 +184,11 @@ bool Scene::render()
 
         if (key == GLFW_KEY_ESCAPE)
             quit = true;
+
+        // Send the action to the GUI
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
     STimer::timer >> "events";
 

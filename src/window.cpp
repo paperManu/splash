@@ -54,8 +54,8 @@ int Window::getKeys(GLFWwindow* win, int& key, int& action, int& mods)
     vector<int> keys = _keys.front().second;
 
     key = keys[0];
-    action = keys[1];
-    mods = keys[2];
+    action = keys[2];
+    mods = keys[3];
 
     _keys.pop_front();
 
