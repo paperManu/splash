@@ -43,7 +43,7 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("gui"))
     {
-        GuiPtr gui(new Gui(_mainWindow));
+        GuiPtr gui(new Gui(getNewSharedWindow(name, true)));
         gui->setId(getId());
         if (name == string())
             _objects[to_string(gui->getId())] = gui;
@@ -222,7 +222,7 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow(string name)
+GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = name;
@@ -233,9 +233,18 @@ GlWindowPtr Scene::getNewSharedWindow(string name)
         return GlWindowPtr(nullptr);
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    if (!gl2)
+    {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    }
+    else
+    {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+    }
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_VISIBLE, false);

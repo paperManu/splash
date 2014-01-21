@@ -97,6 +97,11 @@ class Gui : public BaseObject
         std::vector<ObjectPtr> _objects;
 
         glv::GLV _glv;
+        
+        /**
+         * Initialize GLV
+         */
+        void initGLV();
 
         /**
          * Register new functors to modify attributes
