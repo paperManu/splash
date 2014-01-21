@@ -34,6 +34,7 @@
 #include "config.h"
 #include "coretypes.h"
 
+#include <functional>
 #include <memory>
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
@@ -47,7 +48,12 @@ namespace Splash {
 /*************/
 class GlvTextBox : public glv::View
 {
-    void onDraw(glv::GLV& g);
+    public:
+        void onDraw(glv::GLV& g);
+        void setDraw(std::function<void(GlvTextBox&, glv::GLV&)> func) {_func = func;}
+
+    private:
+        std::function<void(GlvTextBox&, glv::GLV&)> _func;
 };
 
 /*************/
@@ -114,8 +120,10 @@ class Gui : public BaseObject
 
         // GLV related attributes
         bool _isVisible {false};
+        glv::Style _style;
         glv::GLV _glv;
         GlvTextBox _glvLog;
+        GlvTextBox _glvProfile;
         
         /**
          * Initialize GLV

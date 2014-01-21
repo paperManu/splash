@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "timer.h"
 
 using namespace std;
 using namespace glv;
@@ -120,12 +121,76 @@ void Gui::setOutputSize(int width, int height)
 /*************/
 void Gui::initGLV(int width, int height)
 {
-    _glvLog.width(width / 2);
-    _glvLog.height(height / 4);
+    _style.color.set(Color(1.0, 0.5, 0.2, 1.0), 0.7);
+
+    _glvLog.setDraw([](GlvTextBox& me, glv::GLV& g)
+    {
+        draw::color(SPLASH_GLV_TEXTCOLOR);
+        draw::lineWidth(SPLASH_GLV_FONTSIZE);
+        float l = 4;
+        float t = 4;
+        float fontSize = 8;
+        float lineSpacing = 1;
+    
+        // Compute the number of lines which would fit
+        int nbrLines = me.height() / (int)(fontSize + lineSpacing);
+    
+        // Convert the last lines of the text log
+        vector<string> logs = SLog::log.getLogs(Log::DEBUG);
+        string text;
+        for (auto t = logs.begin() + std::max(0, ((int)logs.size() - nbrLines)); t != logs.end(); ++t)
+            text += *t + string("\n");
+        draw::text(text.c_str(), 4, 4);
+    });
+    _glvLog.width(width / 2 - 16);
+    _glvLog.height(height / 4 - 16);
     _glvLog.bottom(height - 8);
     _glvLog.left(8);
-    _glvLog.colors().set(Color(0.2, 0.4, 1.0, 0.8), 0.7);
+    _glvLog.style(&_style);
     _glv << _glvLog;
+
+    _glvProfile.setDraw([](GlvTextBox& me, glv::GLV& g)
+    {
+        draw::color(SPLASH_GLV_TEXTCOLOR);
+        draw::lineWidth(SPLASH_GLV_FONTSIZE);
+        float l = 4;
+        float t = 4;
+        float fontSize = 8;
+        float lineSpacing = 1;
+        
+        // Compute the number of lines which would fit
+        int nbrLines = me.height() / (int)(fontSize + lineSpacing);
+
+        // Smooth the values
+        static float fps {0.f};
+        static float cam {0.f};
+        static float win {0.f};
+        static float buf {0.f};
+        static float evt {0.f};
+
+        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.05;
+        cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
+        win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
+        buf = buf * 0.95 + STimer::timer["swap"] * 0.001 * 0.05;
+        evt = evt * 0.95 + STimer::timer["events"] * 0.001 * 0.05;
+
+        // Create the text message
+        string text;
+        text += "Framerate: " + to_string(fps) + " fps\n";
+        text += "Cameras rendering: " + to_string(cam) + " ms\n";
+        text += "Windows rendering: " + to_string(win) + " ms\n";
+        text += "Buffer swapping: " + to_string(buf) + " ms\n";
+        text += "Events processing: " + to_string(evt) + " ms\n";
+
+        draw::text(text.c_str(), 4, 4);
+    });
+
+    _glvProfile.width(width / 2 - 16);
+    _glvProfile.height(height / 4 - 16);
+    _glvProfile.bottom(height - 8);
+    _glvProfile.right(width - 8);
+    _glvProfile.style(&_style);
+    _glv << _glvProfile;
 }
 
 /*************/
@@ -144,22 +209,15 @@ void Gui::registerAttributes()
 /*************/
 void GlvTextBox::onDraw(GLV& g)
 {
-    draw::color(SPLASH_GLV_TEXTCOLOR);
-    draw::lineWidth(SPLASH_GLV_FONTSIZE);
-    float l = 4;
-    float t = 4;
-    float fontSize = 8;
-    float lineSpacing = 1;
+    try
+    {
+        _func(*this, g);
+    }
+    catch (bad_function_call)
+    {
+        SLog::log << Log::ERROR << "GlvTextBox::" << __FUNCTION__ << " - Draw function is undefined" << Log::endl;
+    }
 
-    // Compute the number of lines which would fit
-    int nbrLines = h / (int)(fontSize + lineSpacing);
-
-    // Convert the last lines of the text log
-    vector<string> logs = SLog::log.getLogs(Log::DEBUG);
-    string text;
-    for (auto t = logs.begin() + std::max(0, ((int)logs.size() - nbrLines)); t != logs.end(); ++t)
-        text += *t + string("\n");
-    draw::text(text.c_str(), 4, 4);
 }
 
 } // end of namespace

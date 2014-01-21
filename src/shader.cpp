@@ -144,7 +144,7 @@ void Shader::compileProgram()
             if (status == GL_TRUE)
             {
                 glAttachShader(_program, shader.second);
-                SLog::log(Log::DEBUG, __FUNCTION__, " - Shader successfully attacher to the program");
+                SLog::log(Log::DEBUG, __FUNCTION__, " - Shader successfully attached to the program");
             }
         }
     }
