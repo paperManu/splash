@@ -128,24 +128,18 @@ void Gui::initGLV(int width, int height)
 {
     _style.color.set(Color(1.0, 0.5, 0.2, 1.0), 0.7);
 
-    _glvLog.setDraw([](GlvTextBox& me, glv::GLV& g)
+    _glvLog.setTextFunc([](GlvTextBox& that)
     {
-        draw::color(SPLASH_GLV_TEXTCOLOR);
-        draw::lineWidth(SPLASH_GLV_FONTSIZE);
-        float l = 4;
-        float t = 4;
-        float fontSize = 8;
-        float lineSpacing = 1;
-    
         // Compute the number of lines which would fit
-        int nbrLines = me.height() / (int)(fontSize + lineSpacing);
+        int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing);
     
         // Convert the last lines of the text log
         vector<string> logs = SLog::log.getLogs(Log::DEBUG);
         string text;
         for (auto t = logs.begin() + std::max(0, ((int)logs.size() - nbrLines)); t != logs.end(); ++t)
             text += *t + string("\n");
-        draw::text(text.c_str(), 4, 4);
+
+        return text;
     });
     _glvLog.width(width / 2 - 16);
     _glvLog.height(height / 4 - 16);
@@ -154,18 +148,8 @@ void Gui::initGLV(int width, int height)
     _glvLog.style(&_style);
     _glv << _glvLog;
 
-    _glvProfile.setDraw([](GlvTextBox& me, glv::GLV& g)
+    _glvProfile.setTextFunc([](GlvTextBox& that)
     {
-        draw::color(SPLASH_GLV_TEXTCOLOR);
-        draw::lineWidth(SPLASH_GLV_FONTSIZE);
-        float l = 4;
-        float t = 4;
-        float fontSize = 8;
-        float lineSpacing = 1;
-        
-        // Compute the number of lines which would fit
-        int nbrLines = me.height() / (int)(fontSize + lineSpacing);
-
         // Smooth the values
         static float fps {0.f};
         static float cam {0.f};
@@ -187,7 +171,7 @@ void Gui::initGLV(int width, int height)
         text += "Buffer swapping: " + to_string(buf) + " ms\n";
         text += "Events processing: " + to_string(evt) + " ms\n";
 
-        draw::text(text.c_str(), 4, 4);
+        return text;
     });
 
     _glvProfile.width(width / 2 - 16);
@@ -214,7 +198,12 @@ void GlvTextBox::onDraw(GLV& g)
 {
     try
     {
-        _func(*this, g);
+        draw::color(SPLASH_GLV_TEXTCOLOR);
+        draw::lineWidth(SPLASH_GLV_FONTSIZE);
+
+        string text = getText(*this);
+
+        draw::text(text.c_str(), 4, 4);
     }
     catch (bad_function_call)
     {
