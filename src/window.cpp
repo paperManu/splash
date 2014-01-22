@@ -263,8 +263,6 @@ bool Window::setProjectionSurface()
     _screen.reset(new Object());
     GeometryPtr virtualScreen(new Geometry());
     _screen->addGeometry(virtualScreen);
-    ShaderPtr shader(new Shader());
-    _screen->setShader(shader);
 
     GLenum error = glGetError();
     if (error)
