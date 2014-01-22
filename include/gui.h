@@ -50,10 +50,13 @@ class GlvTextBox : public glv::View
 {
     public:
         void onDraw(glv::GLV& g);
-        void setDraw(std::function<void(GlvTextBox&, glv::GLV&)> func) {_func = func;}
+        void setTextFunc(std::function<std::string(GlvTextBox& that)> func) {getText = func;}
+
+        float fontSize = 8;
+        float lineSpacing = 1;
 
     private:
-        std::function<void(GlvTextBox&, glv::GLV&)> _func;
+        std::function<std::string(GlvTextBox& that)> getText;
 };
 
 /*************/
