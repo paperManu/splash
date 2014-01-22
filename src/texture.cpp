@@ -41,7 +41,7 @@ ImageBuf Texture::getBuffer() const
 }
 
 /*************/
-void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei width, GLsizei height,
+void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                     GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
     if (width == 0 || height == 0)
@@ -73,14 +73,14 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
             glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         }
 
-        glTexImage2D(target, pLevel, internalFormat, width, height, border, format, type, data);
+        glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     else
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _glTex);
-        glTexImage2D(target, pLevel, internalFormat, width, height, border, format, type, data);
+        glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
@@ -98,6 +98,20 @@ void Texture::reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei w
         _spec.format == TypeDesc::UINT8;
         _spec.channelnames = {"R", "G", "B", "A"};
     }
+
+    _texTarget = target;
+    _texLevel = level;
+    _texInternalFormat = internalFormat;
+    _texBorder = border;
+    _texFormat = format;
+    _texType = type;
+}
+
+/*************/
+void Texture::resize(int width, int height)
+{
+    if (width != _spec.width && height != _spec.height)
+        reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
 }
 
 /*************/

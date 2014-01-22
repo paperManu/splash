@@ -64,13 +64,14 @@ class Window : public BaseObject
             _window = w._window;
             _screen = w._screen;
             _inTextures = w._inTextures;
+            _screenId = w._screenId;
         }
 
         /**
          * Get the grabbed key
          */
         bool getKey(int key);
-        static int getKeys(GLFWwindow* win, int& key, int& action, int& mods);
+        static int getKeys(GLFWwindow*& win, int& key, int& action, int& mods);
 
         /**
          * Get the grabbed mouse action
@@ -88,6 +89,11 @@ class Window : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Check wether the given GLFW window is related to this object
+         */
+        bool isWindow(GLFWwindow* w) const {return (w == _window->get() ? true : false);}
+
+        /**
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
@@ -100,7 +106,7 @@ class Window : public BaseObject
         /**
          * Set the window to fullscreen
          */
-        bool setFullscreen(int screenId);
+        bool switchFullscreen(int screenId = -1);
 
         /**
          * Set a new texture to draw
@@ -115,9 +121,11 @@ class Window : public BaseObject
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
+        int _screenId {0};
 
         ObjectPtr _screen;
         std::vector<TexturePtr> _inTextures;
+        bool _isLinkedToTexture {false};
 
         static std::mutex _callbackMutex;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys;

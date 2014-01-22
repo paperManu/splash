@@ -75,7 +75,9 @@ bool Gui::render()
 
     GLenum error = glGetError();
     ImageSpec spec = _outTexture->getSpec();
-    glViewport(0, 0, spec.width, spec.height);
+    if (spec.width != _width || spec.height != _height)
+        setOutputSize(spec.width, spec.height);
+    glViewport(0, 0, _width, _height);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
@@ -88,7 +90,7 @@ bool Gui::render()
     glClearColor(0.0, 0.0, 0.0, 1.0);
     
     if (_isVisible) 
-        _glv.drawWidgets(spec.width, spec.height, 0.016);
+        _glv.drawWidgets(_width, _height, 0.016);
 
     glActiveTexture(GL_TEXTURE0);
     _outTexture->generateMipmap();
@@ -114,6 +116,9 @@ void Gui::setOutputSize(int width, int height)
     _depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
     _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glfwMakeContextCurrent(NULL);
+
+    _width = width;
+    _height = height;
 
     initGLV(width, height);
 }
@@ -199,9 +204,7 @@ void Gui::registerAttributes()
     _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
             return false;
-        _width = args[0].asInt();
-        _height = args[1].asInt();
-        setOutputSize(_width, _height);
+        setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
     });
 }

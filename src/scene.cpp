@@ -182,8 +182,19 @@ bool Scene::render()
         if (!Window::getKeys(win, key, action, mods))
             break;
 
+        // Find where this action happened
+        WindowPtr eventWindow;
+        for (auto& w : _objects)
+            if (w.second->getType() == "window")
+                if (dynamic_pointer_cast<Window>(w.second)->isWindow(win))
+                    eventWindow = dynamic_pointer_cast<Window>(w.second);
+
         if (key == GLFW_KEY_ESCAPE)
             quit = true;
+        else if (key == GLFW_KEY_F)
+            if (mods == GLFW_MOD_ALT && action == GLFW_PRESS)
+                if (eventWindow.get() != nullptr)
+                    eventWindow->switchFullscreen();
 
         // Send the action to the GUI
         for (auto& obj : _objects)

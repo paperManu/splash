@@ -45,7 +45,7 @@ bool Window::getKey(int key)
 }
 
 /*************/
-int Window::getKeys(GLFWwindow* win, int& key, int& action, int& mods)
+int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 {
     if (_keys.size() == 0)
         return 0;
@@ -94,6 +94,7 @@ bool Window::linkTo(BaseObjectPtr obj)
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        _isLinkedToTexture = true;
         setTexture(tex);
         return true;
     }
@@ -132,6 +133,12 @@ bool Window::render()
     _screen->draw();
     _screen->deactivate();
 
+    // Resize the input textures accordingly to the window size.
+    // This goes upward to the cameras and gui
+    if (!_isLinkedToTexture) // We don't do this if we are directly connected to a Texture (updated from an image)
+        for (auto& t : _inTextures)
+            t->resize(w, h);
+
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
@@ -148,7 +155,7 @@ void Window::swapBuffers()
 }
 
 /*************/
-bool Window::setFullscreen(int screenId)
+bool Window::switchFullscreen(int screenId)
 {
     int count;
     GLFWmonitor** monitors = glfwGetMonitors(&count);
@@ -158,14 +165,22 @@ bool Window::setFullscreen(int screenId)
     if (_window.get() == nullptr)
         return false;
 
-    const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[screenId]);
+    if (screenId != -1)
+        _screenId = screenId;
+
+    const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_VISIBLE, true);
-    GLFWwindow* window = glfwCreateWindow(vidmode->width, vidmode->height, to_string(screenId).c_str(), monitors[screenId], _window->getMainWindow());
+    GLFWwindow* window;
+    if (glfwGetWindowMonitor(_window->get()) == NULL)
+        window = glfwCreateWindow(vidmode->width, vidmode->height, to_string(_screenId).c_str(), monitors[_screenId], _window->getMainWindow());
+    else
+        window = glfwCreateWindow(vidmode->width, vidmode->height, to_string(_screenId).c_str(), 0, _window->getMainWindow());
+
     if (!window)
     {
         SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to create new fullscreen shared window" << Log::endl;
@@ -227,7 +242,7 @@ void Window::registerAttributes()
     _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        setFullscreen(args[0].asInt());
+        switchFullscreen(args[0].asInt());
         return true;
     });
 }

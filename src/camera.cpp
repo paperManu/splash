@@ -86,7 +86,10 @@ bool Camera::render()
     glGetError();
     glEnable(GL_MULTISAMPLE);
     ImageSpec spec = _outTextures[0]->getSpec();
-    glViewport(0, 0, spec.width, spec.height);
+    if (spec.width != _width || spec.height != _height)
+        setOutputSize(spec.width, spec.height);
+
+    glViewport(0, 0, _width, _height);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum fboBuffers[_outTextures.size()];
@@ -171,10 +174,14 @@ void Camera::setOutputSize(int width, int height)
         return;
 
     glfwMakeContextCurrent(_window->get());
-    _depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    _depthTexture->resize(width, height);
 
     for (auto tex : _outTextures)
-        tex->reset(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        tex->resize(width, height);
+
+    _width = width;
+    _height = height;
+
     glfwMakeContextCurrent(NULL);
 }
 
@@ -215,9 +222,7 @@ void Camera::registerAttributes()
     _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
             return false;
-        _width = args[0].asInt();
-        _height = args[1].asInt();
-        setOutputSize(_width, _height);
+        setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
     });
 }

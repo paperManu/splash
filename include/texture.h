@@ -99,20 +99,29 @@ class Texture : public BaseObject
         bool linkTo(BaseObjectPtr obj);
 
         /**
+         * Set the buffer size / type / internal format
+         * See glTexImage2D for information about parameters
+         */
+        void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                   GLint border, GLenum format, GLenum type, const GLvoid* data);
+
+        /**
+         * Modify the size of the texture
+         */
+        void resize(int width, int height);
+
+        /**
          * Update the texture according to the owned Image
          */
         void update();
 
-        /**
-         * Set the buffer size / type / internal format
-         * See glTexImage2D for information about parameters
-         */
-        void reset(GLenum target, GLint pLevel, GLint internalFormat, GLsizei width, GLsizei height,
-                   GLint border, GLenum format, GLenum type, const GLvoid* data);
-
     private:
         GLuint _glTex = {0};
         ImageSpec _spec;
+
+        // Store some texture parameters
+        GLenum _texTarget, _texFormat, _texType;
+        GLint _texLevel, _texInternalFormat, _texBorder;
 
         ImagePtr _img;
         std::chrono::high_resolution_clock::time_point _timestamp;
