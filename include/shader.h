@@ -77,6 +77,13 @@ class Shader : public BaseObject
             _shaders = s._shaders;
             _program = s._program;
             _isLinked = s._isLinked;
+            _locationMVP = s._locationMVP;
+            _locationNormalMatrix = s._locationNormalMatrix;
+            _locationSide = s._locationSide;
+            _locationTextureNbr = s._locationTextureNbr;
+
+            _sideness = s._sideness;
+            _textureNbr = s._textureNbr;
         }
 
         /**

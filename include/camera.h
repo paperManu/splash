@@ -67,6 +67,14 @@ class Camera : public BaseObject
             _fbo = c._fbo;
             _outTextures = c._outTextures;
             _objects = c._objects;
+
+            _fov = c._fov;
+            _width = c._width;
+            _height = c._height;
+            _near = c._near;
+            _far = c._far;
+            _eye = c._eye;
+            _target = c._target;
         }
 
         /**

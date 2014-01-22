@@ -62,9 +62,10 @@ class Window : public BaseObject
         {
             _isInitialized = w._isInitialized;
             _window = w._window;
+            _screenId = w._screenId;
             _screen = w._screen;
             _inTextures = w._inTextures;
-            _screenId = w._screenId;
+            _isLinkedToTexture = w._isLinkedToTexture;
         }
 
         /**
@@ -125,7 +126,7 @@ class Window : public BaseObject
 
         ObjectPtr _screen;
         std::vector<TexturePtr> _inTextures;
-        bool _isLinkedToTexture {false};
+        bool _isLinkedToTexture {false}; //< Set to true if the Window is directly connected to a texture, not a Camera or Gui
 
         static std::mutex _callbackMutex;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys;

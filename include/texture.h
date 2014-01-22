@@ -66,6 +66,16 @@ class Texture : public BaseObject
         {
             _glTex = t._glTex;
             _spec = t._spec;
+
+            _texTarget = t._texTarget;
+            _texLevel = t._texLevel;
+            _texInternalFormat = t._texInternalFormat;
+            _texBorder = t._texBorder;
+            _texFormat = t._texFormat;
+            _texType = t._texType;
+
+            _img = t._img;
+            _timestamp = t._timestamp;
         }
 
         /**
