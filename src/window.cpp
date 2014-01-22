@@ -26,8 +26,11 @@ Window::Window(GlWindowPtr w)
         return;
 
     _window = w;
-    setProjectionSurface();
-    _isInitialized = true;
+    _isInitialized = setProjectionSurface();
+    if (!_isInitialized)
+        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
+    else
+        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
     registerAttributes();
 }
@@ -248,7 +251,7 @@ void Window::registerAttributes()
 }
 
 /*************/
-void Window::setProjectionSurface()
+bool Window::setProjectionSurface()
 {
     glfwMakeContextCurrent(_window->get());
     glfwShowWindow(_window->get());
@@ -265,7 +268,10 @@ void Window::setProjectionSurface()
 
     GLenum error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the window: " << error << Log::endl;
+    {
+        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
+        return false;
+    }
 
     glfwMakeContextCurrent(0);
 
@@ -273,6 +279,8 @@ void Window::setProjectionSurface()
     glfwSetKeyCallback(_window->get(), Window::keyCallback);
     glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
     glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
+
+    return true;
 }
 
 } // end of namespace

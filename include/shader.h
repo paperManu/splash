@@ -135,6 +135,7 @@ class Shader : public BaseObject
 
         void compileProgram();
         bool linkProgram();
+        std::string stringFromShaderType(ShaderType type);
 
     public:
         /**

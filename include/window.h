@@ -148,7 +148,7 @@ class Window : public BaseObject
         /**
          * Set up the projection surface
          */
-        void setProjectionSurface();
+        bool setProjectionSurface();
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

@@ -76,15 +76,15 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     GLint status;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (status)
-        SLog::log << Log::DEBUG << "Shader::" << __FUNCTION__ << " - Shader compiled successfully" << Log::endl;
+        SLog::log << Log::DEBUG << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
     else
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader:" << Log::endl;
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetShaderInfoLog(shader, length, &length, log);
-        SLog::log(Log::WARNING, __FUNCTION__, " - Error log: \n", (const char*)log);
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
     }
 
@@ -144,7 +144,7 @@ void Shader::compileProgram()
             if (status == GL_TRUE)
             {
                 glAttachShader(_program, shader.second);
-                SLog::log(Log::DEBUG, __FUNCTION__, " - Shader successfully attached to the program");
+                SLog::log << Log::DEBUG << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
             }
         }
     }
@@ -175,6 +175,22 @@ bool Shader::linkProgram()
 
         _isLinked = false;
         return false;
+    }
+}
+
+/*************/
+string Shader::stringFromShaderType(ShaderType type)
+{
+    switch (type)
+    {
+    default:
+        return string();
+    case 0:
+        return string("vertex");
+    case 1:
+        return string("geometry");
+    case 2:
+        return string("fragment");
     }
 }
 

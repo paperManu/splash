@@ -41,7 +41,10 @@ Camera::Camera(GlWindowPtr w)
         _isInitialized = false;
     }
     else
+    {
+        SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Camera correctly initialized" << Log::endl;
         _isInitialized = true;
+    }
 
     glfwMakeContextCurrent(NULL);
 

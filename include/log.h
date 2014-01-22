@@ -92,7 +92,7 @@ class Log
             else if (p == ERROR)
                 type = std::string("ERROR");
 
-            timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("] - ");
+            timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("]\t - ");
 
             addToString(timedMsg, args...);
 

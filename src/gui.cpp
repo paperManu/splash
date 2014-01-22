@@ -134,7 +134,7 @@ void Gui::initGLV(int width, int height)
         int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing);
     
         // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::DEBUG);
+        vector<string> logs = SLog::log.getLogs(Log::MESSAGE);
         string text;
         for (auto t = logs.begin() + std::max(0, ((int)logs.size() - nbrLines)); t != logs.end(); ++t)
             text += *t + string("\n");

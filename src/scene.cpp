@@ -21,6 +21,7 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     glfwMakeContextCurrent(_mainWindow->get());
 
+    SLog::log << Log::DEBUG << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
     if (type == string("camera"))
     {
         CameraPtr camera(new Camera(_mainWindow));
