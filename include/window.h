@@ -146,6 +146,11 @@ class Window : public BaseObject
         void registerAttributes();
 
         /**
+         * Set up the user events callbacks
+         */
+        void setEventsCallbacks();
+
+        /**
          * Set up the projection surface
          */
         bool setProjectionSurface();

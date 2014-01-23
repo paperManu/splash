@@ -22,6 +22,8 @@ Image_Shmdata::~Image_Shmdata()
 {
     if (_reader != nullptr)
         shmdata_any_reader_close(_reader);
+
+    SLog::log << Log::DEBUG << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 }
 
 /*************/

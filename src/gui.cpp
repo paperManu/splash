@@ -52,6 +52,7 @@ Gui::Gui(GlWindowPtr w)
 /*************/
 Gui::~Gui()
 {
+    SLog::log << Log::DEBUG << "Gui::~Gui - Destructor" << Log::endl;
 }
 
 /*************/

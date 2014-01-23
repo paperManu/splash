@@ -16,6 +16,7 @@ Texture::Texture()
 /*************/
 Texture::~Texture()
 {
+    SLog::log << Log::DEBUG << "Texture::~Texture - Destructor" << Log::endl;
 }
 
 /*************/

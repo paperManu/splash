@@ -20,6 +20,7 @@ Image::Image()
 /*************/
 Image::~Image()
 {
+    SLog::log << Log::DEBUG << "Image::~Image - Destructor" << Log::endl;
 }
 
 /*************/

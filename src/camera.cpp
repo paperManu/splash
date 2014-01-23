@@ -57,6 +57,7 @@ Camera::Camera(GlWindowPtr w)
 /*************/
 Camera::~Camera()
 {
+    SLog::log<< Log::DEBUG << "Camera::~Camera - Destructor" << Log::endl;
 }
 
 /*************/

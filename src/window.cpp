@@ -32,12 +32,15 @@ Window::Window(GlWindowPtr w)
     else
         SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
+    setEventsCallbacks();
+
     registerAttributes();
 }
 
 /*************/
 Window::~Window()
 {
+    SLog::log << Log::DEBUG << "Window::~Window - Destructor" << Log::endl;
 }
 
 /*************/
@@ -192,7 +195,7 @@ bool Window::switchFullscreen(int screenId)
 
     _window = move(GlWindowPtr(new GlWindow(window, _window->getMainWindow())));
 
-    setProjectionSurface();
+    setEventsCallbacks();
     for (auto t : _inTextures)
         _screen->addTexture(t);
 
@@ -251,6 +254,14 @@ void Window::registerAttributes()
 }
 
 /*************/
+void Window::setEventsCallbacks()
+{
+    glfwSetKeyCallback(_window->get(), Window::keyCallback);
+    glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
+    glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
+}
+
+/*************/
 bool Window::setProjectionSurface()
 {
     glfwMakeContextCurrent(_window->get());
@@ -272,11 +283,6 @@ bool Window::setProjectionSurface()
     }
 
     glfwMakeContextCurrent(0);
-
-    // Initialize the callbacks
-    glfwSetKeyCallback(_window->get(), Window::keyCallback);
-    glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
-    glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
 
     return true;
 }

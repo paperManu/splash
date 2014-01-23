@@ -46,6 +46,7 @@
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         //"texture" : {"type" : "texture"},
         //"texture2" : {"type" : "texture"},
+        "gui" : {"type" : "gui", "size" : [1920, 1200]},
 
         "links" : [
             ["mesh", "object"],
@@ -58,7 +59,8 @@
             ["cam1", "win1"],
             ["cam2", "win2"],
             ["cam3", "win3"],
-            ["cam4", "win4"]
+            ["cam4", "win4"],
+            ["gui", "win1"]
         ]
     }
 }

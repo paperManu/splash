@@ -14,6 +14,7 @@ Scene::Scene(std::string name)
 /*************/
 Scene::~Scene()
 {
+    SLog::log << Log::DEBUG << "Scene::~Scene - Destructor" << Log::endl;
 }
 
 /*************/

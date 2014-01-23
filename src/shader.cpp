@@ -31,6 +31,8 @@ Shader::~Shader()
     for (auto& shader : _shaders)
         if (glIsShader(shader.second))
             glDeleteShader(shader.second);
+
+    SLog::log << Log::DEBUG << "Shader::~Shader - Destructor" << Log::endl;
 }
 
 /*************/
