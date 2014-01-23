@@ -83,7 +83,11 @@ void Gui::mousePosition(int xpos, int ypos)
     space_t relx = x;
     space_t rely = y;
 
-    _glv.setMouseMotion(relx, rely, Event::MouseMove);
+    if (_glv.mouse().left())
+        _glv.setMouseMotion(relx, rely, Event::MouseDrag);
+    else
+        _glv.setMouseMotion(relx, rely, Event::MouseMove);
+
     _glv.setMousePos((int)x, (int)y, relx, rely);
     _glv.propagateEvent();
 }
@@ -91,17 +95,20 @@ void Gui::mousePosition(int xpos, int ypos)
 /*************/
 void Gui::mouseButton(int btn, int action, int mods)
 {
-    int button;
+    int button {0};
     switch (btn)
     {
     default:
         break;
     case GLFW_MOUSE_BUTTON_LEFT:
         button = Mouse::Left;
+        break;
     case GLFW_MOUSE_BUTTON_RIGHT:
         button = Mouse::Right;
+        break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
         button = Mouse::Middle;
+        break;
     }
 
     space_t x = _glv.mouse().x();
@@ -179,6 +186,10 @@ int Gui::glfwToGlvKey(int key)
 /*************/
 void Gui::initGLV(int width, int height)
 {
+    _glv.width(width);
+    _glv.height(height);
+    _glv.disable(DrawBack);
+
     _style.color.set(Color(1.0, 0.5, 0.2, 1.0), 0.7);
 
     _glvLog.setTextFunc([](GlvTextBox& that)
@@ -275,6 +286,12 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
     case Event::KeyDown:
         SLog::log << Log::MESSAGE << "Key down: " << (char)g.keyboard().key() << Log::endl;
         return false;
+    case Event::MouseDrag:
+        if (g.mouse().left())
+        {
+            move(g.mouse().dx(), g.mouse().dy());
+            return false;
+        }
     }
 
     return true;
