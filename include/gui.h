@@ -107,6 +107,7 @@ class Gui : public BaseObject
          */
         void mousePosition(int xpos, int ypos);
         void mouseButton(int btn, int action, int mods);
+        void mouseScroll(double xoffset, double yoffset);
 
         /**
          * Render this camera into its textures

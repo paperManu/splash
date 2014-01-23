@@ -200,6 +200,19 @@ bool Scene::render()
                 dynamic_pointer_cast<Gui>(obj.second)->mouseButton(btn, action, mods);
     }
 
+    // Scrolling events
+    while (true)
+    {
+        GLFWwindow* win;
+        double xoffset, yoffset;
+        if (!Window::getScroll(win, xoffset, yoffset))
+            break;
+
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->mouseScroll(xoffset, yoffset);
+    }
+
     // Keyboard events
     while (true)
     {

@@ -85,6 +85,11 @@ class Window : public BaseObject
         static void getMousePos(GLFWwindow* win, int& xpos, int& ypos);
 
         /**
+         * Get the mouse position
+         */
+        static int getScroll(GLFWwindow* win, double& xoffset, double& yoffset);
+
+        /**
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
@@ -132,6 +137,7 @@ class Window : public BaseObject
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn;
         static std::pair<GLFWwindow*, std::vector<double>> _mousePos;
+        static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll;
 
         /**
          * Input callbacks
@@ -139,6 +145,7 @@ class Window : public BaseObject
         static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
         static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
+        static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
 
         /**
          * Register new functors to modify attributes

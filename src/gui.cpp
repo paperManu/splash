@@ -122,6 +122,12 @@ void Gui::mouseButton(int btn, int action, int mods)
 }
 
 /*************/
+void Gui::mouseScroll(double xoffset, double yoffset)
+{
+    SLog::log << xoffset << " " << yoffset << Log::endl;
+}
+
+/*************/
 bool Gui::render()
 {
     glfwMakeContextCurrent(_window->get());
@@ -138,7 +144,7 @@ bool Gui::render()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    glClearColor(0.0, 1.0, 1.0, 1.0); //< This is the transparent color
+    glClearColor(0.02, 0.02, 0.02, 1.0); //< This is the transparent color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     
@@ -190,7 +196,7 @@ void Gui::initGLV(int width, int height)
     _glv.height(height);
     _glv.disable(DrawBack);
 
-    _style.color.set(Color(1.0, 0.5, 0.2, 1.0), 0.7);
+    _style.color.set(Color(1.0, 0.5, 0.2, 0.7), 0.7);
 
     _glvLog.setTextFunc([](GlvTextBox& that)
     {

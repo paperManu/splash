@@ -16,6 +16,7 @@ mutex Window::_callbackMutex;
 deque<pair<GLFWwindow*, vector<int>>> Window::_keys;
 deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
+deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 
 /*************/
 Window::Window(GlWindowPtr w)
@@ -53,6 +54,7 @@ bool Window::getKey(int key)
 /*************/
 int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 {
+    lock_guard<mutex> lock(_callbackMutex);
     if (_keys.size() == 0)
         return 0;
 
@@ -71,6 +73,7 @@ int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 /*************/
 int Window::getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods)
 {
+    lock_guard<mutex> lock(_callbackMutex);
     if (_mouseBtn.size() == 0)
         return 0;
 
@@ -89,11 +92,29 @@ int Window::getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods)
 /*************/
 void Window::getMousePos(GLFWwindow* win, int& xpos, int& ypos)
 {
+    lock_guard<mutex> lock(_callbackMutex);
     if (_mousePos.second.size() != 2)
         return;
+
     win = _mousePos.first;
     xpos = (int)_mousePos.second[0];
     ypos = (int)_mousePos.second[1];
+}
+
+/*************/
+int Window::getScroll(GLFWwindow* win, double& xoffset, double& yoffset)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    if (_scroll.size() == 0)
+        return 0;
+
+    win = _scroll.front().first;
+    xoffset = _scroll.front().second[0];
+    yoffset = _scroll.front().second[1];
+
+    _scroll.pop_front();
+
+    return _scroll.size() + 1;
 }
 
 /*************/
@@ -245,6 +266,14 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 }
 
 /*************/
+void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    std::vector<double> scroll {xoffset, yoffset};
+    _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
+}
+
+/*************/
 void Window::registerAttributes()
 {
     _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
@@ -261,6 +290,7 @@ void Window::setEventsCallbacks()
     glfwSetKeyCallback(_window->get(), Window::keyCallback);
     glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
     glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
+    glfwSetScrollCallback(_window->get(), Window::scrollCallback);
 }
 
 /*************/
