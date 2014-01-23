@@ -87,11 +87,13 @@ int Window::getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods)
 }
 
 /*************/
-void Window::getMousePos(GLFWwindow* win, double xpos, double ypos)
+void Window::getMousePos(GLFWwindow* win, int& xpos, int& ypos)
 {
+    if (_mousePos.second.size() != 2)
+        return;
     win = _mousePos.first;
-    xpos = _mousePos.second[0];
-    ypos = _mousePos.second[1];
+    xpos = (int)_mousePos.second[0];
+    ypos = (int)_mousePos.second[1];
 }
 
 /*************/

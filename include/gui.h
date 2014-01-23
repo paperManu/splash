@@ -50,6 +50,7 @@ class GlvTextBox : public glv::View
 {
     public:
         void onDraw(glv::GLV& g);
+        bool onEvent(glv::Event::t e, glv::GLV& g);
         void setTextFunc(std::function<std::string(GlvTextBox& that)> func) {getText = func;}
 
         float fontSize = 8;
@@ -102,6 +103,12 @@ class Gui : public BaseObject
         void key(int& key, int& action, int& mods);
 
         /**
+         * Forward mouse events
+         */
+        void mousePosition(int xpos, int ypos);
+        void mouseButton(int btn, int action, int mods);
+
+        /**
          * Render this camera into its textures
          */
         bool render();
@@ -128,6 +135,11 @@ class Gui : public BaseObject
         GlvTextBox _glvLog;
         GlvTextBox _glvProfile;
         
+        /**
+         * Convert GLFW keys values to GLV
+         */
+        int glfwToGlvKey(int key);
+
         /**
          * Initialize GLV
          */

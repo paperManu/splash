@@ -82,7 +82,7 @@ class Window : public BaseObject
         /**
          * Get the mouse position
          */
-        static void getMousePos(GLFWwindow* win, double xpos, double ypos);
+        static void getMousePos(GLFWwindow* win, int& xpos, int& ypos);
 
         /**
          * Check wether it is initialized

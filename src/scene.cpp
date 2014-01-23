@@ -177,6 +177,30 @@ bool Scene::render()
     STimer::timer << "events";
     bool quit = false;
     glfwPollEvents();
+    // Mouse position
+    {
+        GLFWwindow* win;
+        int xpos, ypos;
+        Window::getMousePos(win, xpos, ypos);
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->mousePosition(xpos, ypos);
+    }
+
+    // Mouse events
+    while (true)
+    {
+        GLFWwindow* win;
+        int btn, action, mods;
+        if (!Window::getMouseBtn(win, btn, action, mods))
+            break;
+        
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->mouseButton(btn, action, mods);
+    }
+
+    // Keyboard events
     while (true)
     {
         GLFWwindow* win;
@@ -196,7 +220,10 @@ bool Scene::render()
         else if (key == GLFW_KEY_F)
             if (mods == GLFW_MOD_ALT && action == GLFW_PRESS)
                 if (eventWindow.get() != nullptr)
+                {
                     eventWindow->switchFullscreen();
+                    continue;
+                }
 
         // Send the action to the GUI
         for (auto& obj : _objects)

@@ -61,12 +61,57 @@ void Gui::key(int& key, int& action, int& mods)
     switch (key)
     {
     default:
+        if (action == GLFW_PRESS)
+            _glv.setKeyDown(glfwToGlvKey(key));
+        else if (action == GLFW_RELEASE)
+            _glv.setKeyUp(glfwToGlvKey(key));
+        _glv.setKeyModifiers(mods && GLFW_MOD_SHIFT, mods && GLFW_MOD_ALT, mods && GLFW_MOD_CONTROL, false, false);
+        _glv.propagateEvent();
         break;
     case GLFW_KEY_TAB:
         if (action == GLFW_PRESS)
             _isVisible = !_isVisible;
         break;
     }
+}
+
+/*************/
+void Gui::mousePosition(int xpos, int ypos)
+{
+    space_t x = (space_t)xpos;
+    space_t y = (space_t)ypos;
+    space_t relx = x;
+    space_t rely = y;
+
+    _glv.setMouseMotion(relx, rely, Event::MouseMove);
+    _glv.setMousePos((int)x, (int)y, relx, rely);
+    _glv.propagateEvent();
+}
+
+/*************/
+void Gui::mouseButton(int btn, int action, int mods)
+{
+    int button;
+    switch (btn)
+    {
+    default:
+        break;
+    case GLFW_MOUSE_BUTTON_LEFT:
+        button = Mouse::Left;
+    case GLFW_MOUSE_BUTTON_RIGHT:
+        button = Mouse::Right;
+    case GLFW_MOUSE_BUTTON_MIDDLE:
+        button = Mouse::Middle;
+    }
+
+    space_t x = _glv.mouse().x();
+    space_t y = _glv.mouse().y();
+
+    if (action == GLFW_PRESS)
+        _glv.setMouseDown(x, y, button, 0);
+    if (action == GLFW_RELEASE)
+        _glv.setMouseUp(x, y, button, 0);
+    _glv.propagateEvent();
 }
 
 /*************/
@@ -125,6 +170,13 @@ void Gui::setOutputSize(int width, int height)
 }
 
 /*************/
+int Gui::glfwToGlvKey(int key)
+{
+    // Nothing special noted yet...
+    return key;
+}
+
+/*************/
 void Gui::initGLV(int width, int height)
 {
     _style.color.set(Color(1.0, 0.5, 0.2, 1.0), 0.7);
@@ -132,7 +184,7 @@ void Gui::initGLV(int width, int height)
     _glvLog.setTextFunc([](GlvTextBox& that)
     {
         // Compute the number of lines which would fit
-        int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing);
+        int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing * that.fontSize);
     
         // Convert the last lines of the text log
         vector<string> logs = SLog::log.getLogs(Log::MESSAGE);
@@ -211,6 +263,21 @@ void GlvTextBox::onDraw(GLV& g)
         SLog::log << Log::ERROR << "GlvTextBox::" << __FUNCTION__ << " - Draw function is undefined" << Log::endl;
     }
 
+}
+
+/*************/
+bool GlvTextBox::onEvent(Event::t e, GLV& g)
+{
+    switch (e)
+    {
+    default:
+        break;
+    case Event::KeyDown:
+        SLog::log << Log::MESSAGE << "Key down: " << (char)g.keyboard().key() << Log::endl;
+        return false;
+    }
+
+    return true;
 }
 
 } // end of namespace
