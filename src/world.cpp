@@ -304,6 +304,11 @@ void World::parseArguments(int argc, char** argv)
             _showFramerate = true;
             idx++;
         }
+        else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")
+        {
+            SLog::log.setVerbosity(Log::NONE);
+            idx++;
+        }
         else
             idx++;
     }
