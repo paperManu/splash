@@ -64,6 +64,18 @@ class GlvTextBox : public glv::View
 };
 
 /*************/
+class GlvGlobalView : public glv::View3D
+{
+    public:
+        void onDraw(glv::GLV& g);
+        bool onEvent(glv::Event::t e, glv::GLV& g);
+        void setTexture(TexturePtr tex) {_textures.push_back(tex);}
+
+    private:
+        std::vector<TexturePtr> _textures;
+};
+
+/*************/
 class Gui : public BaseObject
 {
     public:
@@ -113,6 +125,11 @@ class Gui : public BaseObject
         void mouseScroll(double xoffset, double yoffset);
 
         /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
+
+        /**
          * Render this camera into its textures
          */
         bool render();
@@ -138,6 +155,7 @@ class Gui : public BaseObject
         glv::GLV _glv;
         GlvTextBox _glvLog;
         GlvTextBox _glvProfile;
+        GlvGlobalView _glvGlobalView;
         
         /**
          * Convert GLFW keys values to GLV

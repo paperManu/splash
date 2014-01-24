@@ -140,14 +140,19 @@ bool Scene::render()
     STimer::timer << "sceneTimer";
     bool isError {false};
 
-    // Update the cameras and the guis
+    // Update the cameras
     STimer::timer << "cameras";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-        else if (obj.second->getType() == "gui")
-            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "cameras";
+
+    // Update the guis
+    STimer::timer << "guis";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "gui")
+            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
+    STimer::timer >> "guis";
 
     // Update the windows
     STimer::timer << "windows";

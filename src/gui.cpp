@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "timer.h"
+#include "camera.h"
 
 using namespace std;
 using namespace glv;
@@ -129,6 +130,20 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 }
 
 /*************/
+bool Gui::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    {
+        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
+        for (auto& tex : cam->getTextures())
+            _glvGlobalView.setTexture(tex);
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
 bool Gui::render()
 {
     glfwMakeContextCurrent(_window->get());
@@ -145,7 +160,7 @@ bool Gui::render()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    glClearColor(0.02, 0.02, 0.02, 1.0); //< This is the transparent color
+    glClearColor(0.01, 0.01, 0.01, 1.0); //< This is the transparent color
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     
@@ -228,12 +243,14 @@ void Gui::initGLV(int width, int height)
         // Smooth the values
         static float fps {0.f};
         static float cam {0.f};
+        static float gui {0.f};
         static float win {0.f};
         static float buf {0.f};
         static float evt {0.f};
 
         fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.05;
         cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
+        gui = gui * 0.95 + STimer::timer["guis"] * 0.001 * 0.05;
         win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
         buf = buf * 0.95 + STimer::timer["swap"] * 0.001 * 0.05;
         evt = evt * 0.95 + STimer::timer["events"] * 0.001 * 0.05;
@@ -242,6 +259,7 @@ void Gui::initGLV(int width, int height)
         string text;
         text += "Framerate: " + to_string(fps) + " fps\n";
         text += "Cameras rendering: " + to_string(cam) + " ms\n";
+        text += "Guis rendering: " + to_string(gui) + " ms\n";
         text += "Windows rendering: " + to_string(win) + " ms\n";
         text += "Buffer swapping: " + to_string(buf) + " ms\n";
         text += "Events processing: " + to_string(evt) + " ms\n";
@@ -255,6 +273,10 @@ void Gui::initGLV(int width, int height)
     _glvProfile.right(width - 8);
     _glvProfile.style(&_style);
     _glv << _glvProfile;
+
+    _glvGlobalView.set(Rect(16, 16, 512, 512));
+    _glvGlobalView.style(&_style);
+    _glv << _glvGlobalView;
 }
 
 /*************/
@@ -307,6 +329,54 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
     case Event::MouseWheel:
         int scrollOffset = _scrollOffset.fetch_add((int)g.mouse().dw());
         return false;
+    }
+
+    return true;
+}
+
+/*************/
+void GlvGlobalView::onDraw(GLV& g)
+{
+    if (_textures.size() == 0)
+    {
+        draw::color(0.0, 1.0, 0.0, 1.0);
+    }
+    else
+    {
+        float vertcoords[] = {0,0, 0,height(), width(),0, width(),height()};
+        float texcoords[] = {0,1, 0,0, 1,1, 1,0};
+
+        glGetError();
+        glEnable(GL_TEXTURE_2D);
+
+        draw::color(1.0, 1.0, 1.0, 1.0);
+        glBindTexture(GL_TEXTURE_2D, _textures[0]->getTexId());
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+        glVertexPointer(2, GL_FLOAT, 0, vertcoords);
+        glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glDisable(GL_TEXTURE_2D);
+        SLog::log << Log::MESSAGE << "Rendering global view - " << glGetError() << " " << width() << " " << height() << " " << _textures[0]->getTexId() << Log::endl;
+    }
+}
+
+/*************/
+bool GlvGlobalView::onEvent(Event::t e, GLV& g)
+{
+    switch (e)
+    {
+    default:
+        break;
+    case Event::MouseDrag:
+        if (g.mouse().middle())
+        {
+            move(g.mouse().dx(), g.mouse().dy());
+            return false;
+        }
+        break;
     }
 
     return true;

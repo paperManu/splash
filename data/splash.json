@@ -60,6 +60,7 @@
             ["cam2", "win2"],
             ["cam3", "win3"],
             ["cam4", "win4"],
+            ["cam1", "gui"],
             ["gui", "win1"]
         ]
     }
