@@ -53,8 +53,9 @@ class GlvTextBox : public glv::View
         bool onEvent(glv::Event::t e, glv::GLV& g);
         void setTextFunc(std::function<std::string(GlvTextBox& that)> func) {getText = func;}
 
-        float fontSize = 8;
-        float lineSpacing = 1;
+        float fontSize {8};
+        float lineSpacing {1};
+        int _scrollOffset {0};
 
     private:
         std::function<std::string(GlvTextBox& that)> getText;

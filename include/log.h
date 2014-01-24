@@ -84,15 +84,15 @@ class Log
             std::string timedMsg;
             std::string type;
             if (p == MESSAGE)
-                type = std::string("MESSAGE");
+                type = std::string("[MESSAGE]");
             else if (p == DEBUG)
-                type = std::string("DEBUG");
+                type = std::string(" [DEBUG] ");
             else if (p == WARNING)
-                type = std::string("WARNING");
+                type = std::string("[WARNING]");
             else if (p == ERROR)
-                type = std::string("ERROR");
+                type = std::string(" [ERROR] ");
 
-            timedMsg = std::string(time_c) + std::string(" - [") + type + std::string("]\t - ");
+            timedMsg = std::string(time_c) + std::string(" / ") + type + std::string(" / ");
 
             addToString(timedMsg, args...);
 
@@ -151,12 +151,15 @@ class Log
         /**
          * Get the logs by priority
          */
-        std::vector<std::string> getLogs(Priority p)
+        template<typename ... T>
+        std::vector<std::string> getLogs(T ... args)
         {
+            std::vector<Log::Priority> priorities {args...};
             std::vector<std::string> logs;
             for (auto log : _logs)
-                if (log.second == p)
-                    logs.push_back(log.first);
+                for (auto p : priorities)
+                    if (log.second == p)
+                        logs.push_back(log.first);
 
             return logs;
         }

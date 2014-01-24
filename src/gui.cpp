@@ -124,7 +124,8 @@ void Gui::mouseButton(int btn, int action, int mods)
 /*************/
 void Gui::mouseScroll(double xoffset, double yoffset)
 {
-    SLog::log << xoffset << " " << yoffset << Log::endl;
+    _glv.setMouseWheel(yoffset);
+    _glv.propagateEvent();
 }
 
 /*************/
@@ -204,9 +205,10 @@ void Gui::initGLV(int width, int height)
         int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing * that.fontSize);
     
         // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE);
+        vector<string> logs = SLog::log.getLogs(Log::DEBUG, Log::MESSAGE, Log::WARNING, Log::ERROR);
         string text;
-        for (auto t = logs.begin() + std::max(0, ((int)logs.size() - nbrLines)); t != logs.end(); ++t)
+        int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - that._scrollOffset)));
+        for (auto t = logs.begin() + offset; t != logs.end(); ++t)
             text += *t + string("\n");
 
         return text;
@@ -298,6 +300,9 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
             move(g.mouse().dx(), g.mouse().dy());
             return false;
         }
+    case Event::MouseWheel:
+        _scrollOffset = std::max(0, (int)g.mouse().w());
+        return false;
     }
 
     return true;
