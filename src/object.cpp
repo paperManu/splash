@@ -1,4 +1,5 @@
 #include "object.h"
+#include "timer.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 

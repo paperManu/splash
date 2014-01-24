@@ -11,6 +11,7 @@ namespace Splash {
 Texture::Texture()
 {
     _type = "texture";
+    _timestamp = chrono::high_resolution_clock::now();
 }
 
 /*************/
@@ -23,7 +24,6 @@ Texture::~Texture()
 Texture& Texture::operator=(ImagePtr& img)
 {
     _img = img;
-    update();
     return *this;
 }
 
@@ -171,7 +171,6 @@ void Texture::update()
     }
     else
     {
-        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _glTex);
         if (spec.nchannels == 3 && spec.format == TypeDesc::UINT8)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, _img->data());

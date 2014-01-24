@@ -3,7 +3,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/external/GLV/GLV \
     -I$(top_srcdir)/external/bandit \
     $(JSONCPP_CFLAGS) \
-    $(SHMDATA_CFLAGS)
+    $(SHMDATA_CFLAGS) \
+    -DGLV_GLFW
 
 AM_LDFLAGS = \
     $(GLFW_LIBS) \
