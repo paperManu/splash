@@ -88,7 +88,7 @@ bool Camera::render()
         return false;
 
     glGetError();
-    glEnable(GL_MULTISAMPLE);
+    //glEnable(GL_MULTISAMPLE);
     ImageSpec spec = _outTextures[0]->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
@@ -100,9 +100,8 @@ bool Camera::render()
     for (int i = 0; i < _outTextures.size(); ++i)
         fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
     glDrawBuffers(_outTextures.size(), fboBuffers);
-    glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto& obj : _objects)
     {
@@ -118,7 +117,7 @@ bool Camera::render()
         t->generateMipmap();
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glDisable(GL_MULTISAMPLE);
+    //glDisable(GL_MULTISAMPLE);
     glDisable(GL_DEPTH_TEST);
 
     GLenum error = glGetError();
@@ -160,7 +159,7 @@ void Camera::setOutputNbr(int nbr)
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
             TexturePtr texture(new Texture);
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGB8, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA8, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
             _outTextures.push_back(texture);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
         }
@@ -228,6 +227,32 @@ void Camera::registerAttributes()
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
+    });
+
+    // More advanced attributes
+    _attribFunctions["moveEye"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 3)
+            return false;
+        _eye.x = _eye.x + args[0].asFloat();
+        _eye.y = _eye.y + args[1].asFloat();
+        _eye.z = _eye.z + args[2].asFloat();
+    });
+
+    _attribFunctions["moveTarget"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 3)
+            return false;
+        _target.x = _target.x + args[0].asFloat();
+        _target.y = _target.y + args[1].asFloat();
+        _target.z = _target.z + args[2].asFloat();
+    });
+
+    _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 3)
+            return false;
+        auto direction = _target - _eye;
+        auto rotZ = rotate(mat4(1.f), args[0].asFloat(), vec3(0.0, 0.0, 1.0));
+        auto newDirection = vec4(direction, 1.0) * rotZ;
+        _eye = _target - vec3(newDirection.x, newDirection.y, newDirection.z);
     });
 }
 

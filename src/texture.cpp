@@ -106,6 +106,8 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
     _texBorder = border;
     _texFormat = format;
     _texType = type;
+
+    SLog::log << Log::DEBUG << "Texture::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
 }
 
 /*************/

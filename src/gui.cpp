@@ -31,7 +31,7 @@ Gui::Gui(GlWindowPtr w)
 
     {
         TexturePtr texture(new Texture);
-        texture->reset(GL_TEXTURE_2D, 0, GL_RGB8, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        texture->reset(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
         _outTexture = move(texture);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
@@ -135,8 +135,7 @@ bool Gui::linkTo(BaseObjectPtr obj)
     if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
-        for (auto& tex : cam->getTextures())
-            _glvGlobalView.setTexture(tex);
+        _glvGlobalView.setCamera(cam);
         return true;
     }
 
@@ -160,7 +159,7 @@ bool Gui::render()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    glClearColor(0.01, 0.01, 0.01, 1.0); //< This is the transparent color
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     
@@ -188,8 +187,10 @@ void Gui::setOutputSize(int width, int height)
         return;
 
     glfwMakeContextCurrent(_window->get());
-    _depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    _depthTexture->resize(width, height);
+    //_depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    _outTexture->resize(width, height);
+    //_outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glfwMakeContextCurrent(NULL);
 
     _width = width;
@@ -259,7 +260,7 @@ void Gui::initGLV(int width, int height)
         string text;
         text += "Framerate: " + to_string(fps) + " fps\n";
         text += "Cameras rendering: " + to_string(cam) + " ms\n";
-        text += "Guis rendering: " + to_string(gui) + " ms\n";
+        text += "GUI rendering: " + to_string(gui) + " ms\n";
         text += "Windows rendering: " + to_string(win) + " ms\n";
         text += "Buffer swapping: " + to_string(buf) + " ms\n";
         text += "Events processing: " + to_string(evt) + " ms\n";
@@ -267,14 +268,15 @@ void Gui::initGLV(int width, int height)
         return text;
     });
 
-    _glvProfile.width(width / 2 - 16);
-    _glvProfile.height(height / 4 - 16);
-    _glvProfile.bottom(height - 8);
-    _glvProfile.right(width - 8);
+    _glvProfile.width(SPLASH_GLV_FONTSIZE * 32);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 6 + 8);
+    _glvProfile.top(8);
+    _glvProfile.left(8);
     _glvProfile.style(&_style);
     _glv << _glvProfile;
 
-    _glvGlobalView.set(Rect(16, 16, 512, 512));
+    _glvGlobalView.set(Rect(8, 8, 640, 480));
+    _glvGlobalView.right(width - 8);
     _glvGlobalView.style(&_style);
     _glv << _glvGlobalView;
 }
@@ -296,11 +298,11 @@ void GlvTextBox::onDraw(GLV& g)
     try
     {
         draw::color(SPLASH_GLV_TEXTCOLOR);
-        draw::lineWidth(SPLASH_GLV_FONTSIZE);
+        draw::lineWidth(SPLASH_GLV_FONTWIDTH);
 
         string text = getText(*this);
 
-        draw::text(text.c_str(), 4, 4);
+        draw::text(text.c_str(), 4, 4, SPLASH_GLV_FONTSIZE);
     }
     catch (bad_function_call)
     {
@@ -337,7 +339,7 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
 /*************/
 void GlvGlobalView::onDraw(GLV& g)
 {
-    if (_textures.size() == 0)
+    if (_camera.get() == nullptr)
     {
         draw::color(0.0, 1.0, 0.0, 1.0);
     }
@@ -350,7 +352,7 @@ void GlvGlobalView::onDraw(GLV& g)
         glEnable(GL_TEXTURE_2D);
 
         draw::color(1.0, 1.0, 1.0, 1.0);
-        glBindTexture(GL_TEXTURE_2D, _textures[0]->getTexId());
+        glBindTexture(GL_TEXTURE_2D, _camera->getTextures()[0]->getTexId());
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
         glVertexPointer(2, GL_FLOAT, 0, vertcoords);
         glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
@@ -359,7 +361,6 @@ void GlvGlobalView::onDraw(GLV& g)
         glBindTexture(GL_TEXTURE_2D, 0);
 
         glDisable(GL_TEXTURE_2D);
-        SLog::log << Log::MESSAGE << "Rendering global view - " << glGetError() << " " << width() << " " << height() << " " << _textures[0]->getTexId() << Log::endl;
     }
 }
 
@@ -371,15 +372,40 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     default:
         break;
     case Event::MouseDrag:
-        if (g.mouse().middle())
+        if (g.mouse().middle()) // Drag the window
         {
             move(g.mouse().dx(), g.mouse().dy());
+            return false;
+        }
+        else if (g.mouse().left()) // Move the camera
+        {
+            float dx = g.mouse().dx();
+            float dy = g.mouse().dy();
+            _camera->setAttribute("rotateAroundTarget", {dx / 10.f, 0, 0});
+            _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
+            return false;
+        }
+        else if (g.mouse().right()) // Move the target
+        {
+            float dx = g.mouse().dx();
+            float dy = g.mouse().dy();
+            _camera->setAttribute("moveTarget", {0, 0, dy / 100.f});
             return false;
         }
         break;
     }
 
     return true;
+}
+
+/*************/
+void GlvGlobalView::setCamera(CameraPtr cam)
+{
+    if (cam.get() != nullptr)
+    {
+        _camera = cam;
+        _camera->setAttribute("size", {width(), height()});
+    }
 }
 
 } // end of namespace

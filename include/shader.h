@@ -184,9 +184,7 @@ class Shader : public BaseObject
                 if (_textureNbr > 1)
                 {
                     vec4 color = texture(_tex1, texCoord);
-                    if (color.r > 0.01 && color.g > 0.01 && color.b > 0.01)
-                        //fragColor = fragColor * 0.2 + color * 0.8;
-                        fragColor = color;
+                    fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
                 }
             }
         )"};

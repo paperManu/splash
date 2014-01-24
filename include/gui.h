@@ -26,7 +26,8 @@
 #define GUI_H
 
 #define SPLASH_GLV_TEXTCOLOR 1.0, 1.0, 1.0
-#define SPLASH_GLV_FONTSIZE 1.5
+#define SPLASH_GLV_FONTSIZE 8.0
+#define SPLASH_GLV_FONTWIDTH 2.0
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -41,6 +42,7 @@
 #include <GLFW/glfw3.h>
 #include <glv.h>
 
+#include "camera.h"
 #include "object.h"
 #include "texture.h"
 
@@ -56,7 +58,6 @@ class GlvTextBox : public glv::View
 
         float fontSize {8};
         float lineSpacing {1};
-        //int _scrollOffset {0};
         std::atomic_int _scrollOffset {0};
 
     private:
@@ -69,10 +70,10 @@ class GlvGlobalView : public glv::View3D
     public:
         void onDraw(glv::GLV& g);
         bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setTexture(TexturePtr tex) {_textures.push_back(tex);}
+        void setCamera(CameraPtr cam);
 
     private:
-        std::vector<TexturePtr> _textures;
+        CameraPtr _camera;
 };
 
 /*************/
