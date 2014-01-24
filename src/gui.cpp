@@ -83,7 +83,7 @@ void Gui::mousePosition(int xpos, int ypos)
     space_t relx = x;
     space_t rely = y;
 
-    if (_glv.mouse().left())
+    if (_glv.mouse().left() || _glv.mouse().right() || _glv.mouse().middle())
         _glv.setMouseMotion(relx, rely, Event::MouseDrag);
     else
         _glv.setMouseMotion(relx, rely, Event::MouseMove);
@@ -207,7 +207,10 @@ void Gui::initGLV(int width, int height)
         // Convert the last lines of the text log
         vector<string> logs = SLog::log.getLogs(Log::DEBUG, Log::MESSAGE, Log::WARNING, Log::ERROR);
         string text;
-        int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - that._scrollOffset)));
+        int scrollOffset = that._scrollOffset;
+        scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));
+        that._scrollOffset = scrollOffset;
+        int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - scrollOffset)));
         for (auto t = logs.begin() + offset; t != logs.end(); ++t)
             text += *t + string("\n");
 
@@ -295,13 +298,14 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
         SLog::log << Log::MESSAGE << "Key down: " << (char)g.keyboard().key() << Log::endl;
         return false;
     case Event::MouseDrag:
-        if (g.mouse().left())
+        if (g.mouse().middle())
         {
             move(g.mouse().dx(), g.mouse().dy());
             return false;
         }
+        break;
     case Event::MouseWheel:
-        _scrollOffset = std::max(0, (int)g.mouse().w());
+        int scrollOffset = _scrollOffset.fetch_add((int)g.mouse().dw());
         return false;
     }
 

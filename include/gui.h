@@ -34,6 +34,7 @@
 #include "config.h"
 #include "coretypes.h"
 
+#include <atomic>
 #include <functional>
 #include <memory>
 #include <glm/glm.hpp>
@@ -55,7 +56,8 @@ class GlvTextBox : public glv::View
 
         float fontSize {8};
         float lineSpacing {1};
-        int _scrollOffset {0};
+        //int _scrollOffset {0};
+        std::atomic_int _scrollOffset {0};
 
     private:
         std::function<std::string(GlvTextBox& that)> getText;
