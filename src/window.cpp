@@ -180,7 +180,9 @@ bool Window::render()
 /*************/
 void Window::swapBuffers()
 {
+    glfwMakeContextCurrent(_window->get());
     glfwSwapBuffers(_window->get());
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/

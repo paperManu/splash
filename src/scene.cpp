@@ -156,18 +156,14 @@ bool Scene::render()
 
     // Update the windows
     STimer::timer << "windows";
-    vector<unsigned int> threadIds;
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
-                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-            }));
-    SThread::pool.waitThreads(threadIds);
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
     STimer::timer >> "windows";
 
     // Swap all buffers at once
     STimer::timer << "swap";
-    threadIds.clear();
+    vector<unsigned int> threadIds;
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
             threadIds.push_back(SThread::pool.enqueue([&]() {
