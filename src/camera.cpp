@@ -112,6 +112,8 @@ bool Camera::render()
         obj->deactivate();
     }
 
+    glDisable(GL_DEPTH_TEST);
+
     // We need to regenerate the mipmaps for all the output textures
     glActiveTexture(GL_TEXTURE0);
     for (auto t : _outTextures)
@@ -119,7 +121,6 @@ bool Camera::render()
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     //glDisable(GL_MULTISAMPLE);
-    glDisable(GL_DEPTH_TEST);
 
     GLenum error = glGetError();
     if (error)

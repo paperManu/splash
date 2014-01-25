@@ -59,6 +59,11 @@ void Shader::activate()
 void Shader::deactivate()
 {
     glUseProgram(0);
+    for (int i = 0; i < _textureNbr; ++i)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }
 
 /*************/
