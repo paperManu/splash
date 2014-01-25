@@ -177,7 +177,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (width == 0 || height == 0 || bpp == 0)
             return;
 
-        ImageSpec spec(width, height, 3, TypeDesc::UINT8);
+        ImageSpec spec(width, height, 4, TypeDesc::UINT8);
         ImageBuf img(spec);
         if (!is420 && channels == 3)
         {

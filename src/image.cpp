@@ -149,6 +149,35 @@ bool Image::read(const string& filename)
     in->close();
     delete in;
 
+    // If the image has only 3 channels, we add one
+    if (channels == 3)
+    {
+        ImageSpec newSpec(xres, yres, 4, TypeDesc::UINT8);
+        ImageBuf newImg(newSpec);
+        char* inputPixels = (char*)img.localpixels();
+        char* newPixels = (char*)newImg.localpixels();
+
+        if (inputPixels == nullptr || newPixels == nullptr)
+            return false;
+
+        for (int y = 0; y < yres; ++y)
+            for (int x = 0; x < xres; ++x)
+            {
+                memcpy(&newPixels[(x + y * xres) * 4], &inputPixels[(x + y * xres) * 3], 3 * sizeof(char));
+                //newPixels[(x + y * xres) * 4 + 0] = inputPixels[(x + y * xres) * 3 + 0];
+                //newPixels[(x + y * xres) * 4 + 1] = inputPixels[(x + y * xres) * 3 + 1];
+                //newPixels[(x + y * xres) * 4 + 2] = inputPixels[(x + y * xres) * 3 + 2];
+                newPixels[(x + y * xres) * 4 + 3] = 255;
+            }
+
+        channels = 4;
+        img.swap(newImg);
+    }
+    else
+    {
+        return false;
+    }
+
     _image.swap(img);
     updateTimestamp();
 
@@ -158,7 +187,7 @@ bool Image::read(const string& filename)
 /*************/
 void Image::createDefaultImage()
 {
-    ImageSpec spec(512, 512, 3, TypeDesc::UINT8);
+    ImageSpec spec(512, 512, 4, TypeDesc::UINT8);
     ImageBuf img(spec);
 
     for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)

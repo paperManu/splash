@@ -160,7 +160,7 @@ void Camera::setOutputNbr(int nbr)
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
             TexturePtr texture(new Texture);
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA8, 512, 512, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
             _outTextures.push_back(texture);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
         }

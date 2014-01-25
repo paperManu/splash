@@ -31,7 +31,7 @@ Gui::Gui(GlWindowPtr w)
 
     {
         TexturePtr texture(new Texture);
-        texture->reset(GL_TEXTURE_2D, 0, GL_RGBA8, _width, _height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         _outTexture = move(texture);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
@@ -188,9 +188,7 @@ void Gui::setOutputSize(int width, int height)
 
     glfwMakeContextCurrent(_window->get());
     _depthTexture->resize(width, height);
-    //_depthTexture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
     _outTexture->resize(width, height);
-    //_outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
     glfwMakeContextCurrent(NULL);
 
     _width = width;
