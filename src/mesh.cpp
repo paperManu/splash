@@ -32,6 +32,7 @@ bool Mesh::operator==(Mesh& otherMesh) const
 vector<float> Mesh::getVertCoords() const
 {
     vector<float> coords;
+    lock_guard<mutex> lock(_mutex);
     coords.resize(_mesh.n_faces() * 3 * 4);
 
     int idx = 0;
@@ -63,6 +64,7 @@ vector<float> Mesh::getVertCoords() const
 vector<float> Mesh::getUVCoords() const
 {
     vector<float> coords;
+    lock_guard<mutex> lock(_mutex);
     coords.resize(_mesh.n_faces() * 3 * 2);
 
     int idx = 0;
@@ -94,6 +96,7 @@ vector<float> Mesh::getUVCoords() const
 vector<float> Mesh::getNormals() const
 {
     vector<float> normals;
+    lock_guard<mutex> lock(_mutex);
     normals.resize(_mesh.n_faces() * 3 * 3);
 
     int idx = 0;
@@ -141,6 +144,7 @@ bool Mesh::read(const string& filename)
     mesh.update_normals();
     mesh.release_face_normals();
 
+    lock_guard<mutex> lock(_mutex);
     _mesh = mesh;
     updateTimestamp();
     return true;
@@ -157,6 +161,7 @@ SerializedObject Mesh::serialize() const
     data.push_back(move(getUVCoords()));
     data.push_back(move(getNormals()));
 
+    lock_guard<mutex> lock(_mutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto d : data)
@@ -208,6 +213,7 @@ bool Mesh::deserialize(const SerializedObject& obj)
         }
 
         // Next step: use these values to reset the vertices of _mesh
+        lock_guard<mutex> lock(_mutex);
         _mesh.clear();
         for (int face = 0; face < nbrVertices / 3; ++face)
         {

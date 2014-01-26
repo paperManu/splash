@@ -33,6 +33,7 @@ const void* Image::data() const
 ImageBuf Image::get() const
 {
     ImageBuf img;
+    lock_guard<mutex> lock(_mutex);
     img.copy(_image);
     return img;
 }
@@ -40,12 +41,14 @@ ImageBuf Image::get() const
 /*************/
 ImageSpec Image::getSpec() const
 {
+    lock_guard<mutex> lock(_mutex);
     return _image.spec();
 }
 
 /*************/
 void Image::set(const ImageBuf& img)
 {
+    lock_guard<mutex> lock(_mutex);
     _image.copy(img);
 }
 
@@ -164,20 +167,18 @@ bool Image::read(const string& filename)
             for (int x = 0; x < xres; ++x)
             {
                 memcpy(&newPixels[(x + y * xres) * 4], &inputPixels[(x + y * xres) * 3], 3 * sizeof(char));
-                //newPixels[(x + y * xres) * 4 + 0] = inputPixels[(x + y * xres) * 3 + 0];
-                //newPixels[(x + y * xres) * 4 + 1] = inputPixels[(x + y * xres) * 3 + 1];
-                //newPixels[(x + y * xres) * 4 + 2] = inputPixels[(x + y * xres) * 3 + 2];
                 newPixels[(x + y * xres) * 4 + 3] = 255;
             }
 
         channels = 4;
         img.swap(newImg);
     }
-    else
+    else if (channels != 4)
     {
         return false;
     }
 
+    lock_guard<mutex> lock(_mutex);
     _image.swap(img);
     updateTimestamp();
 
@@ -203,6 +204,7 @@ void Image::createDefaultImage()
                 p[c] = 0;
     }
 
+    lock_guard<mutex> lock(_mutex);
     _image.swap(img);
     updateTimestamp();
 }

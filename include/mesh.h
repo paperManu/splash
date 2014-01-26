@@ -29,6 +29,7 @@
 
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <vector>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
@@ -101,6 +102,7 @@ class Mesh : public BaseObject
     protected:
         MeshContainer _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
+        mutable std::mutex _mutex;
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         void updateTimestamp();
