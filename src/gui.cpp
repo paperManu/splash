@@ -241,6 +241,7 @@ void Gui::initGLV(int width, int height)
     {
         // Smooth the values
         static float fps {0.f};
+        static float upl {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
@@ -248,6 +249,7 @@ void Gui::initGLV(int width, int height)
         static float evt {0.f};
 
         fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.05;
+        upl = upl * 0.95 + STimer::timer["upload"] * 0.001 * 0.05;
         cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
         gui = gui * 0.95 + STimer::timer["guis"] * 0.001 * 0.05;
         win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
@@ -257,6 +259,7 @@ void Gui::initGLV(int width, int height)
         // Create the text message
         string text;
         text += "Framerate: " + to_string(fps) + " fps\n";
+        text += "Buffers upload: " + to_string(upl) + " ms\n";
         text += "Cameras rendering: " + to_string(cam) + " ms\n";
         text += "GUI rendering: " + to_string(gui) + " ms\n";
         text += "Windows rendering: " + to_string(win) + " ms\n";
@@ -267,7 +270,7 @@ void Gui::initGLV(int width, int height)
     });
 
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 32);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 6 + 8);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 7 + 8);
     _glvProfile.top(8);
     _glvProfile.left(8);
     _glvProfile.style(&_style);

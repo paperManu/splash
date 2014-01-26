@@ -44,6 +44,7 @@ void World::run()
         for (auto& o : _objects)
             o.second->update();
         // Send them the their destinations
+        STimer::timer << "upload";
         vector<unsigned int> threadIds;
         for (auto& o : _objects)
         {
@@ -60,8 +61,9 @@ void World::run()
                     }));
         }
         SThread::pool.waitThreads(threadIds);
+        STimer::timer >> "upload";
 
-        // Then render the scenes
+        // Render the scenes
         for (auto& s : _scenes)
             run &= !s.second->render();
 
