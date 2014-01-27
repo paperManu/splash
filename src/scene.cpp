@@ -23,90 +23,37 @@ BaseObjectPtr Scene::add(string type, string name)
     glfwMakeContextCurrent(_mainWindow->get());
 
     SLog::log << Log::DEBUG << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
+    BaseObjectPtr obj;
     if (type == string("camera"))
-    {
-        CameraPtr camera(new Camera(_mainWindow));
-        camera->setId(getId());
-        if (name == string())
-            _objects[to_string(camera->getId())] = camera;
-        else
-            _objects[name] = camera;
-        return dynamic_pointer_cast<BaseObject>(camera);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
     else if (type == string("geometry"))
-    {
-        GeometryPtr geometry(new Geometry());
-        geometry->setId(getId());
-        if (name == string())
-            _objects[to_string(geometry->getId())] = geometry;
-        else
-            _objects[name] = geometry;
-        return dynamic_pointer_cast<BaseObject>(geometry);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
     else if (type == string("gui"))
-    {
-        GuiPtr gui(new Gui(getNewSharedWindow(name, true)));
-        gui->setId(getId());
-        if (name == string())
-            _objects[to_string(gui->getId())] = gui;
-        else
-            _objects[name] = gui;
-        return dynamic_pointer_cast<BaseObject>(gui);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true))));
     else if (type == string("image") || type == string("image_shmdata"))
-    {
-        ImagePtr image(new Image());
-        image->setId(getId());
-        if (name == string())
-            _objects[to_string(image->getId())] = image;
-        else
-            _objects[name] = image;
-        return dynamic_pointer_cast<BaseObject>(image);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
     else if (type == string("mesh"))
-    {
-        MeshPtr mesh(new Mesh());
-        mesh->setId(getId());
-        if (name == string())
-            _objects[to_string(mesh->getId())] = mesh;
-        else
-            _objects[name] = mesh;
-        return dynamic_pointer_cast<BaseObject>(mesh);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(MeshPtr(new Mesh()));
     else if (type == string("object"))
-    {
-        ObjectPtr object(new Object());
-        object->setId(getId());
-        if (name == string())
-            _objects[to_string(object->getId())] = object;
-        else
-            _objects[name] = object;
-        return dynamic_pointer_cast<BaseObject>(object);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(ObjectPtr(new Object()));
     else if (type == string("texture"))
-    {
-        TexturePtr tex(new Texture());
-        tex->setId(getId());
-        if (name == string())
-            _objects[to_string(tex->getId())] = tex;
-        else
-            _objects[name] = tex;
-        return dynamic_pointer_cast<BaseObject>(tex);
-    }
+        obj = dynamic_pointer_cast<BaseObject>(TexturePtr(new Texture()));
     else if (type == string("window"))
+        obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
+
+    if (obj.get() != nullptr)
     {
-        WindowPtr window(new Window(getNewSharedWindow(name)));
-        window->setId(getId());
+        obj->setId(getId());
+        obj->setName(name);
         if (name == string())
-            _objects[to_string(window->getId())] = window;
+            _objects[to_string(obj->getId())] = obj;
         else
-            _objects[name] = window;
-        return dynamic_pointer_cast<BaseObject>(window);
+            _objects[name] = obj;
     }
-    else
-        return BaseObjectPtr();
 
     glfwMakeContextCurrent(NULL);
+
+    return obj;
 }
 
 /*************/

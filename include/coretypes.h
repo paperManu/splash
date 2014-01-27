@@ -177,6 +177,12 @@ class BaseObject
         void setId(unsigned long id) {_id = id;}
 
         /**
+         * Set and get the name of the object
+         */
+        std::string getName() const {return _name;}
+        void setName(std::string name) {_name = name;}
+
+        /**
          * Try to link the given BaseObject to this
          */
         virtual bool linkTo(BaseObjectPtr obj) {return false;}
@@ -204,6 +210,7 @@ class BaseObject
     protected:
         unsigned long _id;
         std::string _type {"baseobject"};
+        std::string _name {""};
         std::map<std::string, AttributeFunctor> _attribFunctions;
 };
 
