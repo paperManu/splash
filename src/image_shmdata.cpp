@@ -209,7 +209,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                 p[0] = context->_yCbCrLUT[yValue][uValue][vValue][0];
                 p[1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
                 p[2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
-                p[4] = 255;
+                p[3] = 255;
             }
         }
         else
