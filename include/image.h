@@ -78,6 +78,12 @@ class Image : public BaseObject
         const void* data() const;
 
         /**
+         * Lock the image, useful while reading. Use with care
+         */
+        void lock() {_mutex.lock();}
+        void unlock() {_mutex.unlock();}
+
+        /**
          * Get the image buffer
          */
         ImageBuf get() const;

@@ -159,7 +159,9 @@ void Texture::update()
         if (spec.nchannels == 4 && spec.format == TypeDesc::UINT8)
         {
             SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA" << Log::endl;
+            _img->lock();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+            _img->unlock();
         }
 
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -170,8 +172,10 @@ void Texture::update()
     else
     {
         glBindTexture(GL_TEXTURE_2D, _glTex);
+        _img->lock();
         if (spec.nchannels == 4 && spec.format == TypeDesc::UINT8)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+        _img->unlock();
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);

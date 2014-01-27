@@ -38,16 +38,14 @@ void World::run()
             SLog::log << Log::MESSAGE << "World::" << __FUNCTION__ << " - Framerate: " << framerate << Log::endl;
         }
 
-        bool run {true};
-
-        // Update the local objects
-        for (auto& o : _objects)
-            o.second->update();
-        // Send them the their destinations
         STimer::timer << "upload";
         vector<unsigned int> threadIds;
         for (auto& o : _objects)
         {
+            // Update the local objects
+            o.second->update();
+
+            // Send them the their destinations
             SerializedObjectPtr obj(new SerializedObject);
             if (dynamic_pointer_cast<Image>(o.second).get() != nullptr)
                 *obj = dynamic_pointer_cast<Image>(o.second)->serialize();
@@ -64,6 +62,7 @@ void World::run()
         STimer::timer >> "upload";
 
         // Render the scenes
+        bool run {true};
         for (auto& s : _scenes)
             run &= !s.second->render();
 
