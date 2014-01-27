@@ -130,14 +130,15 @@ class Window : public BaseObject
         int _screenId {0};
 
         ObjectPtr _screen;
+        glm::mat4x4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;
         bool _isLinkedToTexture {false}; //< Set to true if the Window is directly connected to a texture, not a Camera or Gui
 
         static std::mutex _callbackMutex;
-        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys;
-        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn;
-        static std::pair<GLFWwindow*, std::vector<double>> _mousePos;
-        static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll;
+        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys; // Input keys queue
+        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn; // Input mouse buttons queue
+        static std::pair<GLFWwindow*, std::vector<double>> _mousePos; // Input mouse position
+        static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
 
         /**
          * Input callbacks

@@ -90,7 +90,7 @@ void ThreadPool::waitThreads(vector<unsigned int> list)
 {
     timespec nap;
     nap.tv_sec = 0;
-    nap.tv_nsec = 1e4;
+    nap.tv_nsec = 1e5;
 
     while (true)
     {

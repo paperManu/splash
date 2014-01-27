@@ -48,11 +48,13 @@ class Timer
          */
         void start(std::string name)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             _timeMap[name] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
         }
 
         void stop(std::string name)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             if (_timeMap.find(name) != _timeMap.end())
             {
                 auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();

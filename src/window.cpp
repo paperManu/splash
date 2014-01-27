@@ -34,6 +34,8 @@ Window::Window(GlWindowPtr w)
     else
         SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
+    _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
+
     setEventsCallbacks();
 
     registerAttributes();
@@ -159,7 +161,7 @@ bool Window::render()
     glClear(GL_COLOR_BUFFER_BIT);
 
     _screen->activate();
-    _screen->setViewProjectionMatrix(glm::ortho(-1.f, 1.f, -1.f, 1.f));
+    _screen->setViewProjectionMatrix(_viewProjectionMatrix);
     _screen->draw();
     _screen->deactivate();
 
@@ -275,6 +277,7 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
     std::vector<double> scroll {xoffset, yoffset};
     _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
 }
+
 
 /*************/
 void Window::registerAttributes()
