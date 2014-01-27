@@ -84,7 +84,6 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 bool Scene::render()
 {
-    STimer::timer << "sceneTimer";
     bool isError {false};
 
     // Update the cameras
@@ -193,9 +192,21 @@ bool Scene::render()
     }
     STimer::timer >> "events";
 
-    STimer::timer >> "sceneTimer";
-
     return quit;
+}
+
+/*************/
+void Scene::run()
+{
+    _isRunning = true;
+    while (true)
+    {
+        STimer::timer << "sceneLoop";
+        if (render())
+            break;
+        STimer::timer >> 1e6 / 60 >> "sceneLoop";
+    }
+    _isRunning = false;
 }
 
 /*************/

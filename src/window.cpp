@@ -1,6 +1,7 @@
 #include "window.h"
 #include "camera.h"
 #include "gui.h"
+#include "timer.h"
 
 #include <functional>
 #include <glm/glm.hpp>

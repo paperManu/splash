@@ -139,6 +139,7 @@ void Texture::update()
 
     if (_img->getTimestamp() == _timestamp)
         return;
+    _img->update();
     _timestamp = _img->getTimestamp();
 
     ImageSpec spec = _img->getSpec();

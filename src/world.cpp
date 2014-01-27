@@ -27,6 +27,11 @@ void World::run()
 {
     applyConfig();
 
+    for (auto& s : _scenes)
+        SThread::pool.enqueue([&]() {
+            s.second->run();
+        });
+
     while (true)
     {
         STimer::timer << "worldLoop";
@@ -42,21 +47,21 @@ void World::run()
         vector<unsigned int> threadIds;
         for (auto& o : _objects)
         {
-            // Update the local objects
-            o.second->update();
+            threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                // Update the local objects
+                o.second->update();
 
-            // Send them the their destinations
-            SerializedObjectPtr obj(new SerializedObject);
-            if (dynamic_pointer_cast<Image>(o.second).get() != nullptr)
-                *obj = dynamic_pointer_cast<Image>(o.second)->serialize();
-            else if (dynamic_pointer_cast<Mesh>(o.second).get() != nullptr)
-                *obj = dynamic_pointer_cast<Mesh>(o.second)->serialize();
+                // Send them the their destinations
+                SerializedObjectPtr obj(new SerializedObject);
+                if (dynamic_pointer_cast<Image>(o.second).get() != nullptr)
+                    *obj = dynamic_pointer_cast<Image>(o.second)->serialize();
+                else if (dynamic_pointer_cast<Mesh>(o.second).get() != nullptr)
+                    *obj = dynamic_pointer_cast<Mesh>(o.second)->serialize();
 
-            for (auto& dest : _objectDest[o.first])
-                if (_scenes.find(dest) != _scenes.end())
-                    threadIds.push_back(SThread::pool.enqueue([=, &o]() {
-                        _scenes[dest]->setFromSerializedObject(o.first, *obj);
-                    }));
+                for (auto& dest : _objectDest[o.first])
+                    if (_scenes.find(dest) != _scenes.end())
+                            _scenes[dest]->setFromSerializedObject(o.first, *obj);
+            }));
         }
         SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
@@ -64,7 +69,7 @@ void World::run()
         // Render the scenes
         bool run {true};
         for (auto& s : _scenes)
-            run &= !s.second->render();
+            run &= s.second->isRunning();
 
         if (!run)
             break;

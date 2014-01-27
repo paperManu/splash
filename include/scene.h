@@ -75,6 +75,11 @@ class Scene
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Check wether the scene is running
+         */
+        bool isRunning() const {return _isRunning;}
+
+        /**
          * Link an object to another, base on their types
          */
         bool link(std::string first, std::string second);
@@ -84,6 +89,11 @@ class Scene
          * Render everything
          */
         bool render();
+
+        /**
+         * Main loop for the scene
+         */
+        void run();
 
         /**
          * Give a special behavior to the scene, making it the main window of the World
@@ -103,6 +113,7 @@ class Scene
     private:
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
+        bool _isRunning {false};
         GlWindowPtr _mainWindow;
         unsigned long _nextId {0};
 
