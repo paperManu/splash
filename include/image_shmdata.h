@@ -59,15 +59,8 @@ class Image_Shmdata : public Image
          */
         bool read(const std::string& filename);
 
-        /**
-         * Update the content of the image
-         */
-        void update();
-
     private:
         shmdata_any_reader_t* _reader {nullptr};
-        ImageBuf _bufferImage;
-        bool _imageUpdated {false};
 
         // LUT for YUV conversion
         std::vector<std::vector<std::vector<std::vector<unsigned char>>>> _yCbCrLUT;

@@ -113,7 +113,8 @@ bool Image::deserialize(const SerializedObject& obj)
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         lock_guard<mutex> lock(_mutex);
-        _image.swap(image);
+        _bufferImage.swap(image);
+        _imageUpdated = true;
 
         updateTimestamp();
     }
@@ -180,9 +181,21 @@ bool Image::read(const string& filename)
 
     lock_guard<mutex> lock(_mutex);
     _image.swap(img);
+    _imageUpdated = true;
     updateTimestamp();
 
     return true;
+}
+
+/*************/
+void Image::update()
+{
+    lock_guard<mutex> lock(_mutex);
+    if (_imageUpdated)
+    {
+        _image.swap(_bufferImage);
+        _imageUpdated = false;
+    }
 }
 
 /*************/

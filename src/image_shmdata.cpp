@@ -41,18 +41,6 @@ bool Image_Shmdata::read(const string& filename)
 }
 
 /*************/
-void Image_Shmdata::update()
-{
-    lock_guard<mutex> lock(_mutex);
-    if (_imageUpdated)
-    {
-        _image.swap(_bufferImage);
-        _imageUpdated = false;
-        updateTimestamp();
-    }
-}
-
-/*************/
 void Image_Shmdata::computeLUT()
 {
     // Compute YCbCr to RGB lookup table
@@ -218,6 +206,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         lock_guard<mutex> lock(context->_mutex);
         context->_bufferImage.swap(img);
         context->_imageUpdated = true;
+        context->updateTimestamp();
     }
 
     shmdata_any_reader_free(shmbuf);

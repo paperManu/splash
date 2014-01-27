@@ -121,10 +121,12 @@ class Image : public BaseObject
         /**
          * Update the content of the image
          */
-        virtual void update() {}
+        virtual void update();
 
     protected:
         ImageBuf _image;
+        ImageBuf _bufferImage;
+        bool _imageUpdated {false};
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         mutable std::mutex _mutex;
