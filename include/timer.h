@@ -68,9 +68,13 @@ class Timer
             if (_timeMap.find(name) == _timeMap.end())
                 return;
 
-            auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-            auto elapsed = now - _timeMap[name];
-            _timeMap.erase(name);
+            unsigned long long now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            unsigned long long elapsed;
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                elapsed = now - _timeMap[name];
+                _timeMap.erase(name);
+            }
 
             timespec nap;
             nap.tv_sec = 0;
@@ -79,8 +83,10 @@ class Timer
             else
                 nap.tv_nsec = 0;
 
-            std::lock_guard<std::mutex> lock(_mutex);
-            _durationMap[name] = std::max(duration, elapsed);
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                _durationMap[name] = std::max(duration, elapsed);
+            }
             nanosleep(&nap, NULL);
          }
 
@@ -91,8 +97,12 @@ class Timer
          {
             if (_durationMap.find(name) == _durationMap.end())
                 return 0;
-            std::lock_guard<std::mutex> lock(_mutex);
-            return _durationMap[name];
+            unsigned long long duration;
+            {
+                std::lock_guard<std::mutex> lock(_mutex);
+                duration = _durationMap[name];
+            }
+            return duration;
          }
 
          /**
