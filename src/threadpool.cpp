@@ -90,19 +90,18 @@ void ThreadPool::waitThreads(vector<unsigned int> list)
 {
     timespec nap;
     nap.tv_sec = 0;
-    nap.tv_nsec = 1e5;
+    nap.tv_nsec = 1e4;
 
     while (true)
     {
         nanosleep(&nap, NULL);
-        if (list.size() == 0 || workingThreads == 0)
+
+        unique_lock<mutex> lock(queue_mutex);
+        if (list.size() == 0 || workingThreads == 0 || tasksFinished.size() == 0)
         {
-            unique_lock<mutex> lock(queue_mutex);
             tasksFinished.clear();
             break;
         }
-
-        unique_lock<mutex> lock(queue_mutex);
 
         auto task = find(tasksFinished.begin(), tasksFinished.end(), list[0]);
         if (task != tasksFinished.end())
