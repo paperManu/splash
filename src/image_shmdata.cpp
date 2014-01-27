@@ -181,7 +181,15 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ImageBuf img(spec);
         if (!is420 && channels == 3)
         {
-            memcpy((char*)img.localpixels(), (const char*)data, width * height * bpp / 8);
+            for (ImageBuf::Iterator<unsigned char, unsigned char> p(img); !p.done(); ++p)
+            {
+                if (!p.exists())
+                    continue;
+                p[0] = ((const char*)data)[(p.y() * width + p.x()) * 3];
+                p[1] = ((const char*)data)[(p.y() * width + p.x()) * 3 + 1];
+                p[2] = ((const char*)data)[(p.y() * width + p.x()) * 3 + 2];
+                p[4] = 255;
+            }
         }
         else if (is420)
         {

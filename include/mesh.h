@@ -55,6 +55,16 @@ class Mesh : public BaseObject
         virtual ~Mesh();
 
         /**
+         * = operator
+         */
+        Mesh& operator=(const Mesh& m)
+        {
+            _mesh = m._mesh;
+            _timestamp = m._timestamp;
+            return *this;
+        }
+
+        /**
          * Compare meshes based on their timestamps
          */
         bool operator==(Mesh& otherMesh) const;
