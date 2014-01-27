@@ -13,7 +13,16 @@ go_bandit([]() {
         Scene scene;
         it("should be visible", [&]() {
             auto window = scene.add("window", "window");
+            auto camera = scene.add("camera", "camera");
             auto gui = scene.add("gui", "gui");
+
+            scene.link("camera", "gui");
+            scene.link("gui", "window");
+
+            while(true)
+                if (scene.render())
+                    break;
+            AssertThat(scene.getStatus(), Equals(true));
         });
     });
 });
