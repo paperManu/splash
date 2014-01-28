@@ -104,14 +104,21 @@ class Image : public BaseObject
         void set(const ImageBuf& img);
 
         /**
+         * Set the next serialized object to deserialize to buffer
+         */
+        void setSerializedObject(SerializedObject obj);
+
+        /**
          * Serialize the image
          */
         SerializedObject serialize() const;
 
         /**
          * Update the Image from a serialized representation
+         * The second definition updates from the inner serialized object
          */
         bool deserialize(const SerializedObject& obj);
+        bool deserialize();
 
         /**
          * Set the path to read from
@@ -128,6 +135,9 @@ class Image : public BaseObject
         ImageBuf _bufferImage;
         bool _imageUpdated {false};
         std::chrono::high_resolution_clock::time_point _timestamp;
+
+        SerializedObject _serializedObject;
+        bool _newSerializedObject {false};
 
         mutable std::mutex _mutex;
 

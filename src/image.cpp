@@ -53,6 +53,14 @@ void Image::set(const ImageBuf& img)
 }
 
 /*************/
+void Image::setSerializedObject(SerializedObject obj)
+{
+    lock_guard<mutex> lock(_mutex);
+    _serializedObject.swap(obj);
+    _newSerializedObject = true;
+}
+
+/*************/
 SerializedObject Image::serialize() const
 {
     SerializedObject obj;
@@ -125,6 +133,23 @@ bool Image::deserialize(const SerializedObject& obj)
     }
 
     return true;
+}
+
+/*************/
+bool Image::deserialize()
+{
+    {
+        lock_guard<mutex> lock(_mutex);
+        if (_newSerializedObject == false)
+            return true;
+    }
+
+    deserialize(_serializedObject);
+
+    {
+        lock_guard<mutex> lock(_mutex);
+        _newSerializedObject = false;
+    }
 }
 
 /*************/
