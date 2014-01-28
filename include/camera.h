@@ -125,7 +125,7 @@ class Camera : public BaseObject
         float _fov {35};
         float _width {512}, _height {512};
         float _near {0.001}, _far {100.0};
-        glm::vec3 _eye, _target;
+        glm::vec3 _eye, _target, _up;
 
         /**
          * Get the view projection matrix from the camera parameters
