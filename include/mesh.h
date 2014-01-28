@@ -111,10 +111,8 @@ class Mesh : public BufferObject
 
     protected:
         MeshContainer _mesh;
-        std::chrono::high_resolution_clock::time_point _timestamp;
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
-        void updateTimestamp();
         
         /**
          * Register new functors to modify attributes

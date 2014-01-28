@@ -147,6 +147,7 @@ bool Mesh::read(const string& filename)
     lock_guard<mutex> lock(_mutex);
     _mesh = mesh;
     updateTimestamp();
+
     return true;
 }
 
@@ -307,12 +308,6 @@ void Mesh::createDefaultMesh()
     _mesh.set_texcoord2D(vertices[3], MeshContainer::TexCoord2D(0, 1));
 
     updateTimestamp();
-}
-
-/*************/
-void Mesh::updateTimestamp()
-{
-    _timestamp = chrono::high_resolution_clock::now();
 }
 
 /*************/

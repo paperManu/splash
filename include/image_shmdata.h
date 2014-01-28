@@ -52,6 +52,7 @@ class Image_Shmdata : public Image
         Image_Shmdata(const Image_Shmdata&) = delete;
         Image_Shmdata(Image_Shmdata&& g)
         {
+            _reader = g._reader;
         }
 
         /**

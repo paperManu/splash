@@ -231,12 +231,6 @@ void Image::createDefaultImage()
 }
 
 /*************/
-void Image::updateTimestamp()
-{
-    _timestamp = chrono::high_resolution_clock::now();
-}
-
-/*************/
 void Image::registerAttributes()
 {
     _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {

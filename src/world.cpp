@@ -42,8 +42,12 @@ void World::run()
                 // Send them the their destinations
                 SerializedObjectPtr obj(new SerializedObject);
                 if (dynamic_pointer_cast<BufferObject>(o.second).get() != nullptr)
-                    *obj = dynamic_pointer_cast<BufferObject>(o.second)->serialize();
+                    if (dynamic_pointer_cast<BufferObject>(o.second)->wasUpdated()) // if the buffer has been updated
+                        *obj = dynamic_pointer_cast<BufferObject>(o.second)->serialize();
+                    else
+                        return; // if not, exit this thread
 
+                dynamic_pointer_cast<BufferObject>(o.second)->setNotUpdated();
                 for (auto& dest : _objectDest[o.first])
                     if (_scenes.find(dest) != _scenes.end())
                             _scenes[dest]->setFromSerializedObject(o.first, *obj);

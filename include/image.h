@@ -127,10 +127,8 @@ class Image : public BufferObject
         ImageBuf _image;
         ImageBuf _bufferImage;
         bool _imageUpdated {false};
-        std::chrono::high_resolution_clock::time_point _timestamp;
 
         void createDefaultImage(); //< Create a default pattern
-        void updateTimestamp();
         
     private:
         /**

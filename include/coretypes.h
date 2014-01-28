@@ -36,6 +36,7 @@
 #define SPLASH_SAMPLES 4
 #define SPLASH_MAX_THREAD 8
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -224,9 +225,14 @@ class BufferObject : public BaseObject
         virtual ~BufferObject() {}
 
         /**
-         * Serialize the image
+         * Returns true if the object has been updated
          */
-        virtual SerializedObject serialize() const = 0;
+        bool wasUpdated() {return _updatedBuffer;}
+
+        /**
+         * Set the updated buffer flag to false.
+         */
+        void setNotUpdated() {_updatedBuffer = false;}
 
         /**
          * Update the Image from a serialized representation
@@ -246,6 +252,11 @@ class BufferObject : public BaseObject
         }
 
         /**
+         * Serialize the image
+         */
+        virtual SerializedObject serialize() const = 0;
+
+        /**
          * Set the next serialized object to deserialize to buffer
          */
         void setSerializedObject(SerializedObject obj)
@@ -255,8 +266,20 @@ class BufferObject : public BaseObject
             _newSerializedObject = true;
         }
 
+        /**
+         * Updates the timestamp of the object. Also, set the update flag to true
+         */
+        void updateTimestamp()
+        {
+            _timestamp = std::chrono::high_resolution_clock::now();
+            _updatedBuffer = true;
+        }
+
     protected:
         mutable std::mutex _mutex;
+        std::chrono::high_resolution_clock::time_point _timestamp;
+        bool _updatedBuffer {false};
+
         SerializedObject _serializedObject;
         bool _newSerializedObject {false};
 };
