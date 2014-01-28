@@ -83,12 +83,16 @@ class GlvGraph : public glv::View
     public:
         GlvGraph();
         void onDraw(glv::GLV& g);
+        bool onEvent(glv::Event::t e, glv::GLV& g);
         void onResize(glv::space_t dx, glv::space_t dy);
 
     private:
         glv::Plot _plot;
         glv::PlotFunction1D _plotFunction;
+        glv::Label _graphLabel, _scaleLabel;
         glv::Style _style;
+
+        std::atomic_uint _target {0};
 
         unsigned int _maxHistoryLength {500};
         std::map<std::string, std::deque<unsigned long long>> _durationGraph;

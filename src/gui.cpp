@@ -426,6 +426,15 @@ GlvGraph::GlvGraph()
     _plot.major(20, 0).minor(4, 0).major(5, 1).minor(0, 1);
     _plot.disable(Controllable);
     *this << _plot;
+
+    _graphLabel.setValue("Graph").colors().set(Color(0.0, 1.0, 1.0, 1.0));
+    _graphLabel.top(8);
+    _graphLabel.left(8);
+
+    _scaleLabel.top(8);
+    _scaleLabel.right(w - 24);
+    _plot << _graphLabel;
+    _plot << _scaleLabel;
 }
 
 /*************/
@@ -448,12 +457,54 @@ void GlvGraph::onDraw(GLV& g)
     if (_durationGraph.size() == 0)
         return;
 
+    unsigned int target = _target;
+    if (target >= _durationGraph.size())
+        _target = target = 0;
+
+    auto durationIt = _durationGraph.begin();
+    for (int i = 0; i < target; ++i)
+        durationIt++;
+
+    float maxValue {0.f};
     int index = 0;
-    for (auto v : (*_durationGraph.begin()).second)
+    _graphLabel.setValue((*durationIt).first);
+    for (auto v : (*durationIt).second)
     {
+        maxValue = std::max((float)v * 0.001f, maxValue);
         _plot.data().assign((float)v * 0.001f, index);
         index++;
     }
+
+    maxValue = ceil(maxValue * 0.1f) * 10.f;
+    _plot.range(0.0, maxValue, 1);
+
+    _scaleLabel.setValue(to_string((int)maxValue) + " ms");
+    _scaleLabel.right(w - 8);
+}
+
+/*************/
+bool GlvGraph::onEvent(Event::t e, GLV& g)
+{
+    switch (e)
+    {
+    default:
+        break;
+    case Event::KeyDown:
+        if ((char)g.keyboard().key() == ' ')
+        {
+            _target++;
+        }
+        break;
+    case Event::MouseDrag:
+        if (g.mouse().middle())
+        {
+            move(g.mouse().dx(), g.mouse().dy());
+            return false;
+        }
+        break;
+    }
+
+    return true;
 }
 
 /*************/
