@@ -66,7 +66,7 @@ void World::run()
         SThread::pool.waitThreads(threadIds);
 
         // Match the desired FPS
-        STimer::timer >> 1e6 / 60 >> "worldLoop";
+        STimer::timer >> "worldLoop";
     }
 }
 

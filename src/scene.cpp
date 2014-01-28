@@ -213,7 +213,7 @@ void Scene::run()
         STimer::timer << "sceneLoop";
         if (render())
             break;
-        STimer::timer >> 1e6 / 60 >> "sceneLoop";
+        STimer::timer >> "sceneLoop";
     }
     _isRunning = false;
 }
