@@ -53,7 +53,6 @@ void World::run()
                             _scenes[dest]->setFromSerializedObject(o.first, *obj);
             }));
         }
-        SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
         // Render the scenes
@@ -63,6 +62,8 @@ void World::run()
 
         if (!run)
             break;
+
+        SThread::pool.waitThreads(threadIds);
 
         // Match the desired FPS
         STimer::timer >> 1e6 / 60 >> "worldLoop";
