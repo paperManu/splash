@@ -108,6 +108,14 @@ class Timer
          }
 
          /**
+          * Get the whole time map
+          */
+         std::map<std::string, unsigned long long> getDurationMap() {
+            std::lock_guard<std::mutex> lock(_mutex);
+            return _durationMap;
+         }
+
+         /**
           * Some facilities
           */
          Timer& operator<<(std::string name)
@@ -132,10 +140,7 @@ class Timer
             return *this;
          }
 
-         unsigned long long operator[](std::string name)
-         {
-            return getDuration(name);
-         }
+         unsigned long long operator[](std::string name) {return getDuration(name);}
 
     private:
         std::map<std::string, unsigned long long> _timeMap; 

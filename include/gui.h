@@ -36,6 +36,7 @@
 #include "coretypes.h"
 
 #include <atomic>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <glm/glm.hpp>
@@ -74,6 +75,23 @@ class GlvGlobalView : public glv::View3D
 
     private:
         CameraPtr _camera;
+};
+
+/*************/
+class GlvGraph : public glv::View
+{
+    public:
+        GlvGraph();
+        void onDraw(glv::GLV& g);
+        void onResize(glv::space_t dx, glv::space_t dy);
+
+    private:
+        glv::Plot _plot;
+        glv::PlotFunction1D _plotFunction;
+        glv::Style _style;
+
+        unsigned int _maxHistoryLength {500};
+        std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
 /*************/
@@ -157,6 +175,7 @@ class Gui : public BaseObject
         GlvTextBox _glvLog;
         GlvTextBox _glvProfile;
         GlvGlobalView _glvGlobalView;
+        GlvGraph _glvGraph;
         
         /**
          * Convert GLFW keys values to GLV

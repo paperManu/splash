@@ -281,6 +281,13 @@ void Gui::initGLV(int width, int height)
     _glvGlobalView.right(width - 8);
     _glvGlobalView.style(&_style);
     _glv << _glvGlobalView;
+
+    _glvGraph.width(_width / 2 - 16);
+    _glvGraph.height(_height / 4 - 16);
+    _glvGraph.bottom(height - 8);
+    _glvGraph.right(_width - 8);
+    _glvGraph.style(&_style);
+    _glv << _glvGraph;
 }
 
 /*************/
@@ -407,6 +414,56 @@ void GlvGlobalView::setCamera(CameraPtr cam)
         _camera = cam;
         _camera->setAttribute("size", {width(), height()});
     }
+}
+
+/*************/
+GlvGraph::GlvGraph()
+{
+    _plotFunction = PlotFunction1D(Color(1), 2, draw::LineStrip);
+    _plot.add(_plotFunction);
+    _plot.data().resize(1, _maxHistoryLength);
+    _plot.range(0.0, _plot.data().size(1), 0).range(0.0, 20.0, 1);
+    _plot.major(20, 0).minor(4, 0).major(5, 1).minor(0, 1);
+    _plot.disable(Controllable);
+    *this << _plot;
+}
+
+/*************/
+void GlvGraph::onDraw(GLV& g)
+{
+    map<string, unsigned long long> durationMap = STimer::timer.getDurationMap();
+    
+    for (auto& t : durationMap)
+    {
+        if (_durationGraph.find(t.first) == _durationGraph.end())
+            _durationGraph[t.first] = deque<unsigned long long>({t.second});
+        else
+        {
+            if (_durationGraph[t.first].size() == _maxHistoryLength)
+                _durationGraph[t.first].pop_front();
+            _durationGraph[t.first].push_back(t.second);
+        }
+    }
+
+    if (_durationGraph.size() == 0)
+        return;
+
+    int index = 0;
+    for (auto v : (*_durationGraph.begin()).second)
+    {
+        _plot.data().assign((float)v * 0.001f, index);
+        index++;
+    }
+}
+
+/*************/
+void GlvGraph::onResize(glv::space_t dx, glv::space_t dy)
+{
+    _style = style();
+    _plot.style(&_style);
+    _plot.width(w);
+    _plot.height(h);
+    _plot.range(0.0, _plot.data().size(1), 0).range(0.0, 20.0, 1);
 }
 
 } // end of namespace
