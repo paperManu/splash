@@ -120,9 +120,11 @@ bool Image::deserialize(const SerializedObject& obj)
         ptr = reinterpret_cast<unsigned char*>(image.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
-        lock_guard<mutex> lock(_mutex);
+        bool isLocked = _mutex.try_lock();
         _bufferImage.swap(image);
         _imageUpdated = true;
+        if (isLocked)
+            _mutex.unlock();
 
         updateTimestamp();
     }
@@ -138,18 +140,14 @@ bool Image::deserialize(const SerializedObject& obj)
 /*************/
 bool Image::deserialize()
 {
-    {
-        lock_guard<mutex> lock(_mutex);
-        if (_newSerializedObject == false)
-            return true;
-    }
+    lock_guard<mutex> lock(_mutex);
+    if (_newSerializedObject == false)
+        return true;
 
-    deserialize(_serializedObject);
+    bool _returnValue = deserialize(_serializedObject);
+    _newSerializedObject = false;
 
-    {
-        lock_guard<mutex> lock(_mutex);
-        _newSerializedObject = false;
-    }
+    return _returnValue;
 }
 
 /*************/
