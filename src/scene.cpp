@@ -94,11 +94,11 @@ bool Scene::render()
     STimer::timer >> "cameras";
 
     // Update the image buffers
-    STimer::timer << "image buffer update";
+    STimer::timer << "buffer object update";
     vector<unsigned int> threadIds;
     for (auto& obj : _objects)
-        if (obj.second->getType() == "image")
-            dynamic_pointer_cast<Image>(obj.second)->deserialize();
+        if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
+            dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
     STimer::timer >> "image buffer update";
 
     // Update the guis
@@ -122,7 +122,6 @@ bool Scene::render()
             threadIds.push_back(SThread::pool.enqueue([&]() {
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
-    SThread::pool.waitThreads(threadIds);
     STimer::timer >> "swap";
 
     _status = !isError;
@@ -199,6 +198,9 @@ bool Scene::render()
     }
     STimer::timer >> "events";
 
+    // Wait for buffer update and swap threads
+    SThread::pool.waitThreads(threadIds);
+
     return quit;
 }
 
@@ -239,10 +241,8 @@ void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
 /*************/
 void Scene::setFromSerializedObject(const std::string name, const SerializedObject& obj)
 {
-    if (_objects.find(name) != _objects.end() && _objects[name]->getType() == "image")
-        dynamic_pointer_cast<Image>(_objects[name])->setSerializedObject(obj);
-    else if (_objects.find(name) != _objects.end() && _objects[name]->getType() == "mesh")
-        dynamic_pointer_cast<Mesh>(_objects[name])->deserialize(obj);
+    if (_objects.find(name) != _objects.end() && dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
+        dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
 }
 
 /*************/

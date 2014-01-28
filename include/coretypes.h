@@ -38,6 +38,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <GLFW/glfw3.h>
 
@@ -215,6 +216,52 @@ class BaseObject
 };
 
 typedef std::shared_ptr<BaseObject> BaseObjectPtr;
+
+/*************/
+class BufferObject : public BaseObject
+{
+    public:
+        virtual ~BufferObject() {}
+
+        /**
+         * Serialize the image
+         */
+        virtual SerializedObject serialize() const = 0;
+
+        /**
+         * Update the Image from a serialized representation
+         * The second definition updates from the inner serialized object
+         */
+        virtual bool deserialize(const SerializedObject& obj) = 0;
+        bool deserialize()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            if (_newSerializedObject == false)
+                return true;
+
+            bool _returnValue = deserialize(_serializedObject);
+            _newSerializedObject = false;
+
+            return _returnValue;
+        }
+
+        /**
+         * Set the next serialized object to deserialize to buffer
+         */
+        void setSerializedObject(SerializedObject obj)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            _serializedObject.swap(obj);
+            _newSerializedObject = true;
+        }
+
+    protected:
+        mutable std::mutex _mutex;
+        SerializedObject _serializedObject;
+        bool _newSerializedObject {false};
+};
+
+typedef std::shared_ptr<BufferObject> BufferObjectPtr;
 
 } // end of namespace
 

@@ -27,11 +27,6 @@ void World::run()
 {
     applyConfig();
 
-    //for (auto& s : _scenes)
-    //    SThread::pool.enqueue([&]() {
-    //        s.second->run();
-    //    });
-
     while (true)
     {
         STimer::timer << "worldLoop";
@@ -46,10 +41,8 @@ void World::run()
 
                 // Send them the their destinations
                 SerializedObjectPtr obj(new SerializedObject);
-                if (dynamic_pointer_cast<Image>(o.second).get() != nullptr)
-                    *obj = dynamic_pointer_cast<Image>(o.second)->serialize();
-                else if (dynamic_pointer_cast<Mesh>(o.second).get() != nullptr)
-                    *obj = dynamic_pointer_cast<Mesh>(o.second)->serialize();
+                if (dynamic_pointer_cast<BufferObject>(o.second).get() != nullptr)
+                    *obj = dynamic_pointer_cast<BufferObject>(o.second)->serialize();
 
                 for (auto& dest : _objectDest[o.first])
                     if (_scenes.find(dest) != _scenes.end())
@@ -62,7 +55,6 @@ void World::run()
         // Render the scenes
         bool run {true};
         for (auto& s : _scenes)
-            //run &= s.second->isRunning();
             run &= !s.second->render();
 
         if (!run)

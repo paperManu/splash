@@ -52,13 +52,6 @@ void Image::set(const ImageBuf& img)
     _image.copy(img);
 }
 
-/*************/
-void Image::setSerializedObject(SerializedObject obj)
-{
-    lock_guard<mutex> lock(_mutex);
-    _serializedObject.swap(obj);
-    _newSerializedObject = true;
-}
 
 /*************/
 SerializedObject Image::serialize() const
@@ -120,7 +113,12 @@ bool Image::deserialize(const SerializedObject& obj)
         ptr = reinterpret_cast<unsigned char*>(image.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
-        bool isLocked = _mutex.try_lock();
+        bool isLocked {false};
+        if (&obj != &_serializedObject) // If we are setting the mesh from the inner serialized buffer
+        {
+            isLocked = true;
+            _mutex.lock();
+        }
         _bufferImage.swap(image);
         _imageUpdated = true;
         if (isLocked)
@@ -135,19 +133,6 @@ bool Image::deserialize(const SerializedObject& obj)
     }
 
     return true;
-}
-
-/*************/
-bool Image::deserialize()
-{
-    lock_guard<mutex> lock(_mutex);
-    if (_newSerializedObject == false)
-        return true;
-
-    bool _returnValue = deserialize(_serializedObject);
-    _newSerializedObject = false;
-
-    return _returnValue;
 }
 
 /*************/

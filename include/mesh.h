@@ -39,7 +39,7 @@
 
 namespace Splash {
 
-class Mesh : public BaseObject
+class Mesh : public BufferObject
 {
     public:
         typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
@@ -112,7 +112,6 @@ class Mesh : public BaseObject
     protected:
         MeshContainer _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
-        mutable std::mutex _mutex;
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         void updateTimestamp();

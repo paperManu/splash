@@ -213,7 +213,13 @@ bool Mesh::deserialize(const SerializedObject& obj)
         }
 
         // Next step: use these values to reset the vertices of _mesh
-        lock_guard<mutex> lock(_mutex);
+        bool isLocked {false};
+        if (&obj != &_serializedObject) // If we are setting the mesh from the inner serialized buffer
+        {
+            isLocked = true;
+            _mutex.lock();
+        }
+
         _mesh.clear();
         for (int face = 0; face < nbrVertices / 3; ++face)
         {
@@ -248,6 +254,8 @@ bool Mesh::deserialize(const SerializedObject& obj)
         });
 
         updateTimestamp();
+        if (isLocked)
+            _mutex.unlock();
     }
     catch (...)
     {
