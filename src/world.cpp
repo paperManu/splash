@@ -27,21 +27,14 @@ void World::run()
 {
     applyConfig();
 
-    for (auto& s : _scenes)
-        SThread::pool.enqueue([&]() {
-            s.second->run();
-        });
+    //for (auto& s : _scenes)
+    //    SThread::pool.enqueue([&]() {
+    //        s.second->run();
+    //    });
 
     while (true)
     {
         STimer::timer << "worldLoop";
-        static float framerate = 0.f;
-        if (_showFramerate)
-        {
-            framerate *= 0.9f;
-            framerate += 0.1f * 1e6f / (float)std::max(STimer::timer["worldLoop"], 1ull);
-            SLog::log << Log::MESSAGE << "World::" << __FUNCTION__ << " - Framerate: " << framerate << Log::endl;
-        }
 
         STimer::timer << "upload";
         vector<unsigned int> threadIds;
@@ -69,7 +62,8 @@ void World::run()
         // Render the scenes
         bool run {true};
         for (auto& s : _scenes)
-            run &= s.second->isRunning();
+            //run &= s.second->isRunning();
+            run &= !s.second->render();
 
         if (!run)
             break;
@@ -303,11 +297,6 @@ void World::parseArguments(int argc, char** argv)
         else if (string(argv[idx]) == "-d")
         {
             SLog::log.setVerbosity(Log::DEBUG);
-            idx++;
-        }
-        else if (string(argv[idx]) == "--fps")
-        {
-            _showFramerate = true;
             idx++;
         }
         else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")

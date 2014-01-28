@@ -75,7 +75,6 @@ class World {
         std::vector<TexturePtr> _textures;
 
         Json::Value _config;
-        bool _showFramerate {false};
 
         /**
          * Add an object to the world (used for Images and Meshes currently)
