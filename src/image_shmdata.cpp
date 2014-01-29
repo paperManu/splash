@@ -176,7 +176,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                 p[0] = ((const char*)data)[(p.y() * width + p.x()) * 3];
                 p[1] = ((const char*)data)[(p.y() * width + p.x()) * 3 + 1];
                 p[2] = ((const char*)data)[(p.y() * width + p.x()) * 3 + 2];
-                p[4] = 255;
+                p[3] = 255;
             }
         }
         else if (is420)

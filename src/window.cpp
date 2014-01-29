@@ -166,7 +166,7 @@ bool Window::render()
     _screen->deactivate();
 
     // Resize the input textures accordingly to the window size.
-    // This goes upward to the cameras and gui
+    // This goes upstream to the cameras and gui
     if (!_isLinkedToTexture) // We don't do this if we are directly connected to a Texture (updated from an image)
         for (auto& t : _inTextures)
             t->resize(w, h);
