@@ -193,20 +193,42 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             unsigned char* U = (unsigned char*)data + width * height;
             unsigned char* V = (unsigned char*)data + width * height * 5 / 4;
 
-            for (ImageBuf::Iterator<unsigned char, unsigned char> p(img); !p.done(); ++p)
+            char* pixels = (char*)img.localpixels();
+            vector<unsigned int> threadIds;
+            for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
-                if (!p.exists())
-                    continue;
+                threadIds.push_back(SThread::pool.enqueue([=, &context]() {
+                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); ++y)
+                    for (int x = 0; x < width; ++x)
+                    //for (int p = width * height / SPLASH_SHMDATA_THREADS * block; p < width * height / SPLASH_SHMDATA_THREADS * (block + 1); ++p)
+                    {
+                        int yValue = (int)Y[y * width + x];
+                        int uValue = (int)U[y * width / 4 + x / 2];
+                        int vValue = (int)V[y * width / 4 + x / 2];
 
-                int yValue = (int)Y[p.y() * width + p.x()];
-                int uValue = (int)U[p.y() * width / 4 + p.x() / 2];
-                int vValue = (int)V[p.y() * width / 4 + p.x() / 2];
-
-                p[0] = context->_yCbCrLUT[yValue][uValue][vValue][0];
-                p[1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
-                p[2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
-                p[3] = 255;
+                        pixels[(y * width + x) * 4] = context->_yCbCrLUT[yValue][uValue][vValue][0];
+                        pixels[(y * width + x) * 4 + 1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
+                        pixels[(y * width + x) * 4 + 2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
+                        pixels[(y * width + x) * 4 + 3] = 255;
+                    }
+                }));
             }
+            SThread::pool.waitThreads(threadIds);
+
+            //for (ImageBuf::Iterator<unsigned char, unsigned char> p(img); !p.done(); ++p)
+            //{
+            //    if (!p.exists())
+            //        continue;
+
+            //    int yValue = (int)Y[p.y() * width + p.x()];
+            //    int uValue = (int)U[p.y() * width / 4 + p.x() / 2];
+            //    int vValue = (int)V[p.y() * width / 4 + p.x() / 2];
+
+            //    p[0] = context->_yCbCrLUT[yValue][uValue][vValue][0];
+            //    p[1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
+            //    p[2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
+            //    p[3] = 255;
+            //}
         }
         else
             return;

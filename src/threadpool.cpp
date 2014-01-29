@@ -97,11 +97,8 @@ void ThreadPool::waitThreads(vector<unsigned int> list)
         nanosleep(&nap, NULL);
 
         unique_lock<mutex> lock(queue_mutex);
-        if (list.size() == 0 || workingThreads == 0 || tasksFinished.size() == 0)
-        {
-            tasksFinished.clear();
+        if (list.size() == 0 || workingThreads == 0)
             break;
-        }
 
         auto task = find(tasksFinished.begin(), tasksFinished.end(), list[0]);
         if (task != tasksFinished.end())
