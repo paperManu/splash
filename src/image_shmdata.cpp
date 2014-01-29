@@ -1,7 +1,10 @@
 #include "image_shmdata.h"
 #include "timer.h"
+#include "threadpool.h"
 
 #include <regex>
+
+#define SPLASH_SHMDATA_THREADS 4
 
 using namespace std;
 
@@ -169,15 +172,20 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ImageBuf img(spec);
         if (!is420 && channels == 3)
         {
-            for (ImageBuf::Iterator<unsigned char, unsigned char> p(img); !p.done(); ++p)
+            char* pixels = (char*)img.localpixels();
+            vector<unsigned int> threadIds;
+            for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
-                if (!p.exists())
-                    continue;
-                p[0] = ((const char*)data)[(p.y() * width + p.x()) * 3];
-                p[1] = ((const char*)data)[(p.y() * width + p.x()) * 3 + 1];
-                p[2] = ((const char*)data)[(p.y() * width + p.x()) * 3 + 2];
-                p[3] = 255;
+                threadIds.push_back(SThread::pool.enqueue([=]() {
+                    for (int p = width * height / SPLASH_SHMDATA_THREADS * block; p < width * height / SPLASH_SHMDATA_THREADS * (block + 1); ++p)
+                    {
+                        int pixel = *((int*)&((const char*)data)[p * 3]);
+                        memcpy(&(pixels[p * 4]), &pixel, sizeof(int));
+                        pixels[p * 4 + 3] = 255;
+                    }
+                }));
             }
+            SThread::pool.waitThreads(threadIds);
         }
         else if (is420)
         {

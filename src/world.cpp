@@ -20,6 +20,7 @@ World::World(int argc, char** argv)
 World::~World()
 {
     SLog::log << Log::DEBUG << "World::~World - Destructor" << Log::endl;
+    SThread::pool.waitAllThreads();
 }
 
 /*************/

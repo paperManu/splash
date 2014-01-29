@@ -34,7 +34,7 @@
 #define SPLASH_GL_DEBUG false
 #define SPLASH_SWAP_INTERVAL 1
 #define SPLASH_SAMPLES 4
-#define SPLASH_MAX_THREAD 8
+#define SPLASH_MAX_THREAD 12
 
 #include <chrono>
 #include <map>
