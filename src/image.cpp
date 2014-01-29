@@ -121,6 +121,7 @@ bool Image::deserialize(const SerializedObject& obj)
         }
         _bufferImage.swap(image);
         _imageUpdated = true;
+
         if (isLocked)
             _mutex.unlock();
 
@@ -188,8 +189,9 @@ bool Image::read(const string& filename)
     }
 
     lock_guard<mutex> lock(_mutex);
-    _image.swap(img);
+    _bufferImage.swap(img);
     _imageUpdated = true;
+
     updateTimestamp();
 
     return true;
