@@ -14,25 +14,25 @@
         "cam1" : {
             "type" : "camera",
             "size" : [1920, 1200],
-            "eye" : [-2.0, 2.0, 0.0],
+            "eye" : [-2.0, 2.0, 0.3],
             "target" : [0.0, 0.0, 0.3]
         },
         "cam2" : {
             "type" : "camera",
             "size" : [1920, 1200],
-            "eye" : [2.0, -2.0, 0.0],
+            "eye" : [2.0, -2.0, 0.3],
             "target" : [0.0, 0.0, 0.3]
         },
         "cam3" : {
             "type" : "camera",
             "size" : [1920, 1200],
-            "eye" : [-2.0, -2.0, 0.0],
+            "eye" : [-2.0, -2.0, 0.3],
             "target" : [0.0, 0.0, 0.3]
         },
         "cam4" : {
             "type" : "camera",
             "size" : [1920, 1200],
-            "eye" : [2.0, 2.0, 0.0],
+            "eye" : [2.0, 2.0, -0.5],
             "target" : [0.0, 0.0, 0.3]
         },
         "camGui" : {
@@ -51,9 +51,8 @@
         "objectGui" : {"type" : "object", "sideness" : 0},
         //"image" : {"type" : "image", "file" : "lightprobe.jpg"},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-        //"texture" : {"type" : "texture"},
-        //"texture2" : {"type" : "texture"},
-        "gui" : {"type" : "gui", "size" : [1920, 1200]},
+        "texture" : {"type" : "texture"},
+        "gui" : {"type" : "gui"},
 
         "links" : [
             ["mesh", "object"],
@@ -63,9 +62,9 @@
             ["object", "cam3"],
             ["object", "cam4"],
             ["objectGui", "camGui"],
-            ["shmimage", "object"],
-            ["shmimage", "objectGui"],
-            //["image", "texture2"],
+            ["shmimage", "texture"],
+            ["texture", "object"],
+            ["texture", "objectGui"],
             ["cam1", "win1"],
             ["cam2", "win2"],
             ["cam3", "win3"],
