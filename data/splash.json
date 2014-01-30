@@ -15,31 +15,31 @@
             "type" : "camera",
             "size" : [1920, 1200],
             "eye" : [-2.0, 2.0, 0.3],
-            "target" : [0.0, 0.0, 0.3]
+            "target" : [0.0, 0.0, 0.5]
         },
         "cam2" : {
             "type" : "camera",
             "size" : [1920, 1200],
             "eye" : [2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.3]
+            "target" : [0.0, 0.0, 0.5]
         },
         "cam3" : {
             "type" : "camera",
             "size" : [1920, 1200],
             "eye" : [-2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.3]
+            "target" : [0.0, 0.0, 0.5]
         },
         "cam4" : {
             "type" : "camera",
             "size" : [1920, 1200],
             "eye" : [2.0, 2.0, -0.5],
-            "target" : [0.0, 0.0, 0.3]
+            "target" : [0.0, 0.0, 0.5]
         },
         "camGui" : {
             "type" : "camera",
             "size" : [640, 480],
             "eye" : [2.0, 2.0, 0.0],
-            "target" : [0.0, 0.0, 0.3]
+            "target" : [0.0, 0.0, 0.5]
         },
         "win1" : {"type" : "window", "fullscreen" : 0},
         "win2" : {"type" : "window", "fullscreen" : 1},
