@@ -29,7 +29,7 @@ BaseObjectPtr Scene::add(string type, string name)
     else if (type == string("geometry"))
         obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
     else if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true))));
+        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _mainWindow)));
     else if (type == string("image") || type == string("image_shmdata"))
         obj = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
     else if (type == string("mesh"))

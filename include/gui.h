@@ -72,6 +72,7 @@ class GlvGlobalView : public glv::View3D
         void onDraw(glv::GLV& g);
         bool onEvent(glv::Event::t e, glv::GLV& g);
         void setCamera(CameraPtr cam);
+        void setObject(ObjectPtr obj) {_camera->linkTo(obj);}
 
     private:
         CameraPtr _camera;
@@ -105,7 +106,7 @@ class Gui : public BaseObject
         /**
          * Constructor
          */
-        Gui(GlWindowPtr w);
+        Gui(GlWindowPtr w, GlWindowPtr mainW);
 
         /**
          * Destructor
@@ -165,12 +166,16 @@ class Gui : public BaseObject
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
+        GlWindowPtr _mainWindow;
 
         GLuint _fbo;
         TexturePtr _depthTexture;
         TexturePtr _outTexture;
         std::vector<ObjectPtr> _objects;
         float _width {512}, _height {512};
+
+        // GUI specific camera
+        CameraPtr _guiCamera;
 
         // GLV related attributes
         bool _isVisible {false};

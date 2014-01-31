@@ -1,6 +1,5 @@
 #include "gui.h"
 #include "timer.h"
-#include "camera.h"
 
 using namespace std;
 using namespace glv;
@@ -9,14 +8,15 @@ namespace Splash
 {
 
 /*************/
-Gui::Gui(GlWindowPtr w)
+Gui::Gui(GlWindowPtr w, GlWindowPtr mainW)
 {
     _type = "gui";
 
-    if (w.get() == nullptr)
+    if (w.get() == nullptr || mainW.get() == nullptr)
         return;
 
     _window = w;
+    _mainWindow = mainW;
     glfwMakeContextCurrent(_window->get());
     glGetError();
     glGenFramebuffers(1, &_fbo);
@@ -46,7 +46,17 @@ Gui::Gui(GlWindowPtr w)
 
     glfwMakeContextCurrent(NULL);
 
+    // Create the default GUI camera
+    glfwMakeContextCurrent(_mainWindow->get());
+    _guiCamera = CameraPtr(new Camera(_mainWindow));
+    _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
+    _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
+    _guiCamera->setAttribute("size", {640, 480});
+    glfwMakeContextCurrent(NULL);
+
+    // Intialize the GUI widgets
     initGLV(_width, _height);
+
     registerAttributes();
 }
 
@@ -138,6 +148,12 @@ bool Gui::linkTo(BaseObjectPtr obj)
         _glvGlobalView.setCamera(cam);
         return true;
     }
+    else if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    {
+        ObjectPtr object = dynamic_pointer_cast<Object>(obj);
+        _guiCamera->linkTo(object);
+        return true;
+    }
 
     return false;
 }
@@ -145,6 +161,8 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
+    _guiCamera->render();
+
     glfwMakeContextCurrent(_window->get());
 
     GLenum error = glGetError();
@@ -214,6 +232,7 @@ void Gui::initGLV(int width, int height)
 
     _style.color.set(Color(1.0, 0.5, 0.2, 0.7), 0.7);
 
+    // Log display
     _glvLog.setTextFunc([](GlvTextBox& that)
     {
         // Compute the number of lines which would fit
@@ -238,6 +257,7 @@ void Gui::initGLV(int width, int height)
     _glvLog.style(&_style);
     _glv << _glvLog;
 
+    // FPS and timings
     _glvProfile.setTextFunc([](GlvTextBox& that)
     {
         // Smooth the values
@@ -277,11 +297,14 @@ void Gui::initGLV(int width, int height)
     _glvProfile.style(&_style);
     _glv << _glvProfile;
 
+    // GUI camera view
     _glvGlobalView.set(Rect(8, 8, 640, 480));
     _glvGlobalView.right(width - 8);
     _glvGlobalView.style(&_style);
+    _glvGlobalView.setCamera(_guiCamera);
     _glv << _glvGlobalView;
 
+    // Performance graphs
     _glvGraph.width(_width / 2 - 16);
     _glvGraph.height(_height / 4 - 16);
     _glvGraph.bottom(height - 8);

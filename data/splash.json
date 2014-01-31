@@ -35,12 +35,6 @@
             "eye" : [2.0, 2.0, -0.5],
             "target" : [0.0, 0.0, 0.5]
         },
-        "camGui" : {
-            "type" : "camera",
-            "size" : [640, 480],
-            "eye" : [2.0, 2.0, 0.0],
-            "target" : [0.0, 0.0, 0.5]
-        },
         "win1" : {"type" : "window", "fullscreen" : 0},
         "win2" : {"type" : "window", "fullscreen" : 1},
         "win3" : {"type" : "window", "fullscreen" : 2},
@@ -48,28 +42,24 @@
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
-        "objectGui" : {"type" : "object", "sideness" : 0},
-        //"image" : {"type" : "image", "file" : "color_map.png"},
+        "image" : {"type" : "image", "file" : "color_map.png"},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         "texture" : {"type" : "texture"},
         "gui" : {"type" : "gui"},
 
         "links" : [
             ["mesh", "object"],
-            ["mesh", "objectGui"],
             ["object", "cam1"],
             ["object", "cam2"],
             ["object", "cam3"],
             ["object", "cam4"],
-            ["objectGui", "camGui"],
-            ["image", "texture"],
+            ["object", "gui"],
+            ["shmimage", "texture"],
             ["texture", "object"],
-            ["texture", "objectGui"],
             ["cam1", "win1"],
             ["cam2", "win2"],
             ["cam3", "win3"],
             ["cam4", "win4"],
-            ["camGui", "gui"],
             ["gui", "win1"]
         ]
     }
