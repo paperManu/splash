@@ -430,31 +430,32 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
+            _camera->setAttribute("frame", {0});
             if (cameras.size() == 0)
-            {
                 _camera = _guiCamera;
-                return true;
-            }
             else if (_camera == _guiCamera)
-            {
                 _camera = cameras[0];
-                return true;
+            else
+            {
+                for (int i = 0; i < cameras.size(); ++i)
+                {
+                    if (cameras[i] == _camera && i == cameras.size() - 1)
+                    {
+                        _camera = _guiCamera;
+                        break;
+                    }
+                    else if (cameras[i] == _camera)
+                    {
+                        _camera = cameras[i + 1];
+                        break;
+                    }
+                }
             }
 
-            for (int i = 0; i < cameras.size(); ++i)
-            {
-                if (cameras[i] == _camera && i == cameras.size() - 1)
-                {
-                    _camera = _guiCamera;
-                    return true;
-                }
-                else if (cameras[i] == _camera)
-                {
-                    _camera = cameras[i + 1];
-                    return true;
-                }
-            }
-            break;
+            if (_camera != _guiCamera)
+                _camera->setAttribute("frame", {1});
+
+            return true;
         }
         break;
     case Event::MouseDrag:

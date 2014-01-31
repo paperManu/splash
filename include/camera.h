@@ -121,6 +121,8 @@ class Camera : public BaseObject
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 
+        bool _drawFrame {false};
+
         // Camera parameters
         float _fov {35};
         float _width {512}, _height {512};

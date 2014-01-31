@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define SPLASH_SCISSOR_WIDTH 8
+
 using namespace std;
 using namespace glm;
 
@@ -90,7 +92,6 @@ bool Camera::render()
         return false;
 
     glGetError();
-    //glEnable(GL_MULTISAMPLE);
     ImageSpec spec = _outTextures[0]->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
@@ -103,6 +104,16 @@ bool Camera::render()
         fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
     glDrawBuffers(_outTextures.size(), fboBuffers);
     glEnable(GL_DEPTH_TEST);
+
+    if (_drawFrame)
+    {
+        glClearColor(1.0, 1.0, 0.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glEnable(GL_SCISSOR_TEST);
+        glScissor(SPLASH_SCISSOR_WIDTH, SPLASH_SCISSOR_WIDTH, _width - SPLASH_SCISSOR_WIDTH * 2, _height - SPLASH_SCISSOR_WIDTH * 2);
+    }
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (auto& obj : _objects)
@@ -114,6 +125,7 @@ bool Camera::render()
     }
 
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_SCISSOR_TEST);
 
     // We need to regenerate the mipmaps for all the output textures
     glActiveTexture(GL_TEXTURE0);
@@ -121,7 +133,6 @@ bool Camera::render()
         t->generateMipmap();
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    //glDisable(GL_MULTISAMPLE);
 
     GLenum error = glGetError();
     if (error)
@@ -264,6 +275,18 @@ void Camera::registerAttributes()
         auto newDirection = vec4(direction, 1.0) * rotZ;
         _eye = _target - vec3(newDirection.x, newDirection.y, newDirection.z);
     });
+
+    // Rendering options
+    _attribFunctions["frame"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _drawFrame = true;
+        else
+            _drawFrame = false;
+    });
+
+
 }
 
 } // end of namespace
