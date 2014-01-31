@@ -99,7 +99,9 @@ bool Scene::render()
     vector<unsigned int> threadIds;
     for (auto& obj : _objects)
         if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
-            dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
+            threadIds.push_back(SThread::pool.enqueue([&]() {
+                dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
+            }));
     STimer::timer >> "image buffer update";
 
     // Update the guis

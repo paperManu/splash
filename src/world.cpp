@@ -82,26 +82,17 @@ void World::addLocally(string type, string name, string destination)
     if (_objects.find(name) == _objects.end())
     {
         if (type == string("image"))
-        {
-            ImagePtr image(new Image());
-            image->setId(getId());
-            object = dynamic_pointer_cast<BaseObject>(image);
-            _objects[name] = image;
-        }
+            object = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
         else if (type == string("image_shmdata"))
-        {
-            Image_ShmdataPtr image(new Image_Shmdata());
-            image->setId(getId());
-            object = dynamic_pointer_cast<BaseObject>(image);
-            _objects[name] = image;
-        }
+            object = dynamic_pointer_cast<BaseObject>(Image_ShmdataPtr(new Image_Shmdata()));
         else if (type == string("mesh"))
-        {
-            MeshPtr mesh(new Mesh());
-            mesh->setId(getId());
-            object = dynamic_pointer_cast<BaseObject>(mesh);
-            _objects[name] = mesh;
-        }
+            object = dynamic_pointer_cast<BaseObject>(MeshPtr(new Mesh()));
+    }
+    if (object.get() != nullptr)
+    {
+        object->setId(getId());
+        object->setName(name);
+        _objects[name] = object;
     }
 
     // If the object is not registered yet, we add it with the specified destination

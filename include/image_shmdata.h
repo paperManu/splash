@@ -61,6 +61,7 @@ class Image_Shmdata : public Image
         bool read(const std::string& filename);
 
     private:
+        std::string _filename;
         shmdata_any_reader_t* _reader {nullptr};
 
         // LUT for YUV conversion

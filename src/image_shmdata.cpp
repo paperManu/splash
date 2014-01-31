@@ -39,6 +39,7 @@ bool Image_Shmdata::read(const string& filename)
     shmdata_any_reader_run_gmainloop(_reader, SHMDATA_TRUE);
     shmdata_any_reader_set_on_data_handler(_reader, Image_Shmdata::onData, this);
     shmdata_any_reader_start(_reader, filename.c_str());
+    _filename = filename;
 
     return true;
 }
@@ -77,6 +78,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
     const char* type_description, void* user_data)
 {
     Image_Shmdata* context = static_cast<Image_Shmdata*>(user_data);
+
+    STimer::timer << "image_shmdata " + context->_name;
 
     string dataType(type_description);
     regex regRgb, regGray, regYUV, regBpp, regWidth, regHeight, regRed, regBlue, regFormatYUV;
@@ -224,6 +227,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
     }
 
     shmdata_any_reader_free(shmbuf);
+
+    STimer::timer >> "image_shmdata " + context->_name;
 }
 
 /*************/

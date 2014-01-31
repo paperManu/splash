@@ -1,4 +1,5 @@
 #include "image.h"
+#include "timer.h"
 
 #include <OpenImageIO/imageio.h>
 
@@ -59,6 +60,8 @@ SerializedObject Image::serialize() const
     SerializedObject obj;
     lock_guard<mutex> lock(_mutex);
 
+    STimer::timer << "serialize " + _name;
+
     // We first get the xml version of the specs, and pack them into the obj
     string xmlSpec = _image.spec().to_xml();
     int nbrChar = xmlSpec.size();
@@ -80,6 +83,8 @@ SerializedObject Image::serialize() const
         return SerializedObject();
     copy(imgPtr, imgPtr + imgSize, currentObjPtr);
 
+    STimer::timer >> "serialize " + _name;
+
     return obj;
 }
 
@@ -88,6 +93,8 @@ bool Image::deserialize(const SerializedObject& obj)
 {
     if (obj.size() == 0)
         return false;
+
+    STimer::timer << "deserialize " + _name;
 
     // First, we get the size of the metadata
     int nbrChar;
@@ -132,6 +139,8 @@ bool Image::deserialize(const SerializedObject& obj)
         SLog::log << Log::ERROR << "Image::" << __FUNCTION__ << " - Unable to deserialize the given object" << Log::endl;
         return false;
     }
+
+    STimer::timer >> "deserialize " + _name;
 
     return true;
 }
