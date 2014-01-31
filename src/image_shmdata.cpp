@@ -205,8 +205,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                         for (int x = 0; x < width; ++x)
                         {
                             int yValue = (int)Y[y * width + x];
-                            int uValue = (int)U[y * width / 4 + x / 2];
-                            int vValue = (int)V[y * width / 4 + x / 2];
+                            int uValue = (int)U[(y / 2) * (width / 2) + x / 2];
+                            int vValue = (int)V[(y / 2) * (width / 2) + x / 2];
 
                             pixels[(y * width + x) * 4] = context->_yCbCrLUT[yValue][uValue][vValue][0];
                             pixels[(y * width + x) * 4 + 1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
