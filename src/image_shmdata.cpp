@@ -17,7 +17,7 @@ Image_Shmdata::Image_Shmdata()
     _type = "image_shmdata";
 
     registerAttributes();
-    computeLUT();
+    //computeLUT();
 }
 
 /*************/
@@ -56,14 +56,22 @@ void Image_Shmdata::computeLUT()
             vector<vector<unsigned char>> values_2(256);
             for (int v = 0; v < 256; ++v)
             {
-                float yValue = (float)y;
-                float uValue = (float)u - 128.f;
-                float vValue = (float)v - 128.f;
+                //float yValue = (float)y;
+                //float uValue = (float)u - 128.f;
+                //float vValue = (float)v - 128.f;
 
                 vector<unsigned char> pixel(3);
-                pixel[0] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 1.596f * vValue)));
-                pixel[1] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f - 0.392f * uValue - 0.813f * vValue)));
-                pixel[2] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 2.017f * uValue)));
+                //pixel[0] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 1.596f * vValue)));
+                //pixel[1] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f - 0.392f * uValue - 0.813f * vValue)));
+                //pixel[2] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 2.017f * uValue)));
+
+                int yValue = y;
+                int uValue = u - 128;
+                int vValue = v - 128;
+
+                pixel[0] = (unsigned char)max(0, min(255, (yValue * 1164 + 1596 * vValue) / 1000));
+                pixel[1] = (unsigned char)max(0, min(255, (yValue * 1164 - 392 * uValue - 813 * vValue) / 1000));
+                pixel[2] = (unsigned char)max(0, min(255, (yValue * 1164 + 2017 * uValue) / 1000));
 
                 values_2[v] = pixel;
             }
@@ -205,12 +213,12 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                         for (int x = 0; x < width; ++x)
                         {
                             int yValue = (int)Y[y * width + x];
-                            int uValue = (int)U[(y / 2) * (width / 2) + x / 2];
-                            int vValue = (int)V[(y / 2) * (width / 2) + x / 2];
-
-                            pixels[(y * width + x) * 4] = context->_yCbCrLUT[yValue][uValue][vValue][0];
-                            pixels[(y * width + x) * 4 + 1] = context->_yCbCrLUT[yValue][uValue][vValue][1];
-                            pixels[(y * width + x) * 4 + 2] = context->_yCbCrLUT[yValue][uValue][vValue][2];
+                            int uValue = (int)U[(y / 2) * (width / 2) + x / 2] - 128;
+                            int vValue = (int)V[(y / 2) * (width / 2) + x / 2] - 128;
+                            
+                            pixels[(y * width + x) * 4] = (unsigned char)max(0, min(255, (yValue * 1164 + 1596 * vValue) / 1000));
+                            pixels[(y * width + x) * 4 + 1] = (unsigned char)max(0, min(255, (yValue * 1164 - 392 * uValue - 813 * vValue) / 1000));
+                            pixels[(y * width + x) * 4 + 2] = (unsigned char)max(0, min(255, (yValue * 1164 + 2017 * uValue) / 1000));
                             pixels[(y * width + x) * 4 + 3] = 255;
                         }
                 }));

@@ -94,22 +94,22 @@ bool Scene::render()
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
     STimer::timer >> "cameras";
 
-    // Update the image buffers
-    STimer::timer << "buffer object update";
-    vector<unsigned int> threadIds;
-    for (auto& obj : _objects)
-        if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
-            threadIds.push_back(SThread::pool.enqueue([&]() {
-                dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
-            }));
-    STimer::timer >> "image buffer update";
-
     // Update the guis
     STimer::timer << "guis";
     for (auto& obj : _objects)
         if (obj.second->getType() == "gui")
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
+
+    // Update the image buffers
+    STimer::timer << "buffer object update";
+    vector<unsigned int> threadIds;
+    threadIds.push_back(SThread::pool.enqueue([&]() {
+        for (auto& obj : _objects)
+            if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
+                    dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
+    }));
+    STimer::timer >> "image buffer update";
 
     // Update the windows
     STimer::timer << "windows";
