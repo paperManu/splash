@@ -8,6 +8,7 @@ namespace Splash {
 /*************/
 Scene::Scene(std::string name)
 {
+    _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
     init(name);
 }
 
@@ -29,7 +30,7 @@ BaseObjectPtr Scene::add(string type, string name)
     else if (type == string("geometry"))
         obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
     else if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _mainWindow)));
+        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _self)));
     else if (type == string("image") || type == string("image_shmdata"))
         obj = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
     else if (type == string("mesh"))

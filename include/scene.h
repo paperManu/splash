@@ -45,9 +45,15 @@
 
 namespace Splash {
 
+class Scene;
+typedef std::shared_ptr<Scene> ScenePtr;
+
 /*************/
 class Scene
 {
+    friend Gui;
+    friend GlvGlobalView;
+
     public:
         /**
          * Constructor
@@ -110,14 +116,17 @@ class Scene
          */
         void setFromSerializedObject(const std::string name, const SerializedObject& obj);
 
+    protected:
+        GlWindowPtr _mainWindow;
+        std::map<std::string, BaseObjectPtr> _objects;
+
     private:
+        ScenePtr _self;
+
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isRunning {false};
-        GlWindowPtr _mainWindow;
         unsigned long _nextId {0};
-
-        std::map<std::string, BaseObjectPtr> _objects;
 
         /**
          * Get a glfw window sharing the same context as _mainWindow
@@ -141,6 +150,7 @@ class Scene
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;
+typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 } // end of namespace
 

@@ -49,6 +49,10 @@
 
 namespace Splash {
 
+class Gui;
+class Scene;
+typedef std::weak_ptr<Scene> SceneWeakPtr;
+
 /*************/
 class GlvTextBox : public glv::View
 {
@@ -68,14 +72,20 @@ class GlvTextBox : public glv::View
 /*************/
 class GlvGlobalView : public glv::View3D
 {
+    friend Gui;
     public:
+        GlvGlobalView();
         void onDraw(glv::GLV& g);
         bool onEvent(glv::Event::t e, glv::GLV& g);
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
         void setObject(ObjectPtr obj) {_camera->linkTo(obj);}
 
-    private:
-        CameraPtr _camera;
+    protected:
+        CameraPtr _camera, _guiCamera;
+        SceneWeakPtr _scene;
+
+        glv::Label _camLabel;
 };
 
 /*************/
@@ -106,7 +116,7 @@ class Gui : public BaseObject
         /**
          * Constructor
          */
-        Gui(GlWindowPtr w, GlWindowPtr mainW);
+        Gui(GlWindowPtr w, SceneWeakPtr s);
 
         /**
          * Destructor
@@ -124,6 +134,8 @@ class Gui : public BaseObject
             _fbo = c._fbo;
             _outTexture = c._outTexture;
             _objects = c._objects;
+            _scene = c._scene;
+            _guiCamera = c._guiCamera;
         }
 
         /**
@@ -166,7 +178,7 @@ class Gui : public BaseObject
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
-        GlWindowPtr _mainWindow;
+        SceneWeakPtr _scene;
 
         GLuint _fbo;
         TexturePtr _depthTexture;

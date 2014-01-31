@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "scene.h"
 #include "timer.h"
 
 using namespace std;
@@ -8,15 +9,16 @@ namespace Splash
 {
 
 /*************/
-Gui::Gui(GlWindowPtr w, GlWindowPtr mainW)
+Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 {
     _type = "gui";
 
-    if (w.get() == nullptr || mainW.get() == nullptr)
+    auto scene = s.lock();
+    if (w.get() == nullptr || scene.get() == nullptr)
         return;
 
+    _scene = s;
     _window = w;
-    _mainWindow = mainW;
     glfwMakeContextCurrent(_window->get());
     glGetError();
     glGenFramebuffers(1, &_fbo);
@@ -47,8 +49,9 @@ Gui::Gui(GlWindowPtr w, GlWindowPtr mainW)
     glfwMakeContextCurrent(NULL);
 
     // Create the default GUI camera
-    glfwMakeContextCurrent(_mainWindow->get());
-    _guiCamera = CameraPtr(new Camera(_mainWindow));
+    glfwMakeContextCurrent(scene->_mainWindow->get());
+    _guiCamera = CameraPtr(new Camera(scene->_mainWindow));
+    _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
@@ -161,7 +164,7 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
-    _guiCamera->render();
+    _glvGlobalView._camera->render();
 
     glfwMakeContextCurrent(_window->get());
 
@@ -302,6 +305,7 @@ void Gui::initGLV(int width, int height)
     _glvGlobalView.right(width - 8);
     _glvGlobalView.style(&_style);
     _glvGlobalView.setCamera(_guiCamera);
+    _glvGlobalView.setScene(_scene);
     _glv << _glvGlobalView;
 
     // Performance graphs
@@ -368,6 +372,16 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
 }
 
 /*************/
+GlvGlobalView::GlvGlobalView()
+{
+    _camLabel.colors().set(Color(1.0));
+    _camLabel.top(8);
+    _camLabel.left(8);
+
+    *this << _camLabel;
+}
+
+/*************/
 void GlvGlobalView::onDraw(GLV& g)
 {
     if (_camera.get() == nullptr)
@@ -376,6 +390,8 @@ void GlvGlobalView::onDraw(GLV& g)
     }
     else
     {
+        _camLabel.setValue(_camera->getName());
+
         float vertcoords[] = {0,0, 0,height(), width(),0, width(),height()};
         float texcoords[] = {0,1, 0,0, 1,1, 1,0};
 
@@ -401,6 +417,45 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     switch (e)
     {
     default:
+        break;
+    case Event::KeyDown:
+        switch (g.keyboard().key())
+        {
+        default:
+            return false;
+        case ' ': // Switch between scene cameras and guiCamera
+            auto scene = _scene.lock();
+            vector<CameraPtr> cameras;
+            for (auto& obj : scene->_objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+            if (cameras.size() == 0)
+            {
+                _camera = _guiCamera;
+                return true;
+            }
+            else if (_camera == _guiCamera)
+            {
+                _camera = cameras[0];
+                return true;
+            }
+
+            for (int i = 0; i < cameras.size(); ++i)
+            {
+                if (cameras[i] == _camera && i == cameras.size() - 1)
+                {
+                    _camera = _guiCamera;
+                    return true;
+                }
+                else if (cameras[i] == _camera)
+                {
+                    _camera = cameras[i + 1];
+                    return true;
+                }
+            }
+            break;
+        }
         break;
     case Event::MouseDrag:
         if (g.mouse().middle()) // Drag the window
@@ -435,6 +490,7 @@ void GlvGlobalView::setCamera(CameraPtr cam)
     if (cam.get() != nullptr)
     {
         _camera = cam;
+        _guiCamera = cam;
         _camera->setAttribute("size", {width(), height()});
     }
 }
@@ -450,7 +506,7 @@ GlvGraph::GlvGraph()
     _plot.disable(Controllable);
     *this << _plot;
 
-    _graphLabel.setValue("Graph").colors().set(Color(0.0, 1.0, 1.0, 1.0));
+    _graphLabel.setValue("Graph").colors().set(Color(1.0));
     _graphLabel.top(8);
     _graphLabel.left(8);
 
