@@ -154,11 +154,26 @@ struct AttributeFunctor
 {
     public:
         AttributeFunctor() {}
-        AttributeFunctor(std::function<void(std::vector<Value>)> func) {_func = func;}
-        bool operator()(std::vector<Value> args) {_func(args);}
+        AttributeFunctor(std::function<bool(std::vector<Value>)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor(std::function<bool(std::vector<Value>)> setFunc,
+                            std::function<std::vector<Value>()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+
+        bool operator()(std::vector<Value> args)
+        {
+            if (!_setFunc)
+                return false;
+            return _setFunc(args);
+        }
+        std::vector<Value> operator()()
+        {
+            if (!_getFunc)
+                return std::vector<Value>();
+            return _getFunc();
+        }
 
     private:
-        std::function<void(std::vector<Value>)> _func;
+        std::function<bool(std::vector<Value>)> _setFunc;
+        std::function<std::vector<Value>()> _getFunc;
 };
 
 class BaseObject;
@@ -202,6 +217,17 @@ class BaseObject
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
             return _attribFunctions[attrib](args);
+        }
+
+        /**
+         * Get the specified attribute
+         */
+        bool getAttribute(std::string attrib, std::vector<Value>& args)
+        {
+            if (_attribFunctions.find(attrib) == _attribFunctions.end())
+                return false;
+            args = _attribFunctions[attrib]();
+            return true;
         }
         
         /**
