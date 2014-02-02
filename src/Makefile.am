@@ -23,6 +23,7 @@ libsplash_la_SOURCES = \
     threadpool.cpp \
     timer.cpp \
     window.cpp \
+    widgets.cpp \
     world.cpp
 
 # GLV related sources
@@ -91,6 +92,7 @@ noinst_HEADERS = \
     $(top_srcdir)/include/threadpool.h \
     $(top_srcdir)/include/timer.h \
     $(top_srcdir)/include/window.h \
+    $(top_srcdir)/include/widgets.h \
     $(top_srcdir)/include/world.h
 
 splash_CXXFLAGS = \

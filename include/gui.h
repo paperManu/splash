@@ -39,75 +39,18 @@
 #include <deque>
 #include <functional>
 #include <memory>
-#include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
 #include <glv.h>
 
 #include "camera.h"
 #include "object.h"
 #include "texture.h"
+#include "widgets.h"
 
 namespace Splash {
 
-class Gui;
 class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
-
-/*************/
-class GlvTextBox : public glv::View
-{
-    public:
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setTextFunc(std::function<std::string(GlvTextBox& that)> func) {getText = func;}
-
-        float fontSize {8};
-        float lineSpacing {1};
-        std::atomic_int _scrollOffset {0};
-
-    private:
-        std::function<std::string(GlvTextBox& that)> getText;
-};
-
-/*************/
-class GlvGlobalView : public glv::View3D
-{
-    friend Gui;
-    public:
-        GlvGlobalView();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
-        void setCamera(CameraPtr cam);
-        void setObject(ObjectPtr obj) {_camera->linkTo(obj);}
-
-    protected:
-        CameraPtr _camera, _guiCamera;
-        SceneWeakPtr _scene;
-
-        glv::Label _camLabel;
-};
-
-/*************/
-class GlvGraph : public glv::View
-{
-    public:
-        GlvGraph();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void onResize(glv::space_t dx, glv::space_t dy);
-
-    private:
-        glv::Plot _plot;
-        glv::PlotFunction1D _plotFunction;
-        glv::Label _graphLabel, _scaleLabel;
-        glv::Style _style;
-
-        std::atomic_uint _target {0};
-
-        unsigned int _maxHistoryLength {500};
-        std::map<std::string, std::deque<unsigned long long>> _durationGraph;
-};
 
 /*************/
 class Gui : public BaseObject
