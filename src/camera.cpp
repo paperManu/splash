@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "timer.h"
 
+#include <limits>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -81,6 +82,47 @@ bool Camera::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+vector<Value> Camera::pickVertex(int x, int y)
+{
+    return pickVertex(((float)x / _width) * 2.f - 1.f, ((float)y / _height) * 2.f - 1.f);
+}
+
+/*************/
+vector<Value> Camera::pickVertex(float x, float y)
+{
+    mat4 viewProjectionMatrix = computeViewProjectionMatrix();
+    mat4 inverseViewProjectionMatrix = inverse(viewProjectionMatrix);
+
+    // Get the depth at the given point
+    glfwMakeContextCurrent(_window->get());
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    float depth;
+    glReadPixels((x + 1.f) / 2.f * _width, (1.f - y) / 2.f * _height, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    SLog::log << "Depth: " << depth << " " << (x + 1.f) / 2.f * _width << " " << (1.f - y) / 2.f * _height << Log::endl;
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glfwMakeContextCurrent(NULL);
+
+    vec4 screenPoint(x, y, (depth * 2.f) - 1.f, 1.f);
+    SLog::log << "screenPoint = " << screenPoint.x << " " << screenPoint.y << " " << screenPoint.z << " " << screenPoint.w << Log::endl;
+    screenPoint = inverseViewProjectionMatrix * screenPoint;
+    SLog::log << "inverseViewProjection * screenPoint = " << screenPoint.x << " " << screenPoint.y << " " << screenPoint.z << " " << screenPoint.w << Log::endl;
+    
+    vec3 point(screenPoint.x / screenPoint.w, screenPoint.y / screenPoint.w, screenPoint.z / screenPoint.w);
+    SLog::log << sqrtf(pow(point.x, 2.f) + pow(point.y, 2.f) + pow(point.z, 2.f)) << Log::endl;
+
+    float distance = numeric_limits<float>::max();
+    vec3 vertex;
+    for (auto& obj : _objects)
+    {
+        glm::vec3 closestVertex;
+        if (obj->pickVertex(point, closestVertex) < distance)
+            vertex = closestVertex;
+    }
+
+    return vector<Value>({point.x, point.y, point.z});
 }
 
 /*************/

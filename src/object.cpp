@@ -1,6 +1,7 @@
 #include "object.h"
 #include "timer.h"
 
+#include <limits>
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
@@ -97,6 +98,12 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+float Object::pickVertex(glm::vec3 p, glm::vec3 v)
+{
+    return numeric_limits<float>::max();
 }
 
 /*************/
