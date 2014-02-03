@@ -2,7 +2,8 @@ AM_CPPFLAGS = \
     -I$(top_srcdir)/include \
     -I$(top_srcdir)/external/GLV/GLV \
     -I$(top_srcdir)/external/bandit \
-	-DGLV_GLFW
+	-DGLV_GLFW \
+	-DDATADIR=\"$(datadir)\splash\"
 
 #*************#
 lib_LTLIBRARIES = \
