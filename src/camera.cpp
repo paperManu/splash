@@ -85,12 +85,6 @@ bool Camera::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-vector<Value> Camera::pickVertex(int x, int y)
-{
-    return pickVertex(((float)x / _width) * 2.f - 1.f, ((float)y / _height) * 2.f - 1.f);
-}
-
-/*************/
 vector<Value> Camera::pickVertex(float x, float y)
 {
     mat4 viewProjectionMatrix = computeViewProjectionMatrix();
@@ -100,17 +94,13 @@ vector<Value> Camera::pickVertex(float x, float y)
     glfwMakeContextCurrent(_window->get());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
-    glReadPixels((x + 1.f) / 2.f * _width, (1.f - y) / 2.f * _height, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-    SLog::log << "Depth: " << depth << " " << (x + 1.f) / 2.f * _width << " " << (1.f - y) / 2.f * _height << Log::endl;
+    glReadPixels(x, _height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glfwMakeContextCurrent(NULL);
 
-    vec4 screenPoint(x, y, (depth * 2.f) - 1.f, 1.f);
-    SLog::log << "screenPoint = " << screenPoint.x << " " << screenPoint.y << " " << screenPoint.z << " " << screenPoint.w << Log::endl;
-    screenPoint = inverseViewProjectionMatrix * screenPoint;
-    SLog::log << "inverseViewProjection * screenPoint = " << screenPoint.x << " " << screenPoint.y << " " << screenPoint.z << " " << screenPoint.w << Log::endl;
-    
-    vec3 point(screenPoint.x / screenPoint.w, screenPoint.y / screenPoint.w, screenPoint.z / screenPoint.w);
+    vec3 screenPoint(x, _height - y, depth);
+    vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
+
     SLog::log << sqrtf(pow(point.x, 2.f) + pow(point.y, 2.f) + pow(point.z, 2.f)) << Log::endl;
 
     float distance = numeric_limits<float>::max();

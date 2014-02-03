@@ -52,7 +52,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     glfwMakeContextCurrent(scene->_mainWindow->get());
     _guiCamera = CameraPtr(new Camera(scene->_mainWindow));
     _guiCamera->setName("guiCamera");
-    _guiCamera->setAttribute("eye", {2.0, 0.0, 0.0});
+    _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
     glfwMakeContextCurrent(NULL);

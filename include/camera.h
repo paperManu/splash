@@ -99,9 +99,7 @@ class Camera : public BaseObject
 
         /**
          * Get the coordinates of the closest vertex to the given point
-         * First version takes pixel coordinates, second one normalized coordinates [-1, 1]
          */
-        std::vector<Value> pickVertex(int x, int y);
         std::vector<Value> pickVertex(float x, float y);
 
         /**

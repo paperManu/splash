@@ -141,7 +141,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     case Event::MouseDown:
         {
             SLog::log << "Mouse position: " << g.mouse().xRel() << " " << g.mouse().yRel() << Log::endl;
-            vector<Value> position = _camera->pickVertex((int)g.mouse().xRel(), (int)g.mouse().yRel());
+            vector<Value> position = _camera->pickVertex(g.mouse().xRel(), g.mouse().yRel());
             SLog::log << position[0].asFloat() << " " << position[1].asFloat() << " " << position[2].asFloat() << " " << Log::endl;
             return true;
         }
