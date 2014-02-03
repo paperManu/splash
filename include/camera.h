@@ -111,8 +111,9 @@ class Camera : public BaseObject
 
         /**
          * Set the given calibration point
+         * Returns true if the point already existed
          */
-        void setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint);
+        bool setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint);
 
         /**
          * Set the number of output buffers for this camera

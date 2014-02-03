@@ -196,25 +196,24 @@ bool Camera::render()
 }
 
 /*************/
-void Camera::setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint)
+bool Camera::setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint)
 {
     if (worldPoint.size() < 3 || screenPoint.size() < 2)
-        return;
+        return false;
 
     vec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
-    vec2 screen(screenPoint[0].asFloat(), screenPoint[1].asFloat());
+    vec2 screen(screenPoint[0].asFloat() * _width, screenPoint[1].asFloat() * _height);
 
     // Check if the point is already present
-    bool isPresent {false};
     for (auto& point : _calibrationPoints)
         if (point.first == world)
         {
             point.second = screen;
-            isPresent = true;
+            return true;
         }
 
-    if (!isPresent)
-        _calibrationPoints.push_back(pair<vec3, vec2>(world, screen));        
+    _calibrationPoints.push_back(pair<vec3, vec2>(world, screen));        
+    return false;
 }
 
 /*************/

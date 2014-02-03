@@ -54,7 +54,7 @@
             ["object", "cam3"],
             ["object", "cam4"],
             ["object", "gui"],
-            ["shmimage", "texture"],
+            ["image", "texture"],
             ["texture", "object"],
             ["cam1", "win1"],
             ["cam2", "win2"],
