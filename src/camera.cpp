@@ -87,9 +87,6 @@ bool Camera::linkTo(BaseObjectPtr obj)
 /*************/
 vector<Value> Camera::pickVertex(float x, float y)
 {
-    mat4 viewProjectionMatrix = computeViewProjectionMatrix();
-    mat4 inverseViewProjectionMatrix = inverse(viewProjectionMatrix);
-
     // Get the depth at the given point
     glfwMakeContextCurrent(_window->get());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
@@ -98,21 +95,20 @@ vector<Value> Camera::pickVertex(float x, float y)
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glfwMakeContextCurrent(NULL);
 
+    // Unproject the point
     vec3 screenPoint(x, _height - y, depth);
-    vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
-
-    SLog::log << sqrtf(pow(point.x, 2.f) + pow(point.y, 2.f) + pow(point.z, 2.f)) << Log::endl;
 
     float distance = numeric_limits<float>::max();
     vec3 vertex;
     for (auto& obj : _objects)
     {
+        vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(), perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
         glm::vec3 closestVertex;
         if (obj->pickVertex(point, closestVertex) < distance)
             vertex = closestVertex;
     }
 
-    return vector<Value>({point.x, point.y, point.z});
+    return vector<Value>({vertex.x, vertex.y, vertex.z});
 }
 
 /*************/

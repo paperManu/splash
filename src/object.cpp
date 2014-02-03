@@ -47,7 +47,7 @@ void Object::activate()
 }
 
 /*************/
-mat4x4 Object::computeModelMatrix()
+mat4x4 Object::computeModelMatrix() const
 {
     return translate(mat4x4(1.f), _position);
 }

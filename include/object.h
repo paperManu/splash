@@ -80,6 +80,11 @@ class Object : public BaseObject
         void draw();
 
         /**
+         * Get the model matrix
+         */
+        glm::mat4 getModelMatrix() const {return computeModelMatrix();}
+
+        /**
          * Get the shader
          */
         ShaderPtr getShader() const {return _shader;}
@@ -114,7 +119,7 @@ class Object : public BaseObject
         /**
          * Compute the matrix corresponding to the object position
          */
-        glm::mat4x4 computeModelMatrix();
+        glm::mat4x4 computeModelMatrix() const;
 
         /**
          * Register new functors to modify attributes

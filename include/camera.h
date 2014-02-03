@@ -131,7 +131,7 @@ class Camera : public BaseObject
         // Camera parameters
         float _fov {35};
         float _width {512}, _height {512};
-        float _near {0.1}, _far {10.0};
+        float _near {0.1}, _far {100.0};
         glm::vec3 _eye, _target, _up;
 
         /**
