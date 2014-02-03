@@ -87,16 +87,20 @@ bool Camera::linkTo(BaseObjectPtr obj)
 /*************/
 vector<Value> Camera::pickVertex(float x, float y)
 {
+    // Convert the normalized coordinates ([0, 1]) to pixel coordinates
+    float realX = x * _width;
+    float realY = (1.f - y) * _height;
+
     // Get the depth at the given point
     glfwMakeContextCurrent(_window->get());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
-    glReadPixels(x, _height - y, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glfwMakeContextCurrent(NULL);
 
     // Unproject the point
-    vec3 screenPoint(x, _height - y, depth);
+    vec3 screenPoint(realX, realY, depth);
 
     float distance = numeric_limits<float>::max();
     vec3 vertex;
@@ -104,8 +108,12 @@ vector<Value> Camera::pickVertex(float x, float y)
     {
         vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(), perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
         glm::vec3 closestVertex;
-        if (obj->pickVertex(point, closestVertex) < distance)
+        float tmpDist;
+        if ((tmpDist = obj->pickVertex(point, closestVertex)) < distance)
+        {
+            distance = tmpDist;
             vertex = closestVertex;
+        }
     }
 
     return vector<Value>({vertex.x, vertex.y, vertex.z});

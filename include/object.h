@@ -97,7 +97,7 @@ class Object : public BaseObject
         /**
          * Get the coordinates of the closest vertex to the given point
          */
-        float pickVertex(glm::vec3 p, glm::vec3 v);
+        float pickVertex(glm::vec3 p, glm::vec3& v);
 
         /**
          * Set the shader

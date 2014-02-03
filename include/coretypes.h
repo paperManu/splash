@@ -41,10 +41,10 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 #include <GLFW/glfw3.h>
 
 #include "config.h"
-#include "log.h"
 
 namespace Splash
 {

@@ -36,9 +36,12 @@
 #include <tuple>
 #include <vector>
 
+#include "coretypes.h"
+
 namespace Splash
 {
 
+/*************/
 class Log
 {
     public:
@@ -120,6 +123,12 @@ class Log
         Log& operator<<(T msg)
         {
             addToString(_tempString, msg);
+            return *this;
+        }
+
+        Log& operator<<(Value v)
+        {
+            addToString(_tempString, v.asString());
             return *this;
         }
 

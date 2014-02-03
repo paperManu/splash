@@ -1,6 +1,7 @@
 #include "geometry.h"
 
 using namespace std;
+using namespace glm;
 
 namespace Splash {
 
@@ -49,6 +50,29 @@ bool Geometry::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+float Geometry::pickVertex(vec3 p, vec3& v)
+{
+    float distance = numeric_limits<float>::max();
+    vec3 closestVertex;
+
+    vector<float> vertices = _mesh->getVertCoords();
+    for (int i = 0; i < vertices.size(); i += 3)
+    {
+        vec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
+        float dist = length(p - vertex);
+        if (dist < distance)
+        {
+            closestVertex = vertex;
+            distance = dist;
+        }
+    }
+
+    v = closestVertex;
+
+    return distance;
 }
 
 /*************/

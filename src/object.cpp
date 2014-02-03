@@ -101,9 +101,23 @@ bool Object::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-float Object::pickVertex(glm::vec3 p, glm::vec3 v)
+float Object::pickVertex(vec3 p, vec3& v)
 {
-    return numeric_limits<float>::max();
+    float distance = numeric_limits<float>::max();
+    vec3 closestVertex;
+    float tmpDist;
+    for (auto& geom : _geometries)
+    {
+        vec3 vertex;
+        if ((tmpDist = geom->pickVertex(p, vertex)) < distance)
+        {
+            distance = tmpDist;
+            closestVertex = vertex;
+        }
+    }
+
+    v = closestVertex;
+    return distance;
 }
 
 /*************/

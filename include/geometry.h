@@ -35,6 +35,7 @@
 #include <map>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 
 #include "mesh.h"
 
@@ -59,9 +60,12 @@ class Geometry : public BaseObject
         Geometry(const Geometry&) = delete;
         Geometry(Geometry&& g)
         {
-            _mesh = g._mesh;
+            _mesh = std::move(g._mesh);
+            _timestamp = g._timestamp;
+            _vertexArray = std::move(g._vertexArray);
             _vertexCoords = g._vertexCoords;
             _texCoords = g._texCoords;
+            _normals = g._normals;
         }
 
         /**
@@ -98,6 +102,11 @@ class Geometry : public BaseObject
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
+
+        /**
+         * Get the coordinates of the closest vertex to the given point
+         */
+        float pickVertex(glm::vec3 p, glm::vec3& v);
 
         /**
          * Set the mesh for this object
