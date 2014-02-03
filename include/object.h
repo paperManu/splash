@@ -114,7 +114,8 @@ class Object : public BaseObject
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
 
-        glm::vec3 _position;
+        glm::vec3 _position {0.0, 0.0, 0.0};
+        glm::vec3 _scale {1.0, 1.0, 1.0};
 
         /**
          * Compute the matrix corresponding to the object position

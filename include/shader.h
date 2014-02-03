@@ -58,6 +58,12 @@ class Shader : public BaseObject
             inverted
         };
 
+        enum Texture
+        {
+            uv = 0,
+            color
+        };
+
         /**
          * Constructor
          */
@@ -119,7 +125,7 @@ class Shader : public BaseObject
         /**
          * Set the view projection matrix
          */
-        void setViewProjectionMatrix(const glm::mat4& mvp);
+        void setModelViewProjectionMatrix(const glm::mat4& mvp);
 
     private:
         std::map<ShaderType, GLuint> _shaders;
@@ -129,66 +135,35 @@ class Shader : public BaseObject
         GLint _locationNormalMatrix {0};
         GLint _locationSide {0};
         GLint _locationTextureNbr {0};
+        GLint _locationColor {0};
+        GLint _locationScale {0};
 
+        // Rendering parameters
+        Texture _texture {uv};
         Sideness _sideness {doubleSided};
         int _textureNbr {0};
+        glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
+        glm::vec3 _scale {1.0, 1.0, 1.0};
 
+        /**
+         * Compile the shader program
+         */
         void compileProgram();
+
+        /**
+         * Link the shader program
+         */
         bool linkProgram();
+
+        /**
+         * Get a string expression of the shader type, used for logging
+         */
         std::string stringFromShaderType(ShaderType type);
 
-    public:
         /**
-         * Default vertex shader
+         * Register new functors to modify attributes
          */
-        const std::string DEFAULT_VERTEX_SHADER {R"(
-            #version 330 core
-
-            layout(location = 0) in vec4 _vertex;
-            layout(location = 1) in vec2 _texcoord;
-            layout(location = 2) in vec3 _normal;
-            uniform mat4 _viewProjectionMatrix;
-            uniform mat4 _normalMatrix;
-            smooth out vec2 texCoord;
-            smooth out vec3 normal;
-
-            void main(void)
-            {
-                gl_Position = _viewProjectionMatrix * _vertex;
-                normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
-                texCoord = _texcoord;
-            }
-        )"};
-
-        /**
-         * Default fragment shader
-         */
-        const std::string DEFAULT_FRAGMENT_SHADER {R"(
-            #version 330 core
-
-            uniform sampler2D _tex0;
-            uniform sampler2D _tex1;
-            uniform int _sideness;
-            uniform int _textureNbr;
-            in vec2 texCoord;
-            in vec3 normal;
-            out vec4 fragColor;
-
-            void main(void)
-            {
-                if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
-                    discard;
-
-                if (_textureNbr > 0)
-                    fragColor = texture(_tex0, texCoord);
-                if (_textureNbr > 1)
-                {
-                    vec4 color = texture(_tex1, texCoord);
-                    fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
-                }
-            }
-        )"};
-
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;

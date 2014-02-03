@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "shaderSources.h"
 
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
@@ -18,9 +19,11 @@ Shader::Shader()
     _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
     _program = glCreateProgram();
 
-    setSource(DEFAULT_VERTEX_SHADER, vertex);
-    setSource(DEFAULT_FRAGMENT_SHADER, fragment);
+    setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+    setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
     compileProgram();
+
+    registerAttributes();
 }
 
 /*************/
@@ -42,10 +45,12 @@ void Shader::activate()
     {
         if (!linkProgram())
             return;
-        _locationMVP = glGetUniformLocation(_program, "_viewProjectionMatrix");
+        _locationMVP = glGetUniformLocation(_program, "_modelViewProjectionMatrix");
         _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
         _locationSide = glGetUniformLocation(_program, "_sideness");
         _locationTextureNbr = glGetUniformLocation(_program, "_textureNbr");
+        _locationColor = glGetUniformLocation(_program, "_color");
+        _locationScale = glGetUniformLocation(_program, "_scale");
     }
 
     glUseProgram(_program);
@@ -53,6 +58,10 @@ void Shader::activate()
     glUniform1i(_locationSide, _sideness);
     _textureNbr = 0;
     glUniform1i(_locationTextureNbr, _textureNbr);
+    glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
+
+    if (_texture == color)
+        glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
 }
 
 /*************/
@@ -129,7 +138,7 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
 }
 
 /*************/
-void Shader::setViewProjectionMatrix(const glm::mat4& mvp)
+void Shader::setModelViewProjectionMatrix(const glm::mat4& mvp)
 {
     glUniformMatrix4fv(_locationMVP, 1, GL_FALSE, glm::value_ptr(mvp));
     glUniformMatrix4fv(_locationNormalMatrix, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(mvp))));
@@ -199,6 +208,31 @@ string Shader::stringFromShaderType(ShaderType type)
     case 2:
         return string("fragment");
     }
+}
+
+/*************/
+void Shader::registerAttributes()
+{
+    _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 4)
+            return false;
+        _texture = color;
+        _color = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+        return true;
+    });
+
+    _attribFunctions["scale"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+
+        if (args.size() < 3)
+            _scale = glm::vec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+        else
+            _scale = glm::vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+
+        return true;
+    });
 }
 
 } // end of namespace

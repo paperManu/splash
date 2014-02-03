@@ -32,8 +32,10 @@
 #include "coretypes.h"
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
@@ -108,6 +110,11 @@ class Camera : public BaseObject
         bool render();
 
         /**
+         * Set the given calibration point
+         */
+        void setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint);
+
+        /**
          * Set the number of output buffers for this camera
          */
         void setOutputNbr(int nbr);
@@ -128,16 +135,29 @@ class Camera : public BaseObject
 
         bool _drawFrame {false};
 
+        // Some default models use in various situations
+        std::map<std::string, ObjectPtr> _models;
+
         // Camera parameters
         float _fov {35};
         float _width {512}, _height {512};
         float _near {0.1}, _far {100.0};
-        glm::vec3 _eye, _target, _up;
+        glm::vec3 _eye {1.0, 0.0, 5.0};
+        glm::vec3 _target {0.0, 0.0, 0.0};
+        glm::vec3 _up {0.0, 0.0, 1.0};
+
+        // Calibration parameters
+        std::vector<std::pair<glm::vec3, glm::vec2>> _calibrationPoints;
 
         /**
          * Get the view projection matrix from the camera parameters
          */
         glm::mat4x4 computeViewProjectionMatrix();
+
+        /**
+         * Load some defaults models, like the locator for calibration
+         */
+        void loadDefaultModels();
 
         /**
          * Register new functors to modify attributes

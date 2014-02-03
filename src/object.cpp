@@ -15,7 +15,6 @@ Object::Object()
     _type = "object";
 
     _shader.reset(new Shader());
-    _position = vec3(0.f, 0.f, 0.f);
 
     registerAttributes();
 }
@@ -121,9 +120,9 @@ float Object::pickVertex(vec3 p, vec3& v)
 }
 
 /*************/
-void Object::setViewProjectionMatrix(const glm::mat4& mvp)
+void Object::setViewProjectionMatrix(const glm::mat4& vp)
 {
-    _shader->setViewProjectionMatrix(mvp * computeModelMatrix());
+    _shader->setModelViewProjectionMatrix(vp * computeModelMatrix());
 }
 
 /*************/
@@ -133,6 +132,19 @@ void Object::registerAttributes()
         if (args.size() < 3)
             return false;
         _position = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+        return true;
+    });
+
+    _attribFunctions["scale"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+
+        if (args.size() < 3)
+            _scale = vec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+        else
+            _scale = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+
+        _shader->setAttribute("scale", args);
         return true;
     });
 

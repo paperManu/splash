@@ -21,6 +21,8 @@ Camera::Camera(GlWindowPtr w)
         return;
 
     _window = w;
+
+    // Intialize FBO, textures and everything OpenGL
     glfwMakeContextCurrent(_window->get());
     glGetError();
     glGenFramebuffers(1, &_fbo);
@@ -50,11 +52,10 @@ Camera::Camera(GlWindowPtr w)
         _isInitialized = true;
     }
 
-    glfwMakeContextCurrent(NULL);
+    // Load some models
+    loadDefaultModels();
 
-    _eye = vec3(1.0, 0.0, 5.0);
-    _target = vec3(0.0, 0.0, 0.0);
-    _up = vec3(0.0, 0.0, 1.0);
+    glfwMakeContextCurrent(NULL);
 
     registerAttributes();
 }
@@ -98,6 +99,9 @@ vector<Value> Camera::pickVertex(float x, float y)
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     glfwMakeContextCurrent(NULL);
+
+    if (depth == 1.f)
+        return vector<Value>();
 
     // Unproject the point
     vec3 screenPoint(realX, realY, depth);
@@ -143,7 +147,7 @@ bool Camera::render()
 
     if (_drawFrame)
     {
-        glClearColor(1.0, 1.0, 0.0, 1.0);
+        glClearColor(1.0, 0.5, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glEnable(GL_SCISSOR_TEST);
@@ -152,12 +156,24 @@ bool Camera::render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    // Draw the objects
     for (auto& obj : _objects)
     {
         obj->activate();
         obj->setViewProjectionMatrix(computeViewProjectionMatrix());
         obj->draw();
         obj->deactivate();
+    }
+
+    // Draw the calibration points
+    for (auto& point : _calibrationPoints)
+    {
+        ObjectPtr marker = _models["3d_marker"];
+        marker->setAttribute("position", {point.first.x, point.first.y, point.first.z});
+        marker->activate();
+        marker->setViewProjectionMatrix(computeViewProjectionMatrix());
+        marker->draw();
+        marker->deactivate();
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -177,6 +193,28 @@ bool Camera::render()
     glfwMakeContextCurrent(NULL);
 
     return error != 0 ? true : false;
+}
+
+/*************/
+void Camera::setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint)
+{
+    if (worldPoint.size() < 3 || screenPoint.size() < 2)
+        return;
+
+    vec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+    vec2 screen(screenPoint[0].asFloat(), screenPoint[1].asFloat());
+
+    // Check if the point is already present
+    bool isPresent {false};
+    for (auto& point : _calibrationPoints)
+        if (point.first == world)
+        {
+            point.second = screen;
+            isPresent = true;
+        }
+
+    if (!isPresent)
+        _calibrationPoints.push_back(pair<vec3, vec2>(world, screen));        
 }
 
 /*************/
@@ -246,6 +284,27 @@ mat4x4 Camera::computeViewProjectionMatrix()
     mat4x4 viewProjectionMatrix = projMatrix * viewMatrix;
 
     return viewProjectionMatrix;
+}
+
+/*************/
+void Camera::loadDefaultModels()
+{
+    map<string, string> files {{"3d_marker", "3d_marker.obj"}};
+    
+    for (auto& file : files)
+    {
+        MeshPtr mesh(new Mesh());
+        mesh->setAttribute("name", {file.first});
+        mesh->setAttribute("file", {file.second});
+
+        ObjectPtr obj(new Object());
+        obj->setAttribute("name", {file.first});
+        obj->setAttribute("scale", {0.05});
+        obj->getShader()->setAttribute("color", {1.0, 0.5, 0.0, 1.0});
+        obj->linkTo(mesh);
+
+        _models[file.first] = obj;
+    }
 }
 
 /*************/

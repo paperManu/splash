@@ -141,7 +141,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     case Event::MouseDown:
         {
             vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, g.mouse().yRel() / h);
-            SLog::log << "Vertex position: " << position[0] << " " << position[1] << " " << position[2] << Log::endl;
+            if (position.size() == 3)
+                _camera->setCalibrationPoint(position, {0.f, 0.f});
             return true;
         }
     case Event::MouseDrag:
