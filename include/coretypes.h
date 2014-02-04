@@ -107,6 +107,7 @@ struct Value
         Value(float v) {_f = v; _type = f;}
         Value(double v) {_f = (float)v; _type = f;}
         Value(std::string v) {_s = v; _type = s;}
+        Value(const char* c) {_s = std::string(c); _type = s;}
 
         int asInt()
         {

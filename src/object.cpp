@@ -61,7 +61,7 @@ void Object::deactivate()
 /*************/
 void Object::draw()
 {
-    glDrawArrays(GL_TRIANGLES, 0, _geometries[0]->getVerticesNumber());
+    glDrawArrays(_primitive, 0, _geometries[0]->getVerticesNumber());
 }
 
 /*************/
@@ -164,6 +164,18 @@ void Object::registerAttributes()
         case 2:
             _shader->setSideness(Shader::inverted);
         }
+        return true;
+    });
+
+    _attribFunctions["primitive"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asString() == "triangle")
+            _primitive = triangles;
+        else if (args[0].asString() == "lines")
+            _primitive = lines;
+        else
+            return false;
         return true;
     });
 }
