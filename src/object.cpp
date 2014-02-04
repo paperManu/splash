@@ -43,6 +43,12 @@ void Object::activate()
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
         texUnit++;
     }
+
+    if (_primitive == lines)
+    {
+        glLineWidth(4.f);
+        glEnable(GL_LINE_SMOOTH);
+    }
 }
 
 /*************/
