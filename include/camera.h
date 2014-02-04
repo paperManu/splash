@@ -113,7 +113,10 @@ class Camera : public BaseObject
          * Set the given calibration point
          * Returns true if the point already existed
          */
-        bool setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint);
+        bool addCalibrationPoint(std::vector<Value> worldPoint);
+        void deselectCalibrationPoint() {_selectedCalibrationPoint = -1;}
+        void removeCalibrationPoint(std::vector<Value> worldPoint);
+        bool setCalibrationPoint(std::vector<Value> screenPoint);
 
         /**
          * Set the number of output buffers for this camera
@@ -148,7 +151,17 @@ class Camera : public BaseObject
         glm::vec3 _up {0.0, 0.0, 1.0};
 
         // Calibration parameters
-        std::vector<std::pair<glm::vec3, glm::vec2>> _calibrationPoints;
+        bool _displayCalibration {false};
+        struct CalibrationPoint
+        {
+            CalibrationPoint(glm::vec3 w) {world = w; screen = glm::vec2(0.f, 0.f);}
+            CalibrationPoint(glm::vec3 w, glm::vec2 s) {world = w; screen = s;}
+            glm::vec3 world;
+            glm::vec2 screen;
+            bool isSet {false};
+        };
+        std::vector<CalibrationPoint> _calibrationPoints;
+        int _selectedCalibrationPoint {-1};
 
         /**
          * Get the view projection matrix from the camera parameters

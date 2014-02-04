@@ -111,6 +111,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
             _camera->setAttribute("frame", {0});
+            _camera->setAttribute("displayCalibration", {0});
+
             if (cameras.size() == 0)
                 _camera = _guiCamera;
             else if (_camera == _guiCamera)
@@ -133,16 +135,39 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             }
 
             if (_camera != _guiCamera)
+            {
                 _camera->setAttribute("frame", {1});
+                _camera->setAttribute("displayCalibration", {1});
+            }
 
             return true;
         }
         break;
     case Event::MouseDown:
         {
-            vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, g.mouse().yRel() / h);
-            if (position.size() == 3)
-                _camera->setCalibrationPoint(position, {g.mouse().xRel() / w, g.mouse().yRel() / h});
+            // If selected camera is guiCamera, do nothing
+            if (_camera == _guiCamera)
+                return true;
+
+            if (g.mouse().left()) // Set a calibration point
+            {
+                if (!g.keyboard().shift()) // Add a new calibration point
+                {
+                    vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                    if (position.size() == 3)
+                        _camera->addCalibrationPoint(position);
+                    else
+                        _camera->deselectCalibrationPoint();
+                }
+                else // Define the screenpoint corresponding to the selected calibration point
+                    _camera->setCalibrationPoint({(g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
+            }
+            else if (g.mouse().right()) // Remove a calibration point
+            {
+                vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                if (position.size() == 3)
+                    _camera->removeCalibrationPoint(position);
+            }
             return true;
         }
     case Event::MouseDrag:

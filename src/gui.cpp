@@ -124,6 +124,7 @@ void Gui::mouseButton(int btn, int action, int mods)
         button = Mouse::Middle;
         break;
     }
+    _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
 
     space_t x = _glv.mouse().x();
     space_t y = _glv.mouse().y();

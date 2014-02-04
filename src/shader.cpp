@@ -213,12 +213,26 @@ string Shader::stringFromShaderType(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
+    _attribFunctions["texture"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asString() == "uv")
+        {
+            _texture = uv;
+            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+        }
+        else if (args[0].asString() == "color")
+        {
+            _texture = color;
+            setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+        }
+        return true;
+    });
+
     _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 4)
             return false;
-        _texture = color;
         _color = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
-        setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
         return true;
     });
 

@@ -6,6 +6,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
+#define SPLASH_WORLDMARKER_SCALE 0.05
+#define SPLASH_SCREENMARKER_SCALE 0.05
+#define SPLASH_MARKER_SELECTED {0.0, 1.0, 0.0, 1.0}
+#define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
+#define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
 
 using namespace std;
 using namespace glm;
@@ -90,7 +95,7 @@ vector<Value> Camera::pickVertex(float x, float y)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
     float realX = x * _width;
-    float realY = (1.f - y) * _height;
+    float realY = y * _height;
 
     // Get the depth at the given point
     glfwMakeContextCurrent(_window->get());
@@ -166,14 +171,35 @@ bool Camera::render()
     }
 
     // Draw the calibration points
-    for (auto& point : _calibrationPoints)
+    if (_displayCalibration)
     {
-        ObjectPtr marker = _models["3d_marker"];
-        marker->setAttribute("position", {point.first.x, point.first.y, point.first.z});
-        marker->activate();
-        marker->setViewProjectionMatrix(computeViewProjectionMatrix());
-        marker->draw();
-        marker->deactivate();
+        for (int i = 0; i < _calibrationPoints.size(); ++i)
+        {
+            auto& point = _calibrationPoints[i];
+            ObjectPtr marker = _models["3d_marker"];
+            marker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
+            if (_selectedCalibrationPoint == i)
+                marker->getShader()->setAttribute("color", SPLASH_MARKER_SELECTED);
+            else if (point.isSet)
+                marker->getShader()->setAttribute("color", SPLASH_MARKER_SET);
+            else
+                marker->getShader()->setAttribute("color", SPLASH_MARKER_ADDED);
+            marker->activate();
+            marker->setViewProjectionMatrix(computeViewProjectionMatrix());
+            marker->draw();
+            marker->deactivate();
+
+            if (point.isSet && _selectedCalibrationPoint == i) // Draw the target position on screen as well
+            {
+                marker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
+                marker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
+                marker->activate();
+                marker->setViewProjectionMatrix(mat4(1.f));
+                marker->draw();
+                marker->deactivate();
+                marker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+            }
+        }
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -196,24 +222,60 @@ bool Camera::render()
 }
 
 /*************/
-bool Camera::setCalibrationPoint(std::vector<Value> worldPoint, std::vector<Value> screenPoint)
+bool Camera::addCalibrationPoint(std::vector<Value> worldPoint)
 {
-    if (worldPoint.size() < 3 || screenPoint.size() < 2)
+    if (worldPoint.size() < 3)
         return false;
 
     vec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
-    vec2 screen(screenPoint[0].asFloat() * _width, screenPoint[1].asFloat() * _height);
 
     // Check if the point is already present
-    for (auto& point : _calibrationPoints)
-        if (point.first == world)
+    for (int i = 0; i < _calibrationPoints.size(); ++i)
+        if (_calibrationPoints[i].world == world)
         {
-            point.second = screen;
-            return true;
+            if (!_calibrationPoints[i].isSet)
+            {
+                _calibrationPoints.erase(_calibrationPoints.begin() + i);
+                _selectedCalibrationPoint = -1;
+                return false;
+            }
+            else
+            {
+                _selectedCalibrationPoint = i;
+                return true;
+            }
         }
 
-    _calibrationPoints.push_back(pair<vec3, vec2>(world, screen));        
-    return false;
+    _calibrationPoints.push_back(CalibrationPoint(world));
+    _selectedCalibrationPoint = _calibrationPoints.size() - 1;
+    return true;
+}
+
+/*************/
+void Camera::removeCalibrationPoint(std::vector<Value> worldPoint)
+{
+    if (worldPoint.size() < 3)
+        return;
+
+    vec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+
+    for (int i = 0; i < _calibrationPoints.size(); ++i)
+        if (_calibrationPoints[i].world == world)
+        {
+            _calibrationPoints.erase(_calibrationPoints.begin() + i);
+            _selectedCalibrationPoint = -1;
+        }
+}
+
+/*************/
+bool Camera::setCalibrationPoint(std::vector<Value> screenPoint)
+{
+    if (_selectedCalibrationPoint == -1)
+        return false;
+
+    _calibrationPoints[_selectedCalibrationPoint].screen = glm::vec2(screenPoint[0].asFloat(), screenPoint[1].asFloat());
+    _calibrationPoints[_selectedCalibrationPoint].isSet = true;
+    return true;
 }
 
 /*************/
@@ -298,8 +360,9 @@ void Camera::loadDefaultModels()
 
         ObjectPtr obj(new Object());
         obj->setAttribute("name", {file.first});
-        obj->setAttribute("scale", {0.05});
-        obj->getShader()->setAttribute("color", {1.0, 0.5, 0.0, 1.0});
+        obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+        obj->getShader()->setAttribute("texture", {"color"});
+        obj->getShader()->setAttribute("color", SPLASH_MARKER_SET);
         obj->linkTo(mesh);
 
         _models[file.first] = obj;
@@ -380,7 +443,16 @@ void Camera::registerAttributes()
             _drawFrame = false;
     });
 
-
+    // Various options
+    _attribFunctions["displayCalibration"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _displayCalibration = true;
+        else
+            _displayCalibration = false;
+        return true;
+    });
 }
 
 } // end of namespace
