@@ -4,3 +4,6 @@
 [submodule "external/bandit"]
 	path = external/bandit
 	url = git@github.com:joakimkarlsson/bandit.git
+[submodule "external/FLENS"]
+	path = external/FLENS
+	url = git@github.com:paperManu/FLENS.git
