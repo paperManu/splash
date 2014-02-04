@@ -99,11 +99,9 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     default:
         break;
     case Event::KeyDown:
-        switch (g.keyboard().key())
+        // Switch between scene cameras and guiCamera
+        if (g.keyboard().key() ==  ' ')
         {
-        default:
-            return false;
-        case ' ': // Switch between scene cameras and guiCamera
             auto scene = _scene.lock();
             vector<CameraPtr> cameras;
             for (auto& obj : scene->_objects)
@@ -142,6 +140,26 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
 
             return true;
         }
+        // Show all the calibration points for the selected camera
+        else if (g.keyboard().key() == 'A')
+        {
+            _camera->setAttribute("switchShowAllCalibrationPoints", {});
+            return true;
+        }
+        // Switch the rendering to textured
+        else if (g.keyboard().key() == 'T') 
+        {
+            _camera->setAttribute("wireframe", {0});
+            return true;
+        }
+        // Switch the rendering to wireframe
+        else if (g.keyboard().key() == 'W') 
+        {
+            _camera->setAttribute("wireframe", {1});
+            return true;
+        }
+        else
+            return false;
         break;
     case Event::MouseDown:
         {
@@ -149,7 +167,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             if (_camera == _guiCamera)
                 return true;
 
-            if (g.mouse().left()) // Set a calibration point
+            // Set a calibration point
+            if (g.mouse().left()) 
             {
                 if (!g.keyboard().shift()) // Add a new calibration point
                 {
@@ -171,12 +190,14 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             return true;
         }
     case Event::MouseDrag:
-        if (g.mouse().middle()) // Drag the window
+        // Drag the window
+        if (g.mouse().middle()) 
         {
             move(g.mouse().dx(), g.mouse().dy());
             return false;
         }
-        else if (g.mouse().left()) // Move the camera
+        // Move the camera
+        else if (g.mouse().left()) 
         {
             float dx = g.mouse().dx();
             float dy = g.mouse().dy();
@@ -184,7 +205,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
             return false;
         }
-        else if (g.mouse().right()) // Move the target
+        // Move the target
+        else if (g.mouse().right()) 
         {
             float dx = g.mouse().dx();
             float dy = g.mouse().dy();

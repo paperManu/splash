@@ -137,7 +137,9 @@ class Camera : public BaseObject
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 
+        // Rendering parameters
         bool _drawFrame {false};
+        bool _wireframe {false};
 
         // Some default models use in various situations
         std::map<std::string, ObjectPtr> _models;
@@ -152,6 +154,7 @@ class Camera : public BaseObject
 
         // Calibration parameters
         bool _displayCalibration {false};
+        bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
         {
             CalibrationPoint(glm::vec3 w) {world = w; screen = glm::vec2(0.f, 0.f);}

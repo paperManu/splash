@@ -189,7 +189,7 @@ bool Camera::render()
             marker->draw();
             marker->deactivate();
 
-            if (point.isSet && _selectedCalibrationPoint == i) // Draw the target position on screen as well
+            if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
             {
                 marker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                 marker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
@@ -414,6 +414,7 @@ void Camera::registerAttributes()
         _eye.x = _eye.x + args[0].asFloat();
         _eye.y = _eye.y + args[1].asFloat();
         _eye.z = _eye.z + args[2].asFloat();
+        return true;
     });
 
     _attribFunctions["moveTarget"] = AttributeFunctor([&](vector<Value> args) {
@@ -422,6 +423,7 @@ void Camera::registerAttributes()
         _target.x = _target.x + args[0].asFloat();
         _target.y = _target.y + args[1].asFloat();
         _target.z = _target.z + args[2].asFloat();
+        return true;
     });
 
     _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](vector<Value> args) {
@@ -431,6 +433,7 @@ void Camera::registerAttributes()
         auto rotZ = rotate(mat4(1.f), args[0].asFloat(), vec3(0.0, 0.0, 1.0));
         auto newDirection = vec4(direction, 1.0) * rotZ;
         _eye = _target - vec3(newDirection.x, newDirection.y, newDirection.z);
+        return true;
     });
 
     // Rendering options
@@ -441,6 +444,22 @@ void Camera::registerAttributes()
             _drawFrame = true;
         else
             _drawFrame = false;
+        return true;
+    });
+
+    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+
+        string primitive;
+        if (args[0].asInt() == 0)
+            primitive = "triangles";
+        else
+            primitive = "lines";
+
+        for (auto& obj : _objects)
+            obj->setAttribute("primitive", {primitive});
+        return true;
     });
 
     // Various options
@@ -451,6 +470,11 @@ void Camera::registerAttributes()
             _displayCalibration = true;
         else
             _displayCalibration = false;
+        return true;
+    });
+
+    _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](vector<Value> args) {
+        _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
     });
 }

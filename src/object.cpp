@@ -170,7 +170,7 @@ void Object::registerAttributes()
     _attribFunctions["primitive"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asString() == "triangle")
+        if (args[0].asString() == "triangles")
             _primitive = triangles;
         else if (args[0].asString() == "lines")
             _primitive = lines;
