@@ -300,7 +300,6 @@ void Camera::loadDefaultModels()
         obj->setAttribute("name", {file.first});
         obj->setAttribute("scale", {0.05});
         obj->getShader()->setAttribute("color", {1.0, 0.5, 0.0, 1.0});
-        obj->setAttribute("primitive", {"lines"});
         obj->linkTo(mesh);
 
         _models[file.first] = obj;
