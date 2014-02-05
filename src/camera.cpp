@@ -4,6 +4,7 @@
 #include <limits>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
 #define SPLASH_WORLDMARKER_SCALE 0.05
@@ -75,6 +76,62 @@ Camera::~Camera()
 void Camera::addObject(ObjectPtr& obj)
 {
     _objects.push_back(obj);
+}
+
+/*************/
+bool Camera::doCalibration()
+{
+    vector<cv::Point3f> objectPoints;
+    vector<cv::Point2f> imagePoints;
+
+    for (auto& point : _calibrationPoints)
+    {
+        if (!point.isSet)
+            continue;
+
+        objectPoints.push_back(cv::Point3f(point.world.x, point.world.y, point.world.z));
+        imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * _width, (point.screen.y + 1.f) / 2.f * _height));
+    }
+
+    float fovX = (_width / 2.f) / tan(_fov * M_PI / 360.f);
+    float fovY = fovX; //_height / tan(_fov * M_PI / 360.f);
+    cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << fovX, 0, _width / 2.f,
+                                                 0, fovY, _height / 2.f,
+                                                 0, 0, 1);
+
+    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_32F);
+    cv::Mat rvec;
+    cv::Mat tvec;
+    
+    SLog::log << "solvePnP parameters : " << objectPoints.size() << " " << imagePoints.size() << Log::endl;
+
+    try
+    {
+        cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, CV_ITERATIVE);
+    }
+    catch (cv::Exception& e)
+    {
+        SLog::log << "Camera::" << __FUNCTION__ << " - An exception was caught while running calibration" << Log::endl;
+        return false;
+    }
+
+    cout << " --------------- " << endl;
+    cout << cameraMatrix << endl;
+    cout << rvec << endl;
+    cout << tvec << endl;
+
+    cv::Mat r;
+    cv::Rodrigues(rvec, r);
+    cout << r << endl;
+
+    _viewMatrix = mat4(r.at<double>(0, 0), r.at<double>(1, 0), r.at<double>(2, 0), tvec.at<double>(0), 
+                       r.at<double>(0, 1), r.at<double>(1, 1), r.at<double>(2, 1), tvec.at<double>(1), 
+                       r.at<double>(0, 2), r.at<double>(1, 2), r.at<double>(2, 2), tvec.at<double>(2), 
+                       0.f, 0.f, 0.f, 1.f); 
+    _viewMatrix = inverse(_viewMatrix);
+    _isCalibrated = true;
+
+    return true;
 }
 
 /*************/
@@ -340,9 +397,13 @@ void Camera::setOutputSize(int width, int height)
 /*************/
 mat4x4 Camera::computeViewProjectionMatrix()
 {
-    mat4x4 viewMatrix = lookAt(_eye, _target, _up);
-    mat4x4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
-    mat4x4 viewProjectionMatrix = projMatrix * viewMatrix;
+    mat4 viewMatrix;
+    if (_isCalibrated)
+        viewMatrix = _viewMatrix;
+    else
+        viewMatrix = lookAt(_eye, _target, _up);
+    mat4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
+    mat4 viewProjectionMatrix = projMatrix * viewMatrix;
 
     return viewProjectionMatrix;
 }

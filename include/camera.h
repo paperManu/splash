@@ -85,6 +85,11 @@ class Camera : public BaseObject
         void addObject(ObjectPtr& obj);
 
         /**
+         * Compute the calibration given the calibration points
+         */
+        bool doCalibration();
+
+        /**
          * Get pointers to this camera textures
          */
         std::vector<TexturePtr> getTextures() const {return _outTextures;}
@@ -150,7 +155,9 @@ class Camera : public BaseObject
         float _near {0.1}, _far {100.0};
         glm::vec3 _eye {1.0, 0.0, 5.0};
         glm::vec3 _target {0.0, 0.0, 0.0};
+        glm::mat4 _viewMatrix;
         glm::vec3 _up {0.0, 0.0, 1.0};
+        bool _isCalibrated {false};
 
         // Calibration parameters
         bool _displayCalibration {false};

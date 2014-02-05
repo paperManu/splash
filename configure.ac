@@ -1,4 +1,4 @@
-#                                               -*- Autoconf -*-
+#											   -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
@@ -22,58 +22,64 @@ AC_HEADER_STDC
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
 if test "x${have_glfw}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing glfw])
+	AC_MSG_ERROR([Missing glfw])
 fi
 
 # OpenGL
 PKG_CHECK_MODULES([GL], [gl >= 2.3])
 if test "x${have_gl}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing opengl])
+	AC_MSG_ERROR([Missing opengl])
 fi
 
 # GLM
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADER([glm/glm.hpp],
-    [HAVE_GLM=true],
-    [HAVE_GLM=false])
+	[HAVE_GLM=true],
+	[HAVE_GLM=false])
 if test "$HAVE_GLM" = "false" ; then
-    AC_MSG_ERROR([Missing glm])
+	AC_MSG_ERROR([Missing glm])
 fi
 
 # Glew, needed by the embedded GLV library
 PKG_CHECK_MODULES([GLEW], [glew])
 if test "x${have_glew}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing GLEW])
+	AC_MSG_ERROR([Missing GLEW])
 fi
 
 # OpenMesh
 PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
 if test "x${have_openmesh}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing openmesh])
+	AC_MSG_ERROR([Missing openmesh])
 fi
 
 # OpenImageIO
 PKG_CHECK_MODULES([OPENIMAGEIO], [openimageio])
 if test "x${have_openimageio}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing openimageio])
+	AC_MSG_ERROR([Missing openimageio])
 fi
 
 # JSoncpp
 PKG_CHECK_MODULES([JSONCPP], [jsoncpp])
 if test "x${have_jsoncpp}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing jsoncpp])
+	AC_MSG_ERROR([Missing jsoncpp])
 fi
 
 # Shmdata
 PKG_CHECK_MODULES([SHMDATA], [shmdata-0.8 shmdata-any-0.8])
 if test "x${have_shmdata}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing shmdata])
+	AC_MSG_ERROR([Missing shmdata])
+fi
+
+# OpenCV, used for projector calibration
+PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
+if test "x${have_opencv}" = "xfalse" ; then
+	AC_MSG_ERROR([Missing opencv])
 fi
 
 AC_CONFIG_FILES([
-    Makefile
-    src/Makefile
-    data/Makefile
-    tests/Makefile
-    ])
+	Makefile
+	src/Makefile
+	data/Makefile
+	tests/Makefile
+	])
 AC_OUTPUT

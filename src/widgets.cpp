@@ -146,6 +146,11 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             _camera->setAttribute("switchShowAllCalibrationPoints", {});
             return true;
         }
+        else if (g.keyboard().key() == 'C')
+        {
+            _camera->doCalibration();
+            return true;
+        }
         // Switch the rendering to textured
         else if (g.keyboard().key() == 'T') 
         {

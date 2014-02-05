@@ -11,6 +11,7 @@ AM_LDFLAGS = \
 	$(GL_LIBS) \
     $(GLEW_LIBS) \
     $(JSONCPP_LIBS) \
+	$(OPENCV_LIBS) \
     $(OPENIMAGEIO_LIBS) \
     $(OPENMESH_LIBS) \
     $(SHMDATA_LIBS) \
