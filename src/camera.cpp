@@ -485,6 +485,9 @@ void Camera::registerAttributes()
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
+    }, [&]() {
+        vector<Value> size {_width, _height};
+        return size;
     });
 
     // More advanced attributes

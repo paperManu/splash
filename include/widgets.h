@@ -78,6 +78,7 @@ class GlvGlobalView : public glv::View3D
         void setObject(ObjectPtr obj) {_camera->linkTo(obj);}
 
     protected:
+        int _baseWidth {800};
         CameraPtr _camera, _guiCamera;
         SceneWeakPtr _scene;
 

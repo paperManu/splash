@@ -46,7 +46,7 @@ void Object::activate()
 
     if (_primitive == lines)
     {
-        glLineWidth(4.f);
+        glLineWidth(2.f);
         glEnable(GL_LINE_SMOOTH);
     }
 }

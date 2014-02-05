@@ -302,7 +302,7 @@ void Gui::initGLV(int width, int height)
     _glv << _glvProfile;
 
     // GUI camera view
-    _glvGlobalView.set(Rect(8, 8, 640, 480));
+    _glvGlobalView.set(Rect(8, 8, 800, 600));
     _glvGlobalView.right(width - 8);
     _glvGlobalView.style(&_style);
     _glvGlobalView.setCamera(_guiCamera);

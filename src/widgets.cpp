@@ -70,6 +70,12 @@ void GlvGlobalView::onDraw(GLV& g)
     }
     else
     {
+        // Resize if needed
+        vector<Value> size;
+        _camera->getAttribute("size", size);
+        if (size[0].asInt() != w || size[1].asInt() != h)
+            h = _baseWidth * size[1].asInt() / size[0].asInt();
+
         _camLabel.setValue(_camera->getName());
 
         float vertcoords[] = {0,0, 0,height(), width(),0, width(),height()};
