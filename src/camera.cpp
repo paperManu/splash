@@ -93,6 +93,13 @@ bool Camera::doCalibration()
         imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * _width, (-point.screen.y + 1.f) / 2.f * _height));
     }
 
+    // We need at least 5 points to get a meaningful calibration
+    if (objectPoints.size() < 5)
+    {
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 5 points" << Log::endl;
+        return false;
+    }
+
     double fov = (_height / 2.0) / tan(_fov * M_PI / 360.0); // _fov is indeed fovY
     cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fov, 0.0, _width / 2.0,
                                                  0.0, fov, _height / 2.0,
