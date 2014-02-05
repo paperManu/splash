@@ -7,7 +7,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.05
+#define SPLASH_WORLDMARKER_SCALE 0.02
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.0, 1.0, 0.0, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
@@ -145,6 +145,10 @@ bool Camera::doCalibration()
     direction = viewMatrix * direction;
     _target = vec3(direction.x, direction.y, direction.z);
 
+    render();
+    vector<Value> p = pickVertex(0.5, 0.5);
+    _target = vec3(p[0].asFloat(), p[1].asFloat(), p[2].asFloat());
+
     return true;
 }
 
@@ -247,28 +251,33 @@ bool Camera::render()
         for (int i = 0; i < _calibrationPoints.size(); ++i)
         {
             auto& point = _calibrationPoints[i];
-            ObjectPtr marker = _models["3d_marker"];
-            marker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
+            ObjectPtr worldMarker = _models["3d_marker"];
+            worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
             if (_selectedCalibrationPoint == i)
-                marker->getShader()->setAttribute("color", SPLASH_MARKER_SELECTED);
+                worldMarker->getShader()->setAttribute("color", SPLASH_MARKER_SELECTED);
             else if (point.isSet)
-                marker->getShader()->setAttribute("color", SPLASH_MARKER_SET);
+                worldMarker->getShader()->setAttribute("color", SPLASH_MARKER_SET);
             else
-                marker->getShader()->setAttribute("color", SPLASH_MARKER_ADDED);
-            marker->activate();
-            marker->setViewProjectionMatrix(computeViewProjectionMatrix());
-            marker->draw();
-            marker->deactivate();
+                worldMarker->getShader()->setAttribute("color", SPLASH_MARKER_ADDED);
+            worldMarker->activate();
+            worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
+            worldMarker->draw();
+            worldMarker->deactivate();
 
             if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
             {
-                marker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
-                marker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
-                marker->activate();
-                marker->setViewProjectionMatrix(mat4(1.f));
-                marker->draw();
-                marker->deactivate();
-                marker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+                ObjectPtr screenMarker = _models["2d_marker"];
+                screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
+                screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
+                if (_selectedCalibrationPoint == i)
+                    screenMarker->getShader()->setAttribute("color", SPLASH_MARKER_SELECTED);
+                else
+                    screenMarker->getShader()->setAttribute("color", SPLASH_MARKER_SET);
+                screenMarker->activate();
+                screenMarker->setViewProjectionMatrix(mat4(1.f));
+                screenMarker->draw();
+                screenMarker->deactivate();
+                screenMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
             }
         }
     }
@@ -421,7 +430,7 @@ mat4x4 Camera::computeViewProjectionMatrix()
 /*************/
 void Camera::loadDefaultModels()
 {
-    map<string, string> files {{"3d_marker", "3d_marker.obj"}};
+    map<string, string> files {{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}};
     
     for (auto& file : files)
     {
