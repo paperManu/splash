@@ -87,6 +87,11 @@ class World {
         void applyConfig();
 
         /**
+         * Save the configuration
+         */
+        void saveConfig();
+
+        /**
          * Get the next available id
          */
         unsigned long getId() {return ++_nextId;}

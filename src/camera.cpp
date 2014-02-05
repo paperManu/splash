@@ -145,9 +145,11 @@ bool Camera::doCalibration()
     direction = viewMatrix * direction;
     _target = vec3(direction.x, direction.y, direction.z);
 
-    render();
-    vector<Value> p = pickVertex(0.5, 0.5);
-    _target = vec3(p[0].asFloat(), p[1].asFloat(), p[2].asFloat());
+    vec4 up(0.f, -1.f, 0.f, 1.f);
+    up = viewMatrix * up;
+    _up = vec3(up.x, up.y, up.z);
+
+    SLog::log << "Camera::" << __FUNCTION__ << " - Calibration done" << Log::endl;
 
     return true;
 }
@@ -457,6 +459,8 @@ void Camera::registerAttributes()
             return false;
         _eye = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
+    }, [&]() {
+        return vector<Value>({_eye.x, _eye.y, _eye.z});
     });
 
     _attribFunctions["target"] = AttributeFunctor([&](vector<Value> args) {
@@ -464,6 +468,8 @@ void Camera::registerAttributes()
             return false;
         _target = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
+    }, [&]() {
+        return vector<Value>({_target.x, _target.y, _target.z});
     });
 
     _attribFunctions["fov"] = AttributeFunctor([&](vector<Value> args) {
@@ -471,6 +477,8 @@ void Camera::registerAttributes()
             return false;
         _fov = args[0].asFloat();
         return true;
+    }, [&]() {
+        return vector<Value>({_fov});
     });
 
     _attribFunctions["up"] = AttributeFunctor([&](vector<Value> args) {
@@ -478,6 +486,8 @@ void Camera::registerAttributes()
             return false;
         _up = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
+    }, [&]() {
+        return vector<Value>({_up.x, _up.y, _up.z});
     });
 
     _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
@@ -486,8 +496,7 @@ void Camera::registerAttributes()
         setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
     }, [&]() {
-        vector<Value> size {_width, _height};
-        return size;
+        return vector<Value>({_width, _height});
     });
 
     // More advanced attributes

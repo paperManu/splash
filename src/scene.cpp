@@ -58,6 +58,17 @@ BaseObjectPtr Scene::add(string type, string name)
 }
 
 /*************/
+Json::Value Scene::getConfigurationAsJson()
+{
+    Json::Value root;
+
+    for (auto& obj : _objects)
+        root[obj.first] = obj.second->getConfigurationAsJson();
+
+    return root;
+}
+
+/*************/
 bool Scene::link(string first, string second)
 {
     BaseObjectPtr source(nullptr);

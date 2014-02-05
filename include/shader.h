@@ -106,6 +106,7 @@ class Shader : public BaseObject
          * Set the sideness of the object
          */
         void setSideness(const Sideness side);
+        Sideness getSideness() const {return _sideness;}
 
         /**
          * Set a shader source

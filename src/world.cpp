@@ -21,6 +21,9 @@ World::~World()
 {
     SLog::log << Log::DEBUG << "World::~World - Destructor" << Log::endl;
     SThread::pool.waitAllThreads();
+
+    // TODO: temporary
+    saveConfig();
 }
 
 /*************/
@@ -230,6 +233,60 @@ void World::applyConfig()
 
         // Lastly, in the local scene, connect all Objects to the single camera present
     }
+}
+
+/*************/
+void World::saveConfig()
+{
+    Json::Value root;
+    root["scenes"] = Json::Value();
+
+    // Get the configuration from the different scenes
+    for (auto& s : _scenes)
+    {
+        Json::Value scene;
+        scene["name"] = s.first;
+        scene["address"] = "localhost"; // Distant scenes are not yet supported
+        root["scenes"].append(scene);
+
+        Json::Value config = s.second->getConfigurationAsJson();
+        root[s.first] = config;
+    }
+
+    // Complete with the configuration from the world
+    const Json::Value jsScenes = _config["scenes"];
+    for (int i = 0; i < jsScenes.size(); ++i)
+    {
+        string sceneName = jsScenes[i]["name"].asString();
+
+        if (root.isMember(sceneName))
+        {
+            Json::Value& scene = root[sceneName];
+            Json::Value::Members members = _config[sceneName].getMemberNames();
+
+            for (auto& m : members)
+            {
+                if (!scene.isMember(m))
+                    scene[m] = Json::Value();
+
+                if (_config[sceneName][m].isArray())
+                    scene[m] = _config[sceneName][m]; // No further tests because only links is an array at the root. Well, should be.
+                else
+                {
+                    Json::Value::Members attributes = _config[sceneName][m].getMemberNames();
+                    for (auto& a : attributes)
+                    {
+                        if (scene[m].isMember(a))
+                            continue;
+
+                        scene[m][a] = _config[sceneName][m][a];
+                    }
+                }
+            }
+        }
+    }
+    
+    cout << root.toStyledString();
 }
 
 /*************/

@@ -287,6 +287,8 @@ void Window::registerAttributes()
             return false;
         switchFullscreen(args[0].asInt());
         return true;
+    }, [&]() {
+        return vector<Value>({_screenId});
     });
 }
 

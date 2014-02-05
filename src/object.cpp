@@ -139,6 +139,8 @@ void Object::registerAttributes()
             return false;
         _position = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
+    }, [&]() {
+        return vector<Value>({_position.x, _position.y, _position.z});
     });
 
     _attribFunctions["scale"] = AttributeFunctor([&](vector<Value> args) {
@@ -152,6 +154,8 @@ void Object::registerAttributes()
 
         _shader->setAttribute("scale", args);
         return true;
+    }, [&]() {
+        return vector<Value>({_scale.x, _scale.y, _scale.z});
     });
 
     _attribFunctions["sideness"] = AttributeFunctor([&](vector<Value> args) {
@@ -171,6 +175,8 @@ void Object::registerAttributes()
             _shader->setSideness(Shader::inverted);
         }
         return true;
+    }, [&]() {
+        return vector<Value>({_shader->getSideness()});
     });
 
     _attribFunctions["primitive"] = AttributeFunctor([&](vector<Value> args) {

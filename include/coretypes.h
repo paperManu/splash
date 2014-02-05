@@ -43,6 +43,7 @@
 #include <string>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <json/reader.h>
 
 #include "config.h"
 
@@ -143,6 +144,8 @@ struct Value
                 return _s;
         }
 
+        Type getType() {return _type;}
+
     private:
         Type _type;
         int _i;
@@ -235,6 +238,44 @@ class BaseObject
          * Update the content of the object
          */
         virtual void update() {}
+
+        /**
+         * Get the configuration as a json object
+         */
+        Json::Value getConfigurationAsJson()
+        {
+            Json::Value root;
+            root["type"] = _type;
+
+            for (auto& attr : _attribFunctions)
+            {
+                std::vector<Value> values;
+                if (getAttribute(attr.first, values) == false || values.size() == 0)
+                    continue;
+
+                Json::Value jsValue;
+                for (auto& v : values)
+                {
+                    switch (v.getType())
+                    {
+                    default:
+                        continue;
+                    case Value::i:
+                        jsValue.append(v.asInt());
+                        break;
+                    case Value::f:
+                        jsValue.append(v.asFloat());
+                        break;
+                    case Value::s:
+                        jsValue.append(v.asString());
+                        break;
+                    }
+                }
+
+                root[attr.first] = jsValue;
+            }
+            return root;
+        }
 
     protected:
         unsigned long _id;

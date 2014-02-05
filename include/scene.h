@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include <json/reader.h>
 
 #include "camera.h"
 #include "geometry.h"
@@ -69,6 +70,11 @@ class Scene
          * Add an object of the given type, with the given name
          */
         BaseObjectPtr add(std::string type, std::string name = std::string());
+
+        /**
+         * Get the current configuration of the scene as a json object
+         */
+        Json::Value getConfigurationAsJson();
 
         /**
          * Get the status of the scene, return true if all is well
