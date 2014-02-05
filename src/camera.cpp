@@ -90,24 +90,21 @@ bool Camera::doCalibration()
             continue;
 
         objectPoints.push_back(cv::Point3f(point.world.x, point.world.y, point.world.z));
-        imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * _width, (point.screen.y + 1.f) / 2.f * _height));
+        imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * _width, (-point.screen.y + 1.f) / 2.f * _height));
     }
 
-    float fovX = (_width / 2.f) / tan(_fov * M_PI / 360.f);
-    float fovY = fovX; //_height / tan(_fov * M_PI / 360.f);
-    cv::Mat cameraMatrix = (cv::Mat_<float>(3, 3) << fovX, 0, _width / 2.f,
-                                                 0, fovY, _height / 2.f,
-                                                 0, 0, 1);
+    double fov = (_height / 2.0) / tan(_fov * M_PI / 360.0); // _fov is indeed fovY
+    cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fov, 0.0, _width / 2.0,
+                                                 0.0, fov, _height / 2.0,
+                                                 0.0, 0.0, 1.0);
 
-    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_32F);
+    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
     cv::Mat rvec;
     cv::Mat tvec;
-    
-    SLog::log << "solvePnP parameters : " << objectPoints.size() << " " << imagePoints.size() << Log::endl;
 
     try
     {
-        cv::solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, false, CV_ITERATIVE);
+        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
     }
     catch (cv::Exception& e)
     {
@@ -115,21 +112,31 @@ bool Camera::doCalibration()
         return false;
     }
 
-    cout << " --------------- " << endl;
-    cout << cameraMatrix << endl;
-    cout << rvec << endl;
-    cout << tvec << endl;
-
+    // Get a usable rotation matrix
     cv::Mat r;
     cv::Rodrigues(rvec, r);
-    cout << r << endl;
 
-    _viewMatrix = mat4(r.at<double>(0, 0), r.at<double>(1, 0), r.at<double>(2, 0), tvec.at<double>(0), 
-                       r.at<double>(0, 1), r.at<double>(1, 1), r.at<double>(2, 1), tvec.at<double>(1), 
-                       r.at<double>(0, 2), r.at<double>(1, 2), r.at<double>(2, 2), tvec.at<double>(2), 
-                       0.f, 0.f, 0.f, 1.f); 
-    _viewMatrix = inverse(_viewMatrix);
-    _isCalibrated = true;
+    mat4 trans(1.f);
+    trans[3][0] = tvec.at<double>(0);
+    trans[3][1] = tvec.at<double>(1);
+    trans[3][2] = tvec.at<double>(2);
+
+    mat4 rot = mat4(r.at<double>(0, 0), r.at<double>(1, 0), r.at<double>(2, 0), 0.f, 
+                    r.at<double>(0, 1), r.at<double>(1, 1), r.at<double>(2, 1), 0.f, 
+                    r.at<double>(0, 2), r.at<double>(1, 2), r.at<double>(2, 2), 0.f, 
+                    0.f, 0.f, 0.f, 1.f); 
+
+    mat4 viewMatrix = trans * rot;
+    // We have the object pose in the camera base. We want the camera pose in the world base
+    viewMatrix = inverse(viewMatrix);
+
+    vec4 origin(0.f, 0.f, 0.f, 1.f);
+    origin = viewMatrix * origin;
+    _eye = vec3(origin.x, origin.y, origin.z);
+
+    vec4 direction(0.f, 0.f, 1.f, 1.f);
+    direction = viewMatrix * direction;
+    _target = vec3(direction.x, direction.y, direction.z);
 
     return true;
 }
@@ -397,11 +404,7 @@ void Camera::setOutputSize(int width, int height)
 /*************/
 mat4x4 Camera::computeViewProjectionMatrix()
 {
-    mat4 viewMatrix;
-    if (_isCalibrated)
-        viewMatrix = _viewMatrix;
-    else
-        viewMatrix = lookAt(_eye, _target, _up);
+    mat4 viewMatrix = lookAt(_eye, _target, _up);
     mat4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
     mat4 viewProjectionMatrix = projMatrix * viewMatrix;
 

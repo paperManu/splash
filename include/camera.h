@@ -150,14 +150,12 @@ class Camera : public BaseObject
         std::map<std::string, ObjectPtr> _models;
 
         // Camera parameters
-        float _fov {35};
+        float _fov {35}; // This is the vertical FOV
         float _width {512}, _height {512};
         float _near {0.1}, _far {100.0};
         glm::vec3 _eye {1.0, 0.0, 5.0};
         glm::vec3 _target {0.0, 0.0, 0.0};
-        glm::mat4 _viewMatrix;
         glm::vec3 _up {0.0, 0.0, 1.0};
-        bool _isCalibrated {false};
 
         // Calibration parameters
         bool _displayCalibration {false};
