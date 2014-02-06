@@ -101,6 +101,27 @@ struct ShaderSources
             fragColor = _color;
         }
     )"};
+
+    /**
+     * UV drawing fragment shader
+     */
+    const std::string FRAGMENT_SHADER_UV {R"(
+        #version 330 core
+
+        uniform int _sideness;
+        in vec2 texCoord;
+        in vec3 normal;
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+                discard;
+
+            fragColor.rg = vec2(texCoord.x, texCoord.y);
+            fragColor.ba = vec2(0.f, 1.f);
+        }
+    )"};
 } ShaderSources;
 
 } // end of namespace

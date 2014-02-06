@@ -27,6 +27,7 @@ Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width
 Texture::~Texture()
 {
     SLog::log << Log::DEBUG << "Texture::~Texture - Destructor" << Log::endl;
+    glDeleteTextures(1, &_glTex);
 }
 
 /*************/
@@ -42,12 +43,6 @@ void Texture::generateMipmap() const
     glBindTexture(GL_TEXTURE_2D, _glTex);
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, 0);
-}
-
-/*************/
-ImageBuf Texture::getBuffer() const
-{
-    glDeleteTextures(1, &_glTex);
 }
 
 /*************/

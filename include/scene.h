@@ -145,6 +145,15 @@ class Scene
         bool _isRunning {false};
         unsigned long _nextId {0};
 
+        // Blending map, used by all cameras (except the GUI camera)
+        TexturePtr _blendingTexture;
+        ImagePtr _blendingMap;
+
+        /**
+         * Creates the blending map from the current calibration of the cameras
+         */
+        void computeBlendingMap();
+
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
@@ -154,6 +163,11 @@ class Scene
          * Set up the context and everything
          */
         void init(std::string name);
+
+        /**
+         * Set up the blending map
+         */
+        void initBlendingMap();
 
         /**
          * Get the next available id

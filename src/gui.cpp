@@ -167,7 +167,8 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
-    _glvGlobalView._camera->render();
+    if (_isVisible)
+        _glvGlobalView._guiCamera->render();
 
     glfwMakeContextCurrent(_window->get());
 

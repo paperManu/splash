@@ -219,6 +219,11 @@ bool Scene::render()
             if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
                 setMessage("save");
         }
+        else if (key == GLFW_KEY_B)
+        {
+            if (action == GLFW_PRESS)
+                computeBlendingMap();
+        }
 
         // Send the action to the GUI
         for (auto& obj : _objects)
@@ -272,6 +277,19 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 {
     if (_objects.find(name) != _objects.end() && dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
         dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
+}
+
+/*************/
+void Scene::computeBlendingMap()
+{
+    initBlendingMap();
+    // Set the blending map to zero
+    _blendingMap->setTo(0);
+
+    // Compute the contribution of each camera
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+            dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 }
 
 /*************/
@@ -344,6 +362,16 @@ void Scene::init(std::string name)
     glfwMakeContextCurrent(_mainWindow->get());
     _isInitialized = true;
     glfwMakeContextCurrent(NULL);
+}
+
+/*************/
+void Scene::initBlendingMap()
+{
+    _blendingMap.reset(new Image);
+    _blendingMap->set(1024, 1024, 2, TypeDesc::UINT16);
+
+    _blendingTexture.reset(new Texture);
+    *_blendingTexture = _blendingMap;
 }
 
 /*************/

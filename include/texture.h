@@ -96,11 +96,6 @@ class Texture : public BaseObject
         GLuint getTexId() const {return _glTex;}
 
         /**
-         * Get the buffer on the host
-         */
-        ImageBuf getBuffer() const;
-
-        /**
          * Get spec of the texture
          */
         ImageSpec getSpec() const {return _spec;}

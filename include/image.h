@@ -124,6 +124,22 @@ class Image : public BufferObject
         virtual bool read(const std::string& filename);
 
         /**
+         * Set all pixels in the image to the specified value
+         */
+        template<typename T>
+        void setTo(T value)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            for (ImageBuf::Iterator<T> p(_bufferImage); !p.done(); ++p)
+            {
+                if (!p.exists())
+                    continue;
+                for (int c = 0; c < _image.nchannels(); ++c)
+                    p[c] = value;
+            }
+        }
+
+        /**
          * Update the content of the image
          */
         virtual void update();

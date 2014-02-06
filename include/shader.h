@@ -58,10 +58,11 @@ class Shader : public BaseObject
             inverted
         };
 
-        enum Texture
+        enum Fill
         {
-            uv = 0,
-            color
+            texture = 0,
+            color,
+            uv
         };
 
         /**
@@ -140,7 +141,7 @@ class Shader : public BaseObject
         GLint _locationScale {0};
 
         // Rendering parameters
-        Texture _texture {uv};
+        Fill _fill {texture};
         Sideness _sideness {doubleSided};
         int _textureNbr {0};
         glm::vec4 _color {0.0, 1.0, 0.0, 1.0};

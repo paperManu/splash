@@ -79,6 +79,48 @@ void Camera::addObject(ObjectPtr& obj)
 }
 
 /*************/
+void Camera::computeBlendingMap(ImagePtr& map)
+{
+    glfwMakeContextCurrent(_window->get());
+    GLenum error = glGetError();
+    // We want to render the object with a specific texture, containing texture coordinates
+    for (auto& obj : _objects)
+        obj->getShader()->setAttribute("fill", {"uv"});
+    glfwMakeContextCurrent(NULL);
+
+    // Render with the current texture, with no marker or frame
+    bool drawFrame = _drawFrame;
+    bool displayCalibration = _displayCalibration;
+    _drawFrame = displayCalibration =false;
+    render();
+    _drawFrame = drawFrame;
+    _displayCalibration = displayCalibration;
+
+    glfwMakeContextCurrent(_window->get());
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    ImageBuf img(_outTextures[0]->getSpec());
+    glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, img.localpixels());
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    // We want to render the object with a specific texture, containing texture coordinates
+    for (auto& obj : _objects)
+        obj->getShader()->setAttribute("fill", {"texture"});
+    error = glGetError();
+    glfwMakeContextCurrent(NULL);
+
+    if (error)
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
+
+    cout << endl;
+    for (ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
+    {
+        if (!p.exists())
+            continue;
+        cout << p[0] << " ";
+    }
+    cout << endl;
+}
+
+/*************/
 bool Camera::doCalibration()
 {
     vector<cv::Point3f> objectPoints;
@@ -102,8 +144,8 @@ bool Camera::doCalibration()
 
     double fov = (_height / 2.0) / tan(_fov * M_PI / 360.0); // _fov is indeed fovY
     cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fov, 0.0, _width / 2.0,
-                                                 0.0, fov, _height / 2.0,
-                                                 0.0, 0.0, 1.0);
+                                                      0.0, fov, _height / 2.0,
+                                                      0.0, 0.0, 1.0);
 
     cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
     cv::Mat rvec;
@@ -192,7 +234,8 @@ vector<Value> Camera::pickVertex(float x, float y)
     vec3 vertex;
     for (auto& obj : _objects)
     {
-        vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(), perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
+        vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
+                               perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
         glm::vec3 closestVertex;
         float tmpDist;
         if ((tmpDist = obj->pickVertex(point, closestVertex)) < distance)
@@ -453,7 +496,7 @@ void Camera::loadDefaultModels()
         ObjectPtr obj(new Object());
         obj->setAttribute("name", {file.first});
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
-        obj->getShader()->setAttribute("texture", {"color"});
+        obj->getShader()->setAttribute("fill", {"color"});
         obj->getShader()->setAttribute("color", SPLASH_MARKER_SET);
         obj->linkTo(mesh);
 

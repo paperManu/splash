@@ -60,7 +60,7 @@ void Shader::activate()
     glUniform1i(_locationTextureNbr, _textureNbr);
     glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
 
-    if (_texture == color)
+    if (_fill == color)
         glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
 }
 
@@ -213,18 +213,29 @@ string Shader::stringFromShaderType(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["texture"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asString() == "uv")
+        if (args[0].asString() == "texture")
         {
-            _texture = uv;
+            if (_fill == texture)
+                return true;
+            _fill = texture;
             setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
         }
         else if (args[0].asString() == "color")
         {
-            _texture = color;
+            if (_fill == color)
+                return true;
+            _fill = color;
             setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+        }
+        else if (args[0].asString() == "uv")
+        {
+            if (_fill == uv)
+                return true;
+            _fill = uv;
+            setSource(ShaderSources.FRAGMENT_SHADER_UV, fragment);
         }
         return true;
     });

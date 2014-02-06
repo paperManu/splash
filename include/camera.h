@@ -85,6 +85,11 @@ class Camera : public BaseObject
         void addObject(ObjectPtr& obj);
 
         /**
+         * Computes the blending map for this camera
+         */
+        void computeBlendingMap(ImagePtr& map);
+
+        /**
          * Compute the calibration given the calibration points
          */
         bool doCalibration();
