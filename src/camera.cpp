@@ -7,7 +7,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.02
+#define SPLASH_WORLDMARKER_SCALE 0.01
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.0, 1.0, 0.0, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
@@ -94,9 +94,9 @@ bool Camera::doCalibration()
     }
 
     // We need at least 5 points to get a meaningful calibration
-    if (objectPoints.size() < 5)
+    if (objectPoints.size() < 4)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 5 points" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 4 points" << Log::endl;
         return false;
     }
 

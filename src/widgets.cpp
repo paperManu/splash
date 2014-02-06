@@ -76,7 +76,9 @@ void GlvGlobalView::onDraw(GLV& g)
         if (size[0].asInt() != w || size[1].asInt() != h)
             h = _baseWidth * size[1].asInt() / size[0].asInt();
 
-        _camLabel.setValue(_camera->getName());
+        vector<Value> fov;
+        _camera->getAttribute("fov", fov);
+        _camLabel.setValue(_camera->getName() + " - " + fov[0].asString() + "°");
 
         float vertcoords[] = {0,0, 0,height(), width(),0, width(),height()};
         float texcoords[] = {0,1, 0,0, 1,1, 1,0};
@@ -144,39 +146,39 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 _camera->setAttribute("displayCalibration", {1});
             }
 
-            return true;
+            return false;
         }
         // Show all the calibration points for the selected camera
         else if (g.keyboard().key() == 'A')
         {
             _camera->setAttribute("switchShowAllCalibrationPoints", {});
-            return true;
+            return false;
         }
         else if (g.keyboard().key() == 'C')
         {
             _camera->doCalibration();
-            return true;
+            return false;
         }
         // Switch the rendering to textured
         else if (g.keyboard().key() == 'T') 
         {
             _camera->setAttribute("wireframe", {0});
-            return true;
+            return false;
         }
         // Switch the rendering to wireframe
         else if (g.keyboard().key() == 'W') 
         {
             _camera->setAttribute("wireframe", {1});
-            return true;
+            return false;
         }
         else
-            return false;
+            return true;
         break;
     case Event::MouseDown:
         {
             // If selected camera is guiCamera, do nothing
             if (_camera == _guiCamera)
-                return true;
+                return false;
 
             // Set a calibration point
             if (g.mouse().left()) 
@@ -198,7 +200,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 if (position.size() == 3)
                     _camera->removeCalibrationPoint(position);
             }
-            return true;
+            return false;
         }
     case Event::MouseDrag:
         // Drag the window
@@ -225,6 +227,16 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             return false;
         }
         break;
+    case Event::MouseWheel:
+        vector<Value> fov;
+        _camera->getAttribute("fov", fov);
+        float camFov = fov[0].asFloat();
+
+        camFov += g.mouse().dw();
+        camFov = std::max(2.f, std::min(180.f, camFov));
+        _camera->setAttribute("fov", {camFov});
+
+        return false;
     }
 
     return true;
@@ -318,6 +330,7 @@ bool GlvGraph::onEvent(Event::t e, GLV& g)
         if ((char)g.keyboard().key() == ' ')
         {
             _target++;
+            return false;
         }
         break;
     case Event::MouseDrag:
