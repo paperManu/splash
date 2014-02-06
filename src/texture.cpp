@@ -15,6 +15,15 @@ Texture::Texture()
 }
 
 /*************/
+Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                 GLint border, GLenum format, GLenum type, const GLvoid* data)
+{
+    _type = "texture";
+    _timestamp = chrono::high_resolution_clock::now();
+    reset(target, level, internalFormat, width, height, border, format, type, data); 
+}
+
+/*************/
 Texture::~Texture()
 {
     SLog::log << Log::DEBUG << "Texture::~Texture - Destructor" << Log::endl;
@@ -96,8 +105,14 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
     else if (format == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
     {
         _spec.nchannels = 4;
-        _spec.format == TypeDesc::UINT8;
+        _spec.format = TypeDesc::UINT8;
         _spec.channelnames = {"R", "G", "B", "A"};
+    }
+    else if (format == GL_RG && type == GL_UNSIGNED_SHORT)
+    {
+        _spec.nchannels = 2;
+        _spec.format = TypeDesc::UINT16;
+        _spec.channelnames = {"R", "G"};
     }
 
     _texTarget = target;
@@ -164,6 +179,13 @@ void Texture::update()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             _img->unlock();
         }
+        else if (spec.nchannels == 2 && spec.format == TypeDesc::UINT16)
+        {
+            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_RG" << Log::endl;
+            _img->lock();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, spec.width, spec.height, 0, GL_RG, GL_UNSIGNED_SHORT, _img->data());
+            _img->unlock();
+        }
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -176,6 +198,8 @@ void Texture::update()
         _img->lock();
         if (spec.nchannels == 4 && spec.format == TypeDesc::UINT8)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+        else if (spec.nchannels == 2 && spec.format == TypeDesc::UINT16)
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RG, GL_UNSIGNED_SHORT, _img->data());
         _img->unlock();
 
         glGenerateMipmap(GL_TEXTURE_2D);

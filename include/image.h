@@ -104,6 +104,11 @@ class Image : public BufferObject
         void set(const ImageBuf& img);
 
         /**
+         * Set the image as a empty with the given size / channels / typedesc
+         */
+        void set(unsigned int w, unsigned int h, unsigned int channels, TypeDesc type);
+
+        /**
          * Serialize the image
          */
         SerializedObject serialize() const;

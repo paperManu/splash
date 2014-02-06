@@ -53,6 +53,16 @@ void Image::set(const ImageBuf& img)
     _image.copy(img);
 }
 
+/*************/
+void Image::set(unsigned int w, unsigned int h, unsigned int channels, TypeDesc type)
+{
+    ImageSpec spec(w, h, channels, type);
+    ImageBuf img(spec);
+
+    lock_guard<mutex> lock(_mutex);
+    _image.swap(img);
+    updateTimestamp();
+}
 
 /*************/
 SerializedObject Image::serialize() const
