@@ -107,8 +107,10 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     default:
         break;
     case Event::KeyDown:
+    {
+        auto key = g.keyboard().key();
         // Switch between scene cameras and guiCamera
-        if (g.keyboard().key() ==  ' ')
+        if (key ==  ' ')
         {
             auto scene = _scene.lock();
             vector<CameraPtr> cameras;
@@ -149,60 +151,81 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             return false;
         }
         // Show all the calibration points for the selected camera
-        else if (g.keyboard().key() == 'A')
+        else if (key == 'A')
         {
             _camera->setAttribute("switchShowAllCalibrationPoints", {});
             return false;
         }
-        else if (g.keyboard().key() == 'C')
+        else if (key == 'C')
         {
             _camera->doCalibration();
             return false;
         }
         // Switch the rendering to textured
-        else if (g.keyboard().key() == 'T') 
+        else if (key == 'T') 
         {
             _camera->setAttribute("wireframe", {0});
             return false;
         }
         // Switch the rendering to wireframe
-        else if (g.keyboard().key() == 'W') 
+        else if (key == 'W') 
         {
             _camera->setAttribute("wireframe", {1});
             return false;
         }
-        else
-            return true;
-        break;
-    case Event::MouseDown:
+        // Arrow keys
+        else if (key >= 262 && key <= 265)
         {
-            // If selected camera is guiCamera, do nothing
-            if (_camera == _guiCamera)
-                return false;
+            float delta = 1.f;
+            if (g.keyboard().shift())
+                delta = 0.1f;
+                
+            if (key == 262)
+                _camera->moveCalibrationPoint(delta, 0);
+            else if (key == 263)
+                _camera->moveCalibrationPoint(-delta, 0);
+            else if (key == 264)
+                _camera->moveCalibrationPoint(0, -delta);
+            else if (key == 265)
+                _camera->moveCalibrationPoint(0, delta);
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+        break;
+    }
+    case Event::MouseDown:
+    {
+        // If selected camera is guiCamera, do nothing
+        if (_camera == _guiCamera)
+            return false;
 
-            // Set a calibration point
-            if (g.mouse().left()) 
-            {
-                if (!g.keyboard().shift()) // Add a new calibration point
-                {
-                    vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-                    if (position.size() == 3)
-                        _camera->addCalibrationPoint(position);
-                    else
-                        _camera->deselectCalibrationPoint();
-                }
-                else // Define the screenpoint corresponding to the selected calibration point
-                    _camera->setCalibrationPoint({(g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
-            }
-            else if (g.mouse().right()) // Remove a calibration point
+        // Set a calibration point
+        if (g.mouse().left()) 
+        {
+            if (!g.keyboard().shift()) // Add a new calibration point
             {
                 vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
-                    _camera->removeCalibrationPoint(position);
+                    _camera->addCalibrationPoint(position);
+                else
+                    _camera->deselectCalibrationPoint();
             }
-            return false;
+            else // Define the screenpoint corresponding to the selected calibration point
+                _camera->setCalibrationPoint({(g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
         }
+        else if (g.mouse().right()) // Remove a calibration point
+        {
+            vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+            if (position.size() == 3)
+                _camera->removeCalibrationPoint(position);
+        }
+        return false;
+    }
     case Event::MouseDrag:
+    {
         // Drag the window
         if (g.mouse().middle()) 
         {
@@ -227,7 +250,9 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             return false;
         }
         break;
+    }
     case Event::MouseWheel:
+    {
         vector<Value> fov;
         _camera->getAttribute("fov", fov);
         float camFov = fov[0].asFloat();
@@ -237,6 +262,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         _camera->setAttribute("fov", {camFov});
 
         return false;
+    }
     }
 
     return true;

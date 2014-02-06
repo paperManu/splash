@@ -79,6 +79,8 @@ void Gui::key(int& key, int& action, int& mods)
             _glv.setKeyDown(glfwToGlvKey(key));
         else if (action == GLFW_RELEASE)
             _glv.setKeyUp(glfwToGlvKey(key));
+        else if (action == GLFW_REPEAT)
+            _glv.setKeyDown(glfwToGlvKey(key));
         _glv.setKeyModifiers(mods && GLFW_MOD_SHIFT, mods && GLFW_MOD_ALT, mods && GLFW_MOD_CONTROL, false, false);
         _glv.propagateEvent();
         break;

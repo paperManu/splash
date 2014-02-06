@@ -334,6 +334,16 @@ bool Camera::addCalibrationPoint(std::vector<Value> worldPoint)
 }
 
 /*************/
+void Camera::moveCalibrationPoint(float dx, float dy)
+{
+    if (_selectedCalibrationPoint == -1)
+        return;
+
+    _calibrationPoints[_selectedCalibrationPoint].screen.x += dx / _width;
+    _calibrationPoints[_selectedCalibrationPoint].screen.y += dy / _height;
+}
+
+/*************/
 void Camera::removeCalibrationPoint(std::vector<Value> worldPoint)
 {
     if (worldPoint.size() < 3)
