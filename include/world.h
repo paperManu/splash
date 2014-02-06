@@ -34,7 +34,6 @@
 #include <thread>
 #include <vector>
 #include <glm/glm.hpp>
-#include <json/reader.h>
 
 #include "image_shmdata.h"
 #include "log.h"
@@ -74,6 +73,7 @@ class World {
         std::map<std::string, std::vector<std::string>> _objectDest;
         std::vector<TexturePtr> _textures;
 
+        std::string _configFilename;
         Json::Value _config;
 
         /**
@@ -110,6 +110,11 @@ class World {
          * Parse the given arguments
          */
         void parseArguments(int argc, char** argv);
+
+        /**
+         * Parse the message received from the scenes
+         */
+        void parseMessages(std::map<std::string, std::vector<Value>> messages);
 
         /**
          * Set a parameter for an object, given its id

@@ -3,6 +3,8 @@
 
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
+#include <json/reader.h>
+#include <json/writer.h>
 
 using namespace glm;
 using namespace std;
@@ -21,9 +23,6 @@ World::~World()
 {
     SLog::log << Log::DEBUG << "World::~World - Destructor" << Log::endl;
     SThread::pool.waitAllThreads();
-
-    // TODO: temporary
-    saveConfig();
 }
 
 /*************/
@@ -69,7 +68,14 @@ void World::run()
 
         SThread::pool.waitThreads(threadIds);
 
-        // Match the desired FPS
+        // Grab the signals from the scenes
+        for (auto& s : _scenes)
+        {
+            map<string, vector<Value>> messages = s.second->getMessages();
+            parseMessages(messages);
+        }
+
+        // Get the current FPS
         STimer::timer >> "worldLoop";
     }
 }
@@ -276,7 +282,9 @@ void World::saveConfig()
         }
     }
     
-    cout << _config.toStyledString();
+    ofstream out(_configFilename, ios::binary);
+    out << _config.toStyledString();
+    out.close();
 }
 
 /*************/
@@ -303,6 +311,7 @@ bool World::loadConfig(string filename)
         return false;
     }
 
+    _configFilename = filename;
     Json::Value config;
     Json::Reader reader;
 
@@ -342,6 +351,19 @@ void World::parseArguments(int argc, char** argv)
         }
         else
             idx++;
+    }
+}
+
+/*************/
+void World::parseMessages(map<string, vector<Value>> messages)
+{
+    for (auto& m : messages)
+    {
+        if (m.first == string("save"))
+        {
+            SLog::log << "Configuration saved" << Log::endl;
+            saveConfig();
+        }
     }
 }
 

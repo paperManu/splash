@@ -69,6 +69,14 @@ Json::Value Scene::getConfigurationAsJson()
 }
 
 /*************/
+map<string, vector<Value>> Scene::getMessages()
+{
+    auto messages = _worldMessages;
+    _worldMessages.clear();
+    return messages;
+}
+
+/*************/
 bool Scene::link(string first, string second)
 {
     BaseObjectPtr source(nullptr);
@@ -198,12 +206,19 @@ bool Scene::render()
         if (key == GLFW_KEY_ESCAPE)
             quit = true;
         else if (key == GLFW_KEY_F)
+        {
             if (mods == GLFW_MOD_ALT && action == GLFW_PRESS)
                 if (eventWindow.get() != nullptr)
                 {
                     eventWindow->switchFullscreen();
                     continue;
                 }
+        }
+        else if (key == GLFW_KEY_S)
+        {
+            if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
+                setMessage("save");
+        }
 
         // Send the action to the GUI
         for (auto& obj : _objects)

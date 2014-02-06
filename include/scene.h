@@ -77,6 +77,11 @@ class Scene
         Json::Value getConfigurationAsJson();
 
         /**
+         * Get the messages meant to be sent to the World
+         */
+        std::map<std::string, std::vector<Value>> getMessages();
+
+        /**
          * Get the status of the scene, return true if all is well
          */
         bool getStatus() const {return _status;}
@@ -122,9 +127,15 @@ class Scene
          */
         void setFromSerializedObject(const std::string name, const SerializedObject& obj);
 
+        /**
+         * Set a message to be sent to the world
+         */
+        void setMessage(const std::string message, const std::vector<Value> value = {}) {_worldMessages[message] = value;}
+
     protected:
         GlWindowPtr _mainWindow;
         std::map<std::string, BaseObjectPtr> _objects;
+        std::map<std::string, std::vector<Value>> _worldMessages;
 
     private:
         ScenePtr _self;
