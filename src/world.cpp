@@ -262,31 +262,21 @@ void World::saveConfig()
         if (root.isMember(sceneName))
         {
             Json::Value& scene = root[sceneName];
-            Json::Value::Members members = _config[sceneName].getMemberNames();
+            Json::Value::Members members = scene.getMemberNames();
 
             for (auto& m : members)
             {
-                if (!scene.isMember(m))
-                    scene[m] = Json::Value();
+                if (!_config[sceneName].isMember(m))
+                    _config[sceneName][m] = Json::Value();
 
-                if (_config[sceneName][m].isArray())
-                    scene[m] = _config[sceneName][m]; // No further tests because only links is an array at the root. Well, should be.
-                else
-                {
-                    Json::Value::Members attributes = _config[sceneName][m].getMemberNames();
-                    for (auto& a : attributes)
-                    {
-                        if (scene[m].isMember(a))
-                            continue;
-
-                        scene[m][a] = _config[sceneName][m][a];
-                    }
-                }
+                Json::Value::Members attributes = scene[m].getMemberNames();
+                for (auto& a : attributes)
+                    _config[sceneName][m][a] = scene[m][a];
             }
         }
     }
     
-    cout << root.toStyledString();
+    cout << _config.toStyledString();
 }
 
 /*************/
