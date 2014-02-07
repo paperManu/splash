@@ -89,13 +89,9 @@ struct ShaderSources
                 if (blendFactor == 0.f)
                     blendFactor = 1.f;
                 blendFactor = 1.f / blendFactor;
-                fragColor = texture(_tex0, texCoord) * blendFactor;
-                //fragColor.rgb = vec3(texture(_tex1, texCoord).r, texture(_tex1, texCoord).g, 0.1f);
-                //if (fragColor.r > 1.f / 65535.f)
-                //    fragColor.r = 1.f;
-                //if (fragColor.g > 2.f / 65535.f)
-                //    fragColor.g = 1.f;
-                //fragColor.a = 1.f;
+                vec4 color = texture(_tex0, texCoord);
+                fragColor.rgb = color.rgb * blendFactor;
+                fragColor.a = color.a;
             }
         }
     )"};
