@@ -15,6 +15,7 @@
 
 using namespace std;
 using namespace glm;
+using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -81,8 +82,13 @@ void Camera::addObject(ObjectPtr& obj)
 /*************/
 void Camera::computeBlendingMap(ImagePtr& map)
 {
+    if (map->getSpec().format != oiio::TypeDesc::UINT16)
+    {
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
+        return;
+    }
+
     glfwMakeContextCurrent(_window->get());
-    GLenum error = glGetError();
     // We want to render the object with a specific texture, containing texture coordinates
     for (auto& obj : _objects)
         obj->getShader()->setAttribute("fill", {"uv"});
@@ -91,12 +97,13 @@ void Camera::computeBlendingMap(ImagePtr& map)
     // Render with the current texture, with no marker or frame
     bool drawFrame = _drawFrame;
     bool displayCalibration = _displayCalibration;
-    _drawFrame = displayCalibration =false;
+    _drawFrame = displayCalibration = false;
     render();
     _drawFrame = drawFrame;
     _displayCalibration = displayCalibration;
 
     glfwMakeContextCurrent(_window->get());
+    GLenum error = glGetError();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     ImageBuf img(_outTextures[0]->getSpec());
     glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, img.localpixels());
@@ -110,14 +117,26 @@ void Camera::computeBlendingMap(ImagePtr& map)
     if (error)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 
-    cout << endl;
+    // Go through the rendered image, fill the map with the "used" pixels from the original texture
+    oiio::ImageSpec mapSpec = map->getSpec();
+    vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
+    unsigned short* imageMap = (unsigned short*)map->data();
     for (ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
     {
         if (!p.exists())
             continue;
-        cout << p[0] << " ";
+
+        // UV coordinates are mapped on 2 uchar each
+        int x = (int)((p[0] * 65536.f + p[1] * 256.f) / 65536.f * (float)mapSpec.width);
+        int y = (int)((p[2] * 65536.f + p[3] * 256.f) / 65536.f * (float)mapSpec.height);
+
+        if (isSet[y * mapSpec.width + x])
+            continue;
+        isSet[y * mapSpec.width + x] = true;
+
+        imageMap[(y * mapSpec.width + x) * 2]++; // One more camera displaying this pixel
+        imageMap[(y * mapSpec.width + x) * 2 + 1]++; // One more camera displaying this pixel
     }
-    cout << endl;
 }
 
 /*************/

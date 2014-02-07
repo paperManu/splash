@@ -33,7 +33,7 @@
 #include "coretypes.h"
 #include "log.h"
 
-using namespace OIIO_NAMESPACE;
+namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -86,12 +86,12 @@ class Image : public BufferObject
         /**
          * Get the image buffer
          */
-        ImageBuf get() const;
+        oiio::ImageBuf get() const;
 
         /**
          * Get the image buffer specs
          */
-        ImageSpec getSpec() const;
+        oiio::ImageSpec getSpec() const;
 
         /**
          * Get the timestamp for the current mesh
@@ -101,12 +101,12 @@ class Image : public BufferObject
         /**
          * Set the image from an ImageBuf
          */
-        void set(const ImageBuf& img);
+        void set(const oiio::ImageBuf& img);
 
         /**
          * Set the image as a empty with the given size / channels / typedesc
          */
-        void set(unsigned int w, unsigned int h, unsigned int channels, TypeDesc type);
+        void set(unsigned int w, unsigned int h, unsigned int channels, oiio::TypeDesc type);
 
         /**
          * Serialize the image
@@ -126,18 +126,7 @@ class Image : public BufferObject
         /**
          * Set all pixels in the image to the specified value
          */
-        template<typename T>
-        void setTo(T value)
-        {
-            std::lock_guard<std::mutex> lock(_mutex);
-            for (ImageBuf::Iterator<T> p(_bufferImage); !p.done(); ++p)
-            {
-                if (!p.exists())
-                    continue;
-                for (int c = 0; c < _image.nchannels(); ++c)
-                    p[c] = value;
-            }
-        }
+        void setTo(float value);
 
         /**
          * Update the content of the image
@@ -145,8 +134,8 @@ class Image : public BufferObject
         virtual void update();
 
     protected:
-        ImageBuf _image;
-        ImageBuf _bufferImage;
+        oiio::ImageBuf _image;
+        oiio::ImageBuf _bufferImage;
         bool _imageUpdated {false};
 
         void createDefaultImage(); //< Create a default pattern

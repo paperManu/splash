@@ -63,6 +63,7 @@ struct ShaderSources
         uniform sampler2D _tex1;
         uniform int _sideness;
         uniform int _textureNbr;
+        uniform int _texBlendingMap;
         in vec2 texCoord;
         in vec3 normal;
         out vec4 fragColor;
@@ -72,12 +73,29 @@ struct ShaderSources
             if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
                 discard;
 
-            if (_textureNbr > 0)
-                fragColor = texture(_tex0, texCoord);
-            if (_textureNbr > 1)
+            if (_texBlendingMap == 0)
             {
-                vec4 color = texture(_tex1, texCoord);
-                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+                if (_textureNbr > 0)
+                    fragColor = texture(_tex0, texCoord);
+                if (_textureNbr > 1)
+                {
+                    vec4 color = texture(_tex1, texCoord);
+                    fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+                }
+            }
+            else
+            {
+                float blendFactor = ceil(texture(_tex1, texCoord).r * 65535.f);
+                if (blendFactor == 0.f)
+                    blendFactor = 1.f;
+                blendFactor = 1.f / blendFactor;
+                fragColor = texture(_tex0, texCoord) * blendFactor;
+                //fragColor.rgb = vec3(texture(_tex1, texCoord).r, texture(_tex1, texCoord).g, 0.1f);
+                //if (fragColor.r > 1.f / 65535.f)
+                //    fragColor.r = 1.f;
+                //if (fragColor.g > 2.f / 65535.f)
+                //    fragColor.g = 1.f;
+                //fragColor.a = 1.f;
             }
         }
     )"};
@@ -104,6 +122,7 @@ struct ShaderSources
 
     /**
      * UV drawing fragment shader
+     * UV coordinates are encoded on 2 channels each, to get 16bits precision
      */
     const std::string FRAGMENT_SHADER_UV {R"(
         #version 330 core
@@ -118,8 +137,13 @@ struct ShaderSources
             if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
                 discard;
 
-            fragColor.rg = vec2(texCoord.x, texCoord.y);
-            fragColor.ba = vec2(0.f, 1.f);
+            int U = int(texCoord.x * 65536.f);
+            int V = int(texCoord.y * 65536.f);
+            ivec2 UEnc = ivec2(U / 256, U - (U / 256) * 256);
+            ivec2 VEnc = ivec2(V / 256, V - (V / 256) * 256);
+
+            fragColor.rg = vec2(float(UEnc.x) / 256.f, float(UEnc.y) / 256.f);
+            fragColor.ba = vec2(float(VEnc.x) / 256.f, float(VEnc.y) / 256.f);
         }
     )"};
 } ShaderSources;

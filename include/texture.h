@@ -41,7 +41,7 @@
 #include "image.h"
 #include "log.h"
 
-using namespace OIIO_NAMESPACE;
+namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -98,7 +98,7 @@ class Texture : public BaseObject
         /**
          * Get spec of the texture
          */
-        ImageSpec getSpec() const {return _spec;}
+        oiio::ImageSpec getSpec() const {return _spec;}
 
         /**
          * Try to link the given BaseObject to this
@@ -124,7 +124,7 @@ class Texture : public BaseObject
 
     private:
         GLuint _glTex = {0};
-        ImageSpec _spec;
+        oiio::ImageSpec _spec;
 
         // Store some texture parameters
         GLenum _texTarget, _texFormat, _texType;

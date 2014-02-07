@@ -2,6 +2,7 @@
 #include "timer.h"
 
 using namespace std;
+using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -224,11 +225,13 @@ bool Scene::render()
             if (action == GLFW_PRESS)
                 computeBlendingMap();
         }
-
-        // Send the action to the GUI
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
+        else
+        {
+            // Send the action to the GUI
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "gui")
+                    dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
+        }
     }
     STimer::timer >> "events";
 
@@ -285,11 +288,18 @@ void Scene::computeBlendingMap()
     initBlendingMap();
     // Set the blending map to zero
     _blendingMap->setTo(0);
+    _blendingMap->setName("blendingMap");
 
     // Compute the contribution of each camera
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+
+    _blendingMap->updateTimestamp();
+
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "object")
+            dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
 }
 
 /*************/
@@ -368,10 +378,12 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap.reset(new Image);
-    _blendingMap->set(1024, 1024, 2, TypeDesc::UINT16);
+    _blendingMap->set(512, 512, 2, TypeDesc::UINT16);
 
+    glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture.reset(new Texture);
     *_blendingTexture = _blendingMap;
+    glfwMakeContextCurrent(NULL);
 }
 
 /*************/

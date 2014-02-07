@@ -4,6 +4,7 @@
 
 using namespace std;
 using namespace glv;
+using namespace OIIO_NAMESPACE;
 
 namespace Splash
 {

@@ -31,6 +31,11 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
+    if (_blendMaps.size() != 0)
+        for (int i = 0; i < _textures.size(); ++i)
+            if (_blendMaps[0] == _textures[i])
+                _shader->activateBlending(i);
+
     for (auto& t : _textures)
         t->update();
     _geometries[0]->update();
@@ -60,6 +65,8 @@ mat4x4 Object::computeModelMatrix() const
 /*************/
 void Object::deactivate()
 {
+    if (_blendMaps.size() != 0)
+        _shader->deactivateBlending();
     _shader->deactivate();
     _geometries[0]->deactivate();
 }
@@ -123,6 +130,13 @@ float Object::pickVertex(vec3 p, vec3& v)
 
     v = closestVertex;
     return distance;
+}
+
+/*************/
+void Object::setBlendingMap(TexturePtr& map)
+{
+    _blendMaps.push_back(map);
+    _textures.push_back(map);
 }
 
 /*************/

@@ -49,19 +49,20 @@ void Shader::activate()
         _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
         _locationSide = glGetUniformLocation(_program, "_sideness");
         _locationTextureNbr = glGetUniformLocation(_program, "_textureNbr");
+        _locationBlendingMap = glGetUniformLocation(_program, "_texBlendingMap");
         _locationColor = glGetUniformLocation(_program, "_color");
         _locationScale = glGetUniformLocation(_program, "_scale");
     }
 
     glUseProgram(_program);
 
-    glUniform1i(_locationSide, _sideness);
     _textureNbr = 0;
-    glUniform1i(_locationTextureNbr, _textureNbr);
-    glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
 
-    if (_fill == color)
-        glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
+    glUniform1i(_locationSide, _sideness);
+    glUniform1i(_locationTextureNbr, _textureNbr);
+    glUniform1i(_locationBlendingMap, _useBlendingMap);
+    glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
+    glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
 }
 
 /*************/

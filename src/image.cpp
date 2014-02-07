@@ -2,6 +2,7 @@
 #include "timer.h"
 
 #include <OpenImageIO/imageio.h>
+#include <OpenImageIO/imagebufalgo.h>
 
 using namespace std;
 
@@ -12,7 +13,7 @@ Image::Image()
 {
     _type = "image";
 
-    attribute("threads", 0); // Disable the thread limitation for OIIO
+    oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
     createDefaultImage();
 
     registerAttributes();
@@ -31,33 +32,33 @@ const void* Image::data() const
 }
 
 /*************/
-ImageBuf Image::get() const
+oiio::ImageBuf Image::get() const
 {
-    ImageBuf img;
+    oiio::ImageBuf img;
     lock_guard<mutex> lock(_mutex);
     img.copy(_image);
     return img;
 }
 
 /*************/
-ImageSpec Image::getSpec() const
+oiio::ImageSpec Image::getSpec() const
 {
     lock_guard<mutex> lock(_mutex);
     return _image.spec();
 }
 
 /*************/
-void Image::set(const ImageBuf& img)
+void Image::set(const oiio::ImageBuf& img)
 {
     lock_guard<mutex> lock(_mutex);
     _image.copy(img);
 }
 
 /*************/
-void Image::set(unsigned int w, unsigned int h, unsigned int channels, TypeDesc type)
+void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::TypeDesc type)
 {
-    ImageSpec spec(w, h, channels, type);
-    ImageBuf img(spec);
+    oiio::ImageSpec spec(w, h, channels, type);
+    oiio::ImageBuf img(spec);
 
     lock_guard<mutex> lock(_mutex);
     _image.swap(img);
@@ -122,10 +123,10 @@ bool Image::deserialize(const SerializedObject& obj)
         currentObjPtr += nbrChar;
         string xmlSpec(xmlSpecChar);
 
-        ImageSpec spec;
+        oiio::ImageSpec spec;
         spec.from_xml(xmlSpec.c_str());
 
-        ImageBuf image(spec);
+        oiio::ImageBuf image(spec);
         int imgSize = image.spec().pixel_bytes() * image.spec().width * image.spec().height;
         ptr = reinterpret_cast<unsigned char*>(image.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
@@ -158,15 +159,15 @@ bool Image::deserialize(const SerializedObject& obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    ImageInput* in = ImageInput::open(filename);
+    oiio::ImageInput* in = oiio::ImageInput::open(filename);
     if (!in)
     {
         SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
         return false;
     }
 
-    const ImageSpec& spec = in->spec();
-    if (spec.format != TypeDesc::UINT8)
+    const oiio::ImageSpec& spec = in->spec();
+    if (spec.format != oiio::TypeDesc::UINT8)
     {
         SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
         return false;
@@ -175,8 +176,8 @@ bool Image::read(const string& filename)
     int xres = spec.width;
     int yres = spec.height;
     int channels = spec.nchannels;
-    ImageBuf img(spec); 
-    in->read_image(TypeDesc::UINT8, img.localpixels());
+    oiio::ImageBuf img(spec); 
+    in->read_image(oiio::TypeDesc::UINT8, img.localpixels());
 
     in->close();
     delete in;
@@ -184,8 +185,8 @@ bool Image::read(const string& filename)
     // If the image has only 3 channels, we add one
     if (channels == 3)
     {
-        ImageSpec newSpec(xres, yres, 4, TypeDesc::UINT8);
-        ImageBuf newImg(newSpec);
+        oiio::ImageSpec newSpec(xres, yres, 4, oiio::TypeDesc::UINT8);
+        oiio::ImageBuf newImg(newSpec);
         char* inputPixels = (char*)img.localpixels();
         char* newPixels = (char*)newImg.localpixels();
 
@@ -217,6 +218,16 @@ bool Image::read(const string& filename)
 }
 
 /*************/
+void Image::setTo(float value)
+{
+    lock_guard<mutex> lock(_mutex);
+    float v[_image.nchannels()];
+    for (int i = 0; i < _image.nchannels(); ++i)
+        v[i] = (float)value;
+    oiio::ImageBufAlgo::fill(_image, v);
+}
+
+/*************/
 void Image::update()
 {
     lock_guard<mutex> lock(_mutex);
@@ -230,10 +241,10 @@ void Image::update()
 /*************/
 void Image::createDefaultImage()
 {
-    ImageSpec spec(512, 512, 4, TypeDesc::UINT8);
-    ImageBuf img(spec);
+    oiio::ImageSpec spec(512, 512, 4, oiio::TypeDesc::UINT8);
+    oiio::ImageBuf img(spec);
 
-    for (ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
+    for (oiio::ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
     {
         if (!p.exists())
             continue;

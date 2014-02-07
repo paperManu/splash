@@ -179,8 +179,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (width == 0 || height == 0 || bpp == 0)
             return;
 
-        ImageSpec spec(width, height, 4, TypeDesc::UINT8);
-        ImageBuf img(spec);
+        oiio::ImageSpec spec(width, height, 4, oiio::TypeDesc::UINT8);
+        oiio::ImageBuf img(spec);
         if (!is420 && channels == 3)
         {
             char* pixels = (char*)img.localpixels();

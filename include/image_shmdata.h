@@ -30,6 +30,8 @@
 #include "config.h"
 #include "image.h"
 
+namespace oiio = OIIO_NAMESPACE;
+
 namespace Splash
 {
 

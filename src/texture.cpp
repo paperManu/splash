@@ -4,6 +4,7 @@
 #include <string>
 
 using namespace std;
+using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -167,18 +168,18 @@ void Texture::update()
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        if (spec.nchannels == 4 && spec.format == TypeDesc::UINT8)
+        if (spec.nchannels == 4 && spec.format == "uint8")
         {
             SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA" << Log::endl;
             _img->lock();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             _img->unlock();
         }
-        else if (spec.nchannels == 2 && spec.format == TypeDesc::UINT16)
+        else if (spec.nchannels == 2 && spec.format == "uint16")
         {
             SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_RG" << Log::endl;
             _img->lock();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, spec.width, spec.height, 0, GL_RG, GL_UNSIGNED_SHORT, _img->data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16, spec.width, spec.height, 0, GL_RG, GL_UNSIGNED_SHORT, _img->data());
             _img->unlock();
         }
 
@@ -191,9 +192,9 @@ void Texture::update()
     {
         glBindTexture(GL_TEXTURE_2D, _glTex);
         _img->lock();
-        if (spec.nchannels == 4 && spec.format == TypeDesc::UINT8)
+        if (spec.nchannels == 4 && spec.format == "uint8")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
-        else if (spec.nchannels == 2 && spec.format == TypeDesc::UINT16)
+        else if (spec.nchannels == 2 && spec.format == "uint16")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RG, GL_UNSIGNED_SHORT, _img->data());
         _img->unlock();
 

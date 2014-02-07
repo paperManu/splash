@@ -106,6 +106,11 @@ class Object : public BaseObject
         float pickVertex(glm::vec3 p, glm::vec3& v);
 
         /**
+         * Set the blending map for the object
+         */
+        void setBlendingMap(TexturePtr& map);
+
+        /**
          * Set the shader
          */
         void setShader(const ShaderPtr shader) {_shader = shader;}
@@ -119,6 +124,7 @@ class Object : public BaseObject
         ShaderPtr _shader;
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
+        std::vector<TexturePtr> _blendMaps;
 
         glm::vec3 _position {0.0, 0.0, 0.0};
         glm::vec3 _scale {1.0, 1.0, 1.0};
