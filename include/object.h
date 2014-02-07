@@ -106,6 +106,11 @@ class Object : public BaseObject
         float pickVertex(glm::vec3 p, glm::vec3& v);
 
         /**
+         * Reset the blending to no blending at all
+         */
+        void resetBlendingMap();
+
+        /**
          * Set the blending map for the object
          */
         void setBlendingMap(TexturePtr& map);

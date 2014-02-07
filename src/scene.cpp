@@ -285,21 +285,34 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 /*************/
 void Scene::computeBlendingMap()
 {
-    initBlendingMap();
-    // Set the blending map to zero
-    _blendingMap->setTo(0);
-    _blendingMap->setName("blendingMap");
+    if (_isBlendComputed)
+    {
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "object")
+                dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
 
-    // Compute the contribution of each camera
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+        _isBlendComputed = false;
+    }
+    else
+    {
+        initBlendingMap();
+        // Set the blending map to zero
+        _blendingMap->setTo(0);
+        _blendingMap->setName("blendingMap");
 
-    _blendingMap->updateTimestamp();
+        // Compute the contribution of each camera
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "camera")
+                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "object")
-            dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
+        _blendingMap->updateTimestamp();
+
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "object")
+                dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
+
+        _isBlendComputed = true;
+    }
 }
 
 /*************/

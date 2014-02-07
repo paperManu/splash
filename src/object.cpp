@@ -133,6 +133,25 @@ float Object::pickVertex(vec3 p, vec3& v)
 }
 
 /*************/
+void Object::resetBlendingMap()
+{
+    for (int i = 0; i < _textures.size();)
+    {
+        bool hasErased {false};
+        for (auto& m : _blendMaps)
+            if (_textures[i] == m)
+            {
+                _textures.erase(_textures.begin() + i);
+                hasErased = true;
+            }
+        if (!hasErased)
+            ++i;
+    }
+
+    _blendMaps.clear();
+}
+
+/*************/
 void Object::setBlendingMap(TexturePtr& map)
 {
     _blendMaps.push_back(map);

@@ -143,6 +143,7 @@ class Scene
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isRunning {false};
+        bool _isBlendComputed {false};
         unsigned long _nextId {0};
 
         // Blending map, used by all cameras (except the GUI camera)
