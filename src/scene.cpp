@@ -292,6 +292,8 @@ void Scene::computeBlendingMap()
                 dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
 
         _isBlendComputed = false;
+
+        SLog::log << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
     }
     else
     {
@@ -312,6 +314,8 @@ void Scene::computeBlendingMap()
                 dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
 
         _isBlendComputed = true;
+
+        SLog::log << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
     }
 }
 
