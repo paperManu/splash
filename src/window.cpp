@@ -201,6 +201,8 @@ bool Window::switchFullscreen(int screenId)
 
     if (screenId != -1)
         _screenId = screenId;
+    else
+        return false;
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
 

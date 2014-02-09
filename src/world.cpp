@@ -282,6 +282,7 @@ void World::saveConfig()
         }
     }
     
+    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
     ofstream out(_configFilename, ios::binary);
     out << _config.toStyledString();
     out.close();
