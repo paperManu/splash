@@ -151,17 +151,17 @@ void Texture::update()
     if (_img->getTimestamp() == _timestamp)
         return;
     _img->update();
-    _timestamp = _img->getTimestamp();
 
     ImageSpec spec = _img->getSpec();
 
-    if (spec.width != _spec.width || spec.height != _spec.height
-        || spec.nchannels != _spec.nchannels || spec.format != _spec.format
-        || !(bool)glIsTexture(_glTex))
+    if (!(bool)glIsTexture(_glTex))
     {
-        glDeleteTextures(1, &_glTex);
         glGenTextures(1, &_glTex);
+        return;
+    }
 
+    if (spec.nchannels != _spec.nchannels || spec.format != _spec.format)
+    {
         glBindTexture(GL_TEXTURE_2D, _glTex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -182,6 +182,11 @@ void Texture::update()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16, spec.width, spec.height, 0, GL_RG, GL_UNSIGNED_SHORT, _img->data());
             _img->unlock();
         }
+        else
+        {
+            SLog::log << Log::WARNING << "Texture::" <<  __FUNCTION__ << " - Texture format not supported" << Log::endl;
+            return;
+        }
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -190,6 +195,8 @@ void Texture::update()
     }
     else
     {
+        resize(spec.width, spec.height);
+
         glBindTexture(GL_TEXTURE_2D, _glTex);
         _img->lock();
         if (spec.nchannels == 4 && spec.format == "uint8")
@@ -201,6 +208,7 @@ void Texture::update()
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+    _timestamp = _img->getTimestamp();
 }
 
 } // end of namespace
