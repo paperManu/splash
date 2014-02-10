@@ -44,6 +44,7 @@ class Image : public BufferObject
          * Constructor
          */
         Image();
+        Image(oiio::ImageSpec spec);
 
         /**
          * Destructor
@@ -56,11 +57,15 @@ class Image : public BufferObject
         Image(const Image& i)
         {
             _image.copy(i._image);
+            _bufferImage.copy(i._bufferImage);
+            _imageUpdated = i._imageUpdated;
         }
         
         Image(Image&& i)
         {
             _image.swap(i._image);
+            _bufferImage.swap(i._bufferImage);
+            _imageUpdated = i._imageUpdated;
         }
 
         /**

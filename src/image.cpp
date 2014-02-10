@@ -20,6 +20,16 @@ Image::Image()
 }
 
 /*************/
+Image::Image(oiio::ImageSpec spec)
+{
+    _type = "image";
+    oiio::attribute("threads", 0);
+    set(spec.width, spec.height, spec.nchannels, spec.format);
+
+    registerAttributes();
+}
+
+/*************/
 Image::~Image()
 {
     SLog::log << Log::DEBUG << "Image::~Image - Destructor" << Log::endl;

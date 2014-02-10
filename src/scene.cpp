@@ -299,7 +299,7 @@ void Scene::computeBlendingMap()
     {
         initBlendingMap();
         // Set the blending map to zero
-        _blendingMap->setTo(0);
+        _blendingMap->setTo(0.f);
         _blendingMap->setName("blendingMap");
 
         // Compute the contribution of each camera
@@ -307,6 +307,31 @@ void Scene::computeBlendingMap()
             if (obj.second->getType() == "camera")
                 dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
+        // Filter the output to fill the blanks
+        ImagePtr buffer(new Image(_blendingMap->getSpec()));
+        unsigned short* pixBuffer = (unsigned short*)buffer->data();
+        unsigned short* pixels = (unsigned short*)_blendingMap->data();
+        int w = _blendingMap->getSpec().width;
+        int h = _blendingMap->getSpec().height;
+        for (int x = 0; x < w; ++x)
+            for (int y = 0; y < h; ++y)
+            {
+                unsigned short maxValue = 0;
+                for (int xx = -1; xx <= 1; ++xx)
+                {
+                    if (x + xx < 0 || x + xx >= w)
+                        continue;
+                    for (int yy = -1; yy <= 1; ++yy)
+                    {
+                        if (y + yy < 0 || y + yy >= h)
+                            continue;
+                        maxValue = std::max(maxValue, pixels[((y + yy) * w + x + xx) * 2]);
+                    }
+                }
+                pixBuffer[(y * w + x) * 2] = maxValue;
+            }
+        *_blendingMap = *buffer;
+        
         _blendingMap->updateTimestamp();
 
         for (auto& obj : _objects)
@@ -395,7 +420,7 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap.reset(new Image);
-    _blendingMap->set(512, 512, 2, TypeDesc::UINT16);
+    _blendingMap->set(1024, 1024, 2, TypeDesc::UINT16);
 
     glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture.reset(new Texture);

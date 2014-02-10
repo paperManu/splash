@@ -1,5 +1,6 @@
 #include "camera.h"
 #include "timer.h"
+#include "threadpool.h"
 
 #include <limits>
 #include <glm/glm.hpp>
@@ -92,7 +93,19 @@ void Camera::computeBlendingMap(ImagePtr& map)
     // We want to render the object with a specific texture, containing texture coordinates
     for (auto& obj : _objects)
         obj->getShader()->setAttribute("fill", {"uv"});
+
+    // Increase the render size for more precision
+    int width = _width;
+    int height = _height;
+    int dims[2];
+    glGetIntegerv(GL_MAX_VIEWPORT_DIMS, dims);
+    if (width >= height)
+        dims[1] = dims[0] * height / width;
+    else
+        dims[0] = dims[1] * width / height;
     glfwMakeContextCurrent(NULL);
+
+    setOutputSize(dims[0] / 4, dims[1] / 4);
 
     // Render with the current texture, with no marker or frame
     bool drawFrame = _drawFrame;
@@ -114,6 +127,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
     error = glGetError();
     glfwMakeContextCurrent(NULL);
 
+    setOutputSize(width, height);
+
     if (error)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 
@@ -121,14 +136,15 @@ void Camera::computeBlendingMap(ImagePtr& map)
     oiio::ImageSpec mapSpec = map->getSpec();
     vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
     unsigned short* imageMap = (unsigned short*)map->data();
+    
     for (ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
     {
         if (!p.exists())
             continue;
 
         // UV coordinates are mapped on 2 uchar each
-        int x = (int)((p[0] * 65536.f + p[1] * 256.f) / 65536.f * (float)mapSpec.width);
-        int y = (int)((p[2] * 65536.f + p[3] * 256.f) / 65536.f * (float)mapSpec.height);
+        int x = (int)((p[0] * 65536.f + p[1] * 256.f) * 0.0000152587890625f * (float)mapSpec.width);
+        int y = (int)((p[2] * 65536.f + p[3] * 256.f) * 0.0000152587890625f * (float)mapSpec.height);
 
         if (isSet[y * mapSpec.width + x])
             continue;
