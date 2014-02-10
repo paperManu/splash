@@ -153,13 +153,26 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         // Show all the calibration points for the selected camera
         else if (key == 'A')
         {
-            _camera->setAttribute("switchShowAllCalibrationPoints", {});
+           _camera->setAttribute("switchShowAllCalibrationPoints", {});
             return false;
         }
         else if (key == 'C')
         {
+             // We keep the current values
+            _camera->getAttribute("eye", _eye);
+            _camera->getAttribute("target", _target);
+            _camera->getAttribute("up", _up);
+
+            // Calibration
             _camera->doCalibration();
             return false;
+        }
+        // Reset to the previous camera calibration
+        else if (key == 'R')
+        {
+            _camera->setAttribute("eye", _eye);
+            _camera->setAttribute("target", _target);
+            _camera->setAttribute("up", _up);
         }
         // Switch the rendering to textured
         else if (key == 'T') 
