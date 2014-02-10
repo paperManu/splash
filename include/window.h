@@ -128,6 +128,7 @@ class Window : public BaseObject
         bool _isInitialized {false};
         GlWindowPtr _window;
         int _screenId {-1};
+        bool _fullscreen {false};
 
         ObjectPtr _screen;
         glm::mat4x4 _viewProjectionMatrix;

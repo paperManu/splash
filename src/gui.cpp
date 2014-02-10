@@ -253,8 +253,8 @@ void Gui::initGLV(int width, int height)
         scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));
         that._scrollOffset = scrollOffset;
         int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - scrollOffset)));
-        for (auto& t : logs)
-            text += t + string("\n");
+        for (int i = offset; i < logs.size(); ++i)
+            text += logs[i] + string("\n");
 
         return text;
     });

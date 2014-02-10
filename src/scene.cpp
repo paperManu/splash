@@ -307,7 +307,7 @@ void Scene::computeBlendingMap()
             if (obj.second->getType() == "camera")
                 dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
-        // Filter the output to fill the blanks
+        // Filter the output to fill the blanks (dilate filter)
         ImagePtr buffer(new Image(_blendingMap->getSpec()));
         unsigned short* pixBuffer = (unsigned short*)buffer->data();
         unsigned short* pixels = (unsigned short*)_blendingMap->data();

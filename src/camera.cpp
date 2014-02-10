@@ -170,7 +170,7 @@ bool Camera::doCalibration()
         imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * _width, (-point.screen.y + 1.f) / 2.f * _height));
     }
 
-    // We need at least 5 points to get a meaningful calibration
+    // We need at least 4 points to get a meaningful calibration
     if (objectPoints.size() < 4)
     {
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 4 points" << Log::endl;
@@ -182,13 +182,17 @@ bool Camera::doCalibration()
                                                       0.0, fov, _height / 2.0,
                                                       0.0, 0.0, 1.0);
 
+    mat4 lookM = lookAt(_eye, _target, _up);
+    lookM = inverse(lookM);
     cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
-    cv::Mat rvec;
-    cv::Mat tvec;
+    cv::Mat rvec = (cv::Mat_<double>(3, 3) << lookM[0][0], lookM[1][0], lookM[2][0],
+                                              lookM[0][1], lookM[1][1], lookM[2][1],
+                                              lookM[0][2], lookM[1][2], lookM[2][2]);
+    cv::Mat tvec = (cv::Mat_<double>(3, 1) << _eye[0], _eye[1], _eye[2]);
 
     try
     {
-        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
+        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true);
     }
     catch (cv::Exception& e)
     {
