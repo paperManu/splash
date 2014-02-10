@@ -160,7 +160,7 @@ void Texture::update()
         return;
     }
 
-    if (spec.nchannels != _spec.nchannels || spec.format != _spec.format)
+    if (spec.width != _spec.width || spec.height != _spec.height || spec.nchannels != _spec.nchannels || spec.format != _spec.format)
     {
         glBindTexture(GL_TEXTURE_2D, _glTex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -195,8 +195,6 @@ void Texture::update()
     }
     else
     {
-        resize(spec.width, spec.height);
-
         glBindTexture(GL_TEXTURE_2D, _glTex);
         _img->lock();
         if (spec.nchannels == 4 && spec.format == "uint8")
