@@ -168,15 +168,15 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
+    ImageSpec spec = _outTexture->getSpec();
+    if (spec.width != _width || spec.height != _height)
+        setOutputSize(spec.width, spec.height);
+
     if (_isVisible)
         _glvGlobalView._guiCamera->render();
 
     glfwMakeContextCurrent(_window->get());
-
     GLenum error = glGetError();
-    ImageSpec spec = _outTexture->getSpec();
-    if (spec.width != _width || spec.height != _height)
-        setOutputSize(spec.width, spec.height);
     glViewport(0, 0, _width, _height);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
@@ -253,8 +253,8 @@ void Gui::initGLV(int width, int height)
         scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));
         that._scrollOffset = scrollOffset;
         int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - scrollOffset)));
-        for (auto t = logs.begin() + offset; t != logs.end(); ++t)
-            text += *t + string("\n");
+        for (auto& t : logs)
+            text += t + string("\n");
 
         return text;
     });
