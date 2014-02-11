@@ -325,10 +325,10 @@ void Scene::computeBlendingMap()
                     {
                         if (y + yy < 0 || y + yy >= h)
                             continue;
-                        maxValue = std::max(maxValue, pixels[((y + yy) * w + x + xx) * 2]);
+                        maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
                     }
                 }
-                pixBuffer[(y * w + x) * 2] = maxValue;
+                pixBuffer[y * w + x] = maxValue;
             }
         *_blendingMap = *buffer;
         
@@ -420,7 +420,7 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap.reset(new Image);
-    _blendingMap->set(1024, 1024, 2, TypeDesc::UINT16);
+    _blendingMap->set(1024, 1024, 1, TypeDesc::UINT16);
 
     glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture.reset(new Texture);

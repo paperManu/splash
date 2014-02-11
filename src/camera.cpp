@@ -155,14 +155,10 @@ void Camera::computeBlendingMap(ImagePtr& map)
         if (_blendWidth > 0.f)
         {
             int blendValue = (int)std::min(255.f, std::min(distX, distY) * 255.f / _blendWidth);
-            imageMap[(y * mapSpec.width + x) * 2] += blendValue; // One more camera displaying this pixel
-            imageMap[(y * mapSpec.width + x) * 2 + 1] += blendValue; // One more camera displaying this pixel
+            imageMap[y * mapSpec.width + x] += blendValue; // One more camera displaying this pixel
         }
         else
-        {
-            imageMap[(y * mapSpec.width + x) * 2] += 255; // One more camera displaying this pixel
-            imageMap[(y * mapSpec.width + x) * 2 + 1] += 255; // One more camera displaying this pixel
-        }
+            imageMap[y * mapSpec.width + x] += 255; // One more camera displaying this pixel
     }
 }
 

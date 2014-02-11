@@ -105,7 +105,7 @@ struct ShaderSources
                     blendFactor = 255.f / blendFactor;
                 }
                 vec4 color = texture(_tex0, texCoord);
-                fragColor.rgb = color.rgb * blendFactor;
+                fragColor.rgb = color.rgb * min(1.f, blendFactor);
                 fragColor.a = color.a;
             }
         }

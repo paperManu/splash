@@ -104,11 +104,11 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
         _spec.format = TypeDesc::UINT8;
         _spec.channelnames = {"R", "G", "B", "A"};
     }
-    else if (format == GL_RG && type == GL_UNSIGNED_SHORT)
+    else if (format == GL_R && type == GL_UNSIGNED_SHORT)
     {
-        _spec.nchannels = 2;
+        _spec.nchannels = 1;
         _spec.format = TypeDesc::UINT16;
-        _spec.channelnames = {"R", "G"};
+        _spec.channelnames = {"R"};
     }
 
     _texTarget = target;
@@ -175,11 +175,11 @@ void Texture::update()
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             _img->unlock();
         }
-        else if (spec.nchannels == 2 && spec.format == "uint16")
+        else if (spec.nchannels == 1 && spec.format == "uint16")
         {
-            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_RG" << Log::endl;
+            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
             _img->lock();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16, spec.width, spec.height, 0, GL_RG, GL_UNSIGNED_SHORT, _img->data());
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, _img->data());
             _img->unlock();
         }
         else
@@ -199,8 +199,8 @@ void Texture::update()
         _img->lock();
         if (spec.nchannels == 4 && spec.format == "uint8")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
-        else if (spec.nchannels == 2 && spec.format == "uint16")
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RG, GL_UNSIGNED_SHORT, _img->data());
+        else if (spec.nchannels == 1 && spec.format == "uint16")
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, _img->data());
         _img->unlock();
 
         glGenerateMipmap(GL_TEXTURE_2D);
