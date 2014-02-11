@@ -116,7 +116,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
     // Render with the current texture, with no marker or frame
     bool drawFrame = _drawFrame;
     bool displayCalibration = _displayCalibration;
-    _drawFrame = displayCalibration = false;
+    _drawFrame = _displayCalibration = false;
     render();
     _drawFrame = drawFrame;
     _displayCalibration = displayCalibration;
