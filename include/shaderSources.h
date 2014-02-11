@@ -42,12 +42,14 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale;
+        smooth out vec4 position;
         smooth out vec2 texCoord;
         smooth out vec3 normal;
 
         void main(void)
         {
-            gl_Position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.f);
+            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.f);
+            gl_Position = position;
             normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
             texCoord = _texcoord;
         }
@@ -64,6 +66,8 @@ struct ShaderSources
         uniform int _sideness;
         uniform int _textureNbr;
         uniform int _texBlendingMap;
+        uniform float _blendWidth;
+        in vec4 position;
         in vec2 texCoord;
         in vec3 normal;
         out vec4 fragColor;
@@ -85,10 +89,21 @@ struct ShaderSources
             }
             else
             {
-                float blendFactor = ceil(texture(_tex1, texCoord).r * 65535.f);
+                float blendFactor = texture(_tex1, texCoord).r * 65535.f;
                 if (blendFactor == 0.f)
                     blendFactor = 1.f;
-                blendFactor = 1.f / blendFactor;
+                else if (_blendWidth > 0.f)
+                {
+                    vec2 screenPos = vec2((position.x / position.w + 1.f) / 2.f, (position.y / position.w + 1.f) / 2.f);
+                    float distX = min(screenPos.x, 1.f - screenPos.x);
+                    float distY = min(screenPos.y, 1.f - screenPos.y);
+                    float dist = min(1.f, min(distX, distY) / _blendWidth);
+                    blendFactor = 255.f * dist / blendFactor;
+                }
+                else
+                {
+                    blendFactor = 255.f / blendFactor;
+                }
                 vec4 color = texture(_tex0, texCoord);
                 fragColor.rgb = color.rgb * blendFactor;
                 fragColor.a = color.a;

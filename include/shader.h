@@ -148,6 +148,7 @@ class Shader : public BaseObject
         GLint _locationSide {0};
         GLint _locationTextureNbr {0};
         GLint _locationBlendingMap {0};
+        GLint _locationBlendWidth {0};
         GLint _locationColor {0};
         GLint _locationScale {0};
 
@@ -156,6 +157,7 @@ class Shader : public BaseObject
         Sideness _sideness {doubleSided};
         int _textureNbr {0};
         int _useBlendingMap {0};
+        float _blendWidth {0.05f};
         glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
         glm::vec3 _scale {1.0, 1.0, 1.0};
 

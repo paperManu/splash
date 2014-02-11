@@ -162,6 +162,7 @@ class Camera : public BaseObject
         glm::vec3 _eye {1.0, 0.0, 5.0};
         glm::vec3 _target {0.0, 0.0, 0.0};
         glm::vec3 _up {0.0, 0.0, 1.0};
+        float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
 
         // Calibration parameters
         bool _displayCalibration {false};

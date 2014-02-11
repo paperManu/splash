@@ -50,6 +50,7 @@ void Shader::activate()
         _locationSide = glGetUniformLocation(_program, "_sideness");
         _locationTextureNbr = glGetUniformLocation(_program, "_textureNbr");
         _locationBlendingMap = glGetUniformLocation(_program, "_texBlendingMap");
+        _locationBlendWidth = glGetUniformLocation(_program, "_blendWidth");
         _locationColor = glGetUniformLocation(_program, "_color");
         _locationScale = glGetUniformLocation(_program, "_scale");
     }
@@ -61,6 +62,7 @@ void Shader::activate()
     glUniform1i(_locationSide, _sideness);
     glUniform1i(_locationTextureNbr, _textureNbr);
     glUniform1i(_locationBlendingMap, _useBlendingMap);
+    glUniform1f(_locationBlendWidth, _blendWidth);
     glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
     glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
 }
@@ -257,6 +259,13 @@ void Shader::registerAttributes()
         else
             _scale = glm::vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
+        return true;
+    });
+
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _blendWidth = args[0].asFloat();
         return true;
     });
 }

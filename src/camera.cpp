@@ -150,8 +150,19 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
         isSet[y * mapSpec.width + x] = true;
 
-        imageMap[(y * mapSpec.width + x) * 2]++; // One more camera displaying this pixel
-        imageMap[(y * mapSpec.width + x) * 2 + 1]++; // One more camera displaying this pixel
+        float distX = (float)std::min(p.x(), img.spec().width - p.x()) / (float)img.spec().width;
+        float distY = (float)std::min(p.y(), img.spec().height - p.y()) / (float)img.spec().height;
+        if (_blendWidth > 0.f)
+        {
+            int blendValue = (int)std::min(255.f, std::min(distX, distY) * 255.f / _blendWidth);
+            imageMap[(y * mapSpec.width + x) * 2] += blendValue; // One more camera displaying this pixel
+            imageMap[(y * mapSpec.width + x) * 2 + 1] += blendValue; // One more camera displaying this pixel
+        }
+        else
+        {
+            imageMap[(y * mapSpec.width + x) * 2] += 255; // One more camera displaying this pixel
+            imageMap[(y * mapSpec.width + x) * 2 + 1] += 255; // One more camera displaying this pixel
+        }
     }
 }
 
@@ -323,6 +334,7 @@ bool Camera::render()
     // Draw the objects
     for (auto& obj : _objects)
     {
+        obj->getShader()->setAttribute("blendWidth", {_blendWidth});
         obj->activate();
         obj->setViewProjectionMatrix(computeViewProjectionMatrix());
         obj->draw();
@@ -644,6 +656,15 @@ void Camera::registerAttributes()
         for (auto& obj : _objects)
             obj->setAttribute("primitive", {primitive});
         return true;
+    });
+
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _blendWidth = args[0].asFloat();
+        return true;
+    }, [&]() {
+        return vector<Value>({_blendWidth});
     });
 
     // Various options

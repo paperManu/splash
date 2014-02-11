@@ -4,6 +4,8 @@
 
 #include <regex>
 
+#define SPLASH_SHMDATA_THREADS 16
+
 using namespace std;
 
 namespace Splash
@@ -183,10 +185,10 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         {
             char* pixels = (char*)img.localpixels();
             vector<unsigned int> threadIds;
-            for (int block = 0; block < 32; ++block)
+            for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=]() {
-                    for (int p = width * height / 32 * block; p < width * height / 32 * (block + 1); ++p)
+                    for (int p = width * height / SPLASH_SHMDATA_THREADS * block; p < width * height / SPLASH_SHMDATA_THREADS * (block + 1); ++p)
                     {
                         int pixel = *((int*)&((const char*)data)[p * 3]);
                         memcpy(&(pixels[p * 4]), &pixel, sizeof(int));
@@ -204,10 +206,10 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 
             char* pixels = (char*)img.localpixels();
             vector<unsigned int> threadIds;
-            for (int block = 0; block < 32; ++block)
+            for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &context]() {
-                    for (int y = height / 32 * block; y < height / 32 * (block + 1); ++y)
+                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); ++y)
                         for (int x = 0; x < width; ++x)
                         {
                             int yValue = (int)Y[y * width + x];
