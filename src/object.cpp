@@ -31,10 +31,13 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
+    _shader->setAttribute("fill", {_fill});
+
     if (_blendMaps.size() != 0)
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
                 _shader->activateBlending(i);
+
 
     for (auto& t : _textures)
         t->update();
@@ -47,12 +50,6 @@ void Object::activate()
     {
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
         texUnit++;
-    }
-
-    if (_primitive == lines)
-    {
-        glLineWidth(2.f);
-        glEnable(GL_LINE_SMOOTH);
     }
 }
 
@@ -74,7 +71,7 @@ void Object::deactivate()
 /*************/
 void Object::draw()
 {
-    glDrawArrays(_primitive, 0, _geometries[0]->getVerticesNumber());
+    glDrawArrays(GL_TRIANGLES, 0, _geometries[0]->getVerticesNumber());
 }
 
 /*************/
@@ -212,15 +209,19 @@ void Object::registerAttributes()
         return vector<Value>({_shader->getSideness()});
     });
 
-    _attribFunctions["primitive"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asString() == "triangles")
-            _primitive = triangles;
-        else if (args[0].asString() == "lines")
-            _primitive = lines;
-        else
+        _fill = args[0].asString();
+        return true;
+    }, [&]() {
+        return vector<Value>({_fill});
+    });
+
+    _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 4)
             return false;
+        _shader->setAttribute("color", args);
         return true;
     });
 }

@@ -62,7 +62,8 @@ class Shader : public BaseObject
         {
             texture = 0,
             color,
-            uv
+            uv,
+            wireframe
         };
 
         /**
@@ -175,6 +176,11 @@ class Shader : public BaseObject
          * Get a string expression of the shader type, used for logging
          */
         std::string stringFromShaderType(ShaderType type);
+
+        /**
+         * Replace a shader with an empty one
+         */
+        void resetShader(ShaderType type);
 
         /**
          * Register new functors to modify attributes

@@ -91,8 +91,14 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     glfwMakeContextCurrent(_window->get());
     // We want to render the object with a specific texture, containing texture coordinates
+    vector<vector<Value>> shaderFill;
     for (auto& obj : _objects)
-        obj->getShader()->setAttribute("fill", {"uv"});
+    {
+        vector<Value> fill;
+        obj->getAttribute("fill", fill);
+        obj->setAttribute("fill", {"uv"});
+        shaderFill.push_back(fill);
+    }
 
     // Increase the render size for more precision
     int width = _width;
@@ -121,9 +127,14 @@ void Camera::computeBlendingMap(ImagePtr& map)
     ImageBuf img(_outTextures[0]->getSpec());
     glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, img.localpixels());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    // We want to render the object with a specific texture, containing texture coordinates
+
+    // Reset the objects to their initial shader
+    int fillIndex {0};
     for (auto& obj : _objects)
-        obj->getShader()->setAttribute("fill", {"texture"});
+    {
+        obj->setAttribute("fill", shaderFill[fillIndex]);
+        fillIndex++;
+    }
     error = glGetError();
     glfwMakeContextCurrent(NULL);
 
@@ -346,11 +357,11 @@ bool Camera::render()
             ObjectPtr worldMarker = _models["3d_marker"];
             worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
             if (_selectedCalibrationPoint == i)
-                worldMarker->getShader()->setAttribute("color", SPLASH_MARKER_SELECTED);
+                worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
             else if (point.isSet)
-                worldMarker->getShader()->setAttribute("color", SPLASH_MARKER_SET);
+                worldMarker->setAttribute("color", SPLASH_MARKER_SET);
             else
-                worldMarker->getShader()->setAttribute("color", SPLASH_MARKER_ADDED);
+                worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
             worldMarker->activate();
             worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
             worldMarker->draw();
@@ -362,9 +373,9 @@ bool Camera::render()
                 screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                 screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
                 if (_selectedCalibrationPoint == i)
-                    screenMarker->getShader()->setAttribute("color", SPLASH_MARKER_SELECTED);
+                    screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                 else
-                    screenMarker->getShader()->setAttribute("color", SPLASH_MARKER_SET);
+                    screenMarker->setAttribute("color", SPLASH_MARKER_SET);
                 screenMarker->activate();
                 screenMarker->setViewProjectionMatrix(mat4(1.f));
                 screenMarker->draw();
@@ -543,8 +554,8 @@ void Camera::loadDefaultModels()
         ObjectPtr obj(new Object());
         obj->setAttribute("name", {file.first});
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
-        obj->getShader()->setAttribute("fill", {"color"});
-        obj->getShader()->setAttribute("color", SPLASH_MARKER_SET);
+        obj->setAttribute("fill", {"color"});
+        obj->setAttribute("color", SPLASH_MARKER_SET);
         obj->linkTo(mesh);
 
         _models[file.first] = obj;
@@ -645,12 +656,12 @@ void Camera::registerAttributes()
 
         string primitive;
         if (args[0].asInt() == 0)
-            primitive = "triangles";
+            primitive = "texture";
         else
-            primitive = "lines";
+            primitive = "wireframe";
 
         for (auto& obj : _objects)
-            obj->setAttribute("primitive", {primitive});
+            obj->setAttribute("fill", {primitive});
         return true;
     });
 

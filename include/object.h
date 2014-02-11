@@ -44,12 +44,6 @@ namespace Splash {
 class Object : public BaseObject
 {
     public:
-        enum Primitive
-        {
-            triangles = GL_TRIANGLES,
-            lines = GL_LINES
-        };
-
         /**
          * Constructor
          */
@@ -134,7 +128,7 @@ class Object : public BaseObject
         glm::vec3 _position {0.0, 0.0, 0.0};
         glm::vec3 _scale {1.0, 1.0, 1.0};
 
-        Primitive _primitive {triangles};
+        std::string _fill {"texture"};
 
         /**
          * Compute the matrix corresponding to the object position

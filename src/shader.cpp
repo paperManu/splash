@@ -214,33 +214,69 @@ string Shader::stringFromShaderType(ShaderType type)
 }
 
 /*************/
+void Shader::resetShader(ShaderType type)
+{
+    glDeleteShader(_shaders[type]);
+    GLenum glShaderType;
+    if (type == vertex)
+        glShaderType = GL_VERTEX_SHADER;
+    if (type == geometry)
+        glShaderType = GL_GEOMETRY_SHADER;
+    if (type == fragment)
+        glShaderType = GL_FRAGMENT_SHADER;
+    _shaders[type] = glCreateShader(glShaderType);
+}
+
+/*************/
 void Shader::registerAttributes()
 {
     _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asString() == "texture")
+        if (args[0].asString() == "texture" && _fill != texture)
         {
-            if (_fill == texture)
-                return true;
             _fill = texture;
+            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
             setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+            compileProgram();
         }
-        else if (args[0].asString() == "color")
+        else if (args[0].asString() == "color" && _fill != color)
         {
-            if (_fill == color)
-                return true;
             _fill = color;
+            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
             setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+            compileProgram();
         }
-        else if (args[0].asString() == "uv")
+        else if (args[0].asString() == "uv" && _fill != uv)
         {
-            if (_fill == uv)
-                return true;
             _fill = uv;
+            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
             setSource(ShaderSources.FRAGMENT_SHADER_UV, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "wireframe" && _fill != wireframe)
+        {
+            _fill = wireframe;
+            setSource(ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
+            setSource(ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
+            setSource(ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
+            compileProgram();
         }
         return true;
+    }, [&]() {
+        string fill;
+        if (_fill == texture)
+            fill = "texture";
+        else if (_fill == color)
+            fill = "color";
+        else if (_fill == uv)
+            fill = "uv";
+        else if (_fill == wireframe)
+            fill = "wireframe";
+        return vector<Value>({fill});
     });
 
     _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {

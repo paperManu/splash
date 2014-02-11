@@ -157,6 +157,107 @@ struct ShaderSources
             fragColor.ba = vec2(float(VEnc.x) / 256.f, float(VEnc.y) / 256.f);
         }
     )"};
+
+    /**
+     * Wireframe rendering
+     */
+    const std::string VERTEX_SHADER_WIREFRAME {R"(
+        #version 330 core
+
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        layout(location = 2) in vec3 _normal;
+        uniform mat4 _modelViewProjectionMatrix;
+
+        out VertexData
+        {
+            vec4 vertex;
+            vec3 normal;
+            vec2 texcoord;
+        } vertexOut;
+
+        void main()
+        {
+            vertexOut.vertex = _vertex;
+            vertexOut.normal = _normal;
+            vertexOut.texcoord = _texcoord;
+        }
+    )"};
+
+    const std::string GEOMETRY_SHADER_WIREFRAME {R"(
+        #version 330 core
+
+        layout(triangles) in;
+        layout(triangle_strip, max_vertices = 3) out;
+        uniform mat4 _modelViewProjectionMatrix;
+        uniform mat4 _normalMatrix;
+        uniform vec3 _scale;
+
+        in VertexData
+        {
+            vec4 vertex;
+            vec3 normal;
+            vec2 texcoord;
+        } vertexIn[];
+
+        out VertexData
+        {
+            vec2 texcoord;
+            vec3 normal;
+            vec3 bcoord;
+        } vertexOut;
+
+        void main()
+        {
+            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz, 1.f);
+            gl_Position = v;
+            vertexOut.texcoord = vertexIn[0].texcoord;
+            vertexOut.normal = (_normalMatrix * vec4(vertexIn[0].normal, 0.0)).xyz;
+            vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
+            EmitVertex();
+
+            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz, 1.f);
+            gl_Position = v;
+            vertexOut.texcoord = vertexIn[1].texcoord;
+            vertexOut.normal = (_normalMatrix * vec4(vertexIn[1].normal, 0.0)).xyz;
+            vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
+            EmitVertex();
+
+            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz, 1.f);
+            gl_Position = v;
+            vertexOut.texcoord = vertexIn[2].texcoord;
+            vertexOut.normal = (_normalMatrix * vec4(vertexIn[2].normal, 0.0)).xyz;
+            vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
+            EmitVertex();
+
+            EndPrimitive();
+        }
+    )"};
+
+    const std::string FRAGMENT_SHADER_WIREFRAME {R"(
+        #version 330 core
+
+        in VertexData
+        {
+            vec2 texcoord;
+            vec3 normal;
+            vec3 bcoord;
+        } vertexIn;
+
+        uniform int _sideness;
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            vec3 normal = vertexIn.normal;
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+                discard;
+
+            vec3 b = vertexIn.bcoord;
+            float minDist = min(min(b[0], b[1]), b[2]);
+            fragColor.rgba = mix(vec4(1.0), vec4(0.0, 0.0, 0.0, 1.0), (minDist - 0.025) / 0.0125);
+        }
+    )"};
 } ShaderSources;
 
 } // end of namespace
