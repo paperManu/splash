@@ -62,7 +62,7 @@ libsplash_la_CXXFLAGS = \
 	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS)
 
-libsplash_la_LIBADD = \
+libsplash_la_LDFLAGS = \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GLEW_LIBS) \
@@ -108,15 +108,5 @@ splash_CXXFLAGS = \
 	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS)
 
-splash_LDADD = \
-	$(GLFW_LIBS) \
-	$(GL_LIBS) \
-	$(GLEW_LIBS) \
-	$(JSONCPP_LIBS) \
-	$(OPENCV_LIBS) \
-	$(OPENIMAGEIO_LIBS) \
-	$(OPENMESH_LIBS) \
-	$(SHMDATA_LIBS)
-
 splash_LDFLAGS = \
-	$(top_srcdir)/src/libsplash.la
+	$(top_builddir)/src/libsplash.la
