@@ -97,6 +97,14 @@ void Gui::mousePosition(int xpos, int ypos)
 {
     space_t x = (space_t)xpos;
     space_t y = (space_t)ypos;
+
+    // If no movement, no message
+    if (_prevMouseX == x && _prevMouseY == y)
+        return;
+
+    _prevMouseX = x;
+    _prevMouseY = y;
+
     space_t relx = x;
     space_t rely = y;
 

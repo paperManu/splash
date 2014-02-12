@@ -222,7 +222,10 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             {
                 vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
+                {
                     _camera->addCalibrationPoint(position);
+                    _previousPointAdded = position;
+                }
                 else
                     _camera->deselectCalibrationPoint();
             }
@@ -246,6 +249,11 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         }
         return false;
     }
+    case Event::MouseUp:
+    {
+        // Pure precautions
+        _previousPointAdded.clear();
+    }
     case Event::MouseDrag:
     {
         // Drag the window
@@ -257,6 +265,13 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         // Move the camera
         else if (g.mouse().left()) 
         {
+            // If a point was added during the MouseDown, we delete it
+            if (_previousPointAdded.size() == 3)
+            {
+                _camera->removeCalibrationPoint(_previousPointAdded);
+                _previousPointAdded.clear();
+            }
+
             float dx = g.mouse().dx();
             float dy = g.mouse().dy();
             _camera->setAttribute("rotateAroundTarget", {dx / 10.f, 0, 0});

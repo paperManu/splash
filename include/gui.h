@@ -140,6 +140,7 @@ class Gui : public BaseObject
         GlvTextBox _glvProfile;
         GlvGlobalView _glvGlobalView;
         GlvGraph _glvGraph;
+        glv::space_t _prevMouseX, _prevMouseY;
         
         /**
          * Convert GLFW keys values to GLV

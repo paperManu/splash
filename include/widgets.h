@@ -85,6 +85,9 @@ class GlvGlobalView : public glv::View3D
         // Store the previous camera values
         std::vector<Value> _eye, _target, _up;
 
+        // Previous point added
+        std::vector<Value> _previousPointAdded;
+
         glv::Label _camLabel;
 };
 
