@@ -218,7 +218,9 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         // Set a calibration point
         if (g.mouse().left()) 
         {
-            if (!g.keyboard().shift()) // Add a new calibration point
+            if (g.keyboard().shift()) // Define the screenpoint corresponding to the selected calibration point
+                _camera->setCalibrationPoint({(g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
+            else // Add a new calibration point
             {
                 vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
@@ -229,8 +231,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 else
                     _camera->deselectCalibrationPoint();
             }
-            else // Define the screenpoint corresponding to the selected calibration point
-                _camera->setCalibrationPoint({(g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
         }
         else if (g.mouse().right()) // Remove a calibration point
         {
@@ -272,10 +272,15 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 _previousPointAdded.clear();
             }
 
-            float dx = g.mouse().dx();
-            float dy = g.mouse().dy();
-            _camera->setAttribute("rotateAroundTarget", {dx / 10.f, 0, 0});
-            _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
+            if (g.keyboard().shift())
+                _camera->setCalibrationPoint({(g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
+            else
+            {
+                float dx = g.mouse().dx();
+                float dy = g.mouse().dy();
+                _camera->setAttribute("rotateAroundTarget", {dx / 10.f, 0, 0});
+                _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
+            }
             return false;
         }
         // Move the target
