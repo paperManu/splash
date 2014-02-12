@@ -231,9 +231,18 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         }
         else if (g.mouse().right()) // Remove a calibration point
         {
-            vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-            if (position.size() == 3)
-                _camera->removeCalibrationPoint(position);
+            if (g.keyboard().shift())
+            {
+                vector<Value> position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                if (position.size() == 3)
+                    _camera->removeCalibrationPoint(position);
+            }
+            else
+            {
+                vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                if (position.size() == 3)
+                    _camera->removeCalibrationPoint(position);
+            }
         }
         return false;
     }

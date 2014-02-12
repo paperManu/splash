@@ -306,6 +306,45 @@ vector<Value> Camera::pickVertex(float x, float y)
 }
 
 /*************/
+vector<Value> Camera::pickCalibrationPoint(float x, float y)
+{
+    // Convert the normalized coordinates ([0, 1]) to pixel coordinates
+    float realX = x * _width;
+    float realY = y * _height;
+
+    // Get the depth at the given point
+    glfwMakeContextCurrent(_window->get());
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    float depth;
+    glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glfwMakeContextCurrent(NULL);
+
+    if (depth == 1.f)
+        return vector<Value>();
+
+    // Unproject the point
+    vec3 screenPoint(realX, realY, depth);
+
+    float distance = numeric_limits<float>::max();
+    vec3 vertex;
+    for (auto& cPoint : _calibrationPoints)
+    {
+        vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up),
+                               perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
+        glm::vec3 closestVertex;
+        float tmpDist;
+        if ((tmpDist = length(point - cPoint.world)) < distance)
+        {
+            distance = tmpDist;
+            vertex = cPoint.world;
+        }
+    }
+
+    return vector<Value>({vertex.x, vertex.y, vertex.z});
+}
+
+/*************/
 bool Camera::render()
 {
     glfwMakeContextCurrent(_window->get());

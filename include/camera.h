@@ -115,6 +115,11 @@ class Camera : public BaseObject
         std::vector<Value> pickVertex(float x, float y);
 
         /**
+         * Get the coordinates of the closest calibration point
+         */
+        std::vector<Value> pickCalibrationPoint(float x, float y);
+
+        /**
          * Render this camera into its textures
          */
         bool render();
