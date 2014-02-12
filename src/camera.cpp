@@ -154,22 +154,22 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
 
         // UV coordinates are mapped on 2 uchar each
-        int x = (int)((p[0] * 65536.f + p[1] * 256.f) * 0.0000152587890625f * (float)mapSpec.width);
-        int y = (int)((p[2] * 65536.f + p[3] * 256.f) * 0.0000152587890625f * (float)mapSpec.height);
+        int x = (int)round((p[0] * 65536.f + p[1] * 256.f) * 0.0000152587890625f * (float)mapSpec.width);
+        int y = (int)round((p[2] * 65536.f + p[3] * 256.f) * 0.0000152587890625f * (float)mapSpec.height);
 
         if (isSet[y * mapSpec.width + x])
             continue;
         isSet[y * mapSpec.width + x] = true;
 
-        float distX = (float)std::min(p.x(), img.spec().width - p.x()) / (float)img.spec().width;
-        float distY = (float)std::min(p.y(), img.spec().height - p.y()) / (float)img.spec().height;
+        float distX = (float)std::min(p.x(), img.spec().width - 1 - p.x()) / (float)img.spec().width;
+        float distY = (float)std::min(p.y(), img.spec().height - 1 - p.y()) / (float)img.spec().height;
         if (_blendWidth > 0.f)
         {
-            int blendValue = (int)std::min(255.f, std::min(distX, distY) * 255.f / _blendWidth);
+            int blendValue = (int)std::min(256.f, std::min(distX, distY) * 256.f / _blendWidth);
             imageMap[y * mapSpec.width + x] += blendValue; // One more camera displaying this pixel
         }
         else
-            imageMap[y * mapSpec.width + x] += 255; // One more camera displaying this pixel
+            imageMap[y * mapSpec.width + x] += 256; // One more camera displaying this pixel
     }
 }
 

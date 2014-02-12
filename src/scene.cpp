@@ -420,7 +420,7 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap.reset(new Image);
-    _blendingMap->set(1024, 1024, 1, TypeDesc::UINT16);
+    _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
 
     glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture.reset(new Texture);

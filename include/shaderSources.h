@@ -98,11 +98,11 @@ struct ShaderSources
                     float distX = min(screenPos.x, 1.f - screenPos.x);
                     float distY = min(screenPos.y, 1.f - screenPos.y);
                     float dist = min(1.f, min(distX, distY) / _blendWidth);
-                    blendFactor = 255.f * dist / blendFactor;
+                    blendFactor = 256.f * dist / blendFactor;
                 }
                 else
                 {
-                    blendFactor = 255.f / blendFactor;
+                    blendFactor = 256.f / blendFactor;
                 }
                 vec4 color = texture(_tex0, texCoord);
                 fragColor.rgb = color.rgb * min(1.f, blendFactor);
@@ -148,13 +148,11 @@ struct ShaderSources
             if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
                 discard;
 
-            int U = int(texCoord.x * 65536.f);
-            int V = int(texCoord.y * 65536.f);
-            ivec2 UEnc = ivec2(U / 256, U - (U / 256) * 256);
-            ivec2 VEnc = ivec2(V / 256, V - (V / 256) * 256);
+            float U = texCoord.x * 65536.f;
+            float V = texCoord.y * 65536.f;
 
-            fragColor.rg = vec2(float(UEnc.x) / 256.f, float(UEnc.y) / 256.f);
-            fragColor.ba = vec2(float(VEnc.x) / 256.f, float(VEnc.y) / 256.f);
+            fragColor.rg = vec2(floor(U / 256.f) / 256.f, (U - floor(U / 256.f) * 256.f) / 256.f);
+            fragColor.ba = vec2(floor(V / 256.f) / 256.f, (V - floor(V / 256.f) * 256.f) / 256.f);
         }
     )"};
 
