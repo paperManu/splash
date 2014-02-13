@@ -173,82 +173,89 @@ void Camera::computeBlendingMap(ImagePtr& map)
     }
 }
 
+
 /*************/
 bool Camera::doCalibration()
 {
-    vector<cv::Point3f> objectPoints;
-    vector<cv::Point2f> imagePoints;
-
+    int pointsSet = 0;
     for (auto& point : _calibrationPoints)
-    {
-        if (!point.isSet)
-            continue;
-
-        objectPoints.push_back(cv::Point3f(point.world.x, point.world.y, point.world.z));
-        imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * _width, (-point.screen.y + 1.f) / 2.f * _height));
-    }
-
+        if (point.isSet)
+            pointsSet++;
     // We need at least 4 points to get a meaningful calibration
-    if (objectPoints.size() < 4)
+    if (pointsSet < 6)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 4 points" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 6 points" << Log::endl;
         return false;
     }
 
-    double fov = (_height / 2.0) / tan(_fov * M_PI / 360.0); // _fov is indeed fovY
-    cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fov, 0.0, _width / 2.0,
-                                                      0.0, fov, _height / 2.0,
-                                                      0.0, 0.0, 1.0);
+    gsl_multimin_function calibrationFunc;
+    calibrationFunc.n = 3;
+    calibrationFunc.f = &Camera::cameraCalibration_f;
+    //calibrationFunc.df = &Camera::cameraCalibration_df;
+    //calibrationFunc.fdf = &Camera::cameraCalibration_fdf;
+    GslParam params;
+    params.context = this;
+    calibrationFunc.params = (void*)&params;
 
-    mat4 lookM = lookAt(_eye, _target, _up);
-    lookM = inverse(lookM);
-    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
-    cv::Mat rvec = (cv::Mat_<double>(3, 3) << lookM[0][0], lookM[1][0], lookM[2][0],
-                                              lookM[0][1], lookM[1][1], lookM[2][1],
-                                              lookM[0][2], lookM[1][2], lookM[2][2]);
-    cv::Mat tvec = (cv::Mat_<double>(3, 1) << _eye[0], _eye[1], _eye[2]);
+    const gsl_multimin_fminimizer_type* minimizerType;
+    gsl_multimin_fminimizer* minimizer;
 
-    try
+    gsl_vector* x = gsl_vector_alloc(3);
+    gsl_vector* step = gsl_vector_alloc(3);
+    gsl_vector_set(step, 0, 0.5);
+    gsl_vector_set(step, 1, 0.1);
+    gsl_vector_set(step, 2, 0.1);
+
+    SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
+
+    minimizerType = gsl_multimin_fminimizer_nmsimplex2;
+
+    // Starting with various values of the FOV
+    double initialFov = _fov;
+    double minValue = numeric_limits<double>::max();
+    for (int i = 0; i < 8; ++i)
     {
-        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true);
+        minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
+
+        gsl_vector_set(x, 0, initialFov);
+        gsl_vector_set(x, 1, (double)_width / 2.0);
+        gsl_vector_set(x, 2, (double)_height / 2.0);
+        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+        size_t iter = 0;
+        int status = GSL_CONTINUE;
+        while(status == GSL_CONTINUE && iter < 500)
+        {
+            iter++;
+            status = gsl_multimin_fminimizer_iterate(minimizer);
+            if (status)
+            {
+                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                break;
+            }
+
+            status = gsl_multimin_test_size(minimizer->size, 1e-2);
+        }
+
+        if (gsl_multimin_fminimizer_minimum(minimizer) < minValue)
+        {
+            minValue = gsl_multimin_fminimizer_minimum(minimizer);
+            // We call the calibration function one last time, to set the extrinsic parameters
+            params.setExtrinsic = true;
+            cameraCalibration_f(minimizer->x, (void*)&params);
+
+            _fov = gsl_vector_get(minimizer->x, 0);
+            _cx = gsl_vector_get(minimizer->x, 1) / _width;
+            _cy = (_height - gsl_vector_get(minimizer->x, 2)) / _height;;
+        }
+
+        gsl_multimin_fminimizer_free(minimizer);
     }
-    catch (cv::Exception& e)
-    {
-        SLog::log << "Camera::" << __FUNCTION__ << " - An exception was caught while running calibration" << Log::endl;
-        return false;
-    }
 
-    // Get a usable rotation matrix
-    cv::Mat r;
-    cv::Rodrigues(rvec, r);
+    gsl_vector_free(x);
 
-    mat4 trans(1.f);
-    trans[3][0] = tvec.at<double>(0);
-    trans[3][1] = tvec.at<double>(1);
-    trans[3][2] = tvec.at<double>(2);
-
-    mat4 rot = mat4(r.at<double>(0, 0), r.at<double>(1, 0), r.at<double>(2, 0), 0.f, 
-                    r.at<double>(0, 1), r.at<double>(1, 1), r.at<double>(2, 1), 0.f, 
-                    r.at<double>(0, 2), r.at<double>(1, 2), r.at<double>(2, 2), 0.f, 
-                    0.f, 0.f, 0.f, 1.f); 
-
-    mat4 viewMatrix = trans * rot;
-    // We have the object pose in the camera base. We want the camera pose in the world base
-    viewMatrix = inverse(viewMatrix);
-
-    vec4 origin(0.f, 0.f, 0.f, 1.f);
-    origin = viewMatrix * origin;
-    _eye = vec3(origin.x, origin.y, origin.z);
-
-    vec4 direction(0.f, 0.f, 1.f, 1.f);
-    direction = viewMatrix * direction;
-    _target = vec3(direction.x, direction.y, direction.z);
-
-    vec4 up(0.f, -1.f, 0.f, 1.f);
-    up = viewMatrix * up;
-    _up = vec3(up.x, up.y, up.z);
-
-    SLog::log << "Camera::" << __FUNCTION__ << " - Calibration done" << Log::endl;
+    SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
+    SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
 
     return true;
 }
@@ -292,7 +299,7 @@ vector<Value> Camera::pickVertex(float x, float y)
     for (auto& obj : _objects)
     {
         vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
-                               perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
+                               computeProjectionMatrix(), vec4(0, 0, _width, _height));
         glm::vec3 closestVertex;
         float tmpDist;
         if ((tmpDist = obj->pickVertex(point, closestVertex)) < distance)
@@ -331,7 +338,7 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
     for (auto& cPoint : _calibrationPoints)
     {
         vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up),
-                               perspectiveFov(_fov, _width, _height, _near, _far), vec4(0, 0, _width, _height));
+                               computeProjectionMatrix(), vec4(0, 0, _width, _height));
         glm::vec3 closestVertex;
         float tmpDist;
         if ((tmpDist = length(point - cPoint.world)) < distance)
@@ -570,10 +577,145 @@ void Camera::setOutputSize(int width, int height)
 }
 
 /*************/
+double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
+{
+    if (params == NULL)
+        return 0.0;
+
+    GslParam* p = (GslParam*)params;
+    Camera* camera = p->context;
+    bool setExtrinsic = p->setExtrinsic;
+
+    double fov = gsl_vector_get(v, 0);
+    double cx = gsl_vector_get(v, 1);
+    double cy = gsl_vector_get(v, 2);
+
+    vector<cv::Point3f> objectPoints;
+    vector<cv::Point2f> imagePoints;
+
+    for (auto& point : camera->_calibrationPoints)
+    {
+        if (!point.isSet)
+            continue;
+
+        objectPoints.push_back(cv::Point3f(point.world.x, point.world.y, point.world.z));
+        imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * camera->_width, (-point.screen.y + 1.f) / 2.f * camera->_height));
+    }
+
+    SLog::log << Log::DEBUG << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << cx << " " << camera->_height - cy << Log::endl;
+    double fovPix = (camera->_height / 2.0) / tan(fov * M_PI / 360.0); // _fov is indeed fovY
+    cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fovPix, 0.0, cx,
+                                                      0.0, fovPix, cy,
+                                                      0.0, 0.0, 1.0);
+
+    mat4 lookM = lookAt(camera->_eye, camera->_target, camera->_up);
+    lookM = inverse(lookM);
+    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
+    cv::Mat rvec = (cv::Mat_<double>(3, 3) << lookM[0][0], lookM[1][0], lookM[2][0],
+                                              lookM[0][1], lookM[1][1], lookM[2][1],
+                                              lookM[0][2], lookM[1][2], lookM[2][2]);
+    cv::Mat tvec = (cv::Mat_<double>(3, 1) << camera->_eye[0], camera->_eye[1], camera->_eye[2]);
+    vector<int> inliers;
+
+    try
+    {
+        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true, 100, 8.0, 100, inliers, cv::ITERATIVE);
+    }
+    catch (cv::Exception& e)
+    {
+        SLog::log << "Camera::" << __FUNCTION__ << " - An exception was caught while running calibration" << Log::endl;
+        return false;
+    }
+
+    // Compute the projection error with the new parameters
+    vector<cv::Point2f> projectedPoints;
+    cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix, cv::Mat(), projectedPoints);
+    double summedDistance = 0.0;
+    for (auto& i : inliers)
+    {
+        cv::Point2f vec = imagePoints[i] - projectedPoints[i];
+        summedDistance += cv::norm(vec);
+    }
+    if (inliers.size() > 0)
+        summedDistance /= (double)inliers.size();
+    else
+        summedDistance = numeric_limits<double>::max();
+
+    SLog::log << Log::DEBUG << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
+
+    if (setExtrinsic)
+    {
+        // Get a usable rotation matrix
+        cv::Mat r;
+        cv::Rodrigues(rvec, r);
+
+        mat4 trans(1.f);
+        trans[3][0] = tvec.at<double>(0);
+        trans[3][1] = tvec.at<double>(1);
+        trans[3][2] = tvec.at<double>(2);
+
+        mat4 rot = mat4(r.at<double>(0, 0), r.at<double>(1, 0), r.at<double>(2, 0), 0.f, 
+                        r.at<double>(0, 1), r.at<double>(1, 1), r.at<double>(2, 1), 0.f, 
+                        r.at<double>(0, 2), r.at<double>(1, 2), r.at<double>(2, 2), 0.f, 
+                        0.f, 0.f, 0.f, 1.f); 
+
+        mat4 viewMatrix = trans * rot;
+        // We have the object pose in the camera base. We want the camera pose in the world base
+        viewMatrix = inverse(viewMatrix);
+
+        vec4 origin(0.f, 0.f, 0.f, 1.f);
+        origin = viewMatrix * origin;
+        camera->_eye = vec3(origin.x, origin.y, origin.z);
+
+        vec4 direction(0.f, 0.f, 1.f, 1.f);
+        direction = viewMatrix * direction;
+        camera->_target = vec3(direction.x, direction.y, direction.z);
+
+        // TODO: there is something fishy with the up vector, rotation seem to be inversed
+        vec4 up(0.f, -1.f, 0.f, 1.f);
+        up = viewMatrix * up;
+        camera->_up = vec3(up.x, up.y, up.z);
+    }
+
+    return summedDistance;
+}
+
+/*************/
+void Camera::cameraCalibration_df(const gsl_vector* v, void* params, gsl_vector* df)
+{
+}
+
+/*************/
+void Camera::cameraCalibration_fdf(const gsl_vector* v, void* params, double* f, gsl_vector* df)
+{
+}
+
+/*************/
+mat4x4 Camera::computeProjectionMatrix()
+{
+    float l, r, t, b, n, f;
+    // Near and far are obvious
+    n = _near;
+    f = _far;
+    // Up and down
+    float tTemp = n * tan(_fov * M_PI / 360.0);
+    float bTemp = -tTemp;
+    t = tTemp - (_cy - 0.5) * (tTemp - bTemp);
+    b = bTemp - (_cy - 0.5) * (tTemp - bTemp);
+    // Left and right
+    float rTemp = tTemp * _width / _height;
+    float lTemp = bTemp * _width / _height;
+    r = rTemp - (_cx - 0.5) * (rTemp - lTemp);
+    l = lTemp - (_cx - 0.5) * (rTemp - lTemp);
+
+    return frustum(l, r, b, t, n, f);
+}
+
+/*************/
 mat4x4 Camera::computeViewProjectionMatrix()
 {
     mat4 viewMatrix = lookAt(_eye, _target, _up);
-    mat4 projMatrix = perspectiveFov(_fov, _width, _height, _near, _far);
+    mat4 projMatrix = computeProjectionMatrix();
     mat4 viewProjectionMatrix = projMatrix * viewMatrix;
 
     return viewProjectionMatrix;
@@ -647,6 +789,16 @@ void Camera::registerAttributes()
         return true;
     }, [&]() {
         return vector<Value>({_width, _height});
+    });
+
+    _attribFunctions["principalPoint"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        _cx = args[0].asFloat();
+        _cy = args[1].asFloat();
+        return true;
+    }, [&]() {
+        return vector<Value>({_cx, _cy});
     });
 
     // More advanced attributes

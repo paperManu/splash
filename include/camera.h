@@ -38,6 +38,8 @@
 #include <utility>
 #include <vector>
 #include <glm/glm.hpp>
+#include <gsl/gsl_deriv.h>
+#include <gsl/gsl_multimin.h>
 #include <GLFW/glfw3.h>
 
 #include "object.h"
@@ -164,6 +166,7 @@ class Camera : public BaseObject
         float _fov {35}; // This is the vertical FOV
         float _width {512}, _height {512};
         float _near {0.1}, _far {100.0};
+        float _cx {0.5}, _cy {0.5};
         glm::vec3 _eye {1.0, 0.0, 5.0};
         glm::vec3 _target {0.0, 0.0, 0.0};
         glm::vec3 _up {0.0, 0.0, 1.0};
@@ -182,6 +185,22 @@ class Camera : public BaseObject
         };
         std::vector<CalibrationPoint> _calibrationPoints;
         int _selectedCalibrationPoint {-1};
+        
+        // Type used by GSL for calibration
+        struct GslParam
+        {
+            Camera* context;
+            bool setExtrinsic {false};
+        };
+        // Functions used for the calibration (camera parameters optimization)
+        static double cameraCalibration_f(const gsl_vector* v, void* params);
+        static void cameraCalibration_df(const gsl_vector* v, void* params, gsl_vector* df);
+        static void cameraCalibration_fdf(const gsl_vector* v, void* params, double* f, gsl_vector* df);
+
+        /**
+         * Get the frustum matrix from the current camera parameters
+         */
+        glm::mat4x4 computeProjectionMatrix();
 
         /**
          * Get the view projection matrix from the camera parameters

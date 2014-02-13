@@ -83,7 +83,7 @@ class GlvGlobalView : public glv::View3D
         SceneWeakPtr _scene;
 
         // Store the previous camera values
-        std::vector<Value> _eye, _target, _up;
+        std::vector<Value> _eye, _target, _up, _fov, _principalPoint;
 
         // Previous point added
         std::vector<Value> _previousPointAdded;

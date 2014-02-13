@@ -162,6 +162,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             _camera->getAttribute("eye", _eye);
             _camera->getAttribute("target", _target);
             _camera->getAttribute("up", _up);
+            _camera->getAttribute("fov", _fov);
+            _camera->getAttribute("principalPoint", _principalPoint);
 
             // Calibration
             _camera->doCalibration();
@@ -173,6 +175,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             _camera->setAttribute("eye", _eye);
             _camera->setAttribute("target", _target);
             _camera->setAttribute("up", _up);
+            _camera->setAttribute("fov", _fov);
+            _camera->setAttribute("principalPoint", _principalPoint);
         }
         // Switch the rendering to textured
         else if (key == 'T') 

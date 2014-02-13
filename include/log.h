@@ -136,7 +136,8 @@ class Log
         {
             if (action == endl)
             {
-                rec(_tempPriority, _tempString);
+                if (_tempPriority >= _verbosity)
+                    rec(_tempPriority, _tempString);
                 _tempString.clear();
                 _tempPriority = MESSAGE;
             }
@@ -183,7 +184,7 @@ class Log
 
     private:
         std::vector<std::pair<std::string, Priority>> _logs;
-        int _logLength {500};
+        int _logLength {5000};
         Priority _verbosity {MESSAGE};
 
         std::string _tempString;
