@@ -76,6 +76,12 @@ if test "x${have_opencv}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing opencv])
 fi
 
+# GNU Scientific Library, also used for calibration
+PKG_CHECK_MODULES([GSL], [gsl])
+if test "x${have_gsl}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing gsl])
+fi
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile

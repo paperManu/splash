@@ -56,6 +56,7 @@ libsplash_la_CXXFLAGS = \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
 	$(GLEW_CFLAGS) \
+	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENCV_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
@@ -66,6 +67,7 @@ libsplash_la_LDFLAGS = \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GLEW_LIBS) \
+	$(GSL_LIBS) \
 	$(JSONCPP_LIBS) \
 	$(OPENCV_LIBS) \
 	$(OPENIMAGEIO_LIBS) \
@@ -102,6 +104,7 @@ splash_CXXFLAGS = \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
+	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENCV_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
