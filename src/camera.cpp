@@ -633,15 +633,24 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     vector<cv::Point2f> projectedPoints;
     cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix, cv::Mat(), projectedPoints);
     double summedDistance = 0.0;
-    for (auto& i : inliers)
-    {
-        cv::Point2f vec = imagePoints[i] - projectedPoints[i];
-        summedDistance += cv::norm(vec);
-    }
     if (inliers.size() > 0)
+    {
+        for (auto& i : inliers)
+        {
+            cv::Point2f vec = imagePoints[i] - projectedPoints[i];
+            summedDistance += cv::norm(vec);
+        }
         summedDistance /= (double)inliers.size();
+    }
     else
-        summedDistance = numeric_limits<double>::max();
+    {
+        for (int i = 0; i < imagePoints.size(); ++i)
+        {
+            cv::Point2f vec = imagePoints[i] - projectedPoints[i];
+            summedDistance += cv::norm(vec);
+        }
+        summedDistance /= (double)inliers.size();
+    }
 
     SLog::log << Log::DEBUG << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
 
