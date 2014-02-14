@@ -246,7 +246,9 @@ bool Camera::doCalibration()
 
             _fov = gsl_vector_get(minimizer->x, 0);
             _cx = gsl_vector_get(minimizer->x, 1) / _width;
-            _cy = (_height - gsl_vector_get(minimizer->x, 2)) / _height;;
+            _cy = (_height - gsl_vector_get(minimizer->x, 2)) / _height;
+
+            params.setExtrinsic = false; // For next iterations
         }
 
         gsl_multimin_fminimizer_free(minimizer);
@@ -671,8 +673,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         direction = viewMatrix * direction;
         camera->_target = vec3(direction.x, direction.y, direction.z);
 
-        // TODO: there is something fishy with the up vector, rotation seem to be inversed
-        vec4 up(0.f, -1.f, 0.f, 1.f);
+        vec4 up(0.f, -1.f, 0.f, 0.f);
         up = viewMatrix * up;
         camera->_up = vec3(up.x, up.y, up.z);
     }
