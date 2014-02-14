@@ -202,9 +202,9 @@ bool Camera::doCalibration()
 
     gsl_vector* x = gsl_vector_alloc(3);
     gsl_vector* step = gsl_vector_alloc(3);
-    gsl_vector_set(step, 0, 0.5);
-    gsl_vector_set(step, 1, 0.1);
-    gsl_vector_set(step, 2, 0.1);
+    gsl_vector_set(step, 0, 1.0);
+    gsl_vector_set(step, 1, 1.0);
+    gsl_vector_set(step, 2, 1.0);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
@@ -213,13 +213,14 @@ bool Camera::doCalibration()
     // Starting with various values of the FOV
     double initialFov = _fov;
     double minValue = numeric_limits<double>::max();
-    for (int i = 0; i < 8; ++i)
+    for (double s = 0.0; s < 3.0; ++s) // Vary the vertical shift
+    for (double f = 0.0; f < 8.0; ++f) // Vary the FOV
     {
         minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
 
-        gsl_vector_set(x, 0, (double)(i + 1) * 8.0);
-        gsl_vector_set(x, 1, (double)_width / 2.0);
-        gsl_vector_set(x, 2, (double)_height / 2.0);
+        gsl_vector_set(x, 0, (double)(f + 1) * 10.0);
+        gsl_vector_set(x, 1, (double)_width * 0.5);
+        gsl_vector_set(x, 2, (double)_height * (0.3 + 0.2 * s));
         gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
 
         size_t iter = 0;
@@ -621,7 +622,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
     try
     {
-        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true, 100, 8.0, 100, inliers, cv::ITERATIVE);
+        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true, 100, (int)camera->_width / 50, 100, inliers, cv::ITERATIVE);
     }
     catch (cv::Exception& e)
     {
