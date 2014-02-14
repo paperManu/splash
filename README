@@ -24,5 +24,6 @@ Thanks to the Ministère du Développement économique, de l'Innovation et de l'
 
 Installation notes
 ------------------
-- OpenMesh: compile without the apps
+- GLFW : cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+- OpenMesh: cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_APPS:BOOL=false ..
 - OpenImageIO: checkout a tagged version, release 1.3.5 worked for me, and disable the building of the unit tests

@@ -217,7 +217,7 @@ bool Camera::doCalibration()
     {
         minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
 
-        gsl_vector_set(x, 0, initialFov);
+        gsl_vector_set(x, 0, (double)(i + 1) * 8.0);
         gsl_vector_set(x, 1, (double)_width / 2.0);
         gsl_vector_set(x, 2, (double)_height / 2.0);
         gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
@@ -633,24 +633,12 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     vector<cv::Point2f> projectedPoints;
     cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix, cv::Mat(), projectedPoints);
     double summedDistance = 0.0;
-    if (inliers.size() > 0)
+    for (int i = 0; i < imagePoints.size(); ++i)
     {
-        for (auto& i : inliers)
-        {
-            cv::Point2f vec = imagePoints[i] - projectedPoints[i];
-            summedDistance += cv::norm(vec);
-        }
-        summedDistance /= (double)inliers.size();
+        cv::Point2f vec = imagePoints[i] - projectedPoints[i];
+        summedDistance += cv::norm(vec);
     }
-    else
-    {
-        for (int i = 0; i < imagePoints.size(); ++i)
-        {
-            cv::Point2f vec = imagePoints[i] - projectedPoints[i];
-            summedDistance += cv::norm(vec);
-        }
-        summedDistance /= imagePoints.size();
-    }
+    summedDistance /= imagePoints.size();
 
     SLog::log << Log::DEBUG << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
 
