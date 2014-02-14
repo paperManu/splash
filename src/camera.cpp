@@ -256,6 +256,7 @@ bool Camera::doCalibration()
     }
 
     gsl_vector_free(x);
+    gsl_vector_free(step);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
     SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
