@@ -1,6 +1,6 @@
 [submodule "external/GLV"]
 	path = external/GLV
-	url = git@github.com:paperManu/GLV.git
+	url = https://github.com/paperManu/GLV.git
 [submodule "external/bandit"]
 	path = external/bandit
-	url = git@github.com:joakimkarlsson/bandit.git
+	url = https://github.com/joakimkarlsson/bandit.git
