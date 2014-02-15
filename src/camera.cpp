@@ -213,14 +213,14 @@ bool Camera::doCalibration()
     // Starting with various values of the FOV
     double initialFov = _fov;
     double minValue = numeric_limits<double>::max();
-    for (double s = 0.0; s < 3.0; ++s) // Vary the vertical shift
+    //for (double s = 0.0; s < 3.0; ++s) // Vary the vertical shift
     for (double f = 0.0; f < 8.0; ++f) // Vary the FOV
     {
         minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
 
-        gsl_vector_set(x, 0, (double)(f + 1) * 10.0);
+        gsl_vector_set(x, 0, (double)50.0);
         gsl_vector_set(x, 1, (double)_width * 0.5);
-        gsl_vector_set(x, 2, (double)_height * (0.3 + 0.2 * s));
+        gsl_vector_set(x, 2, (double)_height * 0.5);
         gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
 
         size_t iter = 0;
@@ -638,7 +638,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     for (int i = 0; i < imagePoints.size(); ++i)
     {
         cv::Point2f vec = imagePoints[i] - projectedPoints[i];
-        summedDistance += cv::norm(vec);
+        summedDistance += pow(cv::norm(vec), 2.0);
     }
     summedDistance /= imagePoints.size();
 
