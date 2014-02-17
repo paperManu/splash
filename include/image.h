@@ -142,6 +142,7 @@ class Image : public BufferObject
         oiio::ImageBuf _image;
         oiio::ImageBuf _bufferImage;
         bool _imageUpdated {false};
+        bool _srgb {true};
 
         void createDefaultImage(); //< Create a default pattern
         

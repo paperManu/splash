@@ -61,6 +61,8 @@ struct ShaderSources
     const std::string FRAGMENT_SHADER_TEXTURE {R"(
         #version 330 core
 
+        #define PI 3.14159265359
+
         uniform sampler2D _tex0;
         uniform sampler2D _tex1;
         uniform int _sideness;
@@ -74,7 +76,7 @@ struct ShaderSources
 
         void main(void)
         {
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
             if (_texBlendingMap == 0)
@@ -117,6 +119,8 @@ struct ShaderSources
     const std::string FRAGMENT_SHADER_COLOR {R"(
         #version 330 core
 
+        #define PI 3.14159265359
+
         uniform int _sideness;
         uniform vec4 _color;
         in vec3 normal;
@@ -124,7 +128,7 @@ struct ShaderSources
 
         void main(void)
         {
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
             fragColor = _color;
@@ -138,6 +142,8 @@ struct ShaderSources
     const std::string FRAGMENT_SHADER_UV {R"(
         #version 330 core
 
+        #define PI 3.14159265359
+
         uniform int _sideness;
         in vec2 texCoord;
         in vec3 normal;
@@ -145,7 +151,7 @@ struct ShaderSources
 
         void main(void)
         {
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
             float U = texCoord.x * 65536.f;
@@ -207,21 +213,21 @@ struct ShaderSources
 
         void main()
         {
-            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz, 1.f);
+            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz * _scale.xyz, 1.f);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[0].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[0].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz, 1.f);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.f);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[1].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[1].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz, 1.f);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.f);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[2].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[2].normal, 0.0)).xyz;
@@ -234,6 +240,8 @@ struct ShaderSources
 
     const std::string FRAGMENT_SHADER_WIREFRAME {R"(
         #version 330 core
+
+        #define PI 3.14159265359
 
         in VertexData
         {
@@ -248,7 +256,7 @@ struct ShaderSources
         void main(void)
         {
             vec3 normal = vertexIn.normal;
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 2))
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
             vec3 b = vertexIn.bcoord;

@@ -151,6 +151,7 @@ bool Window::linkTo(BaseObjectPtr obj)
 bool Window::render()
 {
     glfwMakeContextCurrent(_window->get());
+    glEnable(GL_FRAMEBUFFER_SRGB);
 
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
@@ -175,6 +176,7 @@ bool Window::render()
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 
+    glDisable(GL_FRAMEBUFFER_SRGB);
     glfwMakeContextCurrent(NULL);
 
     return error != 0 ? true : false;

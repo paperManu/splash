@@ -192,10 +192,8 @@ class Camera : public BaseObject
             Camera* context;
             bool setExtrinsic {false};
         };
-        // Functions used for the calibration (camera parameters optimization)
+        // Function used for the calibration (camera parameters optimization)
         static double cameraCalibration_f(const gsl_vector* v, void* params);
-        static void cameraCalibration_df(const gsl_vector* v, void* params, gsl_vector* df);
-        static void cameraCalibration_fdf(const gsl_vector* v, void* params, double* f, gsl_vector* df);
 
         /**
          * Get the frustum matrix from the current camera parameters

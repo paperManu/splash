@@ -153,6 +153,8 @@ void Texture::update()
     _img->update();
 
     ImageSpec spec = _img->getSpec();
+    vector<Value> srgb;
+    _img->getAttribute("srgb", srgb);
 
     if (!(bool)glIsTexture(_glTex))
     {
@@ -172,7 +174,10 @@ void Texture::update()
         {
             SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA" << Log::endl;
             _img->lock();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+            if (srgb[0].asInt() > 0)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+            else
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             _img->unlock();
         }
         else if (spec.nchannels == 1 && spec.format == "uint16")

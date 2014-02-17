@@ -8,7 +8,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.01
+#define SPLASH_WORLDMARKER_SCALE 0.03
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.0, 1.0, 0.0, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
@@ -191,8 +191,6 @@ bool Camera::doCalibration()
     gsl_multimin_function calibrationFunc;
     calibrationFunc.n = 3;
     calibrationFunc.f = &Camera::cameraCalibration_f;
-    //calibrationFunc.df = &Camera::cameraCalibration_df;
-    //calibrationFunc.fdf = &Camera::cameraCalibration_fdf;
     GslParam params;
     params.context = this;
     calibrationFunc.params = (void*)&params;
@@ -202,9 +200,9 @@ bool Camera::doCalibration()
 
     gsl_vector* x = gsl_vector_alloc(3);
     gsl_vector* step = gsl_vector_alloc(3);
-    gsl_vector_set(step, 0, 1.0);
-    gsl_vector_set(step, 1, 1.0);
-    gsl_vector_set(step, 2, 1.0);
+    gsl_vector_set(step, 0, 2.0);
+    gsl_vector_set(step, 1, 5.0);
+    gsl_vector_set(step, 2, 5.0);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
@@ -213,19 +211,19 @@ bool Camera::doCalibration()
     // Starting with various values of the FOV
     double initialFov = _fov;
     double minValue = numeric_limits<double>::max();
-    //for (double s = 0.0; s < 3.0; ++s) // Vary the vertical shift
-    for (double f = 0.0; f < 8.0; ++f) // Vary the FOV
+    for (double s = -1.0; s < 7.0; ++s) // Vary the vertical shift
+    for (double f = 0.0; f < 3.0; ++f) // Vary the FOV
     {
         minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
 
-        gsl_vector_set(x, 0, (double)50.0);
+        gsl_vector_set(x, 0, 10.0 + f * 20.0);
         gsl_vector_set(x, 1, (double)_width * 0.5);
-        gsl_vector_set(x, 2, (double)_height * 0.5);
+        gsl_vector_set(x, 2, (double)_height * s * 0.2);
         gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
 
         size_t iter = 0;
         int status = GSL_CONTINUE;
-        while(status == GSL_CONTINUE && iter < 500)
+        while(status == GSL_CONTINUE && iter < 100)
         {
             iter++;
             status = gsl_multimin_fminimizer_iterate(minimizer);
@@ -623,7 +621,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
     try
     {
-        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true, 100, (int)camera->_width / 50, 100, inliers, cv::ITERATIVE);
+        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true, 100, (int)camera->_width / 100, 100, inliers, cv::EPNP);
     }
     catch (cv::Exception& e)
     {
@@ -678,16 +676,6 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
 
     return summedDistance;
-}
-
-/*************/
-void Camera::cameraCalibration_df(const gsl_vector* v, void* params, gsl_vector* df)
-{
-}
-
-/*************/
-void Camera::cameraCalibration_fdf(const gsl_vector* v, void* params, double* f, gsl_vector* df)
-{
 }
 
 /*************/

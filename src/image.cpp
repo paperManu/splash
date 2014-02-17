@@ -280,6 +280,15 @@ void Image::registerAttributes()
             return false;
         return read(args[0].asString());
     });
+
+    _attribFunctions["srgb"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _srgb = (args[0].asInt() > 0) ? true : false;     
+        return true;
+    }, [&]() {
+        return vector<Value>({_srgb});
+    });
 }
 
 } // end of namespace
