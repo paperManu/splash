@@ -204,6 +204,12 @@ class BaseObject
         void setName(std::string name) {_name = name;}
 
         /**
+         * Set and get the remote type of the object
+         */
+        std::string getRemoteType() const {return _remoteType;}
+        void setRemoteType(std::string type) {_remoteType = type;}
+
+        /**
          * Try to link the given BaseObject to this
          */
         virtual bool linkTo(BaseObjectPtr obj) {return false;}
@@ -245,7 +251,10 @@ class BaseObject
         Json::Value getConfigurationAsJson()
         {
             Json::Value root;
-            root["type"] = _type;
+            if (_remoteType == "")
+                root["type"] = _type;
+            else
+                root["type"] = _remoteType;
 
             for (auto& attr : _attribFunctions)
             {
@@ -280,6 +289,7 @@ class BaseObject
     protected:
         unsigned long _id;
         std::string _type {"baseobject"};
+        std::string _remoteType {""};
         std::string _name {""};
         std::map<std::string, AttributeFunctor> _attribFunctions;
 };
