@@ -82,6 +82,8 @@ class GlvGlobalView : public glv::View3D
         CameraPtr _camera, _guiCamera;
         SceneWeakPtr _scene;
 
+        bool _camerasHidden {false};
+
         // Store the previous camera values
         std::vector<Value> _eye, _target, _up, _fov, _principalPoint;
 

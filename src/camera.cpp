@@ -386,49 +386,52 @@ bool Camera::render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw the objects
-    for (auto& obj : _objects)
+    if (!_hidden)
     {
-        obj->getShader()->setAttribute("blendWidth", {_blendWidth});
-        obj->activate();
-        obj->setViewProjectionMatrix(computeViewProjectionMatrix());
-        obj->draw();
-        obj->deactivate();
-    }
-
-    // Draw the calibration points
-    if (_displayCalibration)
-    {
-        for (int i = 0; i < _calibrationPoints.size(); ++i)
+        // Draw the objects
+        for (auto& obj : _objects)
         {
-            auto& point = _calibrationPoints[i];
-            ObjectPtr worldMarker = _models["3d_marker"];
-            worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
-            if (_selectedCalibrationPoint == i)
-                worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
-            else if (point.isSet)
-                worldMarker->setAttribute("color", SPLASH_MARKER_SET);
-            else
-                worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
-            worldMarker->activate();
-            worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
-            worldMarker->draw();
-            worldMarker->deactivate();
+            obj->getShader()->setAttribute("blendWidth", {_blendWidth});
+            obj->activate();
+            obj->setViewProjectionMatrix(computeViewProjectionMatrix());
+            obj->draw();
+            obj->deactivate();
+        }
 
-            if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
+        // Draw the calibration points
+        if (_displayCalibration)
+        {
+            for (int i = 0; i < _calibrationPoints.size(); ++i)
             {
-                ObjectPtr screenMarker = _models["2d_marker"];
-                screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
-                screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
+                auto& point = _calibrationPoints[i];
+                ObjectPtr worldMarker = _models["3d_marker"];
+                worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                 if (_selectedCalibrationPoint == i)
-                    screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
+                    worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
+                else if (point.isSet)
+                    worldMarker->setAttribute("color", SPLASH_MARKER_SET);
                 else
-                    screenMarker->setAttribute("color", SPLASH_MARKER_SET);
-                screenMarker->activate();
-                screenMarker->setViewProjectionMatrix(mat4(1.f));
-                screenMarker->draw();
-                screenMarker->deactivate();
-                screenMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+                    worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
+                worldMarker->activate();
+                worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
+                worldMarker->draw();
+                worldMarker->deactivate();
+
+                if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
+                {
+                    ObjectPtr screenMarker = _models["2d_marker"];
+                    screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
+                    screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
+                    if (_selectedCalibrationPoint == i)
+                        screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
+                    else
+                        screenMarker->setAttribute("color", SPLASH_MARKER_SET);
+                    screenMarker->activate();
+                    screenMarker->setViewProjectionMatrix(mat4(1.f));
+                    screenMarker->draw();
+                    screenMarker->deactivate();
+                    screenMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+                }
             }
         }
     }
@@ -819,6 +822,16 @@ void Camera::registerAttributes()
             _drawFrame = true;
         else
             _drawFrame = false;
+        return true;
+    });
+
+    _attribFunctions["hide"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _hidden = true;
+        else
+            _hidden = false;
         return true;
     });
 

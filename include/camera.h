@@ -158,6 +158,7 @@ class Camera : public BaseObject
         // Rendering parameters
         bool _drawFrame {false};
         bool _wireframe {false};
+        bool _hidden {false};
 
         // Some default models use in various situations
         std::map<std::string, ObjectPtr> _models;

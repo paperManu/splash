@@ -118,6 +118,11 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
+            // Ensure that all cameras are shown
+            _camerasHidden = false;
+            for (auto& cam : cameras)
+                cam->setAttribute("hide", {0});
+
             _camera->setAttribute("frame", {0});
             _camera->setAttribute("displayCalibration", {0});
 
@@ -168,6 +173,30 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             // Calibration
             _camera->doCalibration();
             return false;
+        }
+        else if (key == 'H')
+        {
+            auto scene = _scene.lock();
+            vector<CameraPtr> cameras;
+            for (auto& obj : scene->_objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+            if (!_camerasHidden)
+            {
+                for (auto& cam : cameras)
+                    if (cam.get() != _camera.get())
+                        cam->setAttribute("hide", {1});
+                _camerasHidden = true;
+            }
+            else
+            {
+                for (auto& cam : cameras)
+                    if (cam.get() != _camera.get())
+                        cam->setAttribute("hide", {0});
+                _camerasHidden = false;
+            }
+
         }
         // Reset to the previous camera calibration
         else if (key == 'R')
