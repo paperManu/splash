@@ -153,7 +153,6 @@ bool Window::render()
     glfwMakeContextCurrent(_window->get());
     glEnable(GL_FRAMEBUFFER_SRGB);
 
-
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
@@ -170,7 +169,7 @@ bool Window::render()
 
     // Resize the input textures accordingly to the window size.
     // This goes upstream to the cameras and gui
-    if (!_isLinkedToTexture) // We don't do this if we are directly connected to a Texture (updated from an image)
+    if (!_isLinkedToTexture && _overlap) // We don't do this if we are directly connected to a Texture (updated from an image)
         for (auto& t : _inTextures)
             t->resize(w, h);
 
@@ -228,8 +227,6 @@ bool Window::switchFullscreen(int screenId)
     _window = move(GlWindowPtr(new GlWindow(window, _window->getMainWindow())));
 
     setEventsCallbacks();
-    for (auto t : _inTextures)
-        _screen->addTexture(t);
 
     return true;
 }

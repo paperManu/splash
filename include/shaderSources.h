@@ -297,6 +297,7 @@ struct ShaderSources
 
         uniform sampler2D _tex0;
         uniform sampler2D _tex1;
+        uniform sampler2D _tex2;
         uniform int _sideness;
         uniform int _textureNbr;
         uniform int _overlap;
@@ -328,6 +329,12 @@ struct ShaderSources
                 }
                 else if (_textureNbr == 3)
                 {
+                    if (texCoord.x <= 1.0 / 3.0)
+                        fragColor = texture(_tex0, vec2(texCoord.x * 3.0, texCoord.y));
+                    else if (texCoord.x <= 2.0 / 3.0)
+                        fragColor = texture(_tex1, vec2((texCoord.x - 1.0 / 3.0) * 3.0, texCoord.y));
+                    else
+                        fragColor = texture(_tex2, vec2((texCoord.x - 2.0 / 3.0) * 3.0, texCoord.y));
                 }
             }
         }

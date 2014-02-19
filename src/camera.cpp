@@ -8,7 +8,7 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.03
+#define SPLASH_WORLDMARKER_SCALE 0.02
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.0, 1.0, 0.0, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
