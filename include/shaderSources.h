@@ -264,6 +264,75 @@ struct ShaderSources
             fragColor.rgba = mix(vec4(1.0), vec4(0.0, 0.0, 0.0, 1.0), (minDist - 0.025) / 0.0125);
         }
     )"};
+
+    /**
+     * Rendering of the output windows
+     */
+    const std::string VERTEX_SHADER_WINDOW {R"(
+        #version 330 core
+
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        layout(location = 2) in vec3 _normal;
+        uniform mat4 _modelViewProjectionMatrix;
+        uniform mat4 _normalMatrix;
+        uniform vec3 _scale;
+        smooth out vec4 position;
+        smooth out vec2 texCoord;
+        smooth out vec3 normal;
+
+        void main(void)
+        {
+            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.f);
+            gl_Position = position;
+            normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
+            texCoord = _texcoord;
+        }
+    )"};
+
+    const std::string FRAGMENT_SHADER_WINDOW {R"(
+        #version 330 core
+
+        #define PI 3.14159265359
+
+        uniform sampler2D _tex0;
+        uniform sampler2D _tex1;
+        uniform int _sideness;
+        uniform int _textureNbr;
+        uniform int _overlap;
+        in vec4 position;
+        in vec2 texCoord;
+        in vec3 normal;
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            if (_textureNbr == 1)
+            {
+                fragColor = texture(_tex0, texCoord);
+            }
+            else if (_overlap == 1)
+            {
+                fragColor = texture(_tex0, texCoord);
+                vec4 color = texture(_tex1, texCoord);
+                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+            }
+            else
+            {
+                if (_textureNbr == 2)
+                {
+                    if (texCoord.x <= 0.5)
+                        fragColor = texture(_tex0, vec2(texCoord.x * 2.0, texCoord.y));
+                    else
+                        fragColor = texture(_tex1, vec2((texCoord.x - 0.5) * 2.0, texCoord.y));
+                }
+                else if (_textureNbr == 3)
+                {
+                }
+            }
+        }
+    )"};
+
 } ShaderSources;
 
 } // end of namespace

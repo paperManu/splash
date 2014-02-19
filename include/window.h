@@ -129,6 +129,7 @@ class Window : public BaseObject
         GlWindowPtr _window;
         int _screenId {-1};
         bool _fullscreen {false};
+        bool _overlap {true};
 
         ObjectPtr _screen;
         glm::mat4x4 _viewProjectionMatrix;

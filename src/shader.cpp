@@ -53,6 +53,7 @@ void Shader::activate()
         _locationBlendWidth = glGetUniformLocation(_program, "_blendWidth");
         _locationColor = glGetUniformLocation(_program, "_color");
         _locationScale = glGetUniformLocation(_program, "_scale");
+        _locationOverlap = glGetUniformLocation(_program, "_overlap");
     }
 
     glUseProgram(_program);
@@ -65,6 +66,7 @@ void Shader::activate()
     glUniform1f(_locationBlendWidth, _blendWidth);
     glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
     glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
+    glUniform1i(_locationOverlap, (int)_textureOverlap);
 }
 
 /*************/
@@ -265,6 +267,14 @@ void Shader::registerAttributes()
             setSource(ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
             compileProgram();
         }
+        else if (args[0].asString() == "window" && _fill != window)
+        {
+            _fill = window;
+            setSource(ShaderSources.VERTEX_SHADER_WINDOW, vertex);
+            resetShader(geometry);
+            setSource(ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
+            compileProgram();
+        }
         return true;
     }, [&]() {
         string fill;
@@ -276,6 +286,8 @@ void Shader::registerAttributes()
             fill = "uv";
         else if (_fill == wireframe)
             fill = "wireframe";
+        else if (_fill == window)
+            fill = "window";
         return vector<Value>({fill});
     });
 
@@ -302,6 +314,16 @@ void Shader::registerAttributes()
         if (args.size() < 1)
             return false;
         _blendWidth = args[0].asFloat();
+        return true;
+    });
+
+    _attribFunctions["overlap"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _textureOverlap = true;
+        else
+            _textureOverlap = false;
         return true;
     });
 }

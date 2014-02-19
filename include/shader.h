@@ -63,7 +63,8 @@ class Shader : public BaseObject
             texture = 0,
             color,
             uv,
-            wireframe
+            wireframe,
+            window
         };
 
         /**
@@ -152,6 +153,7 @@ class Shader : public BaseObject
         GLint _locationBlendWidth {0};
         GLint _locationColor {0};
         GLint _locationScale {0};
+        GLint _locationOverlap {0};
 
         // Rendering parameters
         Fill _fill {texture};
@@ -161,6 +163,7 @@ class Shader : public BaseObject
         float _blendWidth {0.05f};
         glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
         glm::vec3 _scale {1.0, 1.0, 1.0};
+        bool _textureOverlap {true};
 
         /**
          * Compile the shader program
