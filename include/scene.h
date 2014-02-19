@@ -105,7 +105,7 @@ class Scene
         /**
          * Render everything
          */
-        bool render();
+        void render();
 
         /**
          * Main loop for the scene
@@ -137,6 +137,11 @@ class Scene
         std::map<std::string, BaseObjectPtr> _objects;
         std::map<std::string, std::vector<Value>> _worldMessages;
 
+        /**
+         * Creates the blending map from the current calibration of the cameras
+         */
+        void computeBlendingMap();
+
     private:
         ScenePtr _self;
 
@@ -149,11 +154,6 @@ class Scene
         // Blending map, used by all cameras (except the GUI camera)
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
-
-        /**
-         * Creates the blending map from the current calibration of the cameras
-         */
-        void computeBlendingMap();
 
         /**
          * Get a glfw window sharing the same context as _mainWindow

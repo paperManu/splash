@@ -244,12 +244,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 if (position.size() == 3)
                     _camera->removeCalibrationPoint(position);
             }
-            else
-            {
-                vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-                if (position.size() == 3)
-                    _camera->removeCalibrationPoint(position);
-            }
         }
         return false;
     }
@@ -272,7 +266,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             // If a point was added during the MouseDown, we delete it
             if (_previousPointAdded.size() == 3)
             {
-                _camera->removeCalibrationPoint(_previousPointAdded);
+                _camera->removeCalibrationPoint(_previousPointAdded, true);
                 _previousPointAdded.clear();
             }
 

@@ -66,6 +66,7 @@ class World {
 
     private:
         bool _status {true};
+        bool _quit {false};
         std::map<std::string, ScenePtr> _scenes;
 
         unsigned long _nextId {0};

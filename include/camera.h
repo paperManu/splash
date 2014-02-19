@@ -133,7 +133,7 @@ class Camera : public BaseObject
         bool addCalibrationPoint(std::vector<Value> worldPoint);
         void deselectCalibrationPoint() {_selectedCalibrationPoint = -1;}
         void moveCalibrationPoint(float dx, float dy);
-        void removeCalibrationPoint(std::vector<Value> worldPoint);
+        void removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSet = false);
         bool setCalibrationPoint(std::vector<Value> screenPoint);
 
         /**

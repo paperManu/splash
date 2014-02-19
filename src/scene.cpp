@@ -106,7 +106,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 }
 
 /*************/
-bool Scene::render()
+void Scene::render()
 {
     bool isError {false};
 
@@ -154,7 +154,6 @@ bool Scene::render()
 
     // Update the user events
     STimer::timer << "events";
-    bool quit = false;
     glfwPollEvents();
     // Mouse position
     {
@@ -207,9 +206,7 @@ bool Scene::render()
                 if (dynamic_pointer_cast<Window>(w.second)->isWindow(win))
                     eventWindow = dynamic_pointer_cast<Window>(w.second);
 
-        if (key == GLFW_KEY_ESCAPE)
-            quit = true;
-        else if (key == GLFW_KEY_F)
+        if (key == GLFW_KEY_F)
         {
             if (mods == GLFW_MOD_ALT && action == GLFW_PRESS)
                 if (eventWindow.get() != nullptr)
@@ -217,16 +214,6 @@ bool Scene::render()
                     eventWindow->switchFullscreen();
                     continue;
                 }
-        }
-        else if (key == GLFW_KEY_S)
-        {
-            if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
-                setMessage("save");
-        }
-        else if (key == GLFW_KEY_B)
-        {
-            if (action == GLFW_PRESS)
-                computeBlendingMap();
         }
         else
         {
@@ -240,8 +227,6 @@ bool Scene::render()
 
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
-
-    return quit;
 }
 
 /*************/
@@ -251,8 +236,7 @@ void Scene::run()
     while (true)
     {
         STimer::timer << "sceneLoop";
-        if (render())
-            break;
+        render();
         STimer::timer >> "sceneLoop";
     }
     _isRunning = false;

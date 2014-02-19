@@ -76,6 +76,7 @@ void Gui::key(int& key, int& action, int& mods)
     switch (key)
     {
     default:
+    {
         if (action == GLFW_PRESS)
             _glv.setKeyDown(glfwToGlvKey(key));
         else if (action == GLFW_RELEASE)
@@ -85,10 +86,37 @@ void Gui::key(int& key, int& action, int& mods)
         _glv.setKeyModifiers(mods && GLFW_MOD_SHIFT, mods && GLFW_MOD_ALT, mods && GLFW_MOD_CONTROL, false, false);
         _glv.propagateEvent();
         break;
+    }
     case GLFW_KEY_TAB:
+    {
         if (action == GLFW_PRESS)
             _isVisible = !_isVisible;
         break;
+    }
+    case GLFW_KEY_ESCAPE:
+    {
+        auto scene = _scene.lock();
+        scene->setMessage("quit");
+        break;
+    }
+    case GLFW_KEY_B:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->computeBlendingMap();
+        }
+        break;
+    }
+    case GLFW_KEY_S:
+    {
+        if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->setMessage("save");
+        }
+        break;
+    }
     }
 }
 

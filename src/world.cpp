@@ -59,13 +59,8 @@ void World::run()
         STimer::timer >> "upload";
 
         // Render the scenes
-        bool run {true};
         for (auto& s : _scenes)
-            run &= !s.second->render();
-
-        if (!run)
-            break;
-
+            s.second->render();
         SThread::pool.waitThreads(threadIds);
 
         // Grab the signals from the scenes
@@ -74,6 +69,9 @@ void World::run()
             map<string, vector<Value>> messages = s.second->getMessages();
             parseMessages(messages);
         }
+
+        if (_quit)
+            break;
 
         // Get the current FPS
         STimer::timer >> "worldLoop";
@@ -364,6 +362,10 @@ void World::parseMessages(map<string, vector<Value>> messages)
         {
             SLog::log << "Configuration saved" << Log::endl;
             saveConfig();
+        }
+        else if (m.first == string("quit"))
+        {
+            _quit = true;
         }
     }
 }

@@ -464,17 +464,8 @@ bool Camera::addCalibrationPoint(std::vector<Value> worldPoint)
     for (int i = 0; i < _calibrationPoints.size(); ++i)
         if (_calibrationPoints[i].world == world)
         {
-            if (!_calibrationPoints[i].isSet)
-            {
-                _calibrationPoints.erase(_calibrationPoints.begin() + i);
-                _selectedCalibrationPoint = -1;
-                return false;
-            }
-            else
-            {
                 _selectedCalibrationPoint = i;
                 return true;
-            }
         }
 
     _calibrationPoints.push_back(CalibrationPoint(world));
@@ -493,7 +484,7 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 }
 
 /*************/
-void Camera::removeCalibrationPoint(std::vector<Value> worldPoint)
+void Camera::removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSet)
 {
     if (worldPoint.size() < 3)
         return;
@@ -503,6 +494,8 @@ void Camera::removeCalibrationPoint(std::vector<Value> worldPoint)
     for (int i = 0; i < _calibrationPoints.size(); ++i)
         if (_calibrationPoints[i].world == world)
         {
+            if (_calibrationPoints[i].isSet == true && unlessSet)
+                continue;
             _calibrationPoints.erase(_calibrationPoints.begin() + i);
             _selectedCalibrationPoint = -1;
         }
