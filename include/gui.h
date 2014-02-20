@@ -138,6 +138,7 @@ class Gui : public BaseObject
         glv::GLV _glv;
         GlvTextBox _glvLog;
         GlvTextBox _glvProfile;
+        GlvTextBox _glvHelp;
         GlvGlobalView _glvGlobalView;
         GlvGraph _glvGraph;
         glv::space_t _prevMouseX, _prevMouseY;

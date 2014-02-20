@@ -333,13 +333,33 @@ void Gui::initGLV(int width, int height)
 
         return text;
     });
-
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 32);
     _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 7 + 8);
-    _glvProfile.top(8);
-    _glvProfile.left(8);
     _glvProfile.style(&_style);
-    _glv << _glvProfile;
+
+    // Some help regarding keyboard shortcuts
+    _glvHelp.setTextFunc([](GlvTextBox& that)
+    {
+        string text;
+        text += "Tab: show / hide this GUI\n";
+        text += "Shortcuts for the calibration view:\n";
+        text += " Space: switcher between cameras\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " C: calibrate the selected camera\n";
+        text += " R: revert camera to previous calibration\n";
+        text += " B: compute the blending between all cameras\n";
+        text += " H: hide all but the selected camera\n";
+        text += " T: textured draw mode\n";
+        text += " W: wireframe draw mode\n";
+
+        return text;
+    });
+    _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 10 + 8);
+    _glvHelp.style(&_style);
+
+    Placer placer(_glv, Direction::S, Place::TL, 8, 8);
+    placer << _glvHelp << _glvProfile;
 
     // GUI camera view
     _glvGlobalView.set(Rect(8, 8, 800, 600));
