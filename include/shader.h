@@ -153,7 +153,7 @@ class Shader : public BaseObject
         GLint _locationBlendWidth {0};
         GLint _locationColor {0};
         GLint _locationScale {0};
-        GLint _locationOverlap {0};
+        GLint _locationLayout {0};
 
         // Rendering parameters
         Fill _fill {texture};
@@ -164,6 +164,7 @@ class Shader : public BaseObject
         glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
         glm::vec3 _scale {1.0, 1.0, 1.0};
         bool _textureOverlap {true};
+        std::vector<int> _layout {0, 0, 0, 0};
 
         /**
          * Compile the shader program

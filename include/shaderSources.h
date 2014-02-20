@@ -298,9 +298,11 @@ struct ShaderSources
         uniform sampler2D _tex0;
         uniform sampler2D _tex1;
         uniform sampler2D _tex2;
+        uniform sampler2D _tex3;
         uniform int _sideness;
         uniform int _textureNbr;
         uniform int _overlap;
+        uniform ivec4 _layout;
         in vec4 position;
         in vec2 texCoord;
         in vec3 normal;
@@ -308,35 +310,37 @@ struct ShaderSources
 
         void main(void)
         {
-            if (_textureNbr == 1)
+            float frames = float(_textureNbr);
+            for (int i = 0; i < _textureNbr; ++i)
             {
-                fragColor = texture(_tex0, texCoord);
+                int value = _layout[i];
+                for (int j = i + 1; j < _textureNbr; ++j)
+                {
+                    if (_layout[j] == value)
+                        frames--;
+                }
             }
-            else if (_overlap == 1)
+
+            if (_textureNbr > 0 && texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
             {
-                fragColor = texture(_tex0, texCoord);
-                vec4 color = texture(_tex1, texCoord);
+                fragColor = texture(_tex0, vec2((texCoord.x - float(_layout[0]) / frames) * frames, texCoord.y));
+            }
+            if (_textureNbr > 1 && texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
+            {
+                vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
                 fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
             }
-            else
+            if (_textureNbr > 2 && texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
             {
-                if (_textureNbr == 2)
-                {
-                    if (texCoord.x <= 0.5)
-                        fragColor = texture(_tex0, vec2(texCoord.x * 2.0, texCoord.y));
-                    else
-                        fragColor = texture(_tex1, vec2((texCoord.x - 0.5) * 2.0, texCoord.y));
-                }
-                else if (_textureNbr == 3)
-                {
-                    if (texCoord.x <= 1.0 / 3.0)
-                        fragColor = texture(_tex0, vec2(texCoord.x * 3.0, texCoord.y));
-                    else if (texCoord.x <= 2.0 / 3.0)
-                        fragColor = texture(_tex1, vec2((texCoord.x - 1.0 / 3.0) * 3.0, texCoord.y));
-                    else
-                        fragColor = texture(_tex2, vec2((texCoord.x - 2.0 / 3.0) * 3.0, texCoord.y));
-                }
+                vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
+                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
             }
+            if (_textureNbr > 3 && texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
+            {
+                vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
+                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+            }
+            fragColor.a = 1.f;
         }
     )"};
 

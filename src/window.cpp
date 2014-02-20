@@ -161,7 +161,7 @@ bool Window::render()
     glDrawBuffer(GL_BACK);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    _screen->getShader()->setAttribute("overlap", {(int)_overlap});
+    _screen->getShader()->setAttribute("layout", _layout);
     _screen->activate();
     _screen->setViewProjectionMatrix(_viewProjectionMatrix);
     _screen->draw();
@@ -279,33 +279,6 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
     _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
 }
 
-
-/*************/
-void Window::registerAttributes()
-{
-    _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
-            return false;
-        switchFullscreen(args[0].asInt());
-        return true;
-    }, [&]() {
-        return vector<Value>({_screenId});
-    });
-
-    // Attribute to set if textures should overlap or be positioned side by side
-    _attribFunctions["overlap"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
-            return false;
-        if (args[0].asInt() > 0)
-            _overlap = true;
-        else
-            _overlap = false;
-        return true;
-    }, [&]() {
-        return vector<Value>({_overlap});
-    });
-}
-
 /*************/
 void Window::setEventsCallbacks()
 {
@@ -340,6 +313,29 @@ bool Window::setProjectionSurface()
     glfwMakeContextCurrent(0);
 
     return true;
+}
+
+/*************/
+void Window::registerAttributes()
+{
+    _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        switchFullscreen(args[0].asInt());
+        return true;
+    }, [&]() {
+        return vector<Value>({_screenId});
+    });
+
+    // Attribute to configure the placement of the various texture input
+    _attribFunctions["layout"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _layout = args;
+        return true;
+    }, [&]() {
+        return _layout;
+    });
 }
 
 } // end of namespace

@@ -129,6 +129,7 @@ class Window : public BaseObject
         GlWindowPtr _window;
         int _screenId {-1};
         bool _fullscreen {false};
+        std::vector<Value> _layout {0};
         bool _overlap {true};
 
         ObjectPtr _screen;

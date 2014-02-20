@@ -53,7 +53,7 @@ void Shader::activate()
         _locationBlendWidth = glGetUniformLocation(_program, "_blendWidth");
         _locationColor = glGetUniformLocation(_program, "_color");
         _locationScale = glGetUniformLocation(_program, "_scale");
-        _locationOverlap = glGetUniformLocation(_program, "_overlap");
+        _locationLayout = glGetUniformLocation(_program, "_layout");
     }
 
     glUseProgram(_program);
@@ -66,7 +66,7 @@ void Shader::activate()
     glUniform1f(_locationBlendWidth, _blendWidth);
     glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
     glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
-    glUniform1i(_locationOverlap, (int)_textureOverlap);
+    glUniform4i(_locationLayout, _layout[0], _layout[1], _layout[2], _layout[3]);
 }
 
 /*************/
@@ -317,14 +317,18 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["overlap"] = AttributeFunctor([&](vector<Value> args) {
+    // Attribute to configure the placement of the various texture input
+    _attribFunctions["layout"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asInt() > 0)
-            _textureOverlap = true;
-        else
-            _textureOverlap = false;
+        for (int i = 0; i < args.size() && i < 4; ++i)
+            _layout[i] = args[i].asInt();
         return true;
+    }, [&]() {
+        vector<Value> out;
+        for (auto& v : _layout)
+            out.push_back(v);
+        return out;
     });
 }
 
