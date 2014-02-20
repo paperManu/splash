@@ -130,7 +130,6 @@ class Window : public BaseObject
         int _screenId {-1};
         bool _fullscreen {false};
         std::vector<Value> _layout {0};
-        bool _overlap {true};
 
         ObjectPtr _screen;
         glm::mat4x4 _viewProjectionMatrix;

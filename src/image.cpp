@@ -246,6 +246,8 @@ void Image::update()
         _image.swap(_bufferImage);
         _imageUpdated = false;
     }
+    else if (_benchmark)
+        updateTimestamp();
 }
 
 /*************/
@@ -288,6 +290,16 @@ void Image::registerAttributes()
         return true;
     }, [&]() {
         return vector<Value>({_srgb});
+    });
+
+    _attribFunctions["benchmark"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _benchmark = true;
+        else
+            _benchmark = false;
+        return true;
     });
 }
 
