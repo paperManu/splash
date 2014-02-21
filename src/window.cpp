@@ -169,7 +169,16 @@ bool Window::render()
 
     // Resize the input textures accordingly to the window size.
     // This goes upstream to the cameras and gui
-    if (!_isLinkedToTexture && _inTextures.size() == 1) // We don't do this if we are directly connected to a Texture (updated from an image)
+    // Textures are resized to the number of "frame" there are, according to the layout
+    bool resize = true;
+    for (int i = 0; i < _inTextures.size(); ++i)
+    {
+        int value = _layout[i].asInt();
+        for (int j = i + 1; j < _inTextures.size(); ++j)
+            if (_layout[j].asInt() != value)
+                resize = false;
+    }
+    if (!_isLinkedToTexture && resize) // We don't do this if we are directly connected to a Texture (updated from an image)
         for (auto& t : _inTextures)
             t->resize(w, h);
 
