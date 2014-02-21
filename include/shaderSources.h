@@ -317,7 +317,10 @@ struct ShaderSources
                 for (int j = i + 1; j < _textureNbr; ++j)
                 {
                     if (_layout[j] == value)
+                    {
                         frames--;
+                        break;
+                    }
                 }
             }
 
