@@ -457,7 +457,26 @@ bool Camera::render()
         if (_outShm.get() == nullptr)
             _outShm.reset(new Image_Shmdata());
         
-        ImagePtr img = _outTextures[0]->read();
+        ImagePtr img(new Image(_outTextures[0]->getSpec()));
+
+        // First, we launch the copy to the host
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
+        GLubyte* gpuPixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+        if (gpuPixels != NULL)
+        {
+            memcpy((void*)img->data(), gpuPixels, _width * _height * 4);
+            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+        }
+        _pboReadIndex = (_pboReadIndex + 1) % 2;
+
+        // Then we launch the copy from the FBO to the PBO, which will be finished by next frame
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+        glReadBuffer(GL_COLOR_ATTACHMENT0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
+        glReadPixels(0, 0, _width, _height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
         _outShm->write(img, string("/tmp/splash_") + _name);
     }
 
@@ -581,6 +600,18 @@ void Camera::setOutputSize(int width, int height)
 
     _width = width;
     _height = height;
+
+    // PBOs related things
+    if (_writeToShm)
+    {
+        glDeleteBuffers(2, _pbos);
+        glGenBuffers(2, _pbos);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[0]);
+        glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[1]);
+        glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    }
 
     glfwMakeContextCurrent(NULL);
 }

@@ -152,13 +152,17 @@ class Camera : public BaseObject
 
         bool _isInitialized {false};
         GlWindowPtr _window;
-        bool _writeToShm {false};
 
         GLuint _fbo;
         TexturePtr _depthTexture;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
         Image_ShmdataPtr _outShm;
+
+        // Objects for copying to host
+        bool _writeToShm {false};
+        GLuint _pbos[2];
+        int _pboReadIndex {0};
 
         // Rendering parameters
         bool _drawFrame {false};
