@@ -91,7 +91,7 @@ bool Image_Shmdata::initShmWriter(const ImageSpec& spec, const string& filename)
 
     dataType += "width=" + to_string(spec.width) + ",";
     dataType += "height=" + to_string(spec.height) + ",";
-    dataType += "framerate=30/1";
+    dataType += "framerate=60/1";
     _writerInputSize *= spec.width * spec.height;
 
     shmdata_any_writer_set_data_type(_writer, dataType.c_str());

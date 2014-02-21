@@ -148,8 +148,6 @@ class Camera : public BaseObject
         void setOutputSize(int width, int height);
 
     private:
-        static std::mutex _camerasMutex;
-
         bool _isInitialized {false};
         GlWindowPtr _window;
 

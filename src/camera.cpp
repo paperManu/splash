@@ -111,6 +111,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
         dims[0] = dims[1] * width / height;
     glfwMakeContextCurrent(NULL);
 
+    bool writeToShm = _writeToShm;
+    _writeToShm = false;
     setOutputSize(dims[0] / 4, dims[1] / 4);
 
     // Render with the current texture, with no marker or frame
@@ -138,6 +140,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
     error = glGetError();
     glfwMakeContextCurrent(NULL);
 
+    _writeToShm = writeToShm;
     setOutputSize(width, height);
 
     if (error)
