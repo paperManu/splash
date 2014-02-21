@@ -106,6 +106,11 @@ class Texture : public BaseObject
         bool linkTo(BaseObjectPtr obj);
 
         /**
+         * Read the texture and returns an Image
+         */
+        ImagePtr read();
+
+        /**
          * Set the buffer size / type / internal format
          * See glTexImage2D for information about parameters
          */

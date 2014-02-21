@@ -452,6 +452,20 @@ bool Camera::render()
 
     glfwMakeContextCurrent(NULL);
 
+    // Output to a shared memory if set so
+    if (_writeToShm)
+    {
+        // Only the first output texture can be sent currently
+        if (_outShm.get() == nullptr)
+            _outShm.reset(new Image_Shmdata());
+        
+        glfwMakeContextCurrent(_window->get());
+        ImagePtr img = _outTextures[0]->read();
+        glfwMakeContextCurrent(NULL);
+
+        _outShm->write(img, string("/tmp/splash_") + _name);
+    }
+
     return error != 0 ? true : false;
 }
 
@@ -873,6 +887,18 @@ void Camera::registerAttributes()
     _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](vector<Value> args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
+    });
+
+    _attribFunctions["shmOutput"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _writeToShm = true;
+        else
+            _writeToShm = false;
+        return true;
+    }, [&]() {
+        return vector<Value>({_writeToShm});
     });
 }
 

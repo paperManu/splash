@@ -7,6 +7,7 @@
 #define SPLASH_SHMDATA_THREADS 16
 
 using namespace std;
+using namespace OIIO_NAMESPACE;
 
 namespace Splash
 {
@@ -17,7 +18,6 @@ Image_Shmdata::Image_Shmdata()
     _type = "image_shmdata";
 
     registerAttributes();
-    //computeLUT();
 }
 
 /*************/
@@ -25,6 +25,8 @@ Image_Shmdata::~Image_Shmdata()
 {
     if (_reader != nullptr)
         shmdata_any_reader_close(_reader);
+    if (_writer != nullptr)
+        shmdata_any_writer_close(_writer);
 
     SLog::log << Log::DEBUG << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 }
@@ -45,40 +47,64 @@ bool Image_Shmdata::read(const string& filename)
 }
 
 /*************/
-void Image_Shmdata::computeLUT()
+bool Image_Shmdata::write(const ImagePtr& img, const string& filename)
 {
-    // Compute YCbCr to RGB lookup table
-    for (int y = 0; y < 256; ++y)
+    if (img->data() == NULL)
+        return false;
+
+    ImageSpec spec = img->getSpec();
+    if (spec.width != _writerSpec.width || spec.height != _writerSpec.height || spec.nchannels != _writerSpec.nchannels || _writer == NULL || _filename != filename)
+        if (!initShmWriter(spec, filename))
+            return false;
+
+    unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+    shmdata_any_writer_push_data(_writer, (void*)img->data(), _writerInputSize, (currentTime - _writerStartTime) * 1e6, NULL, NULL);
+    return true;
+}
+
+/*************/
+bool Image_Shmdata::initShmWriter(const ImageSpec& spec, const string& filename)
+{
+    if (_writer != NULL)
+        shmdata_any_writer_close(_writer);
+
+    _writer = shmdata_any_writer_init();
+    
+    string dataType;
+    if (spec.format == "uint8" && spec.nchannels == 4)
     {
-        vector<vector<vector<unsigned char>>> values_1(256);
-        for (int u = 0; u < 256; ++u)
-        {
-            vector<vector<unsigned char>> values_2(256);
-            for (int v = 0; v < 256; ++v)
-            {
-                //float yValue = (float)y;
-                //float uValue = (float)u - 128.f;
-                //float vValue = (float)v - 128.f;
-
-                vector<unsigned char> pixel(3);
-                //pixel[0] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 1.596f * vValue)));
-                //pixel[1] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f - 0.392f * uValue - 0.813f * vValue)));
-                //pixel[2] = (unsigned char)max(0.f, min(255.f, (yValue * 1.164f + 2.017f * uValue)));
-
-                int yValue = y;
-                int uValue = u - 128;
-                int vValue = v - 128;
-
-                pixel[0] = (unsigned char)max(0, min(255, (yValue * 1164 + 1596 * vValue) / 1000));
-                pixel[1] = (unsigned char)max(0, min(255, (yValue * 1164 - 392 * uValue - 813 * vValue) / 1000));
-                pixel[2] = (unsigned char)max(0, min(255, (yValue * 1164 + 2017 * uValue) / 1000));
-
-                values_2[v] = pixel;
-            }
-            values_1[u] = values_2;
-        }
-        _yCbCrLUT.push_back(values_1);
+        dataType += "video/x-raw-rgb,bpp=32,endianness=4321,depth=32,red_mask=-16777216,green_mask=16711680,blue_mask=65280,";
+        _writerInputSize = 4;
     }
+    else if (spec.format == "uint16" && spec.nchannels == 1)
+    {
+        dataType += "video/x-raw-gray,bpp=16,endianness=4321,depth=16,";
+        _writerInputSize = 2;
+    }
+    else
+    {
+        _writerInputSize = 0;
+        return false;
+    }
+
+    dataType += "width=" + to_string(spec.width) + ",";
+    dataType += "height=" + to_string(spec.height) + ",";
+    dataType += "framerate=30/1";
+    _writerInputSize *= spec.width * spec.height;
+
+    shmdata_any_writer_set_data_type(_writer, dataType.c_str());
+    if (!shmdata_any_writer_set_path(_writer, filename.c_str()))
+    {
+        SLog::log << "Image_Shmdata::" << __FUNCTION__ << " - Unable to write to shared memory " << filename << Log::endl;
+        _filename = "";
+        return false;
+    }
+
+    _filename = filename;
+    _writerSpec = spec;
+    shmdata_any_writer_start(_writer);
+    _writerStartTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+    return true;
 }
 
 /*************/

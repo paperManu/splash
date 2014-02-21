@@ -26,6 +26,7 @@
 #define IMAGE_SHMDATA_H
 
 #include <shmdata/any-data-reader.h>
+#include <shmdata/any-data-writer.h>
 
 #include "config.h"
 #include "image.h"
@@ -62,17 +63,29 @@ class Image_Shmdata : public Image
          */
         bool read(const std::string& filename);
 
+        /**
+         * Write an image to the specified path
+         */
+        bool write(const ImagePtr& img, const std::string& filename);
+
     private:
         std::string _filename;
         shmdata_any_reader_t* _reader {nullptr};
+        shmdata_any_writer_t* _writer {nullptr};
 
-        // LUT for YUV conversion
-        std::vector<std::vector<std::vector<std::vector<unsigned char>>>> _yCbCrLUT;
+        oiio::ImageSpec _writerSpec;
+        int _writerInputSize {0};
+        unsigned long long _writerStartTime;
 
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)
          */
         void computeLUT();
+
+        /**
+         * Initialize the shm writer according to the spec
+         */
+        bool initShmWriter(const oiio::ImageSpec& spec, const std::string& filename);
 
         /**
          * Shmdata callback

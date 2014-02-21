@@ -42,6 +42,7 @@
 #include <gsl/gsl_multimin.h>
 #include <GLFW/glfw3.h>
 
+#include "image_shmdata.h"
 #include "object.h"
 #include "texture.h"
 
@@ -149,11 +150,13 @@ class Camera : public BaseObject
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
+        bool _writeToShm {false};
 
         GLuint _fbo;
         TexturePtr _depthTexture;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
+        Image_ShmdataPtr _outShm;
 
         // Rendering parameters
         bool _drawFrame {false};

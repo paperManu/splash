@@ -47,6 +47,29 @@ void Texture::generateMipmap() const
 }
 
 /*************/
+bool Texture::linkTo(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    {
+        ImagePtr img = dynamic_pointer_cast<Image>(obj);
+        _img = img;
+        return true;
+    }
+
+    return false;
+}
+
+/*************/
+ImagePtr Texture::read()
+{
+    ImagePtr img(new Image(_spec));
+    glBindTexture(GL_TEXTURE_2D, _glTex);
+    glGetTexImage(GL_TEXTURE_2D, 0, _texFormat, _texType, (GLvoid*)img->data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return img;
+}
+
+/*************/
 void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                     GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
@@ -126,19 +149,6 @@ void Texture::resize(int width, int height)
 {
     if (width != _spec.width && height != _spec.height)
         reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
-}
-
-/*************/
-bool Texture::linkTo(BaseObjectPtr obj)
-{
-    if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
-    {
-        ImagePtr img = dynamic_pointer_cast<Image>(obj);
-        _img = img;
-        return true;
-    }
-
-    return false;
 }
 
 /*************/
