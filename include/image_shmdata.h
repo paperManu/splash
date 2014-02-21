@@ -76,6 +76,7 @@ class Image_Shmdata : public Image
         oiio::ImageSpec _writerSpec;
         int _writerInputSize {0};
         unsigned long long _writerStartTime;
+        oiio::ImageBuf _writerBuffer;
 
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)

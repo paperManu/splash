@@ -450,8 +450,6 @@ bool Camera::render()
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 
-    glfwMakeContextCurrent(NULL);
-
     // Output to a shared memory if set so
     if (_writeToShm)
     {
@@ -459,12 +457,11 @@ bool Camera::render()
         if (_outShm.get() == nullptr)
             _outShm.reset(new Image_Shmdata());
         
-        glfwMakeContextCurrent(_window->get());
         ImagePtr img = _outTextures[0]->read();
-        glfwMakeContextCurrent(NULL);
-
         _outShm->write(img, string("/tmp/splash_") + _name);
     }
+
+    glfwMakeContextCurrent(NULL);
 
     return error != 0 ? true : false;
 }

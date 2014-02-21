@@ -109,6 +109,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 void Scene::render()
 {
     bool isError {false};
+    vector<unsigned int> threadIds;
 
     // Update the cameras
     STimer::timer << "cameras";
@@ -126,7 +127,6 @@ void Scene::render()
 
     // Update the image buffers
     STimer::timer << "buffer object update";
-    vector<unsigned int> threadIds;
     threadIds.push_back(SThread::pool.enqueue([&]() {
         for (auto& obj : _objects)
             if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
