@@ -66,7 +66,7 @@ class Image_Shmdata : public Image
         /**
          * Write an image to the specified path
          */
-        bool write(const ImagePtr& img, const std::string& filename);
+        bool write(const oiio::ImageBuf& img, const std::string& filename);
 
     private:
         std::string _filename;

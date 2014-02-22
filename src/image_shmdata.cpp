@@ -47,18 +47,18 @@ bool Image_Shmdata::read(const string& filename)
 }
 
 /*************/
-bool Image_Shmdata::write(const ImagePtr& img, const string& filename)
+bool Image_Shmdata::write(const ImageBuf& img, const string& filename)
 {
-    if (img->data() == NULL)
+    if (img.localpixels() == NULL)
         return false;
 
     lock_guard<mutex> lock(_mutex);
-    ImageSpec spec = img->getSpec();
+    ImageSpec spec = img.spec();
     if (spec.width != _writerSpec.width || spec.height != _writerSpec.height || spec.nchannels != _writerSpec.nchannels || _writer == NULL || _filename != filename)
         if (!initShmWriter(spec, filename))
             return false;
 
-    memcpy(_writerBuffer.localpixels(), img->data(), _writerInputSize);
+    memcpy(_writerBuffer.localpixels(), img.localpixels(), _writerInputSize);
     unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
     shmdata_any_writer_push_data(_writer, (void*)_writerBuffer.localpixels(), _writerInputSize, (currentTime - _writerStartTime) * 1e6, NULL, NULL);
     return true;

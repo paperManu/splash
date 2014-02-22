@@ -32,6 +32,7 @@
 #include <iomanip>
 #include <iostream>
 #include <utility>
+#include <mutex>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -74,45 +75,12 @@ class Log
         }
 
         /**
-         * Set a new log message
-         */
-        template<typename ... T>
-        void rec(Priority p, T ... args)
-        {
-            std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-            std::time_t now_c = std::chrono::system_clock::to_time_t(now);
-            char time_c[64];
-            strftime(time_c, 64, "%T", std::localtime(&now_c));
-
-            std::string timedMsg;
-            std::string type;
-            if (p == MESSAGE)
-                type = std::string("[MESSAGE]");
-            else if (p == DEBUG)
-                type = std::string(" [DEBUG] ");
-            else if (p == WARNING)
-                type = std::string("[WARNING]");
-            else if (p == ERROR)
-                type = std::string(" [ERROR] ");
-
-            timedMsg = std::string(time_c) + std::string(" / ") + type + std::string(" / ");
-
-            addToString(timedMsg, args...);
-
-            if (p >= _verbosity)
-                toConsole(timedMsg);
-
-            _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
-            if (_logs.size() > _logLength)
-                _logs.erase(_logs.begin());
-        }
-
-        /**
          * Shortcut for any type of log
          */
         template<typename ... T>
         void operator()(Priority p, T ... args)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             rec(p, args...);
         }
 
@@ -122,18 +90,21 @@ class Log
         template <typename T>
         Log& operator<<(T msg)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             addToString(_tempString, msg);
             return *this;
         }
 
         Log& operator<<(Value v)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             addToString(_tempString, v.asString());
             return *this;
         }
 
         Log& operator<<(Log::Action action)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             if (action == endl)
             {
                 if (_tempPriority >= _verbosity)
@@ -146,6 +117,7 @@ class Log
 
         Log& operator<<(Log::Priority p)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             _tempPriority = p;
             return *this;
         }
@@ -164,6 +136,7 @@ class Log
         template<typename ... T>
         std::vector<std::string> getLogs(T ... args)
         {
+            std::lock_guard<std::mutex> lock(_mutex);
             std::vector<Log::Priority> priorities {args...};
             std::vector<std::string> logs;
             for (auto log : _logs)
@@ -183,6 +156,7 @@ class Log
         }
 
     private:
+        mutable std::mutex _mutex;
         std::vector<std::pair<std::string, Priority>> _logs;
         int _logLength {5000};
         Priority _verbosity {MESSAGE};
@@ -215,6 +189,42 @@ class Log
         void addToString(std::string& str) const
         {
             return;
+        }
+
+        /**
+         * Set a new log message
+         */
+        template<typename ... T>
+        void rec(Priority p, T ... args)
+        {
+            std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+            std::time_t now_c = std::chrono::system_clock::to_time_t(now);
+            char time_c[64];
+            strftime(time_c, 64, "%T", std::localtime(&now_c));
+
+            std::string timedMsg;
+            std::string type;
+            if (p == MESSAGE)
+                type = std::string("[MESSAGE]");
+            else if (p == DEBUG)
+                type = std::string(" [DEBUG] ");
+            else if (p == WARNING)
+                type = std::string("[WARNING]");
+            else if (p == ERROR)
+                type = std::string(" [ERROR] ");
+
+            timedMsg = std::string(time_c) + std::string(" / ") + type + std::string(" / ");
+
+            addToString(timedMsg, args...);
+
+            if (p >= _verbosity)
+                toConsole(timedMsg);
+
+            _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
+            if (_logs.size() > _logLength)
+            {
+                _logs.erase(_logs.begin());
+            }
         }
 
         /*****/

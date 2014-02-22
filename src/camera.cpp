@@ -460,14 +460,13 @@ bool Camera::render()
         if (_outShm.get() == nullptr)
             _outShm.reset(new Image_Shmdata());
         
-        ImagePtr img(new Image(_outTextures[0]->getSpec()));
-
         // First, we launch the copy to the host
+        ImageBuf img(_outTextures[0]->getSpec());
         glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
         GLubyte* gpuPixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
         if (gpuPixels != NULL)
         {
-            memcpy((void*)img->data(), gpuPixels, _width * _height * 4);
+            memcpy((void*)img.localpixels(), gpuPixels, _width * _height * 4);
             glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
         }
         _pboReadIndex = (_pboReadIndex + 1) % 2;
@@ -920,7 +919,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["shmOutput"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["shared"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
