@@ -48,12 +48,16 @@ class Timer
          */
         void start(std::string name)
         {
+            if (!_enabled)
+                return;
             std::lock_guard<std::mutex> lock(_mutex);
             _timeMap[name] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
         }
 
         void stop(std::string name)
         {
+            if (!_enabled)
+                return;
             std::lock_guard<std::mutex> lock(_mutex);
             if (_timeMap.find(name) != _timeMap.end())
             {
@@ -67,6 +71,9 @@ class Timer
          */
          void waitUntilDuration(std::string name, unsigned long long duration)
          {
+            if (!_enabled)
+                return;
+
             if (_timeMap.find(name) == _timeMap.end())
                 return;
 
@@ -142,11 +149,17 @@ class Timer
 
          unsigned long long operator[](std::string name) {return getDuration(name);}
 
+         /**
+          * Enable / disable the timers
+          */
+         void setStatus(bool enabled) {_enabled = enabled;}
+
     private:
         std::map<std::string, unsigned long long> _timeMap; 
         std::map<std::string, unsigned long long> _durationMap;
         unsigned long long _currentDuration;
         std::mutex _mutex;
+        bool _enabled {true};
 };
 
 struct STimer

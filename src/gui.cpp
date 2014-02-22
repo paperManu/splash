@@ -90,7 +90,10 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_TAB:
     {
         if (action == GLFW_PRESS)
+        {
             _isVisible = !_isVisible;
+            STimer::timer.setStatus(_isVisible);
+        }
         break;
     }
     case GLFW_KEY_ESCAPE:
