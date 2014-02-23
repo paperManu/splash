@@ -152,12 +152,10 @@ void Scene::render()
             threadIds.push_back(SThread::pool.enqueue([&]() {
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
-    STimer::timer >> "swap";
 
     _status = !isError;
 
     // Update the user events
-    STimer::timer << "events";
     glfwPollEvents();
     // Mouse position
     {
@@ -227,10 +225,11 @@ void Scene::render()
                     dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
         }
     }
-    STimer::timer >> "events";
 
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
+
+    STimer::timer >> "swap";
 }
 
 /*************/

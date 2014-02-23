@@ -331,8 +331,7 @@ void Gui::initGLV(int width, int height)
         text += "Cameras rendering: " + to_string(cam) + " ms\n";
         text += "GUI rendering: " + to_string(gui) + " ms\n";
         text += "Windows rendering: " + to_string(win) + " ms\n";
-        text += "Buffer swapping: " + to_string(buf) + " ms\n";
-        text += "Events processing: " + to_string(evt) + " ms\n";
+        text += "Swapping and events: " + to_string(buf) + " ms\n";
 
         return text;
     });
