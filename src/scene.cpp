@@ -27,7 +27,7 @@ BaseObjectPtr Scene::add(string type, string name)
     SLog::log << Log::DEBUG << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
     BaseObjectPtr obj;
     if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
+        obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(getNewSharedWindow(name))));
     else if (type == string("geometry"))
         obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
     else if (type == string("gui"))
@@ -115,7 +115,11 @@ void Scene::render()
     STimer::timer << "cameras";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
-            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
+            threadIds.push_back(SThread::pool.enqueue([&]() {
+                isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
+            }));
+    SThread::pool.waitThreads(threadIds);
+    threadIds.clear();
     STimer::timer >> "cameras";
 
     // Update the guis

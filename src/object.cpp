@@ -31,6 +31,7 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
+    _mutex.lock(); 
     _shader->setAttribute("fill", {_fill});
 
     if (_blendMaps.size() != 0)
@@ -65,6 +66,7 @@ void Object::deactivate()
         _shader->deactivateBlending();
     _shader->deactivate();
     _geometries[0]->deactivate();
+    _mutex.unlock();
 }
 
 /*************/

@@ -394,8 +394,8 @@ bool Camera::render()
         // Draw the objects
         for (auto& obj : _objects)
         {
-            obj->getShader()->setAttribute("blendWidth", {_blendWidth});
             obj->activate();
+            obj->getShader()->setAttribute("blendWidth", {_blendWidth});
             obj->setViewProjectionMatrix(computeViewProjectionMatrix());
             obj->draw();
             obj->deactivate();

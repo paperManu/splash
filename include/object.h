@@ -120,6 +120,8 @@ class Object : public BaseObject
         void setViewProjectionMatrix(const glm::mat4& mvp);
 
     private:
+        mutable std::mutex _mutex;
+
         ShaderPtr _shader;
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
