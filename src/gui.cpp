@@ -335,8 +335,8 @@ void Gui::initGLV(int width, int height)
 
         return text;
     });
-    _glvProfile.width(SPLASH_GLV_FONTSIZE * 32);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 7 + 8);
+    _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 6 + 8);
     _glvProfile.style(&_style);
 
     // Some help regarding keyboard shortcuts
