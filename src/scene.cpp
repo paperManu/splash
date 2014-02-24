@@ -129,20 +129,22 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
 
-    // Update the image buffers
-    STimer::timer << "buffer object update";
+    // Update the buffer objects
     threadIds.push_back(SThread::pool.enqueue([&]() {
+        STimer::timer << "buffer object update";
         for (auto& obj : _objects)
             if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
-                    dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
+                dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
+        STimer::timer >> "buffer object update";
     }));
-    STimer::timer >> "image buffer update";
 
     // Update the windows
     STimer::timer << "windows";
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+            threadIds.push_back(SThread::pool.enqueue([&]() {
+                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+            }));
     STimer::timer >> "windows";
 
     // Swap all buffers at once
@@ -152,7 +154,6 @@ void Scene::render()
             threadIds.push_back(SThread::pool.enqueue([&]() {
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
-
     _status = !isError;
 
     // Update the user events

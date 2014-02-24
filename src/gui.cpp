@@ -312,6 +312,7 @@ void Gui::initGLV(int width, int height)
         static float upl {0.f};
         static float cam {0.f};
         static float gui {0.f};
+        static float upd {0.f};
         static float win {0.f};
         static float buf {0.f};
         static float evt {0.f};
@@ -320,6 +321,7 @@ void Gui::initGLV(int width, int height)
         upl = upl * 0.95 + STimer::timer["upload"] * 0.001 * 0.05;
         cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
         gui = gui * 0.95 + STimer::timer["guis"] * 0.001 * 0.05;
+        upd = upd * 0.95 + STimer::timer["buffer object update"] * 0.001 * 0.05;
         win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
         buf = buf * 0.95 + STimer::timer["swap"] * 0.001 * 0.05;
         evt = evt * 0.95 + STimer::timer["events"] * 0.001 * 0.05;
@@ -330,13 +332,14 @@ void Gui::initGLV(int width, int height)
         text += "Buffers upload: " + to_string(upl) + " ms\n";
         text += "Cameras rendering: " + to_string(cam) + " ms\n";
         text += "GUI rendering: " + to_string(gui) + " ms\n";
+        text += "Buffers deserialize: " + to_string(upd) + " ms\n";
         text += "Windows rendering: " + to_string(win) + " ms\n";
         text += "Swapping and events: " + to_string(buf) + " ms\n";
 
         return text;
     });
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 6 + 8);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 7 + 8);
     _glvProfile.style(&_style);
 
     // Some help regarding keyboard shortcuts
