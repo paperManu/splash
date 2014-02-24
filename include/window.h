@@ -131,6 +131,7 @@ class Window : public BaseObject
         bool _fullscreen {false};
         std::vector<Value> _layout {0, 0, 0, 0};
 
+        mutable std::mutex _contextMutex;
         ObjectPtr _screen;
         glm::mat4x4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;

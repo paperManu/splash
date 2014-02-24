@@ -150,6 +150,7 @@ bool Window::linkTo(BaseObjectPtr obj)
 /*************/
 bool Window::render()
 {
+    lock_guard<mutex> lock(_contextMutex);
     glfwMakeContextCurrent(_window->get());
     glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -195,6 +196,7 @@ bool Window::render()
 /*************/
 void Window::swapBuffers()
 {
+    lock_guard<mutex> lock(_contextMutex);
     glfwMakeContextCurrent(_window->get());
     glfwSwapBuffers(_window->get());
     glfwMakeContextCurrent(NULL);

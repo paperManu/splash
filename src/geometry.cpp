@@ -30,6 +30,7 @@ Geometry::~Geometry()
 /*************/
 void Geometry::activate()
 {
+    _mutex.lock();
     glBindVertexArray(_vertexArray[glfwGetCurrentContext()]);
 }
 
@@ -37,6 +38,7 @@ void Geometry::activate()
 void Geometry::deactivate() const
 {
     glBindVertexArray(0);
+    _mutex.unlock();
 }
 
 /*************/

@@ -41,6 +41,7 @@ Shader::~Shader()
 /*************/
 void Shader::activate()
 {
+    _mutex.lock();
     if (!_isLinked)
     {
         if (!linkProgram())
@@ -78,6 +79,7 @@ void Shader::deactivate()
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+    _mutex.unlock();
 }
 
 /*************/

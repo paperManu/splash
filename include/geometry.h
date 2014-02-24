@@ -119,6 +119,8 @@ class Geometry : public BaseObject
         void update();
 
     private:
+        mutable std::mutex _mutex;
+
         MeshPtr _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 

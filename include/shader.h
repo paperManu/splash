@@ -142,6 +142,8 @@ class Shader : public BaseObject
         void setModelViewProjectionMatrix(const glm::mat4& mvp);
 
     private:
+        mutable std::mutex _mutex;
+
         std::map<ShaderType, GLuint> _shaders;
         GLuint _program {0};
         bool _isLinked = {false};
