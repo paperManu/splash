@@ -218,13 +218,11 @@ void Scene::render()
                     continue;
                 }
         }
-        else
-        {
-            // Send the action to the GUI
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "gui")
-                    dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
-        }
+
+        // Send the action to the GUI
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
 
     // Wait for buffer update and swap threads

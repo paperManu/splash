@@ -214,13 +214,14 @@ bool Camera::doCalibration()
     // Starting with various values of the FOV
     double initialFov = _fov;
     double minValue = numeric_limits<double>::max();
-    for (double s = -1.0; s < 7.0; ++s) // Vary the vertical shift
+    for (double s = -1.0; s < 6.0; ++s) // Vary the vertical shift
+    for (double t = 1.0; t < 4.0; ++t) // Vary the horizontal shift
     for (double f = 0.0; f < 3.0; ++f) // Vary the FOV
     {
         minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
 
         gsl_vector_set(x, 0, 10.0 + f * 20.0);
-        gsl_vector_set(x, 1, (double)_width * 0.5);
+        gsl_vector_set(x, 1, (double)_width * t * 0.2);
         gsl_vector_set(x, 2, (double)_height * s * 0.2);
         gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
 
@@ -382,11 +383,14 @@ bool Camera::render()
     {
         glClearColor(1.0, 0.5, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
-        glClearColor(0.0, 0.0, 0.0, 0.0);
         glEnable(GL_SCISSOR_TEST);
         glScissor(SPLASH_SCISSOR_WIDTH, SPLASH_SCISSOR_WIDTH, _width - SPLASH_SCISSOR_WIDTH * 2, _height - SPLASH_SCISSOR_WIDTH * 2);
     }
 
+    if (_flashBG && !_hidden)
+        glClearColor(1.0, 1.0, 1.0, 1.0);
+    else
+        glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (!_hidden)
@@ -929,6 +933,13 @@ void Camera::registerAttributes()
         return true;
     }, [&]() {
         return vector<Value>({_writeToShm});
+    });
+
+    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _flashBG = args[0].asInt();
+        return true;
     });
 }
 

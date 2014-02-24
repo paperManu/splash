@@ -142,6 +142,7 @@ class Gui : public BaseObject
         GlvGlobalView _glvGlobalView;
         GlvGraph _glvGraph;
         glv::space_t _prevMouseX, _prevMouseY;
+        bool _flashBG; // Set to true if the BG is set to all white for all outputs
         
         /**
          * Convert GLFW keys values to GLV

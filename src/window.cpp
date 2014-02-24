@@ -160,6 +160,7 @@ bool Window::render()
 
     glGetError();
     glDrawBuffer(GL_BACK);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     _screen->getShader()->setAttribute("layout", _layout);
@@ -215,6 +216,8 @@ bool Window::switchFullscreen(int screenId)
 
     if (screenId != -1)
         _screenId = screenId;
+    else if (screenId == _screenId)
+        return true;
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
 

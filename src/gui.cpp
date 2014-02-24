@@ -120,6 +120,18 @@ void Gui::key(int& key, int& action, int& mods)
         }
         break;
     }
+    case GLFW_KEY_F:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            for (auto& obj : scene->_objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(!_flashBG)});
+            _flashBG = !_flashBG;
+        }
+        break;
+    }
     }
 }
 
@@ -350,6 +362,7 @@ void Gui::initGLV(int width, int height)
         text += "Shortcuts for the calibration view:\n";
         text += " Space: switcher between cameras\n";
         text += " A: show / hide the target calibration point\n";
+        text += " F: white background instead of black\n";
         text += " C: calibrate the selected camera\n";
         text += " R: revert camera to previous calibration\n";
         text += " B: compute the blending between all cameras\n";
@@ -360,7 +373,7 @@ void Gui::initGLV(int width, int height)
         return text;
     });
     _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 10 + 8);
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
     _glvHelp.style(&_style);
 
     Placer placer(_glv, Direction::S, Place::TL, 8, 8);
