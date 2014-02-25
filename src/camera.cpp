@@ -366,6 +366,10 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
 /*************/
 bool Camera::render()
 {
+    ImageSpec spec = _outTextures[0]->getSpec();
+    if (spec.width != _width || spec.height != _height)
+        setOutputSize(spec.width, spec.height);
+
     if (!_window->setAsCurrentContext()) 
 		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
@@ -373,10 +377,6 @@ bool Camera::render()
         return false;
 
     glGetError();
-    ImageSpec spec = _outTextures[0]->getSpec();
-    if (spec.width != _width || spec.height != _height)
-        setOutputSize(spec.width, spec.height);
-
     glViewport(0, 0, _width, _height);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
