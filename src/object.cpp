@@ -44,8 +44,9 @@ void Object::activate()
     _shader->activate();
 
     GLuint texUnit = 0;
-    for (auto t : _textures)
+    for (auto& t : _textures)
     {
+        t->lock();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
         texUnit++;
     }
@@ -60,8 +61,12 @@ mat4x4 Object::computeModelMatrix() const
 /*************/
 void Object::deactivate()
 {
+    for (auto& t : _textures)
+        t->unlock();
+
     if (_blendMaps.size() != 0)
         _shader->deactivateBlending();
+
     _shader->deactivate();
     _geometries[0]->deactivate();
     _mutex.unlock();

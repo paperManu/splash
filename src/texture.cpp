@@ -152,6 +152,8 @@ void Texture::resize(int width, int height)
 /*************/
 void Texture::update()
 {
+    lock_guard<mutex> lock(_mutex);
+
     // If _img is nullptr, this texture is not set from an Image
     if (_img.get() == nullptr)
         return;

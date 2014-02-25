@@ -117,15 +117,17 @@ void Scene::render()
     vector<unsigned int> threadIds;
 
     // Update the input textures
-    STimer::timer << "textures";
-    _mainWindow->setAsCurrentContext();
-    for (auto& obj: _objects)
-        if (obj.second->getType() == "texture")
-            dynamic_pointer_cast<Texture>(obj.second)->update();
-    if (_blendingTexture.get() != nullptr)
-        _blendingTexture->update();
-    _mainWindow->releaseContext();
-    STimer::timer >> "textures";
+    threadIds.push_back(SThread::pool.enqueue([&]() {
+        STimer::timer << "textures";
+        _mainWindow->setAsCurrentContext();
+        for (auto& obj: _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->update();
+        if (_blendingTexture.get() != nullptr)
+            _blendingTexture->update();
+        _mainWindow->releaseContext();
+        STimer::timer >> "textures";
+    }));
 
     // Update the cameras
     STimer::timer << "cameras";
@@ -158,9 +160,9 @@ void Scene::render()
     STimer::timer << "windows";
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
+            //threadIds.push_back(SThread::pool.enqueue([&]() {
                 isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-            }));
+            //}));
     STimer::timer >> "windows";
 
     // Swap all buffers at once

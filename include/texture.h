@@ -106,6 +106,11 @@ class Texture : public BaseObject
         bool linkTo(BaseObjectPtr obj);
 
         /**
+         * Lock the texture for read / write operations
+         */
+        void lock() const {_mutex.lock();}
+
+        /**
          * Read the texture and returns an Image
          */
         ImagePtr read();
@@ -123,11 +128,18 @@ class Texture : public BaseObject
         void resize(int width, int height);
 
         /**
+         * Unlock the texture for read / write operations
+         */
+        void unlock() const {_mutex.unlock();}
+
+        /**
          * Update the texture according to the owned Image
          */
         void update();
 
     private:
+        mutable std::mutex _mutex;
+
         GLuint _glTex = {0};
         oiio::ImageSpec _spec;
         GLuint _pbos[2];
