@@ -130,6 +130,8 @@ class Texture : public BaseObject
     private:
         GLuint _glTex = {0};
         oiio::ImageSpec _spec;
+        GLuint _pbos[2];
+        int _pboReadIndex {0};
 
         // Store some texture parameters
         GLenum _texTarget, _texFormat, _texType;
@@ -137,6 +139,16 @@ class Texture : public BaseObject
 
         ImagePtr _img;
         std::chrono::high_resolution_clock::time_point _timestamp;
+
+        /**
+         * As says its name
+         */
+        void init();
+
+        /**
+         * Update the pbos according to the parameters
+         */
+        void updatePbos(int width, int height, int bytes);
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;

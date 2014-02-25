@@ -122,6 +122,8 @@ void Scene::render()
     for (auto& obj: _objects)
         if (obj.second->getType() == "texture")
             dynamic_pointer_cast<Texture>(obj.second)->update();
+    if (_blendingTexture.get() != nullptr)
+        _blendingTexture->update();
     _mainWindow->releaseContext();
     STimer::timer >> "textures";
 

@@ -11,16 +11,14 @@ namespace Splash {
 /*************/
 Texture::Texture()
 {
-    _type = "texture";
-    _timestamp = chrono::high_resolution_clock::now();
+    init();
 }
 
 /*************/
 Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                  GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
-    _type = "texture";
-    _timestamp = chrono::high_resolution_clock::now();
+    init();
     reset(target, level, internalFormat, width, height, border, format, type, data); 
 }
 
@@ -202,6 +200,7 @@ void Texture::update()
             SLog::log << Log::WARNING << "Texture::" <<  __FUNCTION__ << " - Texture format not supported" << Log::endl;
             return;
         }
+        updatePbos(spec.width, spec.height, spec.pixel_bytes());
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -211,17 +210,56 @@ void Texture::update()
     else
     {
         glBindTexture(GL_TEXTURE_2D, _glTex);
-        _img->lock();
+
+        // Copy the pixels from the current PBO to the texture
+        STimer::timer << "pbo2";
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         if (spec.nchannels == 4 && spec.format == "uint8")
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         else if (spec.nchannels == 1 && spec.format == "uint16")
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, _img->data());
-        _img->unlock();
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, 0);
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        STimer::timer >> "pbo2";
+
+        _pboReadIndex = (_pboReadIndex + 1) % 2;
+        
+        // Fill the next PBO with the image pixels
+        STimer::timer << "pbo1";
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
+        GLubyte* pixels = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+        if (pixels != NULL)
+        {
+            _img->lock();
+            memcpy((void*)pixels, _img->data(), spec.width * spec.height * spec.pixel_bytes());
+            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+            _img->unlock();
+        }
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        STimer::timer >> "pbo1";
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     _timestamp = _img->getTimestamp();
+}
+
+/*************/
+void Texture::init()
+{
+    _type = "texture";
+    _timestamp = chrono::high_resolution_clock::now();
+
+    glGenBuffers(2, _pbos);
+}
+
+/*************/
+void Texture::updatePbos(int width, int height, int bytes)
+{
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
 } // end of namespace
