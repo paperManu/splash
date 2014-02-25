@@ -8,9 +8,9 @@
 #include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.02
+#define SPLASH_WORLDMARKER_SCALE 0.015
 #define SPLASH_SCREENMARKER_SCALE 0.05
-#define SPLASH_MARKER_SELECTED {0.0, 1.0, 0.0, 1.0}
+#define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
 #define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
 
@@ -395,7 +395,7 @@ bool Camera::render()
     }
 
     if (_flashBG && !_hidden)
-        glClearColor(1.0, 1.0, 1.0, 1.0);
+        glClearColor(0.6, 0.6, 0.6, 1.0);
     else
         glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
