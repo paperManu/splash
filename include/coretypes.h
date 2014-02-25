@@ -86,7 +86,32 @@ class GlWindow
          */
         GLFWwindow* getMainWindow() const {return _mainWindow;}
 
+        /**
+         * Set the context of this window as current
+         */
+        bool setAsCurrentContext() const 
+        {
+            if (glfwGetCurrentContext() != NULL)
+                return false;
+            _mutex.lock();
+            glfwMakeContextCurrent(_window);
+            return true;
+        }
+
+        /**
+         * Release the context
+         */
+        void releaseContext() const
+        {
+            if (glfwGetCurrentContext() == _window)
+            {
+                glfwMakeContextCurrent(NULL);
+                _mutex.unlock();
+            }
+        }
+
     private:
+        mutable std::mutex _mutex;
         GLFWwindow* _window {nullptr};
         GLFWwindow* _mainWindow {nullptr};
 };

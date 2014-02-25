@@ -20,7 +20,8 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 
     _scene = s;
     _window = w;
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -47,16 +48,14 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     // Create the default GUI camera
-    glfwMakeContextCurrent(scene->_mainWindow->get());
     _guiCamera = CameraPtr(new Camera(scene->_mainWindow));
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
-    glfwMakeContextCurrent(NULL);
 
     // Intialize the GUI widgets
     initGLV(_width, _height);
@@ -226,7 +225,8 @@ bool Gui::render()
     if (_isVisible)
         _glvGlobalView._guiCamera->render();
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     GLenum error = glGetError();
     glViewport(0, 0, _width, _height);
 
@@ -253,7 +253,7 @@ bool Gui::render()
     if (error)
         SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     return error != 0 ? true : false;
 }
@@ -264,10 +264,11 @@ void Gui::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
     _outTexture->resize(width, height);
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     _width = width;
     _height = height;

@@ -39,8 +39,6 @@ void Object::activate()
             if (_blendMaps[0] == _textures[i])
                 _shader->activateBlending(i);
 
-    for (auto& t : _textures)
-        t->update();
     _geometries[0]->update();
     _geometries[0]->activate();
     _shader->activate();

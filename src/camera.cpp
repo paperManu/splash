@@ -31,14 +31,16 @@ Camera::Camera(GlWindowPtr w)
     _window = w;
 
     // Intialize FBO, textures and everything OpenGL
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     setOutputNbr(1);
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
@@ -63,7 +65,7 @@ Camera::Camera(GlWindowPtr w)
     // Load some models
     loadDefaultModels();
 
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     registerAttributes();
 }
@@ -89,7 +91,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
         return;
     }
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     // We want to render the object with a specific texture, containing texture coordinates
     vector<vector<Value>> shaderFill;
     for (auto& obj : _objects)
@@ -109,7 +112,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
         dims[1] = dims[0] * height / width;
     else
         dims[0] = dims[1] * width / height;
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     bool writeToShm = _writeToShm;
     _writeToShm = false;
@@ -123,7 +126,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
     _drawFrame = drawFrame;
     _displayCalibration = displayCalibration;
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     GLenum error = glGetError();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     ImageBuf img(_outTextures[0]->getSpec());
@@ -138,7 +142,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
         fillIndex++;
     }
     error = glGetError();
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     _writeToShm = writeToShm;
     setOutputSize(width, height);
@@ -287,12 +291,13 @@ vector<Value> Camera::pickVertex(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     if (depth == 1.f)
         return vector<Value>();
@@ -326,12 +331,13 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     if (depth == 1.f)
         return vector<Value>();
@@ -360,7 +366,8 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
 /*************/
 bool Camera::render()
 {
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     if (_outTextures.size() < 1)
         return false;
@@ -486,7 +493,7 @@ bool Camera::render()
         _outShm->write(img, string("/tmp/splash_") + _name);
     }
 
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 
     return error != 0 ? true : false;
 }
@@ -557,7 +564,8 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
@@ -589,7 +597,7 @@ void Camera::setOutputNbr(int nbr)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 }
 
 /*************/
@@ -598,7 +606,8 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    glfwMakeContextCurrent(_window->get());
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
 
     for (auto tex : _outTextures)
@@ -619,7 +628,7 @@ void Camera::setOutputSize(int width, int height)
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     }
 
-    glfwMakeContextCurrent(NULL);
+    _window->releaseContext();
 }
 
 /*************/

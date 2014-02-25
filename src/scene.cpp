@@ -22,29 +22,36 @@ Scene::~Scene()
 /*************/
 BaseObjectPtr Scene::add(string type, string name)
 {
-    glfwMakeContextCurrent(_mainWindow->get());
-
     SLog::log << Log::DEBUG << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
+
     BaseObjectPtr obj;
+    // First, the objects containing a context
     if (type == string("camera"))
         obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(getNewSharedWindow(name))));
-    else if (type == string("geometry"))
-        obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
-    else if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _self)));
-    else if (type == string("image") || type == string("image_shmdata"))
-    {
-        obj = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
-        obj->setRemoteType(type);
-    }
-    else if (type == string("mesh"))
-        obj = dynamic_pointer_cast<BaseObject>(MeshPtr(new Mesh()));
-    else if (type == string("object"))
-        obj = dynamic_pointer_cast<BaseObject>(ObjectPtr(new Object()));
-    else if (type == string("texture"))
-        obj = dynamic_pointer_cast<BaseObject>(TexturePtr(new Texture()));
     else if (type == string("window"))
         obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
+    else if (type == string("gui"))
+        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _self)));
+    else
+    {
+        // Then, the objects not containing a context
+        _mainWindow->setAsCurrentContext();
+        if (type == string("geometry"))
+            obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
+        else if (type == string("image") || type == string("image_shmdata"))
+        {
+            obj = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
+            obj->setRemoteType(type);
+        }
+        else if (type == string("mesh"))
+            obj = dynamic_pointer_cast<BaseObject>(MeshPtr(new Mesh()));
+        else if (type == string("object"))
+            obj = dynamic_pointer_cast<BaseObject>(ObjectPtr(new Object()));
+        else if (type == string("texture"))
+            obj = dynamic_pointer_cast<BaseObject>(TexturePtr(new Texture()));
+        _mainWindow->releaseContext();
+    }
+
 
     if (obj.get() != nullptr)
     {
@@ -55,8 +62,6 @@ BaseObjectPtr Scene::add(string type, string name)
         else
             _objects[name] = obj;
     }
-
-    glfwMakeContextCurrent(NULL);
 
     return obj;
 }
@@ -110,6 +115,15 @@ void Scene::render()
 {
     bool isError {false};
     vector<unsigned int> threadIds;
+
+    // Update the input textures
+    STimer::timer << "textures";
+    _mainWindow->setAsCurrentContext();
+    for (auto& obj: _objects)
+        if (obj.second->getType() == "texture")
+            dynamic_pointer_cast<Texture>(obj.second)->update();
+    _mainWindow->releaseContext();
+    STimer::timer >> "textures";
 
     // Update the cameras
     STimer::timer << "cameras";
