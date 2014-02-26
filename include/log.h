@@ -207,7 +207,7 @@ class Log
             if (p == Priority::MESSAGE)
                 type = std::string("[MESSAGE]");
             else if (p == Priority::DEBUGGING)
-                type = std::string(" [DEBUGGING] ");
+                type = std::string(" [DEBUG] ");
             else if (p == Priority::WARNING)
                 type = std::string("[WARNING]");
             else if (p == Priority::ERROR)

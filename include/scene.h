@@ -50,7 +50,7 @@ class Scene;
 typedef std::shared_ptr<Scene> ScenePtr;
 
 /*************/
-class Scene
+class Scene : public BaseObject
 {
     friend Gui;
     friend GlvGlobalView;

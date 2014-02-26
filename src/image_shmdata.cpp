@@ -97,7 +97,7 @@ bool Image_Shmdata::initShmWriter(const ImageSpec& spec, const string& filename)
     shmdata_any_writer_set_data_type(_writer, dataType.c_str());
     if (!shmdata_any_writer_set_path(_writer, filename.c_str()))
     {
-        SLog::log << "Image_Shmdata::" << __FUNCTION__ << " - Unable to write to shared memory " << filename << Log::endl;
+        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Unable to write to shared memory " << filename << Log::endl;
         _filename = "";
         return false;
     }
