@@ -11,6 +11,9 @@ using namespace std;
 
 namespace Splash {
 /*************/
+World* World::_that;
+
+/*************/
 World::World(int argc, char** argv)
 {
     parseArguments(argc, argv);
@@ -289,6 +292,18 @@ void World::saveConfig()
 /*************/
 void World::init()
 {
+    _that = this;
+    _signals.sa_handler = leave;
+    _signals.sa_flags = 0;
+    sigaction(SIGINT, &_signals, NULL);
+    sigaction(SIGTERM, &_signals, NULL);
+}
+
+/*************/
+void World::leave(int signal_value)
+{
+    SLog::log << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
+    _that->_quit = true;
 }
 
 /*************/

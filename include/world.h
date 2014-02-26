@@ -30,6 +30,7 @@
 
 #include <map>
 #include <mutex>
+#include <signal.h>
 #include <string>
 #include <thread>
 #include <vector>
@@ -67,6 +68,9 @@ class World {
     private:
         bool _status {true};
         bool _quit {false};
+        static World* _that;
+        struct sigaction _signals;
+
         std::map<std::string, ScenePtr> _scenes;
 
         unsigned long _nextId {0};
@@ -101,6 +105,11 @@ class World {
          * Initialize the GLFW window
          */
         void init();
+
+        /**
+         * Handle the exit signal messages
+         */
+        static void leave(int signal_value);
 
         /**
          * Load the specified configuration file
