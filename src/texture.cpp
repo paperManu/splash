@@ -25,7 +25,7 @@ Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width
 /*************/
 Texture::~Texture()
 {
-    SLog::log << Log::DEBUG << "Texture::~Texture - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "Texture::~Texture - Destructor" << Log::endl;
     glDeleteTextures(1, &_glTex);
 }
 
@@ -139,7 +139,7 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
     _texFormat = format;
     _texType = type;
 
-    SLog::log << Log::DEBUG << "Texture::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
+    SLog::log << Log::DEBUGGING << "Texture::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
 }
 
 /*************/
@@ -182,7 +182,7 @@ void Texture::update()
 
         if (spec.nchannels == 4 && spec.format == "uint8")
         {
-            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA" << Log::endl;
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA" << Log::endl;
             _img->lock();
             if (srgb[0].asInt() > 0)
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
@@ -192,7 +192,7 @@ void Texture::update()
         }
         else if (spec.nchannels == 1 && spec.format == "uint16")
         {
-            SLog::log << Log::DEBUG << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
             _img->lock();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, _img->data());
             _img->unlock();

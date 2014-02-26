@@ -12,7 +12,7 @@ AC_CONFIG_HEADERS([include/config.h])
 AC_PROG_CXX
 AC_PROG_CC_C_O
 
-CXXFLAGS="$CFLAGS -std=gnu++0x"
+CXXFLAGS="$CXXFLAGS -std=gnu++0x"
 
 export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 

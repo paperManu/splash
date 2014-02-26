@@ -24,7 +24,7 @@ Geometry::~Geometry()
     for (auto v : _vertexArray)
         glDeleteVertexArrays(1, &(v.second));
 
-    SLog::log << Log::DEBUG << "Geometry::~Geometry - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "Geometry::~Geometry - Destructor" << Log::endl;
 }
 
 /*************/

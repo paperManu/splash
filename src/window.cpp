@@ -44,7 +44,7 @@ Window::Window(GlWindowPtr w)
 /*************/
 Window::~Window()
 {
-    SLog::log << Log::DEBUG << "Window::~Window - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 }
 
 /*************/

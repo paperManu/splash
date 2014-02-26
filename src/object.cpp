@@ -22,7 +22,7 @@ Object::Object()
 /*************/
 Object::~Object()
 {
-    SLog::log << Log::DEBUG << "Object::~Object - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "Object::~Object - Destructor" << Log::endl;
 }
 
 /*************/

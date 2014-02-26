@@ -28,7 +28,7 @@ Image_Shmdata::~Image_Shmdata()
     if (_writer != nullptr)
         shmdata_any_writer_close(_writer);
 
-    SLog::log << Log::DEBUG << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 }
 
 /*************/

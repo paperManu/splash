@@ -16,13 +16,13 @@ Scene::Scene(std::string name)
 /*************/
 Scene::~Scene()
 {
-    SLog::log << Log::DEBUG << "Scene::~Scene - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
 }
 
 /*************/
 BaseObjectPtr Scene::add(string type, string name)
 {
-    SLog::log << Log::DEBUG << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
+    SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
     BaseObjectPtr obj;
     // First, the objects containing a context

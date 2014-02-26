@@ -73,7 +73,7 @@ Camera::Camera(GlWindowPtr w)
 /*************/
 Camera::~Camera()
 {
-    SLog::log<< Log::DEBUG << "Camera::~Camera - Destructor" << Log::endl;
+    SLog::log<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 }
 
 /*************/
@@ -657,7 +657,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * camera->_width, (-point.screen.y + 1.f) / 2.f * camera->_height));
     }
 
-    SLog::log << Log::DEBUG << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << cx << " " << camera->_height - cy << Log::endl;
+    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << cx << " " << camera->_height - cy << Log::endl;
     double fovPix = (camera->_height / 2.0) / tan(fov * M_PI / 360.0); // _fov is indeed fovY
     cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fovPix, 0.0, cx,
                                                       0.0, fovPix, cy,
@@ -693,7 +693,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
     summedDistance /= imagePoints.size();
 
-    SLog::log << Log::DEBUG << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
+    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
 
     if (setExtrinsic)
     {

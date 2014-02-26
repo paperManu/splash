@@ -48,7 +48,7 @@ class Log
     public:
         enum Priority
         {
-            DEBUG = 0,
+            DEBUGGING = 0,
             MESSAGE,
             WARNING,
             ERROR,
@@ -204,13 +204,13 @@ class Log
 
             std::string timedMsg;
             std::string type;
-            if (p == MESSAGE)
+            if (p == Priority::MESSAGE)
                 type = std::string("[MESSAGE]");
-            else if (p == DEBUG)
-                type = std::string(" [DEBUG] ");
-            else if (p == WARNING)
+            else if (p == Priority::DEBUGGING)
+                type = std::string(" [DEBUGGING] ");
+            else if (p == Priority::WARNING)
                 type = std::string("[WARNING]");
-            else if (p == ERROR)
+            else if (p == Priority::ERROR)
                 type = std::string(" [ERROR] ");
 
             timedMsg = std::string(time_c) + std::string(" / ") + type + std::string(" / ");

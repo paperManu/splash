@@ -24,7 +24,7 @@ World::World(int argc, char** argv)
 /*************/
 World::~World()
 {
-    SLog::log << Log::DEBUG << "World::~World - Destructor" << Log::endl;
+    SLog::log << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
     SThread::pool.waitAllThreads();
 }
 
@@ -355,7 +355,7 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-d")
         {
-            SLog::log.setVerbosity(Log::DEBUG);
+            SLog::log.setVerbosity(Log::DEBUGGING);
             idx++;
         }
         else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")
