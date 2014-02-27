@@ -15,6 +15,7 @@ libsplash_la_SOURCES = \
 	gui.cpp \
 	image.cpp \
 	image_shmdata.cpp \
+	link.cpp \
 	log.cpp \
 	mesh.cpp \
 	object.cpp \
@@ -61,7 +62,8 @@ libsplash_la_CXXFLAGS = \
 	$(OPENCV_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
 	$(OPENMESH_CFLAGS) \
-	$(SHMDATA_CFLAGS)
+	$(SHMDATA_CFLAGS) \
+	$(ZMQ_CFLAGS)
 
 libsplash_la_LDFLAGS = \
 	$(GLFW_LIBS) \
@@ -72,7 +74,8 @@ libsplash_la_LDFLAGS = \
 	$(OPENCV_LIBS) \
 	$(OPENIMAGEIO_LIBS) \
 	$(OPENMESH_LIBS) \
-	$(SHMDATA_LIBS)
+	$(SHMDATA_LIBS) \
+	$(ZMQ_LIBS)
 
 #*************#
 bin_PROGRAMS = splash
@@ -88,6 +91,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
 	$(top_srcdir)/include/object.h \

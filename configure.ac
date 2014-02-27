@@ -82,6 +82,12 @@ if test "x${have_gsl}" = "xfalse" ; then
     AC_MSG_ERROR([Missing gsl])
 fi
 
+# ZMQ, for communication between World and Scenes
+PKG_CHECK_MODULES([ZMQ], [libzmq])
+if test "x${have_zmq}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing libzmq])
+fi
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile

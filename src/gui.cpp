@@ -1,6 +1,7 @@
 #include "gui.h"
 #include "scene.h"
 #include "timer.h"
+#include "threadpool.h"
 
 using namespace std;
 using namespace glv;

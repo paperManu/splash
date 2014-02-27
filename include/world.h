@@ -37,13 +37,15 @@
 #include <glm/glm.hpp>
 
 #include "image_shmdata.h"
+#include "link.h"
 #include "log.h"
 #include "scene.h"
 #include "threadpool.h"
 
 namespace Splash {
 
-class World {
+class World : public BaseObject
+{
     public:
         /**
          * Constructor
@@ -71,6 +73,7 @@ class World {
         static World* _that;
         struct sigaction _signals;
 
+        Link _link; // link between this World and the Scenes
         std::map<std::string, ScenePtr> _scenes;
 
         unsigned long _nextId {0};

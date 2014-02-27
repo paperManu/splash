@@ -148,7 +148,11 @@ void World::applyConfig()
             }
             string name = jsScenes[i]["name"].asString();
             ScenePtr scene(new Scene(name));
+            scene->setName(name);
             _scenes[name] = scene;
+
+            // Initialize the communication
+            _link.connectTo(name);
         }
         else
         {
