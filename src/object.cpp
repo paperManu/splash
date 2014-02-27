@@ -75,6 +75,9 @@ void Object::deactivate()
 /*************/
 void Object::draw()
 {
+    if (_geometries.size() == 0)
+        return;
+
     glDrawArrays(GL_TRIANGLES, 0, _geometries[0]->getVerticesNumber());
 }
 
