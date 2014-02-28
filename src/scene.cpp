@@ -10,14 +10,19 @@ namespace Splash {
 Scene::Scene(std::string name)
 {
     _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
-    init(name);
-    registerAttributes();
+
+    _sceneLoop = thread([&]() {
+        init(name);
+        registerAttributes();
+        run();
+    });
 }
 
 /*************/
 Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+    _sceneLoop.join();
 }
 
 /*************/
@@ -257,7 +262,7 @@ void Scene::render()
 void Scene::run()
 {
     _isRunning = true;
-    while (true)
+    while (_isRunning)
     {
         STimer::timer << "sceneLoop";
         if (_started)
@@ -266,7 +271,6 @@ void Scene::run()
         }
         STimer::timer >> 1e3 >>  "sceneLoop";
     }
-    _isRunning = false;
 }
 
 /*************/

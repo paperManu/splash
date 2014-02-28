@@ -131,6 +131,7 @@ class Scene : public RootObject
     protected:
         GlWindowPtr _mainWindow;
         std::map<std::string, std::vector<Value>> _worldMessages;
+        bool _isRunning {false};
 
         /**
          * Creates the blending map from the current calibration of the cameras
@@ -141,10 +142,10 @@ class Scene : public RootObject
         ScenePtr _self;
         std::shared_ptr<Link> _link;
         bool _started {false};
+        std::thread _sceneLoop;
 
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
-        bool _isRunning {false};
         bool _isBlendComputed {false};
         unsigned long _nextId {0};
 

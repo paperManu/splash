@@ -81,6 +81,7 @@ class World : public RootObject
 
         std::shared_ptr<Link> _link; // link between this World and the Scenes
         std::map<std::string, ScenePtr> _scenes;
+        std::map<std::string, std::thread> _scenesThread;
 
         unsigned long _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;

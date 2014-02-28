@@ -59,12 +59,12 @@ void World::run()
                             _scenes[dest]->setFromSerializedObject(o.first, *obj);
             }));
         }
+        SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
         // Render the scenes
-        for (auto& s : _scenes)
-            s.second->render();
-        SThread::pool.waitThreads(threadIds);
+        //for (auto& s : _scenes)
+        //    s.second->render();
 
         // Grab the signals from the scenes
         for (auto& s : _scenes)
@@ -77,7 +77,7 @@ void World::run()
             break;
 
         // Get the current FPS
-        STimer::timer >> "worldLoop";
+        STimer::timer >> 1e6 / 60 >> "worldLoop";
     }
 }
 
@@ -150,7 +150,7 @@ void World::applyConfig()
             ScenePtr scene(new Scene(name));
             scene->setName(name);
             _scenes[name] = scene;
-
+            
             // Initialize the communication
             _link->connectTo(name);
         }

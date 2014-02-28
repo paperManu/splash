@@ -99,6 +99,7 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_ESCAPE:
     {
         auto scene = _scene.lock();
+        scene->_isRunning = false;
         scene->setMessage("quit");
         break;
     }
@@ -332,7 +333,7 @@ void Gui::initGLV(int width, int height)
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.05;
+        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
         upl = upl * 0.95 + STimer::timer["upload"] * 0.001 * 0.05;
         tex = tex * 0.95 + STimer::timer["textures"] * 0.001 * 0.05;
         cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
