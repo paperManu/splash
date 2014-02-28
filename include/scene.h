@@ -78,11 +78,6 @@ class Scene : public RootObject
         Json::Value getConfigurationAsJson();
 
         /**
-         * Get the messages meant to be sent to the World
-         */
-        std::map<std::string, std::vector<Value>> getMessages();
-
-        /**
          * Get the status of the scene, return true if all is well
          */
         bool getStatus() const {return _status;}
@@ -130,7 +125,6 @@ class Scene : public RootObject
 
     protected:
         GlWindowPtr _mainWindow;
-        std::map<std::string, std::vector<Value>> _worldMessages;
         bool _isRunning {false};
 
         /**

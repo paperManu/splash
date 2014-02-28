@@ -84,14 +84,6 @@ Json::Value Scene::getConfigurationAsJson()
 }
 
 /*************/
-map<string, vector<Value>> Scene::getMessages()
-{
-    auto messages = _worldMessages;
-    _worldMessages.clear();
-    return messages;
-}
-
-/*************/
 bool Scene::link(string first, string second)
 {
     BaseObjectPtr source(nullptr);
@@ -296,7 +288,6 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 /*************/
 void Scene::setMessage(const string message, const vector<Value> value)
 {
-    //_worldMessages[message] = value;
     _link->sendMessage("world", message, value);
 }
 
