@@ -13,7 +13,7 @@ void Worker::operator() ()
     {
         unsigned int id;
         {
-            // Acquire lock
+            // Acquire locklock
             unique_lock<mutex> lock(pool.queue_mutex);
 
             // look for a work item
@@ -29,8 +29,7 @@ void Worker::operator() ()
 
             id = pool.tasksId.front();
             pool.tasksId.pop_front();
-
-        }   // Release lock
+        }   
 
         // Execute the task
         pool.workingThreads++;
@@ -38,8 +37,9 @@ void Worker::operator() ()
         pool.workingThreads--;
 
         {
-            unique_lock<mutex> lock(pool.queue_mutex);
+            pool.queue_mutex.lock();
             pool.tasksFinished.push_back(id);
+            pool.queue_mutex.unlock();
         }
     }
 }
@@ -78,8 +78,9 @@ void ThreadPool::waitAllThreads()
         nanosleep(&nap, NULL);
         if (workingThreads == 0 && tasks.size() == 0)
         {
-            unique_lock<mutex> lock(queue_mutex);
+            queue_mutex.lock();
             tasksFinished.clear();
+            queue_mutex.unlock();
             break;
         }
     }
@@ -96,9 +97,12 @@ void ThreadPool::waitThreads(vector<unsigned int> list)
     {
         nanosleep(&nap, NULL);
 
-        unique_lock<mutex> lock(queue_mutex);
+        queue_mutex.lock();
         if (list.size() == 0 || workingThreads == 0)
+        {
+            queue_mutex.unlock();
             break;
+        }
 
         auto task = find(tasksFinished.begin(), tasksFinished.end(), list[0]);
         if (task != tasksFinished.end())
@@ -106,6 +110,7 @@ void ThreadPool::waitThreads(vector<unsigned int> list)
             list.erase(list.begin());
             tasksFinished.erase(task);
         }
+        queue_mutex.unlock();
     }
 }
 
@@ -114,8 +119,9 @@ unsigned int ThreadPool::getPoolLength()
 {
     int size;
     {
-        unique_lock<mutex> lock(queue_mutex);
+        queue_mutex.lock();
         size = tasks.size();
+        queue_mutex.unlock();
     }
     return size;
 }
