@@ -415,9 +415,11 @@ class RootObject : public BaseObject
     public:
         virtual ~RootObject() {}
 
-        void setAttribute(std::string name, std::string attrib, std::vector<Value> args)
+        bool set(std::string name, std::string attrib, std::vector<Value> args)
         {
-            if (_objects.find(name) != _objects.end())
+            if (name == _name)
+                setAttribute(attrib, args);
+            else if (_objects.find(name) != _objects.end())
                 _objects[name]->setAttribute(attrib, args);
         }
 

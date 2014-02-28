@@ -1,5 +1,4 @@
 #include "link.h"
-#include "scene.h"
 
 #define SPLASH_LINK_END_MSG "__end_msg"
 
@@ -8,8 +7,9 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Link::Link(string name)
+Link::Link(RootObjectWeakPtr root, string name)
 {
+    _rootObject = root;
     _name = name;
     _context.reset(new zmq::context_t(1));
 
@@ -125,6 +125,9 @@ void Link::handleInputMessages()
                 else if (valueType == Value::Type::s)
                     values.push_back(string((char*)msg.data()));
             }
+
+            auto root = _rootObject.lock();
+            root->set(name, attribute, values);
         }
     }
     catch (const zmq::error_t& e)

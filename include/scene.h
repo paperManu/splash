@@ -140,6 +140,7 @@ class Scene : public RootObject
     private:
         ScenePtr _self;
         std::shared_ptr<Link> _link;
+        bool _started {false};
 
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
@@ -175,6 +176,11 @@ class Scene : public RootObject
          * Callback for GLFW errors
          */
         static void glfwErrorCallback(int code, const char* msg);
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;

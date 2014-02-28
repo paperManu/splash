@@ -180,7 +180,7 @@ void World::applyConfig()
             }
 
             string type = obj["type"].asString();
-            s.second->add(type, name);
+            _link->sendMessage(s.first, "add", {type, name});
 
             // Some objects are also created on this side, and linked with the distant one
             addLocally(type, name, s.first);
@@ -214,9 +214,10 @@ void World::applyConfig()
                 else if (attr.isString())
                     values.emplace_back(attr.asString());
 
-                s.second->setAttribute(name, objMembers[idxAttr], values);
+                _link->sendMessage(name, objMembers[idxAttr], values);
                 // We also set the attribute locally, if the object exists
-                setAttribute(name, objMembers[idxAttr], values);
+                set(name, objMembers[idxAttr], values);
+                
 
                 idxAttr++;
             }
@@ -237,12 +238,13 @@ void World::applyConfig()
             {
                 if (link.size() < 2)
                     continue;
-                s.second->link(link[0].asString(), link[1].asString());
+                _link->sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
             }
             idx++;
         }
 
-        // Lastly, in the local scene, connect all Objects to the single camera present
+        // Send the start message for this scene
+        _link->sendMessage(s.first, "start", {});
     }
 }
 
@@ -296,6 +298,8 @@ void World::saveConfig()
 /*************/
 void World::init()
 {
+    _self = WorldPtr(this, [](World*){}); // A shared pointer with no deleter, how convenient
+
     _type = "World";
     _name = "world";
 
@@ -305,7 +309,7 @@ void World::init()
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
 
-    _link.reset(new Link(_name));
+    _link.reset(new Link(weak_ptr<World>(_self), _name));
 }
 
 /*************/

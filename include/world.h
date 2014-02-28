@@ -44,6 +44,10 @@
 
 namespace Splash {
 
+class World;
+typedef std::shared_ptr<World> WorldPtr;
+
+/*************/
 class World : public RootObject
 {
     public:
@@ -68,6 +72,8 @@ class World : public RootObject
         void run();
 
     private:
+        WorldPtr _self;
+
         bool _status {true};
         bool _quit {false};
         static World* _that;

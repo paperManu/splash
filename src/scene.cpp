@@ -11,6 +11,7 @@ Scene::Scene(std::string name)
 {
     _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
     init(name);
+    registerAttributes();
 }
 
 /*************/
@@ -113,6 +114,9 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 void Scene::render()
 {
+    if (!_started)
+        return;
+
     bool isError {false};
     vector<unsigned int> threadIds;
 
@@ -256,8 +260,11 @@ void Scene::run()
     while (true)
     {
         STimer::timer << "sceneLoop";
-        render();
-        STimer::timer >> "sceneLoop";
+        if (_started)
+        {
+            render();
+        }
+        STimer::timer >> 1e3 >>  "sceneLoop";
     }
     _isRunning = false;
 }
@@ -416,7 +423,7 @@ void Scene::init(std::string name)
     glfwMakeContextCurrent(NULL);
 
     // Create the link and connect to the World
-    _link.reset(new Link(name));
+    _link.reset(new Link(weak_ptr<Scene>(_self), name));
     _link->connectTo("world");
 }
 
@@ -436,6 +443,34 @@ void Scene::initBlendingMap()
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
     SLog::log << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
+}
+
+/*************/
+void Scene::registerAttributes()
+{
+    _attribFunctions["add"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        string type = args[0].asString();
+        string name = args[1].asString();
+
+        add(type, name);
+        return true;
+    });
+
+    _attribFunctions["link"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        string src = args[0].asString();
+        string dst = args[1].asString();
+        link(src, dst);
+        return true;
+    });
+
+    _attribFunctions["start"] = AttributeFunctor([&](vector<Value> args) {
+        _started = true;
+        return true;
+    });
 }
 
 } // end of namespace

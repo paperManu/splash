@@ -34,8 +34,7 @@
 
 namespace Splash {
 
-class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
+typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
 
 /*************/
 class Link
@@ -44,7 +43,7 @@ class Link
         /**
          * Constructor
          */
-        Link(std::string name);
+        Link(RootObjectWeakPtr root, std::string name);
 
         /**
          * Destructor
@@ -77,6 +76,7 @@ class Link
         bool sendMessage(std::string name, std::string attribute, std::vector<Value> message);
 
     private:
+        RootObjectWeakPtr _rootObject;
         std::string _name;
         std::shared_ptr<zmq::context_t> _context;
 
