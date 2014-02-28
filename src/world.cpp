@@ -62,17 +62,6 @@ void World::run()
         SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
-        // Render the scenes
-        //for (auto& s : _scenes)
-        //    s.second->render();
-
-        // Grab the signals from the scenes
-        for (auto& s : _scenes)
-        {
-            map<string, vector<Value>> messages = s.second->getMessages();
-            parseMessages(messages);
-        }
-
         if (_quit)
             break;
 
@@ -310,6 +299,8 @@ void World::init()
     sigaction(SIGTERM, &_signals, NULL);
 
     _link.reset(new Link(weak_ptr<World>(_self), _name));
+
+    registerAttributes();
 }
 
 /*************/
@@ -382,23 +373,6 @@ void World::parseArguments(int argc, char** argv)
 }
 
 /*************/
-void World::parseMessages(map<string, vector<Value>> messages)
-{
-    for (auto& m : messages)
-    {
-        if (m.first == string("save"))
-        {
-            SLog::log << "Configuration saved" << Log::endl;
-            saveConfig();
-        }
-        else if (m.first == string("quit"))
-        {
-            _quit = true;
-        }
-    }
-}
-
-/*************/
 void World::setAttribute(string name, string attrib, std::vector<Value> args)
 {
     if (_objects.find(name) != _objects.end())
@@ -409,6 +383,21 @@ void World::setAttribute(string name, string attrib, std::vector<Value> args)
 void World::glfwErrorCallback(int code, const char* msg)
 {
     SLog::log << Log::WARNING << "World::glfwErrorCallback - " << msg << Log::endl;
+}
+
+/*************/
+void World::registerAttributes()
+{
+    _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
+        _quit = true;
+        return true;
+    });
+
+    _attribFunctions["save"] = AttributeFunctor([&](vector<Value> args) {
+        SLog::log << "Configuration save" << Log::endl;
+        saveConfig();
+        return true;
+    });
 }
 
 }

@@ -131,11 +131,6 @@ class World : public RootObject
         void parseArguments(int argc, char** argv);
 
         /**
-         * Parse the message received from the scenes
-         */
-        void parseMessages(std::map<std::string, std::vector<Value>> messages);
-
-        /**
          * Set a parameter for an object, given its id
          */
         void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
@@ -144,6 +139,11 @@ class World : public RootObject
          * Callback for GLFW errors
          */
         static void glfwErrorCallback(int code, const char* msg);
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 } // end of namespace

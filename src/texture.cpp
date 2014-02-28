@@ -214,19 +214,16 @@ void Texture::update()
         glBindTexture(GL_TEXTURE_2D, _glTex);
 
         // Copy the pixels from the current PBO to the texture
-        STimer::timer << "pbo2";
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         if (spec.nchannels == 4 && spec.format == "uint8")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
         else if (spec.nchannels == 1 && spec.format == "uint16")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        STimer::timer >> "pbo2";
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
         
         // Fill the next PBO with the image pixels
-        STimer::timer << "pbo1";
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         GLubyte* pixels = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
         if (pixels != NULL)
@@ -237,7 +234,6 @@ void Texture::update()
             _img->unlock();
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        STimer::timer >> "pbo1";
 
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);

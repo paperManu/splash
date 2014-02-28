@@ -294,6 +294,13 @@ void Scene::setFromSerializedObject(const std::string name, const SerializedObje
 }
 
 /*************/
+void Scene::setMessage(const string message, const vector<Value> value)
+{
+    //_worldMessages[message] = value;
+    _link->sendMessage("world", message, value);
+}
+
+/*************/
 void Scene::computeBlendingMap()
 {
     if (_isBlendComputed)
