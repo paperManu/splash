@@ -44,7 +44,7 @@
 
 namespace Splash {
 
-class World : public BaseObject
+class World : public RootObject
 {
     public:
         /**
@@ -73,11 +73,10 @@ class World : public BaseObject
         static World* _that;
         struct sigaction _signals;
 
-        Link _link; // link between this World and the Scenes
+        std::shared_ptr<Link> _link; // link between this World and the Scenes
         std::map<std::string, ScenePtr> _scenes;
 
         unsigned long _nextId {0};
-        std::map<std::string, BaseObjectPtr> _objects;
         std::map<std::string, std::vector<std::string>> _objectDest;
         std::vector<TexturePtr> _textures;
 

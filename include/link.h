@@ -34,13 +34,17 @@
 
 namespace Splash {
 
+class Scene;
+typedef std::weak_ptr<Scene> SceneWeakPtr;
+
+/*************/
 class Link
 {
     public:
         /**
          * Constructor
          */
-        Link();
+        Link(std::string name);
 
         /**
          * Destructor
@@ -70,9 +74,10 @@ class Link
         /**
          * Send a message to connected pairs
          */
-        bool sendMessage(std::string name, std::vector<Value> message);
+        bool sendMessage(std::string name, std::string attribute, std::vector<Value> message);
 
     private:
+        std::string _name;
         std::shared_ptr<zmq::context_t> _context;
 
         std::shared_ptr<zmq::socket_t> _socketBufferIn;

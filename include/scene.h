@@ -37,6 +37,7 @@
 #include "geometry.h"
 #include "gui.h"
 #include "image.h"
+#include "link.h"
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
@@ -50,7 +51,7 @@ class Scene;
 typedef std::shared_ptr<Scene> ScenePtr;
 
 /*************/
-class Scene : public BaseObject
+class Scene : public RootObject
 {
     friend Gui;
     friend GlvGlobalView;
@@ -118,11 +119,6 @@ class Scene : public BaseObject
         void setAsWorldScene();
 
         /**
-         * Set a parameter for an object, given its id
-         */
-        void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
-
-        /**
          * Set an object from its serialized form
          */
         void setFromSerializedObject(const std::string name, const SerializedObject& obj);
@@ -134,7 +130,6 @@ class Scene : public BaseObject
 
     protected:
         GlWindowPtr _mainWindow;
-        std::map<std::string, BaseObjectPtr> _objects;
         std::map<std::string, std::vector<Value>> _worldMessages;
 
         /**
@@ -144,6 +139,7 @@ class Scene : public BaseObject
 
     private:
         ScenePtr _self;
+        std::shared_ptr<Link> _link;
 
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering

@@ -276,13 +276,6 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::setAttribute(string name, string attrib, std::vector<Value> args)
-{
-    if (_objects.find(name) != _objects.end())
-        _objects[name]->setAttribute(attrib, args);
-}
-
-/*************/
 void Scene::setFromSerializedObject(const std::string name, const SerializedObject& obj)
 {
     if (_objects.find(name) != _objects.end() && dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
@@ -421,6 +414,10 @@ void Scene::init(std::string name)
     glfwMakeContextCurrent(_mainWindow->get());
     _isInitialized = true;
     glfwMakeContextCurrent(NULL);
+
+    // Create the link and connect to the World
+    _link.reset(new Link(name));
+    _link->connectTo("world");
 }
 
 /*************/

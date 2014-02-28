@@ -169,7 +169,27 @@ struct Value
                 return _s;
         }
 
+        void* data()
+        {
+            if (_type == i)
+                return (void*)&_i;
+            else if (_type == f)
+                return (void*)&_f;
+            else if (_type == s)
+                return (void*)_s.c_str();
+        }
+
         Type getType() {return _type;}
+        
+        int size()
+        {
+            if (_type == i)
+                return sizeof(_i);
+            else if (_type == f)
+                return sizeof(_f);
+            else if (_type == s)
+                return _s.size();
+        }
 
     private:
         Type _type;
@@ -388,6 +408,24 @@ class BufferObject : public BaseObject
 };
 
 typedef std::shared_ptr<BufferObject> BufferObjectPtr;
+
+/*************/
+class RootObject : public BaseObject
+{
+    public:
+        virtual ~RootObject() {}
+
+        void setAttribute(std::string name, std::string attrib, std::vector<Value> args)
+        {
+            if (_objects.find(name) != _objects.end())
+                _objects[name]->setAttribute(attrib, args);
+        }
+
+    protected:
+        std::map<std::string, BaseObjectPtr> _objects;
+};
+
+typedef std::shared_ptr<RootObject> RootObjectPtr;
 
 } // end of namespace
 

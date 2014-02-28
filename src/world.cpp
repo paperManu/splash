@@ -152,7 +152,7 @@ void World::applyConfig()
             _scenes[name] = scene;
 
             // Initialize the communication
-            _link.connectTo(name);
+            _link->connectTo(name);
         }
         else
         {
@@ -296,11 +296,16 @@ void World::saveConfig()
 /*************/
 void World::init()
 {
+    _type = "World";
+    _name = "world";
+
     _that = this;
     _signals.sa_handler = leave;
     _signals.sa_flags = 0;
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
+
+    _link.reset(new Link(_name));
 }
 
 /*************/
