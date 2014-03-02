@@ -89,6 +89,8 @@ class World : public RootObject
 
         std::string _configFilename;
         Json::Value _config;
+        std::string _lastConfigReceived {"none"};
+        bool _doSaveConfig {false};
 
         /**
          * Add an object to the world (used for Images and Meshes currently)

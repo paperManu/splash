@@ -244,6 +244,16 @@ void Scene::render()
                 dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
 
+    // Saving event
+    if (_doSaveNow)
+    {
+        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+        Json::Value config = getConfigurationAsJson();
+        string configStr = config.toStyledString();
+        setMessage("sceneConfig", {_name, configStr});
+        _doSaveNow = false;
+    }
+
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
 
@@ -457,6 +467,11 @@ void Scene::registerAttributes()
         string name = args[1].asString();
 
         add(type, name);
+        return true;
+    });
+
+    _attribFunctions["config"] = AttributeFunctor([&](vector<Value> args) {
+        _doSaveNow = true;
         return true;
     });
 

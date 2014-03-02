@@ -62,6 +62,12 @@ void World::run()
         SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
+        if (_doSaveConfig)
+        {
+            saveConfig();
+            _doSaveConfig = false;
+        }
+
         if (_quit)
             break;
 
@@ -251,8 +257,23 @@ void World::saveConfig()
         scene["address"] = "localhost"; // Distant scenes are not yet supported
         root["scenes"].append(scene);
 
-        Json::Value config = s.second->getConfigurationAsJson();
+        // Get this scene's configuration
+        _link->sendMessage(s.first, "config", {});
+        while (_lastConfigReceived == string("none"))
+        {
+            timespec nap;
+            nap.tv_sec = 0;
+            nap.tv_nsec = 1e6;
+            nanosleep(&nap, NULL);
+        }
+
+        // Parse the string to get a json
+        Json::Value config;
+        Json::Reader reader;
+        reader.parse(_lastConfigReceived, config);
+        //Json::Value config = s.second->getConfigurationAsJson();
         root[s.first] = config;
+        _lastConfigReceived = "none";
     }
 
     // Complete with the configuration from the world
@@ -394,8 +415,15 @@ void World::registerAttributes()
     });
 
     _attribFunctions["save"] = AttributeFunctor([&](vector<Value> args) {
-        SLog::log << "Configuration save" << Log::endl;
-        saveConfig();
+        SLog::log << "Saving configuration" << Log::endl;
+        _doSaveConfig = true;
+        return true;
+    });
+
+    _attribFunctions["sceneConfig"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        _lastConfigReceived = args[1].asString();
         return true;
     });
 }

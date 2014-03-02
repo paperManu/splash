@@ -147,6 +147,9 @@ class Scene : public RootObject
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
 
+        // Set to true if we have to send the current json config to the world
+        bool _doSaveNow {false};
+
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
