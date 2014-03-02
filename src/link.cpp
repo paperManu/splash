@@ -30,13 +30,11 @@ Link::Link(RootObjectWeakPtr root, string name)
 /*************/
 Link::~Link()
 {
-    int lingerValue = 1000;
+    int lingerValue = 0;
     _socketMessageOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
     _socketBufferOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
 
-    _socketMessageIn.reset();
     _socketMessageOut.reset();
-    _socketBufferIn.reset();
     _socketBufferOut.reset();
 
     _context.reset();
@@ -135,6 +133,9 @@ void Link::handleInputMessages()
         if (errno != ETERM)
             cout << "Exception: " << e.what() << endl;
     }
+
+
+    _socketMessageIn.reset();
 }
 
 /*************/
@@ -149,6 +150,8 @@ void Link::handleInputBuffers()
         if (errno != ETERM)
             cout << "Exception: " << e.what() << endl;
     }
+
+    _socketBufferIn.reset();
 }
 
 } // end of namespace
