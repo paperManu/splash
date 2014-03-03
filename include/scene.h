@@ -114,11 +114,6 @@ class Scene : public RootObject
         void setAsWorldScene();
 
         /**
-         * Set an object from its serialized form
-         */
-        void setFromSerializedObject(const std::string name, const SerializedObject& obj);
-
-        /**
          * Set a message to be sent to the world
          */
         void setMessage(const std::string message, const std::vector<Value> value = {});

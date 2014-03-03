@@ -415,12 +415,24 @@ class RootObject : public BaseObject
     public:
         virtual ~RootObject() {}
 
+        /**
+         * Set the attribute of the named object with the given args
+         */
         bool set(std::string name, std::string attrib, std::vector<Value> args)
         {
             if (name == _name)
                 setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
                 _objects[name]->setAttribute(attrib, args);
+        }
+
+        /**
+         * Set an object from its serialized form
+         */
+        void setFromSerializedObject(const std::string name, const SerializedObject& obj)
+        {
+            if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
+                std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
         }
 
     protected:

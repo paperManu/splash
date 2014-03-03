@@ -325,20 +325,20 @@ void Gui::initGLV(int width, int height)
         // Smooth the values
         static float fps {0.f};
         static float upl {0.f};
+        static float upd {0.f};
         static float tex {0.f};
         static float cam {0.f};
         static float gui {0.f};
-        static float upd {0.f};
         static float win {0.f};
         static float buf {0.f};
         static float evt {0.f};
 
         fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
         upl = upl * 0.95 + STimer::timer["upload"] * 0.001 * 0.05;
+        upd = upd * 0.95 + STimer::timer["buffer object update"] * 0.001 * 0.05;
         tex = tex * 0.95 + STimer::timer["textures"] * 0.001 * 0.05;
         cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
         gui = gui * 0.95 + STimer::timer["guis"] * 0.001 * 0.05;
-        upd = upd * 0.95 + STimer::timer["buffer object update"] * 0.001 * 0.05;
         win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
         buf = buf * 0.95 + STimer::timer["swap"] * 0.001 * 0.05;
         evt = evt * 0.95 + STimer::timer["events"] * 0.001 * 0.05;
@@ -347,10 +347,10 @@ void Gui::initGLV(int width, int height)
         string text;
         text += "Framerate: " + to_string(fps) + " fps\n";
         text += "Sending buffers to Scenes: " + to_string(upl) + " ms\n";
+        text += "Buffers deserialize: " + to_string(upd) + " ms\n";
         text += "Texture upload: " + to_string(tex) + " ms\n";
         text += "Cameras rendering: " + to_string(cam) + " ms\n";
         text += "GUI rendering: " + to_string(gui) + " ms\n";
-        text += "Buffers deserialize: " + to_string(upd) + " ms\n";
         text += "Windows rendering: " + to_string(win) + " ms\n";
         text += "Swapping and events: " + to_string(buf) + " ms\n";
 

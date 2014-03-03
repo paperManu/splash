@@ -55,8 +55,7 @@ void World::run()
 
                 dynamic_pointer_cast<BufferObject>(o.second)->setNotUpdated();
                 for (auto& dest : _objectDest[o.first])
-                    if (_scenes.find(dest) != _scenes.end())
-                            _scenes[dest]->setFromSerializedObject(o.first, *obj);
+                    _link->sendBuffer(o.first, obj);
             }));
         }
         SThread::pool.waitThreads(threadIds);

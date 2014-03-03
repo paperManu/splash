@@ -289,13 +289,6 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::setFromSerializedObject(const std::string name, const SerializedObject& obj)
-{
-    if (_objects.find(name) != _objects.end() && dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
-        dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
-}
-
-/*************/
 void Scene::setMessage(const string message, const vector<Value> value)
 {
     _link->sendMessage("world", message, value);

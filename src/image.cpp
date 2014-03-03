@@ -115,8 +115,6 @@ bool Image::deserialize(const SerializedObject& obj)
     if (obj.size() == 0)
         return false;
 
-    STimer::timer << "deserialize " + _name;
-
     // First, we get the size of the metadata
     int nbrChar;
     unsigned char* ptr = reinterpret_cast<unsigned char*>(&nbrChar);

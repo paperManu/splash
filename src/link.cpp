@@ -1,4 +1,6 @@
 #include "link.h"
+#include "log.h"
+#include "timer.h"
 
 #define SPLASH_LINK_END_MSG "__end_msg"
 
@@ -53,6 +55,12 @@ void Link::connectTo(string name)
 /*************/
 bool Link::sendBuffer(string name, SerializedObjectPtr buffer)
 {
+    // We pack the buffer and its name in a single msg
+    zmq::message_t msg(name.size() + 1 + buffer->size());
+    memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+    memcpy((char*)msg.data() + name.size() + 1, buffer->data(), buffer->size());
+    _socketBufferOut->send(msg);
+
     return true;
 }
 
@@ -144,6 +152,20 @@ void Link::handleInputBuffers()
     try
     {
         _socketBufferIn->connect((string("ipc:///tmp/splash_buf_") + _name).c_str());
+        _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
+
+        while (true)
+        {
+            zmq::message_t msg;
+
+            _socketBufferIn->recv(&msg);
+            string name((char*)msg.data());
+            SerializedObjectPtr buffer(new SerializedObject(msg.size() - name.size() - 1));
+            memcpy(buffer->data(), (char*)msg.data() + name.size() + 1, msg.size() - name.size() - 1);
+            
+            auto root = _rootObject.lock();
+            root->setFromSerializedObject(name, *buffer);
+        }
     }
     catch (const zmq::error_t& e)
     {
