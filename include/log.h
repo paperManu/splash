@@ -148,6 +148,14 @@ class Log
         }
 
         /**
+         * Get the verbosity of the console output
+         */
+        Priority getVerbosity()
+        {
+            return _verbosity;
+        }
+
+        /**
          * Set the verbosity of the console output
          */
         void setVerbosity(Priority p)

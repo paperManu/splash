@@ -153,8 +153,11 @@ void World::applyConfig()
             {
                 _childProcessLaunched = false;
                 int pid;
+
                 string cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
-                char* argv[] = {(char*)cmd.c_str(), (char*)name.c_str(), NULL};
+                string debug = (SLog::log.getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+
+                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)name.c_str(), NULL};
                 char* env[] = {(char*)"DISPLAY=:0.0"};
                 int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                 if (status != 0)
