@@ -3,7 +3,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/bandit \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-DGLV_GLFW \
-	-DDATADIR=\"$(datadir)\splash\"
+	-DDATADIR=\"$(datadir)\splash\" \
+	-DSPLASHPREFIX=\"$(prefix)\"
 
 #*************#
 lib_LTLIBRARIES = \
@@ -78,7 +79,8 @@ libsplash_la_LDFLAGS = \
 	$(ZMQ_LIBS)
 
 #*************#
-bin_PROGRAMS = splash
+bin_PROGRAMS = splash \
+	splash-scene
 
 splash_DEPENDENCIES = libsplash.la
 
@@ -116,4 +118,24 @@ splash_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
+	$(top_builddir)/src/libsplash.la
+
+#*************#
+splash_scene_DEPENDENCIES = libsplash.la
+
+splash_scene_SOURCES = \
+	splashScene.cpp
+
+splash_scene_CXXFLAGS = \
+	$(GLFW_CFLAGS) \
+	$(GL_CFLAGS) \
+	$(GLM_CFLAGS) \
+	$(GSL_CFLAGS) \
+	$(JSONCPP_CFLAGS) \
+	$(OPENCV_CFLAGS) \
+	$(OPENIMAGEIO_CFLAGS) \
+	$(OPENMESH_CFLAGS) \
+	$(SHMDATA_CFLAGS)
+
+splash_scene_LDFLAGS = \
 	$(top_builddir)/src/libsplash.la

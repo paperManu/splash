@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <json/reader.h>
 #include <json/writer.h>
+#include <spawn.h>
 
 using namespace glm;
 using namespace std;
@@ -68,7 +69,11 @@ void World::run()
         }
 
         if (_quit)
+        {
+            for (auto& s : _scenes)
+                _link->sendMessage(s.first, "quit", {});
             break;
+        }
 
         // Get the current FPS
         STimer::timer >> 1e6 / 60 >> "worldLoop";
@@ -127,8 +132,6 @@ void World::applyConfig()
     if (_scenes.size() > 0)
         _scenes.clear();
 
-    vector<string> scenes;
-
     // Get the list of all scenes, and create them
     const Json::Value jsScenes = _config["scenes"];
     for (int i = 0; i < jsScenes.size(); ++i)
@@ -140,9 +143,31 @@ void World::applyConfig()
                 SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
                 return;
             }
+            int spawn = 0;
+            if (jsScenes[i].isMember("spawn"))
+                spawn = jsScenes[i]["spawn"].asInt();
+
             string name = jsScenes[i]["name"].asString();
-            ScenePtr scene(new Scene(name));
-            scene->setName(name);
+            ScenePtr scene;
+            if (spawn > 0)
+            {
+                _childProcessLaunched = false;
+                int pid;
+                string cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                char* argv[] = {(char*)cmd.c_str(), (char*)name.c_str(), NULL};
+                char* env[] = {(char*)"DISPLAY=:0.0"};
+                int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
+                if (status != 0)
+                    SLog::log << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+
+                // We wait for the thread to be launched
+                // There must be a better way...
+                timespec nap;
+                nap.tv_sec = 1;
+                nap.tv_nsec = 0;
+                while (!_childProcessLaunched)
+                    nanosleep(&nap, NULL);
+            }
             _scenes[name] = scene;
             
             // Initialize the communication
@@ -423,6 +448,11 @@ void World::registerAttributes()
         if (args.size() < 2)
             return false;
         _lastConfigReceived = args[1].asString();
+        return true;
+    });
+
+    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](vector<Value> args) {
+        _childProcessLaunched = true;
         return true;
     });
 }

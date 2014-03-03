@@ -21,6 +21,7 @@ ltmain.sh
 m4/
 missing
 src/splash
+src/splash-scene
 src/.deps/
 src/Makefile
 src/Makefile.i

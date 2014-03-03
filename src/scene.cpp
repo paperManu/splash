@@ -11,6 +11,9 @@ Scene::Scene(std::string name)
 {
     _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
 
+    SLog::log << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
+
+    _isRunning = true;
     _sceneLoop = thread([&]() {
         init(name);
         registerAttributes();
@@ -263,7 +266,6 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
-    _isRunning = true;
     while (_isRunning)
     {
         STimer::timer << "sceneLoop";
@@ -430,6 +432,7 @@ void Scene::init(std::string name)
     // Create the link and connect to the World
     _link.reset(new Link(weak_ptr<Scene>(_self), name));
     _link->connectTo("world");
+    _link->sendMessage("world", "childProcessLaunched", {});
 }
 
 /*************/
@@ -479,6 +482,12 @@ void Scene::registerAttributes()
 
     _attribFunctions["start"] = AttributeFunctor([&](vector<Value> args) {
         _started = true;
+        return true;
+    });
+
+    _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
+        _started = false;
+        _isRunning = false;
         return true;
     });
 }

@@ -99,7 +99,6 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_ESCAPE:
     {
         auto scene = _scene.lock();
-        scene->_isRunning = false;
         scene->setMessage("quit");
         break;
     }
