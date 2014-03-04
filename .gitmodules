@@ -4,3 +4,6 @@
 [submodule "external/bandit"]
 	path = external/bandit
 	url = https://github.com/joakimkarlsson/bandit.git
+[submodule "external/cppzmq"]
+	path = external/cppzmq
+	url = https://github.com/zeromq/cppzmq
