@@ -50,6 +50,10 @@ void Link::connectTo(string name)
     // TODO: for now, all connections are through IPC.
     _socketMessageOut->bind((string("ipc:///tmp/splash_msg_") + name).c_str());
     _socketBufferOut->bind((string("ipc:///tmp/splash_buf_") + name).c_str());
+    
+    // Set the high water mark to a low value for the buffer output
+    uint64_t hwm = 2;
+    _socketBufferOut->setsockopt(ZMQ_HWM, &hwm, sizeof(hwm));
 }
 
 /*************/
@@ -157,6 +161,10 @@ void Link::handleInputBuffers()
     {
         _socketBufferIn->connect((string("ipc:///tmp/splash_buf_") + _name).c_str());
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
+
+        // Set the high water mark to a low value for the buffer output
+        uint64_t hwm = 2;
+        _socketBufferIn->setsockopt(ZMQ_HWM, &hwm, sizeof(hwm));
 
         while (true)
         {
