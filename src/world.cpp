@@ -62,6 +62,11 @@ void World::run()
         SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
+        // Send current timings to all Scenes, for display purpose
+        //auto durationMap = STimer::timer.getDurationMap();
+        //for (auto& d : durationMap)
+        //    _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+
         if (_doSaveConfig)
         {
             saveConfig();
@@ -147,10 +152,17 @@ void World::applyConfig()
             if (jsScenes[i].isMember("spawn"))
                 spawn = jsScenes[i]["spawn"].asInt();
 
+            string display = "DISPLAY=:0.";
+            if (jsScenes[i].isMember("display"))
+                display += to_string(jsScenes[i]["display"].asInt());
+            else
+                display += to_string(0);
+
             string name = jsScenes[i]["name"].asString();
             ScenePtr scene;
             if (spawn > 0)
             {
+                // Spawn a new process containing this Scene
                 _childProcessLaunched = false;
                 int pid;
 
@@ -158,13 +170,12 @@ void World::applyConfig()
                 string debug = (SLog::log.getVerbosity() == Log::DEBUGGING) ? "-d" : "";
 
                 char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)name.c_str(), NULL};
-                char* env[] = {(char*)"DISPLAY=:0.0"};
+                char* env[] = {(char*)display.c_str()};
                 int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                 if (status != 0)
                     SLog::log << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
 
-                // We wait for the thread to be launched
-                // There must be a better way...
+                // We wait for the child process to be launched
                 timespec nap;
                 nap.tv_sec = 1;
                 nap.tv_nsec = 0;

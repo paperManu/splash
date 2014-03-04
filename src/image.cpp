@@ -110,16 +110,18 @@ SerializedObject Image::serialize() const
 }
 
 /*************/
-bool Image::deserialize(const SerializedObject& obj)
+bool Image::deserialize(const SerializedObjectPtr obj)
 {
-    if (obj.size() == 0)
+    if (obj->size() == 0)
         return false;
+
+    STimer::timer << "deserialize " + _name;
 
     // First, we get the size of the metadata
     int nbrChar;
     unsigned char* ptr = reinterpret_cast<unsigned char*>(&nbrChar);
 
-    auto currentObjPtr = obj.data();
+    auto currentObjPtr = obj->data();
     copy(currentObjPtr, currentObjPtr + sizeof(nbrChar), ptr);
     currentObjPtr += sizeof(nbrChar);
 
@@ -140,7 +142,7 @@ bool Image::deserialize(const SerializedObject& obj)
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         bool isLocked {false};
-        if (&obj != &_serializedObject) // If we are setting the mesh from the inner serialized buffer
+        if (obj != _serializedObject) // If we are setting the image from the inner serialized buffer
         {
             isLocked = true;
             _mutex.lock();

@@ -92,7 +92,7 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             _isVisible = !_isVisible;
-            STimer::timer.setStatus(_isVisible);
+            //STimer::timer.setStatus(_isVisible);
         }
         break;
     }

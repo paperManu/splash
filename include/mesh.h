@@ -102,7 +102,7 @@ class Mesh : public BufferObject
         /**
          * Set the mesh from a serialized representation
          */
-        bool deserialize(const SerializedObject& obj);
+        bool deserialize(const SerializedObjectPtr obj);
 
         /**
          * Update the content of the mesh

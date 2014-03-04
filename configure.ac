@@ -83,7 +83,7 @@ if test "x${have_gsl}" = "xfalse" ; then
 fi
 
 # ZMQ, for communication between World and Scenes
-PKG_CHECK_MODULES([ZMQ], [libzmq])
+PKG_CHECK_MODULES([ZMQ], [libzmq > 3.0])
 if test "x${have_zmq}" = "xfalse" ; then
     AC_MSG_ERROR([Missing libzmq])
 fi

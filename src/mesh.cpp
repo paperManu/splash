@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -156,6 +157,8 @@ SerializedObject Mesh::serialize() const
 {
     SerializedObject obj;
 
+    STimer::timer << "serialize " + _name;
+
     // For this, we will use the getVertex, getUV, etc. methods to create a serialized representation of the mesh
     vector<vector<float>> data;
     data.push_back(move(getVertCoords()));
@@ -180,21 +183,25 @@ SerializedObject Mesh::serialize() const
         copy(ptr, ptr + d.size() * sizeof(float), currentObjPtr);
         currentObjPtr += d.size() * sizeof(float);
     }
+    
+    STimer::timer >> "serialize " + _name;
 
     return obj;
 }
 
 /*************/
-bool Mesh::deserialize(const SerializedObject& obj)
+bool Mesh::deserialize(const SerializedObjectPtr obj)
 {
-    if (obj.size() == 0)
+    if (obj->size() == 0)
         return false;
+
+    STimer::timer << "deserialize " + _name;
 
     // First, we get the number of vertices
     int nbrVertices;
     unsigned char* ptr = reinterpret_cast<unsigned char*>(&nbrVertices);
 
-    auto currentObjPtr = obj.data();
+    auto currentObjPtr = obj->data();
     copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
     currentObjPtr += sizeof(nbrVertices);
 
@@ -215,7 +222,7 @@ bool Mesh::deserialize(const SerializedObject& obj)
 
         // Next step: use these values to reset the vertices of _mesh
         bool isLocked {false};
-        if (&obj != &_serializedObject) // If we are setting the mesh from the inner serialized buffer
+        if (obj != _serializedObject) // If we are setting the mesh from the inner serialized buffer
         {
             isLocked = true;
             _mutex.lock();
@@ -264,6 +271,8 @@ bool Mesh::deserialize(const SerializedObject& obj)
         SLog::log(Log::ERROR, __FUNCTION__, " - Unable to deserialize the given object");
         return false;
     }
+
+    STimer::timer >> "deserialize " + _name;
 
     return true;
 }

@@ -121,7 +121,7 @@ class Image : public BufferObject
         /**
          * Update the Image from a serialized representation
          */
-        bool deserialize(const SerializedObject& obj);
+        bool deserialize(const SerializedObjectPtr obj);
 
         /**
          * Set the path to read from

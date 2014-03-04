@@ -36,6 +36,8 @@
 #define SPLASH_SAMPLES 4
 #define SPLASH_MAX_THREAD 8
 
+#define SPLASH_ALL_PAIRS "__ALL__"
+
 #include <chrono>
 #include <map>
 #include <memory>
@@ -361,7 +363,7 @@ class BufferObject : public BaseObject
          * Update the Image from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(const SerializedObject& obj) = 0;
+        virtual bool deserialize(const SerializedObjectPtr obj) = 0;
         bool deserialize()
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -382,7 +384,7 @@ class BufferObject : public BaseObject
         /**
          * Set the next serialized object to deserialize to buffer
          */
-        void setSerializedObject(SerializedObject obj)
+        void setSerializedObject(SerializedObjectPtr obj)
         {
             std::lock_guard<std::mutex> lock(_mutex);
             _serializedObject.swap(obj);
@@ -403,7 +405,7 @@ class BufferObject : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
         bool _updatedBuffer {false};
 
-        SerializedObject _serializedObject;
+        SerializedObjectPtr _serializedObject;
         bool _newSerializedObject {false};
 };
 
@@ -420,7 +422,7 @@ class RootObject : public BaseObject
          */
         bool set(std::string name, std::string attrib, std::vector<Value> args)
         {
-            if (name == _name)
+            if (name == _name || name == SPLASH_ALL_PAIRS)
                 setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
                 _objects[name]->setAttribute(attrib, args);
@@ -429,7 +431,7 @@ class RootObject : public BaseObject
         /**
          * Set an object from its serialized form
          */
-        void setFromSerializedObject(const std::string name, const SerializedObject& obj)
+        void setFromSerializedObject(const std::string name, const SerializedObjectPtr obj)
         {
             if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
                 std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);

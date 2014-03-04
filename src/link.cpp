@@ -52,8 +52,8 @@ void Link::connectTo(string name)
     _socketBufferOut->bind((string("ipc:///tmp/splash_buf_") + name).c_str());
     
     // Set the high water mark to a low value for the buffer output
-    uint64_t hwm = 2;
-    _socketBufferOut->setsockopt(ZMQ_HWM, &hwm, sizeof(hwm));
+    int hwm = 2;
+    _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 }
 
 /*************/
@@ -138,7 +138,7 @@ void Link::handleInputMessages()
                     values.push_back(string((char*)msg.data()));
             }
 
-        SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Receiving message for " << name << "::" << attribute << Log::endl;
+            SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Receiving message for " << name << "::" << attribute << Log::endl;
 
             auto root = _rootObject.lock();
             root->set(name, attribute, values);
@@ -163,8 +163,8 @@ void Link::handleInputBuffers()
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         // Set the high water mark to a low value for the buffer output
-        uint64_t hwm = 2;
-        _socketBufferIn->setsockopt(ZMQ_HWM, &hwm, sizeof(hwm));
+        int hwm = 2;
+        _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         while (true)
         {
@@ -176,7 +176,7 @@ void Link::handleInputBuffers()
             memcpy(buffer->data(), (char*)msg.data() + name.size() + 1, msg.size() - name.size() - 1);
             
             auto root = _rootObject.lock();
-            root->setFromSerializedObject(name, *buffer);
+            root->setFromSerializedObject(name, buffer);
         }
     }
     catch (const zmq::error_t& e)

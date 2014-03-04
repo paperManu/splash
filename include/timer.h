@@ -117,9 +117,22 @@ class Timer
          /**
           * Get the whole time map
           */
-         std::map<std::string, unsigned long long> getDurationMap() {
-            std::lock_guard<std::mutex> lock(_mutex);
-            return _durationMap;
+         std::map<std::string, unsigned long long> getDurationMap()
+         {
+            _mutex.lock();
+            auto durationMap = _durationMap;
+            _mutex.unlock();
+            return durationMap;
+         }
+
+         /**
+          * Set an element in the duration map. Used for transmitting timings between pairs
+          */
+         void setDuration(std::string name, unsigned long long value)
+         {
+            _mutex.lock();
+            _durationMap[name] = value;
+            _mutex.unlock();
          }
 
          /**

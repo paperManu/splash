@@ -471,6 +471,13 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["duration"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        STimer::timer.setDuration(args[0].asString(), args[1].asInt());
+        return true;
+    });
+
     _attribFunctions["link"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
             return false;
