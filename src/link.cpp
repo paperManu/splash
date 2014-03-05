@@ -15,8 +15,8 @@ Link::Link(RootObjectWeakPtr root, string name)
     _name = name;
     _context.reset(new zmq::context_t(1));
 
-    _socketMessageOut.reset(new zmq::socket_t(*_context, ZMQ_PUSH));
-    _socketMessageIn.reset(new zmq::socket_t(*_context, ZMQ_PULL));
+    _socketMessageOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
+    _socketMessageIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
     _socketBufferOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
     _socketBufferIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
 
@@ -48,12 +48,16 @@ Link::~Link()
 void Link::connectTo(string name)
 {
     // TODO: for now, all connections are through IPC.
-    _socketMessageOut->bind((string("ipc:///tmp/splash_msg_") + name).c_str());
-    _socketBufferOut->bind((string("ipc:///tmp/splash_buf_") + name).c_str());
+    _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
+    _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
     
     // Set the high water mark to a low value for the buffer output
     int hwm = 2;
     _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+
+    // Wait a bit for the connection to be up
+    timespec nap {0, (long int)1e8};
+    nanosleep(&nap, NULL);
 }
 
 /*************/
@@ -112,7 +116,8 @@ void Link::handleInputMessages()
 {
     try
     {
-        _socketMessageIn->connect((string("ipc:///tmp/splash_msg_") + _name).c_str());
+        _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());
+        _socketMessageIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         while (true)
         {
@@ -159,7 +164,7 @@ void Link::handleInputBuffers()
 {
     try
     {
-        _socketBufferIn->connect((string("ipc:///tmp/splash_buf_") + _name).c_str());
+        _socketBufferIn->bind((string("ipc:///tmp/splash_buf_") + _name).c_str());
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         // Set the high water mark to a low value for the buffer output

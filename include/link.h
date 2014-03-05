@@ -88,9 +88,6 @@ class Link
         std::thread _bufferInThread;
         std::thread _messageInThread;
 
-        std::deque<std::pair<std::string, std::vector<Value>>> _messageQueue;
-        std::map<std::string, SerializedObjectPtr> _buffers;
-
         /**
          * Message input thread function
          */
