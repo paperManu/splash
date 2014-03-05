@@ -257,6 +257,13 @@ void Scene::render()
         _doSaveNow = false;
     }
 
+    // Compute blending event
+    if (_doComputeBlending)
+    {
+        computeBlendingMap();
+        _doComputeBlending = false;
+    }
+
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
 
@@ -466,6 +473,11 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
+        _doComputeBlending = true;
+        return true;
+    });
+
     _attribFunctions["config"] = AttributeFunctor([&](vector<Value> args) {
         _doSaveNow = true;
         return true;
@@ -477,6 +489,16 @@ void Scene::registerAttributes()
         STimer::timer.setDuration(args[0].asString(), args[1].asInt());
         return true;
     });
+ 
+    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        for (auto& obj : _objects)
+            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+        return true;
+    });
+   
 
     _attribFunctions["link"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
@@ -495,6 +517,15 @@ void Scene::registerAttributes()
     _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
         _started = false;
         _isRunning = false;
+        return true;
+    });
+ 
+    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        for (auto& obj : _objects)
+            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
         return true;
     });
 }

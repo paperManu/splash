@@ -196,7 +196,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                         cam->setAttribute("hide", {0});
                 _camerasHidden = false;
             }
-
         }
         // Reset to the previous camera calibration
         else if (key == 'R')
@@ -206,18 +205,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             _camera->setAttribute("up", _up);
             _camera->setAttribute("fov", _fov);
             _camera->setAttribute("principalPoint", _principalPoint);
-        }
-        // Switch the rendering to textured
-        else if (key == 'T') 
-        {
-            _camera->setAttribute("wireframe", {0});
-            return false;
-        }
-        // Switch the rendering to wireframe
-        else if (key == 'W') 
-        {
-            _camera->setAttribute("wireframe", {1});
-            return false;
         }
         // Arrow keys
         else if (key >= 262 && key <= 265)

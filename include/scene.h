@@ -142,7 +142,8 @@ class Scene : public RootObject
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
 
-        // Set to true if we have to send the current json config to the world
+        // List of actions to do during the next render loop
+        bool _doComputeBlending {false};
         bool _doSaveNow {false};
 
         /**

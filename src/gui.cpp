@@ -107,7 +107,7 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->computeBlendingMap();
+            scene->setMessage("computeBlending");
         }
         break;
     }
@@ -125,11 +125,28 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            for (auto& obj : scene->_objects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(!_flashBG)});
+
+            if (_flashBG)
+                scene->setMessage("flashBG", {0});
+            else
+                scene->setMessage("flashBG", {1});
+
             _flashBG = !_flashBG;
         }
+        break;
+    }
+    // Switch the rendering to textured
+    case GLFW_KEY_T: 
+    {
+        auto scene = _scene.lock();
+        scene->setMessage("wireframe", {0});
+        break;
+    }
+    // Switch the rendering to wireframe
+    case GLFW_KEY_W:
+    {
+        auto scene = _scene.lock();
+        scene->setMessage("wireframe", {1});
         break;
     }
     }

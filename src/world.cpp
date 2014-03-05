@@ -55,8 +55,7 @@ void World::run()
                         return; // if not, exit this thread
 
                 dynamic_pointer_cast<BufferObject>(o.second)->setNotUpdated();
-                for (auto& dest : _objectDest[o.first])
-                    _link->sendBuffer(o.first, obj);
+                _link->sendBuffer(o.first, obj);
             }));
         }
         SThread::pool.waitThreads(threadIds);
@@ -66,6 +65,12 @@ void World::run()
         auto durationMap = STimer::timer.getDurationMap();
         for (auto& d : durationMap)
             _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+
+        if (_doComputeBlending)
+        {
+            _link->sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
+            _doComputeBlending = false;
+        }
 
         if (_doSaveConfig)
         {
@@ -447,6 +452,23 @@ void World::glfwErrorCallback(int code, const char* msg)
 /*************/
 void World::registerAttributes()
 {
+    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](vector<Value> args) {
+        _childProcessLaunched = true;
+        return true;
+    });
+
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
+        _doComputeBlending = true;
+        return true;
+    });
+
+    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _link->sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
+        return true;
+    });
+
     _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
         _quit = true;
         return true;
@@ -465,8 +487,10 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](vector<Value> args) {
-        _childProcessLaunched = true;
+    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _link->sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});
         return true;
     });
 }
