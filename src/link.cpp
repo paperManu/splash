@@ -13,7 +13,7 @@ Link::Link(RootObjectWeakPtr root, string name)
 {
     _rootObject = root;
     _name = name;
-    _context.reset(new zmq::context_t(1));
+    _context.reset(new zmq::context_t(2));
 
     _socketMessageOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
     _socketMessageIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
