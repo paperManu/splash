@@ -50,20 +50,22 @@ class Timer
         {
             if (!_enabled)
                 return;
-            std::lock_guard<std::mutex> lock(_mutex);
+            _mutex.lock();
             _timeMap[name] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            _mutex.unlock();
         }
 
         void stop(std::string name)
         {
             if (!_enabled)
                 return;
-            std::lock_guard<std::mutex> lock(_mutex);
+            _mutex.lock();
             if (_timeMap.find(name) != _timeMap.end())
             {
                 auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
                 _durationMap[name] = now - _timeMap[name];
             }
+            _mutex.unlock();
         }
 
         /**
@@ -80,9 +82,10 @@ class Timer
             unsigned long long now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
             unsigned long long elapsed;
             {
-                std::lock_guard<std::mutex> lock(_mutex);
+                _mutex.lock();
                 elapsed = now - _timeMap[name];
                 _timeMap.erase(name);
+                _mutex.unlock();
             }
 
             timespec nap;
@@ -93,8 +96,9 @@ class Timer
                 nap.tv_nsec = 0;
 
             {
-                std::lock_guard<std::mutex> lock(_mutex);
+                _mutex.lock();
                 _durationMap[name] = std::max(duration, elapsed);
+                _mutex.unlock();
             }
             nanosleep(&nap, NULL);
          }
@@ -108,8 +112,9 @@ class Timer
                 return 0;
             unsigned long long duration;
             {
-                std::lock_guard<std::mutex> lock(_mutex);
+                _mutex.lock();
                 duration = _durationMap[name];
+                _mutex.unlock();
             }
             return duration;
          }
