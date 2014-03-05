@@ -68,7 +68,7 @@ class ThreadPool
         friend class Worker;
 
         std::vector<std::thread> workers;
-        std::deque<std::function<void()> > tasks;
+        std::deque<std::shared_ptr<std::function<void()>>> tasks;
         std::deque<unsigned int> tasksId;
         std::deque<unsigned int> tasksFinished;
 
@@ -89,13 +89,15 @@ unsigned int ThreadPool::enqueue(F f)
     unsigned int id;
     {
         // Acquire lock
-        std::unique_lock<std::mutex> lock(queue_mutex);
+        queue_mutex.lock();
 
         id = std::atomic_fetch_add(&nextId, 1u);
 
         // Add the task
-        tasks.push_back(std::function<void()>(f));
+        tasks.push_back(std::shared_ptr<std::function<void()>>(new std::function<void()>(f)));
         tasksId.push_back(id);
+
+        queue_mutex.unlock();
     }
 
     // Wake up one thread

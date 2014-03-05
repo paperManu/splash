@@ -106,7 +106,9 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
         _socketMessageOut->send(msg);
     }
 
-    SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
+    // We don't display broadcast messages, for visibility
+    if (name != SPLASH_ALL_PAIRS)
+        SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
 
     return true;
 }
@@ -143,7 +145,9 @@ void Link::handleInputMessages()
                     values.push_back(string((char*)msg.data()));
             }
 
-            SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Receiving message for " << name << "::" << attribute << Log::endl;
+            // We don't display broadcast messages, for visibility
+            if (name != SPLASH_ALL_PAIRS)
+                SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Receiving message for " << name << "::" << attribute << Log::endl;
 
             auto root = _rootObject.lock();
             root->set(name, attribute, values);

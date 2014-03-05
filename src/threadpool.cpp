@@ -7,7 +7,7 @@ using namespace std;
 /*************/
 void Worker::operator() ()
 {
-    function<void()> task;
+    shared_ptr<function<void()>> task;
 
     while (true)
     {
@@ -24,7 +24,7 @@ void Worker::operator() ()
             if (pool.stop)
                 return;
 
-            task = pool.tasks.front();
+            task.swap(pool.tasks.front());
             pool.tasks.pop_front();
 
             id = pool.tasksId.front();
@@ -33,7 +33,7 @@ void Worker::operator() ()
 
         // Execute the task
         pool.workingThreads++;
-        task();
+        (*task)();
         pool.workingThreads--;
 
         {

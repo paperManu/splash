@@ -216,18 +216,14 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         {
             char* pixels = (char*)img.localpixels();
             vector<unsigned int> threadIds;
-            for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+            for (int p = 0; p < width * height; ++p)
             {
-                threadIds.push_back(SThread::pool.enqueue([=]() {
-                    for (int p = width * height / SPLASH_SHMDATA_THREADS * block; p < width * height / SPLASH_SHMDATA_THREADS * (block + 1); ++p)
-                    {
-                        const char* pixel = &((const char*)data)[p * 3];
-                        memcpy(&(pixels[p * 4]), pixel, 3 * sizeof(char));
-                        pixels[p * 4 + 3] = 255;
-                    }
-                }));
+                const char* pixel = &((const char*)data)[p * 3];
+                pixels[p * 4 + 0] = pixel[0];
+                pixels[p * 4 + 1] = pixel[1];
+                pixels[p * 4 + 2] = pixel[2];
+                pixels[p * 4 + 3] = 255;
             }
-            SThread::pool.waitThreads(threadIds);
         }
         else if (is420)
         {

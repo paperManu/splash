@@ -79,7 +79,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 SerializedObject Image::serialize() const
 {
     SerializedObject obj;
-    lock_guard<mutex> lock(_mutex);
+    _mutex.lock();
 
     STimer::timer << "serialize " + _name;
 
@@ -106,6 +106,7 @@ SerializedObject Image::serialize() const
 
     STimer::timer >> "serialize " + _name;
 
+    _mutex.unlock();
     return obj;
 }
 
