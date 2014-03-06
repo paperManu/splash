@@ -62,9 +62,9 @@ void World::run()
         STimer::timer >> "upload";
 
         // Send current timings to all Scenes, for display purpose
-        //auto durationMap = STimer::timer.getDurationMap();
-        //for (auto& d : durationMap)
-        //    _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        auto durationMap = STimer::timer.getDurationMap();
+        for (auto& d : durationMap)
+            _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
         if (_doComputeBlending)
         {

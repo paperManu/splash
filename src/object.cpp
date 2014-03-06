@@ -231,6 +231,13 @@ void Object::registerAttributes()
         _shader->setAttribute("color", args);
         return true;
     });
+
+    _attribFunctions["name"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _name = args[0].asString();
+        return true;
+    });
 }
 
 } // end of namespace

@@ -327,6 +327,13 @@ void Mesh::registerAttributes()
             return false;
         return read(args[0].asString());
     });
+
+    _attribFunctions["name"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _name = args[0].asString();
+        return true;
+    });
 }
 
 } // end of namespace

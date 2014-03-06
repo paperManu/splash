@@ -36,7 +36,7 @@ BaseObjectPtr Scene::add(string type, string name)
     BaseObjectPtr obj;
     // First, the objects containing a context
     if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(getNewSharedWindow(name))));
+        obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
     else if (type == string("window"))
         obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
     else if (type == string("gui"))
@@ -179,14 +179,18 @@ void Scene::render()
     }));
 
     // Update the cameras
+    // TODO: we cannot enable multithreading on Cameras, because:
+    // - we need multiple glfw context for this
+    // - and specifying one context for each camera leads to issues with calibration
+    // (certainly related to vertex arrays in Geometry)
     STimer::timer << "cameras";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
+            //threadIds.push_back(SThread::pool.enqueue([&]() {
                 isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-            }));
-    SThread::pool.waitThreads(threadIds);
-    threadIds.clear();
+            //}));
+    //SThread::pool.waitThreads(threadIds);
+    //threadIds.clear();
     STimer::timer >> "cameras";
 
     // Update the guis
@@ -601,7 +605,10 @@ void Scene::registerAttributes()
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            if (obj.second->getType() == "camera")
+                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+        for (auto& obj : _ghostObjects)
+            if (obj.second->getType() == "camera")
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
         return true;
     });

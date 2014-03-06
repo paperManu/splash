@@ -444,7 +444,6 @@ bool Camera::render()
                     screenMarker->setViewProjectionMatrix(mat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();
-                    screenMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
                 }
             }
         }
@@ -902,8 +901,7 @@ void Camera::registerAttributes()
     _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
             return false;
-        setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
-        return true;
+        return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
     });
 
     // Rendering options
