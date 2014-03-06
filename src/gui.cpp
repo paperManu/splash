@@ -241,7 +241,14 @@ bool Gui::render()
         setOutputSize(spec.width, spec.height);
 
     if (_isVisible)
+    {
+        // Redraw the Gui camera, as well as the ghosts cameras if present
         _glvGlobalView._guiCamera->render();
+        auto scene = _scene.lock();
+        for (auto& obj : scene->_ghostObjects)
+            if (obj.second->getType() == "camera")
+                dynamic_pointer_cast<Camera>(obj.second)->render();
+    }
 
     if (!_window->setAsCurrentContext()) 
 		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;

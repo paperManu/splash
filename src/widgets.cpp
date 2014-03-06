@@ -70,20 +70,6 @@ void GlvGlobalView::onDraw(GLV& g)
     }
     else
     {
-        // Redraw the currently selected camera if is not
-        // from this very Scene
-        auto scene = _scene.lock();
-        bool isLocal {false};
-        for (auto& obj : scene->_objects)
-            if (obj.second == _camera)
-                isLocal = true;
-        if (!isLocal && _camera != _guiCamera)
-        {
-            thread camDraw([&]() {_camera->render();});
-            camDraw.join();
-        }
-        scene.reset();
-
         // Resize if needed
         vector<Value> size;
         _camera->getAttribute("size", size);
