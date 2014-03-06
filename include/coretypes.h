@@ -120,6 +120,9 @@ class GlWindow
 
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
 
+struct Value;
+typedef std::vector<Value> Values;
+
 /*************/
 struct Value
 {
@@ -128,69 +131,93 @@ struct Value
         {
             i = 0,
             f,
-            s
+            s,
+            v
         };
 
-        Value(int v) {_i = v; _type = i;}
-        Value(float v) {_f = v; _type = f;}
-        Value(double v) {_f = (float)v; _type = f;}
-        Value(std::string v) {_s = v; _type = s;}
-        Value(const char* c) {_s = std::string(c); _type = s;}
+        Value(int v) {_i = v; _type = Type::i;}
+        Value(float v) {_f = v; _type = Type::f;}
+        Value(double v) {_f = (float)v; _type = Type::f;}
+        Value(std::string v) {_s = v; _type = Type::s;}
+        Value(const char* c) {_s = std::string(c); _type = Type::s;}
+        Value(Values v) {_v = v; _type = Type::v;}
 
         int asInt()
         {
-            if (_type == i)
+            if (_type == Type::i)
                 return _i;
-            else if (_type == f)
+            else if (_type == Type::f)
                 return (int)_f;
-            else if (_type == s)
+            else if (_type == Type::s)
                 try {return std::stoi(_s);}
                 catch (...) {return 0;}
+            else
+                return 0;
         }
 
         float asFloat()
         {
-            if (_type == i)
+            if (_type == Type::i)
                 return (float)_i;
-            else if (_type == f)
+            else if (_type == Type::f)
                 return _f;
-            else if (_type == s)
+            else if (_type == Type::s)
                 try {return std::stof(_s);}
                 catch (...) {return 0.f;}
+            else
+                return 0.f;
         }
 
         std::string asString()
         {
-            if (_type == i)
+            if (_type == Type::i)
                 try {return std::to_string(_i);}
                 catch (...) {return std::string();}
-            else if (_type == f)
+            else if (_type == Type::f)
                 try {return std::to_string(_f);}
                 catch (...) {return std::string();}
-            else if (_type == s)
+            else if (_type == Type::s)
                 return _s;
+            else
+                return "";
+        }
+
+        Values asValues()
+        {
+            if (_type == Type::i)
+                return Values({_i});
+            else if (_type == Type::f)
+                return Values({_f});
+            else if (_type == Type::s)
+                return Values({_s});
+            else if (_type == Type::v)
+                return _v;
         }
 
         void* data()
         {
-            if (_type == i)
+            if (_type == Type::i)
                 return (void*)&_i;
-            else if (_type == f)
+            else if (_type == Type::f)
                 return (void*)&_f;
-            else if (_type == s)
+            else if (_type == Type::s)
                 return (void*)_s.c_str();
+            else
+                return nullptr;
         }
 
         Type getType() {return _type;}
         
         int size()
         {
-            if (_type == i)
+            if (_type == Type::i)
                 return sizeof(_i);
-            else if (_type == f)
+            else if (_type == Type::f)
                 return sizeof(_f);
-            else if (_type == s)
+            else if (_type == Type::s)
                 return _s.size();
+            else
+                return 0;
         }
 
     private:
@@ -198,6 +225,7 @@ struct Value
         int _i;
         float _f;
         std::string _s;
+        Values _v;
 };
 
 /*************/

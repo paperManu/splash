@@ -62,9 +62,9 @@ void World::run()
         STimer::timer >> "upload";
 
         // Send current timings to all Scenes, for display purpose
-        auto durationMap = STimer::timer.getDurationMap();
-        for (auto& d : durationMap)
-            _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        //auto durationMap = STimer::timer.getDurationMap();
+        //for (auto& d : durationMap)
+        //    _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
         if (_doComputeBlending)
         {
@@ -188,6 +188,8 @@ void World::applyConfig()
                     nanosleep(&nap, NULL);
             }
             _scenes[name] = scene;
+            if (_masterSceneName == "")
+                _masterSceneName = name;
             
             // Initialize the communication
             _link->connectTo(name);
@@ -199,6 +201,8 @@ void World::applyConfig()
     }
 
     // Configure each scenes
+    // The first scene is the master one, and also receives some ghost objects
+    // Currently, only cameras are concerned
     for (auto& s : _scenes)
     {
         if (!_config.isMember(s.first))
@@ -219,6 +223,8 @@ void World::applyConfig()
 
             string type = obj["type"].asString();
             _link->sendMessage(s.first, "add", {type, name});
+            if (s.first != _masterSceneName)
+                _link->sendMessage(_masterSceneName, "addGhost", {type, name});
 
             // Some objects are also created on this side, and linked with the distant one
             addLocally(type, name, s.first);
@@ -253,9 +259,15 @@ void World::applyConfig()
                     values.emplace_back(attr.asString());
 
                 _link->sendMessage(name, objMembers[idxAttr], values);
+                if (s.first != _masterSceneName)
+                {
+                    Values ghostValues {name, objMembers[idxAttr]};
+                    for (auto& v : values)
+                        ghostValues.push_back(v);
+                    _link->sendMessage(_masterSceneName, "setGhost", ghostValues);
+                }
                 // We also set the attribute locally, if the object exists
                 set(name, objMembers[idxAttr], values);
-                
 
                 idxAttr++;
             }
@@ -277,13 +289,15 @@ void World::applyConfig()
                 if (link.size() < 2)
                     continue;
                 _link->sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
+                if (s.first != _masterSceneName)
+                    _link->sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
             }
             idx++;
         }
-
-        // Send the start message for this scene
-        _link->sendMessage(s.first, "start", {});
     }
+
+    // Send the start message for all scenes
+    _link->sendMessage(SPLASH_ALL_PAIRS, "start", {});
 }
 
 /*************/
@@ -485,6 +499,22 @@ void World::registerAttributes()
             return false;
         _lastConfigReceived = args[1].asString();
         return true;
+    });
+
+    _attribFunctions["sendAll"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        string name = args[0].asString();
+        string attr = args[1].asString();
+        Values values {name, attr};
+        for (int i = 2; i < args.size(); ++i)
+            values.push_back(args[i]);
+
+        _link->sendMessage(_masterSceneName, "setGhost", values);
+        
+        values.erase(values.begin());
+        values.erase(values.begin());
+        _link->sendMessage(name, attr, values);
     });
 
     _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {

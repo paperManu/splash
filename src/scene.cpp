@@ -76,6 +76,22 @@ BaseObjectPtr Scene::add(string type, string name)
 }
 
 /*************/
+void Scene::addGhost(string type, string name)
+{
+    // Currently, only Cameras can be ghosts
+    if (type != string("camera"))
+        return;
+
+    SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
+
+    // Add the object for real ...
+    BaseObjectPtr obj = add(type, name);
+    // And move it to _ghostObjects
+    _objects.erase(obj->getName());
+    _ghostObjects[obj->getName()] = obj;
+}
+
+/*************/
 Json::Value Scene::getConfigurationAsJson()
 {
     Json::Value root;
@@ -98,7 +114,9 @@ bool Scene::link(string first, string second)
         sink = _objects[second];
 
     if (source.get() != nullptr && sink.get() != nullptr)
-        link(source, sink);
+        return link(source, sink);
+    else
+        return false;
 }
 
 /*************/
@@ -109,6 +127,33 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
     glfwMakeContextCurrent(NULL);
 
     return result;
+}
+
+/*************/
+bool Scene::linkGhost(string first, string second)
+{
+    BaseObjectPtr source(nullptr);
+    BaseObjectPtr sink(nullptr);
+
+    if (_ghostObjects.find(first) != _ghostObjects.end())
+        source = _ghostObjects[first];
+    else if (_objects.find(first) != _objects.end())
+        source = _objects[first];
+    else
+        return false;
+
+    if (_ghostObjects.find(second) != _ghostObjects.end())
+        sink = _ghostObjects[second];
+    else if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+    else
+        return false;
+
+    // TODO: add a mechanism in objects to check if already linked
+    if (source->getType() != "camera" && sink->getType() != "camera")
+        return false;
+
+    return link(source, sink);
 }
 
 /*************/
@@ -473,6 +518,16 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["addGhost"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        string type = args[0].asString();
+        string name = args[1].asString();
+
+        addGhost(type, name);
+        return true;
+    });
+
     _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
         _doComputeBlending = true;
         return true;
@@ -499,13 +554,35 @@ void Scene::registerAttributes()
         return true;
     });
    
-
     _attribFunctions["link"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
         string dst = args[1].asString();
         link(src, dst);
+        return true;
+    });
+
+    _attribFunctions["linkGhost"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        string src = args[0].asString();
+        string dst = args[1].asString();
+        return linkGhost(src, dst);
+    });
+
+    _attribFunctions["setGhost"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        string name = args[0].asString();
+        string attr = args[1].asString();
+        Values values;
+        for (int i = 2; i < args.size(); ++i)
+            values.push_back(args[i]);
+
+        if (_ghostObjects.find(name) != _ghostObjects.end())
+            _ghostObjects[name]->setAttribute(attr, values);
+
         return true;
     });
 

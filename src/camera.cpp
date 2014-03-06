@@ -520,6 +520,12 @@ bool Camera::addCalibrationPoint(std::vector<Value> worldPoint)
 }
 
 /*************/
+void Camera::deselectCalibrationPoint()
+{
+    _selectedCalibrationPoint = -1;
+}
+
+/*************/
 void Camera::moveCalibrationPoint(float dx, float dy)
 {
     if (_selectedCalibrationPoint == -1)
@@ -868,6 +874,35 @@ void Camera::registerAttributes()
         auto rotZ = rotate(mat4(1.f), args[0].asFloat(), vec3(0.0, 0.0, 1.0));
         auto newDirection = vec4(direction, 1.0) * rotZ;
         _eye = _target - vec3(newDirection.x, newDirection.y, newDirection.z);
+        return true;
+    });
+
+    _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 3)
+            return false;
+        addCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
+        return true;
+    });
+
+    _attribFunctions["deselectedCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+        deselectCalibrationPoint();
+        return true;
+    });
+
+    _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 3)
+            return false;
+        else if (args.size() == 3)
+            removeCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
+        else
+            removeCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()}, args[3].asInt());
+        return true;
+    });
+
+    _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
         return true;
     });
 

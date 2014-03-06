@@ -73,6 +73,11 @@ class Scene : public RootObject
         BaseObjectPtr add(std::string type, std::string name = std::string());
 
         /**
+         * Add a fake object, keeping only its configuration between uses
+         */
+        void addGhost(std::string type, std::string name = std::string());
+
+        /**
          * Get the current configuration of the scene as a json object
          */
         Json::Value getConfigurationAsJson();
@@ -99,6 +104,11 @@ class Scene : public RootObject
         bool link(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
+         * Link objects, at least one of them being a ghost
+         */
+        bool linkGhost(std::string first, std::string second);
+
+        /**
          * Render everything
          */
         void render();
@@ -121,6 +131,8 @@ class Scene : public RootObject
     protected:
         GlWindowPtr _mainWindow;
         bool _isRunning {false};
+
+        std::map<std::string, BaseObjectPtr> _ghostObjects;
 
         /**
          * Creates the blending map from the current calibration of the cameras
