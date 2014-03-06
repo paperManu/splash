@@ -34,6 +34,9 @@ void World::run()
 {
     applyConfig();
 
+    // We must not send the timings too often, this is what this variable is for
+    int frameIndice {0};
+
     while (true)
     {
         STimer::timer << "worldLoop";
@@ -62,9 +65,13 @@ void World::run()
         STimer::timer >> "upload";
 
         // Send current timings to all Scenes, for display purpose
-        auto durationMap = STimer::timer.getDurationMap();
-        for (auto& d : durationMap)
-            _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        if (frameIndice == 0)
+        {
+            auto durationMap = STimer::timer.getDurationMap();
+            for (auto& d : durationMap)
+                _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        }
+        frameIndice = (frameIndice + 1) % 60;
 
         if (_doComputeBlending)
         {
