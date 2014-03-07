@@ -210,7 +210,7 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     vector<vector<float>> data;
     data.push_back(vector<float>(nbrVertices * 4));
     data.push_back(vector<float>(nbrVertices * 2));
-    data.push_back(vector<float>(nbrVertices * 4));
+    data.push_back(vector<float>(nbrVertices * 3));
 
     // Let's read the values
     try
