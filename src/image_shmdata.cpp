@@ -7,7 +7,6 @@
 #define SPLASH_SHMDATA_THREADS 16
 
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash
 {
@@ -49,13 +48,13 @@ bool Image_Shmdata::read(const string& filename)
 }
 
 /*************/
-bool Image_Shmdata::write(const ImageBuf& img, const string& filename)
+bool Image_Shmdata::write(const oiio::ImageBuf& img, const string& filename)
 {
     if (img.localpixels() == NULL)
         return false;
 
     lock_guard<mutex> lock(_mutex);
-    ImageSpec spec = img.spec();
+    oiio::ImageSpec spec = img.spec();
     if (spec.width != _writerSpec.width || spec.height != _writerSpec.height || spec.nchannels != _writerSpec.nchannels || _writer == NULL || _filename != filename)
         if (!initShmWriter(spec, filename))
             return false;
@@ -67,7 +66,7 @@ bool Image_Shmdata::write(const ImageBuf& img, const string& filename)
 }
 
 /*************/
-bool Image_Shmdata::initShmWriter(const ImageSpec& spec, const string& filename)
+bool Image_Shmdata::initShmWriter(const oiio::ImageSpec& spec, const string& filename)
 {
     if (_writer != NULL)
         shmdata_any_writer_close(_writer);
@@ -221,9 +220,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             for (int p = 0; p < width * height; ++p)
             {
                 const char* pixel = &((const char*)data)[p * 3];
-                pixels[p * 4 + 0] = pixel[0];
-                pixels[p * 4 + 1] = pixel[1];
-                pixels[p * 4 + 2] = pixel[2];
+                memcpy(&(pixels[p * 4]), pixel, 3 * sizeof(char));
                 pixels[p * 4 + 3] = 255;
             }
         }
