@@ -118,6 +118,12 @@ class World : public RootObject
         unsigned long getId() {return ++_nextId;}
 
         /**
+         * Redefinition of a method from RootObject
+         * Send the input buffers back to all pairs
+         */
+        void handleSerializedObject(const std::string name, const SerializedObjectPtr obj);
+
+        /**
          * Initialize the GLFW window
          */
         void init();

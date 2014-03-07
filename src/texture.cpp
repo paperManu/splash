@@ -212,6 +212,18 @@ void Texture::update()
         }
         updatePbos(spec.width, spec.height, spec.pixel_bytes());
 
+        // Fill one of the PBOs right now
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
+        GLubyte* pixels = (GLubyte*)glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY);
+        if (pixels != NULL)
+        {
+            _img->lock();
+            memcpy((void*)pixels, _img->data(), spec.width * spec.height * spec.pixel_bytes());
+            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+            _img->unlock();
+        }
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 

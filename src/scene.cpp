@@ -376,6 +376,9 @@ void Scene::computeBlendingMap()
         for (auto& obj : _objects)
             if (obj.second->getType() == "camera")
                 dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+        for (auto& obj : _ghostObjects)
+            if (obj.second->getType() == "camera")
+                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
         // Filter the output to fill the blanks (dilate filter)
         ImagePtr buffer(new Image(_blendingMap->getSpec()));
@@ -401,8 +404,14 @@ void Scene::computeBlendingMap()
                 pixBuffer[y * w + x] = maxValue;
             }
         *_blendingMap = *buffer;
-        
         _blendingMap->updateTimestamp();
+
+        // Small hack to handle the fact that texture transfer uses PBOs.
+        // If we send the buffer only once, the displayed PBOs wont be the correct one.
+        _link->sendBuffer("blendingMap", SerializedObjectPtr(new SerializedObject(_blendingMap->serialize())));
+        timespec nap {0, (long int) 5e8};
+        nanosleep(&nap, NULL);
+        _link->sendBuffer("blendingMap", SerializedObjectPtr(new SerializedObject(_blendingMap->serialize())));
 
         for (auto& obj : _objects)
             if (obj.second->getType() == "object")
@@ -496,6 +505,7 @@ void Scene::initBlendingMap()
 {
     _blendingMap.reset(new Image);
     _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
+    _objects["blendingMap"] = _blendingMap;
 
     glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture.reset(new Texture);

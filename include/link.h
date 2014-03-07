@@ -72,8 +72,11 @@ class Link
 
         /**
          * Send a message to connected pairs
+         * The second one converts known base types to vector<Value> before sending
          */
         bool sendMessage(std::string name, std::string attribute, std::vector<Value> message);
+        template <typename T>
+        bool sendMessage(std::string name, std::string attribute, std::vector<T> message);
 
     private:
         RootObjectWeakPtr _rootObject;
@@ -98,6 +101,18 @@ class Link
          */
         void handleInputBuffers();
 };
+
+/*************/
+template <typename T>
+bool Link::sendMessage(std::string name, std::string attribute, std::vector<T> message)
+{
+    std::vector<Value> convertedMsg;
+
+    for (auto& m : message)
+        convertedMsg.emplace_back(m);
+
+    return sendMessage(name, attribute, convertedMsg);
+}
 
 typedef std::shared_ptr<Link> LinkPtr;
 

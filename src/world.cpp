@@ -66,7 +66,7 @@ void World::run()
         SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
-        // Send current timings to all Scenes, for display purpose
+        // Send (not too often) current timings to all Scenes, for display purpose
         if (frameIndice == 0)
         {
             auto durationMap = STimer::timer.getDurationMap();
@@ -369,6 +369,12 @@ void World::saveConfig()
     ofstream out(_configFilename, ios::binary);
     out << _config.toStyledString();
     out.close();
+}
+
+/*************/
+void World::handleSerializedObject(const string name, const SerializedObjectPtr obj)
+{
+    _link->sendBuffer(name, obj);
 }
 
 /*************/

@@ -458,15 +458,20 @@ class RootObject : public BaseObject
 
         /**
          * Set an object from its serialized form
+         * If non existant, it is handled by the handleSerializedObject method
          */
         void setFromSerializedObject(const std::string name, const SerializedObjectPtr obj)
         {
             if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
                 std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
+            else
+                handleSerializedObject(name, obj);
         }
 
     protected:
         std::map<std::string, BaseObjectPtr> _objects;
+
+        virtual void handleSerializedObject(const std::string name, const SerializedObjectPtr obj) {}
 };
 
 typedef std::shared_ptr<RootObject> RootObjectPtr;

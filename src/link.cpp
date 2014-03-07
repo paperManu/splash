@@ -50,9 +50,13 @@ void Link::connectTo(string name)
     // TODO: for now, all connections are through IPC.
     _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
     _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
-    
+
     // Set the high water mark to a low value for the buffer output
-    int hwm = 2;
+    int hwm = 10000;
+    _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+
+    // Set the high water mark to a low value for the buffer output
+    hwm = 2;
     _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
     // Wait a bit for the connection to be up

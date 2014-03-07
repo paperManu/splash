@@ -145,7 +145,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         bool isLocked {false};
-        if (obj != _serializedObject) // If we are setting the image from the inner serialized buffer
+        if (obj != _serializedObject) // If we are not setting the image from the inner serialized buffer
         {
             isLocked = true;
             _mutex.lock();
@@ -153,10 +153,10 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         _bufferImage.swap(image);
         _imageUpdated = true;
 
+        updateTimestamp();
+
         if (isLocked)
             _mutex.unlock();
-
-        updateTimestamp();
     }
     catch (...)
     {
