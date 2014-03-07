@@ -97,7 +97,7 @@ class Mesh : public BufferObject
         /**
          * Get a serialized representation of the mesh
          */
-        SerializedObject serialize() const;
+        SerializedObjectPtr serialize() const;
 
         /**
          * Set the mesh from a serialized representation

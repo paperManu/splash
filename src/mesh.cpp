@@ -155,9 +155,9 @@ bool Mesh::read(const string& filename)
 }
 
 /*************/
-SerializedObject Mesh::serialize() const
+SerializedObjectPtr Mesh::serialize() const
 {
-    SerializedObject obj;
+    SerializedObjectPtr obj(new SerializedObject());
 
     STimer::timer << "serialize " + _name;
 
@@ -172,9 +172,9 @@ SerializedObject Mesh::serialize() const
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto d : data)
         totalSize += d.size() * sizeof(d[0]);
-    obj.resize(totalSize);
+    obj->resize(totalSize);
 
-    auto currentObjPtr = obj.data();
+    auto currentObjPtr = obj->data();
     const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&nbrVertices);
     copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
     currentObjPtr += sizeof(nbrVertices);

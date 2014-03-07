@@ -407,7 +407,7 @@ class BufferObject : public BaseObject
         /**
          * Serialize the image
          */
-        virtual SerializedObject serialize() const = 0;
+        virtual SerializedObjectPtr serialize() const = 0;
 
         /**
          * Set the next serialized object to deserialize to buffer

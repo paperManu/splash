@@ -116,7 +116,7 @@ class Image : public BufferObject
         /**
          * Serialize the image
          */
-        SerializedObject serialize() const;
+        SerializedObjectPtr serialize() const;
 
         /**
          * Update the Image from a serialized representation

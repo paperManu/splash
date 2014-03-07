@@ -408,10 +408,10 @@ void Scene::computeBlendingMap()
 
         // Small hack to handle the fact that texture transfer uses PBOs.
         // If we send the buffer only once, the displayed PBOs wont be the correct one.
-        _link->sendBuffer("blendingMap", SerializedObjectPtr(new SerializedObject(_blendingMap->serialize())));
+        _link->sendBuffer("blendingMap", _blendingMap->serialize());
         timespec nap {0, (long int)1e8};
         nanosleep(&nap, NULL);
-        _link->sendBuffer("blendingMap", SerializedObjectPtr(new SerializedObject(_blendingMap->serialize())));
+        _link->sendBuffer("blendingMap", _blendingMap->serialize());
 
         for (auto& obj : _objects)
             if (obj.second->getType() == "object")

@@ -52,10 +52,10 @@ void World::run()
                 o.second->update();
 
                 // Send them the their destinations
-                SerializedObjectPtr obj(new SerializedObject);
+                SerializedObjectPtr obj;
                 if (dynamic_pointer_cast<BufferObject>(o.second).get() != nullptr)
                     if (dynamic_pointer_cast<BufferObject>(o.second)->wasUpdated()) // if the buffer has been updated
-                        *obj = dynamic_pointer_cast<BufferObject>(o.second)->serialize();
+                        obj = dynamic_pointer_cast<BufferObject>(o.second)->serialize();
                     else
                         return; // if not, exit this thread
 
