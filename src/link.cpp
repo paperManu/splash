@@ -56,7 +56,7 @@ void Link::connectTo(string name)
     _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
     // Set the high water mark to a low value for the buffer output
-    hwm = 2;
+    hwm = 5;
     _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
     // Wait a bit for the connection to be up
@@ -180,7 +180,7 @@ void Link::handleInputBuffers()
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         // Set the high water mark to a low value for the buffer output
-        int hwm = 2;
+        int hwm = 5;
         _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         while (true)

@@ -119,6 +119,11 @@ class Scene : public RootObject
         void run();
 
         /**
+         * Set the Scene as the master one
+         */
+        void setAsMaster() {_isMaster = true;}
+
+        /**
          * Give a special behavior to the scene, making it the main window of the World
          */
         void setAsWorldScene();
@@ -145,6 +150,7 @@ class Scene : public RootObject
         bool _started {false};
         std::thread _sceneLoop;
 
+        bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isBlendComputed {false};

@@ -218,6 +218,11 @@ void World::applyConfig()
             continue;
 
         const Json::Value jsScene = _config[s.first];
+
+        // Set if master
+        if (s.first == _masterSceneName)
+            _link->sendMessage(_masterSceneName, "setMaster", {});
+
         // Create the objects
         auto sceneMembers = jsScene.getMemberNames();
         int idx {0};
