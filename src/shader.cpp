@@ -35,7 +35,9 @@ Shader::~Shader()
         if (glIsShader(shader.second))
             glDeleteShader(shader.second);
 
+#ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
+#endif
 }
 
 /*************/
@@ -99,7 +101,11 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     GLint status;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
     if (status)
+    {
+#ifdef DEBUG
         SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
+#endif
+    }
     else
     {
         SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
@@ -167,7 +173,9 @@ void Shader::compileProgram()
             if (status == GL_TRUE)
             {
                 glAttachShader(_program, shader.second);
+#ifdef DEBUG
                 SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
+#endif
             }
         }
     }
@@ -181,7 +189,9 @@ bool Shader::linkProgram()
     glGetProgramiv(_program, GL_LINK_STATUS, &status);
     if (status == GL_TRUE)
     {
+#ifdef DEBUG
         SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
+#endif
         _isLinked = true;
         return true;
     }

@@ -107,8 +107,10 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
     }
 
     // We don't display broadcast messages, for visibility
+#ifdef DEBUG
     if (name != SPLASH_ALL_PAIRS)
         SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
+#endif
 
     return true;
 }
@@ -146,8 +148,10 @@ void Link::handleInputMessages()
             }
 
             // We don't display broadcast messages, for visibility
+#ifdef DEBUG
             if (name != SPLASH_ALL_PAIRS)
                 SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Receiving message for " << name << "::" << attribute << Log::endl;
+#endif
 
             auto root = _rootObject.lock();
             root->set(name, attribute, values);

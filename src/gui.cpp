@@ -67,7 +67,9 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 /*************/
 Gui::~Gui()
 {
+#ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
+#endif
 }
 
 /*************/

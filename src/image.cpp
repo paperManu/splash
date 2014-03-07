@@ -32,7 +32,9 @@ Image::Image(oiio::ImageSpec spec)
 /*************/
 Image::~Image()
 {
+#ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
+#endif
 }
 
 /*************/

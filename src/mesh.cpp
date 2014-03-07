@@ -18,7 +18,9 @@ Mesh::Mesh()
 /*************/
 Mesh::~Mesh()
 {
+#ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Mesh::~Mesh - Destructor" << Log::endl;
+#endif
 }
 
 /*************/
