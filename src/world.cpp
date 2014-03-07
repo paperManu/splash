@@ -73,7 +73,7 @@ void World::run()
             for (auto& d : durationMap)
                 _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
         }
-        frameIndice = (frameIndice + 1) % 60;
+        frameIndice = (frameIndice + 1) % 6;
 
         if (_doComputeBlending)
         {
