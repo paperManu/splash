@@ -189,8 +189,7 @@ void Link::handleInputBuffers()
 
             _socketBufferIn->recv(&msg);
             string name((char*)msg.data());
-            SerializedObjectPtr buffer(new SerializedObject(msg.size() - name.size() - 1));
-            memcpy(buffer->data(), (char*)msg.data() + name.size() + 1, msg.size() - name.size() - 1);
+            SerializedObjectPtr buffer(new SerializedObject((char*)msg.data() + name.size() + 1, (char*)msg.data() + msg.size()));
             
             auto root = _rootObject.lock();
             root->setFromSerializedObject(name, buffer);
