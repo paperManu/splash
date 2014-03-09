@@ -1,8 +1,11 @@
 #include "image.h"
+#include "threadpool.h"
 #include "timer.h"
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
+
+#define SPLASH_IMAGE_COPY_THREADS 4
 
 using namespace std;
 
@@ -113,7 +116,17 @@ SerializedObjectPtr Image::serialize() const
     const unsigned char* imgPtr = reinterpret_cast<const unsigned char*>(_image.localpixels());
     if (imgPtr == NULL)
         return SerializedObjectPtr();
-    copy(imgPtr, imgPtr + imgSize, currentObjPtr);
+    
+    vector<unsigned int> threadIds;
+    int stride = SPLASH_IMAGE_COPY_THREADS;
+    for (int i = 0; i < stride - 1; ++i)
+    {
+        threadIds.push_back(SThread::pool.enqueue([=, &imgPtr, &imgSize, &currentObjPtr]() {
+            copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i);
+        }));
+    }
+    copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
+    SThread::pool.waitThreads(threadIds);
 
     STimer::timer >> "serialize " + _name;
 
@@ -152,6 +165,17 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         int imgSize = image.spec().pixel_bytes() * image.spec().width * image.spec().height;
         ptr = reinterpret_cast<unsigned char*>(image.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
+
+        vector<unsigned int> threadIds;
+        int stride = SPLASH_IMAGE_COPY_THREADS;
+        for (int i = 0; i < stride - 1; ++i)
+        {
+            threadIds.push_back(SThread::pool.enqueue([=, &ptr, &imgSize, &currentObjPtr]() {
+                copy(currentObjPtr + imgSize / stride * i, currentObjPtr + imgSize / stride * (i + 1), ptr + imgSize / stride * i);
+            }));
+        }
+        copy(currentObjPtr + imgSize / stride * (stride - 1), currentObjPtr + imgSize, ptr + imgSize / stride * (stride - 1));
+        SThread::pool.waitThreads(threadIds);
 
         bool isLocked {false};
         if (obj != _serializedObject) // If we are not setting the image from the inner serialized buffer
