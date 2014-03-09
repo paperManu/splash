@@ -47,17 +47,17 @@ Link::~Link()
 /*************/
 void Link::connectTo(string name)
 {
-    // TODO: for now, all connections are through IPC.
-    _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
-    _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
-
     // Set the high water mark to a low value for the buffer output
     int hwm = 10000;
     _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
     // Set the high water mark to a low value for the buffer output
-    hwm = 5;
+    hwm = 2;
     _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+
+    // TODO: for now, all connections are through IPC.
+    _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
+    _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
 
     // Wait a bit for the connection to be up
     timespec nap {0, (long int)1e8};
@@ -176,12 +176,12 @@ void Link::handleInputBuffers()
 {
     try
     {
+        // Set the high water mark to a low value for the buffer output
+        int hwm = 2;
+        _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+
         _socketBufferIn->bind((string("ipc:///tmp/splash_buf_") + _name).c_str());
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
-
-        // Set the high water mark to a low value for the buffer output
-        int hwm = 5;
-        _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         while (true)
         {
