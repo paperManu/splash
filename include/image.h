@@ -148,6 +148,11 @@ class Image : public BufferObject
         void createDefaultImage(); //< Create a default pattern
         
     private:
+        // Serialization is done in a double-buffer way,
+        // to limit memory initialization
+        mutable SerializedObjectPtr _serializedBuffers[2];
+        mutable int _serializedBufferIndex {0};
+        
         /**
          * Register new functors to modify attributes
          */

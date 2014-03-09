@@ -80,7 +80,6 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 /*************/
 SerializedObjectPtr Image::serialize() const
 {
-    SerializedObjectPtr obj(new SerializedObject());
     _mutex.lock();
 
     STimer::timer << "serialize " + _name;
@@ -89,7 +88,17 @@ SerializedObjectPtr Image::serialize() const
     string xmlSpec = _image.spec().to_xml();
     int nbrChar = xmlSpec.size();
     int imgSize = _image.spec().pixel_bytes() * _image.spec().width * _image.spec().height;
-    obj->resize(sizeof(nbrChar) + nbrChar + imgSize);
+    int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
+    
+    if (_serializedBuffers[0].get() == nullptr || _serializedBuffers[1].get() == nullptr
+        || _serializedBuffers[0]->size() != totalSize || _serializedBuffers[1]->size() != totalSize)
+    {
+        _serializedBuffers[0].reset(new SerializedObject(totalSize));
+        _serializedBuffers[1].reset(new SerializedObject(totalSize));
+    }
+    
+    SerializedObjectPtr obj = _serializedBuffers[_serializedBufferIndex];
+    _serializedBufferIndex = (_serializedBufferIndex + 1) % 2;
 
     auto currentObjPtr = obj->data();
     const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&nbrChar);
