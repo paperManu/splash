@@ -79,6 +79,9 @@ class World : public RootObject
         static World* _that;
         struct sigaction _signals;
 
+        // World parameters
+        unsigned int _worldFramerate {60};
+
         std::shared_ptr<Link> _link; // link between this World and the Scenes
         std::map<std::string, ScenePtr> _scenes;
         std::map<std::string, std::thread> _scenesThread;

@@ -369,8 +369,6 @@ class BaseObject
         std::map<std::string, AttributeFunctor> _attribFunctions;
 };
 
-typedef std::shared_ptr<BaseObject> BaseObjectPtr;
-
 /*************/
 class BufferObject : public BaseObject
 {

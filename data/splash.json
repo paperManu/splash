@@ -3,6 +3,10 @@
     // Default encoding for text
     "encoding" : "UTF-8",
 
+    "world" : {
+        "framerate" : 30
+    },
+
     "scenes" : [
         {
             "name" : "local",

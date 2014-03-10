@@ -95,7 +95,7 @@ void World::run()
         }
 
         // Get the current FPS
-        STimer::timer >> 1e6 / 60 >> "worldLoop";
+        STimer::timer >> 1e6 / (float)_worldFramerate >> "worldLoop";
     }
 }
 
@@ -150,6 +150,14 @@ void World::applyConfig()
     // We first destroy all scenes
     if (_scenes.size() > 0)
         _scenes.clear();
+
+    // Configure this very World
+    if (_config.isMember("world"))
+    {
+        const Json::Value jsWorld = _config["world"];
+        if (jsWorld.isMember("framerate"))
+            _worldFramerate = jsWorld["framerate"].asInt();
+    }
 
     // Get the list of all scenes, and create them
     const Json::Value jsScenes = _config["scenes"];
