@@ -371,18 +371,18 @@ void Gui::initGLV(int width, int height)
         evt = evt * 0.95 + STimer::timer["events"] * 0.001 * 0.05;
 
         // Create the text message
-        string text;
-        text += "Framerate: " + to_string(fps) + " fps\n";
-        text += "World framerate: " + to_string(worldFps) + " fps\n";
-        text += "Sending buffers to Scenes: " + to_string(upl) + " ms\n";
-        text += "Buffers deserialize: " + to_string(upd) + " ms\n";
-        text += "Texture upload: " + to_string(tex) + " ms\n";
-        text += "Cameras rendering: " + to_string(cam) + " ms\n";
-        text += "GUI rendering: " + to_string(gui) + " ms\n";
-        text += "Windows rendering: " + to_string(win) + " ms\n";
-        text += "Swapping and events: " + to_string(buf) + " ms\n";
+        ostringstream stream;
+        stream << "Framerate: " << setprecision(4) << fps << " fps\n";
+        stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
+        stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
+        stream << "Buffers deserialize: " << setprecision(4) << upd << " ms\n";
+        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
+        stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
+        stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
+        stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
+        stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
 
-        return text;
+        return stream.str();
     });
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
     _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 9 + 8);
