@@ -154,6 +154,8 @@ class Scene : public RootObject
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isBlendComputed {false};
+        int _swapInterval {1}; //< Global value for the swap interval, default for all windows
+
         unsigned long _nextId {0};
 
         // Blending map, used by all cameras (except the GUI camera)

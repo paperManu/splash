@@ -210,6 +210,23 @@ void World::applyConfig()
             
             // Initialize the communication
             _link->connectTo(name);
+
+            // Set the remaining parameters
+            auto sceneMembers = jsScenes[i].getMemberNames();
+            int idx {0};
+            for (const auto& param : jsScenes[i])
+            {
+                string paramName = sceneMembers[idx];
+                Value v;
+                if (param.isInt())
+                    v = param.asInt();
+                else if (param.isDouble())
+                    v = param.asFloat();
+                else
+                    v = param.asString();
+                _link->sendMessage(name, paramName, {v});
+                idx++;
+            }
         }
         else
         {

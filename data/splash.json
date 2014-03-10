@@ -11,7 +11,9 @@
         {
             "name" : "local",
             "address" : "localhost",
-            "spawn" : 1
+            "spawn" : 1,
+            "display" : 0,
+            "swapInterval" : 1
         }
     ],
 

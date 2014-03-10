@@ -130,6 +130,7 @@ class Window : public BaseObject
         int _screenId {-1};
         bool _fullscreen {false};
         std::vector<Value> _layout {0, 0, 0, 0};
+        int _swapInterval {2};
 
         mutable std::mutex _contextMutex;
         ObjectPtr _screen;
@@ -165,6 +166,11 @@ class Window : public BaseObject
          * Set up the projection surface
          */
         bool setProjectionSurface();
+
+        /**
+         * Update the swap interval
+         */
+        void updateSwapInterval();
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

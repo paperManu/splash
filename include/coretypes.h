@@ -32,7 +32,6 @@
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
 #define SPLASH_GL_DEBUG false
-#define SPLASH_SWAP_INTERVAL 1
 #define SPLASH_SAMPLES 4
 #define SPLASH_MAX_THREAD 8
 
@@ -135,6 +134,7 @@ struct Value
             v
         };
 
+        Value() {_i = 0; _type = Type::i;}
         Value(int v) {_i = v; _type = Type::i;}
         Value(float v) {_f = v; _type = Type::f;}
         Value(double v) {_f = (float)v; _type = Type::f;}

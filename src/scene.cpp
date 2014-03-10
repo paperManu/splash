@@ -38,7 +38,10 @@ BaseObjectPtr Scene::add(string type, string name)
     if (type == string("camera"))
         obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
     else if (type == string("window"))
+    {
         obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
+        obj->setAttribute("swapInterval", {_swapInterval});
+    }
     else if (type == string("gui"))
         obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _self)));
     else
@@ -610,6 +613,13 @@ void Scene::registerAttributes()
 
     _attribFunctions["start"] = AttributeFunctor([&](vector<Value> args) {
         _started = true;
+        return true;
+    });
+
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _swapInterval = max(0, args[0].asInt());
         return true;
     });
 

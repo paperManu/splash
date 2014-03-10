@@ -241,6 +241,7 @@ bool Window::switchFullscreen(int screenId)
     }
 
     _window = move(GlWindowPtr(new GlWindow(window, _window->getMainWindow())));
+    updateSwapInterval();
 
     setEventsCallbacks();
 
@@ -310,7 +311,7 @@ bool Window::setProjectionSurface()
     if (!_window->setAsCurrentContext()) 
 		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glfwShowWindow(_window->get());
-    glfwSwapInterval(SPLASH_SWAP_INTERVAL);
+    glfwSwapInterval(_swapInterval);
 
     // Setup the projection surface
     glGetError();
@@ -333,6 +334,17 @@ bool Window::setProjectionSurface()
 }
 
 /*************/
+void Window::updateSwapInterval()
+{
+    if (!_window->setAsCurrentContext()) 
+		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+
+    glfwSwapInterval(_swapInterval);
+
+    _window->releaseContext();
+}
+
+/*************/
 void Window::registerAttributes()
 {
     _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
@@ -352,6 +364,14 @@ void Window::registerAttributes()
         return true;
     }, [&]() {
         return _layout;
+    });
+
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _swapInterval = max(0, args[0].asInt());
+        updateSwapInterval();
+        return true;
     });
 }
 
