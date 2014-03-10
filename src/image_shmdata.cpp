@@ -211,25 +211,25 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (width == 0 || height == 0 || bpp == 0)
             return;
 
-        oiio::ImageSpec spec(width, height, 4, oiio::TypeDesc::UINT8);
-        oiio::ImageBuf img(spec);
-        if (!is420 && channels == 3)
+        oiio::ImageBuf img;
+        if (!is420 && (channels == 3 || channels == 4))
         {
-            char* pixels = (char*)img.localpixels();
-            for (int p = 0; p < width * height; ++p)
-            {
-                const char* pixel = &((const char*)data)[p * 3];
-                memcpy(&(pixels[p * 4]), pixel, 3 * sizeof(char));
-                pixels[p * 4 + 3] = 255;
-            }
+            oiio::ImageSpec spec(width, height, channels, oiio::TypeDesc::UINT8);
+            oiio::ImageBuf buffer(spec);
+            char* pixels = (char*)buffer.localpixels();
+            memcpy(pixels, (const char*)data, width * height * channels * sizeof(char));
+            img.swap(buffer);
         }
         else if (is420)
         {
+            oiio::ImageSpec spec(width, height, 3, oiio::TypeDesc::UINT8);
+            oiio::ImageBuf buffer(spec);
+
             unsigned char* Y = (unsigned char*)data;
             unsigned char* U = (unsigned char*)data + width * height;
             unsigned char* V = (unsigned char*)data + width * height * 5 / 4;
 
-            char* pixels = (char*)img.localpixels();
+            char* pixels = (char*)buffer.localpixels();
             vector<unsigned int> threadIds;
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
@@ -241,14 +241,14 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                             int uValue = (int)U[(y / 2) * (width / 2) + x / 2] - 128;
                             int vValue = (int)V[(y / 2) * (width / 2) + x / 2] - 128;
                             
-                            pixels[(y * width + x) * 4] = (unsigned char)max(0, min(255, (yValue * 1164 + 1596 * vValue) / 1000));
-                            pixels[(y * width + x) * 4 + 1] = (unsigned char)max(0, min(255, (yValue * 1164 - 392 * uValue - 813 * vValue) / 1000));
-                            pixels[(y * width + x) * 4 + 2] = (unsigned char)max(0, min(255, (yValue * 1164 + 2017 * uValue) / 1000));
-                            pixels[(y * width + x) * 4 + 3] = 255;
+                            pixels[(y * width + x) * 3] = (unsigned char)max(0, min(255, (yValue * 1164 + 1596 * vValue) / 1000));
+                            pixels[(y * width + x) * 3 + 1] = (unsigned char)max(0, min(255, (yValue * 1164 - 392 * uValue - 813 * vValue) / 1000));
+                            pixels[(y * width + x) * 3 + 2] = (unsigned char)max(0, min(255, (yValue * 1164 + 2017 * uValue) / 1000));
                         }
                 }));
             }
             SThread::pool.waitThreads(threadIds);
+            img.swap(buffer);
         }
         else
             return;

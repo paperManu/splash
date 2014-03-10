@@ -228,31 +228,8 @@ bool Image::read(const string& filename)
     in->close();
     delete in;
 
-    // If the image has only 3 channels, we add one
-    if (channels == 3)
-    {
-        oiio::ImageSpec newSpec(xres, yres, 4, oiio::TypeDesc::UINT8);
-        oiio::ImageBuf newImg(newSpec);
-        char* inputPixels = (char*)img.localpixels();
-        char* newPixels = (char*)newImg.localpixels();
-
-        if (inputPixels == nullptr || newPixels == nullptr)
-            return false;
-
-        for (int y = 0; y < yres; ++y)
-            for (int x = 0; x < xres; ++x)
-            {
-                memcpy(&newPixels[(x + y * xres) * 4], &inputPixels[(x + y * xres) * 3], 3 * sizeof(char));
-                newPixels[(x + y * xres) * 4 + 3] = 255;
-            }
-
-        channels = 4;
-        img.swap(newImg);
-    }
-    else if (channels != 4)
-    {
+    if (channels != 3 && channels != 4)
         return false;
-    }
 
     lock_guard<mutex> lock(_mutex);
     _bufferImage.swap(img);
