@@ -216,7 +216,6 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (!is420 && channels == 3)
         {
             char* pixels = (char*)img.localpixels();
-            vector<unsigned int> threadIds;
             for (int p = 0; p < width * height; ++p)
             {
                 const char* pixel = &((const char*)data)[p * 3];

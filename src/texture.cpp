@@ -187,13 +187,25 @@ void Texture::update()
         if (spec.nchannels == 4 && spec.format == "uint8")
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA" << Log::endl;
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             else
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+            _img->unlock();
+        }
+        else if (spec.nchannels == 3 && spec.format == "uint8")
+        {
+#ifdef DEBUG
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGB)" << Log::endl;
+#endif
+            _img->lock();
+            if (srgb[0].asInt() > 0)
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, _img->data());
+            else
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, _img->data());
             _img->unlock();
         }
         else if (spec.nchannels == 1 && spec.format == "uint16")
@@ -237,6 +249,8 @@ void Texture::update()
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         if (spec.nchannels == 4 && spec.format == "uint8")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        else if (spec.nchannels == 3 && spec.format == "uint8")
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, 0);
         else if (spec.nchannels == 1 && spec.format == "uint16")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
