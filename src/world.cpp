@@ -155,8 +155,21 @@ void World::applyConfig()
     if (_config.isMember("world"))
     {
         const Json::Value jsWorld = _config["world"];
-        if (jsWorld.isMember("framerate"))
-            _worldFramerate = jsWorld["framerate"].asInt();
+        auto worldMember = jsWorld.getMemberNames();
+        int idx {0};
+        for (const auto& param : jsWorld)
+        {
+            string paramName = worldMember[idx];
+            Value v;
+            if (param.isInt())
+                v = param.asInt();
+            else if (param.isDouble())
+                v = param.asFloat();
+            else
+                v = param.asString();
+            dynamic_cast<BaseObject*>(this)->setAttribute(paramName, {v});
+            idx++;
+        }
     }
 
     // Get the list of all scenes, and create them
@@ -524,6 +537,13 @@ void World::registerAttributes()
         if (args.size() < 1)
             return false;
         _link->sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
+        return true;
+    });
+
+    _attribFunctions["framerate"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _worldFramerate = std::max(1, args[0].asInt());
         return true;
     });
 
