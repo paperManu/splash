@@ -19,9 +19,8 @@ go_bandit([]() {
             scene.link("camera", "gui");
             scene.link("gui", "window");
 
-            while(true)
-                if (scene.render())
-                    break;
+            for (int i = 0; i < 500; ++i)
+                scene.render();
             AssertThat(scene.getStatus(), Equals(true));
         });
     });

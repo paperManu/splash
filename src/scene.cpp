@@ -14,8 +14,9 @@ Scene::Scene(std::string name)
     SLog::log << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
     _isRunning = true;
+    _name = name;
     _sceneLoop = thread([&]() {
-        init(name);
+        init(_name);
         registerAttributes();
         run();
     });

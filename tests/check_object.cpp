@@ -26,11 +26,10 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
-            scene.setAttribute("obj", "position", vector<Value>({0.5, 0.5, 0.0}));
+            scene.set("obj", "position", vector<Value>({0.5, 0.5, 0.0}));
 
-            while(true)
-                if (scene.render())
-                    break;
+            for (int i = 0; i < 500; ++i)
+                scene.render();
             AssertThat(scene.getStatus(), Equals(true));
         });
     });
@@ -56,12 +55,11 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
-            scene.setAttribute("camera", "eye", vector<Value>({-4.f, 2.f, 2.f}));
-            scene.setAttribute("obj", "sideness", vector<Value>({2}));
+            scene.set("camera", "eye", vector<Value>({-4.f, 2.f, 2.f}));
+            scene.set("obj", "sideness", vector<Value>({2}));
 
-            while(true)
-                if (scene.render())
-                    break;
+            for (int i = 0; i < 500; ++i)
+                scene.render();
             AssertThat(scene.getStatus(), Equals(true));
         });
     });

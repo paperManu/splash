@@ -10,7 +10,7 @@ go_bandit([]() {
     /*********/
     describe("World class", [&]() {
         int argc = 2;
-        char* argv[] = {"-o", "../data/config.json"};
+        char* argv[] = {(char*)"-o", (char*)"../data/config.json"};
 
         it("should load the configuration correctly", [&]() {
             World world(argc, argv); 
