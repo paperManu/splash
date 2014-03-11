@@ -342,6 +342,8 @@ void World::applyConfig()
 /*************/
 void World::saveConfig()
 {
+    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+
     Json::Value root;
     root["scenes"] = Json::Value();
 
@@ -355,19 +357,14 @@ void World::saveConfig()
 
         // Get this scene's configuration
         _link->sendMessage(s.first, "config", {});
+        timespec nap({0, (long int)1e6});
         while (_lastConfigReceived == string("none"))
-        {
-            timespec nap;
-            nap.tv_sec = 0;
-            nap.tv_nsec = 1e6;
             nanosleep(&nap, NULL);
-        }
 
         // Parse the string to get a json
         Json::Value config;
         Json::Reader reader;
         reader.parse(_lastConfigReceived, config);
-        //Json::Value config = s.second->getConfigurationAsJson();
         root[s.first] = config;
         _lastConfigReceived = "none";
     }
