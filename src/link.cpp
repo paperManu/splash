@@ -11,14 +11,22 @@ namespace Splash {
 /*************/
 Link::Link(RootObjectWeakPtr root, string name)
 {
-    _rootObject = root;
-    _name = name;
-    _context.reset(new zmq::context_t(1));
+    try
+    {
+        _rootObject = root;
+        _name = name;
+        _context.reset(new zmq::context_t(1));
 
-    _socketMessageOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
-    _socketMessageIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
-    _socketBufferOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
-    _socketBufferIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
+        _socketMessageOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
+        _socketMessageIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
+        _socketBufferOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
+        _socketBufferIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
+    }
+    catch (const zmq::error_t& e)
+    {
+        if (errno != ETERM)
+            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+    }
 
     _bufferInThread = thread([&]() {
         handleInputBuffers();
@@ -47,18 +55,25 @@ Link::~Link()
 /*************/
 void Link::connectTo(string name)
 {
-    // Set the high water mark to a low value for the buffer output
-    int hwm = 10000;
-    _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+    try
+    {
+        // Set the high water mark to a low value for the buffer output
+        int hwm = 10000;
+        _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
-    // Set the high water mark to a low value for the buffer output
-    hwm = 2;
-    _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+        // Set the high water mark to a low value for the buffer output
+        hwm = 2;
+        _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
-    // TODO: for now, all connections are through IPC.
-    _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
-    _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
-
+        // TODO: for now, all connections are through IPC.
+        _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
+        _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
+    }
+    catch (const zmq::error_t& e)
+    {
+        if (errno != ETERM)
+            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+    }
     // Wait a bit for the connection to be up
     timespec nap {0, (long int)1e8};
     nanosleep(&nap, NULL);
@@ -67,11 +82,19 @@ void Link::connectTo(string name)
 /*************/
 bool Link::sendBuffer(string name, SerializedObjectPtr buffer)
 {
-    // We pack the buffer and its name in a single msg
-    zmq::message_t msg(name.size() + 1 + buffer->size());
-    memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-    memcpy((char*)msg.data() + name.size() + 1, buffer->data(), buffer->size());
-    _socketBufferOut->send(msg);
+    try
+    {
+        // We pack the buffer and its name in a single msg
+        zmq::message_t msg(name.size() + 1 + buffer->size());
+        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+        memcpy((char*)msg.data() + name.size() + 1, buffer->data(), buffer->size());
+        _socketBufferOut->send(msg);
+    }
+    catch (const zmq::error_t& e)
+    {
+        if (errno != ETERM)
+            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+    }
 
     return true;
 }
@@ -79,35 +102,43 @@ bool Link::sendBuffer(string name, SerializedObjectPtr buffer)
 /*************/
 bool Link::sendMessage(string name, string attribute, vector<Value> message)
 {
-    // First we send the name of the target
-    zmq::message_t msg(name.size() + 1);
-    memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-    _socketMessageOut->send(msg);
-
-    // And the target's attribute
-    msg.rebuild(attribute.size() + 1);
-    memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
-    _socketMessageOut->send(msg);
-
-    // Then, the size of the message
-    int size = message.size();
-    msg.rebuild(sizeof(size));
-    memcpy(msg.data(), (void*)&size, sizeof(size));
-    _socketMessageOut->send(msg);
-
-    // And every message
-    for (auto& v : message)
+    try
     {
-        Value::Type valueType = v.getType();
-        int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
-        void* value = v.data();
+        // First we send the name of the target
+        zmq::message_t msg(name.size() + 1);
+        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+        _socketMessageOut->send(msg);
 
-        msg.rebuild(sizeof(valueType));
-        memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
+        // And the target's attribute
+        msg.rebuild(attribute.size() + 1);
+        memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
         _socketMessageOut->send(msg);
-        msg.rebuild(valueSize);
-        memcpy(msg.data(), value, valueSize);
+
+        // Then, the size of the message
+        int size = message.size();
+        msg.rebuild(sizeof(size));
+        memcpy(msg.data(), (void*)&size, sizeof(size));
         _socketMessageOut->send(msg);
+
+        // And every message
+        for (auto& v : message)
+        {
+            Value::Type valueType = v.getType();
+            int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
+            void* value = v.data();
+
+            msg.rebuild(sizeof(valueType));
+            memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
+            _socketMessageOut->send(msg);
+            msg.rebuild(valueSize);
+            memcpy(msg.data(), value, valueSize);
+            _socketMessageOut->send(msg);
+        }
+    }
+    catch (const zmq::error_t& e)
+    {
+        if (errno != ETERM)
+            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     // We don't display broadcast messages, for visibility
@@ -164,7 +195,7 @@ void Link::handleInputMessages()
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            cout << "Exception: " << e.what() << endl;
+            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
 
@@ -198,7 +229,7 @@ void Link::handleInputBuffers()
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            cout << "Exception: " << e.what() << endl;
+            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     _socketBufferIn.reset();
