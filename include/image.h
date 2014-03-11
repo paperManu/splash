@@ -152,6 +152,9 @@ class Image : public BufferObject
         // to limit memory initialization
         mutable SerializedObjectPtr _serializedBuffers[2];
         mutable int _serializedBufferIndex {0};
+
+        // Deserialization is done in this buffer, to avoid realloc
+        oiio::ImageBuf _bufferDeserialize;
         
         /**
          * Register new functors to modify attributes

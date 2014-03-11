@@ -161,9 +161,12 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         oiio::ImageSpec spec;
         spec.from_xml(xmlSpec.c_str());
 
-        oiio::ImageBuf image(spec);
-        int imgSize = image.spec().pixel_bytes() * image.spec().width * image.spec().height;
-        ptr = reinterpret_cast<unsigned char*>(image.localpixels());
+        oiio::ImageSpec curSpec = _bufferDeserialize.spec();
+        if (spec.width != curSpec.width || spec.height != curSpec.height || spec.nchannels != curSpec.nchannels || spec.format != curSpec.format)
+            _bufferDeserialize.reset(spec);
+
+        int imgSize = _bufferDeserialize.spec().pixel_bytes() * _bufferDeserialize.spec().width * _bufferDeserialize.spec().height;
+        ptr = reinterpret_cast<unsigned char*>(_bufferDeserialize.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         vector<unsigned int> threadIds;
@@ -183,7 +186,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
             isLocked = true;
             _mutex.lock();
         }
-        _bufferImage.swap(image);
+        _bufferImage.swap(_bufferDeserialize);
         _imageUpdated = true;
 
         updateTimestamp();
