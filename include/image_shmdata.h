@@ -78,6 +78,8 @@ class Image_Shmdata : public Image
         unsigned long long _writerStartTime;
         oiio::ImageBuf _writerBuffer;
 
+        oiio::ImageBuf _readerBuffer;
+
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)
          */

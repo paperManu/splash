@@ -211,25 +211,26 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (width == 0 || height == 0 || bpp == 0)
             return;
 
-        oiio::ImageBuf img;
-        if (!is420 && (channels == 3 || channels == 4))
+        // Check if we need to resize the reader buffer
+        oiio::ImageSpec bufSpec = context->_readerBuffer.spec();
+        if (bufSpec.width != width || bufSpec.height != height || bufSpec.nchannels != channels)
         {
             oiio::ImageSpec spec(width, height, channels, oiio::TypeDesc::UINT8);
-            oiio::ImageBuf buffer(spec);
-            char* pixels = (char*)buffer.localpixels();
+            context->_readerBuffer.reset(spec);
+        }
+
+        if (!is420 && (channels == 3 || channels == 4))
+        {
+            char* pixels = (char*)(context->_readerBuffer).localpixels();
             memcpy(pixels, (const char*)data, width * height * channels * sizeof(char));
-            img.swap(buffer);
         }
         else if (is420)
         {
-            oiio::ImageSpec spec(width, height, 3, oiio::TypeDesc::UINT8);
-            oiio::ImageBuf buffer(spec);
-
             unsigned char* Y = (unsigned char*)data;
             unsigned char* U = (unsigned char*)data + width * height;
             unsigned char* V = (unsigned char*)data + width * height * 5 / 4;
 
-            char* pixels = (char*)buffer.localpixels();
+            char* pixels = (char*)(context->_readerBuffer).localpixels();
             vector<unsigned int> threadIds;
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
@@ -248,13 +249,12 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                 }));
             }
             SThread::pool.waitThreads(threadIds);
-            img.swap(buffer);
         }
         else
             return;
 
         lock_guard<mutex> lock(context->_mutex);
-        context->_bufferImage.swap(img);
+        context->_bufferImage.swap(context->_readerBuffer);
         context->_imageUpdated = true;
         context->updateTimestamp();
     }
