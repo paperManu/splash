@@ -104,6 +104,11 @@ class Image_Shmdata : public Image
 
 typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
 
+/**
+ * Utility function to clamp quickly a value
+ */
+inline int clamp(int v, int a, int b) {return v < a ? a : v > b ? b : v;}
+
 } // end of namespace
 
 #endif // IMAGE_SHMDATA_H

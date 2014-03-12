@@ -1,4 +1,5 @@
 AM_CPPFLAGS = \
+	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/bandit \
 	-I$(top_srcdir)/external/GLV/GLV \

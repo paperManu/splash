@@ -235,16 +235,28 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &context]() {
-                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); ++y)
-                        for (int x = 0; x < width; ++x)
+                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); y+=2)
+                        for (int x = 0; x < width; x+=2)
                         {
-                            int yValue = (int)Y[y * width + x];
                             int uValue = (int)U[(y / 2) * (width / 2) + x / 2] - 128;
                             int vValue = (int)V[(y / 2) * (width / 2) + x / 2] - 128;
-                            
-                            pixels[(y * width + x) * 3] = (unsigned char)max(0, min(255, (yValue * 1164 + 1596 * vValue) / 1000));
-                            pixels[(y * width + x) * 3 + 1] = (unsigned char)max(0, min(255, (yValue * 1164 - 392 * uValue - 813 * vValue) / 1000));
-                            pixels[(y * width + x) * 3 + 2] = (unsigned char)max(0, min(255, (yValue * 1164 + 2017 * uValue) / 1000));
+
+                            int rPart = 1596 * vValue;
+                            int gPart = -392 * uValue - 813 * vValue;
+                            int bPart = 2017 * uValue;
+                           
+                            for (int xx = 0; xx < 2; ++xx)
+#pragma Loop_Optimize (Unroll, Vector)
+                                for (int yy = 0; yy < 2; ++yy)
+#pragma Loop_Optimize (Unroll, Vector)
+                                {
+                                    int col = x + xx;
+                                    int row = y + yy;
+                                    int yValue = (int)Y[row * width + col];
+                                    pixels[(row * width + col) * 3] = (unsigned char)clamp((yValue * 1164 + rPart) / 1000, 0, 255);
+                                    pixels[(row * width + col) * 3 + 1] = (unsigned char)clamp((yValue * 1164 + gPart) / 1000, 0, 255);
+                                    pixels[(row * width + col) * 3 + 2] = (unsigned char)clamp((yValue * 1164 + bPart) / 1000, 0, 255);
+                                }
                         }
                 }));
             }
