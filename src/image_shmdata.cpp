@@ -246,9 +246,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                             int bPart = 2017 * uValue;
                            
                             for (int xx = 0; xx < 2; ++xx)
-#pragma Loop_Optimize (Unroll, Vector)
                                 for (int yy = 0; yy < 2; ++yy)
-#pragma Loop_Optimize (Unroll, Vector)
                                 {
                                     int col = x + xx;
                                     int row = y + yy;
