@@ -150,6 +150,7 @@ class World : public RootObject
          * Set a parameter for an object, given its id
          */
         void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
+        using BaseObject::setAttribute;
 
         /**
          * Callback for GLFW errors

@@ -167,7 +167,7 @@ void World::applyConfig()
                 v = param.asFloat();
             else
                 v = param.asString();
-            dynamic_cast<BaseObject*>(this)->setAttribute(paramName, {v});
+            setAttribute(paramName, {v});
             idx++;
         }
     }
