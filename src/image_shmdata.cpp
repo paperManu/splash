@@ -140,6 +140,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
     catch (const regex_error& e)
     {
         SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error code: " << e.code() << Log::endl;
+        shmdata_any_reader_free(shmbuf);
         return;
     }
 
@@ -202,14 +203,23 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                 if (strstr(format, (char*)"I420") != nullptr)
                     is420 = true;
                 else
+                {
+                    shmdata_any_reader_free(shmbuf);
                     return; // No other YUV format is supported yet
+                }
             }
         }
         else
+        {
+            shmdata_any_reader_free(shmbuf);
             return;
+        }
 
         if (width == 0 || height == 0 || bpp == 0)
+        {
+            shmdata_any_reader_free(shmbuf);
             return;
+        }
 
         // Check if we need to resize the reader buffer
         oiio::ImageSpec bufSpec = context->_readerBuffer.spec();
@@ -238,8 +248,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                     for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); y++)
                         for (int x = 0; x < width; x+=2)
                         {
-                            int uValue = (int)U[(y / 2) * (width / 2) + x / 2] - 128;
-                            int vValue = (int)V[(y / 2) * (width / 2) + x / 2] - 128;
+                            int uValue = (int)(U[(y / 2) * (width / 2) + x / 2]) - 128;
+                            int vValue = (int)(V[(y / 2) * (width / 2) + x / 2]) - 128;
 
                             int rPart = 52298 * vValue;
                             int gPart = -12846 * uValue - 36641 * vValue;
@@ -247,13 +257,13 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                            
                             int col = x;
                             int row = y;
-                            int yValue = (int)Y[row * width + col] * 38142;
+                            int yValue = (int)(Y[row * width + col]) * 38142;
                             pixels[(row * width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                             pixels[(row * width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                             pixels[(row * width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
 
                             col++;
-                            yValue = (int)Y[row * width + col] * 38142;
+                            yValue = (int)(Y[row * width + col]) * 38142;
                             pixels[(row * width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                             pixels[(row * width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                             pixels[(row * width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
@@ -264,7 +274,10 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             SThread::pool.waitThreads(threadIds);
         }
         else
+        {
+            shmdata_any_reader_free(shmbuf);
             return;
+        }
 
         lock_guard<mutex> lock(context->_mutex);
         context->_bufferImage.swap(context->_readerBuffer);
