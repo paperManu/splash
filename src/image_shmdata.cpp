@@ -235,26 +235,29 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &context]() {
-                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); y+=2)
+                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < height / SPLASH_SHMDATA_THREADS * (block + 1); y++)
                         for (int x = 0; x < width; x+=2)
                         {
                             int uValue = (int)U[(y / 2) * (width / 2) + x / 2] - 128;
                             int vValue = (int)V[(y / 2) * (width / 2) + x / 2] - 128;
 
-                            int rPart = 1596 * vValue;
-                            int gPart = -392 * uValue - 813 * vValue;
-                            int bPart = 2017 * uValue;
+                            int rPart = 52298 * vValue;
+                            int gPart = -12846 * uValue - 36641 * vValue;
+                            int bPart = 66094 * uValue;
                            
-                            for (int xx = 0; xx < 2; ++xx)
-                                for (int yy = 0; yy < 2; ++yy)
-                                {
-                                    int col = x + xx;
-                                    int row = y + yy;
-                                    int yValue = (int)Y[row * width + col];
-                                    pixels[(row * width + col) * 3] = (unsigned char)clamp((yValue * 1164 + rPart) / 1000, 0, 255);
-                                    pixels[(row * width + col) * 3 + 1] = (unsigned char)clamp((yValue * 1164 + gPart) / 1000, 0, 255);
-                                    pixels[(row * width + col) * 3 + 2] = (unsigned char)clamp((yValue * 1164 + bPart) / 1000, 0, 255);
-                                }
+                            int col = x;
+                            int row = y;
+                            int yValue = (int)Y[row * width + col] * 38142;
+                            pixels[(row * width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                            pixels[(row * width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                            pixels[(row * width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+
+                            col++;
+                            yValue = (int)Y[row * width + col] * 38142;
+                            pixels[(row * width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                            pixels[(row * width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                            pixels[(row * width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+
                         }
                 }));
             }
