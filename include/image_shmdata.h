@@ -79,6 +79,16 @@ class Image_Shmdata : public Image
         oiio::ImageBuf _writerBuffer;
 
         oiio::ImageBuf _readerBuffer;
+        std::string _inputDataType {""};
+        int _bpp {0};
+        int _width {0};
+        int _height {0};
+        int _red {0};
+        int _green {0};
+        int _blue {0};
+        int _channels {0};
+        bool _isYUV {false};
+        bool _is420 {false};
 
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)
