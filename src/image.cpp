@@ -50,7 +50,7 @@ const void* Image::data() const
 oiio::ImageBuf Image::get() const
 {
     oiio::ImageBuf img;
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     img.copy(_image);
     return img;
 }
@@ -58,14 +58,14 @@ oiio::ImageBuf Image::get() const
 /*************/
 oiio::ImageSpec Image::getSpec() const
 {
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     return _image.spec();
 }
 
 /*************/
 void Image::set(const oiio::ImageBuf& img)
 {
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     _image.copy(img);
 }
 
@@ -75,7 +75,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
     oiio::ImageSpec spec(w, h, channels, type);
     oiio::ImageBuf img(spec);
 
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     _image.swap(img);
     updateTimestamp();
 }
@@ -83,7 +83,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 /*************/
 SerializedObjectPtr Image::serialize() const
 {
-    _mutex.lock();
+    _readMutex.lock();
 
     STimer::timer << "serialize " + _name;
 
@@ -130,7 +130,7 @@ SerializedObjectPtr Image::serialize() const
 
     STimer::timer >> "serialize " + _name;
 
-    _mutex.unlock();
+    _readMutex.unlock();
     return obj;
 }
 
@@ -184,7 +184,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         if (obj != _serializedObject) // If we are not setting the image from the inner serialized buffer
         {
             isLocked = true;
-            _mutex.lock();
+            _readMutex.lock();
         }
         _bufferImage.swap(_bufferDeserialize);
         _imageUpdated = true;
@@ -192,7 +192,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         updateTimestamp();
 
         if (isLocked)
-            _mutex.unlock();
+            _readMutex.unlock();
     }
     catch (...)
     {
@@ -234,7 +234,7 @@ bool Image::read(const string& filename)
     if (channels != 3 && channels != 4)
         return false;
 
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     _bufferImage.swap(img);
     _imageUpdated = true;
 
@@ -246,7 +246,7 @@ bool Image::read(const string& filename)
 /*************/
 void Image::setTo(float value)
 {
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     float v[_image.nchannels()];
     for (int i = 0; i < _image.nchannels(); ++i)
         v[i] = (float)value;
@@ -256,7 +256,8 @@ void Image::setTo(float value)
 /*************/
 void Image::update()
 {
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lockRead(_readMutex);
+    lock_guard<mutex> lockWrite(_writeMutex);
     if (_imageUpdated)
     {
         _image.swap(_bufferImage);
@@ -285,7 +286,7 @@ void Image::createDefaultImage()
                 p[c] = 0;
     }
 
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     _image.swap(img);
     updateTimestamp();
 }

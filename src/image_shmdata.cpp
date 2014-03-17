@@ -53,7 +53,7 @@ bool Image_Shmdata::write(const oiio::ImageBuf& img, const string& filename)
     if (img.localpixels() == NULL)
         return false;
 
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     oiio::ImageSpec spec = img.spec();
     if (spec.width != _writerSpec.width || spec.height != _writerSpec.height || spec.nchannels != _writerSpec.nchannels || _writer == NULL || _filename != filename)
         if (!initShmWriter(spec, filename))
@@ -286,7 +286,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             return;
         }
 
-        lock_guard<mutex> lock(ctx->_mutex);
+        lock_guard<mutex> lock(ctx->_writeMutex);
         ctx->_bufferImage.swap(ctx->_readerBuffer);
         ctx->_imageUpdated = true;
         ctx->updateTimestamp();

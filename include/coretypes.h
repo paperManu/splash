@@ -392,7 +392,7 @@ class BufferObject : public BaseObject
         virtual bool deserialize(const SerializedObjectPtr obj) = 0;
         bool deserialize()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::lock_guard<std::mutex> lock(_writeMutex);
             if (_newSerializedObject == false)
                 return true;
 
@@ -412,7 +412,7 @@ class BufferObject : public BaseObject
          */
         void setSerializedObject(SerializedObjectPtr obj)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::lock_guard<std::mutex> lock(_writeMutex);
             _serializedObject.swap(obj);
             _newSerializedObject = true;
         }
@@ -427,7 +427,8 @@ class BufferObject : public BaseObject
         }
 
     protected:
-        mutable std::mutex _mutex;
+        mutable std::mutex _readMutex;
+        mutable std::mutex _writeMutex;
         std::chrono::high_resolution_clock::time_point _timestamp;
         bool _updatedBuffer {false};
 

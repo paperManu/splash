@@ -35,7 +35,7 @@ bool Mesh::operator==(Mesh& otherMesh) const
 vector<float> Mesh::getVertCoords() const
 {
     vector<float> coords;
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     coords.resize(_mesh.n_faces() * 3 * 4);
 
     int idx = 0;
@@ -67,7 +67,7 @@ vector<float> Mesh::getVertCoords() const
 vector<float> Mesh::getUVCoords() const
 {
     vector<float> coords;
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     coords.resize(_mesh.n_faces() * 3 * 2);
 
     int idx = 0;
@@ -99,7 +99,7 @@ vector<float> Mesh::getUVCoords() const
 vector<float> Mesh::getNormals() const
 {
     vector<float> normals;
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     normals.resize(_mesh.n_faces() * 3 * 3);
 
     int idx = 0;
@@ -147,7 +147,7 @@ bool Mesh::read(const string& filename)
     mesh.update_normals();
     mesh.release_face_normals();
 
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_writeMutex);
     _mesh = mesh;
     updateTimestamp();
 
@@ -167,7 +167,7 @@ SerializedObjectPtr Mesh::serialize() const
     data.push_back(move(getUVCoords()));
     data.push_back(move(getNormals()));
 
-    lock_guard<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto d : data)
@@ -227,7 +227,7 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
         if (obj != _serializedObject) // If we are setting the mesh from the inner serialized buffer
         {
             isLocked = true;
-            _mutex.lock();
+            _writeMutex.lock();
         }
 
         _mesh.clear();
@@ -265,7 +265,7 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
 
         updateTimestamp();
         if (isLocked)
-            _mutex.unlock();
+            _writeMutex.unlock();
     }
     catch (...)
     {
