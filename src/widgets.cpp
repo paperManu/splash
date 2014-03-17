@@ -124,10 +124,10 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             // Ensure that all cameras are shown
             _camerasHidden = false;
             for (auto& cam : cameras)
-                scene->setMessage("sendAll", {cam->getName(), "hide", 0});
+                scene->sendMessage("sendAll", {cam->getName(), "hide", 0});
 
-            scene->setMessage("sendAll", {_camera->getName(), "frame", 0});
-            scene->setMessage("sendAll", {_camera->getName(), "displayCalibration", 0});
+            scene->sendMessage("sendAll", {_camera->getName(), "frame", 0});
+            scene->sendMessage("sendAll", {_camera->getName(), "displayCalibration", 0});
 
             if (cameras.size() == 0)
                 _camera = _guiCamera;
@@ -152,8 +152,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
 
             if (_camera != _guiCamera)
             {
-                scene->setMessage("sendAll", {_camera->getName(), "frame", 1});
-                scene->setMessage("sendAll", {_camera->getName(), "displayCalibration", 1});
+                scene->sendMessage("sendAll", {_camera->getName(), "frame", 1});
+                scene->sendMessage("sendAll", {_camera->getName(), "displayCalibration", 1});
             }
 
             return false;
@@ -162,7 +162,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         else if (key == 'A')
         {
             auto scene = _scene.lock();
-            scene->setMessage("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
+            scene->sendMessage("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
             return false;
         }
         else if (key == 'C')
@@ -196,7 +196,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                     for (auto& v : values)
                         sendValues.push_back(v);
 
-                    scene->setMessage("sendAll", sendValues);
+                    scene->sendMessage("sendAll", sendValues);
                 }
             }
 
@@ -217,14 +217,14 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             {
                 for (auto& cam : cameras)
                     if (cam.get() != _camera.get())
-                        scene->setMessage("sendAll", {cam->getName(), "hide", 1});
+                        scene->sendMessage("sendAll", {cam->getName(), "hide", 1});
                 _camerasHidden = true;
             }
             else
             {
                 for (auto& cam : cameras)
                     if (cam.get() != _camera.get())
-                        scene->setMessage("sendAll", {cam->getName(), "hide", 0});
+                        scene->sendMessage("sendAll", {cam->getName(), "hide", 0});
                 _camerasHidden = false;
             }
         }
@@ -241,11 +241,11 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             for (auto& obj : scene->_ghostObjects)
                 if (_camera->getName() == obj.second->getName())
                 {
-                    scene->setMessage("sendAll", {_camera->getName(), "eye", _eye[0], _eye[1], _eye[2]});
-                    scene->setMessage("sendAll", {_camera->getName(), "target", _target[0], _target[1], _target[2]});
-                    scene->setMessage("sendAll", {_camera->getName(), "up", _up[0], _up[1], _up[2]});
-                    scene->setMessage("sendAll", {_camera->getName(), "fov", _fov[0]});
-                    scene->setMessage("sendAll", {_camera->getName(), "principalPoint", _principalPoint[0], _principalPoint[1]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "eye", _eye[0], _eye[1], _eye[2]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "target", _target[0], _target[1], _target[2]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "up", _up[0], _up[1], _up[2]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "fov", _fov[0]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "principalPoint", _principalPoint[0], _principalPoint[1]});
                 }
         }
         // Arrow keys
@@ -282,17 +282,17 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         {
             auto scene = _scene.lock();
             if (g.keyboard().shift()) // Define the screenpoint corresponding to the selected calibration point
-                scene->setMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
+                scene->sendMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
             else // Add a new calibration point
             {
                 vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
                 {
-                    scene->setMessage("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
                     _previousPointAdded = position;
                 }
                 else
-                    scene->setMessage("sendAll", {_camera->getName(), "deselectCalibrationPoint"});
+                    scene->sendMessage("sendAll", {_camera->getName(), "deselectCalibrationPoint"});
             }
         }
         else if (g.mouse().right()) // Remove a calibration point
@@ -302,7 +302,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 auto scene = _scene.lock();
                 vector<Value> position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
-                    scene->setMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
+                    scene->sendMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
             }
         }
         return false;
@@ -327,14 +327,14 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             if (_previousPointAdded.size() == 3)
             {
                 auto scene = _scene.lock();
-                scene->setMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", _previousPointAdded[0], _previousPointAdded[1], _previousPointAdded[2], 1});
+                scene->sendMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", _previousPointAdded[0], _previousPointAdded[1], _previousPointAdded[2], 1});
                 _previousPointAdded.clear();
             }
 
             if (g.keyboard().shift())
             {
                 auto scene = _scene.lock();
-                scene->setMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
+                scene->sendMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
             }
             else
             {
@@ -343,8 +343,8 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 auto scene = _scene.lock();
                 if (_camera != _guiCamera)
                 {
-                    scene->setMessage("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 10.f, 0, 0});
-                    scene->setMessage("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
+                    scene->sendMessage("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 10.f, 0, 0});
+                    scene->sendMessage("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
                 }
                 else
                 {
@@ -361,7 +361,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             float dy = g.mouse().dy();
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
-                scene->setMessage("sendAll", {_camera->getName(), "moveTarget", 0, 0, dy / 100.f});
+                scene->sendMessage("sendAll", {_camera->getName(), "moveTarget", 0, 0, dy / 100.f});
             else
                 _camera->setAttribute("moveTarget", {0, 0, dy / 100.f});
             return false;
@@ -379,7 +379,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
 
         auto scene = _scene.lock();
         if (_camera != _guiCamera)
-            scene->setMessage("sendAll", {_camera->getName(), "fov", camFov});
+            scene->sendMessage("sendAll", {_camera->getName(), "fov", camFov});
         else
             _camera->setAttribute("fov", {camFov});
 

@@ -306,7 +306,7 @@ void Scene::render()
         setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
         Json::Value config = getConfigurationAsJson();
         string configStr = config.toStyledString();
-        setMessage("sceneConfig", {_name, configStr});
+        sendMessage("sceneConfig", {_name, configStr});
         _doSaveNow = false;
     }
 
@@ -351,7 +351,7 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::setMessage(const string message, const vector<Value> value)
+void Scene::sendMessage(const string message, const vector<Value> value)
 {
     _link->sendMessage("world", message, value);
 }

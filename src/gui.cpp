@@ -101,7 +101,7 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_ESCAPE:
     {
         auto scene = _scene.lock();
-        scene->setMessage("quit");
+        scene->sendMessage("quit");
         break;
     }
     case GLFW_KEY_B:
@@ -109,7 +109,7 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->setMessage("computeBlending");
+            scene->sendMessage("computeBlending");
         }
         break;
     }
@@ -118,7 +118,7 @@ void Gui::key(int& key, int& action, int& mods)
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->setMessage("save");
+            scene->sendMessage("save");
         }
         break;
     }
@@ -129,9 +129,9 @@ void Gui::key(int& key, int& action, int& mods)
             auto scene = _scene.lock();
 
             if (_flashBG)
-                scene->setMessage("flashBG", {0});
+                scene->sendMessage("flashBG", {0});
             else
-                scene->setMessage("flashBG", {1});
+                scene->sendMessage("flashBG", {1});
 
             _flashBG = !_flashBG;
         }
@@ -141,14 +141,14 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_T: 
     {
         auto scene = _scene.lock();
-        scene->setMessage("wireframe", {0});
+        scene->sendMessage("wireframe", {0});
         break;
     }
     // Switch the rendering to wireframe
     case GLFW_KEY_W:
     {
         auto scene = _scene.lock();
-        scene->setMessage("wireframe", {1});
+        scene->sendMessage("wireframe", {1});
         break;
     }
     }
