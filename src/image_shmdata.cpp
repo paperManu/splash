@@ -226,6 +226,13 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height || bufSpec.nchannels != ctx->_channels)
         {
             oiio::ImageSpec spec(ctx->_width, ctx->_height, ctx->_channels, oiio::TypeDesc::UINT8);
+            if (ctx->_red < ctx->_blue)
+                spec.channelnames = {"B", "G", "R"};
+            else
+                spec.channelnames = {"R", "G", "B"};
+            if (ctx->_channels == 4)
+                spec.channelnames.push_back("A");
+
             ctx->_readerBuffer.reset(spec);
         }
 

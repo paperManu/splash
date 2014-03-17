@@ -176,6 +176,20 @@ void Texture::update()
         return;
     }
 
+    GLint glChannelOrder;
+    if (spec.channelnames == vector<string>({"B", "G", "R"}))
+        glChannelOrder = GL_BGR;
+    else if (spec.channelnames == vector<string>({"B", "G", "R", "A"}))
+        glChannelOrder = GL_BGRA;
+    else if (spec.channelnames == vector<string>({"R", "G", "B"}))
+        glChannelOrder = GL_RGB;
+    else if (spec.channelnames == vector<string>({"R", "G", "B", "A"}))
+        glChannelOrder = GL_RGBA;
+    else if (spec.nchannels == 3)
+        glChannelOrder = GL_RGB;
+    else if (spec.nchannels == 4)
+        glChannelOrder = GL_RGBA;
+
     if (spec.width != _spec.width || spec.height != _spec.height || spec.nchannels != _spec.nchannels || spec.format != _spec.format)
     {
         glBindTexture(GL_TEXTURE_2D, _glTex);
@@ -191,9 +205,9 @@ void Texture::update()
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             _img->unlock();
         }
         else if (spec.nchannels == 3 && spec.format == "uint8")
@@ -203,9 +217,9 @@ void Texture::update()
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, _img->data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, _img->data());
             else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGB, GL_UNSIGNED_BYTE, _img->data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, _img->data());
             _img->unlock();
         }
         else if (spec.nchannels == 1 && spec.format == "uint16")
@@ -248,9 +262,9 @@ void Texture::update()
         // Copy the pixels from the current PBO to the texture
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         if (spec.nchannels == 4 && spec.format == "uint8")
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, GL_UNSIGNED_BYTE, 0);
         else if (spec.nchannels == 3 && spec.format == "uint8")
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RGB, GL_UNSIGNED_BYTE, 0);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, GL_UNSIGNED_BYTE, 0);
         else if (spec.nchannels == 1 && spec.format == "uint16")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
