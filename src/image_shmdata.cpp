@@ -239,7 +239,21 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         if (!ctx->_is420 && (ctx->_channels == 3 || ctx->_channels == 4))
         {
             char* pixels = (char*)(ctx->_readerBuffer).localpixels();
-            memcpy(pixels, (const char*)data, ctx->_width * ctx->_height * ctx->_channels * sizeof(char));
+            vector<unsigned int> threadIds;
+            for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+            {
+                int size = ctx->_width * ctx->_height * ctx->_channels * sizeof(char);
+                threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                    int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                    if (size - size / SPLASH_SHMDATA_THREADS * block < 2 * size / SPLASH_SHMDATA_THREADS)
+                        sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
+                    else
+                        sizeOfBlock = size / SPLASH_SHMDATA_THREADS;
+                        
+                    memcpy(pixels + size / SPLASH_SHMDATA_THREADS * block, (const char*)data + size / SPLASH_SHMDATA_THREADS * block, sizeOfBlock);
+                }));
+            }
+            SThread::pool.waitThreads(threadIds);
         }
         else if (ctx->_is420)
         {
@@ -252,7 +266,13 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
-                    for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1); y++)
+                    int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                    if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < 2 * ctx->_height / SPLASH_SHMDATA_THREADS)
+                        lastLine = ctx->_height;
+                    else
+                        lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                    for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
                         for (int x = 0; x < ctx->_width; x+=2)
                         {
                             int uValue = (int)(U[(y / 2) * (ctx->_width / 2) + x / 2]) - 128;
