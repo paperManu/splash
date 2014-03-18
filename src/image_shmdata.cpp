@@ -3,10 +3,12 @@
 #include "threadpool.h"
 
 #include <regex>
+#include <simdpp/simd.h>
 
 #define SPLASH_SHMDATA_THREADS 16
 
 using namespace std;
+using namespace simdpp;
 
 namespace Splash
 {
@@ -263,6 +265,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 
             char* pixels = (char*)(ctx->_readerBuffer).localpixels();
             vector<unsigned int> threadIds;
+#if 1
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
@@ -294,11 +297,87 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                             pixels[(row * ctx->_width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                             pixels[(row * ctx->_width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                             pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
-
                         }
                 }));
             }
             SThread::pool.waitThreads(threadIds);
+#else
+            for (int y = 0; y < ctx->_height; ++y)
+            {
+                for (int x = 0; x < ctx->_width; x += 4)
+                {
+                    // Some constants
+                    int32x4 meanUV = make_int(128);
+                    int32x4 vf1 = make_int(52298);
+                    int32x4 vf2 = make_int(-36641);
+                    int32x4 uf1 = make_int(-12846);
+                    int32x4 uf2 = make_int(66094);
+                    int32x4 yf1 = make_int(38142);
+                    int32x4 maxV = make_int(255);
+                    int32x4 minV = make_int(0);
+
+                    int ySrc[4];
+                    int uSrc[4];
+                    int vSrc[4];
+
+                    ySrc[0] = (int)(Y[y * ctx->_width + x + 0]);
+                    ySrc[1] = (int)(Y[y * ctx->_width + x + 1]);
+                    ySrc[2] = (int)(Y[y * ctx->_width + x + 2]);
+                    ySrc[3] = (int)(Y[y * ctx->_width + x + 3]);
+
+                    uSrc[0] = (int)(U[(y / 2) * (ctx->_width / 2) + x / 2 + 0]);
+                    uSrc[1] = (int)(U[(y / 2) * (ctx->_width / 2) + x / 2 + 0]);
+                    uSrc[2] = (int)(U[(y / 2) * (ctx->_width / 2) + x / 2 + 1]);
+                    uSrc[3] = (int)(U[(y / 2) * (ctx->_width / 2) + x / 2 + 1]);
+
+                    vSrc[0] = (int)(V[(y / 2) * (ctx->_width / 2) + x / 2 + 0]);
+                    vSrc[1] = (int)(V[(y / 2) * (ctx->_width / 2) + x / 2 + 0]);
+                    vSrc[2] = (int)(V[(y / 2) * (ctx->_width / 2) + x / 2 + 1]);
+                    vSrc[3] = (int)(V[(y / 2) * (ctx->_width / 2) + x / 2 + 1]);
+
+                    basic_int32x4 yValue;
+                    basic_int32x4 uValue;
+                    basic_int32x4 vValue;
+
+                    yValue = load(ySrc);
+
+                    uValue = load(uSrc);
+                    vValue = load(vSrc);
+
+                    uValue = sub(uValue, meanUV);
+                    vValue = sub(vValue, meanUV);
+
+                    int32x4 red, grn, blu;
+                    red = add(mul_lo(yValue, yf1), mul_lo(uValue, vf1));
+                    grn = add(mul_lo(yValue, yf1), add(mul_lo(uValue, uf1), mul_lo(vValue, vf2)));
+                    blu = add(mul_lo(yValue, yf1), mul_lo(vValue, uf2));
+
+                    red = shift_r(red, 15);
+                    grn = shift_r(grn, 15);
+                    blu = shift_r(blu, 15);
+
+                    red = simdpp::min(red, maxV);
+                    grn = simdpp::min(grn, maxV);
+                    blu = simdpp::min(blu, maxV);
+
+                    red = simdpp::max(red, minV);
+                    grn = simdpp::max(grn, minV);
+                    blu = simdpp::max(blu, minV);
+
+                    store(ySrc, blu);
+                    store(uSrc, grn);
+                    store(vSrc, red);
+
+
+                    for (int i = 0; i < 4; ++i)
+                    {
+                        pixels[(y * ctx->_width + x + i) * 3 + 0] = (unsigned char)ySrc[i];
+                        pixels[(y * ctx->_width + x + i) * 3 + 1] = (unsigned char)uSrc[i];
+                        pixels[(y * ctx->_width + x + i) * 3 + 2] = (unsigned char)vSrc[i];
+                    }
+                }
+            }
+#endif
         }
         else
         {

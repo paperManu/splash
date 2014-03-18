@@ -3,9 +3,11 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/bandit \
 	-I$(top_srcdir)/external/GLV/GLV \
+	-I$(top_srcdir)/external/libsimdpp \
 	-DGLV_GLFW \
 	-DDATADIR=\"$(datadir)\splash\" \
-	-DSPLASHPREFIX=\"$(prefix)\"
+	-DSPLASHPREFIX=\"$(prefix)\" \
+	-DSIMDPP_ARCH_X86_SSE4_1 -msse4.1
 
 #*************#
 lib_LTLIBRARIES = \
