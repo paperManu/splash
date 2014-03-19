@@ -5,6 +5,16 @@
 #include <regex>
 #include <simdpp/simd.h>
 
+#ifdef HAVE_SSE_4_1
+    #define SIMDPP_ARCH_X86_SSE4_1
+#elif HAVE_SSE_3
+    #define SIMDPP_ARCH_X86_SSE3
+#elif HAVE_SSE_2
+    #define SIMDPP_ARCH_X86_SSE2
+#else
+    #define SIMPDD_NO_SSE
+#endif
+
 #define SPLASH_SHMDATA_THREADS 16
 
 using namespace std;
@@ -265,7 +275,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 
             char* pixels = (char*)(ctx->_readerBuffer).localpixels();
             vector<unsigned int> threadIds;
-#if 1
+#if SIMDPP_NO_SSE
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {

@@ -19,6 +19,9 @@ export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgco
 # Check for header files
 AC_HEADER_STDC
 
+# Check for SSE
+AX_EXT
+
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
 if test "x${have_glfw}" = "xfalse" ; then

@@ -6,8 +6,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/libsimdpp \
 	-DGLV_GLFW \
 	-DDATADIR=\"$(datadir)\splash\" \
-	-DSPLASHPREFIX=\"$(prefix)\" \
-	-DSIMDPP_ARCH_X86_SSE4_1 -msse4.1
+	-DSPLASHPREFIX=\"$(prefix)\"
 
 #*************#
 lib_LTLIBRARIES = \
@@ -67,6 +66,8 @@ libsplash_la_CXXFLAGS = \
 	$(OPENIMAGEIO_CFLAGS) \
 	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS) \
+    $(SIMD_FLAGS) \
+	$(SIMDPP_FLAGS) \
 	$(ZMQ_CFLAGS)
 
 libsplash_la_LDFLAGS = \
