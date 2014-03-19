@@ -21,6 +21,15 @@ AC_HEADER_STDC
 
 # Check for SSE
 AX_EXT
+if test "$ax_cv_have_sse41_ext" = yes; then
+    CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE4_1"
+else
+    if test "$ax_cv_have_sse3_ext" = yes; then
+        CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE3"
+    else
+        CXXFLAGS="$CXXFLAGS -DSIMDPP_NO_SSE"
+    fi
+fi
 
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
