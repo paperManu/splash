@@ -330,7 +330,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                             vValue = sub(vValue, int16x8::make_const(128));
 
                             int16x8 red, grn, blu;
-                            int8x16 uRed, uGrn, uBlu;
+                            uint8x16 uRed, uGrn, uBlu;
                             
                             for (int l = 0; l < 2; ++l)
                             {
@@ -360,7 +360,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                                 uBlu = blu;
                                 uBlu = unzip_lo(uBlu, uBlu);
 
-                                short dst[48];
+                                char dst[48];
                                 store_packed3(dst, uBlu, uGrn, uRed);
 
                                 memcpy(&(pixels[((y + l) * ctx->_width + x) * 3]), dst, 24*sizeof(unsigned char));
