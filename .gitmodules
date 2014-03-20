@@ -6,4 +6,4 @@
 	url = https://github.com/joakimkarlsson/bandit.git
 [submodule "external/libsimdpp"]
 	path = external/libsimdpp
-	url = git@github.com:p12tic/libsimdpp.git
+	url = https://github.com/p12tic/libsimdpp.git
