@@ -310,58 +310,60 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                     else
                         lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
 
-                    for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                        for (int x = 0; x + 3 < ctx->_width; x += 4)
+                    for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y += 2)
+                        for (int x = 0; x + 7 < ctx->_width; x += 8)
                         {
-                            int32x4 yValue;
-                            int32x4 uValue;
-                            int32x4 vValue;
-
+                            int16x8 yValue[2];
+                            int16x8 uValue;
+                            int16x8 vValue;
                             uint8x16 loadBuf;
-                            loadBuf = load(&(Y[y * ctx->_width + x]));
-                            yValue = sse::to_int32x4(loadBuf);
 
-                            loadBuf = load(&(U[(y / 2) * (ctx->_width / 2) + x / 2]));
-                            uValue = sse::to_int32x4(loadBuf);
-                            uValue = zip4_lo(uValue, uValue);
+                            load(loadBuf, &(U[(y / 2) * (ctx->_width / 2) + x / 2]));
+                            uValue = to_int16x8(loadBuf);
+                            uValue = zip_lo(uValue, uValue);
 
-                            loadBuf = load(&(V[(y / 2) * (ctx->_width / 2) + x / 2]));
-                            vValue = sse::to_int32x4(loadBuf);
-                            vValue = zip4_lo(vValue, vValue);
+                            load(loadBuf, &(V[(y / 2) * (ctx->_width / 2) + x / 2]));
+                            vValue = to_int16x8(loadBuf);
+                            vValue = zip_lo(vValue, vValue);
 
-                            uValue = sub(uValue, (int32x4)make_int(128));
-                            vValue = sub(vValue, (int32x4)make_int(128));
+                            uValue = sub(uValue, int16x8::make_const(128));
+                            vValue = sub(vValue, int16x8::make_const(128));
 
-                            int32x4 red, grn, blu;
-                            red = add(mul_lo(yValue, (int32x4)make_int(38142)), mul_lo(uValue, (int32x4)make_int(52298)));
-                            grn = add(mul_lo(yValue, (int32x4)make_int(38142)), add(mul_lo(uValue, (int32x4)make_int(-12846)), mul_lo(vValue, (int32x4)make_int(-36641))));
-                            blu = add(mul_lo(yValue, (int32x4)make_int(38142)), mul_lo(vValue, (int32x4)make_int(66094)));
-
-                            red = shift_r(red, 15);
-                            grn = shift_r(grn, 15);
-                            blu = shift_r(blu, 15);
-
-                            red = simdpp::min(red, (int32x4)make_int(255));
-                            grn = simdpp::min(grn, (int32x4)make_int(255));
-                            blu = simdpp::min(blu, (int32x4)make_int(255));
-
-                            red = simdpp::max(red, (int32x4)make_int(0));
-                            grn = simdpp::max(grn, (int32x4)make_int(0));
-                            blu = simdpp::max(blu, (int32x4)make_int(0));
-
-                            int yDst[4];
-                            int uDst[4];
-                            int vDst[4];
-
-                            store(yDst, blu);
-                            store(uDst, grn);
-                            store(vDst, red);
-
-                            for (int i = 0; i < 4; ++i)
+                            int16x8 red, grn, blu;
+                            int8x16 uRed, uGrn, uBlu;
+                            
+                            for (int l = 0; l < 2; ++l)
                             {
-                                pixels[(y * ctx->_width + x + i) * 3 + 0] = (unsigned char)yDst[i];
-                                pixels[(y * ctx->_width + x + i) * 3 + 1] = (unsigned char)uDst[i];
-                                pixels[(y * ctx->_width + x + i) * 3 + 2] = (unsigned char)vDst[i];
+                                load(loadBuf, &(Y[(y + l) * ctx->_width + x]));
+                                yValue[l] = to_int16x8(loadBuf);
+
+                                red = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
+                                grn = add(mul_lo(yValue[l], int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
+                                blu = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(vValue, int16x8::make_const(129)));
+
+                                red = shift_r(red, 6);
+                                grn = shift_r(grn, 6);
+                                blu = shift_r(blu, 6);
+
+                                red = simdpp::min(red, int16x8::make_const(255));
+                                grn = simdpp::min(grn, int16x8::make_const(255));
+                                blu = simdpp::min(blu, int16x8::make_const(255));
+
+                                red = simdpp::max(red, int16x8::make_const(0));
+                                grn = simdpp::max(grn, int16x8::make_const(0));
+                                blu = simdpp::max(blu, int16x8::make_const(0));
+
+                                uRed = red;
+                                uRed = unzip_lo(uRed, uRed);
+                                uGrn = grn;
+                                uGrn = unzip_lo(uGrn, uGrn);
+                                uBlu = blu;
+                                uBlu = unzip_lo(uBlu, uBlu);
+
+                                short dst[48];
+                                store_packed3(dst, uBlu, uGrn, uRed);
+
+                                memcpy(&(pixels[((y + l) * ctx->_width + x) * 3]), dst, 24*sizeof(unsigned char));
                             }
                         }
                 }));
