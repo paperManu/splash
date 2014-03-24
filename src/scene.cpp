@@ -215,11 +215,13 @@ void Scene::render()
 
     // Update the windows
     STimer::timer << "windows";
+    //vector<unsigned int> threadsWin;
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-            //threadIds.push_back(SThread::pool.enqueue([&]() {
+            //threadsWin.push_back(SThread::pool.enqueue([&]() {
                 isError |= dynamic_pointer_cast<Window>(obj.second)->render();
             //}));
+    //SThread::pool.waitThreads(threadsWin);
     STimer::timer >> "windows";
 
     // Swap all buffers at once
@@ -620,7 +622,7 @@ void Scene::registerAttributes()
     _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        _swapInterval = max(0, args[0].asInt());
+        _swapInterval = max(-1, args[0].asInt());
         return true;
     });
 

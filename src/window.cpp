@@ -369,7 +369,7 @@ void Window::registerAttributes()
     _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-        _swapInterval = max(0, args[0].asInt());
+        _swapInterval = max(-1, args[0].asInt());
         updateSwapInterval();
         return true;
     });
