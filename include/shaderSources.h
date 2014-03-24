@@ -69,6 +69,7 @@ struct ShaderSources
         uniform int _textureNbr;
         uniform int _texBlendingMap;
         uniform float _blendWidth;
+        uniform float _blackLevel;
         in vec4 position;
         in vec2 texCoord;
         in vec3 normal;
@@ -79,14 +80,18 @@ struct ShaderSources
             if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
+            vec4 color = texture(_tex0, texCoord);
+            if (_blackLevel > 0.f && _blackLevel < 1.f)
+                color.rgb = color.rgb * (1.f - _blackLevel) + _blackLevel;
+
             if (_texBlendingMap == 0)
             {
                 if (_textureNbr > 0)
-                    fragColor = texture(_tex0, texCoord);
+                    fragColor = color;
                 if (_textureNbr > 1)
                 {
-                    vec4 color = texture(_tex1, texCoord);
-                    fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+                    vec4 color2 = texture(_tex1, texCoord);
+                    fragColor.rgb = fragColor.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
                 }
             }
             else
@@ -106,7 +111,6 @@ struct ShaderSources
                 {
                     blendFactor = 256.f / blendFactor;
                 }
-                vec4 color = texture(_tex0, texCoord);
                 fragColor.rgb = color.rgb * min(1.f, blendFactor);
                 fragColor.a = color.a;
             }

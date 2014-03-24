@@ -409,6 +409,7 @@ bool Camera::render()
         {
             obj->activate();
             obj->getShader()->setAttribute("blendWidth", {_blendWidth});
+            obj->getShader()->setAttribute("blackLevel", {_blackLevel});
             obj->setViewProjectionMatrix(computeViewProjectionMatrix());
             obj->draw();
             obj->deactivate();
@@ -911,6 +912,24 @@ void Camera::registerAttributes()
     });
 
     // Rendering options
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _blendWidth = args[0].asFloat();
+        return true;
+    }, [&]() {
+        return vector<Value>({_blendWidth});
+    });
+
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _blackLevel = args[0].asFloat();
+        return true;
+    }, [&]() {
+        return vector<Value>({_blackLevel});
+    });
+
     _attribFunctions["frame"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
@@ -944,15 +963,6 @@ void Camera::registerAttributes()
         for (auto& obj : _objects)
             obj->setAttribute("fill", {primitive});
         return true;
-    });
-
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
-            return false;
-        _blendWidth = args[0].asFloat();
-        return true;
-    }, [&]() {
-        return vector<Value>({_blendWidth});
     });
 
     // Various options

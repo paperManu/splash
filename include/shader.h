@@ -153,6 +153,7 @@ class Shader : public BaseObject
         GLint _locationTextureNbr {0};
         GLint _locationBlendingMap {0};
         GLint _locationBlendWidth {0};
+        GLint _locationBlackLevel {0};
         GLint _locationColor {0};
         GLint _locationScale {0};
         GLint _locationLayout {0};
@@ -163,6 +164,7 @@ class Shader : public BaseObject
         int _textureNbr {0};
         int _useBlendingMap {0};
         float _blendWidth {0.05f};
+        float _blackLevel {0.f};
         glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
         glm::vec3 _scale {1.0, 1.0, 1.0};
         bool _textureOverlap {true};

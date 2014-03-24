@@ -180,6 +180,7 @@ class Camera : public BaseObject
         glm::vec3 _target {0.0, 0.0, 0.0};
         glm::vec3 _up {0.0, 0.0, 1.0};
         float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
+        float _blackLevel {0.f};
 
         // Calibration parameters
         bool _displayCalibration {false};
