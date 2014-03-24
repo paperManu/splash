@@ -9,7 +9,7 @@ using namespace Splash;
 go_bandit([]() {
     /*********/
     describe("World class", [&]() {
-        int argc = 2;
+        int argc = 3;
         char* argv[] = {(char*)"-o", (char*)"../data/config.json"};
 
         it("should load the configuration correctly", [&]() {

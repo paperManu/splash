@@ -10,7 +10,9 @@ using namespace Splash;
 go_bandit([]() {
     /*********/
     describe("Gui class", [&]() {
-        Scene scene;
+        Scene scene("check");
+        timespec nap({1, (long int)0});
+        nanosleep(&nap, 0);
         it("should be visible", [&]() {
             auto window = scene.add("window", "window");
             auto camera = scene.add("camera", "camera");
@@ -19,8 +21,10 @@ go_bandit([]() {
             scene.link("camera", "gui");
             scene.link("gui", "window");
 
-            for (int i = 0; i < 500; ++i)
-                scene.render();
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
     });

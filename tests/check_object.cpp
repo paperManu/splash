@@ -9,7 +9,9 @@ using namespace Splash;
 go_bandit([]() {
     /*********/
     describe("Moving the object around", [&]() {
-        Scene scene;
+        Scene scene("check");
+        timespec nap({1, (long int)0});
+        nanosleep(&nap, 0);
         it("should be no problem", [&]() {
             auto camera = scene.add("camera");
             auto mesh = scene.add("mesh");
@@ -28,15 +30,19 @@ go_bandit([]() {
 
             scene.set("obj", "position", vector<Value>({0.5, 0.5, 0.0}));
 
-            for (int i = 0; i < 500; ++i)
-                scene.render();
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
     });
 
     /*********/
     describe("Loading an object from a file", [&]() {
-        Scene scene;
+        Scene scene("check");
+        timespec nap({1, (long int)0});
+        nanosleep(&nap, 0);
         it("should work with an obj file", [&]() {
             auto camera = scene.add("camera", "camera");
             auto mesh = static_pointer_cast<Splash::Mesh>(scene.add("mesh"));
@@ -58,8 +64,10 @@ go_bandit([]() {
             scene.set("camera", "eye", vector<Value>({-4.f, 2.f, 2.f}));
             scene.set("obj", "sideness", vector<Value>({2}));
 
-            for (int i = 0; i < 500; ++i)
-                scene.render();
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
     });

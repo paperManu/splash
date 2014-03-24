@@ -6,7 +6,8 @@
     "scenes" : [
         {
             "name" : "local",
-            "address" : "localhost"
+            "address" : "localhost",
+            "spawn" : 1
         }
     ],
 
@@ -37,6 +38,7 @@
         "object" : {"type" : "object"},
         "image" : {"type" : "image", "file" : "../data/lightprobe.jpg"},
         "texture" : {"type" : "texture"},
+        "gui" : {"type" : "gui"},
 
         "links" : [
             ["mesh", "geometry"],
@@ -46,7 +48,8 @@
             ["image", "texture"],
             ["texture", "object"],
             ["cam1", "win1"],
-            ["cam2", "win2"]
+            ["cam2", "win2"],
+            ["gui", "win1"]
         ]
     }
 }

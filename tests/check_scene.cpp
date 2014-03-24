@@ -49,15 +49,17 @@ go_bandit([]() {
 
     /*********/
     describe("A setup with a single window", [&]() {
-        Scene scene("scene");
+        Scene scene("check");
         timespec nap({1, (long int)0});
         nanosleep(&nap, 0);
         it("should display and update the window", [&]() {
             scene.add("window", "window");
-            scene.set("scene", "start", {});
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 
     /*********/
@@ -72,9 +74,13 @@ go_bandit([]() {
 
             scene.link(image, texture);
             scene.link(texture, window);
+
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 
     /*********/
@@ -98,9 +104,12 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 
     /*********/
@@ -126,9 +135,12 @@ go_bandit([]() {
             scene.link(image, texture);
             scene.link(texture, object);
 
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 
     /*********/
@@ -159,9 +171,12 @@ go_bandit([]() {
             scene.set("cam2", "eye", vector<Value>({-1.f, 1.f, -5.f}));
             scene.set("cam2", "size", vector<Value>({2048, 2048}));
 
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 
     /*********/
@@ -179,9 +194,12 @@ go_bandit([]() {
 
             scene.set("window", "fullscreen", vector<Value>({0}));
 
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 
     /*********/
@@ -202,9 +220,12 @@ go_bandit([]() {
             scene.set("win1", "fullscreen", vector<Value>({0}));
             scene.set("win2", "fullscreen", vector<Value>({1}));
 
+            scene.set("check", "start", {});
+            nanosleep(&nap, 0);
+            scene.set("check", "quit", {});
+            nanosleep(&nap, 0);
             AssertThat(scene.getStatus(), Equals(true));
         });
-        scene.set("check", "quit", {});
     });
 });
 
