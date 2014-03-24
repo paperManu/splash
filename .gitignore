@@ -33,3 +33,5 @@ tests/check_scene
 tests/check_object
 tests/check_world
 tests/check_gui
+tests/*.log
+tests/*.trs
