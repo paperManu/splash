@@ -52,7 +52,7 @@ namespace Splash
 {
 
 /*************/
-typedef std::vector<unsigned char> SerializedObject;
+typedef std::vector<char> SerializedObject;
 typedef std::shared_ptr<SerializedObject> SerializedObjectPtr;
 
 /*************/

@@ -5,7 +5,7 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
 
-#define SPLASH_IMAGE_COPY_THREADS 4
+#define SPLASH_IMAGE_COPY_THREADS 8
 
 using namespace std;
 
@@ -104,16 +104,16 @@ SerializedObjectPtr Image::serialize() const
     _serializedBufferIndex = (_serializedBufferIndex + 1) % 2;
 
     auto currentObjPtr = obj->data();
-    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&nbrChar);
+    const char* ptr = reinterpret_cast<const char*>(&nbrChar);
     copy(ptr, ptr + sizeof(nbrChar), currentObjPtr);
     currentObjPtr += sizeof(nbrChar);
 
-    const unsigned char* charPtr = reinterpret_cast<const unsigned char*>(xmlSpec.c_str());
+    const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
     copy(charPtr, charPtr + nbrChar, currentObjPtr);
     currentObjPtr += nbrChar;
 
     // And then, the image
-    const unsigned char* imgPtr = reinterpret_cast<const unsigned char*>(_image.localpixels());
+    const char* imgPtr = reinterpret_cast<const char*>(_image.localpixels());
     if (imgPtr == NULL)
         return SerializedObjectPtr();
     
@@ -144,7 +144,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 
     // First, we get the size of the metadata
     int nbrChar;
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(&nbrChar);
+    char* ptr = reinterpret_cast<char*>(&nbrChar);
 
     auto currentObjPtr = obj->data();
     copy(currentObjPtr, currentObjPtr + sizeof(nbrChar), ptr);
@@ -153,7 +153,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
     try
     {
         char xmlSpecChar[nbrChar];
-        ptr = reinterpret_cast<unsigned char*>(xmlSpecChar);
+        ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
         currentObjPtr += nbrChar;
         string xmlSpec(xmlSpecChar);
@@ -166,7 +166,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
             _bufferDeserialize.reset(spec);
 
         int imgSize = _bufferDeserialize.spec().pixel_bytes() * _bufferDeserialize.spec().width * _bufferDeserialize.spec().height;
-        ptr = reinterpret_cast<unsigned char*>(_bufferDeserialize.localpixels());
+        ptr = reinterpret_cast<char*>(_bufferDeserialize.localpixels());
         copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         vector<unsigned int> threadIds;

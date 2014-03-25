@@ -175,13 +175,13 @@ SerializedObjectPtr Mesh::serialize() const
     obj->resize(totalSize);
 
     auto currentObjPtr = obj->data();
-    const unsigned char* ptr = reinterpret_cast<const unsigned char*>(&nbrVertices);
+    const char* ptr = reinterpret_cast<const char*>(&nbrVertices);
     copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
     currentObjPtr += sizeof(nbrVertices);
 
     for (auto d : data)
     {
-        ptr = reinterpret_cast<const unsigned char*>(d.data());
+        ptr = reinterpret_cast<const char*>(d.data());
         copy(ptr, ptr + d.size() * sizeof(float), currentObjPtr);
         currentObjPtr += d.size() * sizeof(float);
     }
@@ -201,7 +201,7 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
 
     // First, we get the number of vertices
     int nbrVertices;
-    unsigned char* ptr = reinterpret_cast<unsigned char*>(&nbrVertices);
+    char* ptr = reinterpret_cast<char*>(&nbrVertices);
 
     auto currentObjPtr = obj->data();
     copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
@@ -217,7 +217,7 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     {
         for (auto& d : data)
         {
-            ptr = reinterpret_cast<unsigned char*>(d.data());
+            ptr = reinterpret_cast<char*>(d.data());
             copy(currentObjPtr, currentObjPtr + d.size() * sizeof(float), ptr);
             currentObjPtr += d.size() * sizeof(float);
         }
