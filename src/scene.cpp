@@ -518,6 +518,7 @@ void Scene::initBlendingMap()
 
     glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture.reset(new Texture);
+    _blendingTexture->disableFiltering();
     *_blendingTexture = _blendingMap;
     glfwMakeContextCurrent(NULL);
 }

@@ -96,10 +96,19 @@ struct ShaderSources
             }
             else
             {
-                float blendFactor = texture(_tex1, texCoord).r * 65535.f;
+                float blendFactor = texture(_tex1, texCoord).r * 65536.f;
+                // Extract the number of cameras
+                float camNbr = floor(blendFactor / 4096.f);
+                blendFactor = blendFactor - camNbr * 4096.f;
+
+                // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
+                bool smoothBlend = false;
+                if (color.r > _blackLevel * 2.0 || color.g > _blackLevel * 2.0 || color.b > _blackLevel * 2.0)
+                    smoothBlend = true;
+
                 if (blendFactor == 0.f)
                     blendFactor = 1.f;
-                else if (_blendWidth > 0.f)
+                else if (_blendWidth > 0.f && smoothBlend == true)
                 {
                     vec2 screenPos = vec2((position.x / position.w + 1.f) / 2.f, (position.y / position.w + 1.f) / 2.f);
                     float distX = min(screenPos.x, 1.f - screenPos.x);
@@ -109,7 +118,7 @@ struct ShaderSources
                 }
                 else
                 {
-                    blendFactor = 256.f / blendFactor;
+                    blendFactor = 1.f / camNbr;
                 }
                 fragColor.rgb = color.rgb * min(1.f, blendFactor);
                 fragColor.a = color.a;

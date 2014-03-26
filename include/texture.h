@@ -86,6 +86,12 @@ class Texture : public BaseObject
         Texture& operator=(ImagePtr& img);
 
         /**
+         * Enable / disable filtering of the texture
+         */
+        void disableFiltering() {_filtering = false;}
+        void enableFiltering() {_filtering = true;}
+
+        /**
          * Generate the mipmaps for the texture
          */
         void generateMipmap() const;
@@ -146,6 +152,7 @@ class Texture : public BaseObject
         int _pboReadIndex {0};
 
         // Store some texture parameters
+        bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;
 

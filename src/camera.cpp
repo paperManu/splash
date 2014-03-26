@@ -179,6 +179,9 @@ void Camera::computeBlendingMap(ImagePtr& map)
         }
         else
             imageMap[y * mapSpec.width + x] += 256; // One more camera displaying this pixel
+
+        // We keep the real number of projectors, hidden higher in the shorts
+        imageMap[y * mapSpec.width + x] += 4096;
     }
 }
 
