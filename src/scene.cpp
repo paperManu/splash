@@ -40,7 +40,7 @@ BaseObjectPtr Scene::add(string type, string name)
         obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
     else if (type == string("window"))
     {
-        obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
+        obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(_mainWindow)));
         obj->setAttribute("swapInterval", {_swapInterval});
     }
     else if (type == string("gui"))
@@ -64,7 +64,6 @@ BaseObjectPtr Scene::add(string type, string name)
             obj = dynamic_pointer_cast<BaseObject>(TexturePtr(new Texture()));
         _mainWindow->releaseContext();
     }
-
 
     if (obj.get() != nullptr)
     {
@@ -170,31 +169,21 @@ void Scene::render()
     vector<unsigned int> threadIds;
 
     // Update the input textures
-    threadIds.push_back(SThread::pool.enqueue([&]() {
-        STimer::timer << "textures";
-        _mainWindow->setAsCurrentContext();
-        for (auto& obj: _objects)
-            if (obj.second->getType() == "texture")
-                dynamic_pointer_cast<Texture>(obj.second)->update();
-        if (_blendingTexture.get() != nullptr)
-            _blendingTexture->update();
-        _mainWindow->releaseContext();
-        STimer::timer >> "textures";
-    }));
+    STimer::timer << "textures";
+    _mainWindow->setAsCurrentContext();
+    for (auto& obj: _objects)
+        if (obj.second->getType() == "texture")
+            dynamic_pointer_cast<Texture>(obj.second)->update();
+    if (_blendingTexture.get() != nullptr)
+        _blendingTexture->update();
+    _mainWindow->releaseContext();
+    STimer::timer >> "textures";
 
     // Update the cameras
-    // TODO: we cannot enable multithreading on Cameras, because:
-    // - we need multiple glfw context for this
-    // - and specifying one context for each camera leads to issues with calibration
-    // (certainly related to vertex arrays in Geometry)
     STimer::timer << "cameras";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
-            //threadIds.push_back(SThread::pool.enqueue([&]() {
-                isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-            //}));
-    //SThread::pool.waitThreads(threadIds);
-    //threadIds.clear();
+            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
     STimer::timer >> "cameras";
 
     // Update the guis
@@ -205,23 +194,19 @@ void Scene::render()
     STimer::timer >> "guis";
 
     // Update the buffer objects
-    threadIds.push_back(SThread::pool.enqueue([&]() {
+    SThread::pool.enqueue([&]() {
         STimer::timer << "buffer object update";
         for (auto& obj : _objects)
             if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
                 dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
         STimer::timer >> "buffer object update";
-    }));
+    });
 
     // Update the windows
     STimer::timer << "windows";
-    //vector<unsigned int> threadsWin;
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-            //threadsWin.push_back(SThread::pool.enqueue([&]() {
-                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-            //}));
-    //SThread::pool.waitThreads(threadsWin);
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
     STimer::timer >> "windows";
 
     // Swap all buffers at once
