@@ -133,7 +133,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
     GLenum error = glGetError();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     ImageBuf img(_outTextures[0]->getSpec());
-    glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, img.localpixels());
+    glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.localpixels());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     // Reset the objects to their initial shader
@@ -157,7 +157,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
     vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
     unsigned short* imageMap = (unsigned short*)map->data();
     
-    for (ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
+    for (ImageBuf::ConstIterator<unsigned short> p(img); !p.done(); ++p)
     {
         if (!p.exists())
             continue;
@@ -602,7 +602,7 @@ void Camera::setOutputNbr(int nbr)
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
             TexturePtr texture(new Texture);
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, NULL);
             _outTextures.push_back(texture);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
         }

@@ -125,19 +125,25 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
 
     _spec.width = width;
     _spec.height = height;
-    if (format == GL_RGB && type == GL_UNSIGNED_BYTE)
+    if (internalFormat == GL_RGB && type == GL_UNSIGNED_BYTE)
     {
         _spec.nchannels = 3;
         _spec.format = TypeDesc::UINT8;
         _spec.channelnames = {"R", "G", "B"};
     }
-    else if (format == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
+    else if (internalFormat == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
     {
         _spec.nchannels = 4;
         _spec.format = TypeDesc::UINT8;
         _spec.channelnames = {"R", "G", "B", "A"};
     }
-    else if (format == GL_R && type == GL_UNSIGNED_SHORT)
+    else if (internalFormat == GL_RGBA16 && type == GL_UNSIGNED_SHORT)
+    {
+        _spec.nchannels = 4;
+        _spec.format = TypeDesc::UINT16;
+        _spec.channelnames = {"R", "G", "B", "A"};
+    }
+    else if (internalFormat == GL_R && type == GL_UNSIGNED_SHORT)
     {
         _spec.nchannels = 1;
         _spec.format = TypeDesc::UINT16;

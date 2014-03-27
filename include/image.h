@@ -74,6 +74,7 @@ class Image : public BufferObject
         Image& operator=(const Image& i)
         {
             _image.copy(i._image);
+            _srgb = i._srgb;
             return *this;
         }
 
