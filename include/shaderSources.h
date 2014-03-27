@@ -70,6 +70,7 @@ struct ShaderSources
         uniform int _texBlendingMap;
         uniform float _blendWidth;
         uniform float _blackLevel;
+        uniform float _brightness;
         in vec4 position;
         in vec2 texCoord;
         in vec3 normal;
@@ -81,6 +82,9 @@ struct ShaderSources
                 discard;
 
             vec4 color = texture(_tex0, texCoord);
+            if (_brightness != 1.f)
+                color.rgb = color.rgb * _brightness;
+
             if (_blackLevel > 0.f && _blackLevel < 1.f)
                 color.rgb = color.rgb * (1.f - _blackLevel) + _blackLevel;
 

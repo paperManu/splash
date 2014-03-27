@@ -410,9 +410,11 @@ bool Camera::render()
         // Draw the objects
         for (auto& obj : _objects)
         {
-            obj->activate();
             obj->getShader()->setAttribute("blendWidth", {_blendWidth});
             obj->getShader()->setAttribute("blackLevel", {_blackLevel});
+            obj->getShader()->setAttribute("brightness", {_brightness});
+
+            obj->activate();
             obj->setViewProjectionMatrix(computeViewProjectionMatrix());
             obj->draw();
             obj->deactivate();
@@ -931,6 +933,15 @@ void Camera::registerAttributes()
         return true;
     }, [&]() {
         return vector<Value>({_blackLevel});
+    });
+
+    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _brightness = args[0].asFloat();
+        return true;
+    }, [&]() {
+        return vector<Value>({_brightness});
     });
 
     _attribFunctions["frame"] = AttributeFunctor([&](vector<Value> args) {

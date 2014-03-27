@@ -55,6 +55,7 @@ void Shader::activate()
         _locationBlendingMap = glGetUniformLocation(_program, "_texBlendingMap");
         _locationBlendWidth = glGetUniformLocation(_program, "_blendWidth");
         _locationBlackLevel = glGetUniformLocation(_program, "_blackLevel");
+        _locationBrightness = glGetUniformLocation(_program, "_brightness");
         _locationColor = glGetUniformLocation(_program, "_color");
         _locationScale = glGetUniformLocation(_program, "_scale");
         _locationLayout = glGetUniformLocation(_program, "_layout");
@@ -69,6 +70,7 @@ void Shader::activate()
     glUniform1i(_locationBlendingMap, _useBlendingMap);
     glUniform1f(_locationBlendWidth, _blendWidth);
     glUniform1f(_locationBlackLevel, _blackLevel);
+    glUniform1f(_locationBrightness, _brightness);
     glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
     glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
     glUniform4i(_locationLayout, _layout[0], _layout[1], _layout[2], _layout[3]);
@@ -335,6 +337,13 @@ void Shader::registerAttributes()
         if (args.size() < 1)
             return false;
         _blackLevel = args[0].asFloat();
+        return true;
+    });
+
+    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _brightness = args[0].asFloat();
         return true;
     });
 
