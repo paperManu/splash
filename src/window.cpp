@@ -230,9 +230,9 @@ bool Window::switchFullscreen(int screenId)
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
-        window = glfwCreateWindow(vidmode->width, vidmode->height, to_string(_screenId).c_str(), monitors[_screenId], _window->getMainWindow());
+        window = glfwCreateWindow(vidmode->width, vidmode->height, _name.c_str(), monitors[_screenId], _window->getMainWindow());
     else
-        window = glfwCreateWindow(vidmode->width, vidmode->height, to_string(_screenId).c_str(), 0, _window->getMainWindow());
+        window = glfwCreateWindow(vidmode->width, vidmode->height, _name.c_str(), 0, _window->getMainWindow());
 
     if (!window)
     {

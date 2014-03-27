@@ -149,6 +149,7 @@ class Scene : public RootObject
         std::shared_ptr<Link> _link;
         bool _started {false};
         std::thread _sceneLoop;
+        std::mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};

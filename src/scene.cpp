@@ -34,13 +34,15 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
+    unique_lock<mutex> lock(_configureMutex);
+
     BaseObjectPtr obj;
     // First, the objects containing a context
     if (type == string("camera"))
         obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
     else if (type == string("window"))
     {
-        obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(_mainWindow)));
+        obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
         obj->setAttribute("swapInterval", {_swapInterval});
     }
     else if (type == string("gui"))
@@ -81,6 +83,8 @@ BaseObjectPtr Scene::add(string type, string name)
 /*************/
 void Scene::addGhost(string type, string name)
 {
+    unique_lock<mutex> lock(_configureMutex);
+
     // Currently, only Cameras can be ghosts
     if (type != string("camera"))
         return;
@@ -97,6 +101,8 @@ void Scene::addGhost(string type, string name)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
+    unique_lock<mutex> lock(_configureMutex);
+
     Json::Value root;
 
     for (auto& obj : _objects)
@@ -125,6 +131,8 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
+    unique_lock<mutex> lock(_configureMutex);
+
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
     glfwMakeContextCurrent(NULL);
@@ -135,6 +143,8 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 bool Scene::linkGhost(string first, string second)
 {
+    unique_lock<mutex> lock(_configureMutex);
+
     BaseObjectPtr source(nullptr);
     BaseObjectPtr sink(nullptr);
 
@@ -318,6 +328,7 @@ void Scene::run()
         STimer::timer << "sceneLoop";
         if (_started)
         {
+            unique_lock<mutex> lock(_configureMutex);
             render();
         }
         STimer::timer >> 1e3 >>  "sceneLoop";
@@ -602,6 +613,11 @@ void Scene::registerAttributes()
 
     _attribFunctions["start"] = AttributeFunctor([&](vector<Value> args) {
         _started = true;
+        return true;
+    });
+
+    _attribFunctions["stop"] = AttributeFunctor([&](vector<Value> args) {
+        _started = false;
         return true;
     });
 
