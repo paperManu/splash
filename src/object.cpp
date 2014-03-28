@@ -48,6 +48,7 @@ void Object::activate()
     GLuint texUnit = 0;
     for (auto& t : _textures)
     {
+        t->update();
         t->lock();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
         texUnit++;

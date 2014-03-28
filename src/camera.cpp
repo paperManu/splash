@@ -493,7 +493,7 @@ bool Camera::render()
         glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
-        glReadPixels(0, 0, _width, _height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+        glReadPixels(0, 0, _width, _height, GL_RGBA, GL_UNSIGNED_SHORT, 0);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 

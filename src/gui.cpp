@@ -352,7 +352,6 @@ void Gui::initGLV(int width, int height)
         static float worldFps {0.f};
         static float upl {0.f};
         static float upd {0.f};
-        static float tex {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
@@ -363,7 +362,6 @@ void Gui::initGLV(int width, int height)
         worldFps = worldFps * 0.95 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.05;
         upl = upl * 0.95 + STimer::timer["upload"] * 0.001 * 0.05;
         upd = upd * 0.95 + STimer::timer["buffer object update"] * 0.001 * 0.05;
-        tex = tex * 0.95 + STimer::timer["textures"] * 0.001 * 0.05;
         cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
         gui = gui * 0.95 + STimer::timer["guis"] * 0.001 * 0.05;
         win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
@@ -376,7 +374,6 @@ void Gui::initGLV(int width, int height)
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
         stream << "Buffers deserialize: " << setprecision(4) << upd << " ms\n";
-        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
@@ -385,7 +382,7 @@ void Gui::initGLV(int width, int height)
         return stream.str();
     });
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 9 + 8);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 8 + 8);
     _glvProfile.style(&_style);
 
     // Some help regarding keyboard shortcuts
