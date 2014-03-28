@@ -83,7 +83,6 @@ BaseObjectPtr Scene::add(string type, string name)
 /*************/
 void Scene::addGhost(string type, string name)
 {
-    unique_lock<mutex> lock(_configureMutex);
 
     // Currently, only Cameras can be ghosts
     if (type != string("camera"))
@@ -93,7 +92,9 @@ void Scene::addGhost(string type, string name)
 
     // Add the object for real ...
     BaseObjectPtr obj = add(type, name);
+
     // And move it to _ghostObjects
+    unique_lock<mutex> lock(_configureMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -143,8 +144,6 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 bool Scene::linkGhost(string first, string second)
 {
-    unique_lock<mutex> lock(_configureMutex);
-
     BaseObjectPtr source(nullptr);
     BaseObjectPtr sink(nullptr);
 
