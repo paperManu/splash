@@ -130,6 +130,14 @@ bool Window::linkTo(BaseObjectPtr obj)
         setTexture(tex);
         return true;
     }
+    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    {
+        TexturePtr tex(new Texture());
+        if (tex->linkTo(obj))
+            return linkTo(tex);
+        else
+            return false;
+    }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
@@ -154,6 +162,10 @@ bool Window::render()
     if (!_window->setAsCurrentContext()) 
 		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glEnable(GL_FRAMEBUFFER_SRGB);
+
+    // Update the input textures if needed
+    for (auto& t : _inTextures)
+        t->update();
 
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
