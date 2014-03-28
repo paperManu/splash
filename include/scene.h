@@ -109,6 +109,11 @@ class Scene : public RootObject
         bool linkGhost(std::string first, std::string second);
 
         /**
+         * Remove an object
+         */
+        void remove(std::string name);
+
+        /**
          * Render everything
          */
         void render();

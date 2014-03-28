@@ -170,6 +170,17 @@ bool Scene::linkGhost(string first, string second)
 }
 
 /*************/
+void Scene::remove(string name)
+{
+    BaseObjectPtr obj;
+
+    if (_objects.find(name) != _objects.end())
+        _objects.erase(name);
+    else if (_ghostObjects.find(name) != _ghostObjects.end())
+        _ghostObjects.erase(name);
+}
+
+/*************/
 void Scene::render()
 {
     if (!_started)
@@ -589,6 +600,15 @@ void Scene::registerAttributes()
         string src = args[0].asString();
         string dst = args[1].asString();
         return linkGhost(src, dst);
+    });
+
+    _attribFunctions["remove"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        string name = args[1].asString();
+
+        remove(name);
+        return true;
     });
 
     _attribFunctions["setGhost"] = AttributeFunctor([&](vector<Value> args) {
