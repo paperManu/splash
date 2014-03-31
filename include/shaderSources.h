@@ -112,7 +112,7 @@ struct ShaderSources
 
                 if (blendFactor == 0.f)
                     blendFactor = 1.f;
-                else if (_blendWidth > 0.f) // && smoothBlend == true)
+                else if (_blendWidth > 0.f && smoothBlend == true)
                 {
                     vec2 screenPos = vec2((position.x / position.w + 1.f) / 2.f, (position.y / position.w + 1.f) / 2.f);
                     float distX = min(screenPos.x, 1.f - screenPos.x);

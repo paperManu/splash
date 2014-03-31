@@ -314,6 +314,23 @@ class BaseObject
             args = _attribFunctions[attrib]();
             return true;
         }
+
+        /**
+         * Get all the attributes as a map
+         */
+        std::map<std::string, Values> getAttributes()
+        {
+            std::map<std::string, Values> attribs;
+            for (auto& attr : _attribFunctions)
+            {
+                Values values;
+                if (getAttribute(attr.first, values) == false || values.size() == 0)
+                    continue;
+                attribs[attr.first] = values;
+            }
+
+            return attribs;
+        }
         
         /**
          * Update the content of the object

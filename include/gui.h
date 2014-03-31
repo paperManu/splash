@@ -141,6 +141,7 @@ class Gui : public BaseObject
         GlvTextBox _glvHelp;
         GlvGlobalView _glvGlobalView;
         GlvGraph _glvGraph;
+        GlvControl _glvControl;
         glv::space_t _prevMouseX, _prevMouseY;
         bool _flashBG; // Set to true if the BG is set to all white for all outputs
         

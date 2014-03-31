@@ -66,6 +66,32 @@ class GlvTextBox : public glv::View
 };
 
 /*************/
+class GlvControl : public glv::View
+{
+    public:
+        GlvControl();
+        void onDraw(glv::GLV& g);
+        bool onEvent(glv::Event::t e, glv::GLV& g);
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        SceneWeakPtr _scene;
+        bool _ready {false};
+
+        int _objIndex {0};
+        bool _isDistant {false};
+        glv::Label _selectedObjectName;
+        glv::View _left, _right;
+        glv::Placer _titlePlacer;
+
+        std::vector<glv::Label*> _properties;
+        std::vector<glv::NumberDialer*> _numbers;
+
+        std::string getNameByIndex();
+        void changeTarget(std::string name);
+};
+
+/*************/
 class GlvGlobalView : public glv::View3D
 {
     friend Gui;
@@ -113,6 +139,7 @@ class GlvGraph : public glv::View
         unsigned int _maxHistoryLength {500};
         std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
+
 } // end of namespace
 
 #endif // WIDGETS_H

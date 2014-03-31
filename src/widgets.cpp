@@ -52,6 +52,168 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
 }
 
 /*************/
+GlvControl::GlvControl()
+{
+    _selectedObjectName.colors().set(Color(1.0));
+    _selectedObjectName.top(8);
+    _selectedObjectName.left(8);
+
+    _left = View(Rect(16, 16));
+    _left.name("left");
+    _right = View(Rect(16, 16));
+    _right.name("right");
+}
+
+/*************/
+void GlvControl::onDraw(GLV& g)
+{
+    if (!_ready)
+    {
+        string objName = getNameByIndex();
+        changeTarget(objName);
+
+        _left.style(&style());
+        _right.style(&style());
+
+        _ready = true;
+    }
+
+    // Update all the values currently displayed
+    for (int i = 0; i < _properties.size(); ++i)
+    {
+        auto scene = _scene.lock();
+        string objName = getNameByIndex();
+
+        if (!_isDistant)
+            scene->_objects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
+        else
+        {
+            scene->_ghostObjects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
+            scene->sendMessage("sendAll", {objName, _properties[i]->getValue(), _numbers[i]->getValue()});
+        }
+    }
+}
+
+/*************/
+bool GlvControl::onEvent(Event::t e, GLV& g)
+{
+    switch (e)
+    {
+    default:
+        break;
+    case Event::MouseDown:
+    {
+        string viewName = g.focusedView()->name();
+        if (viewName == "left")
+            _objIndex--;
+        else if (viewName == "right")
+            _objIndex++;
+        else
+            return true;
+
+        string objName = getNameByIndex();
+        changeTarget(objName);
+        return false;
+    }
+    case Event::MouseDrag:
+    {
+        // Drag the window
+        if (g.mouse().middle()) 
+        {
+            move(g.mouse().dx(), g.mouse().dy());
+            return false;
+        }
+    }
+    }
+
+    return true;
+}
+
+/*************/
+string GlvControl::getNameByIndex()
+{
+    auto scene = _scene.lock();
+    vector<string> objNames;
+
+    for (auto& o : scene->_objects)
+        objNames.push_back(o.first);
+    for (auto& o : scene->_ghostObjects)
+        objNames.push_back(o.first);
+    
+    if (objNames.size() == 0)
+        return "";
+
+    _objIndex = _objIndex < 0 ? 0 : _objIndex >= objNames.size() ? objNames.size() - 1 : _objIndex;
+    return objNames[_objIndex];
+}
+
+/*************/
+void GlvControl::changeTarget(string name)
+{
+    // Reset the height of the view
+    h = 28;
+
+    auto scene = _scene.lock();
+
+    for (auto& p : _properties)
+        p->remove();
+    _properties.clear();
+
+    for (auto& n : _numbers)
+        n->remove();
+    _numbers.clear();
+
+    if (scene->_objects.find(name) == scene->_objects.end() && scene->_ghostObjects.find(name) == scene->_ghostObjects.end())
+        return;
+
+    _selectedObjectName.setValue(name);
+
+    if (scene->_ghostObjects.find(name) != scene->_ghostObjects.end())
+        _isDistant = true;
+    else
+        _isDistant = false;
+
+    // We don't allow modification of Window parameters yet
+    if (!_isDistant && scene->_objects[name]->getType() == "window" || _isDistant && scene->_ghostObjects[name]->getType() == "window")
+        return;
+
+    map<string, Values> attribs;
+    if (!_isDistant)
+        attribs = scene->_objects[name]->getAttributes();
+    else
+        attribs = scene->_ghostObjects[name]->getAttributes();
+
+    int position = 28;
+    for (auto& a : attribs)
+    {
+        // Only show single values properties
+        if (a.second.size() > 1)
+            continue;
+        glv::Label* label = new glv::Label();
+        label->top(position);
+        label->left(8);
+        label->setValue(a.first);
+        _properties.push_back(label);
+        *this << *label;
+
+        glv::NumberDialer* number = new glv::NumberDialer();
+        number->style(&style());
+        number->top(position);
+        number->right(w);
+        number->resize(2, 2);
+        number->setValue(a.second[0].asFloat());
+        _numbers.push_back(number);
+        *this << *number;
+
+        position += 16;
+    }
+
+    h = position;
+    _titlePlacer = Placer(*this, Direction::E, Place::TL, 8, 8, 4);
+    _titlePlacer << _left << _right << _selectedObjectName;
+}
+
+/*************/
 GlvGlobalView::GlvGlobalView()
 {
     _camLabel.colors().set(Color(1.0));

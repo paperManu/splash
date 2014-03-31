@@ -55,6 +55,7 @@ class Scene : public RootObject
 {
     friend Gui;
     friend GlvGlobalView;
+    friend GlvControl;
 
     public:
         /**

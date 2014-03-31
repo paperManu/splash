@@ -407,8 +407,16 @@ void Gui::initGLV(int width, int height)
     _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
     _glvHelp.style(&_style);
 
+    // Controls
+    _glvControl.width(200);
+    _glvControl.height(128);
+    _glvControl.top(8);
+    _glvControl.right(_width / 2 - 64);
+    _glvControl.style(&_style);
+    _glvControl.setScene(_scene);
+
     Placer placer(_glv, Direction::S, Place::TL, 8, 8);
-    placer << _glvHelp << _glvProfile;
+    placer << _glvHelp << _glvProfile << _glvControl;
 
     // GUI camera view
     _glvGlobalView.set(Rect(8, 8, 800, 600));
