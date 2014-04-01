@@ -25,6 +25,7 @@
 #ifndef LINK_H
 #define LINK_H
 
+#include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
@@ -82,6 +83,7 @@ class Link
         RootObjectWeakPtr _rootObject;
         std::string _name;
         std::shared_ptr<zmq::context_t> _context;
+        std::mutex _sendMutex;
 
         std::shared_ptr<zmq::socket_t> _socketBufferIn;
         std::shared_ptr<zmq::socket_t> _socketBufferOut;

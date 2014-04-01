@@ -77,6 +77,7 @@ class GlvControl : public glv::View
     private:
         SceneWeakPtr _scene;
         bool _ready {false};
+        int _frameIndice {0};
 
         int _objIndex {0};
         bool _isDistant {false};

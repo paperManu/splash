@@ -104,21 +104,23 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
 {
     try
     {
+        unique_lock<mutex> lock(_sendMutex);
+
         // First we send the name of the target
         zmq::message_t msg(name.size() + 1);
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        _socketMessageOut->send(msg);
+        _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
         // And the target's attribute
         msg.rebuild(attribute.size() + 1);
         memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
-        _socketMessageOut->send(msg);
+        _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
         // Then, the size of the message
         int size = message.size();
         msg.rebuild(sizeof(size));
         memcpy(msg.data(), (void*)&size, sizeof(size));
-        _socketMessageOut->send(msg);
+        _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
         // And every message
         for (auto& v : message)
@@ -129,11 +131,17 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
 
             msg.rebuild(sizeof(valueType));
             memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
-            _socketMessageOut->send(msg);
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
             msg.rebuild(valueSize);
             memcpy(msg.data(), value, valueSize);
-            _socketMessageOut->send(msg);
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
         }
+
+        // Closing the multipart message
+        string end {SPLASH_LINK_END_MSG};
+        msg.rebuild(end.size() + 1);
+        memcpy(msg.data(), end.c_str(), (end.size() + 1) * sizeof(char));
+        _socketMessageOut->send(msg);
     }
     catch (const zmq::error_t& e)
     {
@@ -155,11 +163,15 @@ void Link::handleInputMessages()
 {
     try
     {
+        int hwm = 10000;
+        _socketMessageIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
+
         _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());
         _socketMessageIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         while (true)
         {
+            auto root = _rootObject.lock();
             zmq::message_t msg;
             _socketMessageIn->recv(&msg); // name of the target
             string name((char*)msg.data());
@@ -182,14 +194,14 @@ void Link::handleInputMessages()
                     values.push_back(string((char*)msg.data()));
             }
 
+            _socketMessageIn->recv(&msg);
+
+            root->set(name, attribute, values);
             // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PAIRS)
-                SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Receiving message for " << name << "::" << attribute << Log::endl;
+                SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
-
-            auto root = _rootObject.lock();
-            root->set(name, attribute, values);
         }
     }
     catch (const zmq::error_t& e)
