@@ -79,17 +79,36 @@ void GlvControl::onDraw(GLV& g)
     }
 
     // Update all the values currently displayed
-    for (int i = 0; i < _properties.size(); ++i)
+    if (g.focusedView() == this || g.focusedView()->parent == this)
     {
-        auto scene = _scene.lock();
-        string objName = getNameByIndex();
-
-        if (!_isDistant)
-            scene->_objects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
-        else
+        for (int i = 0; i < _properties.size(); ++i)
         {
-            scene->_ghostObjects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
-            scene->sendMessage("sendAll", {objName, _properties[i]->getValue(), _numbers[i]->getValue()});
+            auto scene = _scene.lock();
+            string objName = getNameByIndex();
+
+            if (!_isDistant)
+                scene->_objects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
+            else
+            {
+                scene->_ghostObjects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
+                scene->sendMessage("sendAll", {objName, _properties[i]->getValue(), _numbers[i]->getValue()});
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < _properties.size(); ++i)
+        {
+            auto scene = _scene.lock();
+            string objName = getNameByIndex();
+
+            Values values;
+            if (!_isDistant)
+                scene->_objects[objName]->getAttribute(_properties[i]->getValue(), values);
+            else
+                scene->_ghostObjects[objName]->getAttribute(_properties[i]->getValue(), values);
+
+            _numbers[i]->setValue(values[0].asFloat());
         }
     }
 }
