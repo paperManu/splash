@@ -57,16 +57,6 @@ class Link
         void connectTo(std::string name);
 
         /**
-         * Get the current buffer for the given object
-         */
-        SerializedObjectPtr getBuffer(std::string name);
-
-        /**
-         * Get the oldest message in queue
-         */
-        std::vector<Value> getMessage(std::string name);
-
-        /**
          * Send a buffer to the connected pairs
          */
         bool sendBuffer(std::string name, SerializedObjectPtr buffer);
