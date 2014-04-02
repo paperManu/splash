@@ -108,7 +108,8 @@ void GlvControl::onDraw(GLV& g)
             else
                 scene->_ghostObjects[objName]->getAttribute(_properties[i]->getValue(), values);
 
-            _numbers[i]->setValue(values[0].asFloat());
+            if (values.size() != 0)
+                _numbers[i]->setValue(values[0].asFloat());
         }
     }
 }
