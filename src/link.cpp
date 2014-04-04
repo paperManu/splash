@@ -2,8 +2,6 @@
 #include "log.h"
 #include "timer.h"
 
-#define SPLASH_LINK_END_MSG "__end_msg"
-
 using namespace std;
 
 namespace Splash {
@@ -120,11 +118,16 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
         int size = message.size();
         msg.rebuild(sizeof(size));
         memcpy(msg.data(), (void*)&size, sizeof(size));
-        _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+        if (message.size() == 0)
+            _socketMessageOut->send(msg);
+        else
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
         // And every message
-        for (auto& v : message)
+        for (int i = 0; i < message.size(); ++i)
         {
+            auto v = message[i];
             Value::Type valueType = v.getType();
             int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
             void* value = v.data();
@@ -134,14 +137,12 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
             _socketMessageOut->send(msg, ZMQ_SNDMORE);
             msg.rebuild(valueSize);
             memcpy(msg.data(), value, valueSize);
-            _socketMessageOut->send(msg, ZMQ_SNDMORE);
-        }
 
-        // Closing the multipart message
-        string end {SPLASH_LINK_END_MSG};
-        msg.rebuild(end.size() + 1);
-        memcpy(msg.data(), end.c_str(), (end.size() + 1) * sizeof(char));
-        _socketMessageOut->send(msg);
+            if (i != message.size() - 1)
+                _socketMessageOut->send(msg, ZMQ_SNDMORE);
+            else
+                _socketMessageOut->send(msg);
+        }
     }
     catch (const zmq::error_t& e)
     {
@@ -171,7 +172,6 @@ void Link::handleInputMessages()
 
         while (true)
         {
-            auto root = _rootObject.lock();
             zmq::message_t msg;
             _socketMessageIn->recv(&msg); // name of the target
             string name((char*)msg.data());
@@ -194,8 +194,7 @@ void Link::handleInputMessages()
                     values.push_back(string((char*)msg.data()));
             }
 
-            _socketMessageIn->recv(&msg);
-
+            auto root = _rootObject.lock();
             root->set(name, attribute, values);
             // We don't display broadcast messages, for visibility
 #ifdef DEBUG
