@@ -16,7 +16,7 @@ AM_LDFLAGS = \
     $(OPENIMAGEIO_LIBS) \
     $(OPENMESH_LIBS) \
     $(SHMDATA_LIBS) \
-	$(top_srcdir)/src/libsplash.la
+	$(top_srcdir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
 
 check_PROGRAMS = \
     check_image \

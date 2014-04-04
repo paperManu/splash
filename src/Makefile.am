@@ -10,9 +10,9 @@ AM_CPPFLAGS = \
 
 #*************#
 lib_LTLIBRARIES = \
-	libsplash.la
+	libsplash-@LIBSPLASH_API_VERSION@.la
 
-libsplash_la_SOURCES = \
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
 	geometry.cpp \
 	gui.cpp \
@@ -32,7 +32,7 @@ libsplash_la_SOURCES = \
 	world.cpp
 
 # GLV related sources
-libsplash_la_SOURCES += \
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/GLV/src/glv_buttons.cpp \
 	$(top_srcdir)/external/GLV/src/glv_color_controls.cpp \
 	$(top_srcdir)/external/GLV/src/glv_color.cpp \
@@ -55,7 +55,7 @@ libsplash_la_SOURCES += \
 	$(top_srcdir)/external/GLV/src/glv_view.cpp \
 	$(top_srcdir)/external/GLV/src/glv_widget.cpp
 
-libsplash_la_CXXFLAGS = \
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
@@ -70,7 +70,7 @@ libsplash_la_CXXFLAGS = \
 	$(SIMDPP_FLAGS) \
 	$(ZMQ_CFLAGS)
 
-libsplash_la_LDFLAGS = \
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GLEW_LIBS) \
@@ -86,29 +86,10 @@ libsplash_la_LDFLAGS = \
 bin_PROGRAMS = splash \
 	splash-scene
 
-splash_DEPENDENCIES = libsplash.la
+splash_DEPENDENCIES = libsplash-@LIBSPLASH_API_VERSION@.la
 
 splash_SOURCES = \
-	splash.cpp
-
-noinst_HEADERS = \
-	$(top_srcdir)/include/splash.h \
-	$(top_srcdir)/include/camera.h \
-	$(top_srcdir)/include/geometry.h \
-	$(top_srcdir)/include/gui.h \
-	$(top_srcdir)/include/image.h \
-	$(top_srcdir)/include/link.h \
-	$(top_srcdir)/include/log.h \
-	$(top_srcdir)/include/mesh.h \
-	$(top_srcdir)/include/object.h \
-	$(top_srcdir)/include/scene.h \
-	$(top_srcdir)/include/shader.h \
-	$(top_srcdir)/include/texture.h \
-	$(top_srcdir)/include/threadpool.h \
-	$(top_srcdir)/include/timer.h \
-	$(top_srcdir)/include/window.h \
-	$(top_srcdir)/include/widgets.h \
-	$(top_srcdir)/include/world.h
+	splash-app.cpp
 
 splash_CXXFLAGS = \
 	$(GLFW_CFLAGS) \
@@ -122,13 +103,13 @@ splash_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
-	$(top_builddir)/src/libsplash.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
 
 #*************#
-splash_scene_DEPENDENCIES = libsplash.la
+splash_scene_DEPENDENCIES = libsplash-@LIBSPLASH_API_VERSION@.la
 
 splash_scene_SOURCES = \
-	splashScene.cpp
+	splash-scene.cpp
 
 splash_scene_CXXFLAGS = \
 	$(GLFW_CFLAGS) \
@@ -142,4 +123,4 @@ splash_scene_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_scene_LDFLAGS = \
-	$(top_builddir)/src/libsplash.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la

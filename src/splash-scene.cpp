@@ -18,13 +18,11 @@
  */
 
 /**
- * @splash.cpp
- * The main program from the Splash suite.
+ * @splash-scene.cpp
+ * Subprogram which handles the display on a single display adapter
  */
 
-#include "config.h"
-#include "scene.h"
-#include "log.h"
+#include "splash.h"
 
 using namespace Splash;
 using namespace std;
