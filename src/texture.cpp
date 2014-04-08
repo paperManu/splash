@@ -62,7 +62,7 @@ bool Texture::linkTo(BaseObjectPtr obj)
 /*************/
 ImagePtr Texture::read()
 {
-    ImagePtr img(new Image(_spec));
+    ImagePtr img = make_shared<Image>(_spec);
     glBindTexture(GL_TEXTURE_2D, _glTex);
     glGetTexImage(GL_TEXTURE_2D, 0, _texFormat, _texType, (GLvoid*)img->data());
     glBindTexture(GL_TEXTURE_2D, 0);

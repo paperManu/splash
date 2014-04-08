@@ -13,12 +13,12 @@ Link::Link(RootObjectWeakPtr root, string name)
     {
         _rootObject = root;
         _name = name;
-        _context.reset(new zmq::context_t(1));
+        _context = make_shared<zmq::context_t>(1);
 
-        _socketMessageOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
-        _socketMessageIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
-        _socketBufferOut.reset(new zmq::socket_t(*_context, ZMQ_PUB));
-        _socketBufferIn.reset(new zmq::socket_t(*_context, ZMQ_SUB));
+        _socketMessageOut = make_shared<zmq::socket_t>(*_context, ZMQ_PUB);
+        _socketMessageIn = make_shared<zmq::socket_t>(*_context, ZMQ_SUB);
+        _socketBufferOut = make_shared<zmq::socket_t>(*_context, ZMQ_PUB);
+        _socketBufferIn = make_shared<zmq::socket_t>(*_context, ZMQ_SUB);
     }
     catch (const zmq::error_t& e)
     {
@@ -231,7 +231,7 @@ void Link::handleInputBuffers()
 
             _socketBufferIn->recv(&msg);
             string name((char*)msg.data());
-            SerializedObjectPtr buffer(new SerializedObject((char*)msg.data() + name.size() + 1, (char*)msg.data() + msg.size()));
+            SerializedObjectPtr buffer = make_shared<SerializedObject>((char*)msg.data() + name.size() + 1, (char*)msg.data() + msg.size());
             
             auto root = _rootObject.lock();
             root->setFromSerializedObject(name, buffer);

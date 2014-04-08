@@ -39,31 +39,31 @@ BaseObjectPtr Scene::add(string type, string name)
     BaseObjectPtr obj;
     // First, the objects containing a context
     if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(CameraPtr(new Camera(_mainWindow)));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_mainWindow));
     else if (type == string("window"))
     {
-        obj = dynamic_pointer_cast<BaseObject>(WindowPtr(new Window(getNewSharedWindow(name))));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(getNewSharedWindow(name)));
         obj->setAttribute("swapInterval", {_swapInterval});
     }
     else if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(GuiPtr(new Gui(getNewSharedWindow(name, true), _self)));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
     else
     {
         // Then, the objects not containing a context
         _mainWindow->setAsCurrentContext();
         if (type == string("geometry"))
-            obj = dynamic_pointer_cast<BaseObject>(GeometryPtr(new Geometry()));
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
         else if (type == string("image") || type == string("image_shmdata"))
         {
-            obj = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
             obj->setRemoteType(type);
         }
         else if (type == string("mesh"))
-            obj = dynamic_pointer_cast<BaseObject>(MeshPtr(new Mesh()));
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
         else if (type == string("object"))
-            obj = dynamic_pointer_cast<BaseObject>(ObjectPtr(new Object()));
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>());
         else if (type == string("texture"))
-            obj = dynamic_pointer_cast<BaseObject>(TexturePtr(new Texture()));
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture>());
         _mainWindow->releaseContext();
     }
 
@@ -382,7 +382,7 @@ void Scene::computeBlendingMap()
                 dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
         // Filter the output to fill the blanks (dilate filter)
-        ImagePtr buffer(new Image(_blendingMap->getSpec()));
+        ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
         unsigned short* pixBuffer = (unsigned short*)buffer->data();
         unsigned short* pixels = (unsigned short*)_blendingMap->data();
         int w = _blendingMap->getSpec().width;
@@ -460,7 +460,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
-    return GlWindowPtr(new GlWindow(window, _mainWindow->get()));
+    return make_shared<GlWindow>(window, _mainWindow->get());
 }
 
 /*************/
@@ -493,13 +493,13 @@ void Scene::init(std::string name)
         return;
     }
 
-    _mainWindow.reset(new GlWindow(window, window));
+    _mainWindow = make_shared<GlWindow>(window, window);
     glfwMakeContextCurrent(_mainWindow->get());
     _isInitialized = true;
     glfwMakeContextCurrent(NULL);
 
     // Create the link and connect to the World
-    _link.reset(new Link(weak_ptr<Scene>(_self), name));
+    _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
     _link->sendMessage("world", "childProcessLaunched", {});
 }
@@ -507,12 +507,12 @@ void Scene::init(std::string name)
 /*************/
 void Scene::initBlendingMap()
 {
-    _blendingMap.reset(new Image);
+    _blendingMap = make_shared<Image>();
     _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
     glfwMakeContextCurrent(_mainWindow->get());
-    _blendingTexture.reset(new Texture);
+    _blendingTexture = make_shared<Texture>();
     _blendingTexture->disableFiltering();
     *_blendingTexture = _blendingMap;
     glfwMakeContextCurrent(NULL);

@@ -142,6 +142,46 @@ struct Value
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
         Value(Values v) {_v = v; _type = Type::v;}
 
+        Value(const Value& v) noexcept
+        {
+            _i = v._i;
+            _f = v._f;
+            _s = v._s;
+            _v = v._v;
+            _type = v._type;
+        }
+
+        Value& operator=(const Value& v) noexcept
+        {
+            if (this != &v)
+            {
+                _i = v._i;
+                _f = v._f;
+                _s = v._s;
+                _v = v._v;
+                _type = v._type;
+            }
+            return *this;
+        }
+
+        Value(Value&& v) noexcept
+        {
+            *this = std::move(v);
+        }
+
+        Value& operator=(Value&& v) noexcept
+        {
+            if (this != &v)
+            {
+                _i = v._i;
+                _f = v._f;
+                _s = v._s;
+                _v = v._v;
+                _type = v._type;
+            }
+            return *this;
+        }
+
         int asInt()
         {
             if (_type == Type::i)

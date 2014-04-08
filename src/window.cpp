@@ -132,7 +132,7 @@ bool Window::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex(new Texture());
+        TexturePtr tex = make_shared<Texture>();
         if (tex->linkTo(obj))
             return linkTo(tex);
         else
@@ -252,7 +252,7 @@ bool Window::switchFullscreen(int screenId)
         return false;
     }
 
-    _window = move(GlWindowPtr(new GlWindow(window, _window->getMainWindow())));
+    _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
 
     setEventsCallbacks();
@@ -328,9 +328,9 @@ bool Window::setProjectionSurface()
     // Setup the projection surface
     glGetError();
 
-    _screen.reset(new Object());
+    _screen = make_shared<Object>();
     _screen->setAttribute("fill", {"window"});
-    GeometryPtr virtualScreen(new Geometry());
+    GeometryPtr virtualScreen = make_shared<Geometry>();
     _screen->addGeometry(virtualScreen);
 
     GLenum error = glGetError();

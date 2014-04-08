@@ -476,7 +476,7 @@ bool Camera::render()
     {
         // Only the first output texture can be sent currently
         if (_outShm.get() == nullptr)
-            _outShm.reset(new Image_Shmdata());
+            _outShm = make_shared<Image_Shmdata>();
         
         // First, we launch the copy to the host
         ImageBuf img(_outTextures[0]->getSpec());
@@ -584,7 +584,7 @@ void Camera::setOutputNbr(int nbr)
 
     if (!_depthTexture)
     {
-        TexturePtr texture(new Texture);
+        TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         _depthTexture = move(texture);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
@@ -601,7 +601,7 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            TexturePtr texture(new Texture);
+            TexturePtr texture = make_shared<Texture>();
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, NULL);
             _outTextures.push_back(texture);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
@@ -786,11 +786,11 @@ void Camera::loadDefaultModels()
     
     for (auto& file : files)
     {
-        MeshPtr mesh(new Mesh());
+        MeshPtr mesh = make_shared<Mesh>();
         mesh->setAttribute("name", {file.first});
         mesh->setAttribute("file", {file.second});
 
-        ObjectPtr obj(new Object());
+        ObjectPtr obj = make_shared<Object>();
         obj->setAttribute("name", {file.first});
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});

@@ -110,11 +110,11 @@ void World::addLocally(string type, string name, string destination)
     if (_objects.find(name) == _objects.end())
     {
         if (type == string("image"))
-            object = dynamic_pointer_cast<BaseObject>(ImagePtr(new Image()));
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
         else if (type == string("image_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(Image_ShmdataPtr(new Image_Shmdata()));
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
         else if (type == string("mesh"))
-            object = dynamic_pointer_cast<BaseObject>(MeshPtr(new Mesh()));
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
     }
     if (object.get() != nullptr)
     {
@@ -431,7 +431,7 @@ void World::init()
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
 
-    _link.reset(new Link(weak_ptr<World>(_self), _name));
+    _link = make_shared<Link>(weak_ptr<World>(_self), _name);
 
     registerAttributes();
 }

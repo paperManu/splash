@@ -54,27 +54,52 @@ class Image : public BufferObject
         /**
          * Copy and move constructors
          */
-        Image(const Image& i)
+        Image(const Image& i) noexcept
         {
             _image.copy(i._image);
             _bufferImage.copy(i._bufferImage);
             _imageUpdated = i._imageUpdated;
-        }
-        
-        Image(Image&& i)
-        {
-            _image.swap(i._image);
-            _bufferImage.swap(i._bufferImage);
-            _imageUpdated = i._imageUpdated;
+            _srgb = i._srgb;
+            _benchmark = i._benchmark;
+            _serializedBuffers[0] = i._serializedBuffers[0];
+            _serializedBuffers[1] = i._serializedBuffers[1];
+            _serializedBufferIndex = i._serializedBufferIndex;
         }
 
-        /**
-         * = operator
-         */
-        Image& operator=(const Image& i)
+        Image& operator=(const Image& i) noexcept
         {
-            _image.copy(i._image);
-            _srgb = i._srgb;
+            if (this != &i)
+            {
+                _image.copy(i._image);
+                _bufferImage.copy(i._bufferImage);
+                _imageUpdated = i._imageUpdated;
+                _srgb = i._srgb;
+                _benchmark = i._benchmark;
+                _serializedBuffers[0] = i._serializedBuffers[0];
+                _serializedBuffers[1] = i._serializedBuffers[1];
+                _serializedBufferIndex = i._serializedBufferIndex;
+            }
+            return *this;
+        }
+        
+        Image(Image&& i) noexcept
+        {
+            *this = std::move(i);
+        }
+
+        Image& operator=(Image&& i) noexcept
+        {
+            if (this != &i)
+            {
+                _image.swap(i._image);
+                _bufferImage.swap(i._bufferImage);
+                _imageUpdated = i._imageUpdated;
+                _srgb = i._srgb;
+                _benchmark = i._benchmark;
+                _serializedBuffers[0] = i._serializedBuffers[0];
+                _serializedBuffers[1] = i._serializedBuffers[1];
+                _serializedBufferIndex = i._serializedBufferIndex;
+            }
             return *this;
         }
 

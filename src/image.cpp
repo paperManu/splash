@@ -96,8 +96,8 @@ SerializedObjectPtr Image::serialize() const
     if (_serializedBuffers[0].get() == nullptr || _serializedBuffers[1].get() == nullptr
         || _serializedBuffers[0]->size() != totalSize || _serializedBuffers[1]->size() != totalSize)
     {
-        _serializedBuffers[0].reset(new SerializedObject(totalSize));
-        _serializedBuffers[1].reset(new SerializedObject(totalSize));
+        _serializedBuffers[0] = make_shared<SerializedObject>(totalSize);
+        _serializedBuffers[1] = make_shared<SerializedObject>(totalSize);
     }
     
     SerializedObjectPtr obj = _serializedBuffers[_serializedBufferIndex];
