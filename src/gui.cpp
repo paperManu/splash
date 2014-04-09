@@ -28,14 +28,14 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     {
-        TexturePtr texture(new Texture);
+        TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         _depthTexture = move(texture);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
     {
-        TexturePtr texture(new Texture);
+        TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         _outTexture = move(texture);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
@@ -52,7 +52,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _window->releaseContext();
 
     // Create the default GUI camera
-    _guiCamera = CameraPtr(new Camera(scene->_mainWindow));
+    _guiCamera = make_shared<Camera>(scene->_mainWindow);
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});

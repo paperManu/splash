@@ -14,7 +14,7 @@ Object::Object()
 {
     _type = "object";
 
-    _shader.reset(new Shader());
+    _shader = make_shared<Shader>();
 
     registerAttributes();
 }
@@ -95,7 +95,7 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex(new Texture());
+        TexturePtr tex = make_shared<Texture>();
         if (tex->linkTo(obj))
             return linkTo(tex);
         else
@@ -103,7 +103,7 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
-        GeometryPtr geom(new Geometry());
+        GeometryPtr geom = make_shared<Geometry>();
         if (geom->linkTo(obj))
             return linkTo(geom);
         else

@@ -10,7 +10,7 @@ Geometry::Geometry()
 {
     _type = "geometry";
 
-    _mesh.reset(new Mesh());
+    _mesh = make_shared<Mesh>();
     update();
     _timestamp = _mesh->getTimestamp();
 }

@@ -3,16 +3,24 @@
     // Default encoding for text
     "encoding" : "UTF-8",
 
+    "world" : {
+        "framerate" : 300
+    },
+
     "scenes" : [
         {
             "name" : "first",
             "address" : "localhost",
-            "spawn" : 1
+            "spawn" : 1,
+            "display" : 0,
+            "swapInterval" : 0
         },
         {
             "name" : "second",
             "address" : "localhost",
-            "spawn" : 1
+            "spawn" : 1,
+            "display" : 0,
+            "swapInterval" : 0
         }
     ],
 
@@ -40,7 +48,6 @@
         "object" : {"type" : "object", "sideness" : 2},
         "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-        "texture" : {"type" : "texture"},
         "gui" : {"type" : "gui"},
 
         "links" : [
@@ -48,8 +55,7 @@
             ["object", "cam1"],
             ["object", "cam2"],
             ["object", "gui"],
-            ["shmimage", "texture"],
-            ["texture", "object"],
+            ["shmimage", "object"],
             ["cam1", "win1"],
             ["cam2", "win2"],
             ["gui", "win1"]
@@ -80,15 +86,13 @@
         "object" : {"type" : "object", "sideness" : 2},
         "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-        "texture" : {"type" : "texture"},
 
         "links" : [
             ["mesh", "object"],
             ["object", "cam3"],
             ["object", "cam4"],
             ["object", "gui"],
-            ["shmimage", "texture"],
-            ["texture", "object"],
+            ["shmimage", "object"],
             ["cam3", "win3"],
             ["cam4", "win4"]
         ]

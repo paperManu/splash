@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
     SLog::log << "splashScene::main - Creating Scene with name " << name << Log::endl;
 
-    ScenePtr scene(new Scene(name));
+    ScenePtr scene = make_shared<Scene>(name);
     scene->setName(name);
 
     timespec nap;
