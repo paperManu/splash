@@ -53,14 +53,17 @@ void World::run()
 
                 // Send them the their destinations
                 SerializedObjectPtr obj;
-                if (dynamic_pointer_cast<BufferObject>(o.second).get() != nullptr)
-                    if (dynamic_pointer_cast<BufferObject>(o.second)->wasUpdated()) // if the buffer has been updated
-                        obj = dynamic_pointer_cast<BufferObject>(o.second)->serialize();
+                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                if (bufferObj.get() != nullptr)
+                    if (bufferObj->wasUpdated()) // if the buffer has been updated
+                    {
+                        obj = bufferObj->serialize();
+                        bufferObj->setNotUpdated();
+                        _link->sendBuffer(o.first, obj);
+                    }
                     else
                         return; // if not, exit this thread
 
-                dynamic_pointer_cast<BufferObject>(o.second)->setNotUpdated();
-                _link->sendBuffer(o.first, obj);
             }));
         }
         SThread::pool.waitThreads(threadIds);

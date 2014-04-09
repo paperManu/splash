@@ -51,7 +51,7 @@ Link::~Link()
 }
 
 /*************/
-void Link::connectTo(string name)
+void Link::connectTo(const string name)
 {
     try
     {
@@ -78,14 +78,17 @@ void Link::connectTo(string name)
 }
 
 /*************/
-bool Link::sendBuffer(string name, SerializedObjectPtr buffer)
+bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
 {
     try
     {
-        // We pack the buffer and its name in a single msg
-        zmq::message_t msg(name.size() + 1 + buffer->size());
+        _otgBuffers.push_back(buffer);
+
+        zmq::message_t msg(name.size() + 1);
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        memcpy((char*)msg.data() + name.size() + 1, buffer->data(), buffer->size());
+        _socketBufferOut->send(msg, ZMQ_SNDMORE);
+
+        msg.rebuild(buffer->data(), buffer->size(), Link::freeOlderBuffer, this);
         _socketBufferOut->send(msg);
     }
     catch (const zmq::error_t& e)
@@ -98,7 +101,7 @@ bool Link::sendBuffer(string name, SerializedObjectPtr buffer)
 }
 
 /*************/
-bool Link::sendMessage(string name, string attribute, vector<Value> message)
+bool Link::sendMessage(const string name, const string attribute, const vector<Value> message)
 {
     try
     {
@@ -157,6 +160,13 @@ bool Link::sendMessage(string name, string attribute, vector<Value> message)
 #endif
 
     return true;
+}
+
+/*************/
+void Link::freeOlderBuffer(void* data, void* hint)
+{
+    Link* ctx = (Link*)hint;
+    ctx->_otgBuffers.pop_front();
 }
 
 /*************/
@@ -231,7 +241,9 @@ void Link::handleInputBuffers()
 
             _socketBufferIn->recv(&msg);
             string name((char*)msg.data());
-            SerializedObjectPtr buffer = make_shared<SerializedObject>((char*)msg.data() + name.size() + 1, (char*)msg.data() + msg.size());
+
+            _socketBufferIn->recv(&msg);
+            SerializedObjectPtr buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
             
             auto root = _rootObject.lock();
             root->setFromSerializedObject(name, buffer);

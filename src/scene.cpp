@@ -206,8 +206,11 @@ void Scene::render()
     SThread::pool.enqueue([&]() {
         STimer::timer << "buffer object update";
         for (auto& obj : _objects)
-            if (dynamic_pointer_cast<BufferObject>(obj.second).get() != nullptr)
-                dynamic_pointer_cast<BufferObject>(obj.second)->deserialize();
+        {
+            BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(obj.second);
+            if (bufferObj.get() != nullptr)
+                bufferObj->deserialize();
+        }
         STimer::timer >> "buffer object update";
     });
 
@@ -277,8 +280,11 @@ void Scene::render()
         WindowPtr eventWindow;
         for (auto& w : _objects)
             if (w.second->getType() == "window")
-                if (dynamic_pointer_cast<Window>(w.second)->isWindow(win))
-                    eventWindow = dynamic_pointer_cast<Window>(w.second);
+            {
+                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                if (window->isWindow(win))
+                    eventWindow = window;
+            }
 
         if (key == GLFW_KEY_F)
         {

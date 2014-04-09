@@ -25,6 +25,7 @@
 #ifndef LINK_H
 #define LINK_H
 
+#include <deque>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -54,20 +55,20 @@ class Link
         /**
          * Connect to a pair given its name
          */
-        void connectTo(std::string name);
+        void connectTo(const std::string name);
 
         /**
          * Send a buffer to the connected pairs
          */
-        bool sendBuffer(std::string name, SerializedObjectPtr buffer);
+        bool sendBuffer(const std::string name, const SerializedObjectPtr buffer);
 
         /**
          * Send a message to connected pairs
          * The second one converts known base types to vector<Value> before sending
          */
-        bool sendMessage(std::string name, std::string attribute, std::vector<Value> message);
+        bool sendMessage(const std::string name, const std::string attribute, const std::vector<Value> message);
         template <typename T>
-        bool sendMessage(std::string name, std::string attribute, std::vector<T> message);
+        bool sendMessage(const std::string name, const std::string attribute, const std::vector<T> message);
 
     private:
         RootObjectWeakPtr _rootObject;
@@ -80,8 +81,15 @@ class Link
         std::shared_ptr<zmq::socket_t> _socketMessageIn;
         std::shared_ptr<zmq::socket_t> _socketMessageOut;
 
+        std::deque<SerializedObjectPtr> _otgBuffers;
+
         std::thread _bufferInThread;
         std::thread _messageInThread;
+
+        /**
+         * Callback to remove the shared_ptr to a sent buffer
+         */
+        static void freeOlderBuffer(void* data, void* hint);
 
         /**
          * Message input thread function
@@ -96,7 +104,7 @@ class Link
 
 /*************/
 template <typename T>
-bool Link::sendMessage(std::string name, std::string attribute, std::vector<T> message)
+bool Link::sendMessage(const std::string name, const std::string attribute, const std::vector<T> message)
 {
     std::vector<Value> convertedMsg;
 
