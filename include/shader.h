@@ -81,18 +81,39 @@ class Shader : public BaseObject
          * No copy constructor, but a move one
          */
         Shader(const Shader&) = delete;
-        Shader(Shader&& s)
-        {
-            _shaders = s._shaders;
-            _program = s._program;
-            _isLinked = s._isLinked;
-            _locationMVP = s._locationMVP;
-            _locationNormalMatrix = s._locationNormalMatrix;
-            _locationSide = s._locationSide;
-            _locationTextureNbr = s._locationTextureNbr;
+        Shader& operator=(const Shader&) = delete;
 
-            _sideness = s._sideness;
-            _textureNbr = s._textureNbr;
+        Shader& operator=(Shader&& s)
+        {
+            if (this != &s)
+            {
+                _shaders = s._shaders;
+                _program = s._program;
+                _isLinked = s._isLinked;
+                _locationMVP = s._locationMVP;
+                _locationNormalMatrix = s._locationNormalMatrix;
+                _locationSide = s._locationSide;
+                _locationTextureNbr = s._locationTextureNbr;
+                _locationBlendingMap = s._locationBlendingMap;
+                _locationBlendWidth = s._locationBlendWidth;
+                _locationBlackLevel = s._locationBlackLevel;
+                _locationColor = s._locationColor;
+                _locationScale = s._locationScale;
+                _locationLayout = s._locationLayout;
+
+                _fill = s._fill;
+                _sideness = s._sideness;
+                _textureNbr = s._textureNbr;
+                _useBlendingMap = s._useBlendingMap;
+                _blendWidth = s._blendWidth;
+                _blackLevel = s._blackLevel;
+                _brightness = s._brightness;
+                _color = s._color;
+                _scale = s._scale;
+                _textureOverlap = s._textureOverlap;
+                _layout = s._layout;
+            }
+            return *this;
         }
 
         /**

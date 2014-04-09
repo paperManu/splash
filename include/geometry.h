@@ -58,14 +58,28 @@ class Geometry : public BaseObject
          * No copy constructor, but a move one
          */
         Geometry(const Geometry&) = delete;
+        Geometry& operator=(const Geometry&) = delete;
+
         Geometry(Geometry&& g)
         {
-            _mesh = std::move(g._mesh);
-            _timestamp = g._timestamp;
-            _vertexArray = std::move(g._vertexArray);
-            _vertexCoords = g._vertexCoords;
-            _texCoords = g._texCoords;
-            _normals = g._normals;
+            *this = std::move(g);
+        }
+
+        Geometry& operator=(Geometry&& g)
+        {
+            if (this != &g)
+            {
+                _mesh = std::move(g._mesh);
+                _timestamp = g._timestamp;
+
+                _vertexArray = std::move(g._vertexArray);
+                _vertexCoords = g._vertexCoords;
+                _texCoords = g._texCoords;
+                _normals = g._normals;
+
+                _normals = g._normals;
+            }
+            return *this;
         }
 
         /**

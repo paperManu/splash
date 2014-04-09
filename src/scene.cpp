@@ -404,7 +404,7 @@ void Scene::computeBlendingMap()
                 }
                 pixBuffer[y * w + x] = maxValue;
             }
-        *_blendingMap = *buffer;
+        swap(*_blendingMap, *buffer);
         _blendingMap->updateTimestamp();
 
         // Small hack to handle the fact that texture transfer uses PBOs.

@@ -58,14 +58,30 @@ class Window : public BaseObject
          * No copy constructor, but a move one
          */
         Window(const Window&) = delete;
+        Window& operator=(const Window&) = delete;
+
         Window(Window&& w)
         {
-            _isInitialized = w._isInitialized;
-            _window = w._window;
-            _screenId = w._screenId;
-            _screen = w._screen;
-            _inTextures = w._inTextures;
-            _isLinkedToTexture = w._isLinkedToTexture;
+            *this = std::move(w);
+        }
+
+        Window& operator=(Window&& w)
+        {
+            if (this != &w)
+            {
+                _isInitialized = w._isInitialized;
+                _window = w._window;
+                _screenId = w._screenId;
+                _fullscreen = std::move(w._fullscreen);
+                _layout = w._layout;
+                _swapInterval = w._swapInterval;
+
+                _screen = w._screen;
+                _viewProjectionMatrix = w._viewProjectionMatrix;
+                _inTextures = w._inTextures;
+                _isLinkedToTexture = w._isLinkedToTexture;
+            }
+            return *this;
         }
 
         /**

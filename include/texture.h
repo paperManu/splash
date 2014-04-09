@@ -64,20 +64,35 @@ class Texture : public BaseObject
          * No copy constructor, but a move one
          */
         Texture(const Texture&) = delete;
+        Texture& operator=(const Texture&) = delete;
+
         Texture(Texture&& t)
         {
-            _glTex = t._glTex;
-            _spec = t._spec;
+            *this = std::move(t);
+        }
 
-            _texTarget = t._texTarget;
-            _texLevel = t._texLevel;
-            _texInternalFormat = t._texInternalFormat;
-            _texBorder = t._texBorder;
-            _texFormat = t._texFormat;
-            _texType = t._texType;
+        Texture& operator=(Texture&& t)
+        {
+            if (this != &t)
+            {
+                _glTex = t._glTex;
+                _spec = t._spec;
+                _pbos[0] = t._pbos[0];
+                _pbos[1] = t._pbos[1];
+                _pboReadIndex = t._pboReadIndex;
 
-            _img = t._img;
-            _timestamp = t._timestamp;
+                _filtering = t._filtering;
+                _texTarget = t._texTarget;
+                _texLevel = t._texLevel;
+                _texInternalFormat = t._texInternalFormat;
+                _texBorder = t._texBorder;
+                _texFormat = t._texFormat;
+                _texType = t._texType;
+
+                _img = t._img;
+                _timestamp = t._timestamp;
+            }
+            return *this;
         }
 
         /**

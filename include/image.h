@@ -52,35 +52,10 @@ class Image : public BufferObject
         virtual ~Image();
 
         /**
-         * Copy and move constructors
+         * No copy, but some move constructors
          */
-        Image(const Image& i) noexcept
-        {
-            _image.copy(i._image);
-            _bufferImage.copy(i._bufferImage);
-            _imageUpdated = i._imageUpdated;
-            _srgb = i._srgb;
-            _benchmark = i._benchmark;
-            _serializedBuffers[0] = i._serializedBuffers[0];
-            _serializedBuffers[1] = i._serializedBuffers[1];
-            _serializedBufferIndex = i._serializedBufferIndex;
-        }
-
-        Image& operator=(const Image& i) noexcept
-        {
-            if (this != &i)
-            {
-                _image.copy(i._image);
-                _bufferImage.copy(i._bufferImage);
-                _imageUpdated = i._imageUpdated;
-                _srgb = i._srgb;
-                _benchmark = i._benchmark;
-                _serializedBuffers[0] = i._serializedBuffers[0];
-                _serializedBuffers[1] = i._serializedBuffers[1];
-                _serializedBufferIndex = i._serializedBufferIndex;
-            }
-            return *this;
-        }
+        Image(const Image&) = delete;
+        Image& operator=(const Image&) = delete;
         
         Image(Image&& i) noexcept
         {

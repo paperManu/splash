@@ -55,6 +55,34 @@ class Object : public BaseObject
         ~Object();
 
         /**
+         * No copy constructor, but some moves
+         */
+        Object(const Object& o) = delete;
+        Object& operator=(const Object& o) = delete;
+
+        Object(Object&& o)
+        {
+            *this = std::move(o);
+        }
+
+        Object& operator=(Object&& o)
+        {
+            if (this != &o)
+            {
+                _shader = o._shader;
+                _textures = o._textures;
+                _geometries = o._geometries;
+                _blendMaps = o._blendMaps;
+
+                _position = o._position;
+                _scale = o._scale;
+
+                _fill = o._fill;
+            }
+            return *this;
+        }
+
+        /**
          * Activate this object for rendering
          */
         void activate();

@@ -51,7 +51,7 @@ ThreadPool::ThreadPool(size_t threads)
     workingThreads = 0;
 
     for (size_t i = 0; i < threads; ++i)
-        workers.push_back(thread(Worker(*this)));
+        workers.emplace_back(thread(Worker(*this)));
 }
 
 /*************/
