@@ -22,8 +22,8 @@
  * The Object class
  */
 
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef SPLASH_OBJECT_H
+#define SPLASH_OBJECT_H
 
 #include <config.h>
 
@@ -175,4 +175,4 @@ typedef std::shared_ptr<Object> ObjectPtr;
 
 } // end of namespace
 
-#endif // OBJECT_H
+#endif // SPLASH_OBJECT_H

@@ -22,8 +22,8 @@
  * The Camera base class
  */
 
-#ifndef CAMERA_H
-#define CAMERA_H
+#ifndef SPLASH_CAMERA_H
+#define SPLASH_CAMERA_H
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -268,4 +268,4 @@ typedef std::shared_ptr<Camera> CameraPtr;
 
 } // end of namespace
 
-#endif // CAMERA_H
+#endif // SPLASH_CAMERA_H

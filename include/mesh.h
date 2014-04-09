@@ -22,8 +22,8 @@
  * The Mesh class
  */
 
-#ifndef MESH_H
-#define MESH_H
+#ifndef SPLASH_MESH_H
+#define SPLASH_MESH_H
 
 #include "config.h"
 
@@ -124,4 +124,4 @@ typedef std::shared_ptr<Mesh> MeshPtr;
 
 } // end of namespace
 
-#endif // MESH_H
+#endif // SPLASH_MESH_H

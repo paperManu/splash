@@ -23,8 +23,8 @@
 //    3. This notice may not be removed or altered from any source
 //    distribution.
 
-#ifndef THREADPOOL_H
-#define THREADPOOL_H
+#ifndef SPLASH_THREADPOOL_H
+#define SPLASH_THREADPOOL_H
 
 #include <atomic>
 #include <iostream>
@@ -114,4 +114,4 @@ struct SThread
         static ThreadPool pool;
 };
 
-#endif // THREADPOOL_H
+#endif // SPLASH_THREADPOOL_H

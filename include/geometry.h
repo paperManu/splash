@@ -22,8 +22,8 @@
  * The Geometry base class
  */
 
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
+#ifndef SPLASH_GEOMETRY_H
+#define SPLASH_GEOMETRY_H
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -155,4 +155,4 @@ typedef std::shared_ptr<Geometry> GeometryPtr;
 
 } // end of namespace
 
-#endif // GEOMETRY_H
+#endif // SPLASH_GEOMETRY_H

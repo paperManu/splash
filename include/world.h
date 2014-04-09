@@ -22,8 +22,8 @@
  * The World class
  */
 
-#ifndef WORLD_H
-#define WORLD_H
+#ifndef SPLASH_WORLD_H
+#define SPLASH_WORLD_H
 
 #include "config.h"
 #include "coretypes.h"
@@ -165,4 +165,4 @@ class World : public RootObject
 
 } // end of namespace
 
- #endif // WORLD_H
+ #endif // SPLASH_WORLD_H

@@ -22,8 +22,8 @@
  * The Shader class
  */
 
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef SPLASH_SHADER_H
+#define SPLASH_SHADER_H
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -223,4 +223,4 @@ typedef std::shared_ptr<Shader> ShaderPtr;
 
 } // end of namespace
 
-#endif // SHADER_H
+#endif // SPLASH_SHADER_H

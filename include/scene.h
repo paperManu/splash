@@ -22,8 +22,8 @@
  * The Scene class
  */
 
-#ifndef SCENE_H
-#define SCENE_H
+#ifndef SPLASH_SCENE_H
+#define SPLASH_SCENE_H
 
 #include "config.h"
 #include "coretypes.h"
@@ -209,4 +209,4 @@ typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 } // end of namespace
 
-#endif // SCENE_H
+#endif // SPLASH_SCENE_H

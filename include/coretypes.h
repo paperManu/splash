@@ -22,8 +22,8 @@
  * A few, mostly basic, types
  */
 
-#ifndef CORETYPES_H
-#define CORETYPES_H
+#ifndef SPLASH_CORETYPES_H
+#define SPLASH_CORETYPES_H
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -534,4 +534,4 @@ typedef std::shared_ptr<RootObject> RootObjectPtr;
 
 } // end of namespace
 
-#endif // CORETYPES_H
+#endif // SPLASH_CORETYPES_H

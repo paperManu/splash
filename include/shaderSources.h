@@ -22,8 +22,8 @@
  * Contains the sources for all shaders used in Splash
  */
 
-#ifndef SHADERSOURCES_H
-#define SHADERSOURCES_H
+#ifndef SPLASH_SHADERSOURCES_H
+#define SPLASH_SHADERSOURCES_H
 
 namespace Splash
 {
@@ -368,4 +368,4 @@ struct ShaderSources
 
 } // end of namespace
 
-#endif // SHADERSOURCES_H
+#endif // SPLASH_SHADERSOURCES_H

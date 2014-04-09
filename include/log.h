@@ -22,8 +22,8 @@
  * The Log class
  */
 
-#ifndef LOG_H
-#define LOG_H
+#ifndef SPLASH_LOG_H
+#define SPLASH_LOG_H
 
 #include "config.h"
 
@@ -250,4 +250,4 @@ struct SLog
 
 } // end of namespace
 
-#endif // LOG_H
+#endif // SPLASH_LOG_H

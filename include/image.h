@@ -22,8 +22,8 @@
  * The Image class
  */
 
-#ifndef IMAGE_H
-#define IMAGE_H
+#ifndef SPLASH_IMAGE_H
+#define SPLASH_IMAGE_H
 
 #include <chrono>
 #include <mutex>
@@ -167,4 +167,4 @@ typedef std::shared_ptr<Image> ImagePtr;
 
 } // end of namespace
 
-#endif // IMAGE_H
+#endif // SPLASH_IMAGE_H

@@ -22,8 +22,8 @@
  * The Window class
  */
 
-#ifndef WINDOW_H
-#define WINDOW_H
+#ifndef SPLASH_WINDOW_H
+#define SPLASH_WINDOW_H
 
 #include "config.h"
 #include "coretypes.h"
@@ -193,4 +193,4 @@ typedef std::shared_ptr<Window> WindowPtr;
 
 } // end of namespace
 
-#endif // WINDOW_H
+#endif // SPLASH_WINDOW_H

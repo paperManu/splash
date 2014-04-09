@@ -22,8 +22,8 @@
  * The splash widgets
  */
 
-#ifndef WIDGETS_H
-#define WIDGETS_H
+#ifndef SPLASH_WIDGETS_H
+#define SPLASH_WIDGETS_H
 
 #define SPLASH_GLV_TEXTCOLOR 1.0, 1.0, 1.0
 #define SPLASH_GLV_FONTSIZE 8.0
@@ -142,4 +142,4 @@ class GlvGraph : public glv::View
 
 } // end of namespace
 
-#endif // WIDGETS_H
+#endif // SPLASH_WIDGETS_H

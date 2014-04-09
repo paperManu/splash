@@ -22,8 +22,8 @@
  * The Image_Shmdata class
  */
 
-#ifndef IMAGE_SHMDATA_H
-#define IMAGE_SHMDATA_H
+#ifndef SPLASH_IMAGE_SHMDATA_H
+#define SPLASH_IMAGE_SHMDATA_H
 
 #include <shmdata/any-data-reader.h>
 #include <shmdata/any-data-writer.h>
@@ -151,4 +151,4 @@ inline int clamp(int v, int a, int b) {return v < a ? a : v > b ? b : v;}
 
 } // end of namespace
 
-#endif // IMAGE_SHMDATA_H
+#endif // SPLASH_IMAGE_SHMDATA_H

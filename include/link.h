@@ -22,8 +22,8 @@
  * The Link class, used for communication between World and Scenes
  */
 
-#ifndef LINK_H
-#define LINK_H
+#ifndef SPLASH_LINK_H
+#define SPLASH_LINK_H
 
 #include <deque>
 #include <mutex>
@@ -118,4 +118,4 @@ typedef std::shared_ptr<Link> LinkPtr;
 
 } // end of namespace
 
-#endif // LINK_H
+#endif // SPLASH_LINK_H

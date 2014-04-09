@@ -22,8 +22,8 @@
  * The Gui base class
  */
 
-#ifndef GUI_H
-#define GUI_H
+#ifndef SPLASH_GUI_H
+#define SPLASH_GUI_H
 
 #define SPLASH_GLV_TEXTCOLOR 1.0, 1.0, 1.0
 #define SPLASH_GLV_FONTSIZE 8.0
@@ -171,4 +171,4 @@ typedef std::shared_ptr<Gui> GuiPtr;
 } // end of namespace
 
 
-#endif // GUI_H
+#endif // SPLASH_GUI_H

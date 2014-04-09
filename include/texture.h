@@ -22,8 +22,8 @@
  * The Texture base class
  */
 
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef SPLASH_TEXTURE_H
+#define SPLASH_TEXTURE_H
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
@@ -189,4 +189,4 @@ typedef std::shared_ptr<Texture> TexturePtr;
 
 } // end of namespace
 
-#endif // TEXTURE_H
+#endif // SPLASH_TEXTURE_H

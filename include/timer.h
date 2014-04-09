@@ -22,8 +22,8 @@
  * The Timer class
  */
 
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef SPLASH_TIMER_H
+#define SPLASH_TIMER_H
 
 #include <chrono>
 #include <ctime>
@@ -188,4 +188,4 @@ struct STimer
 
 } // end of namespace
 
-#endif // TIMER_H
+#endif // SPLASH_TIMER_H
