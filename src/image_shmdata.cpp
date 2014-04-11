@@ -5,7 +5,7 @@
 #include <regex>
 #include <simdpp/simd.h>
 
-#define SPLASH_SHMDATA_THREADS 16
+#define SPLASH_SHMDATA_THREADS 8
 
 using namespace std;
 using namespace simdpp;

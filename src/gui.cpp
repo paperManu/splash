@@ -358,15 +358,15 @@ void Gui::initGLV(int width, int height)
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
-        worldFps = worldFps * 0.95 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.05;
-        upl = upl * 0.95 + STimer::timer["upload"] * 0.001 * 0.05;
-        upd = upd * 0.95 + STimer::timer["buffer object update"] * 0.001 * 0.05;
-        cam = cam * 0.95 + STimer::timer["cameras"] * 0.001 * 0.05;
-        gui = gui * 0.95 + STimer::timer["guis"] * 0.001 * 0.05;
-        win = win * 0.95 + STimer::timer["windows"] * 0.001 * 0.05;
-        buf = buf * 0.95 + STimer::timer["swap"] * 0.001 * 0.05;
-        evt = evt * 0.95 + STimer::timer["events"] * 0.001 * 0.05;
+        fps = fps * 0.9 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.1;
+        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
+        upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
+        upd = upd * 0.9 + STimer::timer["buffer object update"] * 0.001 * 0.1;
+        cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
+        gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
+        win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
+        buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
+        evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
 
         // Create the text message
         ostringstream stream;

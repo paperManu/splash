@@ -5,7 +5,7 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
 
-#define SPLASH_IMAGE_COPY_THREADS 8
+#define SPLASH_IMAGE_COPY_THREADS 4
 
 using namespace std;
 
@@ -167,7 +167,6 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 
         int imgSize = _bufferDeserialize.spec().pixel_bytes() * _bufferDeserialize.spec().width * _bufferDeserialize.spec().height;
         ptr = reinterpret_cast<char*>(_bufferDeserialize.localpixels());
-        copy(currentObjPtr, currentObjPtr + imgSize, ptr);
 
         vector<unsigned int> threadIds;
         int stride = SPLASH_IMAGE_COPY_THREADS;
