@@ -1,7 +1,10 @@
 #include "texture.h"
+#include "threadpool.h"
 #include "timer.h"
 
 #include <string>
+
+#define SPLASH_TEXTURE_COPY_THREADS 4
 
 using namespace std;
 using namespace OIIO_NAMESPACE;
@@ -302,9 +305,21 @@ void Texture::update()
         if (pixels != NULL)
         {
             _img->lock();
-            memcpy((void*)pixels, _img->data(), spec.width * spec.height * spec.pixel_bytes());
-            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+
+            vector<unsigned int> threadIds;
+            int stride = SPLASH_TEXTURE_COPY_THREADS;
+            int size = spec.width * spec.height * spec.pixel_bytes();
+            for (int i = 0; i < stride - 1; ++i)
+            {
+                threadIds.push_back(SThread::pool.enqueue([=]() {
+                    copy((char*)_img->data() + size / stride * i, (char*)_img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i);
+                }));
+            }
+            copy((char*)_img->data() + size / stride * (stride - 1), (char*)_img->data() + size, (char*)pixels + size / stride * (stride - 1));
+            SThread::pool.waitThreads(threadIds);
+
             _img->unlock();
+            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
@@ -312,6 +327,7 @@ void Texture::update()
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     _timestamp = _img->getTimestamp();
+
 }
 
 /*************/
