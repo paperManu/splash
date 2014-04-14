@@ -5,7 +5,7 @@
 #include <regex>
 #include <simdpp/simd.h>
 
-#define SPLASH_SHMDATA_THREADS 8
+#define SPLASH_SHMDATA_THREADS 16
 
 using namespace std;
 using namespace simdpp;
@@ -119,7 +119,7 @@ bool Image_Shmdata::initShmWriter(const oiio::ImageSpec& spec, const string& fil
 void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
     const char* type_description, void* user_data)
 {
-    Image_Shmdata* ctx = static_cast<Image_Shmdata*>(user_data);
+    Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
 
     STimer::timer << "image_shmdata " + ctx->_name;
 
@@ -259,9 +259,9 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         }
         else if (ctx->_is420)
         {
-            unsigned char* Y = (unsigned char*)data;
-            unsigned char* U = (unsigned char*)data + ctx->_width * ctx->_height;
-            unsigned char* V = (unsigned char*)data + ctx->_width * ctx->_height * 5 / 4;
+            const unsigned char* Y = (const unsigned char*)data;
+            const unsigned char* U = (const unsigned char*)data + ctx->_width * ctx->_height;
+            const unsigned char* V = (const unsigned char*)data + ctx->_width * ctx->_height * 5 / 4;
 
             char* pixels = (char*)(ctx->_readerBuffer).localpixels();
             vector<unsigned int> threadIds;
@@ -270,7 +270,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             {
                 threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
                     int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                    if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < 2 * ctx->_height / SPLASH_SHMDATA_THREADS)
+                    if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
                         lastLine = ctx->_height;
                     else
                         lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
@@ -303,26 +303,29 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 #else
             for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
             {
+                int width = ctx->_width;
+                int height = ctx->_height;
+
                 threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
                     int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                    if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < 2 * ctx->_height / SPLASH_SHMDATA_THREADS)
-                        lastLine = ctx->_height;
+                    if (height - height / SPLASH_SHMDATA_THREADS * (block + 1) < height / SPLASH_SHMDATA_THREADS)
+                        lastLine = height;
                     else
-                        lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+                        lastLine = height / SPLASH_SHMDATA_THREADS * (block + 1);
 
-                    for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y += 2)
-                        for (int x = 0; x + 7 < ctx->_width; x += 8)
+                    for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y += 2)
+                        for (int x = 0; x + 7 < width; x += 8)
                         {
                             int16x8 yValue[2];
                             int16x8 uValue;
                             int16x8 vValue;
                             uint8x16 loadBuf;
 
-                            load(loadBuf, &(U[(y / 2) * (ctx->_width / 2) + x / 2]));
+                            load_u(loadBuf, &(U[(y / 2) * (width / 2) + x / 2]));
                             uValue = to_int16x8(loadBuf);
                             uValue = zip_lo(uValue, uValue);
 
-                            load(loadBuf, &(V[(y / 2) * (ctx->_width / 2) + x / 2]));
+                            load_u(loadBuf, &(V[(y / 2) * (width / 2) + x / 2]));
                             vValue = to_int16x8(loadBuf);
                             vValue = zip_lo(vValue, vValue);
 
@@ -334,7 +337,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                             
                             for (int l = 0; l < 2; ++l)
                             {
-                                load(loadBuf, &(Y[(y + l) * ctx->_width + x]));
+                                load_u(loadBuf, &(Y[(y + l) * width + x]));
                                 yValue[l] = to_int16x8(loadBuf);
 
                                 red = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
@@ -360,10 +363,10 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                                 uBlu = blu;
                                 uBlu = unzip_lo(uBlu, uBlu);
 
-                                char dst[48];
+                                alignas(32) char dst[48];
                                 store_packed3(dst, uBlu, uGrn, uRed);
 
-                                memcpy(&(pixels[((y + l) * ctx->_width + x) * 3]), dst, 24*sizeof(unsigned char));
+                                memcpy(&(pixels[((y + l) * width + x) * 3]), dst, 24*sizeof(char));
                             }
                         }
                 }));
