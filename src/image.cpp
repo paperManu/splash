@@ -101,6 +101,7 @@ SerializedObjectPtr Image::serialize() const
     }
     
     SerializedObjectPtr obj = _serializedBuffers[_serializedBufferIndex];
+    int bufferIndex = _serializedBufferIndex;
     _serializedBufferIndex = (_serializedBufferIndex + 1) % 2;
 
     auto currentObjPtr = obj->data();
@@ -131,7 +132,7 @@ SerializedObjectPtr Image::serialize() const
     STimer::timer >> "serialize " + _name;
 
     _readMutex.unlock();
-    return _serializedBuffers[_serializedBufferIndex];
+    return _serializedBuffers[bufferIndex];
 }
 
 /*************/
