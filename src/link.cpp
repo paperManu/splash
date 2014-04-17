@@ -56,7 +56,7 @@ void Link::connectTo(const string name)
     try
     {
         // Set the high water mark to a low value for the buffer output
-        int hwm = 10000;
+        int hwm = 100;
         _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // Set the high water mark to a low value for the buffer output
@@ -174,7 +174,7 @@ void Link::handleInputMessages()
 {
     try
     {
-        int hwm = 10000;
+        int hwm = 100;
         _socketMessageIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());

@@ -33,7 +33,6 @@
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
 #define SPLASH_GL_DEBUG false
 #define SPLASH_SAMPLES 4
-#define SPLASH_MAX_THREAD 8
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
@@ -47,6 +46,7 @@
 #include <json/reader.h>
 
 #include "config.h"
+#include "threadpool.h"
 
 namespace Splash
 {
@@ -470,8 +470,13 @@ class BufferObject : public BaseObject
         void setSerializedObject(SerializedObjectPtr obj)
         {
             std::lock_guard<std::mutex> lock(_writeMutex);
-            _serializedObject.swap(obj);
+            _serializedObject = move(obj);
             _newSerializedObject = true;
+
+            // Deserialize it right away, in a separate thread
+            SThread::pool.enqueue([&]() {
+                deserialize();
+            });
         }
 
         /**

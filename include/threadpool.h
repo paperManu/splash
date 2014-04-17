@@ -36,7 +36,8 @@
 #include <condition_variable>
 
 #include "config.h"
-#include "coretypes.h"
+
+#define SPLASH_MAX_THREAD 8
 
 /*************/
 class ThreadPool;

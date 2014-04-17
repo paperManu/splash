@@ -361,7 +361,7 @@ void Gui::initGLV(int width, int height)
         fps = fps * 0.9 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.1;
         worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
         upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
-        upd = upd * 0.9 + STimer::timer["buffer object update"] * 0.001 * 0.1;
+        //upd = upd * 0.9 + STimer::timer["buffer object update"] * 0.001 * 0.1;
         cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
         win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
@@ -373,7 +373,7 @@ void Gui::initGLV(int width, int height)
         stream << "Framerate: " << setprecision(4) << fps << " fps\n";
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
-        stream << "Buffers deserialize: " << setprecision(4) << upd << " ms\n";
+        //stream << "Buffers deserialize: " << setprecision(4) << upd << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
@@ -382,7 +382,7 @@ void Gui::initGLV(int width, int height)
         return stream.str();
     });
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 8 + 8);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 7 + 8);
     _glvProfile.style(&_style);
 
     // Some help regarding keyboard shortcuts
