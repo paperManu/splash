@@ -13,7 +13,7 @@ Link::Link(RootObjectWeakPtr root, string name)
     {
         _rootObject = root;
         _name = name;
-        _context = make_shared<zmq::context_t>(1);
+        _context = make_shared<zmq::context_t>(2);
 
         _socketMessageOut = make_shared<zmq::socket_t>(*_context, ZMQ_PUB);
         _socketMessageIn = make_shared<zmq::socket_t>(*_context, ZMQ_SUB);
@@ -60,7 +60,7 @@ void Link::connectTo(const string name)
         _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // Set the high water mark to a low value for the buffer output
-        hwm = 2;
+        hwm = 10;
         _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // TODO: for now, all connections are through IPC.
@@ -82,6 +82,8 @@ bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
 {
     try
     {
+        unique_lock<mutex> lock(_bufferSendMutex);
+
         _otgBuffers.push_back(buffer);
 
         zmq::message_t msg(name.size() + 1);
@@ -105,7 +107,7 @@ bool Link::sendMessage(const string name, const string attribute, const vector<V
 {
     try
     {
-        unique_lock<mutex> lock(_sendMutex);
+        unique_lock<mutex> lock(_msgSendMutex);
 
         // First we send the name of the target
         zmq::message_t msg(name.size() + 1);
@@ -229,7 +231,7 @@ void Link::handleInputBuffers()
     try
     {
         // Set the high water mark to a low value for the buffer output
-        int hwm = 2;
+        int hwm = 10;
         _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         _socketBufferIn->bind((string("ipc:///tmp/splash_buf_") + _name).c_str());

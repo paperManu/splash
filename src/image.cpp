@@ -121,7 +121,7 @@ SerializedObjectPtr Image::serialize() const
     int stride = SPLASH_IMAGE_COPY_THREADS;
     for (int i = 0; i < stride - 1; ++i)
     {
-        threadIds.push_back(SThread::pool.enqueue([=, &imgPtr, &imgSize, &currentObjPtr]() {
+        threadIds.push_back(SThread::pool.enqueue([=]() {
             copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i);
         }));
     }
@@ -131,7 +131,7 @@ SerializedObjectPtr Image::serialize() const
     STimer::timer >> "serialize " + _name;
 
     _readMutex.unlock();
-    return obj;
+    return _serializedBuffers[_serializedBufferIndex];
 }
 
 /*************/
@@ -172,7 +172,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         int stride = SPLASH_IMAGE_COPY_THREADS;
         for (int i = 0; i < stride - 1; ++i)
         {
-            threadIds.push_back(SThread::pool.enqueue([=, &ptr, &imgSize, &currentObjPtr]() {
+            threadIds.push_back(SThread::pool.enqueue([=]() {
                 copy(currentObjPtr + imgSize / stride * i, currentObjPtr + imgSize / stride * (i + 1), ptr + imgSize / stride * i);
             }));
         }

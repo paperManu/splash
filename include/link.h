@@ -74,7 +74,8 @@ class Link
         RootObjectWeakPtr _rootObject;
         std::string _name;
         std::shared_ptr<zmq::context_t> _context;
-        std::mutex _sendMutex;
+        std::mutex _msgSendMutex;
+        std::mutex _bufferSendMutex;
 
         std::shared_ptr<zmq::socket_t> _socketBufferIn;
         std::shared_ptr<zmq::socket_t> _socketBufferOut;

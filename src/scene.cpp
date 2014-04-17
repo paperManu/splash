@@ -202,18 +202,6 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
 
-    // Update the buffer objects
-    //SThread::pool.enqueue([&]() {
-    //    STimer::timer << "buffer object update";
-    //    for (auto& obj : _objects)
-    //    {
-    //        BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(obj.second);
-    //        if (bufferObj.get() != nullptr)
-    //            bufferObj->deserialize();
-    //    }
-    //    STimer::timer >> "buffer object update";
-    //});
-
     // Update the windows
     STimer::timer << "windows";
     for (auto& obj : _objects)

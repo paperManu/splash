@@ -11,38 +11,38 @@
         {
             "name" : "first",
             "address" : "localhost",
-            "spawn" : 0,
+            "spawn" : 1,
             "display" : 0,
             "swapInterval" : 0
         },
         {
             "name" : "second",
             "address" : "localhost",
-            "spawn" : 0,
+            "spawn" : 1,
             "display" : 0,
             "swapInterval" : 0
         }
     ],
 
     "first" : {
-        //"cam1" : {
-        //    "type" : "camera",
-        //    "size" : [1920, 1200],
-        //    "eye" : [-2.0, 2.0, 0.3],
-        //    "target" : [0.0, 0.0, 0.5],
-        //    "blendWidth" : 0.05,
-        //    "shared" : 0
-        //},
-        //"cam2" : {
-        //    "type" : "camera",
-        //    "size" : [1920, 1200],
-        //    "eye" : [2.0, -2.0, 0.3],
-        //    "target" : [0.0, 0.0, 0.5],
-        //    "blendWidth" : 0.05,
-        //    "shared" : 0
-        //},
-        //"win1" : {"type" : "window", "fullscreen" : 0},
-        //"win2" : {"type" : "window", "fullscreen" : 1},
+        "cam1" : {
+            "type" : "camera",
+            "size" : [1920, 1200],
+            "eye" : [-2.0, 2.0, 0.3],
+            "target" : [0.0, 0.0, 0.5],
+            "blendWidth" : 0.05,
+            "shared" : 0
+        },
+        "cam2" : {
+            "type" : "camera",
+            "size" : [1920, 1200],
+            "eye" : [2.0, -2.0, 0.3],
+            "target" : [0.0, 0.0, 0.5],
+            "blendWidth" : 0.05,
+            "shared" : 0
+        },
+        "win1" : {"type" : "window", "fullscreen" : 0},
+        "win2" : {"type" : "window", "fullscreen" : 1},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
@@ -63,24 +63,24 @@
     },
 
     "second" : {
-        //"cam3" : {
-        //    "type" : "camera",
-        //    "size" : [1920, 1200],
-        //    "eye" : [-2.0, -2.0, 0.3],
-        //    "target" : [0.0, 0.0, 0.5],
-        //    "blendWidth" : 0.05,
-        //    "shared" : 0
-        //},
-        //"cam4" : {
-        //    "type" : "camera",
-        //    "size" : [1920, 1200],
-        //    "eye" : [2.0, 2.0, -0.5],
-        //    "target" : [0.0, 0.0, 0.5],
-        //    "blendWidth" : 0.05,
-        //    "shared" : 0
-        //},
-        //"win3" : {"type" : "window", "fullscreen" : 2},
-        //"win4" : {"type" : "window", "fullscreen" : 3},
+        "cam3" : {
+            "type" : "camera",
+            "size" : [1920, 1200],
+            "eye" : [-2.0, -2.0, 0.3],
+            "target" : [0.0, 0.0, 0.5],
+            "blendWidth" : 0.05,
+            "shared" : 0
+        },
+        "cam4" : {
+            "type" : "camera",
+            "size" : [1920, 1200],
+            "eye" : [2.0, 2.0, -0.5],
+            "target" : [0.0, 0.0, 0.5],
+            "blendWidth" : 0.05,
+            "shared" : 0
+        },
+        "win3" : {"type" : "window", "fullscreen" : 2},
+        "win4" : {"type" : "window", "fullscreen" : 3},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
