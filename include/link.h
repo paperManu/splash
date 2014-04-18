@@ -83,6 +83,7 @@ class Link
         std::shared_ptr<zmq::socket_t> _socketMessageOut;
 
         std::deque<SerializedObjectPtr> _otgBuffers;
+        std::mutex _otgMutex;
 
         std::thread _bufferInThread;
         std::thread _messageInThread;

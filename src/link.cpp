@@ -84,7 +84,9 @@ bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
     {
         unique_lock<mutex> lock(_bufferSendMutex);
 
+        _otgMutex.lock();
         _otgBuffers.push_back(buffer);
+        _otgMutex.unlock();
 
         zmq::message_t msg(name.size() + 1);
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
@@ -168,6 +170,7 @@ bool Link::sendMessage(const string name, const string attribute, const vector<V
 void Link::freeOlderBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
+    unique_lock<mutex> lock(ctx->_otgMutex);
     ctx->_otgBuffers.pop_front();
 }
 
