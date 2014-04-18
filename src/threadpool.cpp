@@ -87,18 +87,18 @@ void ThreadPool::waitAllThreads()
 }
 
 /*************/
-void ThreadPool::waitThreads(vector<unsigned int> list)
+void ThreadPool::waitThreads(vector<unsigned int>& list)
 {
     timespec nap;
     nap.tv_sec = 0;
-    nap.tv_nsec = 1e4;
+    nap.tv_nsec = 1e3;
 
     while (true)
     {
         nanosleep(&nap, NULL);
 
         queue_mutex.lock();
-        if (list.size() == 0 || workingThreads == 0)
+        if (list.size() == 0 || stop == true)
         {
             queue_mutex.unlock();
             break;
