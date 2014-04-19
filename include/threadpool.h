@@ -62,7 +62,7 @@ class ThreadPool
 
         template<class F> unsigned int enqueue(F f);
         void waitAllThreads();
-        void waitThreads(std::vector<unsigned int>&);
+        void waitThreads(std::vector<unsigned int>);
         unsigned int getPoolLength();
 
     private:

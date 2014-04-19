@@ -163,10 +163,6 @@ bool Window::render()
 		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glEnable(GL_FRAMEBUFFER_SRGB);
 
-    // Update the input textures if needed
-    for (auto& t : _inTextures)
-        t->update();
-
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);

@@ -296,6 +296,8 @@ void Texture::update()
         else if (spec.nchannels == 1 && spec.format == "uint16")
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
         
@@ -306,28 +308,43 @@ void Texture::update()
         {
             _img->lock();
 
-            vector<unsigned int> threadIds;
+            _pboCopyThreadIds.clear();
             int stride = SPLASH_TEXTURE_COPY_THREADS;
             int size = spec.width * spec.height * spec.pixel_bytes();
             for (int i = 0; i < stride - 1; ++i)
             {
-                threadIds.push_back(SThread::pool.enqueue([=]() {
+                _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
                     copy((char*)_img->data() + size / stride * i, (char*)_img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i);
                 }));
             }
-            copy((char*)_img->data() + size / stride * (stride - 1), (char*)_img->data() + size, (char*)pixels + size / stride * (stride - 1));
-            SThread::pool.waitThreads(threadIds);
-
-            _img->unlock();
-            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+            _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
+                copy((char*)_img->data() + size / stride * (stride - 1), (char*)_img->data() + size, (char*)pixels + size / stride * (stride - 1));
+            }));
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
     }
     _timestamp = _img->getTimestamp();
 
+}
+
+/*************/
+void Texture::flushPbo()
+{
+    if (_pboCopyThreadIds.size() != 0)
+    {
+        SThread::pool.waitThreads(_pboCopyThreadIds);
+        _pboCopyThreadIds.clear();
+
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+        _img->unlock();
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 }
 
 /*************/

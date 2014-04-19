@@ -107,6 +107,12 @@ class Texture : public BaseObject
         void enableFiltering() {_filtering = true;}
 
         /**
+         * Flush the PBO copy which may still be happening. Do this before
+         * closing the current context!
+         */
+        void flushPbo();
+
+        /**
          * Generate the mipmaps for the texture
          */
         void generateMipmap() const;
@@ -165,6 +171,7 @@ class Texture : public BaseObject
         oiio::ImageSpec _spec;
         GLuint _pbos[2];
         int _pboReadIndex {0};
+        std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
         bool _filtering {true};

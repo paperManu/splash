@@ -87,7 +87,7 @@ void ThreadPool::waitAllThreads()
 }
 
 /*************/
-void ThreadPool::waitThreads(vector<unsigned int>& list)
+void ThreadPool::waitThreads(vector<unsigned int> list)
 {
     timespec nap;
     nap.tv_sec = 0;

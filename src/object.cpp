@@ -65,7 +65,10 @@ mat4x4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     for (auto& t : _textures)
+    {
+        t->flushPbo();
         t->unlock();
+    }
 
     if (_blendMaps.size() != 0)
         _shader->deactivateBlending();
