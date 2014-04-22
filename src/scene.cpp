@@ -290,23 +290,6 @@ void Scene::render()
                 dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
 
-    // Saving event
-    if (_doSaveNow)
-    {
-        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-        Json::Value config = getConfigurationAsJson();
-        string configStr = config.toStyledString();
-        sendMessage("sceneConfig", {_name, configStr});
-        _doSaveNow = false;
-    }
-
-    // Compute blending event
-    if (_doComputeBlending)
-    {
-        computeBlendingMap();
-        _doComputeBlending = false;
-    }
-
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
 
@@ -324,6 +307,24 @@ void Scene::run()
             unique_lock<mutex> lock(_configureMutex);
             render();
         }
+
+        // Saving event
+        if (_doSaveNow)
+        {
+            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+            Json::Value config = getConfigurationAsJson();
+            string configStr = config.toStyledString();
+            sendMessage("sceneConfig", {_name, configStr});
+            _doSaveNow = false;
+        }
+        
+        // Compute blending event
+        if (_doComputeBlending)
+        {
+            computeBlendingMap();
+            _doComputeBlending = false;
+        }
+
         STimer::timer >> 1e3 >>  "sceneLoop";
     }
 }
