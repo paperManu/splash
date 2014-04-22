@@ -172,9 +172,12 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
         float distX = (float)std::min(p.x(), img.spec().width - 1 - p.x()) / (float)img.spec().width;
         float distY = (float)std::min(p.y(), img.spec().height - 1 - p.y()) / (float)img.spec().height;
+        
         if (_blendWidth > 0.f)
         {
-            int blendValue = (int)std::min(256.f, std::min(distX, distY) * 256.f / _blendWidth);
+            // Add some smoothness to the transition
+            float smoothDist = smoothstep(0.f, 1.f, std::min(distX, distY) / _blendWidth) * 256.f;
+            int blendValue = (int)std::min(256.f, smoothDist);
             imageMap[y * mapSpec.width + x] += blendValue; // One more camera displaying this pixel
         }
         else

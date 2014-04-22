@@ -118,6 +118,7 @@ struct ShaderSources
                     float distX = min(screenPos.x, 1.f - screenPos.x);
                     float distY = min(screenPos.y, 1.f - screenPos.y);
                     float dist = min(1.f, min(distX, distY) / _blendWidth);
+                    dist = smoothstep(0.f, 1.f, dist);
                     blendFactor = 256.f * dist / blendFactor;
                 }
                 else
