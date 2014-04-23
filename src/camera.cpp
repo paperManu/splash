@@ -542,6 +542,8 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 
     _calibrationPoints[_selectedCalibrationPoint].screen.x += dx / _width;
     _calibrationPoints[_selectedCalibrationPoint].screen.y += dy / _height;
+
+    doCalibration();
 }
 
 /*************/
@@ -570,6 +572,9 @@ bool Camera::setCalibrationPoint(std::vector<Value> screenPoint)
 
     _calibrationPoints[_selectedCalibrationPoint].screen = glm::vec2(screenPoint[0].asFloat(), screenPoint[1].asFloat());
     _calibrationPoints[_selectedCalibrationPoint].isSet = true;
+
+    doCalibration();
+
     return true;
 }
 
