@@ -5,7 +5,6 @@
 #include <limits>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
 #define SPLASH_WORLDMARKER_SCALE 0.015
@@ -204,7 +203,7 @@ bool Camera::doCalibration()
     }
 
     gsl_multimin_function calibrationFunc;
-    calibrationFunc.n = 3;
+    calibrationFunc.n = 12;
     calibrationFunc.f = &Camera::cameraCalibration_f;
     GslParam params;
     params.context = this;
@@ -213,61 +212,61 @@ bool Camera::doCalibration()
     const gsl_multimin_fminimizer_type* minimizerType;
     gsl_multimin_fminimizer* minimizer;
 
-    gsl_vector* x = gsl_vector_alloc(3);
-    gsl_vector* step = gsl_vector_alloc(3);
-    gsl_vector_set(step, 0, 2.0);
-    gsl_vector_set(step, 1, 5.0);
-    gsl_vector_set(step, 2, 5.0);
+    gsl_vector* x = gsl_vector_alloc(12);
+    gsl_vector* step = gsl_vector_alloc(12);
+    gsl_vector_set(step, 0, 5.0);
+    gsl_vector_set(step, 1, 0.1);
+    gsl_vector_set(step, 2, 0.1);
+    for (int i = 3; i < 12; ++i)
+        gsl_vector_set(step, i, 0.5);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
     minimizerType = gsl_multimin_fminimizer_nmsimplex2;
 
     // Starting with various values of the FOV
-    double initialFov = _fov;
-    double minValue = numeric_limits<double>::max();
-    for (double s = -1.0; s < 6.0; ++s) // Vary the vertical shift
-    for (double t = 1.0; t < 4.0; ++t) // Vary the horizontal shift
-    for (double f = 0.0; f < 3.0; ++f) // Vary the FOV
+    minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 12);
+
+    gsl_vector_set(x, 0, 35.0);
+    gsl_vector_set(x, 1, 0.5);
+    gsl_vector_set(x, 2, 0.5);
+    for (int i = 0; i < 3; ++i)
     {
-        minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 3);
-
-        gsl_vector_set(x, 0, 10.0 + f * 20.0);
-        gsl_vector_set(x, 1, (double)_width * t * 0.2);
-        gsl_vector_set(x, 2, (double)_height * s * 0.2);
-        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
-
-        size_t iter = 0;
-        int status = GSL_CONTINUE;
-        while(status == GSL_CONTINUE && iter < 100)
-        {
-            iter++;
-            status = gsl_multimin_fminimizer_iterate(minimizer);
-            if (status)
-            {
-                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
-                break;
-            }
-
-            status = gsl_multimin_test_size(minimizer->size, 1e-2);
-        }
-
-        if (gsl_multimin_fminimizer_minimum(minimizer) < minValue)
-        {
-            minValue = gsl_multimin_fminimizer_minimum(minimizer);
-            // We call the calibration function one last time, to set the extrinsic parameters
-            params.setExtrinsic = true;
-            cameraCalibration_f(minimizer->x, (void*)&params);
-
-            _fov = gsl_vector_get(minimizer->x, 0);
-            _cx = gsl_vector_get(minimizer->x, 1) / _width;
-            _cy = (_height - gsl_vector_get(minimizer->x, 2)) / _height;
-
-            params.setExtrinsic = false; // For next iterations
-        }
-
-        gsl_multimin_fminimizer_free(minimizer);
+        gsl_vector_set(x, i + 3, _eye[i]);
+        gsl_vector_set(x, i + 6, _target[i]);
+        gsl_vector_set(x, i + 9, _up[i]);
     }
+
+    gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+    size_t iter = 0;
+    int status = GSL_CONTINUE;
+    double minValue = numeric_limits<double>::max();
+    while(status == GSL_CONTINUE && iter < 10000 && minValue > 1.0)
+    {
+        iter++;
+        status = gsl_multimin_fminimizer_iterate(minimizer);
+        if (status)
+        {
+            SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+            break;
+        }
+
+        status = gsl_multimin_test_size(minimizer->size, 1e-6);
+        minValue = gsl_multimin_fminimizer_minimum(minimizer);
+    }
+
+    // We call the calibration function one last time, to set the extrinsic parameters
+    params.setExtrinsic = true;
+    cameraCalibration_f(minimizer->x, (void*)&params);
+
+    _fov = gsl_vector_get(minimizer->x, 0);
+    _cx = gsl_vector_get(minimizer->x, 1);
+    _cy = gsl_vector_get(minimizer->x, 2);
+
+    params.setExtrinsic = false; // For next iterations
+
+    gsl_multimin_fminimizer_free(minimizer);
 
     gsl_vector_free(x);
     gsl_vector_free(step);
@@ -659,54 +658,45 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     double fov = gsl_vector_get(v, 0);
     double cx = gsl_vector_get(v, 1);
     double cy = gsl_vector_get(v, 2);
+    dvec3 eye;
+    dvec3 target;
+    dvec3 up;
+    for (int i = 0; i < 3; ++i)
+    {
+        eye[i] = gsl_vector_get(v, i + 3);
+        target[i] = gsl_vector_get(v, i + 6);
+        up[i] = gsl_vector_get(v, i + 9);
+    }
 
-    vector<cv::Point3f> objectPoints;
-    vector<cv::Point2f> imagePoints;
-
+    vector<dvec3> objectPoints;
+    vector<dvec3> imagePoints;
     for (auto& point : camera->_calibrationPoints)
     {
         if (!point.isSet)
             continue;
 
-        objectPoints.push_back(cv::Point3f(point.world.x, point.world.y, point.world.z));
-        imagePoints.push_back(cv::Point2f((point.screen.x + 1.f) / 2.f * camera->_width, (-point.screen.y + 1.f) / 2.f * camera->_height));
+        objectPoints.emplace_back(dvec3(point.world.x, point.world.y, point.world.z));
+        imagePoints.emplace_back(dvec3((point.screen.x + 1.0) / 2.0 * camera->_width, (point.screen.y + 1.0) / 2.0 * camera->_height, 0.0));
     }
 
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << cx << " " << camera->_height - cy << Log::endl;
 #endif
-    double fovPix = (camera->_height / 2.0) / tan(fov * M_PI / 360.0); // _fov is indeed fovY
-    cv::Mat cameraMatrix = (cv::Mat_<double>(3, 3) << fovPix, 0.0, cx,
-                                                      0.0, fovPix, cy,
-                                                      0.0, 0.0, 1.0);
 
-    mat4 lookM = lookAt(camera->_eye, camera->_target, camera->_up);
-    lookM = inverse(lookM);
-    cv::Mat distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
-    cv::Mat rvec = (cv::Mat_<double>(3, 3) << lookM[0][0], lookM[1][0], lookM[2][0],
-                                              lookM[0][1], lookM[1][1], lookM[2][1],
-                                              lookM[0][2], lookM[1][2], lookM[2][2]);
-    cv::Mat tvec = (cv::Mat_<double>(3, 1) << camera->_eye[0], camera->_eye[1], camera->_eye[2]);
-    vector<int> inliers;
+    dmat4 lookM = lookAt(eye, target, up);
+    dmat4 projM = dmat4(camera->computeProjectionMatrix(fov, cx, cy));
+    dmat4 modelM(1.0);
+    dvec4 viewport(0, 0, camera->_width, camera->_height);
 
-    try
-    {
-        cv::solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, true, 100, (int)camera->_width / 100, 100, inliers, cv::EPNP);
-    }
-    catch (cv::Exception& e)
-    {
-        SLog::log << "Camera::" << __FUNCTION__ << " - An exception was caught while running calibration" << Log::endl;
-        return false;
-    }
-
-    // Compute the projection error with the new parameters
-    vector<cv::Point2f> projectedPoints;
-    cv::projectPoints(objectPoints, rvec, tvec, cameraMatrix, cv::Mat(), projectedPoints);
+    // Project all the object points, and measure the distance between them and the image points
     double summedDistance = 0.0;
     for (int i = 0; i < imagePoints.size(); ++i)
     {
-        cv::Point2f vec = imagePoints[i] - projectedPoints[i];
-        summedDistance += pow(cv::norm(vec), 2.0);
+        dvec3 projectedPoint;
+        projectedPoint = project(objectPoints[i], lookM, projM, viewport);
+        projectedPoint.z = 0.0;
+
+        summedDistance += pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
     }
     summedDistance /= imagePoints.size();
 
@@ -716,57 +706,37 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
     if (setExtrinsic)
     {
-        // Get a usable rotation matrix
-        cv::Mat r;
-        cv::Rodrigues(rvec, r);
-
-        mat4 trans(1.f);
-        trans[3][0] = tvec.at<double>(0);
-        trans[3][1] = tvec.at<double>(1);
-        trans[3][2] = tvec.at<double>(2);
-
-        mat4 rot = mat4(r.at<double>(0, 0), r.at<double>(1, 0), r.at<double>(2, 0), 0.f, 
-                        r.at<double>(0, 1), r.at<double>(1, 1), r.at<double>(2, 1), 0.f, 
-                        r.at<double>(0, 2), r.at<double>(1, 2), r.at<double>(2, 2), 0.f, 
-                        0.f, 0.f, 0.f, 1.f); 
-
-        mat4 viewMatrix = trans * rot;
-        // We have the object pose in the camera base. We want the camera pose in the world base
-        viewMatrix = inverse(viewMatrix);
-
-        vec4 origin(0.f, 0.f, 0.f, 1.f);
-        origin = viewMatrix * origin;
-        camera->_eye = vec3(origin.x, origin.y, origin.z);
-
-        vec4 direction(0.f, 0.f, 1.f, 1.f);
-        direction = viewMatrix * direction;
-        camera->_target = vec3(direction.x, direction.y, direction.z);
-
-        vec4 up(0.f, -1.f, 0.f, 0.f);
-        up = viewMatrix * up;
-        camera->_up = vec3(up.x, up.y, up.z);
+        camera->_eye = eye;
+        camera->_target = target;
+        camera->_up = up;
     }
 
     return summedDistance;
 }
 
 /*************/
-mat4x4 Camera::computeProjectionMatrix()
+mat4 Camera::computeProjectionMatrix()
+{
+    return computeProjectionMatrix(_fov, _cx, _cy);
+}
+
+/*************/
+mat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 {
     float l, r, t, b, n, f;
     // Near and far are obvious
     n = _near;
     f = _far;
     // Up and down
-    float tTemp = n * tan(_fov * M_PI / 360.0);
+    float tTemp = n * tan(fov * M_PI / 360.0);
     float bTemp = -tTemp;
-    t = tTemp - (_cy - 0.5) * (tTemp - bTemp);
-    b = bTemp - (_cy - 0.5) * (tTemp - bTemp);
+    t = tTemp - (cy - 0.5) * (tTemp - bTemp);
+    b = bTemp - (cy - 0.5) * (tTemp - bTemp);
     // Left and right
     float rTemp = tTemp * _width / _height;
     float lTemp = bTemp * _width / _height;
-    r = rTemp - (_cx - 0.5) * (rTemp - lTemp);
-    l = lTemp - (_cx - 0.5) * (rTemp - lTemp);
+    r = rTemp - (cx - 0.5) * (rTemp - lTemp);
+    l = lTemp - (cx - 0.5) * (rTemp - lTemp);
 
     return frustum(l, r, b, t, n, f);
 }

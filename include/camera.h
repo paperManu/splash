@@ -246,7 +246,8 @@ class Camera : public BaseObject
         /**
          * Get the frustum matrix from the current camera parameters
          */
-        glm::mat4x4 computeProjectionMatrix();
+        glm::mat4 computeProjectionMatrix();
+        glm::mat4 computeProjectionMatrix(float fov, float cx, float cy);
 
         /**
          * Get the view projection matrix from the camera parameters

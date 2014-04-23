@@ -86,12 +86,6 @@ if test "x${have_shmdata}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing shmdata])
 fi
 
-# OpenCV, used for projector calibration
-PKG_CHECK_MODULES([OPENCV], [opencv >= 2.3])
-if test "x${have_opencv}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing opencv])
-fi
-
 # GNU Scientific Library, also used for calibration
 PKG_CHECK_MODULES([GSL], [gsl])
 if test "x${have_gsl}" = "xfalse" ; then
