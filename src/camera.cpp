@@ -205,9 +205,7 @@ bool Camera::doCalibration()
     gsl_multimin_function calibrationFunc;
     calibrationFunc.n = 12;
     calibrationFunc.f = &Camera::cameraCalibration_f;
-    GslParam params;
-    params.context = this;
-    calibrationFunc.params = (void*)&params;
+    calibrationFunc.params = (void*)this;
 
     const gsl_multimin_fminimizer_type* minimizerType;
     gsl_multimin_fminimizer* minimizer;
@@ -227,9 +225,9 @@ bool Camera::doCalibration()
     // Starting with various values of the FOV
     minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 12);
 
-    gsl_vector_set(x, 0, 35.0);
-    gsl_vector_set(x, 1, 0.5);
-    gsl_vector_set(x, 2, 0.5);
+    gsl_vector_set(x, 0, _fov);
+    gsl_vector_set(x, 1, _cx);
+    gsl_vector_set(x, 2, _cy);
     for (int i = 0; i < 3; ++i)
     {
         gsl_vector_set(x, i + 3, _eye[i]);
@@ -257,14 +255,16 @@ bool Camera::doCalibration()
     }
 
     // We call the calibration function one last time, to set the extrinsic parameters
-    params.setExtrinsic = true;
-    cameraCalibration_f(minimizer->x, (void*)&params);
+    for (int i = 0; i < 3; ++i)
+    {
+        _eye[i] = gsl_vector_get(minimizer->x, i + 3);
+        _target[i] = gsl_vector_get(minimizer->x, i + 6);
+        _up[i] = gsl_vector_get(minimizer->x, i + 9);
+    }
 
     _fov = gsl_vector_get(minimizer->x, 0);
     _cx = gsl_vector_get(minimizer->x, 1);
     _cy = gsl_vector_get(minimizer->x, 2);
-
-    params.setExtrinsic = false; // For next iterations
 
     gsl_multimin_fminimizer_free(minimizer);
 
@@ -656,9 +656,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     if (params == NULL)
         return 0.0;
 
-    GslParam* p = (GslParam*)params;
-    Camera* camera = p->context;
-    bool setExtrinsic = p->setExtrinsic;
+    Camera* camera = (Camera*)params;
 
     double fov = gsl_vector_get(v, 0);
     double cx = gsl_vector_get(v, 1);
@@ -708,13 +706,6 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
 #endif
-
-    if (setExtrinsic)
-    {
-        camera->_eye = eye;
-        camera->_target = target;
-        camera->_up = up;
-    }
 
     return summedDistance;
 }
