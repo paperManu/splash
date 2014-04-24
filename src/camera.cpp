@@ -261,6 +261,8 @@ bool Camera::doCalibration()
         _target[i] = gsl_vector_get(minimizer->x, i + 6);
         _up[i] = gsl_vector_get(minimizer->x, i + 9);
     }
+    _target = normalize(_target);
+    _up = normalize(_up);
 
     _fov = gsl_vector_get(minimizer->x, 0);
     _cx = gsl_vector_get(minimizer->x, 1);
@@ -670,6 +672,8 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         target[i] = gsl_vector_get(v, i + 6);
         up[i] = gsl_vector_get(v, i + 9);
     }
+    target = normalize(target);
+    up = normalize(up);
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;

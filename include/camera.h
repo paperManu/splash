@@ -234,12 +234,6 @@ class Camera : public BaseObject
         std::vector<CalibrationPoint> _calibrationPoints;
         int _selectedCalibrationPoint {-1};
         
-        // Type used by GSL for calibration
-        struct GslParam
-        {
-            Camera* context;
-            bool setExtrinsic {false};
-        };
         // Function used for the calibration (camera parameters optimization)
         static double cameraCalibration_f(const gsl_vector* v, void* params);
 
