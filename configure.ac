@@ -5,7 +5,7 @@ AC_PREREQ(2.68)
 AC_INIT(SPLASH, 0.1.0, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([include/config.h])
 
 AC_SUBST([LIBSPLASH_SO_VERSION], [0:1:0])
@@ -97,6 +97,13 @@ PKG_CHECK_MODULES([ZMQ], [libzmq > 3.0])
 if test "x${have_zmq}" = "xfalse" ; then
     AC_MSG_ERROR([Missing libzmq])
 fi
+
+# Check for Markdown to generate documentation
+AC_CHECK_PROGS([MARKDOWN], [markdown])
+if test "x$MARKDOWN" = "xtrue" ; then
+    AC_MSG_WARN([Markdown was not found - README.md will not be converted to HTML])
+fi
+AM_CONDITIONAL([HAVE_MARKDOWN], [test -n "$MARKDOWN"])
 
 AC_CONFIG_FILES([
 	Makefile

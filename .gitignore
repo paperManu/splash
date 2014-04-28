@@ -5,6 +5,7 @@
 *.la
 *.libs
 *.deps
+*.html
 aclocal.m4
 Makefile
 Makefile.in
