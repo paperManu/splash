@@ -57,32 +57,36 @@ Splash has currently only been compiled and tested on Ubuntu (version 13.10 and 
 
 Here are some step by step commands to install everything on Ubuntu 14.04 LTS:
 
-    - sudo apt-add-repository ppa:irie/blender
-    - sudo apt-add-repository ppa:sat-metalab/metalab
-    - sudo apt-get update
-    - sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
-    - sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev
-    - git clone git://github.com:glfw/glfw.git
-    - cd glfw && git checkout 3.0.4 && mkdir build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON .. && make && sudo make install
-    - cd ../..
-    - svn checkout http://openmesh.org/svnrepo/OpenMesh/tags/OpenMesh-3.0
-    - cd OpenMesh-3.0 && mkdir build && cd build
-    - cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_APPS:BOOL=false .. && make && sudo make install
-    - cd ../..
+    sudo apt-add-repository ppa:irie/blender
+    sudo apt-add-repository ppa:sat-metalab/metalab
+    sudo apt-get update
+    sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
+    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev
+    git clone git://github.com:glfw/glfw.git
+    cd glfw && git checkout 3.0.4 && mkdir build && cd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON .. && make && sudo make install
+    cd ../..
+    svn checkout http://openmesh.org/svnrepo/OpenMesh/tags/OpenMesh-3.0
+    cd OpenMesh-3.0 && mkdir build && cd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_APPS:BOOL=false .. && make && sudo make install
+    cd ../..
+    sudo ldconfig
 
 And you are done with dependencies
 
 ### Compilation and installation
 Now some step by step commands to compile and install Splash:
 
-    - git clone git://github.com/paperManu/splash
-    - cd splash
-    - git checkout develop
-    - git submodule init && git submodule update
-    - ./autogen.sh && ./configure
-    - make && sudo make install
+    git clone git://github.com/paperManu/splash
+    cd splash
+    git checkout develop
+    git submodule init && git submodule update
+    ./autogen.sh && ./configure
+    make && sudo make install
 
+You can now try launching Splash:
+
+    splash --help
 
 Software architecture
 ---------------------

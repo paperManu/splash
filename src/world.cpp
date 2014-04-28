@@ -485,12 +485,12 @@ bool World::loadConfig(string filename)
 void World::parseArguments(int argc, char** argv)
 {
     int idx = 0;
+    string filename {""};
     while (idx < argc)
     {
         if ((string(argv[idx]) == "-o" || string(argv[idx]) == "--open") && idx + 1 < argc)
         {
-            string filename = string(argv[idx + 1]);
-            _status &= loadConfig(filename);
+            filename = string(argv[idx + 1]);
             idx += 2;
         }
         else if (string(argv[idx]) == "-d")
@@ -505,9 +505,23 @@ void World::parseArguments(int argc, char** argv)
             SLog::log.setVerbosity(Log::NONE);
             idx++;
         }
+        else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
+        {
+            cout << "Splash - a modular multi-output video mapper" << endl;
+            cout << "Basic usage: splash -o [config.json]" << endl;
+            cout << "Options:" << endl;
+            cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
+            cout << "\t-d : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
+            cout << "\t-s : disable all messages" << endl;
+            exit(0);
+            idx++;
+        }
         else
             idx++;
     }
+
+    if (filename != "")
+        _status &= loadConfig(filename);
 }
 
 /*************/
