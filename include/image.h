@@ -86,7 +86,7 @@ class Image : public BufferObject
         /**
          * Lock the image, useful while reading. Use with care
          */
-        void lock() {_readMutex.lock(); _writeMutex.unlock();}
+        void lock() {_readMutex.lock(); _writeMutex.lock();}
         void unlock() {_readMutex.unlock(); _writeMutex.unlock();}
 
         /**
