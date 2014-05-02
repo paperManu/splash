@@ -53,24 +53,17 @@ A few more libraries are used as submodules in the git repository:
 - [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing.
 
 ### Dependencies installation
-Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. Most of the needed libraries are already packaged for these distributions, with the exception of OpenMesh. Also, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added, and GLFW 3.x is not yet packaged.
+Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenMesh, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
 Here are some step by step commands to install everything on Ubuntu 14.04 LTS:
 
     sudo apt-add-repository ppa:irie/blender
     sudo apt-add-repository ppa:sat-metalab/metalab
+    sudo apt-add-repository ppa:keithw/glfw3
     sudo apt-get update
     sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
     sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev
-    git clone git://github.com:glfw/glfw.git
-    cd glfw && git checkout 3.0.4 && mkdir build && cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON .. && make && sudo make install
-    cd ../..
-    svn checkout http://openmesh.org/svnrepo/OpenMesh/tags/OpenMesh-3.0
-    cd OpenMesh-3.0 && mkdir build && cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_APPS:BOOL=false .. && make && sudo make install
-    cd ../..
-    sudo ldconfig
+    sudo apt-get install libglfw3-dev libopenmesh-dev
 
 And you are done with dependencies
 

@@ -18,7 +18,7 @@ AC_PROG_CC_C_O
 
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
-export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
+#export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 
 # Check for header files
 AC_HEADER_STDC
@@ -66,12 +66,6 @@ fi
 PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
 if test "x${have_openmesh}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing openmesh])
-fi
-
-# OpenImageIO
-PKG_CHECK_MODULES([OPENIMAGEIO], [openimageio])
-if test "x${have_openimageio}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing openimageio])
 fi
 
 # JSoncpp
