@@ -52,6 +52,7 @@ AC_LANG_PUSH([C++])
 AC_CHECK_HEADER([glm/glm.hpp],
 	[HAVE_GLM=true],
 	[HAVE_GLM=false])
+AC_LANG_POP
 if test "$HAVE_GLM" = "false" ; then
 	AC_MSG_ERROR([Missing glm])
 fi
@@ -60,6 +61,16 @@ fi
 PKG_CHECK_MODULES([GLEW], [glew])
 if test "x${have_glew}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing GLEW])
+fi
+
+# OpenImageIO
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADER([OpenImageIO/imageio.h],
+    [HAVE_OIIO=true],
+    [HAVE_OIIO=false])
+AC_LANG_POP
+if test "$HAVE_OIIO" = "false" ; then
+    AC_MSG_ERROR([Missing OpenImageIO])
 fi
 
 # OpenMesh
