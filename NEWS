@@ -1,0 +1,24 @@
+Slash release notes
+===================
+
+Splash 0.1.2 (2014-05-02)
+-------------------------
+New features:
+* Overall performance improvements
+* Calibration is now done in realtime
+* Removed dependency to OpenCV
+
+Bug fixed:
+* Fixed a random crash happening roughly once a day
+* Fixed alignment issues in SSE YUV to RGB conversion
+* Fixed a bug when two video sources where configured
+
+New Documentation:
+* Added a first documentation (README.md)
+
+Splash 0.1.0 (2014-04-06)
+-------------------------
+First release of Splash
+
+New features:
+* Can be used for real
