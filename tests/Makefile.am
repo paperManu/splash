@@ -7,6 +7,7 @@ AM_CPPFLAGS = \
     -DGLV_GLFW
 
 AM_LDFLAGS = \
+	-lOpenImageIO \
     $(GLFW_LIBS) \
 	$(GL_LIBS) \
     $(GLEW_LIBS) \
@@ -17,6 +18,7 @@ AM_LDFLAGS = \
     $(SHMDATA_LIBS) \
 	$(top_srcdir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
 
+if HAVE_TESTS
 check_PROGRAMS = \
     check_image \
 	check_mesh \
@@ -38,3 +40,4 @@ check_world_SOURCES = check_world.cpp
 check_gui_SOURCES = check_gui.cpp
 
 TESTS = $(check_PROGRAMS)
+endif

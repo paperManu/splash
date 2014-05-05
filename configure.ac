@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.1.0, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.1.3, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:1:0])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:1:3])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.1])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.1"], [API version])
 
@@ -109,6 +109,13 @@ if test "x$MARKDOWN" = "xtrue" ; then
     AC_MSG_WARN([Markdown was not found - README.md will not be converted to HTML])
 fi
 AM_CONDITIONAL([HAVE_MARKDOWN], [test -n "$MARKDOWN"])
+
+# Some options
+AC_ARG_WITH([tests],
+    AS_HELP_STRING([--with-tests], [If enabled, all tests are enabled]),
+    [],
+    [with_tests=no])
+AM_CONDITIONAL(HAVE_TESTS, test "x$with_tests" != "xno")
 
 AC_CONFIG_FILES([
 	Makefile

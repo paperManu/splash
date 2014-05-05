@@ -4,7 +4,7 @@ SUBDIRS = src \
 		  tests
 
 if HAVE_MARKDOWN
-dist_man_MANS = $(top_builddir)
+dist_man_MANS = README.md
 $(top_builddir): markdown.stamp
 
 markdown.stamp:
