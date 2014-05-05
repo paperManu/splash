@@ -5,3 +5,10 @@ datas_DATA = \
 	color_map.png \
 	sphere.obj \
 	splash.json
+
+EXTRA_DIST = \
+	3d_marker.obj \
+	2d_marker.obj \
+	color_map.png \
+	sphere.obj \
+	splash.json

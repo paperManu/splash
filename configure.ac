@@ -110,6 +110,13 @@ if test "x$MARKDOWN" = "xtrue" ; then
 fi
 AM_CONDITIONAL([HAVE_MARKDOWN], [test -n "$MARKDOWN"])
 
+# Some options
+AC_ARG_WITH([tests],
+    AS_HELP_STRING([--with-tests], [If enabled, all tests are enabled]),
+    [],
+    [with_tests=no])
+AM_CONDITIONAL(HAVE_TESTS, test "x$with_tests" != "xno")
+
 AC_CONFIG_FILES([
 	Makefile
 	src/Makefile
