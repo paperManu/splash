@@ -1,0 +1,9 @@
+[submodule "external/GLV"]
+	path = external/GLV
+	url = https://github.com/paperManu/GLV.git
+[submodule "external/bandit"]
+	path = external/bandit
+	url = https://github.com/joakimkarlsson/bandit.git
+[submodule "external/libsimdpp"]
+	path = external/libsimdpp
+	url = https://github.com/p12tic/libsimdpp.git
