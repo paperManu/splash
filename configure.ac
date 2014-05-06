@@ -86,7 +86,7 @@ if test "x${have_jsoncpp}" = "xfalse" ; then
 fi
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-0.8 shmdata-any-0.8])
+PKG_CHECK_MODULES([SHMDATA], [shmdata-any-0.8])
 if test "x${have_shmdata}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing shmdata])
 fi
