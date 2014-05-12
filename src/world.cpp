@@ -63,20 +63,15 @@ void World::run()
                     }
                     else
                         return; // if not, exit this thread
-
             }));
         }
         SThread::pool.waitThreads(threadIds);
         STimer::timer >> "upload";
 
-        // Send (not too often) current timings to all Scenes, for display purpose
-        if (frameIndice == 0)
-        {
-            auto durationMap = STimer::timer.getDurationMap();
-            for (auto& d : durationMap)
-                _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
-        }
-        frameIndice = (frameIndice + 1) % 10;
+        // Send current timings to all Scenes, for display purpose
+        auto durationMap = STimer::timer.getDurationMap();
+        for (auto& d : durationMap)
+            _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
         if (_doComputeBlending)
         {

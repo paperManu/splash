@@ -121,6 +121,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 {
     Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
 
+    STimer::timer.sinceLastSeen("image_shmdata_period " + ctx->_name);
     STimer::timer << "image_shmdata " + ctx->_name;
 
     string dataType(type_description);
