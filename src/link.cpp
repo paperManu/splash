@@ -83,6 +83,8 @@ bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
     try
     {
         unique_lock<mutex> lock(_bufferSendMutex);
+        if (!buffer->_mutex.try_lock())
+            return false;
 
         _otgMutex.lock();
         _otgBuffers.push_back(buffer);
@@ -171,6 +173,7 @@ void Link::freeOlderBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
     unique_lock<mutex> lock(ctx->_otgMutex);
+    ctx->_otgBuffers[0]->_mutex.unlock();
     ctx->_otgBuffers.pop_front();
 }
 
