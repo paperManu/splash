@@ -188,6 +188,15 @@ void Scene::render()
     bool isError {false};
     vector<unsigned int> threadIds;
 
+    // Swap all buffers at once
+    STimer::timer << "swap";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            threadIds.push_back(SThread::pool.enqueue([&]() {
+                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+            }));
+    _status = !isError;
+
     // Update the cameras
     STimer::timer << "cameras";
     for (auto& obj : _objects)
@@ -202,6 +211,10 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
 
+    // Wait for buffer update and swap threads
+    SThread::pool.waitThreads(threadIds);
+    STimer::timer >> "swap";
+
     // Update the windows
     STimer::timer << "windows";
     for (auto& obj : _objects)
@@ -209,14 +222,6 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Window>(obj.second)->render();
     STimer::timer >> "windows";
 
-    // Swap all buffers at once
-    STimer::timer << "swap";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
-                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-            }));
-    _status = !isError;
 
     // Update the user events
     glfwPollEvents();
@@ -289,11 +294,6 @@ void Scene::render()
             if (obj.second->getType() == "gui")
                 dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
-
-    // Wait for buffer update and swap threads
-    SThread::pool.waitThreads(threadIds);
-
-    STimer::timer >> "swap";
 }
 
 /*************/
