@@ -223,6 +223,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 
     if (ctx->_width != 0 && ctx->_height != 0 && ctx->_bpp != 0 && ctx->_channels != 0)
     {
+        lock_guard<mutex> lock(ctx->_writeMutex);
+
         // Check if we need to resize the reader buffer
         oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();
         if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height || bufSpec.nchannels != ctx->_channels)
@@ -380,7 +382,6 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             return;
         }
 
-        lock_guard<mutex> lock(ctx->_writeMutex);
         ctx->_bufferImage.swap(ctx->_readerBuffer);
         ctx->_imageUpdated = true;
         ctx->updateTimestamp();

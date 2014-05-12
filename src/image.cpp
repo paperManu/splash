@@ -65,7 +65,7 @@ oiio::ImageSpec Image::getSpec() const
 /*************/
 void Image::set(const oiio::ImageBuf& img)
 {
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<mutex> lockRead(_readMutex);
     _image.copy(img);
 }
 
@@ -83,7 +83,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 /*************/
 SerializedObjectPtr Image::serialize() const
 {
-    _readMutex.lock();
+    lock_guard<mutex> lock(_readMutex);
 
     STimer::timer << "serialize " + _name;
 
@@ -93,16 +93,17 @@ SerializedObjectPtr Image::serialize() const
     int imgSize = _image.spec().pixel_bytes() * _image.spec().width * _image.spec().height;
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
-    if (_serializedBuffers[0].get() == nullptr || _serializedBuffers[1].get() == nullptr
-        || _serializedBuffers[0]->size() != totalSize || _serializedBuffers[1]->size() != totalSize)
+    if (_serializedBuffers[0].get() == nullptr || _serializedBuffers[0]->size() != totalSize)
     {
         _serializedBuffers[0] = make_shared<SerializedObject>(totalSize);
         _serializedBuffers[1] = make_shared<SerializedObject>(totalSize);
+        _serializedBuffers[2] = make_shared<SerializedObject>(totalSize);
     }
     
     SerializedObjectPtr obj = _serializedBuffers[_serializedBufferIndex];
+    lock_guard<mutex> lockObject(obj->_mutex);
     int bufferIndex = _serializedBufferIndex;
-    _serializedBufferIndex = (_serializedBufferIndex + 1) % 2;
+    _serializedBufferIndex = (_serializedBufferIndex + 1) % 3;
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrChar);
@@ -131,7 +132,6 @@ SerializedObjectPtr Image::serialize() const
 
     STimer::timer >> "serialize " + _name;
 
-    _readMutex.unlock();
     return _serializedBuffers[bufferIndex];
 }
 
@@ -153,6 +153,8 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 
     try
     {
+        lock_guard<mutex> lockWrite(_writeMutex);
+
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
@@ -180,19 +182,10 @@ bool Image::deserialize(const SerializedObjectPtr obj)
         copy(currentObjPtr + imgSize / stride * (stride - 1), currentObjPtr + imgSize, ptr + imgSize / stride * (stride - 1));
         SThread::pool.waitThreads(threadIds);
 
-        bool isLocked {false};
-        if (obj != _serializedObject) // If we are not setting the image from the inner serialized buffer
-        {
-            isLocked = true;
-            _readMutex.lock();
-        }
         _bufferImage.swap(_bufferDeserialize);
         _imageUpdated = true;
 
         updateTimestamp();
-
-        if (isLocked)
-            _readMutex.unlock();
     }
     catch (...)
     {
@@ -234,7 +227,7 @@ bool Image::read(const string& filename)
     if (channels != 3 && channels != 4)
         return false;
 
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<mutex> lock(_writeMutex);
     _bufferImage.swap(img);
     _imageUpdated = true;
 
