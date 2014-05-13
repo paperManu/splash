@@ -279,7 +279,11 @@ struct ShaderSources
 
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
-            fragColor.rgba = mix(vec4(1.0), vec4(0.0, 0.0, 0.0, 1.0), (minDist - 0.025) / 0.0125);
+            vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
+            if (minDist < 0.025)
+                fragColor.rgba = mix(vec4(1.0), matColor, (minDist - 0.0125) / 0.0125);
+            else
+                fragColor.rgba = matColor;
         }
     )"};
 
