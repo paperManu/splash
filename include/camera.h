@@ -221,6 +221,7 @@ class Camera : public BaseObject
         float _brightness {1.f};
 
         // Calibration parameters
+        bool _calibrationCalledOnce {false};
         bool _displayCalibration {false};
         bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
