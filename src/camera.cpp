@@ -214,95 +214,99 @@ bool Camera::doCalibration()
     calibrationFunc.f = &Camera::cameraCalibration_f;
     calibrationFunc.params = (void*)this;
 
-    const gsl_multimin_fminimizer_type* minimizerType;
-    gsl_multimin_fminimizer* minimizer;
-
-    gsl_vector* x = gsl_vector_alloc(9);
-    gsl_vector* step = gsl_vector_alloc(9);
-    gsl_vector_set(step, 0, 10.0);
-    gsl_vector_set(step, 1, 0.1);
-    gsl_vector_set(step, 2, 0.1);
-    for (int i = 3; i < 9; ++i)
-        gsl_vector_set(step, i, 0.1);
-
     SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
+    const gsl_multimin_fminimizer_type* minimizerType;
     minimizerType = gsl_multimin_fminimizer_nmsimplex2rand;
-
-    // Starting with various values of the FOV
-    minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
 
     // Variables we do not want to keep between tries
     dvec3 eyeOriginal = _eye;
     float fovOriginal = _fov;
 
     double minValue = numeric_limits<double>::max();
-    int nbrIter = 32;
-    for (double s = 0.0; s < 1.0; s += 0.25)
-    for (double t = 0.0; t < 1.0; t += 0.25)
-    for (int i = 0; i < nbrIter; ++i)
+
+    mutex gslMutex;
+    vector<unsigned int> threadIds;
+    for (int index = 0; index < 32; ++index)
     {
-        gsl_vector_set(x, 0, 35.0);
-        gsl_vector_set(x, 1, s);
-        gsl_vector_set(x, 2, t);
-        for (int i = 0; i < 3; ++i)
-        {
-            gsl_vector_set(x, i + 3, eyeOriginal[i]);
-            gsl_vector_set(x, i + 6, 0.0);
-        }
+        threadIds.push_back(SThread::pool.enqueue([&]() {
+            gsl_multimin_fminimizer* minimizer;
+            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
 
-        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
-
-        size_t iter = 0;
-        int status = GSL_CONTINUE;
-        double localMinimum;
-        while(status == GSL_CONTINUE && iter < 10000 && minValue > 1.0)
-        {
-            iter++;
-            status = gsl_multimin_fminimizer_iterate(minimizer);
-            if (status)
+            for (double s = 0.0; s < 1.0; s += 0.25)
+            for (double t = 0.0; t < 1.0; t += 0.25)
             {
-                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
-                break;
+                gsl_vector* step = gsl_vector_alloc(9);
+                gsl_vector_set(step, 0, 10.0);
+                gsl_vector_set(step, 1, 0.1);
+                gsl_vector_set(step, 2, 0.1);
+                for (int i = 3; i < 9; ++i)
+                    gsl_vector_set(step, i, 0.1);
+
+                gsl_vector* x = gsl_vector_alloc(9);
+                gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
+                gsl_vector_set(x, 1, s);
+                gsl_vector_set(x, 2, t);
+                for (int i = 0; i < 3; ++i)
+                {
+                    gsl_vector_set(x, i + 3, eyeOriginal[i]);
+                    gsl_vector_set(x, i + 6, 0.0);
+                }
+
+                gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+                size_t iter = 0;
+                int status = GSL_CONTINUE;
+                double localMinimum = numeric_limits<double>::max();
+                while(status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
+                {
+                    iter++;
+                    status = gsl_multimin_fminimizer_iterate(minimizer);
+                    if (status)
+                    {
+                        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                        break;
+                    }
+
+                    status = gsl_multimin_test_size(minimizer->size, 1e-6);
+                    localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+                }
+
+                lock_guard<mutex> lock(gslMutex);
+                if (localMinimum < minValue)
+                {
+                    minValue = localMinimum;
+                    dvec3 euler;
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        _eye[i] = gsl_vector_get(minimizer->x, i + 3);
+                        euler[i] = gsl_vector_get(minimizer->x, i + 6);
+                    }
+                    dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
+                    dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
+                    dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        _target[i] = target[i];
+                        _up[i] = up[i];
+                    }
+                    _target = normalize(_target);
+                    _up = normalize(_up);
+
+                    _fov = gsl_vector_get(minimizer->x, 0);
+                    _cx = gsl_vector_get(minimizer->x, 1);
+                    _cy = gsl_vector_get(minimizer->x, 2);
+                }
+
+                gsl_vector_free(x);
+                gsl_vector_free(step);
             }
 
-            status = gsl_multimin_test_size(minimizer->size, 1e-6);
-            localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
-        }
-
-        if (localMinimum < minValue)
-        {
-            minValue = localMinimum;
-            dvec3 euler;
-            for (int i = 0; i < 3; ++i)
-            {
-                _eye[i] = gsl_vector_get(minimizer->x, i + 3);
-                euler[i] = gsl_vector_get(minimizer->x, i + 6);
-            }
-            dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
-            dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
-            dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
-            for (int i = 0; i < 3; ++i)
-            {
-                _target[i] = target[i];
-                _up[i] = up[i];
-            }
-            //_target = normalize(_target);
-            //_up = normalize(_up);
-
-            _fov = gsl_vector_get(minimizer->x, 0);
-            _cx = gsl_vector_get(minimizer->x, 1);
-            _cy = gsl_vector_get(minimizer->x, 2);
-        }
-
-        if (minValue < 0.5)
-            break;
+            gsl_multimin_fminimizer_free(minimizer);
+        }));
     }
+    SThread::pool.waitThreads(threadIds);
 
-    gsl_multimin_fminimizer_free(minimizer);
-
-    gsl_vector_free(x);
-    gsl_vector_free(step);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
     SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
