@@ -56,9 +56,9 @@ void Object::activate()
 }
 
 /*************/
-mat4x4 Object::computeModelMatrix() const
+dmat4 Object::computeModelMatrix() const
 {
-    return translate(mat4x4(1.f), _position);
+    return translate(dmat4(1.f), _position);
 }
 
 /*************/
@@ -123,14 +123,14 @@ bool Object::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-float Object::pickVertex(vec3 p, vec3& v)
+float Object::pickVertex(dvec3 p, dvec3& v)
 {
     float distance = numeric_limits<float>::max();
-    vec3 closestVertex;
+    dvec3 closestVertex;
     float tmpDist;
     for (auto& geom : _geometries)
     {
-        vec3 vertex;
+        dvec3 vertex;
         if ((tmpDist = geom->pickVertex(p, vertex)) < distance)
         {
             distance = tmpDist;
@@ -169,7 +169,7 @@ void Object::setBlendingMap(TexturePtr& map)
 }
 
 /*************/
-void Object::setViewProjectionMatrix(const glm::mat4& vp)
+void Object::setViewProjectionMatrix(const glm::dmat4& vp)
 {
     _shader->setModelViewProjectionMatrix(vp * computeModelMatrix());
 }
@@ -180,7 +180,7 @@ void Object::registerAttributes()
     _attribFunctions["position"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _position = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+        _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
         return vector<Value>({_position.x, _position.y, _position.z});
@@ -191,9 +191,9 @@ void Object::registerAttributes()
             return false;
 
         if (args.size() < 3)
-            _scale = vec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+            _scale = dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
         else
-            _scale = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _scale = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
         _shader->setAttribute("scale", args);
         return true;

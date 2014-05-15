@@ -155,10 +155,11 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
 }
 
 /*************/
-void Shader::setModelViewProjectionMatrix(const glm::mat4& mvp)
+void Shader::setModelViewProjectionMatrix(const glm::dmat4& mvp)
 {
-    glUniformMatrix4fv(_locationMVP, 1, GL_FALSE, glm::value_ptr(mvp));
-    glUniformMatrix4fv(_locationNormalMatrix, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(mvp))));
+    glm::mat4 floatMvp = (glm::mat4)mvp;
+    glUniformMatrix4fv(_locationMVP, 1, GL_FALSE, glm::value_ptr(floatMvp));
+    glUniformMatrix4fv(_locationNormalMatrix, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMvp))));
 }
 
 /*************/
@@ -310,7 +311,7 @@ void Shader::registerAttributes()
     _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 4)
             return false;
-        _color = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
     });
 
@@ -319,9 +320,9 @@ void Shader::registerAttributes()
             return false;
 
         if (args.size() < 3)
-            _scale = glm::vec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+            _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
         else
-            _scale = glm::vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
         return true;
     });

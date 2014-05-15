@@ -57,15 +57,15 @@ bool Geometry::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-float Geometry::pickVertex(vec3 p, vec3& v)
+float Geometry::pickVertex(dvec3 p, dvec3& v)
 {
     float distance = numeric_limits<float>::max();
-    vec3 closestVertex;
+    dvec3 closestVertex;
 
     vector<float> vertices = _mesh->getVertCoords();
     for (int i = 0; i < vertices.size(); i += 4)
     {
-        vec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
+        dvec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
         float dist = length(p - vertex);
         if (dist < distance)
         {

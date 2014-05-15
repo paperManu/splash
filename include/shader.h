@@ -160,7 +160,7 @@ class Shader : public BaseObject
         /**
          * Set the view projection matrix
          */
-        void setModelViewProjectionMatrix(const glm::mat4& mvp);
+        void setModelViewProjectionMatrix(const glm::dmat4& mvp);
 
     private:
         mutable std::mutex _mutex;
@@ -188,8 +188,8 @@ class Shader : public BaseObject
         float _blendWidth {0.05f};
         float _blackLevel {0.f};
         float _brightness {1.f};
-        glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
-        glm::vec3 _scale {1.0, 1.0, 1.0};
+        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
+        glm::dvec3 _scale {1.0, 1.0, 1.0};
         bool _textureOverlap {true};
         std::vector<int> _layout {0, 0, 0, 0};
 

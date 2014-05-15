@@ -219,7 +219,7 @@ bool Camera::doCalibration()
 
     gsl_vector* x = gsl_vector_alloc(9);
     gsl_vector* step = gsl_vector_alloc(9);
-    gsl_vector_set(step, 0, 0.1);
+    gsl_vector_set(step, 0, 10.0);
     gsl_vector_set(step, 1, 0.1);
     gsl_vector_set(step, 2, 0.1);
     for (int i = 3; i < 9; ++i)
@@ -233,15 +233,18 @@ bool Camera::doCalibration()
     minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
 
     // Variables we do not want to keep between tries
-    vec3 eyeOriginal = _eye;
+    dvec3 eyeOriginal = _eye;
     float fovOriginal = _fov;
 
     double minValue = numeric_limits<double>::max();
-    for (int i = 0; i < 16; ++i)
+    int nbrIter = 32;
+    for (double s = 0.0; s < 1.0; s += 0.25)
+    for (double t = 0.0; t < 1.0; t += 0.25)
+    for (int i = 0; i < nbrIter; ++i)
     {
-        gsl_vector_set(x, 0, fovOriginal);
-        gsl_vector_set(x, 1, 0.5);
-        gsl_vector_set(x, 2, 0.5);
+        gsl_vector_set(x, 0, 35.0);
+        gsl_vector_set(x, 1, s);
+        gsl_vector_set(x, 2, t);
         for (int i = 0; i < 3; ++i)
         {
             gsl_vector_set(x, i + 3, eyeOriginal[i]);
@@ -270,13 +273,13 @@ bool Camera::doCalibration()
         if (localMinimum < minValue)
         {
             minValue = localMinimum;
-            dvec3 _euler;
+            dvec3 euler;
             for (int i = 0; i < 3; ++i)
             {
                 _eye[i] = gsl_vector_get(minimizer->x, i + 3);
-                _euler[i] = gsl_vector_get(minimizer->x, i + 6);
+                euler[i] = gsl_vector_get(minimizer->x, i + 6);
             }
-            dmat4 rotateMat = yawPitchRoll(_euler[0], _euler[1], _euler[2]);
+            dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
             dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
             dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
             for (int i = 0; i < 3; ++i)
@@ -284,15 +287,15 @@ bool Camera::doCalibration()
                 _target[i] = target[i];
                 _up[i] = up[i];
             }
-            _target = normalize(_target);
-            _up = normalize(_up);
+            //_target = normalize(_target);
+            //_up = normalize(_up);
 
             _fov = gsl_vector_get(minimizer->x, 0);
             _cx = gsl_vector_get(minimizer->x, 1);
             _cy = gsl_vector_get(minimizer->x, 2);
         }
 
-        if (minValue < 1.0)
+        if (minValue < 0.5)
             break;
     }
 
@@ -340,15 +343,15 @@ vector<Value> Camera::pickVertex(float x, float y)
         return vector<Value>();
 
     // Unproject the point
-    vec3 screenPoint(realX, realY, depth);
+    dvec3 screenPoint(realX, realY, depth);
 
     float distance = numeric_limits<float>::max();
-    vec3 vertex;
+    dvec3 vertex;
     for (auto& obj : _objects)
     {
-        vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
-                               computeProjectionMatrix(), vec4(0, 0, _width, _height));
-        glm::vec3 closestVertex;
+        dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
+                               computeProjectionMatrix(), dvec4(0, 0, _width, _height));
+        glm::dvec3 closestVertex;
         float tmpDist;
         if ((tmpDist = obj->pickVertex(point, closestVertex)) < distance)
         {
@@ -380,15 +383,15 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
         return vector<Value>();
 
     // Unproject the point
-    vec3 screenPoint(realX, realY, depth);
+    dvec3 screenPoint(realX, realY, depth);
 
     float distance = numeric_limits<float>::max();
-    vec3 vertex;
+    dvec3 vertex;
     for (auto& cPoint : _calibrationPoints)
     {
-        vec3 point = unProject(screenPoint, lookAt(_eye, _target, _up),
-                               computeProjectionMatrix(), vec4(0, 0, _width, _height));
-        glm::vec3 closestVertex;
+        dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up),
+                               computeProjectionMatrix(), dvec4(0, 0, _width, _height));
+        glm::dvec3 closestVertex;
         float tmpDist;
         if ((tmpDist = length(point - cPoint.world)) < distance)
         {
@@ -481,7 +484,7 @@ bool Camera::render()
                     else
                         screenMarker->setAttribute("color", SPLASH_MARKER_SET);
                     screenMarker->activate();
-                    screenMarker->setViewProjectionMatrix(mat4(1.f));
+                    screenMarker->setViewProjectionMatrix(dmat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();
                 }
@@ -543,7 +546,7 @@ bool Camera::addCalibrationPoint(std::vector<Value> worldPoint)
     if (worldPoint.size() < 3)
         return false;
 
-    vec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+    dvec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
 
     // Check if the point is already present
     for (int i = 0; i < _calibrationPoints.size(); ++i)
@@ -583,7 +586,7 @@ void Camera::removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSe
     if (worldPoint.size() < 3)
         return;
 
-    vec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+    dvec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
 
     for (int i = 0; i < _calibrationPoints.size(); ++i)
         if (_calibrationPoints[i].world == world)
@@ -603,7 +606,7 @@ bool Camera::setCalibrationPoint(std::vector<Value> screenPoint)
     if (_selectedCalibrationPoint == -1)
         return false;
 
-    _calibrationPoints[_selectedCalibrationPoint].screen = glm::vec2(screenPoint[0].asFloat(), screenPoint[1].asFloat());
+    _calibrationPoints[_selectedCalibrationPoint].screen = glm::dvec2(screenPoint[0].asFloat(), screenPoint[1].asFloat());
     _calibrationPoints[_selectedCalibrationPoint].isSet = true;
 
     _calibrationCalledOnce = false;
@@ -711,8 +714,8 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         target[i] = targetTmp[i];
         up[i] = upTmp[i];
     }
-    target = normalize(target);
-    up = normalize(up);
+    //target = normalize(target);
+    //up = normalize(up);
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
@@ -754,26 +757,26 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 }
 
 /*************/
-mat4 Camera::computeProjectionMatrix()
+dmat4 Camera::computeProjectionMatrix()
 {
     return computeProjectionMatrix(_fov, _cx, _cy);
 }
 
 /*************/
-mat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
+dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 {
-    float l, r, t, b, n, f;
+    double l, r, t, b, n, f;
     // Near and far are obvious
     n = _near;
     f = _far;
     // Up and down
-    float tTemp = n * tan(fov * M_PI / 360.0);
-    float bTemp = -tTemp;
+    double tTemp = n * tan(fov * M_PI / 360.0);
+    double bTemp = -tTemp;
     t = tTemp - (cy - 0.5) * (tTemp - bTemp);
     b = bTemp - (cy - 0.5) * (tTemp - bTemp);
     // Left and right
-    float rTemp = tTemp * _width / _height;
-    float lTemp = bTemp * _width / _height;
+    double rTemp = tTemp * _width / _height;
+    double lTemp = bTemp * _width / _height;
     r = rTemp - (cx - 0.5) * (rTemp - lTemp);
     l = lTemp - (cx - 0.5) * (rTemp - lTemp);
 
@@ -781,11 +784,11 @@ mat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 }
 
 /*************/
-mat4x4 Camera::computeViewProjectionMatrix()
+dmat4 Camera::computeViewProjectionMatrix()
 {
-    mat4 viewMatrix = lookAt(_eye, _target, _up);
-    mat4 projMatrix = computeProjectionMatrix();
-    mat4 viewProjectionMatrix = projMatrix * viewMatrix;
+    dmat4 viewMatrix = lookAt(_eye, _target, _up);
+    dmat4 projMatrix = computeProjectionMatrix();
+    dmat4 viewProjectionMatrix = projMatrix * viewMatrix;
 
     return viewProjectionMatrix;
 }
@@ -818,7 +821,7 @@ void Camera::registerAttributes()
     _attribFunctions["eye"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _eye = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+        _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
         return vector<Value>({_eye.x, _eye.y, _eye.z});
@@ -827,7 +830,7 @@ void Camera::registerAttributes()
     _attribFunctions["target"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _target = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+        _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
         return vector<Value>({_target.x, _target.y, _target.z});
@@ -845,7 +848,7 @@ void Camera::registerAttributes()
     _attribFunctions["up"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;
-        _up = vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+        _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
         return vector<Value>({_up.x, _up.y, _up.z});
@@ -893,9 +896,9 @@ void Camera::registerAttributes()
         if (args.size() < 3)
             return false;
         auto direction = _target - _eye;
-        auto rotZ = rotate(mat4(1.f), args[0].asFloat(), vec3(0.0, 0.0, 1.0));
-        auto newDirection = vec4(direction, 1.0) * rotZ;
-        _eye = _target - vec3(newDirection.x, newDirection.y, newDirection.z);
+        auto rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+        auto newDirection = dvec4(direction, 1.0) * rotZ;
+        _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
         return true;
     });
 
