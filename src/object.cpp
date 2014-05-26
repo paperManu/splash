@@ -209,13 +209,13 @@ void Object::registerAttributes()
         default:
             return false;
         case 0:
-            _shader->setSideness(Shader::doubleSided);
+            _shader->setAttribute("sideness", {Shader::doubleSided});
             break;
         case 1:
-            _shader->setSideness(Shader::singleSided);
+            _shader->setAttribute("sideness", {Shader::singleSided});
             break;
         case 2:
-            _shader->setSideness(Shader::inverted);
+            _shader->setAttribute("sideness", {Shader::inverted});
         }
         return true;
     }, [&]() {

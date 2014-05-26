@@ -90,16 +90,8 @@ class Shader : public BaseObject
                 _shaders = s._shaders;
                 _program = s._program;
                 _isLinked = s._isLinked;
-                _locationMVP = s._locationMVP;
-                _locationNormalMatrix = s._locationNormalMatrix;
-                _locationSide = s._locationSide;
-                _locationTextureNbr = s._locationTextureNbr;
-                _locationBlendingMap = s._locationBlendingMap;
-                _locationBlendWidth = s._locationBlendWidth;
-                _locationBlackLevel = s._locationBlackLevel;
-                _locationColor = s._locationColor;
-                _locationScale = s._locationScale;
-                _locationLayout = s._locationLayout;
+                _uniforms = s._uniforms;
+                _uniformsToUpdate = s._uniformsToUpdate;
 
                 _fill = s._fill;
                 _sideness = s._sideness;
@@ -169,18 +161,8 @@ class Shader : public BaseObject
         std::map<ShaderType, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
-        GLint _locationMVP {0};
-        GLint _locationNormalMatrix {0};
-        GLint _locationSide {0};
-        GLint _locationTextureNbr {0};
-        GLint _locationBlendingMap {0};
-        GLint _locationBlendWidth {0};
-        GLint _locationBlackLevel {0};
-        GLint _locationBrightness {0};
-        GLint _locationColor {0};
-        GLint _locationScale {0};
-        GLint _locationLayout {0};
         std::map<std::string, std::pair<Values, GLint>> _uniforms;
+        std::vector<std::string> _uniformsToUpdate;
 
         // Rendering parameters
         Fill _fill {texture};
