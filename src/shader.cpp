@@ -2,6 +2,7 @@
 #include "shaderSources.h"
 
 #include <fstream>
+#include <sstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -121,6 +122,7 @@ void Shader::setSource(const std::string& src, const ShaderType type)
         free(log);
     }
 
+    _shadersSource[type] = src;
     _isLinked = false;
 }
 
@@ -197,6 +199,13 @@ bool Shader::linkProgram()
 #ifdef DEBUG
         SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
 #endif
+
+        // Free the previous uniform locations
+        _uniforms.clear();
+    
+        for (auto src : _shadersSource)
+            parseUniforms(src.second);
+
         _isLinked = true;
         return true;
     }
@@ -213,6 +222,40 @@ bool Shader::linkProgram()
 
         _isLinked = false;
         return false;
+    }
+}
+
+/*************/
+void Shader::parseUniforms(const std::string& src)
+{
+    istringstream input(src);
+    for (string line; getline(input, line);)
+    {
+        string::size_type position;
+        if ((position = line.find("uniform")) == string::npos)
+            continue;
+        string next = line.substr(position + 8);
+        string type, name;
+        istringstream lineStream(next);
+        getline(lineStream, type, ' ');
+        getline(lineStream, name, ' ');
+
+        if (name.find(";") != string::npos)
+            name = name.substr(0, name.size() - 1);
+
+        if (type == "int")
+            _uniforms[name] = pair<Values, GLint>({0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "float")
+            _uniforms[name] = pair<Values, GLint>({0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "vec3")
+            _uniforms[name] = pair<Values, GLint>({0.f, 0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "ivec4")
+            _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "mat4")
+            _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type != "sampler2D")
+            SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << "Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
+        cout << "Uniform: " << name << " -> " << _uniforms[name].second << endl;
     }
 }
 

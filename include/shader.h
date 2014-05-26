@@ -166,6 +166,7 @@ class Shader : public BaseObject
         mutable std::mutex _mutex;
 
         std::map<ShaderType, GLuint> _shaders;
+        std::map<ShaderType, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
         GLint _locationMVP {0};
@@ -179,6 +180,7 @@ class Shader : public BaseObject
         GLint _locationColor {0};
         GLint _locationScale {0};
         GLint _locationLayout {0};
+        std::map<std::string, std::pair<Values, GLint>> _uniforms;
 
         // Rendering parameters
         Fill _fill {texture};
@@ -202,6 +204,11 @@ class Shader : public BaseObject
          * Link the shader program
          */
         bool linkProgram();
+
+        /**
+         * Parses the shader to find uniforms
+         */
+        void parseUniforms(const std::string& src);
 
         /**
          * Get a string expression of the shader type, used for logging
