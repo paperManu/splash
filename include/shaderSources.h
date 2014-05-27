@@ -319,7 +319,7 @@ struct ShaderSources
         uniform sampler2D _tex2;
         uniform sampler2D _tex3;
         uniform int _textureNbr = 0;
-        uniform ivec4 _layout = ivec4(0, 0, 0, 0);
+        uniform ivec4 _layout = ivec4(0, 1, 2, 3);
         in vec4 position;
         in vec2 texCoord;
         out vec4 fragColor;
@@ -340,6 +340,7 @@ struct ShaderSources
                 }
             }
 
+            fragColor.rgba = vec4(0.0);
             if (_textureNbr > 0 && texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
             {
                 fragColor = texture(_tex0, vec2((texCoord.x - float(_layout[0]) / frames) * frames, texCoord.y));
