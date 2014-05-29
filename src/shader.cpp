@@ -2,6 +2,7 @@
 #include "shaderSources.h"
 
 #include <fstream>
+#include <sstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -48,32 +49,52 @@ void Shader::activate()
     {
         if (!linkProgram())
             return;
-        _locationMVP = glGetUniformLocation(_program, "_modelViewProjectionMatrix");
-        _locationNormalMatrix = glGetUniformLocation(_program, "_normalMatrix");
-        _locationSide = glGetUniformLocation(_program, "_sideness");
-        _locationTextureNbr = glGetUniformLocation(_program, "_textureNbr");
-        _locationBlendingMap = glGetUniformLocation(_program, "_texBlendingMap");
-        _locationBlendWidth = glGetUniformLocation(_program, "_blendWidth");
-        _locationBlackLevel = glGetUniformLocation(_program, "_blackLevel");
-        _locationBrightness = glGetUniformLocation(_program, "_brightness");
-        _locationColor = glGetUniformLocation(_program, "_color");
-        _locationScale = glGetUniformLocation(_program, "_scale");
-        _locationLayout = glGetUniformLocation(_program, "_layout");
     }
 
     glUseProgram(_program);
 
-    _textureNbr = 0;
+    for (int i = 0; i < _uniformsToUpdate.size(); ++i)
+    {
+        string u = _uniformsToUpdate[i];
+        if (_uniforms.find(u) == _uniforms.end())
+            continue;
 
-    glUniform1i(_locationSide, _sideness);
-    glUniform1i(_locationTextureNbr, _textureNbr);
-    glUniform1i(_locationBlendingMap, _useBlendingMap);
-    glUniform1f(_locationBlendWidth, _blendWidth);
-    glUniform1f(_locationBlackLevel, _blackLevel);
-    glUniform1f(_locationBrightness, _brightness);
-    glUniform3f(_locationScale, _scale.x, _scale.y, _scale.z);
-    glUniform4f(_locationColor, _color.r, _color.g, _color.b, _color.a);
-    glUniform4i(_locationLayout, _layout[0], _layout[1], _layout[2], _layout[3]);
+        if (_uniforms[u].second == -1)
+            continue;
+
+        int size = _uniforms[u].first.size();
+        int type = _uniforms[u].first[0].getType();
+
+        if (size > 4)
+            continue;
+
+        if (type == Value::Type::i)
+        {
+            if (size == 1)
+                glUniform1i(_uniforms[u].second, _uniforms[u].first[0].asInt());
+            else if (size == 2)
+                glUniform2i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt());
+            else if (size == 3)
+                glUniform3i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt(), _uniforms[u].first[2].asInt());
+            else if (size == 4)
+                glUniform4i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt(), _uniforms[u].first[2].asInt(), _uniforms[u].first[3].asInt());
+        }
+        else if (type == Value::Type::f)
+        {
+            if (size == 1)
+                glUniform1f(_uniforms[u].second, _uniforms[u].first[0].asFloat());
+            else if (size == 2)
+                glUniform2f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat());
+            else if (size == 3)
+                glUniform3f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat());
+            else if (size == 4)
+                glUniform4f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat(), _uniforms[u].first[3].asFloat());
+        }
+    }
+
+
+    _uniformsToUpdate.clear();
+    _textureNbr = 0; // Set to 0 for the next draw
 }
 
 /*************/
@@ -86,12 +107,6 @@ void Shader::deactivate()
         glBindTexture(GL_TEXTURE_2D, 0);
     }
     _mutex.unlock();
-}
-
-/*************/
-void Shader::setSideness(const Sideness side)
-{
-    _sideness = side;
 }
 
 /*************/
@@ -121,6 +136,7 @@ void Shader::setSource(const std::string& src, const ShaderType type)
         free(log);
     }
 
+    _shadersSource[type] = src;
     _isLinked = false;
 }
 
@@ -151,14 +167,19 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
     glUniform1i(uniform, textureUnit);
 
     _textureNbr++;
-    glUniform1i(_locationTextureNbr, _textureNbr);
+    if (_uniforms.find("_textureNbr") != _uniforms.end())
+        glUniform1i(_uniforms["_textureNbr"].second, _textureNbr);
+    _uniformsToUpdate.push_back("_textureNbr");
 }
 
 /*************/
-void Shader::setModelViewProjectionMatrix(const glm::mat4& mvp)
+void Shader::setModelViewProjectionMatrix(const glm::dmat4& mvp)
 {
-    glUniformMatrix4fv(_locationMVP, 1, GL_FALSE, glm::value_ptr(mvp));
-    glUniformMatrix4fv(_locationNormalMatrix, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(mvp))));
+    glm::mat4 floatMvp = (glm::mat4)mvp;
+    if (_uniforms.find("_modelViewProjectionMatrix") != _uniforms.end())
+        glUniformMatrix4fv(_uniforms["_modelViewProjectionMatrix"].second, 1, GL_FALSE, glm::value_ptr(floatMvp));
+    if (_uniforms.find("_normalMatrix") != _uniforms.end())
+        glUniformMatrix4fv(_uniforms["_normalMatrix"].second, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMvp))));
 }
 
 /*************/
@@ -196,6 +217,10 @@ bool Shader::linkProgram()
 #ifdef DEBUG
         SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
 #endif
+
+        for (auto src : _shadersSource)
+            parseUniforms(src.second);
+
         _isLinked = true;
         return true;
     }
@@ -212,6 +237,94 @@ bool Shader::linkProgram()
 
         _isLinked = false;
         return false;
+    }
+}
+
+/*************/
+void Shader::parseUniforms(const std::string& src)
+{
+    istringstream input(src);
+    for (string line; getline(input, line);)
+    {
+        string::size_type position;
+        if ((position = line.find("uniform")) == string::npos)
+            continue;
+        string next = line.substr(position + 8);
+        string type, name;
+        istringstream lineStream(next);
+        getline(lineStream, type, ' ');
+        getline(lineStream, name, ' ');
+
+        if (name.find(";") != string::npos)
+            name = name.substr(0, name.size() - 1);
+
+        Values values;
+        if (_uniforms.find(name) != _uniforms.end())
+            values = _uniforms[name].first;
+
+        // Get the location
+        if (type == "int")
+            _uniforms[name] = pair<Values, GLint>({0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "float")
+            _uniforms[name] = pair<Values, GLint>({0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "vec3")
+            _uniforms[name] = pair<Values, GLint>({0.f, 0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "vec4")
+            _uniforms[name] = pair<Values, GLint>({0.f, 0.f, 0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "ivec4")
+            _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "mat4")
+            _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type != "sampler2D")
+            SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << "Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
+
+        if (values.size() != 0)
+        {
+            _uniforms[name].first = values;
+            _uniformsToUpdate.push_back(name);
+        }
+        else
+        {
+            // Save the default value
+            if (type == "int")
+            {
+                int v;
+                glGetUniformiv(_program, _uniforms[name].second, &v);
+                _uniforms[name].first = Values({v});
+            }
+            else if (type == "float")
+            {
+                float v;
+                glGetUniformfv(_program, _uniforms[name].second, &v);
+                _uniforms[name].first = Values({v});
+            }
+            else if (type == "vec3")
+            {
+                float v[3];
+                glGetUniformfv(_program, _uniforms[name].second, v);
+                _uniforms[name].first = Values({v[0], v[1], v[2]});
+            }
+            else if (type == "vec4")
+            {
+                float v[4];
+                glGetUniformfv(_program, _uniforms[name].second, v);
+                _uniforms[name].first = Values({v[0], v[1], v[2], v[3]});
+            }
+            else if (type == "ivec4")
+            {
+                int v[4];
+                glGetUniformiv(_program, _uniforms[name].second, v);
+                _uniforms[name].first = Values({v[0], v[1], v[2], v[3]});
+            }
+        }
+    }
+
+    // We parse all uniforms to deactivate of the obsolete ones
+    for (auto& u : _uniforms)
+    {
+        string name = u.first;
+        if (glGetUniformLocation(_program, name.c_str()) == -1)
+            u.second.second = -1;
     }
 }
 
@@ -308,51 +421,86 @@ void Shader::registerAttributes()
     });
 
     _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 4)
+        if (args.size() != 4)
             return false;
-        _color = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        _uniforms["_color"].first = args;
+        _uniformsToUpdate.push_back("_color");
         return true;
     });
 
     _attribFunctions["scale"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
-
-        if (args.size() < 3)
-            _scale = glm::vec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+        else if (args.size() < 3)
+        {
+            _uniforms["_scale"].first.resize(3);
+            _uniforms["_scale"].first[0] = args[0];
+            _uniforms["_scale"].first[1] = args[0];
+            _uniforms["_scale"].first[2] = args[0];
+        }
+        else if (args.size() == 3)
+            _uniforms["_scale"].first = args;
         else
-            _scale = glm::vec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            return false;
+
+        _uniformsToUpdate.push_back("_scale");
+
+        return true;
+    });
+
+    _attribFunctions["sideness"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_sideness"].first = args;
+        _uniformsToUpdate.push_back("_sideness");
 
         return true;
     });
 
     _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
+        if (args.size() != 1)
             return false;
-        _blendWidth = args[0].asFloat();
+
+        _uniforms["_blendWidth"].first = args;
+        _uniformsToUpdate.push_back("_blendWidth");
+
         return true;
     });
 
     _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
+        if (args.size() != 1)
             return false;
-        _blackLevel = args[0].asFloat();
+
+        _uniforms["_blackLevel"].first = args;
+        _uniformsToUpdate.push_back("_blackLevel");
+
         return true;
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
+        if (args.size() != 1)
             return false;
-        _brightness = args[0].asFloat();
+
+        _uniforms["_brightness"].first = args;
+        _uniformsToUpdate.push_back("_brightness");
+
         return true;
     });
 
     // Attribute to configure the placement of the various texture input
     _attribFunctions["layout"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() < 1)
+        if (args.size() < 1 || args.size() > 4)
             return false;
+
+        _uniforms["_layout"].first = Values({0, 0, 0, 0});
         for (int i = 0; i < args.size() && i < 4; ++i)
+        {
             _layout[i] = args[i].asInt();
+            _uniforms["_layout"].first[i] = args[i];
+        }
+        _uniformsToUpdate.push_back("_layout");
+
         return true;
     }, [&]() {
         vector<Value> out;

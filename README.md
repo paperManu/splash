@@ -55,20 +55,27 @@ A few more libraries are used as submodules in the git repository:
 ### Dependencies installation
 Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenMesh, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
-Here are some step by step commands to install everything on Ubuntu 14.04 LTS:
+Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
     sudo apt-add-repository ppa:irie/blender
     sudo apt-add-repository ppa:sat-metalab/metalab
     sudo apt-add-repository ppa:keithw/glfw3
     sudo apt-get update
+
+And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being...
+
+### Compilation and installation
+Your first option to install Splash is to use the packaged version:
+
+    sudo apt-get install splash
+
+And you should be ready to go!
+
+If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations:
+
     sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
     sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev
     sudo apt-get install libglfw3-dev libopenmesh-dev
-
-And you are done with dependencies
-
-### Compilation and installation
-Now some step by step commands to compile and install Splash:
 
     git clone git://github.com/paperManu/splash
     cd splash

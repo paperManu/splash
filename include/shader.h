@@ -90,16 +90,8 @@ class Shader : public BaseObject
                 _shaders = s._shaders;
                 _program = s._program;
                 _isLinked = s._isLinked;
-                _locationMVP = s._locationMVP;
-                _locationNormalMatrix = s._locationNormalMatrix;
-                _locationSide = s._locationSide;
-                _locationTextureNbr = s._locationTextureNbr;
-                _locationBlendingMap = s._locationBlendingMap;
-                _locationBlendWidth = s._locationBlendWidth;
-                _locationBlackLevel = s._locationBlackLevel;
-                _locationColor = s._locationColor;
-                _locationScale = s._locationScale;
-                _locationLayout = s._locationLayout;
+                _uniforms = s._uniforms;
+                _uniformsToUpdate = s._uniformsToUpdate;
 
                 _fill = s._fill;
                 _sideness = s._sideness;
@@ -160,25 +152,17 @@ class Shader : public BaseObject
         /**
          * Set the view projection matrix
          */
-        void setModelViewProjectionMatrix(const glm::mat4& mvp);
+        void setModelViewProjectionMatrix(const glm::dmat4& mvp);
 
     private:
         mutable std::mutex _mutex;
 
         std::map<ShaderType, GLuint> _shaders;
+        std::map<ShaderType, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
-        GLint _locationMVP {0};
-        GLint _locationNormalMatrix {0};
-        GLint _locationSide {0};
-        GLint _locationTextureNbr {0};
-        GLint _locationBlendingMap {0};
-        GLint _locationBlendWidth {0};
-        GLint _locationBlackLevel {0};
-        GLint _locationBrightness {0};
-        GLint _locationColor {0};
-        GLint _locationScale {0};
-        GLint _locationLayout {0};
+        std::map<std::string, std::pair<Values, GLint>> _uniforms;
+        std::vector<std::string> _uniformsToUpdate;
 
         // Rendering parameters
         Fill _fill {texture};
@@ -188,8 +172,8 @@ class Shader : public BaseObject
         float _blendWidth {0.05f};
         float _blackLevel {0.f};
         float _brightness {1.f};
-        glm::vec4 _color {0.0, 1.0, 0.0, 1.0};
-        glm::vec3 _scale {1.0, 1.0, 1.0};
+        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
+        glm::dvec3 _scale {1.0, 1.0, 1.0};
         bool _textureOverlap {true};
         std::vector<int> _layout {0, 0, 0, 0};
 
@@ -202,6 +186,11 @@ class Shader : public BaseObject
          * Link the shader program
          */
         bool linkProgram();
+
+        /**
+         * Parses the shader to find uniforms
+         */
+        void parseUniforms(const std::string& src);
 
         /**
          * Get a string expression of the shader type, used for logging

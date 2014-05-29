@@ -110,7 +110,7 @@ class Object : public BaseObject
         /**
          * Get the model matrix
          */
-        glm::mat4 getModelMatrix() const {return computeModelMatrix();}
+        glm::dmat4 getModelMatrix() const {return computeModelMatrix();}
 
         /**
          * Get the shader
@@ -125,7 +125,7 @@ class Object : public BaseObject
         /**
          * Get the coordinates of the closest vertex to the given point
          */
-        float pickVertex(glm::vec3 p, glm::vec3& v);
+        float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
          * Reset the blending to no blending at all
@@ -145,7 +145,7 @@ class Object : public BaseObject
         /**
          * Set the view projection matrix
          */
-        void setViewProjectionMatrix(const glm::mat4& mvp);
+        void setViewProjectionMatrix(const glm::dmat4& mvp);
 
     private:
         mutable std::mutex _mutex;
@@ -155,15 +155,15 @@ class Object : public BaseObject
         std::vector<GeometryPtr> _geometries;
         std::vector<TexturePtr> _blendMaps;
 
-        glm::vec3 _position {0.0, 0.0, 0.0};
-        glm::vec3 _scale {1.0, 1.0, 1.0};
+        glm::dvec3 _position {0.0, 0.0, 0.0};
+        glm::dvec3 _scale {1.0, 1.0, 1.0};
 
         std::string _fill {"texture"};
 
         /**
          * Compute the matrix corresponding to the object position
          */
-        glm::mat4x4 computeModelMatrix() const;
+        glm::dmat4 computeModelMatrix() const;
 
         /**
          * Register new functors to modify attributes

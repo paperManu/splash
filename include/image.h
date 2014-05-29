@@ -85,9 +85,10 @@ class Image : public BufferObject
 
         /**
          * Lock the image, useful while reading. Use with care
+         * Note that only write mutex is needed, as it also disables reading
          */
-        void lock() {_readMutex.lock(); _writeMutex.lock();}
-        void unlock() {_readMutex.unlock(); _writeMutex.unlock();}
+        void lock() {_writeMutex.lock();}
+        void unlock() {_writeMutex.unlock();}
 
         /**
          * Get the image buffer
@@ -151,7 +152,7 @@ class Image : public BufferObject
     private:
         // Serialization is done in a double-buffer way,
         // to limit memory initialization
-        mutable SerializedObjectPtr _serializedBuffers[2];
+        mutable SerializedObjectPtr _serializedBuffers[3];
         mutable int _serializedBufferIndex {0};
 
         // Deserialization is done in this buffer, to avoid realloc

@@ -41,7 +41,7 @@ struct ShaderSources
         layout(location = 2) in vec3 _normal;
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec3 _scale;
+        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         smooth out vec4 position;
         smooth out vec2 texCoord;
         smooth out vec3 normal;
@@ -65,12 +65,12 @@ struct ShaderSources
 
         uniform sampler2D _tex0;
         uniform sampler2D _tex1;
-        uniform int _sideness;
-        uniform int _textureNbr;
-        uniform int _texBlendingMap;
-        uniform float _blendWidth;
-        uniform float _blackLevel;
-        uniform float _brightness;
+        uniform int _sideness = 0;
+        uniform int _textureNbr = 0;
+        uniform int _texBlendingMap = 0;
+        uniform float _blendWidth = 0.05;
+        uniform float _blackLevel = 0.0;
+        uniform float _brightness = 1.0;
         in vec4 position;
         in vec2 texCoord;
         in vec3 normal;
@@ -139,8 +139,8 @@ struct ShaderSources
 
         #define PI 3.14159265359
 
-        uniform int _sideness;
-        uniform vec4 _color;
+        uniform int _sideness = 0;
+        uniform vec4 _color = vec4(0.0, 1.0, 0.0, 1.0);
         in vec3 normal;
         out vec4 fragColor;
 
@@ -162,7 +162,7 @@ struct ShaderSources
 
         #define PI 3.14159265359
 
-        uniform int _sideness;
+        uniform int _sideness = 0;
         in vec2 texCoord;
         in vec3 normal;
         out vec4 fragColor;
@@ -213,7 +213,7 @@ struct ShaderSources
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec3 _scale;
+        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
 
         in VertexData
         {
@@ -268,7 +268,7 @@ struct ShaderSources
             vec3 bcoord;
         } vertexIn;
 
-        uniform int _sideness;
+        uniform int _sideness = 0;
         out vec4 fragColor;
 
         void main(void)
@@ -279,7 +279,11 @@ struct ShaderSources
 
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
-            fragColor.rgba = mix(vec4(1.0), vec4(0.0, 0.0, 0.0, 1.0), (minDist - 0.025) / 0.0125);
+            vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
+            if (minDist < 0.025)
+                fragColor.rgba = mix(vec4(1.0), matColor, (minDist - 0.0125) / 0.0125);
+            else
+                fragColor.rgba = matColor;
         }
     )"};
 
@@ -293,17 +297,14 @@ struct ShaderSources
         layout(location = 1) in vec2 _texcoord;
         layout(location = 2) in vec3 _normal;
         uniform mat4 _modelViewProjectionMatrix;
-        uniform mat4 _normalMatrix;
-        uniform vec3 _scale;
+        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         smooth out vec4 position;
         smooth out vec2 texCoord;
-        smooth out vec3 normal;
 
         void main(void)
         {
             position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.f);
             gl_Position = position;
-            normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
             texCoord = _texcoord;
         }
     )"};
@@ -317,13 +318,10 @@ struct ShaderSources
         uniform sampler2D _tex1;
         uniform sampler2D _tex2;
         uniform sampler2D _tex3;
-        uniform int _sideness;
-        uniform int _textureNbr;
-        uniform int _overlap;
-        uniform ivec4 _layout;
+        uniform int _textureNbr = 0;
+        uniform ivec4 _layout = ivec4(0, 1, 2, 3);
         in vec4 position;
         in vec2 texCoord;
-        in vec3 normal;
         out vec4 fragColor;
 
         void main(void)
@@ -342,6 +340,7 @@ struct ShaderSources
                 }
             }
 
+            fragColor.rgba = vec4(0.0);
             if (_textureNbr > 0 && texCoord.x > float(_layout[0]) / frames && texCoord.x < (float(_layout[0]) + 1.0) / frames)
             {
                 fragColor = texture(_tex0, vec2((texCoord.x - float(_layout[0]) / frames) * frames, texCoord.y));

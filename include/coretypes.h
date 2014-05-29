@@ -52,7 +52,86 @@ namespace Splash
 {
 
 /*************/
-typedef std::vector<char> SerializedObject;
+struct SerializedObject
+{
+    /**
+     * Constructors
+     */
+    SerializedObject() {}
+
+    SerializedObject(int size)
+    {
+        _data.resize(size);
+    }
+
+    SerializedObject(char* start, char* end)
+    {
+        _data = std::vector<char>(start, end);
+    }
+
+    SerializedObject(const SerializedObject& obj)
+    {
+        _data = obj._data;
+    }
+
+    SerializedObject(SerializedObject&& obj)
+    {
+        *this = std::move(obj);
+    }
+
+    /**
+     * Operators
+     */
+    SerializedObject& operator=(const SerializedObject& obj)
+    {
+        if (this != &obj)
+        {
+            _data = obj._data;
+        }
+        return *this;
+    }
+
+    SerializedObject& operator=(SerializedObject&& obj)
+    {
+        if (this != &obj)
+        {
+            _data = std::move(obj._data);
+        }
+        return *this;
+    }
+
+    /**
+     * Get the pointer to the data
+     */
+    char* data()
+    {
+        return _data.data();
+    }
+
+    /**
+     * Return the size of the data
+     */
+    std::size_t size()
+    {
+        return _data.size();
+    }
+
+    /**
+     * Modify the size of the data
+     */
+    void resize(size_t s)
+    {
+        _data.resize(s);
+    }
+
+    /**
+     * Attributes
+     */
+    std::mutex _mutex;
+    std::vector<char> _data;
+};
+
+//typedef std::vector<char> SerializedObject;
 typedef std::shared_ptr<SerializedObject> SerializedObjectPtr;
 
 /*************/
@@ -449,7 +528,6 @@ class BufferObject : public BaseObject
         virtual bool deserialize(const SerializedObjectPtr obj) = 0;
         bool deserialize()
         {
-            std::lock_guard<std::mutex> lock(_writeMutex);
             if (_newSerializedObject == false)
                 return true;
 
@@ -469,9 +547,11 @@ class BufferObject : public BaseObject
          */
         void setSerializedObject(SerializedObjectPtr obj)
         {
-            std::lock_guard<std::mutex> lock(_writeMutex);
-            _serializedObject = move(obj);
-            _newSerializedObject = true;
+            {
+                std::lock_guard<std::mutex> lock(_writeMutex);
+                _serializedObject = move(obj);
+                _newSerializedObject = true;
+            }
 
             // Deserialize it right away, in a separate thread
             SThread::pool.enqueue([&]() {

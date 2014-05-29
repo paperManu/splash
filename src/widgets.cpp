@@ -543,7 +543,10 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             float dy = g.mouse().dy();
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
+            {
                 scene->sendMessage("sendAll", {_camera->getName(), "moveTarget", 0, 0, dy / 100.f});
+                scene->sendMessage("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
+            }
             else
                 _camera->setAttribute("moveTarget", {0, 0, dy / 100.f});
             return false;
@@ -657,9 +660,14 @@ bool GlvGraph::onEvent(Event::t e, GLV& g)
     default:
         break;
     case Event::KeyDown:
-        if ((char)g.keyboard().key() == ' ')
+        if ((char)g.keyboard().key() == 'N')
         {
             _target++;
+            return false;
+        }
+        else if ((char)g.keyboard().key() == 'P')
+        {
+            _target--;
             return false;
         }
         break;

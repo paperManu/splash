@@ -141,6 +141,24 @@ class Timer
          }
 
          /**
+          * Return the time since the last call with this name,
+          * or 0 if it is the first time
+          */
+         unsigned long long sinceLastSeen(std::string name)
+         {
+            if (_timeMap.find(name) == _timeMap.end())
+            {
+                start(name);
+                return 0;
+            }
+            
+            stop(name);
+            unsigned long long duration = getDuration(name);
+            start(name);
+            return duration;
+         }
+
+         /**
           * Some facilities
           */
          Timer& operator<<(std::string name)

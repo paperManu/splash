@@ -150,7 +150,7 @@ class Window : public BaseObject
 
         mutable std::mutex _contextMutex;
         ObjectPtr _screen;
-        glm::mat4x4 _viewProjectionMatrix;
+        glm::dmat4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;
         bool _isLinkedToTexture {false}; //< Set to true if the Window is directly connected to a texture, not a Camera or Gui
 

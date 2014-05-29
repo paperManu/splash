@@ -213,22 +213,23 @@ class Camera : public BaseObject
         float _width {512}, _height {512};
         float _near {0.1}, _far {100.0};
         float _cx {0.5}, _cy {0.5};
-        glm::vec3 _eye {1.0, 0.0, 5.0};
-        glm::vec3 _target {0.0, 0.0, 0.0};
-        glm::vec3 _up {0.0, 0.0, 1.0};
+        glm::dvec3 _eye {1.0, 0.0, 5.0};
+        glm::dvec3 _target {0.0, 0.0, 0.0};
+        glm::dvec3 _up {0.0, 0.0, 1.0};
         float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
         float _blackLevel {0.f};
         float _brightness {1.f};
 
         // Calibration parameters
+        bool _calibrationCalledOnce {false};
         bool _displayCalibration {false};
         bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
         {
-            CalibrationPoint(glm::vec3 w) {world = w; screen = glm::vec2(0.f, 0.f);}
-            CalibrationPoint(glm::vec3 w, glm::vec2 s) {world = w; screen = s;}
-            glm::vec3 world;
-            glm::vec2 screen;
+            CalibrationPoint(glm::dvec3 w) {world = w; screen = glm::dvec2(0.f, 0.f);}
+            CalibrationPoint(glm::dvec3 w, glm::dvec2 s) {world = w; screen = s;}
+            glm::dvec3 world;
+            glm::dvec2 screen;
             bool isSet {false};
         };
         std::vector<CalibrationPoint> _calibrationPoints;
@@ -240,13 +241,13 @@ class Camera : public BaseObject
         /**
          * Get the frustum matrix from the current camera parameters
          */
-        glm::mat4 computeProjectionMatrix();
-        glm::mat4 computeProjectionMatrix(float fov, float cx, float cy);
+        glm::dmat4 computeProjectionMatrix();
+        glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
 
         /**
          * Get the view projection matrix from the camera parameters
          */
-        glm::mat4x4 computeViewProjectionMatrix();
+        glm::dmat4 computeViewProjectionMatrix();
 
         /**
          * Load some defaults models, like the locator for calibration
