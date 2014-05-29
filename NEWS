@@ -1,8 +1,14 @@
 Slash release notes
 ===================
 
-Splash 0.1.4 (2014-xx-xx)
+Splash 0.1.6 (2014-xx-xx)
 -------------------------
+
+Splash 0.1.4 (2014-05-29)
+-------------------------
+New improvements:
+* Support of 4K @ 30Hz
+* GLSL: better uniforms management
 
 Splash 0.1.2 (2014-05-02)
 -------------------------
