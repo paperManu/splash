@@ -134,6 +134,7 @@ class Gui : public BaseObject
 
         // GLV related attributes
         bool _isVisible {false};
+        bool _doNotRender {false};
         glv::Style _style;
         glv::GLV _glv;
         GlvTextBox _glvLog;
