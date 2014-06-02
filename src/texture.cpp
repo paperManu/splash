@@ -340,10 +340,6 @@ void Texture::flushPbo()
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
         _img->unlock();
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
 
@@ -360,9 +356,9 @@ void Texture::init()
 void Texture::updatePbos(int width, int height, int bytes)
 {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
