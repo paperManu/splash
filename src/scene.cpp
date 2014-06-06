@@ -325,7 +325,11 @@ void Scene::run()
             _doComputeBlending = false;
         }
 
-        STimer::timer >> 1e3 >>  "sceneLoop";
+        bool overtime = STimer::timer >> 1e6 / 60 * _swapInterval >>  "sceneLoop";
+#ifdef DEBUG
+        if (overtime)
+            SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Frame took too long to finish" << Log::endl;
+#endif
     }
 }
 

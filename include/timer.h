@@ -71,13 +71,13 @@ class Timer
         /**
          * Wait for the specified timer to reach a certain value, in us
          */
-         void waitUntilDuration(std::string name, unsigned long long duration)
+         bool waitUntilDuration(std::string name, unsigned long long duration)
          {
             if (!_enabled)
-                return;
+                return false;
 
             if (_timeMap.find(name) == _timeMap.end())
-                return;
+                return false;
 
             unsigned long long now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
             unsigned long long elapsed;
@@ -90,10 +90,14 @@ class Timer
 
             timespec nap;
             nap.tv_sec = 0;
+            bool overtime = false;
             if (elapsed < duration)
                 nap.tv_nsec = (duration - elapsed) * 1e3;
             else
+            {
                 nap.tv_nsec = 0;
+                overtime = true;
+            }
 
             {
                 _mutex.lock();
@@ -101,6 +105,8 @@ class Timer
                 _mutex.unlock();
             }
             nanosleep(&nap, NULL);
+
+            return overtime;
          }
 
          /**
@@ -170,17 +176,22 @@ class Timer
 
          Timer& operator>>(unsigned long long duration)
          {
+            _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
             _currentDuration = duration;
             return *this;
          }
 
-         Timer& operator>>(std::string name)
+         bool operator>>(std::string name)
          {
+            unsigned long long duration = _currentDuration;
+            _mutex.unlock();
+
+            bool overtime = false;
             if (_currentDuration > 0)
-                waitUntilDuration(name, _currentDuration);
+                overtime = waitUntilDuration(name, duration);
             else
                 stop(name);
-            return *this;
+            return overtime;
          }
 
          unsigned long long operator[](std::string name) {return getDuration(name);}
