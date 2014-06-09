@@ -39,7 +39,7 @@ void Object::activate()
     if (_blendMaps.size() != 0)
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
-                _shader->activateBlending(i);
+                _shader->setAttribute("blending", {1});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -71,7 +71,7 @@ void Object::deactivate()
     }
 
     if (_blendMaps.size() != 0)
-        _shader->deactivateBlending();
+        _shader->setAttribute("blending", {0});
 
     _shader->deactivate();
     _geometries[0]->deactivate();

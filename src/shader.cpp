@@ -361,6 +361,46 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
+    _attribFunctions["blending"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+        
+        _uniforms["_texBlendingMap"].first = args;
+        _uniformsToUpdate.push_back("_texBlendingMap");
+
+        return true;
+    });
+
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_blendWidth"].first = args;
+        _uniformsToUpdate.push_back("_blendWidth");
+
+        return true;
+    });
+
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_blackLevel"].first = args;
+        _uniformsToUpdate.push_back("_blackLevel");
+
+        return true;
+    });
+
+    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_brightness"].first = args;
+        _uniformsToUpdate.push_back("_brightness");
+
+        return true;
+    });
+
     _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
@@ -454,36 +494,6 @@ void Shader::registerAttributes()
 
         _uniforms["_sideness"].first = args;
         _uniformsToUpdate.push_back("_sideness");
-
-        return true;
-    });
-
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_blendWidth"].first = args;
-        _uniformsToUpdate.push_back("_blendWidth");
-
-        return true;
-    });
-
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_blackLevel"].first = args;
-        _uniformsToUpdate.push_back("_blackLevel");
-
-        return true;
-    });
-
-    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_brightness"].first = args;
-        _uniformsToUpdate.push_back("_brightness");
 
         return true;
     });
