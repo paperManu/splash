@@ -170,7 +170,9 @@ class Timer
          Timer& operator<<(std::string name)
          {
             start(name);
+            _mutex.lock();
             _currentDuration = 0;
+            _mutex.unlock();
             return *this;
          }
 
@@ -183,11 +185,16 @@ class Timer
 
          bool operator>>(std::string name)
          {
-            unsigned long long duration = _currentDuration;
+            unsigned long long duration = 0;
+            if (!_mutex.try_lock())
+            {
+                duration = _currentDuration;
+                _currentDuration = 0;
+            }
             _mutex.unlock();
 
             bool overtime = false;
-            if (_currentDuration > 0)
+            if (duration > 0)
                 overtime = waitUntilDuration(name, duration);
             else
                 stop(name);
