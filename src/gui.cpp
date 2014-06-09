@@ -335,7 +335,7 @@ void Gui::initGLV(int width, int height)
         int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing * that.fontSize);
     
         // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR);
+        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
         string text;
         int scrollOffset = that._scrollOffset;
         scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));

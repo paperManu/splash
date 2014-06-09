@@ -73,6 +73,11 @@ void World::run()
         for (auto& d : durationMap)
             _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
+        // Send newer logs to all Scenes
+        auto logs = SLog::log.getLogs();
+        for (auto& log : logs)
+            _link->sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
+
         if (_doComputeBlending)
         {
             _link->sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});

@@ -589,6 +589,13 @@ void Scene::registerAttributes()
         return linkGhost(src, dst);
     });
 
+    _attribFunctions["log"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        SLog::log.setLog(args[0].asString(), (Log::Priority)args[1].asInt());
+        return true;
+    });
+
     _attribFunctions["remove"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
