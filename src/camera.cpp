@@ -918,6 +918,13 @@ void Camera::registerAttributes()
         return true;
     });
 
+    _attribFunctions["moveCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        moveCalibrationPoint(args[0].asFloat(), args[1].asFloat());
+        return true;
+    });
+
     _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 3)
             return false;

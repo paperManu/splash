@@ -433,18 +433,22 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         // Arrow keys
         else if (key >= 262 && key <= 265)
         {
+            auto scene = _scene.lock();
+
             float delta = 1.f;
             if (g.keyboard().shift())
                 delta = 0.1f;
+            else if (g.keyboard().ctrl())
+                delta = 10.f;
                 
             if (key == 262)
-                _camera->moveCalibrationPoint(delta, 0);
+                scene->sendMessage("sendAll", {_camera->getName(), "moveCalibrationPoint", delta, 0});
             else if (key == 263)
-                _camera->moveCalibrationPoint(-delta, 0);
+                scene->sendMessage("sendAll", {_camera->getName(), "moveCalibrationPoint", -delta, 0});
             else if (key == 264)
-                _camera->moveCalibrationPoint(0, -delta);
+                scene->sendMessage("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, -delta});
             else if (key == 265)
-                _camera->moveCalibrationPoint(0, delta);
+                scene->sendMessage("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
             return false;
         }
         else
