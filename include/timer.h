@@ -180,18 +180,20 @@ class Timer
          {
             _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
             _currentDuration = duration;
+            _isDurationSet = true;
             return *this;
          }
 
          bool operator>>(std::string name)
          {
             unsigned long long duration = 0;
-            if (!_mutex.try_lock())
+            if (_isDurationSet)
             {
+                _isDurationSet = false;
                 duration = _currentDuration;
                 _currentDuration = 0;
+                _mutex.unlock();
             }
-            _mutex.unlock();
 
             bool overtime = false;
             if (duration > 0)
@@ -212,6 +214,7 @@ class Timer
         std::map<std::string, unsigned long long> _timeMap; 
         std::map<std::string, unsigned long long> _durationMap;
         unsigned long long _currentDuration;
+        bool _isDurationSet {false};
         std::mutex _mutex;
         bool _enabled {true};
 };
