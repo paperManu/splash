@@ -73,6 +73,16 @@ if test "$HAVE_OIIO" = "false" ; then
     AC_MSG_ERROR([Missing OpenImageIO])
 fi
 
+# Snappy
+AC_LANG_PUSH([C])
+AC_CHECK_HEADER([snappy-c.h],
+    [HAVE_SNAPPY=true],
+    [HAVE_SNAPPY=false])
+AC_LANG_POP
+if test "$HAVE_SNAPPY" = "false" ; then
+    AC_MSG_ERROR([Missing Snappy])
+fi
+
 # OpenMesh
 PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
 if test "x${have_openmesh}" = "xfalse" ; then
