@@ -195,19 +195,38 @@ void Texture::update()
         return;
     }
 
+    // Store the image data size
+    int imageDataSize = spec.width * spec.height * spec.pixel_bytes();
+
     GLint glChannelOrder;
     if (spec.channelnames == vector<string>({"B", "G", "R"}))
         glChannelOrder = GL_BGR;
     else if (spec.channelnames == vector<string>({"B", "G", "R", "A"}))
         glChannelOrder = GL_BGRA;
-    else if (spec.channelnames == vector<string>({"R", "G", "B"}))
+    else if (spec.channelnames == vector<string>({"R", "G", "B"})
+          || spec.channelnames == vector<string>({"RGB_DXT1"}))
         glChannelOrder = GL_RGB;
-    else if (spec.channelnames == vector<string>({"R", "G", "B", "A"}))
+    else if (spec.channelnames == vector<string>({"R", "G", "B", "A"})
+          || spec.channelnames == vector<string>({"RGBA_DXT5"}))
         glChannelOrder = GL_RGBA;
     else if (spec.nchannels == 3)
         glChannelOrder = GL_RGB;
     else if (spec.nchannels == 4)
         glChannelOrder = GL_RGBA;
+
+    // If the texture is compressed, we need to modify a few values
+    bool isCompressed = false;
+    if (spec.channelnames == vector<string>({"RGB_DXT1"}))
+    {
+        isCompressed = true;
+        spec.height *= 2;
+        spec.nchannels = 3;
+    }
+    else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
+    {
+        isCompressed = true;
+        spec.nchannels = 4;
+    }
 
     if (spec.width != _spec.width || spec.height != _spec.height || spec.nchannels != _spec.nchannels || spec.format != _spec.format)
     {
@@ -217,7 +236,7 @@ void Texture::update()
 
         if (_filtering)
         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         else
@@ -226,7 +245,7 @@ void Texture::update()
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
 
-        if (spec.nchannels == 4 && spec.format == "uint8")
+        if (spec.nchannels == 4 && spec.format == "uint8" && !isCompressed)
         {
 #ifdef DEBUG
             SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGBA)" << Log::endl;
@@ -238,7 +257,7 @@ void Texture::update()
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
             _img->unlock();
         }
-        else if (spec.nchannels == 3 && spec.format == "uint8")
+        else if (spec.nchannels == 3 && spec.format == "uint8" && !isCompressed)
         {
 #ifdef DEBUG
             SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGB)" << Log::endl;
@@ -250,13 +269,37 @@ void Texture::update()
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, _img->data());
             _img->unlock();
         }
-        else if (spec.nchannels == 1 && spec.format == "uint16")
+        else if (spec.nchannels == 1 && spec.format == "uint16" && !isCompressed)
         {
 #ifdef DEBUG
             SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
 #endif
             _img->lock();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, _img->data());
+            _img->unlock();
+        }
+        else if (spec.channelnames == vector<string>({"RGB_DXT1"}))
+        {
+#ifdef DEBUG
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGB_S3TC_DXT1, format GL_RGBA (source RGBA)" << Log::endl;
+#endif
+            _img->lock();
+            //if (srgb[0].asInt() > 0)
+            //    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
+            //else
+                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
+            _img->unlock();
+        }
+        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
+        {
+#ifdef DEBUG
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
+#endif
+            _img->lock();
+            //if (srgb[0].asInt() > 0)
+            //    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
+            //else
+                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
             _img->unlock();
         }
         else
@@ -272,13 +315,13 @@ void Texture::update()
         if (pixels != NULL)
         {
             _img->lock();
-            memcpy((void*)pixels, _img->data(), spec.width * spec.height * spec.pixel_bytes());
+            memcpy((void*)pixels, _img->data(), imageDataSize);
             glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
             _img->unlock();
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        glGenerateMipmap(GL_TEXTURE_2D);
+        //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         _spec = spec;
@@ -289,14 +332,18 @@ void Texture::update()
 
         // Copy the pixels from the current PBO to the texture
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
-        if (spec.nchannels == 4 && spec.format == "uint8")
+        if (spec.nchannels == 4 && spec.format == "uint8" && !isCompressed)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, GL_UNSIGNED_BYTE, 0);
-        else if (spec.nchannels == 3 && spec.format == "uint8")
+        else if (spec.nchannels == 3 && spec.format == "uint8" && !isCompressed)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, GL_UNSIGNED_BYTE, 0);
-        else if (spec.nchannels == 1 && spec.format == "uint16")
+        else if (spec.nchannels == 1 && spec.format == "uint16" && !isCompressed)
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_RED, GL_UNSIGNED_SHORT, 0);
+        else if (spec.channelnames == vector<string>({"RGB_DXT1"}))
+            glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, imageDataSize, 0);
+        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
+            glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
@@ -310,7 +357,7 @@ void Texture::update()
 
             _pboCopyThreadIds.clear();
             int stride = SPLASH_TEXTURE_COPY_THREADS;
-            int size = spec.width * spec.height * spec.pixel_bytes();
+            int size = imageDataSize;
             for (int i = 0; i < stride - 1; ++i)
             {
                 _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
@@ -322,7 +369,6 @@ void Texture::update()
             }));
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
     }
     _timestamp = _img->getTimestamp();
 

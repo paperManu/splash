@@ -197,6 +197,7 @@ bool Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 
     glDisable(GL_FRAMEBUFFER_SRGB);
+
     _window->releaseContext();
 
     return error != 0 ? true : false;

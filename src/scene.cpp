@@ -222,7 +222,6 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Window>(obj.second)->render();
     STimer::timer >> "windows";
 
-
     // Update the user events
     glfwPollEvents();
     // Mouse position
