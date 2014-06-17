@@ -6,6 +6,25 @@
 Splash
 ======
 
+Table of Contents
+-----------------
+
+[Introduction](#introduction)
+
+[Installation](#installation)
+
+[Software architecture](#architecture)
+
+[Configuration](#configuration)
+
+[Objects description](#objects)
+
+[Calibration](#calibration)
+
+[Blending](#blending)
+
+
+<a name="introduction"></a>
 Introduction
 ------------
 
@@ -30,6 +49,7 @@ This project is made possible thanks to the [Society for Arts and Technologies](
 Thanks to the Ministère du Développement économique, de l'Innovation et de l'Exportation du Québec (MDEIE).
 
 
+<a name="installation"/></a>
 Installation
 ------------
 
@@ -44,7 +64,8 @@ Splash relies on a few libraries to get the job done. These libraries are:
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
-- [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session.
+- [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
+- [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression.
 
 A few more libraries are used as submodules in the git repository:
 
@@ -71,10 +92,10 @@ Your first option to install Splash is to use the packaged version:
 
 And you should be ready to go!
 
-If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations:
+If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations. Also, OpenMesh is not in the default Ubuntu repository, so it has been packaged by the Metalab and is only available for Ubuntu 13.10 yet. If you want to install Splash on another revision you have to compile OpenMesh by yourself.
 
     sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
-    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev
+    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev
     sudo apt-get install libglfw3-dev libopenmesh-dev
 
     git clone git://github.com/paperManu/splash
@@ -88,6 +109,7 @@ You can now try launching Splash:
 
     splash --help
 
+<a name="architecture"/></a>
 Software architecture
 ---------------------
 As said earlier, Splash was made very modular to handle situations outside the scope of domes. Most of the objects can be created and configured from the configuration file (see next section for the syntax). The most important and useful objects are the following:
@@ -111,6 +133,7 @@ These various objects are connected together through *links*, which you have to 
 A description of the parameters accepted by each object should be added to this documentation shortly.
 
 
+<a name="configuration"/></a>
 Configuration
 -------------
 The configuration is stored in a standard Json file, with the exception that C-style comments are accepted (yay!). It contains at least two sections: one for the *World* configuration, and one for the *Scenes*. Any other object is described in additional sections, one for each *Scene*. As I think that a few examples are far better than any description in this case, here are some typical configuration starting with a very simple one output mapping.
@@ -417,6 +440,7 @@ A few notes on this one:
 - currently, you need to set the same parameters for objects shared between scenes (like "mesh", "object" and "shmimage"). If not, the parameters from the last object will be used. You can also set no parameter at all in all scenes but one, except for the type which has to be set everywhere.
 
 
+<a name="objects"/></a>
 Objects description
 -------------------
 
@@ -583,3 +607,36 @@ Links to: None
 Attributes:
 
 - framerate [int]: refresh rate of the *World* main loop. Setting a value higher than the display refresh rate may help reduce latency between video input and output.
+
+
+<a name="calibration"/></a>
+Calibration
+-----------
+
+This is a (very) preliminary guide to projector calibration in Splash, feel free to report any error or useful addition.
+
+The way calibration works in Splash is to reproduce as closely as possible the parameters of the physical projectors onto a virtual camera. This includes its intrinsic parameters (field of view, shifts) as well as its extrinsic parameters (position and orientation). Roughly, to find these parameters we will set a few point - pixel pairs (at least six of them) and then ask Splash to find values which minimizes the squared sum of the differences between point projections and the associated pixel position.
+
+Once the configuration file is set and each videoprojector has an output, do the following on the screen which has the GUI :
+
+- Press 'tab' to make the GUI appear,
+- click on the dome view which is in the upper right corner,
+- press space to navigate through all the cameras, until you find the one you want to calibrage,
+- press 'W' to switch the view to wireframe,
+- left click on a vertex to select it,
+- shift + left click to specify the position where this vertex should be projected. You can move this projection with the arrow keys.
+- continue until you have six pairs of point - projection. You can orientate the view with the mouse (left click + drag) and zoom in / out with the wheel.
+- press 'C' to ask for calibration.
+
+At this point, you should have a first calibration. Pressing 'C' multiple times can help getting a better one, as is adding more pairs of point - projection. You can go back to previous calibration by pressing 'R'.
+
+Once you are happy with the result, you can go back to textured rendering by pressing 'T' and save the configuration by pressing 'Ctrl' + 'S'. It is advised to save after each calibrated camera (you never know...). Also, be aware that the calibration points are not saved, and will be lost after reloading the configuration.
+
+
+<a name="blending"/></a>
+Blending
+--------
+
+This is an easy part, as long as calibration is done: with the GUI open, press 'B' and wait for it to be computed!
+
+Although it is automatic, it is known to have some issues in specific cases which were not solved yet, but seem to be mostly related to the mesh. In particular, try replacing the mesh with a more / less refined one to check if it solves the issue. Note that the blending state is not saved yet.
