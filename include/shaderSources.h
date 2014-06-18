@@ -93,6 +93,7 @@ struct ShaderSources
                 float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
                 float Y = color.w;
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
+                color.rgb = pow(color.rgb, vec3(2.2));
             }
 
             if (_brightness != 1.f)
