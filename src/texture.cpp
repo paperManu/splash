@@ -291,7 +291,7 @@ void Texture::update()
                 glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
             _img->unlock();
         }
-        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}) || spec.channelnames == vector<string>({"YCoCg_DXT5"}))
+        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
         {
 #ifdef DEBUG
             SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
@@ -301,6 +301,15 @@ void Texture::update()
                 glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
             else
                 glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
+            _img->unlock();
+        }
+        else if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
+        {
+#ifdef DEBUG
+            SLog::log << Log::DEBUGGING << "Texture::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
+#endif
+            _img->lock();
+             glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
             _img->unlock();
         }
         else
@@ -345,11 +354,14 @@ void Texture::update()
                 glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, imageDataSize, 0);
             else
                 glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, imageDataSize, 0);
-        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}) || spec.channelnames == vector<string>({"YCoCg_DXT5"}))
+        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
             if (srgb[0].asInt() > 0)
                 glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, imageDataSize, 0);
             else
                 glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
+        else if (spec.channelnames == vector<string>({"RGBA_DXT5"}) || spec.channelnames == vector<string>({"YCoCg_DXT5"}))
+            glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
+
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
         //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -381,7 +393,7 @@ void Texture::update()
 
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
-    if (spec.channelnames == vector<string>({"YCoCg_DXT1"}))
+    if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
         _shaderUniforms["YCoCg"] = Values({1});
     else
         _shaderUniforms["YCoCg"] = Values({0});
