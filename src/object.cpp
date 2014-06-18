@@ -51,6 +51,18 @@ void Object::activate()
         t->update();
         t->lock();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
+
+        // Get texture specific uniforms and send them to the shader
+        map<string, Values> texUniforms = t->getShaderUniforms();
+        for (auto u : texUniforms)
+        {
+            Values parameters;
+            parameters.push_back(Value(string("_tex") + to_string(texUnit) + "_" + u.first));
+            for (auto value : u.second)
+                parameters.push_back(value);
+            _shader->setAttribute("uniform", parameters);
+        }
+
         texUnit++;
     }
 }

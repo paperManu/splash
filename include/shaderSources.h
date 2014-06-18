@@ -75,6 +75,8 @@ struct ShaderSources
         in vec2 texCoord;
         in vec3 normal;
         out vec4 fragColor;
+        // HapQ specific parameters
+        uniform int _tex0_YCoCg = 0;
 
         void main(void)
         {
@@ -82,6 +84,17 @@ struct ShaderSources
                 discard;
 
             vec4 color = texture(_tex0, texCoord);
+
+            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
+            if (_tex0_YCoCg == 1)
+            {
+                float scale = (color.z * (255.0 / 8.0)) + 1.0;
+                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
+                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
+                float Y = color.w;
+                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
+            }
+
             if (_brightness != 1.f)
                 color.rgb = color.rgb * _brightness;
 
