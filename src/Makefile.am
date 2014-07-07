@@ -283,4 +283,6 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x4.inl \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x8.inl \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/int128.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.inl
+	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.inl \
+	\
+	$(top_srcdir)/external/hap/source/hap.h
