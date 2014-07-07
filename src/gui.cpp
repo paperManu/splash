@@ -22,7 +22,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _scene = s;
     _window = w;
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -244,6 +244,7 @@ bool Gui::render()
 
     if (_isVisible)
     {
+        _doNotRender = false;
         // Redraw the Gui camera, as well as the ghosts cameras if present
         _glvGlobalView._guiCamera->render();
         auto scene = _scene.lock();
@@ -252,35 +253,42 @@ bool Gui::render()
                 dynamic_pointer_cast<Camera>(obj.second)->render();
     }
 
-    if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    GLenum error = glGetError();
-    glViewport(0, 0, _width, _height);
+    GLenum error = 0;
+    if (_doNotRender == false)
+    {
+        if (!_window->setAsCurrentContext()) 
+        	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+        glViewport(0, 0, _width, _height);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+        error = glGetError();
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, fboBuffers);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LEQUAL);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    
-    if (_isVisible) 
-        _glv.drawWidgets(_width, _height, 0.016);
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        
+        if (_isVisible) 
+            _glv.drawWidgets(_width, _height, 0.016);
 
-    glActiveTexture(GL_TEXTURE0);
-    _outTexture->generateMipmap();
+        glActiveTexture(GL_TEXTURE0);
+        _outTexture->generateMipmap();
 
-    glDisable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glDisable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    error = glGetError();
-    if (error)
-        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+        error = glGetError();
+        if (error)
+            SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
 
-    _window->releaseContext();
+        _window->releaseContext();
+
+        if (!_isVisible)
+            _doNotRender = true;
+    }
 
     return error != 0 ? true : false;
 }
@@ -292,13 +300,14 @@ void Gui::setOutputSize(int width, int height)
         return;
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
     _outTexture->resize(width, height);
     _window->releaseContext();
 
     _width = width;
     _height = height;
+    _doNotRender = false;
 
     initGLV(width, height);
 }
@@ -326,7 +335,7 @@ void Gui::initGLV(int width, int height)
         int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing * that.fontSize);
     
         // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR);
+        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
         string text;
         int scrollOffset = that._scrollOffset;
         scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));

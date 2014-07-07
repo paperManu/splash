@@ -39,7 +39,7 @@ void Object::activate()
     if (_blendMaps.size() != 0)
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
-                _shader->activateBlending(i);
+                _shader->setAttribute("blending", {1});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -51,6 +51,18 @@ void Object::activate()
         t->update();
         t->lock();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
+
+        // Get texture specific uniforms and send them to the shader
+        map<string, Values> texUniforms = t->getShaderUniforms();
+        for (auto u : texUniforms)
+        {
+            Values parameters;
+            parameters.push_back(Value(string("_tex") + to_string(texUnit) + "_" + u.first));
+            for (auto value : u.second)
+                parameters.push_back(value);
+            _shader->setAttribute("uniform", parameters);
+        }
+
         texUnit++;
     }
 }
@@ -71,7 +83,7 @@ void Object::deactivate()
     }
 
     if (_blendMaps.size() != 0)
-        _shader->deactivateBlending();
+        _shader->setAttribute("blending", {0});
 
     _shader->deactivate();
     _geometries[0]->deactivate();

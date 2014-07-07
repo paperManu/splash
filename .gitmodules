@@ -7,3 +7,6 @@
 [submodule "external/libsimdpp"]
 	path = external/libsimdpp
 	url = https://github.com/p12tic/libsimdpp.git
+[submodule "external/hap"]
+	path = external/hap
+	url = https://github.com/Vidvox/hap.git

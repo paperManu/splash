@@ -117,8 +117,12 @@ class Image_Shmdata : public Image
         int _green {0};
         int _blue {0};
         int _channels {0};
+        bool _isHap {false};
         bool _isYUV {false};
         bool _is420 {false};
+
+        // Hap specific attributes
+        unsigned int _textureFormat {0};
 
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)
@@ -136,6 +140,16 @@ class Image_Shmdata : public Image
         static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
             const char* type_description, void* user_data);
         
+        /**
+         * Read Hap compressed images
+         */
+        static void readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size);
+
+        /**
+         * Read uncompressed RGB or YUV images
+         */
+        static void readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size);
+
         /**
          * Register new functors to modify attributes
          */

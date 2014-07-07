@@ -271,12 +271,16 @@ void Shader::parseUniforms(const std::string& src)
             _uniforms[name] = pair<Values, GLint>({0.f, 0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "vec4")
             _uniforms[name] = pair<Values, GLint>({0.f, 0.f, 0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "ivec2")
+            _uniforms[name] = pair<Values, GLint>({0, 0}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "ivec3")
+            _uniforms[name] = pair<Values, GLint>({0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "ivec4")
             _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "mat4")
             _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
         else if (type != "sampler2D")
-            SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << "Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
+            SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
 
         if (values.size() != 0)
         {
@@ -309,6 +313,18 @@ void Shader::parseUniforms(const std::string& src)
                 float v[4];
                 glGetUniformfv(_program, _uniforms[name].second, v);
                 _uniforms[name].first = Values({v[0], v[1], v[2], v[3]});
+            }
+            else if (type == "ivec2")
+            {
+                int v[2];
+                glGetUniformiv(_program, _uniforms[name].second, v);
+                _uniforms[name].first = Values({v[0], v[1]});
+            }
+            else if (type == "ivec3")
+            {
+                int v[3];
+                glGetUniformiv(_program, _uniforms[name].second, v);
+                _uniforms[name].first = Values({v[0], v[1], v[2]});
             }
             else if (type == "ivec4")
             {
@@ -361,6 +377,46 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
+    _attribFunctions["blending"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+        
+        _uniforms["_texBlendingMap"].first = args;
+        _uniformsToUpdate.push_back("_texBlendingMap");
+
+        return true;
+    });
+
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_blendWidth"].first = args;
+        _uniformsToUpdate.push_back("_blendWidth");
+
+        return true;
+    });
+
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_blackLevel"].first = args;
+        _uniformsToUpdate.push_back("_blackLevel");
+
+        return true;
+    });
+
+    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() != 1)
+            return false;
+
+        _uniforms["_brightness"].first = args;
+        _uniformsToUpdate.push_back("_brightness");
+
+        return true;
+    });
+
     _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
@@ -458,36 +514,6 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_blendWidth"].first = args;
-        _uniformsToUpdate.push_back("_blendWidth");
-
-        return true;
-    });
-
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_blackLevel"].first = args;
-        _uniformsToUpdate.push_back("_blackLevel");
-
-        return true;
-    });
-
-    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_brightness"].first = args;
-        _uniformsToUpdate.push_back("_brightness");
-
-        return true;
-    });
-
     // Attribute to configure the placement of the various texture input
     _attribFunctions["layout"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1 || args.size() > 4)
@@ -507,6 +533,21 @@ void Shader::registerAttributes()
         for (auto& v : _layout)
             out.push_back(v);
         return out;
+    });
+
+    _attribFunctions["uniform"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+
+        string uniformName = args[0].asString();
+        vector<Value> uniformArgs;
+        for (int i = 1; i < args.size(); ++i)
+            uniformArgs.push_back(args[i]);
+
+        _uniforms[uniformName].first = uniformArgs;
+        _uniformsToUpdate.push_back(uniformName);
+
+        return true;
     });
 }
 

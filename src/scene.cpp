@@ -222,7 +222,6 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Window>(obj.second)->render();
     STimer::timer >> "windows";
 
-
     // Update the user events
     glfwPollEvents();
     // Mouse position
@@ -325,7 +324,7 @@ void Scene::run()
             _doComputeBlending = false;
         }
 
-        STimer::timer >> 1e3 >>  "sceneLoop";
+        STimer::timer >> "sceneLoop";
     }
 }
 
@@ -583,6 +582,13 @@ void Scene::registerAttributes()
         string src = args[0].asString();
         string dst = args[1].asString();
         return linkGhost(src, dst);
+    });
+
+    _attribFunctions["log"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 2)
+            return false;
+        SLog::log.setLog(args[0].asString(), (Log::Priority)args[1].asInt());
+        return true;
     });
 
     _attribFunctions["remove"] = AttributeFunctor([&](vector<Value> args) {

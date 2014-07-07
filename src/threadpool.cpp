@@ -1,6 +1,7 @@
 #include "threadpool.h"
 
 #include <algorithm>
+#include <unistd.h>
 
 using namespace std;
 
@@ -46,11 +47,11 @@ void Worker::operator() ()
 
 /*************/
 ThreadPool::ThreadPool(size_t threads)
-    : stop(false)
 {
-    workingThreads = 0;
-
-    for (size_t i = 0; i < threads; ++i)
+    int nprocessors = threads;
+    if (threads == 0)
+        nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+    for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }
 
@@ -127,4 +128,4 @@ unsigned int ThreadPool::getPoolLength()
 }
 
 /*************/
-ThreadPool SThread::pool(SPLASH_MAX_THREAD);
+ThreadPool SThread::pool;

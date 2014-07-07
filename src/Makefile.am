@@ -3,6 +3,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/libsimdpp \
+	-I$(top_srcdir)/external/hap/source \
 	-DGLV_GLFW \
 	-DDATADIR=\"$(datadir)\splash\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
@@ -54,6 +55,10 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/GLV/src/glv_view.cpp \
 	$(top_srcdir)/external/GLV/src/glv_widget.cpp
 
+# Hap related sources
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/hap/source/hap.c
+
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/libsimdpp/simdpp \
@@ -72,6 +77,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lOpenImageIO \
+	-lsnappy \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GLEW_LIBS) \
@@ -277,4 +283,6 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x4.inl \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x8.inl \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/int128.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.inl
+	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.inl \
+	\
+	$(top_srcdir)/external/hap/source/hap.h

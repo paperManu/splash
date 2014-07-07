@@ -158,9 +158,8 @@ bool Window::linkTo(BaseObjectPtr obj)
 /*************/
 bool Window::render()
 {
-    lock_guard<mutex> lock(_contextMutex);
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glEnable(GL_FRAMEBUFFER_SRGB);
 
     int w, h;
@@ -198,6 +197,7 @@ bool Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 
     glDisable(GL_FRAMEBUFFER_SRGB);
+
     _window->releaseContext();
 
     return error != 0 ? true : false;
@@ -206,9 +206,8 @@ bool Window::render()
 /*************/
 void Window::swapBuffers()
 {
-    lock_guard<mutex> lock(_contextMutex);
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glfwSwapBuffers(_window->get());
     _window->releaseContext();
 }
@@ -317,7 +316,7 @@ void Window::setEventsCallbacks()
 bool Window::setProjectionSurface()
 {
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glfwShowWindow(_window->get());
     glfwSwapInterval(_swapInterval);
 
@@ -331,21 +330,18 @@ bool Window::setProjectionSurface()
 
     GLenum error = glGetError();
     if (error)
-    {
         SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
-        return false;
-    }
 
     _window->releaseContext();
 
-    return true;
+    return error == 0 ? true : false;
 }
 
 /*************/
 void Window::updateSwapInterval()
 {
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     glfwSwapInterval(_swapInterval);
 

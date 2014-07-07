@@ -171,7 +171,7 @@ class GlWindow
          */
         bool setAsCurrentContext() const 
         {
-            if (glfwGetCurrentContext() != NULL)
+            if (glfwGetCurrentContext() != NULL && glfwGetCurrentContext() != _window)
                 return false;
             _mutex.lock();
             glfwMakeContextCurrent(_window);

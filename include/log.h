@@ -148,6 +148,19 @@ class Log
         }
 
         /**
+         * Get the new logs (from last call to this method)
+         */
+        std::vector<std::pair<std::string, Priority>> getLogs()
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            std::vector<std::pair<std::string, Priority>> logs;
+            for (int i = _logPointer; i < _logs.size(); ++i)
+                logs.push_back(_logs[i]);
+            _logPointer = _logs.size();
+            return logs;
+        }
+
+        /**
          * Get the verbosity of the console output
          */
         Priority getVerbosity()
@@ -163,10 +176,26 @@ class Log
             _verbosity = p;
         }
 
+        /**
+         * Add new logs from an outside source, i.e. another process
+         */
+        void setLog(std::string log, Priority priority)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            _logs.push_back(std::pair<std::string, Priority>(log, priority));
+
+            if (_logs.size() > _logLength)
+            {
+                _logPointer = _logPointer > 0 ? _logPointer - 1 : _logPointer;
+                _logs.erase(_logs.begin());
+            }
+        }
+
     private:
         mutable std::mutex _mutex;
         std::vector<std::pair<std::string, Priority>> _logs;
         int _logLength {5000};
+        int _logPointer {0};
         Priority _verbosity {MESSAGE};
 
         std::string _tempString;
@@ -231,6 +260,7 @@ class Log
             _logs.push_back(std::pair<std::string, Priority>(timedMsg, p));
             if (_logs.size() > _logLength)
             {
+                _logPointer = _logPointer > 0 ? _logPointer - 1 : _logPointer;
                 _logs.erase(_logs.begin());
             }
         }

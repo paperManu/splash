@@ -148,7 +148,6 @@ class Window : public BaseObject
         std::vector<Value> _layout {0, 0, 0, 0};
         int _swapInterval {2};
 
-        mutable std::mutex _contextMutex;
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;

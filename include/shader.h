@@ -114,19 +114,9 @@ class Shader : public BaseObject
         void activate();
 
         /**
-         * Activate the blending from the given texture nbr
-         */
-        void activateBlending(int textureNbr) {_useBlendingMap = textureNbr;}
-
-        /**
          * Deactivate this shader
          */
         void deactivate();
-
-        /**
-         * Deactivate the blending
-         */
-        void deactivateBlending() {_useBlendingMap = 0;}
 
         /**
          * Set the sideness of the object

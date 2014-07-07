@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.1.4, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.1.6, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:1:4])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:1:6])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.1])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.1"], [API version])
 
@@ -71,6 +71,16 @@ AC_CHECK_HEADER([OpenImageIO/imageio.h],
 AC_LANG_POP
 if test "$HAVE_OIIO" = "false" ; then
     AC_MSG_ERROR([Missing OpenImageIO])
+fi
+
+# Snappy
+AC_LANG_PUSH([C])
+AC_CHECK_HEADER([snappy-c.h],
+    [HAVE_SNAPPY=true],
+    [HAVE_SNAPPY=false])
+AC_LANG_POP
+if test "$HAVE_SNAPPY" = "false" ; then
+    AC_MSG_ERROR([Missing Snappy])
 fi
 
 # OpenMesh

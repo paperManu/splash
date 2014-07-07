@@ -57,7 +57,7 @@ class Worker
 class ThreadPool
 {
     public:
-        ThreadPool(size_t);
+        ThreadPool(size_t threads = 0);
         ~ThreadPool();
 
         template<class F> unsigned int enqueue(F f);
@@ -73,10 +73,10 @@ class ThreadPool
         std::deque<unsigned int> tasksId;
         std::deque<unsigned int> tasksFinished;
 
-        std::atomic_uint workingThreads;
+        std::atomic_uint workingThreads {0};
         std::mutex queue_mutex;
         std::condition_variable condition;
-        bool stop;
+        bool stop {false};
 
         std::atomic_uint nextId {1};
 };
