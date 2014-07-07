@@ -4,7 +4,7 @@
     "encoding" : "UTF-8",
 
     "world" : {
-        "framerate" : 300
+        "framerate" : 60
     },
 
     "scenes" : [
@@ -13,7 +13,7 @@
             "address" : "localhost",
             "spawn" : 1,
             "display" : 0,
-            "swapInterval" : 0
+            "swapInterval" : 1
         }
     ],
 
@@ -36,32 +36,32 @@
             "blackLevel" : 0.0,
             "shared" : 0
         },
-        "cam3" : {
-            "type" : "camera",
-            "size" : [1920, 1200],
-            "eye" : [-2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "blackLevel" : 0.0,
-            "shared" : 0
-        },
-        "cam4" : {
-            "type" : "camera",
-            "size" : [1920, 1200],
-            "eye" : [2.0, 2.0, -0.5],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "blackLevel" : 0.0,
-            "shared" : 0
-        },
+        //"cam3" : {
+        //    "type" : "camera",
+        //    "size" : [1920, 1200],
+        //    "eye" : [-2.0, -2.0, 0.3],
+        //    "target" : [0.0, 0.0, 0.5],
+        //    "blendWidth" : 0.05,
+        //    "blackLevel" : 0.0,
+        //    "shared" : 0
+        //},
+        //"cam4" : {
+        //    "type" : "camera",
+        //    "size" : [1920, 1200],
+        //    "eye" : [2.0, 2.0, -0.5],
+        //    "target" : [0.0, 0.0, 0.5],
+        //    "blendWidth" : 0.05,
+        //    "blackLevel" : 0.0,
+        //    "shared" : 0
+        //},
         "win1" : {"type" : "window", "fullscreen" : 0},
-        "win2" : {"type" : "window", "fullscreen" : 1},
-        "win3" : {"type" : "window", "fullscreen" : 2},
-        "win4" : {"type" : "window", "fullscreen" : 3},
+        "win2" : {"type" : "window", "fullscreen" : 1, "layout" : [0, 1, 2, 5]},
+        //"win3" : {"type" : "window", "fullscreen" : 2},
+        //"win4" : {"type" : "window", "fullscreen" : 3},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
-        "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0, "srgb" : 1},
+        "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 1, "srgb" : 1},
         "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         "gui" : {"type" : "gui"},
 
@@ -72,11 +72,11 @@
             ["object", "cam3"],
             ["object", "cam4"],
             ["object", "gui"],
-            ["shmimage", "object"],
+            ["image", "object"],
             ["cam1", "win1"],
             ["cam2", "win2"],
-            ["cam3", "win3"],
-            ["cam4", "win4"],
+            ["cam3", "win2"],
+            ["cam4", "win2"],
             ["gui", "win1"]
         ]
     }
