@@ -36,7 +36,7 @@ Camera::Camera(GlWindowPtr w)
 
     // Intialize FBO, textures and everything OpenGL
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     _window->releaseContext();
@@ -44,7 +44,7 @@ Camera::Camera(GlWindowPtr w)
     setOutputNbr(1);
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
@@ -98,7 +98,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
     }
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     // We want to render the object with a specific texture, containing texture coordinates
     vector<vector<Value>> shaderFill;
     for (auto& obj : _objects)
@@ -133,7 +133,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
     _displayCalibration = displayCalibration;
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     GLenum error = glGetError();
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     ImageBuf img(_outTextures[0]->getSpec());
@@ -336,7 +336,7 @@ vector<Value> Camera::pickVertex(float x, float y)
 
     // Get the depth at the given point
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
@@ -376,7 +376,7 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
 
     // Get the depth at the given point
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
@@ -415,7 +415,7 @@ bool Camera::render()
         setOutputSize(spec.width, spec.height);
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     if (_outTextures.size() < 1)
         return false;
@@ -625,7 +625,7 @@ void Camera::setOutputNbr(int nbr)
         return;
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
@@ -666,7 +666,7 @@ void Camera::setOutputSize(int width, int height)
         return;
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
 
     for (auto tex : _outTextures)

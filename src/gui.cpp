@@ -22,7 +22,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _scene = s;
     _window = w;
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -257,7 +257,7 @@ bool Gui::render()
     if (_doNotRender == false)
     {
         if (!_window->setAsCurrentContext()) 
-	    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+        	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
         glViewport(0, 0, _width, _height);
 
         error = glGetError();
@@ -300,7 +300,7 @@ void Gui::setOutputSize(int width, int height)
         return;
 
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
     _outTexture->resize(width, height);
     _window->releaseContext();

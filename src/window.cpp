@@ -159,7 +159,7 @@ bool Window::linkTo(BaseObjectPtr obj)
 bool Window::render()
 {
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glEnable(GL_FRAMEBUFFER_SRGB);
 
     int w, h;
@@ -207,7 +207,7 @@ bool Window::render()
 void Window::swapBuffers()
 {
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glfwSwapBuffers(_window->get());
     _window->releaseContext();
 }
@@ -316,7 +316,7 @@ void Window::setEventsCallbacks()
 bool Window::setProjectionSurface()
 {
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glfwShowWindow(_window->get());
     glfwSwapInterval(_swapInterval);
 
@@ -341,7 +341,7 @@ bool Window::setProjectionSurface()
 void Window::updateSwapInterval()
 {
     if (!_window->setAsCurrentContext()) 
-		 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     glfwSwapInterval(_swapInterval);
 
