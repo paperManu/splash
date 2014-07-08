@@ -225,38 +225,42 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
         }
 
         // Next step: use these values to reset the vertices of _mesh
-        _mesh.clear();
+        MeshContainer mesh;
+        //_mesh.clear();
         for (int face = 0; face < nbrVertices / 3; ++face)
         {
             MeshContainer::VertexHandle vertices[3];
-            vertices[0] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 0], data[0][face * 3 * 4 + 1], data[0][face * 3 * 4 + 2]));
-            vertices[1] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 4], data[0][face * 3 * 4 + 5], data[0][face * 3 * 4 + 6]));
-            vertices[2] = _mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 8], data[0][face * 3 * 4 + 9], data[0][face * 3 * 4 + 10]));
+            vertices[0] = mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 0], data[0][face * 3 * 4 + 1], data[0][face * 3 * 4 + 2]));
+            vertices[1] = mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 4], data[0][face * 3 * 4 + 5], data[0][face * 3 * 4 + 6]));
+            vertices[2] = mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 8], data[0][face * 3 * 4 + 9], data[0][face * 3 * 4 + 10]));
 
             vector<MeshContainer::VertexHandle> faceHandle;
             faceHandle.clear();
             faceHandle.push_back(vertices[0]);
             faceHandle.push_back(vertices[1]);
             faceHandle.push_back(vertices[2]);
-            _mesh.add_face(faceHandle);
+            mesh.add_face(faceHandle);
         }
 
         // We are also loading uv coords and normals
-        _mesh.request_vertex_normals();
-        _mesh.request_vertex_texcoords2D();
+        mesh.request_vertex_normals();
+        mesh.request_vertex_texcoords2D();
         int faceIdx = 0;
-        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
+        for_each (mesh.faces_begin(), mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
         {
             int vertexIdx = 0;
-            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
+            for_each (mesh.cfv_begin(face), mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
             {
                 int floatIdx = faceIdx * 3 + vertexIdx;
-                _mesh.set_texcoord2D(vertex, MeshContainer::TexCoord2D(data[1][floatIdx * 2 + 0], data[1][floatIdx * 2 + 1]));
-                _mesh.set_normal(vertex, MeshContainer::Normal(data[2][floatIdx * 3 + 0], data[2][floatIdx * 3 + 1], data[2][floatIdx * 3 + 2]));
+                mesh.set_texcoord2D(vertex, MeshContainer::TexCoord2D(data[1][floatIdx * 2 + 0], data[1][floatIdx * 2 + 1]));
+                mesh.set_normal(vertex, MeshContainer::Normal(data[2][floatIdx * 3 + 0], data[2][floatIdx * 3 + 1], data[2][floatIdx * 3 + 2]));
                 vertexIdx++;
             });
             faceIdx++;
         });
+
+        _bufferMesh = mesh;
+        _meshUpdated = true;
 
         updateTimestamp();
     }
@@ -270,6 +274,20 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     STimer::timer >> "deserialize " + _name;
 
     return true;
+}
+
+/*************/
+void Mesh::update()
+{
+    lock_guard<mutex> lockRead(_readMutex);
+    lock_guard<mutex> lockWrite(_writeMutex);
+    if (_meshUpdated)
+    {
+        _mesh = _bufferMesh;
+        _meshUpdated = false;
+    }
+    else if (_benchmark)
+        updateTimestamp();
 }
 
 /*************/
@@ -329,6 +347,16 @@ void Mesh::registerAttributes()
         if (args.size() < 1)
             return false;
         _name = args[0].asString();
+        return true;
+    });
+    
+    _attribFunctions["benchmark"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() > 0)
+            _benchmark = true;
+        else
+            _benchmark = false;
         return true;
     });
 }

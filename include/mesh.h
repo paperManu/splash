@@ -107,10 +107,13 @@ class Mesh : public BufferObject
         /**
          * Update the content of the mesh
          */
-        virtual void update() {}
+        virtual void update();
 
     protected:
         MeshContainer _mesh;
+        MeshContainer _bufferMesh;
+        bool _meshUpdated {false};
+        bool _benchmark {false};
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         
