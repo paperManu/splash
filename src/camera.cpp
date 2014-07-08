@@ -499,11 +499,6 @@ bool Camera::render()
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_SCISSOR_TEST);
 
-    // We need to regenerate the mipmaps for all the output textures
-    glActiveTexture(GL_TEXTURE0);
-    for (auto t : _outTextures)
-        t->generateMipmap();
-
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();

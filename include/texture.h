@@ -101,6 +101,12 @@ class Texture : public BaseObject
         Texture& operator=(ImagePtr& img);
 
         /**
+         * Bind / unbind this texture
+         */
+        void bind() {glBindTexture(_texTarget, _glTex);}
+        void unbind() {glBindTexture(_texTarget, 0);} // Of course, this should be used on the right texture unit
+
+        /**
          * Enable / disable filtering of the texture
          */
         void disableFiltering() {_filtering = false;}

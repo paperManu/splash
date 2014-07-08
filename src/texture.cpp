@@ -44,9 +44,9 @@ Texture& Texture::operator=(ImagePtr& img)
 /*************/
 void Texture::generateMipmap() const
 {
-    glBindTexture(GL_TEXTURE_2D, _glTex);
+    glBindTexture(_texTarget, _glTex);
     glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(_texTarget, 0);
 }
 
 /*************/
@@ -87,7 +87,7 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
         glGenTextures(1, &_glTex);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glBindTexture(target, _glTex);
 
         if (internalFormat == GL_DEPTH_COMPONENT)
         {
@@ -116,14 +116,14 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
         }
 
         glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(target, 0);
     }
     else
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glBindTexture(target, _glTex);
         glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(target, 0);
     }
 
     _spec.width = width;
@@ -331,7 +331,6 @@ void Texture::update()
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         _spec = spec;
@@ -363,7 +362,6 @@ void Texture::update()
             glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
@@ -422,6 +420,8 @@ void Texture::init()
 {
     _type = "texture";
     _timestamp = chrono::high_resolution_clock::now();
+
+    _texTarget = GL_TEXTURE_2D;
 
     glGenBuffers(2, _pbos);
 }

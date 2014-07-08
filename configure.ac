@@ -18,7 +18,7 @@ AC_PROG_CC_C_O
 
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
-#export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
+export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 
 # Check for header files
 AC_HEADER_STDC

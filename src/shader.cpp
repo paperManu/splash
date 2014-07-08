@@ -92,20 +92,19 @@ void Shader::activate()
         }
     }
 
-
     _uniformsToUpdate.clear();
-    _textureNbr = 0; // Set to 0 for the next draw
 }
 
 /*************/
 void Shader::deactivate()
 {
     glUseProgram(0);
-    for (int i = 0; i < _textureNbr; ++i)
+    for (int i = 0; i < _textures.size(); ++i)
     {
         glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        _textures[i]->unbind();
     }
+    _textures.clear();
     _mutex.unlock();
 }
 
@@ -162,13 +161,13 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
 {
     glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(GL_TEXTURE_2D, texture->getTexId());
+    texture->bind();
     GLint uniform = glGetUniformLocation(_program, name.c_str());
     glUniform1i(uniform, textureUnit);
 
-    _textureNbr++;
+    _textures.push_back(texture);
     if (_uniforms.find("_textureNbr") != _uniforms.end())
-        glUniform1i(_uniforms["_textureNbr"].second, _textureNbr);
+        glUniform1i(_uniforms["_textureNbr"].second, _textures.size());
     _uniformsToUpdate.push_back("_textureNbr");
 }
 
