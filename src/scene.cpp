@@ -465,7 +465,7 @@ void Scene::init(std::string name)
     // GLFW stuff
     if (!glfwInit())
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
         _isInitialized = false;
         return;
     }
@@ -482,7 +482,7 @@ void Scene::init(std::string name)
 
     if (!window)
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
+        SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
         _isInitialized = false;
         return;
     }

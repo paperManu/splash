@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-DGLV_GLFW \
+	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)\splash\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
