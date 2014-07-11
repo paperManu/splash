@@ -197,6 +197,8 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     if (obj->size() == 0)
         return false;
 
+    lock_guard<mutex> lock(_writeMutex);
+
     STimer::timer << "deserialize " + _name;
 
     // First, we get the number of vertices
@@ -207,6 +209,12 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
     currentObjPtr += sizeof(nbrVertices);
 
+    if (nbrVertices <= 0 || nbrVertices > obj->size())
+    {
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Bad buffer received, discarding" << Log::endl;
+        return false;
+    }
+
     vector<vector<float>> data;
     data.push_back(vector<float>(nbrVertices * 4));
     data.push_back(vector<float>(nbrVertices * 2));
@@ -215,8 +223,6 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     // Let's read the values
     try
     {
-        lock_guard<mutex> lock(_writeMutex);
-
         for (auto& d : data)
         {
             ptr = reinterpret_cast<char*>(d.data());
