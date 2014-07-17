@@ -173,8 +173,18 @@ void Link::freeOlderBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
     unique_lock<mutex> lock(ctx->_otgMutex);
-    ctx->_otgBuffers[0]->_mutex.unlock();
-    ctx->_otgBuffers.pop_front();
+    int index = 0;
+    for (; index < ctx->_otgBuffers.size(); ++index)
+        if (ctx->_otgBuffers[index]->data() == data)
+            break;
+
+    if (index >= ctx->_otgBuffers.size())
+    {
+        SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
+        return;
+    }
+    ctx->_otgBuffers[index]->_mutex.unlock();
+    ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
 }
 
 /*************/
