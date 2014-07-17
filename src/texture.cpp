@@ -201,8 +201,12 @@ void Texture::update()
     GLint glChannelOrder;
     if (spec.channelnames == vector<string>({"B", "G", "R"}))
         glChannelOrder = GL_BGR;
+    else if (spec.channelnames == vector<string>({"R", "G", "B"}))
+        glChannelOrder = GL_RGB;
     else if (spec.channelnames == vector<string>({"B", "G", "R", "A"}))
         glChannelOrder = GL_BGRA;
+    else if (spec.channelnames == vector<string>({"R", "G", "B", "A"}))
+        glChannelOrder = GL_RGBA;
     else if (spec.channelnames == vector<string>({"R", "G", "B"})
           || spec.channelnames == vector<string>({"RGB_DXT1"}))
         glChannelOrder = GL_RGB;

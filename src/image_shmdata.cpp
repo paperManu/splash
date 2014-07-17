@@ -141,7 +141,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ctx->_isYUV = false;
         ctx->_is420 = false;
         
-        regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regBlue, regFormatYUV;
+        regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regGreen, regBlue, regFormatYUV;
         try
         {
             // TODO: replace these regex with some GCC 4.7 compatible ones
@@ -155,6 +155,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             regWidth = regex("(.*width=\\(int\\))(.*)", regex_constants::extended);
             regHeight = regex("(.*height=\\(int\\))(.*)", regex_constants::extended);
             regRed = regex("(.*red_mask=\\(int\\))(.*)", regex_constants::extended);
+            regGreen = regex("(.*green_mask=\\(int\\))(.*)", regex_constants::extended);
             regBlue = regex("(.*blue_mask=\\(int\\))(.*)", regex_constants::extended);
         }
         catch (const regex_error& e)
@@ -198,6 +199,12 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
             {
                 ctx->_isYUV = true;
             }
+            if (regex_match(dataType, match, regGreen))
+            {
+                ssub_match subMatch = match[2];
+                substr = subMatch.str();
+                sscanf(substr.c_str(), ")%i", &ctx->_green);
+            }
             if (regex_match(dataType, match, regBlue))
             {
                 ssub_match subMatch = match[2];
@@ -207,6 +214,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
 
             if (ctx->_bpp == 24)
                 ctx->_channels = 3;
+            else if (ctx->_bpp == 32)
+                ctx->_channels = 4;
             else if (ctx->_isYUV)
             {
                 ctx->_bpp = 12;
@@ -328,7 +337,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
     if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height || bufSpec.nchannels != ctx->_channels)
     {
         oiio::ImageSpec spec(ctx->_width, ctx->_height, ctx->_channels, oiio::TypeDesc::UINT8);
-        if (ctx->_red < ctx->_blue)
+        if (ctx->_green < ctx->_blue)
             spec.channelnames = {"B", "G", "R"};
         else
             spec.channelnames = {"R", "G", "B"};
