@@ -61,10 +61,7 @@ void Shader::deactivate()
     glUseProgram(0);
     _activated = false;
     for (int i = 0; i < _textures.size(); ++i)
-    {
-        glActiveTexture(GL_TEXTURE0 + i);
         _textures[i]->unbind();
-    }
     _textures.clear();
     _mutex.unlock();
 }

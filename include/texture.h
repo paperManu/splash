@@ -103,8 +103,8 @@ class Texture : public BaseObject
         /**
          * Bind / unbind this texture
          */
-        void bind() {glBindTexture(_texTarget, _glTex);}
-        void unbind() {glBindTexture(_texTarget, 0);} // Of course, this should be used on the right texture unit
+        void bind();
+        void unbind();
 
         /**
          * Enable / disable filtering of the texture
@@ -189,6 +189,9 @@ class Texture : public BaseObject
         bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;
+
+        // And some temporary attributes
+        GLint _activeTexture; // To which texture unit the texture is bound
 
         ImagePtr _img;
         std::chrono::high_resolution_clock::time_point _timestamp;

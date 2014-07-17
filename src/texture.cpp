@@ -42,6 +42,13 @@ Texture& Texture::operator=(ImagePtr& img)
 }
 
 /*************/
+void Texture::bind()
+{
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
+    glBindTexture(_texTarget, _glTex);
+}
+
+/*************/
 void Texture::generateMipmap() const
 {
     glBindTexture(_texTarget, _glTex);
@@ -170,6 +177,13 @@ void Texture::resize(int width, int height)
 {
     if (width != _spec.width && height != _spec.height)
         reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
+}
+
+/*************/
+void Texture::unbind()
+{
+    glActiveTexture((GLenum)_activeTexture);
+    glBindTexture(_texTarget, 0);
 }
 
 /*************/
