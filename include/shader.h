@@ -31,6 +31,7 @@
 #include "config.h"
 #include "coretypes.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
@@ -143,8 +144,14 @@ class Shader : public BaseObject
          */
         void setModelViewProjectionMatrix(const glm::dmat4& mvp);
 
+        /**
+         * Set the currently queued uniforms updates
+         */
+        void updateUniforms();
+
     private:
         mutable std::mutex _mutex;
+        std::atomic_bool _activated {false};
 
         std::map<ShaderType, GLuint> _shaders;
         std::map<ShaderType, std::string> _shadersSource;
