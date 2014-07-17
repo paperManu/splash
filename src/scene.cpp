@@ -425,7 +425,7 @@ void Scene::computeBlendingMap()
 GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 {
     string windowName;
-    name.size() == 0 ? windowName = "Splash::Window" : windowName = name;
+    name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
 
     if (!_mainWindow)
     {
