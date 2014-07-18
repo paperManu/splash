@@ -448,9 +448,9 @@ void Texture::init()
 void Texture::updatePbos(int width, int height, int bytes)
 {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 
