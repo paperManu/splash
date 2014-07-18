@@ -459,7 +459,8 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     {
         glfwMakeContextCurrent(window);
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW | GL_DEBUG_SEVERITY_MEDIUM | GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
         glfwMakeContextCurrent(NULL);
     }
 
@@ -503,7 +504,8 @@ void Scene::init(std::string name)
     {
         glfwMakeContextCurrent(_mainWindow->get());
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM | GL_DEBUG_SEVERITY_HIGH | GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
         glfwMakeContextCurrent(NULL);
     }
 
