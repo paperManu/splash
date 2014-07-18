@@ -554,7 +554,7 @@ class BufferObject : public BaseObject
             }
 
             // Deserialize it right away, in a separate thread
-            SThread::pool.enqueue([&]() {
+            SThread::pool.enqueueWithoutId([&]() {
                 deserialize();
             });
         }

@@ -39,7 +39,8 @@ void Worker::operator() ()
 
         {
             pool.queue_mutex.lock();
-            pool.tasksFinished.push_back(id);
+            if (id != 0)
+                pool.tasksFinished.push_back(id);
             pool.queue_mutex.unlock();
         }
     }
@@ -88,7 +89,7 @@ void ThreadPool::waitAllThreads()
 }
 
 /*************/
-void ThreadPool::waitThreads(vector<unsigned int> list)
+void ThreadPool::waitThreads(vector<unsigned int>& list)
 {
     timespec nap;
     nap.tv_sec = 0;

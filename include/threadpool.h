@@ -61,8 +61,9 @@ class ThreadPool
         ~ThreadPool();
 
         template<class F> unsigned int enqueue(F f);
+        template<class F> void enqueueWithoutId(F f);
         void waitAllThreads();
-        void waitThreads(std::vector<unsigned int>);
+        void waitThreads(std::vector<unsigned int>&);
         unsigned int getPoolLength();
 
     private:
@@ -93,6 +94,8 @@ unsigned int ThreadPool::enqueue(F f)
         queue_mutex.lock();
 
         id = std::atomic_fetch_add(&nextId, 1u);
+        if (id == std::numeric_limits<unsigned int>::max())
+            nextId = 1;
 
         // Add the task
         tasks.push_back(std::shared_ptr<std::function<void()>>(new std::function<void()>(f)));
@@ -105,6 +108,25 @@ unsigned int ThreadPool::enqueue(F f)
     condition.notify_one();
 
     return id;
+}
+
+/*************/
+template<class F>
+void ThreadPool::enqueueWithoutId(F f)
+{
+    {
+        // Acquire lock
+        queue_mutex.lock();
+
+        // Add the task
+        tasks.push_back(std::shared_ptr<std::function<void()>>(new std::function<void()>(f)));
+        tasksId.push_back(0);
+
+        queue_mutex.unlock();
+    }
+
+    // Wake up one thread
+    condition.notify_one();
 }
 
 /*************/
