@@ -42,6 +42,13 @@ Texture& Texture::operator=(ImagePtr& img)
 }
 
 /*************/
+void Texture::bind()
+{
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
+    glBindTexture(_texTarget, _glTex);
+}
+
+/*************/
 void Texture::generateMipmap() const
 {
     glBindTexture(_texTarget, _glTex);
@@ -173,6 +180,13 @@ void Texture::resize(int width, int height)
 }
 
 /*************/
+void Texture::unbind()
+{
+    glActiveTexture((GLenum)_activeTexture);
+    glBindTexture(_texTarget, 0);
+}
+
+/*************/
 void Texture::update()
 {
     lock_guard<mutex> lock(_mutex);
@@ -201,8 +215,12 @@ void Texture::update()
     GLint glChannelOrder;
     if (spec.channelnames == vector<string>({"B", "G", "R"}))
         glChannelOrder = GL_BGR;
+    else if (spec.channelnames == vector<string>({"R", "G", "B"}))
+        glChannelOrder = GL_RGB;
     else if (spec.channelnames == vector<string>({"B", "G", "R", "A"}))
         glChannelOrder = GL_BGRA;
+    else if (spec.channelnames == vector<string>({"R", "G", "B", "A"}))
+        glChannelOrder = GL_RGBA;
     else if (spec.channelnames == vector<string>({"R", "G", "B"})
           || spec.channelnames == vector<string>({"RGB_DXT1"}))
         glChannelOrder = GL_RGB;
@@ -430,9 +448,9 @@ void Texture::init()
 void Texture::updatePbos(int width, int height, int bytes)
 {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
 

@@ -449,11 +449,11 @@ bool Camera::render()
         // Draw the objects
         for (auto& obj : _objects)
         {
+            obj->activate();
             obj->getShader()->setAttribute("blendWidth", {_blendWidth});
             obj->getShader()->setAttribute("blackLevel", {_blackLevel});
             obj->getShader()->setAttribute("brightness", {_brightness});
 
-            obj->activate();
             obj->setViewProjectionMatrix(computeViewProjectionMatrix());
             obj->draw();
             obj->deactivate();
@@ -466,6 +466,8 @@ bool Camera::render()
             {
                 auto& point = _calibrationPoints[i];
                 ObjectPtr worldMarker = _models["3d_marker"];
+
+                worldMarker->activate();
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                 if (_selectedCalibrationPoint == i)
                     worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
@@ -473,7 +475,6 @@ bool Camera::render()
                     worldMarker->setAttribute("color", SPLASH_MARKER_SET);
                 else
                     worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
-                worldMarker->activate();
                 worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
                 worldMarker->draw();
                 worldMarker->deactivate();
@@ -481,13 +482,14 @@ bool Camera::render()
                 if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
                     ObjectPtr screenMarker = _models["2d_marker"];
+
+                    screenMarker->activate();
                     screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                     screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
                     if (_selectedCalibrationPoint == i)
                         screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                     else
                         screenMarker->setAttribute("color", SPLASH_MARKER_SET);
-                    screenMarker->activate();
                     screenMarker->setViewProjectionMatrix(dmat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();

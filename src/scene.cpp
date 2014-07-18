@@ -425,7 +425,7 @@ void Scene::computeBlendingMap()
 GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 {
     string windowName;
-    name.size() == 0 ? windowName = "Splash::Window" : windowName = name;
+    name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
 
     if (!_mainWindow)
     {
@@ -454,6 +454,15 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
+
+    if (SPLASH_GL_DEBUG)
+    {
+        glfwMakeContextCurrent(window);
+        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW | GL_DEBUG_SEVERITY_MEDIUM | GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+        glfwMakeContextCurrent(NULL);
+    }
+
     return make_shared<GlWindow>(window, _mainWindow->get());
 }
 
@@ -488,9 +497,16 @@ void Scene::init(std::string name)
     }
 
     _mainWindow = make_shared<GlWindow>(window, window);
-    glfwMakeContextCurrent(_mainWindow->get());
     _isInitialized = true;
-    glfwMakeContextCurrent(NULL);
+
+    if (SPLASH_GL_DEBUG)
+    {
+        glfwMakeContextCurrent(_mainWindow->get());
+        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM | GL_DEBUG_SEVERITY_HIGH | GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_TRUE);
+        glfwMakeContextCurrent(NULL);
+    }
+
 
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
@@ -516,6 +532,35 @@ void Scene::initBlendingMap()
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
     SLog::log << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
+}
+
+/*************/
+void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    string typeString {""};
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:
+        typeString = "Error";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        typeString = "Deprecated behavior";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        typeString = "Undefined behavior";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        typeString = "Portability";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        typeString = "Performance";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        typeString = "Other";
+        break;
+    }
+
+    SLog::log << Log::WARNING << "GL::debug - [" << typeString << "] - " << message << Log::endl;
 }
 
 /*************/

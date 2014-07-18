@@ -199,6 +199,11 @@ class Scene : public RootObject
         static void glfwErrorCallback(int code, const char* msg);
 
         /**
+         * Callback for GL errors and warnings
+         */
+        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+
+        /**
          * Register new functors to modify attributes
          */
         void registerAttributes();

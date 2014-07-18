@@ -51,59 +51,17 @@ void Shader::activate()
             return;
     }
 
+    _activated = true;
     glUseProgram(_program);
-
-    for (int i = 0; i < _uniformsToUpdate.size(); ++i)
-    {
-        string u = _uniformsToUpdate[i];
-        if (_uniforms.find(u) == _uniforms.end())
-            continue;
-
-        if (_uniforms[u].second == -1)
-            continue;
-
-        int size = _uniforms[u].first.size();
-        int type = _uniforms[u].first[0].getType();
-
-        if (size > 4)
-            continue;
-
-        if (type == Value::Type::i)
-        {
-            if (size == 1)
-                glUniform1i(_uniforms[u].second, _uniforms[u].first[0].asInt());
-            else if (size == 2)
-                glUniform2i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt());
-            else if (size == 3)
-                glUniform3i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt(), _uniforms[u].first[2].asInt());
-            else if (size == 4)
-                glUniform4i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt(), _uniforms[u].first[2].asInt(), _uniforms[u].first[3].asInt());
-        }
-        else if (type == Value::Type::f)
-        {
-            if (size == 1)
-                glUniform1f(_uniforms[u].second, _uniforms[u].first[0].asFloat());
-            else if (size == 2)
-                glUniform2f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat());
-            else if (size == 3)
-                glUniform3f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat());
-            else if (size == 4)
-                glUniform4f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat(), _uniforms[u].first[3].asFloat());
-        }
-    }
-
-    _uniformsToUpdate.clear();
 }
 
 /*************/
 void Shader::deactivate()
 {
     glUseProgram(0);
+    _activated = false;
     for (int i = 0; i < _textures.size(); ++i)
-    {
-        glActiveTexture(GL_TEXTURE0 + i);
         _textures[i]->unbind();
-    }
     _textures.clear();
     _mutex.unlock();
 }
@@ -167,8 +125,10 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
 
     _textures.push_back(texture);
     if (_uniforms.find("_textureNbr") != _uniforms.end())
-        glUniform1i(_uniforms["_textureNbr"].second, _textures.size());
-    _uniformsToUpdate.push_back("_textureNbr");
+    {
+        _uniforms["_textureNbr"].first = Values({(int)_textures.size()});
+        _uniformsToUpdate.push_back("_textureNbr");
+    }
 }
 
 /*************/
@@ -356,6 +316,54 @@ string Shader::stringFromShaderType(ShaderType type)
         return string("geometry");
     case 2:
         return string("fragment");
+    }
+}
+
+/*************/
+void Shader::updateUniforms()
+{
+    if (_activated)
+    {
+        for (int i = 0; i < _uniformsToUpdate.size(); ++i)
+        {
+            string u = _uniformsToUpdate[i];
+            if (_uniforms.find(u) == _uniforms.end())
+                continue;
+
+            if (_uniforms[u].second == -1)
+                continue;
+
+            int size = _uniforms[u].first.size();
+            int type = _uniforms[u].first[0].getType();
+
+            if (size > 4)
+                continue;
+
+            if (type == Value::Type::i)
+            {
+                if (size == 1)
+                    glUniform1i(_uniforms[u].second, _uniforms[u].first[0].asInt());
+                else if (size == 2)
+                    glUniform2i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt());
+                else if (size == 3)
+                    glUniform3i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt(), _uniforms[u].first[2].asInt());
+                else if (size == 4)
+                    glUniform4i(_uniforms[u].second, _uniforms[u].first[0].asInt(), _uniforms[u].first[1].asInt(), _uniforms[u].first[2].asInt(), _uniforms[u].first[3].asInt());
+            }
+            else if (type == Value::Type::f)
+            {
+                if (size == 1)
+                    glUniform1f(_uniforms[u].second, _uniforms[u].first[0].asFloat());
+                else if (size == 2)
+                    glUniform2f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat());
+                else if (size == 3)
+                    glUniform3f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat());
+                else if (size == 4)
+                    glUniform4f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat(), _uniforms[u].first[3].asFloat());
+            }
+        }
+
+        _uniformsToUpdate.clear();
     }
 }
 
