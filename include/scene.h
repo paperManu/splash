@@ -163,6 +163,10 @@ class Scene : public RootObject
         bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
+        // NV Swap group specific
+        GLuint _maxSwapGroups {0};
+        GLuint _maxSwapBarriers {0};
+
         unsigned long _nextId {0};
 
         // Blending map, used by all cameras (except the GUI camera)
