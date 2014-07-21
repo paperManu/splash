@@ -1,6 +1,11 @@
 #include "scene.h"
 #include "timer.h"
 
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
+#include <GLFW/glfw3native.h>
+#include <GL/glxext.h>
+
 using namespace std;
 using namespace OIIO_NAMESPACE;
 
@@ -455,14 +460,20 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         return GlWindowPtr(nullptr);
     }
 
+    glfwMakeContextCurrent(window);
     if (SPLASH_GL_DEBUG)
     {
-        glfwMakeContextCurrent(window);
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-        glfwMakeContextCurrent(NULL);
     }
+
+#ifdef GLX_NV_swap_group
+    if (_maxSwapGroups)
+        glXJoinSwapGroupNV(glfwGetX11Display(), glfwGetX11Window(window), 1);
+#endif
+
+    glfwMakeContextCurrent(NULL);
 
     return make_shared<GlWindow>(window, _mainWindow->get());
 }
@@ -500,15 +511,24 @@ void Scene::init(std::string name)
     _mainWindow = make_shared<GlWindow>(window, window);
     _isInitialized = true;
 
+    glfwMakeContextCurrent(_mainWindow->get());
+    // Activate GL debug messages
     if (SPLASH_GL_DEBUG)
     {
-        glfwMakeContextCurrent(_mainWindow->get());
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-        glfwMakeContextCurrent(NULL);
     }
 
+    // Check for swap groups
+#ifdef GLX_NV_swap_group
+    if (!glXQueryMaxSwapGroupsNV(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
+        SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
+    else
+        SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+#endif
+
+    glfwMakeContextCurrent(NULL);
 
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
