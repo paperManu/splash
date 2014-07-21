@@ -468,10 +468,10 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
     }
 
+#ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
-    {
         glXJoinSwapGroupNV(glfwGetX11Display(), glfwGetX11Window(window), 0);
-    }
+#endif
 
     glfwMakeContextCurrent(NULL);
 
@@ -521,10 +521,12 @@ void Scene::init(std::string name)
     }
 
     // Check for swap groups
+#ifdef GLX_NV_swap_group
     if (!glXQueryMaxSwapGroupsNV(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
         SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
     else
         SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+#endif
 
     glfwMakeContextCurrent(NULL);
 
