@@ -470,7 +470,15 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
-        glXJoinSwapGroupNV(glfwGetX11Display(), glfwGetX11Window(window), 1);
+    {
+        bool nvResult = true;
+        nvResult &= glXJoinSwapGroupNV(glfwGetX11Display(), glfwGetX11Window(window), 1);
+        nvResult &= glXBindSwapBarrierNV(glfwGetX11Display(), 1, 1);
+        if (nvResult)
+            SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " successfully joined the NV swap group" << Log::endl;
+        else
+            SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
+    }
 #endif
 
     glfwMakeContextCurrent(NULL);
