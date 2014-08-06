@@ -6,6 +6,7 @@
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
+#include "mesh_shmdata.h"
 #include "scene.h"
 #include "threadpool.h"
 
@@ -126,6 +127,8 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        else if (type == string("mesh_shmdata"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
     }
     if (object.get() != nullptr)
     {

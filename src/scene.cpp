@@ -7,6 +7,7 @@
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
+#include "mesh_shmdata.h"
 #include "object.h"
 #include "texture.h"
 #include "threadpool.h"
@@ -77,6 +78,8 @@ BaseObjectPtr Scene::add(string type, string name)
         }
         else if (type == string("mesh"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        else if (type == string("mesh_shmdata"))
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
         else if (type == string("object"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>());
         else if (type == string("texture"))

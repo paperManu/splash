@@ -22,6 +22,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	link.cpp \
 	log.cpp \
 	mesh.cpp \
+	mesh_shmdata.cpp \
 	object.cpp \
 	scene.cpp \
 	shader.cpp \
@@ -140,6 +141,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
+	$(top_srcdir)/include/mesh_shmdata.h \
 	$(top_srcdir)/include/object.h \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \
