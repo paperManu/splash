@@ -30,9 +30,9 @@
 #define GLX_GLXEXT_PROTOTYPES
 
 #define SPLASH
-#define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
+#define SPLASH_GL_CONTEXT_VERSION_MAJOR 4
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#define SPLASH_GL_DEBUG false
+#define SPLASH_GL_DEBUG true
 #define SPLASH_SAMPLES 4
 
 #define SPLASH_ALL_PAIRS "__ALL__"
@@ -51,6 +51,38 @@
 
 namespace Splash
 {
+
+/*************/
+// All object types are specified here,
+// so that we don't have to do it everywhere
+
+class Camera;
+class Geometry;
+class Gui;
+class GlvGlobalView;
+class GlvControl;
+class Image;
+class Image_Shmdata;
+class Link;
+class Mesh;
+class Object;
+class Scene;
+class Shader;
+class Texture;
+class Window;
+
+typedef std::shared_ptr<Camera> CameraPtr;
+typedef std::shared_ptr<Geometry> GeometryPtr;
+typedef std::shared_ptr<Gui> GuiPtr;
+typedef std::shared_ptr<Image> ImagePtr;
+typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
+typedef std::shared_ptr<Link> LinkPtr;
+typedef std::shared_ptr<Mesh> MeshPtr;
+typedef std::shared_ptr<Object> ObjectPtr;
+typedef std::shared_ptr<Scene> ScenePtr;
+typedef std::shared_ptr<Shader> ShaderPtr;
+typedef std::shared_ptr<Texture> TexturePtr;
+typedef std::shared_ptr<Window> WindowPtr;
 
 /*************/
 struct SerializedObject

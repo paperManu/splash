@@ -1,4 +1,6 @@
 #include "image_shmdata.h"
+
+#include "log.h"
 #include "timer.h"
 #include "threadpool.h"
 

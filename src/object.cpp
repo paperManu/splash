@@ -1,5 +1,13 @@
 #include "object.h"
+
+#include "image.h"
+#include "geometry.h"
+#include "log.h"
+#include "mesh.h"
+#include "shader.h"
+#include "texture.h"
 #include "timer.h"
+
 
 #include <limits>
 #include <glm/gtc/matrix_transform.hpp>

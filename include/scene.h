@@ -33,18 +33,6 @@
 #include <GLFW/glfw3.h>
 #include <json/reader.h>
 
-#include "camera.h"
-#include "geometry.h"
-#include "gui.h"
-#include "image.h"
-#include "link.h"
-#include "log.h"
-#include "mesh.h"
-#include "object.h"
-#include "texture.h"
-#include "threadpool.h"
-#include "window.h"
-
 namespace Splash {
 
 class Scene;

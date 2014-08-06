@@ -1,5 +1,10 @@
 #include "gui.h"
+
+#include "camera.h"
+#include "log.h"
+#include "object.h"
 #include "scene.h"
+#include "texture.h"
 #include "timer.h"
 #include "threadpool.h"
 

@@ -1,6 +1,14 @@
 #include "world.h"
 #include "timer.h"
 
+#include "image.h"
+#include "image_shmdata.h"
+#include "link.h"
+#include "log.h"
+#include "mesh.h"
+#include "scene.h"
+#include "threadpool.h"
+
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <json/reader.h>

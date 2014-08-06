@@ -1,4 +1,6 @@
 #include "widgets.h"
+
+#include "log.h"
 #include "scene.h"
 #include "timer.h"
 

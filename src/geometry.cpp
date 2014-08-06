@@ -1,5 +1,7 @@
 #include "geometry.h"
 
+#include "mesh.h"
+
 using namespace std;
 using namespace glm;
 

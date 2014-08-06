@@ -38,9 +38,6 @@
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 
-#include "image.h"
-#include "log.h"
-
 namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {

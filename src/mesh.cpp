@@ -1,4 +1,6 @@
 #include "mesh.h"
+
+#include "log.h"
 #include "timer.h"
 
 using namespace std;

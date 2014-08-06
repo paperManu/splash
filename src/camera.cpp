@@ -1,4 +1,11 @@
 #include "camera.h"
+
+#include "image_shmdata.h"
+#include "log.h"
+#include "mesh.h"
+#include "object.h"
+#include "shader.h"
+#include "texture.h"
 #include "timer.h"
 #include "threadpool.h"
 

@@ -1,5 +1,17 @@
 #include "scene.h"
+
+#include "camera.h"
+#include "geometry.h"
+#include "gui.h"
+#include "image.h"
+#include "link.h"
+#include "log.h"
+#include "mesh.h"
+#include "object.h"
+#include "texture.h"
+#include "threadpool.h"
 #include "timer.h"
+#include "window.h"
 
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
@@ -201,7 +213,7 @@ void Scene::render()
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
-
+    
     // Update the cameras
     STimer::timer << "cameras";
     for (auto& obj : _objects)

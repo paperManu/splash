@@ -34,10 +34,7 @@
 #include <utility>
 #include <vector>
 
-#include "geometry.h"
-#include "log.h"
-#include "object.h"
-#include "texture.h"
+#include <glm/glm.hpp>
 
 namespace Splash {
 

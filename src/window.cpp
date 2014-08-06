@@ -1,10 +1,16 @@
 #include "window.h"
+
 #include "camera.h"
+#include "geometry.h"
 #include "gui.h"
+#include "image.h"
+#include "log.h"
+#include "object.h"
+#include "shader.h"
+#include "texture.h"
 #include "timer.h"
 
 #include <functional>
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;

@@ -31,7 +31,6 @@
 
 #include "config.h"
 #include "coretypes.h"
-#include "log.h"
 
 namespace oiio = OIIO_NAMESPACE;
 

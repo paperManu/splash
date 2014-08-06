@@ -35,7 +35,6 @@
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
 #include "coretypes.h"
-#include "log.h"
 
 namespace Splash {
 

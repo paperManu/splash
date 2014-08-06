@@ -42,12 +42,9 @@
 #include <gsl/gsl_multimin.h>
 #include <GLFW/glfw3.h>
 
-#include "image_shmdata.h"
-#include "object.h"
-#include "texture.h"
-
 namespace Splash {
 
+/*************/
 class Camera : public BaseObject
 {
     public:

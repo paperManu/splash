@@ -37,8 +37,6 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#include "mesh.h"
-
 namespace Splash {
 
 class Geometry : public BaseObject
