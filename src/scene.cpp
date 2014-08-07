@@ -76,10 +76,11 @@ BaseObjectPtr Scene::add(string type, string name)
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
             obj->setRemoteType(type);
         }
-        else if (type == string("mesh"))
+        else if (type == string("mesh") || type == string("mesh_shmdata"))
+        {
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
-        else if (type == string("mesh_shmdata"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
+            obj->setRemoteType(type);
+        }
         else if (type == string("object"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>());
         else if (type == string("texture"))

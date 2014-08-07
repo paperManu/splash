@@ -115,7 +115,7 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type != "image" && type != "mesh" && type != "image_shmdata")
+    if (type != "image" && type != "image_shmdata" && type != "mesh" && type != "mesh_shmdata")
         return;
 
     BaseObjectPtr object;

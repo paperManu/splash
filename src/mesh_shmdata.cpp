@@ -45,6 +45,63 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
 
     lock_guard<mutex> lock(ctx->_writeMutex);
 
+    ctx->_bufferMesh.clear();
+
+    // Read the number of vertices and polys
+    int* intPtr = (int*)data;
+    float* floatPtr = (float*)data;
+
+    int verticeNbr = *(intPtr++);
+    int polyNbr = *(intPtr++);
+
+    MeshContainer::VertexHandle vertices[verticeNbr];
+
+    floatPtr += 2;
+    // First, create the vertices with no UV, normals or faces
+    for (int v = 0; v < verticeNbr; ++v)
+    {
+        vertices[v] = ctx->_bufferMesh.add_vertex(MeshContainer::Point(floatPtr[0], floatPtr[1], floatPtr[2]));
+        floatPtr += 8;
+    }
+
+    intPtr += 8 * verticeNbr;
+    // Then create the faces
+    vector<MeshContainer::VertexHandle> faceHandle;
+    for (int p = 0; p < polyNbr; ++p)
+    {
+        int size = *(intPtr++);
+        // Quads and larger polys are converted to tris through a very simple method
+        // This can lead to bad shapes especially for polys larger than quads
+        for (int tri = 0; tri < size - 2; ++tri)
+        {
+            faceHandle.clear();
+            faceHandle.push_back(vertices[*intPtr]);
+            faceHandle.push_back(vertices[*(intPtr + 1 + tri)]);
+            faceHandle.push_back(vertices[*(intPtr + 2 + tri)]);
+            ctx->_bufferMesh.add_face(faceHandle);
+        }
+        intPtr += size;
+    }
+
+    // Update the normals
+    ctx->_bufferMesh.request_vertex_normals();
+    ctx->_bufferMesh.request_face_normals();
+    ctx->_bufferMesh.update_normals();
+    ctx->_bufferMesh.release_face_normals();
+
+    // Add the UV coords
+    floatPtr = (float*)data;
+    floatPtr += 4; // Go to the first UV data
+    ctx->_bufferMesh.request_vertex_texcoords2D();
+    for (int v = 0; v < verticeNbr; ++v)
+    {
+        ctx->_bufferMesh.set_texcoord2D(vertices[v], MeshContainer::TexCoord2D(floatPtr[0], floatPtr[1]));
+        floatPtr += 8;
+    }
+
+    ctx->_meshUpdated = true;
+    ctx->updateTimestamp();
+
     shmdata_any_reader_free(shmbuf);
 }
 
