@@ -91,7 +91,7 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
 
     // Add the UV coords
     floatPtr = (float*)data;
-    floatPtr += 4; // Go to the first UV data
+    floatPtr += 5; // Go to the first UV data
     ctx->_bufferMesh.request_vertex_texcoords2D();
     for (int v = 0; v < verticeNbr; ++v)
     {
