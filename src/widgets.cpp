@@ -531,12 +531,12 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 auto scene = _scene.lock();
                 if (_camera != _guiCamera)
                 {
-                    scene->sendMessage("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 10.f, 0, 0});
+                    scene->sendMessage("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
                     scene->sendMessage("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
                 }
                 else
                 {
-                    _camera->setAttribute("rotateAroundTarget", {dx / 10.f, 0, 0});
+                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
                     _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
                 }
             }
