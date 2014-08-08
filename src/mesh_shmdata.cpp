@@ -83,19 +83,15 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
         intPtr += size;
     }
 
-    // Update the normals
-    ctx->_bufferMesh.request_vertex_normals();
-    ctx->_bufferMesh.request_face_normals();
-    ctx->_bufferMesh.update_normals();
-    ctx->_bufferMesh.release_face_normals();
-
-    // Add the UV coords
+    // Add the UV coords and the normals
     floatPtr = (float*)data;
     floatPtr += 5; // Go to the first UV data
     ctx->_bufferMesh.request_vertex_texcoords2D();
+    ctx->_bufferMesh.request_vertex_normals();
     for (int v = 0; v < verticeNbr; ++v)
     {
         ctx->_bufferMesh.set_texcoord2D(vertices[v], MeshContainer::TexCoord2D(floatPtr[0], floatPtr[1]));
+        ctx->_bufferMesh.set_normal(vertices[v], MeshContainer::Normal(floatPtr[2], floatPtr[3], floatPtr[4]));
         floatPtr += 8;
     }
 
