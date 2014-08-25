@@ -77,6 +77,7 @@ struct ShaderSources
         out vec4 fragColor;
         // HapQ specific parameters
         uniform int _tex0_YCoCg = 0;
+        uniform int _tex1_YCoCg = 0;
 
         void main(void)
         {
