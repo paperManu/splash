@@ -141,7 +141,9 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+#ifdef DEBUG
     GLenum error = glGetError();
+#endif
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     ImageBuf img(_outTextures[0]->getSpec());
     glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.localpixels());
@@ -154,14 +156,16 @@ void Camera::computeBlendingMap(ImagePtr& map)
         obj->setAttribute("fill", shaderFill[fillIndex]);
         fillIndex++;
     }
+#ifdef DEBUG
     error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
+#endif
+
     _window->releaseContext();
 
     _writeToShm = writeToShm;
     setOutputSize(width, height);
-
-    if (error)
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
     oiio::ImageSpec mapSpec = map->getSpec();
@@ -427,7 +431,9 @@ bool Camera::render()
     if (_outTextures.size() < 1)
         return false;
 
+#ifdef DEBUG
     glGetError();
+#endif
     glViewport(0, 0, _width, _height);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
@@ -510,9 +516,11 @@ bool Camera::render()
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+#ifdef DEBUG
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+#endif
 
     // Output to a shared memory if set so
     if (_writeToShm)
@@ -545,7 +553,11 @@ bool Camera::render()
 
     _window->releaseContext();
 
+#ifdef DEBUG
     return error != 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/

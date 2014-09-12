@@ -172,7 +172,9 @@ bool Window::render()
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
 
+#ifdef DEBUG
     glGetError();
+#endif
     glDrawBuffer(GL_BACK);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -198,15 +200,21 @@ bool Window::render()
         for (auto& t : _inTextures)
             t->resize(w, h);
 
+#ifdef DEBUG
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
+#endif
 
     glDisable(GL_FRAMEBUFFER_SRGB);
 
     _window->releaseContext();
 
+#ifdef DEBUG
     return error != 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/
@@ -327,20 +335,28 @@ bool Window::setProjectionSurface()
     glfwSwapInterval(_swapInterval);
 
     // Setup the projection surface
+#ifdef DEBUG
     glGetError();
+#endif
 
     _screen = make_shared<Object>();
     _screen->setAttribute("fill", {"window"});
     GeometryPtr virtualScreen = make_shared<Geometry>();
     _screen->addGeometry(virtualScreen);
 
+#ifdef DEBUG
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
+#endif
 
     _window->releaseContext();
 
+#ifdef DEBUG
     return error == 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/

@@ -265,7 +265,9 @@ bool Gui::render()
         	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
         glViewport(0, 0, _width, _height);
 
+#ifdef DEBUG
         error = glGetError();
+#endif
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
         GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, fboBuffers);
@@ -285,9 +287,11 @@ bool Gui::render()
         glDisable(GL_DEPTH_TEST);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+#ifdef DEBUG
         error = glGetError();
         if (error)
             SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+#endif
 
         _window->releaseContext();
 
