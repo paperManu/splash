@@ -203,8 +203,9 @@ void Texture::update()
     _img->update();
 
     ImageSpec spec = _img->getSpec();
-    vector<Value> srgb;
+    vector<Value> srgb, flip;
     _img->getAttribute("srgb", srgb);
+    _img->getAttribute("flip", flip);
 
     if (!(bool)glIsTexture(_glTex))
     {
@@ -416,6 +417,8 @@ void Texture::update()
         _shaderUniforms["YCoCg"] = Values({1});
     else
         _shaderUniforms["YCoCg"] = Values({0});
+
+    _shaderUniforms["flip"] = Values({flip[0]});
 
     _timestamp = _img->getTimestamp();
 

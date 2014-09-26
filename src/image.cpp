@@ -289,6 +289,15 @@ void Image::createDefaultImage()
 /*************/
 void Image::registerAttributes()
 {
+    _attribFunctions["flip"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _flip = (args[0].asInt() > 0) ? true : false;
+        return true;
+    }, [&]() {
+        return vector<Value>({_flip});
+    });
+
     _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;

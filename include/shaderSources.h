@@ -75,6 +75,9 @@ struct ShaderSources
         in vec2 texCoord;
         in vec3 normal;
         out vec4 fragColor;
+        // Texture transformation
+        uniform int _tex0_flip = 0;
+        uniform int _tex1_flip = 0;
         // HapQ specific parameters
         uniform int _tex0_YCoCg = 0;
         uniform int _tex1_YCoCg = 0;
@@ -84,7 +87,11 @@ struct ShaderSources
             if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
-            vec4 color = texture(_tex0, texCoord);
+            vec4 color;
+            if (_tex0_flip == 1)
+                color = texture(_tex0, vec2(texCoord.x, 1.0 - texCoord.y));
+            else
+                color = texture(_tex0, texCoord);
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
