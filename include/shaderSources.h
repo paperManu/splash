@@ -78,6 +78,8 @@ struct ShaderSources
         // Texture transformation
         uniform int _tex0_flip = 0;
         uniform int _tex1_flip = 0;
+        uniform int _tex0_flop = 0;
+        uniform int _tex1_flop = 0;
         // HapQ specific parameters
         uniform int _tex0_YCoCg = 0;
         uniform int _tex1_YCoCg = 0;
@@ -88,8 +90,12 @@ struct ShaderSources
                 discard;
 
             vec4 color;
-            if (_tex0_flip == 1)
+            if (_tex0_flip == 1 && _tex0_flop == 0)
                 color = texture(_tex0, vec2(texCoord.x, 1.0 - texCoord.y));
+            else if (_tex0_flip == 0 && _tex0_flop == 1)
+                color = texture(_tex0, vec2(1.0 - texCoord.x, texCoord.y));
+            else if (_tex0_flip == 1 && _tex0_flop == 1)
+                color = texture(_tex0, vec2(1.0 - texCoord.x, 1.0 - texCoord.y));
             else
                 color = texture(_tex0, texCoord);
 

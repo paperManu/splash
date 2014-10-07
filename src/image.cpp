@@ -298,6 +298,15 @@ void Image::registerAttributes()
         return vector<Value>({_flip});
     });
 
+    _attribFunctions["flop"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _flop = (args[0].asInt() > 0) ? true : false;
+        return true;
+    }, [&]() {
+        return vector<Value>({_flop});
+    });
+
     _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {
         if (args.size() < 1)
             return false;
