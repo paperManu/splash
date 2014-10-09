@@ -124,6 +124,7 @@ struct ShaderSources
                 {
                     vec4 color2 = texture(_tex1, texCoord);
                     fragColor.rgb = fragColor.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
+                    fragColor.a = 1.0;
                 }
             }
             else
@@ -154,7 +155,7 @@ struct ShaderSources
                     blendFactor = 1.f / camNbr;
                 }
                 fragColor.rgb = color.rgb * min(1.f, blendFactor);
-                fragColor.a = color.a;
+                fragColor.a = 1.0;
             }
         }
     )"};
