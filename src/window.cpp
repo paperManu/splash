@@ -354,7 +354,7 @@ bool Window::setProjectionSurface()
 #ifdef DEBUG
     return error == 0 ? true : false;
 #else
-    return false;
+    return true;
 #endif
 }
 
