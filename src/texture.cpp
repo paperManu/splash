@@ -178,6 +178,8 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
 /*************/
 void Texture::resize(int width, int height)
 {
+    if (!_resizable)
+        return;
     if (width != _spec.width && height != _spec.height)
         reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
 }
@@ -444,6 +446,8 @@ void Texture::flushPbo()
 /*************/
 void Texture::init()
 {
+    registerAttributes();
+
     _type = "texture";
     _timestamp = chrono::high_resolution_clock::now();
 
@@ -460,6 +464,19 @@ void Texture::updatePbos(int width, int height, int bytes)
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
     glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+}
+
+/*************/
+void Texture::registerAttributes()
+{
+    _attribFunctions["resizable"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 1)
+            return false;
+        _resizable = args[0].asInt() > 0 ? true : false;
+        return true;
+    }, [&]() {
+        return vector<Value>({_resizable});
+    });
 }
 
 } // end of namespace

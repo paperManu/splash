@@ -11,6 +11,7 @@ namespace Splash {
 Geometry::Geometry()
 {
     _type = "geometry";
+    registerAttributes();
 
     _mesh = make_shared<Mesh>();
     update();

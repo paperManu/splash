@@ -683,10 +683,16 @@ void Camera::setOutputSize(int width, int height)
 
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    _depthTexture->setAttribute("resizable", Values({1}));
     _depthTexture->resize(width, height);
+    _depthTexture->setAttribute("resizable", Values({0}));
 
     for (auto tex : _outTextures)
+    {
+        tex->setAttribute("resizable", Values({1}));
         tex->resize(width, height);
+        tex->setAttribute("resizable", Values({0}));
+    }
 
     _width = width;
     _height = height;

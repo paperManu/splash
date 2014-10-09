@@ -32,12 +32,13 @@
 #define SPLASH
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 4
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#define SPLASH_GL_DEBUG true
+#define SPLASH_GL_DEBUG false
 #define SPLASH_SAMPLES 4
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
 #include <chrono>
+#include <ostream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -444,11 +445,6 @@ class BaseObject
         virtual bool linkTo(BaseObjectPtr obj) {return false;}
 
         /**
-         * Register modifiable attributes
-         */
-        virtual void registerAttributes() {}
-
-        /**
          * Set the specified attribute
          */
         bool setAttribute(std::string attrib, std::vector<Value> args)
@@ -538,6 +534,11 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
         std::map<std::string, AttributeFunctor> _attribFunctions;
+
+        /**
+         * Register new functors to modify attributes
+         */
+        virtual void registerAttributes() = 0;
 };
 
 /*************/

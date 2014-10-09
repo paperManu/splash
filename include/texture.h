@@ -183,6 +183,7 @@ class Texture : public BaseObject
         std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
+        bool _resizable {false};
         bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;
@@ -205,6 +206,11 @@ class Texture : public BaseObject
          * Update the pbos according to the parameters
          */
         void updatePbos(int width, int height, int bytes);
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;

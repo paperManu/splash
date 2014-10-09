@@ -132,7 +132,6 @@ bool Window::linkTo(BaseObjectPtr obj)
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
-        _isLinkedToTexture = true;
         setTexture(tex);
         return true;
     }
@@ -196,7 +195,7 @@ bool Window::render()
             if (_layout[j].asInt() != value)
                 resize = false;
     }
-    if (!_isLinkedToTexture && resize) // We don't do this if we are directly connected to a Texture (updated from an image)
+    if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
         for (auto& t : _inTextures)
             t->resize(w, h);
 
