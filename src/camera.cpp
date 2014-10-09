@@ -9,6 +9,7 @@
 #include "timer.h"
 #include "threadpool.h"
 
+#include <fstream>
 #include <limits>
 
 #define GLM_FORCE_SSE2
@@ -826,6 +827,15 @@ void Camera::loadDefaultModels()
     
     for (auto& file : files)
     {
+        if (!ifstream(file.second, ios::in | ios::binary))
+            if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
+                file.second = string(DATADIR) + file.second;
+            else
+            {
+                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
+                continue;
+            }
+
         MeshPtr mesh = make_shared<Mesh>();
         mesh->setAttribute("name", {file.first});
         mesh->setAttribute("file", {file.second});

@@ -6,7 +6,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/hap/source \
 	-DGLV_GLFW \
 	-DGLM_FORCE_RADIANS \
-	-DDATADIR=\"$(datadir)\splash\" \
+	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
 #*************#
