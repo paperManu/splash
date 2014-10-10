@@ -48,7 +48,7 @@ struct ShaderSources
 
         void main(void)
         {
-            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.f);
+            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             gl_Position = position;
             normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
             texCoord = _texcoord;
@@ -110,11 +110,11 @@ struct ShaderSources
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
 
-            if (_brightness != 1.f)
+            if (_brightness != 1.0)
                 color.rgb = color.rgb * _brightness;
 
-            if (_blackLevel > 0.f && _blackLevel < 1.f)
-                color.rgb = color.rgb * (1.f - _blackLevel) + _blackLevel;
+            if (_blackLevel > 0.0 && _blackLevel < 1.0)
+                color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
 
             if (_texBlendingMap == 0)
             {
@@ -129,32 +129,32 @@ struct ShaderSources
             }
             else
             {
-                float blendFactor = texture(_tex1, texCoord).r * 65536.f;
+                float blendFactor = texture(_tex1, texCoord).r * 65536.0;
                 // Extract the number of cameras
-                float camNbr = floor(blendFactor / 4096.f);
-                blendFactor = blendFactor - camNbr * 4096.f;
+                float camNbr = floor(blendFactor / 4096.0);
+                blendFactor = blendFactor - camNbr * 4096.0;
 
                 // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
                 bool smoothBlend = false;
                 if (color.r > _blackLevel * 2.0 || color.g > _blackLevel * 2.0 || color.b > _blackLevel * 2.0)
                     smoothBlend = true;
 
-                if (blendFactor == 0.f)
-                    blendFactor = 1.f;
-                else if (_blendWidth > 0.f && smoothBlend == true)
+                if (blendFactor == 0.0)
+                    blendFactor = 1.0;
+                else if (_blendWidth > 0.0 && smoothBlend == true)
                 {
-                    vec2 screenPos = vec2((position.x / position.w + 1.f) / 2.f, (position.y / position.w + 1.f) / 2.f);
-                    float distX = min(screenPos.x, 1.f - screenPos.x);
-                    float distY = min(screenPos.y, 1.f - screenPos.y);
-                    float dist = min(1.f, min(distX, distY) / _blendWidth);
-                    dist = smoothstep(0.f, 1.f, dist);
-                    blendFactor = 256.f * dist / blendFactor;
+                    vec2 screenPos = vec2((position.x / position.w + 1.0) / 2.0, (position.y / position.w + 1.0) / 2.0);
+                    float distX = min(screenPos.x, 1.0 - screenPos.x);
+                    float distY = min(screenPos.y, 1.0 - screenPos.y);
+                    float dist = min(1.0, min(distX, distY) / _blendWidth);
+                    dist = smoothstep(0.0, 1.0, dist);
+                    blendFactor = 256.0 * dist / blendFactor;
                 }
                 else
                 {
-                    blendFactor = 1.f / camNbr;
+                    blendFactor = 1.0 / camNbr;
                 }
-                fragColor.rgb = color.rgb * min(1.f, blendFactor);
+                fragColor.rgb = color.rgb * min(1.0, blendFactor);
                 fragColor.a = 1.0;
             }
         }
@@ -201,11 +201,11 @@ struct ShaderSources
             if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
                 discard;
 
-            float U = texCoord.x * 65536.f;
-            float V = texCoord.y * 65536.f;
+            float U = texCoord.x * 65536.0;
+            float V = texCoord.y * 65536.0;
 
-            fragColor.rg = vec2(floor(U / 256.f) / 256.f, (U - floor(U / 256.f) * 256.f) / 256.f);
-            fragColor.ba = vec2(floor(V / 256.f) / 256.f, (V - floor(V / 256.f) * 256.f) / 256.f);
+            fragColor.rg = vec2(floor(U / 256.0) / 256.0, (U - floor(U / 256.0) * 256.0) / 256.0);
+            fragColor.ba = vec2(floor(V / 256.0) / 256.0, (V - floor(V / 256.0) * 256.0) / 256.0);
         }
     )"};
 
@@ -260,21 +260,21 @@ struct ShaderSources
 
         void main()
         {
-            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz * _scale.xyz, 1.f);
+            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz * _scale.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[0].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[0].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.f);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[1].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[1].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.f);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[2].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[2].normal, 0.0)).xyz;
@@ -332,7 +332,7 @@ struct ShaderSources
 
         void main(void)
         {
-            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.f);
+            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             gl_Position = position;
             texCoord = _texcoord;
         }
@@ -389,7 +389,7 @@ struct ShaderSources
                 vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
                 fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
             }
-            fragColor.a = 1.f;
+            fragColor.a = 1.0;
         }
     )"};
 

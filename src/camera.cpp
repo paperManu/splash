@@ -179,21 +179,21 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
 
         // UV coordinates are mapped on 2 uchar each
-        int x = (int)round((p[0] * 65536.f + p[1] * 256.f) * 0.0000152587890625f * (float)mapSpec.width);
-        int y = (int)round((p[2] * 65536.f + p[3] * 256.f) * 0.0000152587890625f * (float)mapSpec.height);
+        int x = (int)round((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
+        int y = (int)round((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
         if (isSet[y * mapSpec.width + x])
             continue;
         isSet[y * mapSpec.width + x] = true;
 
-        float distX = (float)std::min(p.x(), img.spec().width - 1 - p.x()) / (float)img.spec().width;
-        float distY = (float)std::min(p.y(), img.spec().height - 1 - p.y()) / (float)img.spec().height;
+        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width;
+        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height;
         
         if (_blendWidth > 0.f)
         {
             // Add some smoothness to the transition
-            float smoothDist = smoothstep(0.f, 1.f, std::min(distX, distY) / _blendWidth) * 256.f;
-            int blendValue = (int)std::min(256.f, smoothDist);
+            double smoothDist = smoothstep(0.0, 1.0, std::min(distX, distY) / _blendWidth) * 256.0;
+            int blendValue = (int)std::min(256.0, smoothDist);
             imageMap[y * mapSpec.width + x] += blendValue; // One more camera displaying this pixel
         }
         else
