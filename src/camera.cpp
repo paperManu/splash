@@ -179,28 +179,47 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
 
         // UV coordinates are mapped on 2 uchar each
-        int x = (int)round((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
-        int y = (int)round((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
+        int x = (int)floor((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
+        int y = (int)floor((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
-        if (isSet[y * mapSpec.width + x])
+        if (isSet[y * mapSpec.width + x] || x == 0 && y == 0)
             continue;
         isSet[y * mapSpec.width + x] = true;
 
         double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width;
         double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height;
         
+        unsigned short blendAddition = 0;
         if (_blendWidth > 0.f)
         {
             // Add some smoothness to the transition
             double smoothDist = smoothstep(0.0, 1.0, std::min(distX, distY) / _blendWidth) * 256.0;
             int blendValue = (int)std::min(256.0, smoothDist);
-            imageMap[y * mapSpec.width + x] += blendValue; // One more camera displaying this pixel
+            blendAddition += blendValue; // One more camera displaying this pixel
         }
         else
-            imageMap[y * mapSpec.width + x] += 256; // One more camera displaying this pixel
+            blendAddition += 256; // One more camera displaying this pixel
 
         // We keep the real number of projectors, hidden higher in the shorts
-        imageMap[y * mapSpec.width + x] += 4096;
+        blendAddition += 4096;
+        imageMap[y * mapSpec.width + x] += blendAddition;
+
+        // Extend to neighbours (kind of reverse to effect of floor())
+        if (x < mapSpec.width - 1 && !isSet[y * mapSpec.width + x + 1])
+        {
+            imageMap[y * mapSpec.width + x + 1] += blendAddition;
+            isSet[y * mapSpec.width + x + 1] = true;
+        }
+        if (y < mapSpec.height - 1 && !isSet[(y + 1) * mapSpec.width + x])
+        {
+            imageMap[(y + 1) * mapSpec.width + x] += blendAddition;
+            isSet[(y + 1) * mapSpec.width + x] = true;
+            if (x < mapSpec.width - 1 && !isSet[(y + 1) * mapSpec.width + x + 1])
+            {
+                imageMap[(y + 1) * mapSpec.width + x + 1] += blendAddition;
+                isSet[(y + 1) * mapSpec.width + x + 1] = true;
+            }
+        }
     }
 }
 
