@@ -205,7 +205,7 @@ void Texture::update()
     _img->update();
 
     ImageSpec spec = _img->getSpec();
-    vector<Value> srgb, flip, flop;
+    Values srgb, flip, flop;
     _img->getAttribute("srgb", srgb);
     _img->getAttribute("flip", flip);
     _img->getAttribute("flop", flop);
@@ -469,13 +469,13 @@ void Texture::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture::registerAttributes()
 {
-    _attribFunctions["resizable"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["resizable"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _resizable = args[0].asInt() > 0 ? true : false;
         return true;
     }, [&]() {
-        return vector<Value>({_resizable});
+        return Values({_resizable});
     });
 }
 

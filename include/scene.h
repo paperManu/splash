@@ -125,7 +125,7 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessage(const std::string message, const std::vector<Value> value = {});
+        void sendMessage(const std::string message, const Values value = {});
 
     protected:
         GlWindowPtr _mainWindow;

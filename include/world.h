@@ -142,7 +142,7 @@ class World : public RootObject
         /**
          * Set a parameter for an object, given its id
          */
-        void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
+        void setAttribute(std::string name, std::string attrib, Values args);
         using BaseObject::setAttribute;
 
         /**

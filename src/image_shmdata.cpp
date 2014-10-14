@@ -497,7 +497,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 /*************/
 void Image_Shmdata::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["file"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());

@@ -108,7 +108,7 @@ bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
 }
 
 /*************/
-bool Link::sendMessage(const string name, const string attribute, const vector<Value> message)
+bool Link::sendMessage(const string name, const string attribute, const Values message)
 {
     try
     {
@@ -209,7 +209,7 @@ void Link::handleInputMessages()
             _socketMessageIn->recv(&msg); // size of the message
             int size = *(int*)msg.data();
 
-            vector<Value> values;
+            Values values;
             for (int i = 0; i < size; ++i)
             {
                 _socketMessageIn->recv(&msg);

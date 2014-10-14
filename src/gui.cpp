@@ -458,7 +458,7 @@ void Gui::initGLV(int width, int height)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());

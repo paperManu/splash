@@ -306,7 +306,7 @@ void World::applyConfig()
                     continue;
                 }
 
-                vector<Value> values;
+                Values values;
                 if (attr.isArray())
                     for (auto& v : attr)
                     {
@@ -536,7 +536,7 @@ void World::parseArguments(int argc, char** argv)
 }
 
 /*************/
-void World::setAttribute(string name, string attrib, std::vector<Value> args)
+void World::setAttribute(string name, string attrib, Values args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
@@ -551,49 +551,49 @@ void World::glfwErrorCallback(int code, const char* msg)
 /*************/
 void World::registerAttributes()
 {
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
         _childProcessLaunched = true;
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         _doComputeBlending = true;
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _link->sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
         return true;
     });
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["framerate"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
         _quit = true;
         return true;
     });
 
-    _attribFunctions["save"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["save"] = AttributeFunctor([&](Values args) {
         SLog::log << "Saving configuration" << Log::endl;
         _doSaveConfig = true;
         return true;
     });
 
-    _attribFunctions["sceneConfig"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["sceneConfig"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         _lastConfigReceived = args[1].asString();
         return true;
     });
 
-    _attribFunctions["sendAll"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["sendAll"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -609,7 +609,7 @@ void World::registerAttributes()
         _link->sendMessage(name, attr, values);
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _link->sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});

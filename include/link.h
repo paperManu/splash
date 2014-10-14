@@ -66,7 +66,7 @@ class Link
          * Send a message to connected pairs
          * The second one converts known base types to vector<Value> before sending
          */
-        bool sendMessage(const std::string name, const std::string attribute, const std::vector<Value> message);
+        bool sendMessage(const std::string name, const std::string attribute, const Values message);
         template <typename T>
         bool sendMessage(const std::string name, const std::string attribute, const std::vector<T> message);
 
@@ -108,7 +108,7 @@ class Link
 template <typename T>
 bool Link::sendMessage(const std::string name, const std::string attribute, const std::vector<T> message)
 {
-    std::vector<Value> convertedMsg;
+    Values convertedMsg;
 
     for (auto& m : message)
         convertedMsg.emplace_back(m);

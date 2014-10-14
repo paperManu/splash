@@ -198,16 +198,16 @@ void Object::setViewProjectionMatrix(const glm::dmat4& vp)
 /*************/
 void Object::registerAttributes()
 {
-    _attribFunctions["position"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["position"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
-        return vector<Value>({_position.x, _position.y, _position.z});
+        return Values({_position.x, _position.y, _position.z});
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
 
@@ -219,10 +219,10 @@ void Object::registerAttributes()
         _shader->setAttribute("scale", args);
         return true;
     }, [&]() {
-        return vector<Value>({_scale.x, _scale.y, _scale.z});
+        return Values({_scale.x, _scale.y, _scale.z});
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         switch (args[0].asInt())
@@ -240,26 +240,26 @@ void Object::registerAttributes()
         }
         return true;
     }, [&]() {
-        return vector<Value>({_shader->getSideness()});
+        return Values({_shader->getSideness()});
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _fill = args[0].asString();
         return true;
     }, [&]() {
-        return vector<Value>({_fill});
+        return Values({_fill});
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["color"] = AttributeFunctor([&](Values args) {
         if (args.size() < 4)
             return false;
         _shader->setAttribute("color", args);
         return true;
     });
 
-    _attribFunctions["name"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["name"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _name = args[0].asString();

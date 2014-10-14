@@ -388,26 +388,26 @@ struct AttributeFunctor
 {
     public:
         AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(std::vector<Value>)> setFunc) {_setFunc = setFunc;}
-        AttributeFunctor(std::function<bool(std::vector<Value>)> setFunc,
-                            std::function<std::vector<Value>()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+        AttributeFunctor(std::function<bool(Values)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor(std::function<bool(Values)> setFunc,
+                            std::function<Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
 
-        bool operator()(std::vector<Value> args)
+        bool operator()(Values args)
         {
             if (!_setFunc)
                 return false;
             return _setFunc(args);
         }
-        std::vector<Value> operator()()
+        Values operator()()
         {
             if (!_getFunc)
-                return std::vector<Value>();
+                return Values();
             return _getFunc();
         }
 
     private:
-        std::function<bool(std::vector<Value>)> _setFunc;
-        std::function<std::vector<Value>()> _getFunc;
+        std::function<bool(Values)> _setFunc;
+        std::function<Values()> _getFunc;
 };
 
 class BaseObject;
@@ -447,7 +447,7 @@ class BaseObject
         /**
          * Set the specified attribute
          */
-        bool setAttribute(std::string attrib, std::vector<Value> args)
+        bool setAttribute(std::string attrib, Values args)
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
@@ -457,7 +457,7 @@ class BaseObject
         /**
          * Get the specified attribute
          */
-        bool getAttribute(std::string attrib, std::vector<Value>& args)
+        bool getAttribute(std::string attrib, Values& args)
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
@@ -500,7 +500,7 @@ class BaseObject
 
             for (auto& attr : _attribFunctions)
             {
-                std::vector<Value> values;
+                Values values;
                 if (getAttribute(attr.first, values) == false || values.size() == 0)
                     continue;
 
@@ -625,7 +625,7 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(std::string name, std::string attrib, std::vector<Value> args)
+        bool set(std::string name, std::string attrib, Values args)
         {
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 setAttribute(attrib, args);

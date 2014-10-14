@@ -289,40 +289,40 @@ void Image::createDefaultImage()
 /*************/
 void Image::registerAttributes()
 {
-    _attribFunctions["flip"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flip"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _flip = (args[0].asInt() > 0) ? true : false;
         return true;
     }, [&]() {
-        return vector<Value>({_flip});
+        return Values({_flip});
     });
 
-    _attribFunctions["flop"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flop"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _flop = (args[0].asInt() > 0) ? true : false;
         return true;
     }, [&]() {
-        return vector<Value>({_flop});
+        return Values({_flop});
     });
 
-    _attribFunctions["file"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["file"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
     });
 
-    _attribFunctions["srgb"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _srgb = (args[0].asInt() > 0) ? true : false;     
         return true;
     }, [&]() {
-        return vector<Value>({_srgb});
+        return Values({_srgb});
     });
 
-    _attribFunctions["benchmark"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["benchmark"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)

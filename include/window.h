@@ -141,7 +141,7 @@ class Window : public BaseObject
         GlWindowPtr _window;
         int _screenId {-1};
         bool _fullscreen {false};
-        std::vector<Value> _layout {0, 0, 0, 0};
+        Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
 
         ObjectPtr _screen;

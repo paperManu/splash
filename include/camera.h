@@ -149,12 +149,12 @@ class Camera : public BaseObject
         /**
          * Get the coordinates of the closest vertex to the given point
          */
-        std::vector<Value> pickVertex(float x, float y);
+        Values pickVertex(float x, float y);
 
         /**
          * Get the coordinates of the closest calibration point
          */
-        std::vector<Value> pickCalibrationPoint(float x, float y);
+        Values pickCalibrationPoint(float x, float y);
 
         /**
          * Render this camera into its textures
@@ -165,11 +165,11 @@ class Camera : public BaseObject
          * Set the given calibration point
          * Returns true if the point already existed
          */
-        bool addCalibrationPoint(std::vector<Value> worldPoint);
+        bool addCalibrationPoint(Values worldPoint);
         void deselectCalibrationPoint();
         void moveCalibrationPoint(float dx, float dy);
-        void removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSet = false);
-        bool setCalibrationPoint(std::vector<Value> screenPoint);
+        void removeCalibrationPoint(Values worldPoint, bool unlessSet = false);
+        bool setCalibrationPoint(Values screenPoint);
 
         /**
          * Set the number of output buffers for this camera

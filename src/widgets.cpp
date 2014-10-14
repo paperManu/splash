@@ -255,12 +255,12 @@ void GlvGlobalView::onDraw(GLV& g)
     else
     {
         // Resize if needed
-        vector<Value> size;
+        Values size;
         _camera->getAttribute("size", size);
         if (size[0].asInt() != w || size[1].asInt() != h)
             h = _baseWidth * size[1].asInt() / size[0].asInt();
 
-        vector<Value> fov;
+        Values fov;
         _camera->getAttribute("fov", fov);
         _camLabel.setValue(_camera->getName() + " - " + fov[0].asString() + "°");
 
@@ -373,10 +373,10 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 auto scene = _scene.lock();
                 for (auto& p : properties)
                 {
-                    vector<Value> values;
+                    Values values;
                     _camera->getAttribute(p, values);
 
-                    vector<Value> sendValues {_camera->getName(), p};
+                    Values sendValues {_camera->getName(), p};
                     for (auto& v : values)
                         sendValues.push_back(v);
 
@@ -472,7 +472,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             if (g.keyboard().ctrl())
             {
                 auto scene = _scene.lock();
-                vector<Value> position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                Values position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
                     scene->sendMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
             }
@@ -480,7 +480,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 scene->sendMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
             else // Add a new calibration point
             {
-                vector<Value> position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                Values position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
                 if (position.size() == 3)
                 {
                     scene->sendMessage("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
@@ -545,7 +545,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             }
             else if (!g.keyboard().shift() && g.keyboard().ctrl())
             {
-                vector<Value> fov;
+                Values fov;
                 _camera->getAttribute("fov", fov);
                 float camFov = fov[0].asFloat();
 
@@ -564,7 +564,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     }
     case Event::MouseWheel:
     {
-        vector<Value> fov;
+        Values fov;
         _camera->getAttribute("fov", fov);
         float camFov = fov[0].asFloat();
 

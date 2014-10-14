@@ -363,7 +363,7 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessage(const string message, const vector<Value> value)
+void Scene::sendMessage(const string message, const Values value)
 {
     _link->sendMessage("world", message, value);
 }
@@ -612,7 +612,7 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 /*************/
 void Scene::registerAttributes()
 {
-    _attribFunctions["add"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["add"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string type = args[0].asString();
@@ -622,7 +622,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["addGhost"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["addGhost"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string type = args[0].asString();
@@ -632,24 +632,24 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         _doComputeBlending = true;
         return true;
     });
 
-    _attribFunctions["config"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["config"] = AttributeFunctor([&](Values args) {
         _doSaveNow = true;
         return true;
     });
 
-    _attribFunctions["duration"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["duration"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         STimer::timer.setDuration(args[0].asString(), args[1].asInt());
         return true;
     });
  
-    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)
@@ -658,7 +658,7 @@ void Scene::registerAttributes()
         return true;
     });
    
-    _attribFunctions["link"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["link"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -667,7 +667,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["linkGhost"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["linkGhost"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -675,14 +675,14 @@ void Scene::registerAttributes()
         return linkGhost(src, dst);
     });
 
-    _attribFunctions["log"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["log"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         SLog::log.setLog(args[0].asString(), (Log::Priority)args[1].asInt());
         return true;
     });
 
-    _attribFunctions["remove"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["remove"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         string name = args[1].asString();
@@ -691,7 +691,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setGhost"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["setGhost"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -706,35 +706,35 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setMaster"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["setMaster"] = AttributeFunctor([&](Values args) {
         setAsMaster();
         return true;
     });
 
-    _attribFunctions["start"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["start"] = AttributeFunctor([&](Values args) {
         _started = true;
         return true;
     });
 
-    _attribFunctions["stop"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["stop"] = AttributeFunctor([&](Values args) {
         _started = false;
         return true;
     });
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
         _started = false;
         _isRunning = false;
         return true;
     });
  
-    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)

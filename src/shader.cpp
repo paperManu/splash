@@ -386,7 +386,7 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["blending"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["blending"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
         
@@ -396,7 +396,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
 
@@ -406,7 +406,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
 
@@ -416,7 +416,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
 
@@ -426,7 +426,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         if (args[0].asString() == "texture" && _fill != texture)
@@ -482,10 +482,10 @@ void Shader::registerAttributes()
             fill = "wireframe";
         else if (_fill == window)
             fill = "window";
-        return vector<Value>({fill});
+        return Values({fill});
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["color"] = AttributeFunctor([&](Values args) {
         if (args.size() != 4)
             return false;
         _uniforms["_color"].first = args;
@@ -493,7 +493,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         else if (args.size() < 3)
@@ -513,7 +513,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
 
@@ -524,7 +524,7 @@ void Shader::registerAttributes()
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["layout"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1 || args.size() > 4)
             return false;
 
@@ -538,18 +538,18 @@ void Shader::registerAttributes()
 
         return true;
     }, [&]() {
-        vector<Value> out;
+        Values out;
         for (auto& v : _layout)
             out.push_back(v);
         return out;
     });
 
-    _attribFunctions["uniform"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["uniform"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
 
         string uniformName = args[0].asString();
-        vector<Value> uniformArgs;
+        Values uniformArgs;
         for (int i = 1; i < args.size(); ++i)
             uniformArgs.push_back(args[i]);
 
