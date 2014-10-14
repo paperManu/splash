@@ -14,6 +14,7 @@
 
 #define GLM_FORCE_SSE2
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/simd_mat4.hpp>
@@ -935,6 +936,20 @@ void Camera::registerAttributes()
         auto rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
         auto newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
+        return true;
+    });
+
+    _attribFunctions["pan"] = AttributeFunctor([&](vector<Value> args) {
+        if (args.size() < 3)
+            return false;
+        dvec4 panV(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), 0.f);
+        dvec3 dirV = normalize(_eye - _target);
+        double alpha = dirV.y >= 0.0 ? acos(dirV.x) : 2 * M_PI - acos(dirV.x);
+        dmat4 rotZ = rotate(dmat4(1.f), (double)-alpha + M_PI/2.0, dvec3(0.0, 0.0, 1.0));
+        dvec4 moveV = panV * rotZ;
+        _target = _target + dvec3(moveV.x, moveV.y, moveV.z);
+        _eye = _eye + dvec3(moveV.x, moveV.y, moveV.z);
+
         return true;
     });
 

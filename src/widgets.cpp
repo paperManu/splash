@@ -469,7 +469,14 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         if (g.mouse().left()) 
         {
             auto scene = _scene.lock();
-            if (g.keyboard().shift()) // Define the screenpoint corresponding to the selected calibration point
+            if (g.keyboard().ctrl())
+            {
+                auto scene = _scene.lock();
+                vector<Value> position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+                if (position.size() == 3)
+                    scene->sendMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
+            }
+            else if (g.keyboard().shift()) // Define the screenpoint corresponding to the selected calibration point
                 scene->sendMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
             else // Add a new calibration point
             {
@@ -483,16 +490,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                     scene->sendMessage("sendAll", {_camera->getName(), "deselectCalibrationPoint"});
             }
         }
-        else if (g.mouse().right()) // Remove a calibration point
-        {
-            if (g.keyboard().shift())
-            {
-                auto scene = _scene.lock();
-                vector<Value> position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-                if (position.size() == 3)
-                    scene->sendMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
-            }
-        }
         return false;
     }
     case Event::MouseUp:
@@ -503,28 +500,23 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     case Event::MouseDrag:
     {
         // Drag the window
-        if (g.mouse().middle()) 
+        if (g.mouse().left())
         {
-            move(g.mouse().dx(), g.mouse().dy());
-            return false;
-        }
-        // Move the camera
-        else if (g.mouse().left()) 
-        {
-            // If a point was added during the MouseDown, we delete it
-            if (_previousPointAdded.size() == 3)
-            {
-                auto scene = _scene.lock();
-                scene->sendMessage("sendAll", {_camera->getName(), "removeCalibrationPoint", _previousPointAdded[0], _previousPointAdded[1], _previousPointAdded[2], 1});
-                _previousPointAdded.clear();
-            }
-
             if (g.keyboard().shift())
             {
                 auto scene = _scene.lock();
                 scene->sendMessage("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
             }
-            else
+        }
+        else if (g.mouse().middle()) 
+        {
+            move(g.mouse().dx(), g.mouse().dy());
+            return false;
+        }
+        else if (g.mouse().right()) 
+        {
+            // Move the camera
+            if (!g.keyboard().ctrl() && !g.keyboard().shift())
             {
                 float dx = g.mouse().dx();
                 float dy = g.mouse().dy();
@@ -540,21 +532,32 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                     _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
                 }
             }
-            return false;
-        }
-        // Move the target
-        else if (g.mouse().right()) 
-        {
-            float dx = g.mouse().dx();
-            float dy = g.mouse().dy();
-            auto scene = _scene.lock();
-            if (_camera != _guiCamera)
+            // Move the target and the camera (in the camera plane)
+            else if (g.keyboard().shift() && !g.keyboard().ctrl())
             {
-                scene->sendMessage("sendAll", {_camera->getName(), "moveTarget", 0, 0, dy / 100.f});
-                scene->sendMessage("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
+                float dx = g.mouse().dx();
+                float dy = g.mouse().dy();
+                auto scene = _scene.lock();
+                if (_camera != _guiCamera)
+                    scene->sendMessage("sendAll", {_camera->getName(), "pan", dx / 100.f, 0, dy / 100.f});
+                else
+                    _camera->setAttribute("pan", {dx / 100.f, 0, dy / 100.f});
             }
-            else
-                _camera->setAttribute("moveTarget", {0, 0, dy / 100.f});
+            else if (!g.keyboard().shift() && g.keyboard().ctrl())
+            {
+                vector<Value> fov;
+                _camera->getAttribute("fov", fov);
+                float camFov = fov[0].asFloat();
+
+                camFov += g.mouse().dy() / 10.f;
+                camFov = std::max(2.f, std::min(180.f, camFov));
+
+                auto scene = _scene.lock();
+                if (_camera != _guiCamera)
+                    scene->sendMessage("sendAll", {_camera->getName(), "fov", camFov});
+                else
+                    _camera->setAttribute("fov", {camFov});
+            }
             return false;
         }
         break;
