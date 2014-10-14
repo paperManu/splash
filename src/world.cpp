@@ -495,6 +495,11 @@ bool World::loadConfig(string filename)
 /*************/
 void World::parseArguments(int argc, char** argv)
 {
+    cout << endl;
+    cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
+    cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
+    cout << endl;
+
     int idx = 0;
     string filename {""};
     while (idx < argc)
@@ -518,7 +523,6 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
         {
-            cout << "Splash - a modular multi-output video mapper" << endl;
             cout << "Basic usage: splash -o [config.json]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
@@ -540,12 +544,6 @@ void World::setAttribute(string name, string attrib, Values args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
-}
-
-/*************/
-void World::glfwErrorCallback(int code, const char* msg)
-{
-    SLog::log << Log::WARNING << "World::glfwErrorCallback - " << msg << Log::endl;
 }
 
 /*************/
