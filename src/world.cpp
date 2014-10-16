@@ -498,6 +498,7 @@ void World::parseArguments(int argc, char** argv)
     cout << endl;
     cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
     cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
+    cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
     cout << endl;
 
     int idx = 0;
@@ -509,7 +510,7 @@ void World::parseArguments(int argc, char** argv)
             filename = string(argv[idx + 1]);
             idx += 2;
         }
-        else if (string(argv[idx]) == "-d")
+        else if (string(argv[idx]) == "-d" || string(argv[idx]) == "--debug")
         {
 #ifdef DEBUG
             SLog::log.setVerbosity(Log::DEBUGGING);
@@ -526,10 +527,9 @@ void World::parseArguments(int argc, char** argv)
             cout << "Basic usage: splash -o [config.json]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
-            cout << "\t-d : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
-            cout << "\t-s : disable all messages" << endl;
+            cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
+            cout << "\t-s (--silent) : disable all messages" << endl;
             exit(0);
-            idx++;
         }
         else
             idx++;
@@ -537,6 +537,8 @@ void World::parseArguments(int argc, char** argv)
 
     if (filename != "")
         _status &= loadConfig(filename);
+    else
+        exit(0);
 }
 
 /*************/
