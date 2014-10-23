@@ -232,7 +232,7 @@ bool Camera::doCalibration()
     for (auto& point : _calibrationPoints)
         if (point.isSet)
             pointsSet++;
-    // We need at least 4 points to get a meaningful calibration
+    // We need at least 6 points to get a meaningful calibration
     if (pointsSet < 6)
     {
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 6 points" << Log::endl;

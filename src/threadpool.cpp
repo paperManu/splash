@@ -51,7 +51,7 @@ ThreadPool::ThreadPool(size_t threads)
 {
     int nprocessors = threads;
     if (threads == 0)
-        nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+        nprocessors = sysconf(_SC_NPROCESSORS_ONLN * 2);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }
