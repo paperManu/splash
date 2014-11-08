@@ -545,18 +545,12 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
             }
             else if (!g.keyboard().shift() && g.keyboard().ctrl())
             {
-                Values fov;
-                _camera->getAttribute("fov", fov);
-                float camFov = fov[0].asFloat();
-
-                camFov += g.mouse().dy() / 10.f;
-                camFov = std::max(2.f, std::min(180.f, camFov));
-
+                float dy = g.mouse().dy() / 100.f;
                 auto scene = _scene.lock();
                 if (_camera != _guiCamera)
-                    scene->sendMessage("sendAll", {_camera->getName(), "fov", camFov});
+                    scene->sendMessage("sendAll", {_camera->getName(), "forward", dy});
                 else
-                    _camera->setAttribute("fov", {camFov});
+                    _camera->setAttribute("forward", {dy});
             }
             return false;
         }

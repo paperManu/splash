@@ -972,6 +972,17 @@ void Camera::registerAttributes()
         return true;
     });
 
+    _attribFunctions["forward"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+
+        float value = args[0].asFloat();
+        dvec3 dirV = normalize(_eye - _target);
+        dirV *= value;
+        _target += dirV;
+        _eye += dirV;
+    });
+
     _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
