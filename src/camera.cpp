@@ -487,6 +487,7 @@ bool Camera::render()
             obj->getShader()->setAttribute("blendWidth", {_blendWidth});
             obj->getShader()->setAttribute("blackLevel", {_blackLevel});
             obj->getShader()->setAttribute("brightness", {_brightness});
+            obj->getShader()->setAttribute("colorTemperature", {_colorTemperature});
 
             obj->setViewProjectionMatrix(computeViewProjectionMatrix());
             obj->draw();
@@ -1035,6 +1036,15 @@ void Camera::registerAttributes()
         return true;
     }, [&]() {
         return Values({_blackLevel});
+    });
+
+    _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _colorTemperature = args[0].asFloat() * 100.f;
+        return true;
+    }, [&]() {
+        return Values({_colorTemperature / 100.f});
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
