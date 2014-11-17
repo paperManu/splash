@@ -487,9 +487,12 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
     {
+        PFNGLXJOINSWAPGROUPNVPROC nvGLJoinSwapGroup = (PFNGLXJOINSWAPGROUPNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
+        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
+
         bool nvResult = true;
-        nvResult &= glXJoinSwapGroupNV(glfwGetX11Display(), glfwGetX11Window(window), 1);
-        nvResult &= glXBindSwapBarrierNV(glfwGetX11Display(), 1, 1);
+        nvResult &= nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetX11Window(window), 1);
+        nvResult &= nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
         if (nvResult)
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " successfully joined the NV swap group" << Log::endl;
         else
@@ -546,10 +549,14 @@ void Scene::init(std::string name)
 
     // Check for swap groups
 #ifdef GLX_NV_swap_group
-    if (!glXQueryMaxSwapGroupsNV(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
-        SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
-    else
-        SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+    if (glfwExtensionSupported("GLX_NV_swap_group"))
+    {
+        PFNGLXQUERYMAXSWAPGROUPSNVPROC nvGLQueryMaxSwapGroups = (PFNGLXQUERYMAXSWAPGROUPSNVPROC)glfwGetProcAddress("glXQueryMaxSwapGroupsNV");
+        if (!nvGLQueryMaxSwapGroups(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
+            SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
+        else
+            SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+    }
 #endif
 
     glfwMakeContextCurrent(NULL);
