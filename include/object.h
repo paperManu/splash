@@ -25,19 +25,12 @@
 #ifndef SPLASH_OBJECT_H
 #define SPLASH_OBJECT_H
 
-#include <config.h>
+#include "config.h"
+#include "coretypes.h"
 
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
-
-#include "coretypes.h"
-#include "image.h"
-#include "log.h"
-#include "shader.h"
-#include "texture.h"
-#include "geometry.h"
-#include "mesh.h"
 
 namespace Splash {
 

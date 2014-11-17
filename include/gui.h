@@ -42,9 +42,6 @@
 #include <GLFW/glfw3.h>
 #include <glv.h>
 
-#include "camera.h"
-#include "object.h"
-#include "texture.h"
 #include "widgets.h"
 
 namespace Splash {

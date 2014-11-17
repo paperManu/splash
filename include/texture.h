@@ -38,9 +38,6 @@
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 
-#include "image.h"
-#include "log.h"
-
 namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {
@@ -99,6 +96,12 @@ class Texture : public BaseObject
          * Sets the specified buffer as the texture on the device
          */
         Texture& operator=(ImagePtr& img);
+
+        /**
+         * Bind / unbind this texture
+         */
+        void bind();
+        void unbind();
 
         /**
          * Enable / disable filtering of the texture
@@ -180,9 +183,13 @@ class Texture : public BaseObject
         std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
+        bool _resizable {false};
         bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;
+
+        // And some temporary attributes
+        GLint _activeTexture; // To which texture unit the texture is bound
 
         ImagePtr _img;
         std::chrono::high_resolution_clock::time_point _timestamp;
@@ -199,6 +206,11 @@ class Texture : public BaseObject
          * Update the pbos according to the parameters
          */
         void updatePbos(int width, int height, int bytes);
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Texture> TexturePtr;

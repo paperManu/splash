@@ -1,5 +1,10 @@
 #include "gui.h"
+
+#include "camera.h"
+#include "log.h"
+#include "object.h"
 #include "scene.h"
+#include "texture.h"
 #include "timer.h"
 #include "threadpool.h"
 
@@ -31,6 +36,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
         TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         _depthTexture = move(texture);
+        _depthTexture->setAttribute("resizable", Values({1}));
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -38,6 +44,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
         TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         _outTexture = move(texture);
+        _outTexture->setAttribute("resizable", Values({1}));
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
 
@@ -260,7 +267,9 @@ bool Gui::render()
         	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
         glViewport(0, 0, _width, _height);
 
+#ifdef DEBUG
         error = glGetError();
+#endif
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
         GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, fboBuffers);
@@ -280,9 +289,11 @@ bool Gui::render()
         glDisable(GL_DEPTH_TEST);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+#ifdef DEBUG
         error = glGetError();
         if (error)
             SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+#endif
 
         _window->releaseContext();
 
@@ -447,7 +458,7 @@ void Gui::initGLV(int width, int height)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());

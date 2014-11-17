@@ -5,7 +5,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-DGLV_GLFW \
-	-DDATADIR=\"$(datadir)\splash\" \
+	-DGLM_FORCE_RADIANS \
+	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
 #*************#
@@ -21,6 +22,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	link.cpp \
 	log.cpp \
 	mesh.cpp \
+	mesh_shmdata.cpp \
 	object.cpp \
 	scene.cpp \
 	shader.cpp \
@@ -139,6 +141,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
+	$(top_srcdir)/include/mesh_shmdata.h \
 	$(top_srcdir)/include/object.h \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \

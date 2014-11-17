@@ -1,5 +1,23 @@
 #include "scene.h"
+
+#include "camera.h"
+#include "geometry.h"
+#include "gui.h"
+#include "image.h"
+#include "link.h"
+#include "log.h"
+#include "mesh.h"
+#include "mesh_shmdata.h"
+#include "object.h"
+#include "texture.h"
+#include "threadpool.h"
 #include "timer.h"
+#include "window.h"
+
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
+#include <GLFW/glfw3native.h>
+#include <GL/glxext.h>
 
 using namespace std;
 using namespace OIIO_NAMESPACE;
@@ -58,8 +76,11 @@ BaseObjectPtr Scene::add(string type, string name)
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
             obj->setRemoteType(type);
         }
-        else if (type == string("mesh"))
+        else if (type == string("mesh") || type == string("mesh_shmdata"))
+        {
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+            obj->setRemoteType(type);
+        }
         else if (type == string("object"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>());
         else if (type == string("texture"))
@@ -196,7 +217,7 @@ void Scene::render()
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
-
+    
     // Update the cameras
     STimer::timer << "cameras";
     for (auto& obj : _objects)
@@ -342,7 +363,7 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessage(const string message, const vector<Value> value)
+void Scene::sendMessage(const string message, const Values value)
 {
     _link->sendMessage("world", message, value);
 }
@@ -425,7 +446,7 @@ void Scene::computeBlendingMap()
 GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 {
     string windowName;
-    name.size() == 0 ? windowName = "Splash::Window" : windowName = name;
+    name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
 
     if (!_mainWindow)
     {
@@ -454,6 +475,30 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
+
+    glfwMakeContextCurrent(window);
+    if (SPLASH_GL_DEBUG)
+    {
+        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+    }
+
+#ifdef GLX_NV_swap_group
+    if (_maxSwapGroups)
+    {
+        bool nvResult = true;
+        nvResult &= glXJoinSwapGroupNV(glfwGetX11Display(), glfwGetX11Window(window), 1);
+        nvResult &= glXBindSwapBarrierNV(glfwGetX11Display(), 1, 1);
+        if (nvResult)
+            SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " successfully joined the NV swap group" << Log::endl;
+        else
+            SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
+    }
+#endif
+
+    glfwMakeContextCurrent(NULL);
+
     return make_shared<GlWindow>(window, _mainWindow->get());
 }
 
@@ -465,7 +510,7 @@ void Scene::init(std::string name)
     // GLFW stuff
     if (!glfwInit())
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
         _isInitialized = false;
         return;
     }
@@ -482,14 +527,31 @@ void Scene::init(std::string name)
 
     if (!window)
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
+        SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to create a GLFW window" << Log::endl;
         _isInitialized = false;
         return;
     }
 
     _mainWindow = make_shared<GlWindow>(window, window);
-    glfwMakeContextCurrent(_mainWindow->get());
     _isInitialized = true;
+
+    glfwMakeContextCurrent(_mainWindow->get());
+    // Activate GL debug messages
+    if (SPLASH_GL_DEBUG)
+    {
+        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+    }
+
+    // Check for swap groups
+#ifdef GLX_NV_swap_group
+    if (!glXQueryMaxSwapGroupsNV(glfwGetX11Display(), 0, &_maxSwapGroups, &_maxSwapBarriers))
+        SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
+    else
+        SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+#endif
+
     glfwMakeContextCurrent(NULL);
 
     // Create the link and connect to the World
@@ -519,9 +581,38 @@ void Scene::glfwErrorCallback(int code, const char* msg)
 }
 
 /*************/
+void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    string typeString {""};
+    switch (type)
+    {
+    case GL_DEBUG_TYPE_ERROR:
+        typeString = "Error";
+        break;
+    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+        typeString = "Deprecated behavior";
+        break;
+    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+        typeString = "Undefined behavior";
+        break;
+    case GL_DEBUG_TYPE_PORTABILITY:
+        typeString = "Portability";
+        break;
+    case GL_DEBUG_TYPE_PERFORMANCE:
+        typeString = "Performance";
+        break;
+    case GL_DEBUG_TYPE_OTHER:
+        typeString = "Other";
+        break;
+    }
+
+    SLog::log << Log::WARNING << "GL::debug - [" << typeString << "] - " << message << Log::endl;
+}
+
+/*************/
 void Scene::registerAttributes()
 {
-    _attribFunctions["add"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["add"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string type = args[0].asString();
@@ -531,7 +622,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["addGhost"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["addGhost"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string type = args[0].asString();
@@ -541,24 +632,24 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         _doComputeBlending = true;
         return true;
     });
 
-    _attribFunctions["config"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["config"] = AttributeFunctor([&](Values args) {
         _doSaveNow = true;
         return true;
     });
 
-    _attribFunctions["duration"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["duration"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         STimer::timer.setDuration(args[0].asString(), args[1].asInt());
         return true;
     });
  
-    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)
@@ -567,7 +658,7 @@ void Scene::registerAttributes()
         return true;
     });
    
-    _attribFunctions["link"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["link"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -576,7 +667,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["linkGhost"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["linkGhost"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -584,14 +675,14 @@ void Scene::registerAttributes()
         return linkGhost(src, dst);
     });
 
-    _attribFunctions["log"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["log"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         SLog::log.setLog(args[0].asString(), (Log::Priority)args[1].asInt());
         return true;
     });
 
-    _attribFunctions["remove"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["remove"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         string name = args[1].asString();
@@ -600,7 +691,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setGhost"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["setGhost"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -615,35 +706,35 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setMaster"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["setMaster"] = AttributeFunctor([&](Values args) {
         setAsMaster();
         return true;
     });
 
-    _attribFunctions["start"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["start"] = AttributeFunctor([&](Values args) {
         _started = true;
         return true;
     });
 
-    _attribFunctions["stop"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["stop"] = AttributeFunctor([&](Values args) {
         _started = false;
         return true;
     });
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
         _started = false;
         _isRunning = false;
         return true;
     });
  
-    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)

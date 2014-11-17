@@ -36,12 +36,6 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "image_shmdata.h"
-#include "link.h"
-#include "log.h"
-#include "scene.h"
-#include "threadpool.h"
-
 namespace Splash {
 
 class World;
@@ -89,7 +83,6 @@ class World : public RootObject
 
         unsigned long _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;
-        std::vector<TexturePtr> _textures;
 
         std::string _configFilename;
         Json::Value _config;
@@ -149,7 +142,7 @@ class World : public RootObject
         /**
          * Set a parameter for an object, given its id
          */
-        void setAttribute(std::string name, std::string attrib, std::vector<Value> args);
+        void setAttribute(std::string name, std::string attrib, Values args);
         using BaseObject::setAttribute;
 
         /**

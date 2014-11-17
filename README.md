@@ -80,7 +80,7 @@ Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
     sudo apt-add-repository ppa:irie/blender
     sudo apt-add-repository ppa:sat-metalab/metalab
-    sudo apt-add-repository ppa:keithw/glfw3
+    sudo apt-add-repository ppa:pyglfw/pyglfw
     sudo apt-get update
 
 And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being...

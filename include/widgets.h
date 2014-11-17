@@ -111,10 +111,10 @@ class GlvGlobalView : public glv::View3D
         bool _camerasHidden {false};
 
         // Store the previous camera values
-        std::vector<Value> _eye, _target, _up, _fov, _principalPoint;
+        Values _eye, _target, _up, _fov, _principalPoint;
 
         // Previous point added
-        std::vector<Value> _previousPointAdded;
+        Values _previousPointAdded;
 
         glv::Label _camLabel;
 };

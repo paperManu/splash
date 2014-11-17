@@ -34,10 +34,7 @@
 #include <utility>
 #include <vector>
 
-#include "geometry.h"
-#include "log.h"
-#include "object.h"
-#include "texture.h"
+#include <glm/glm.hpp>
 
 namespace Splash {
 
@@ -79,7 +76,6 @@ class Window : public BaseObject
                 _screen = w._screen;
                 _viewProjectionMatrix = w._viewProjectionMatrix;
                 _inTextures = w._inTextures;
-                _isLinkedToTexture = w._isLinkedToTexture;
             }
             return *this;
         }
@@ -145,13 +141,12 @@ class Window : public BaseObject
         GlWindowPtr _window;
         int _screenId {-1};
         bool _fullscreen {false};
-        std::vector<Value> _layout {0, 0, 0, 0};
+        Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
 
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;
-        bool _isLinkedToTexture {false}; //< Set to true if the Window is directly connected to a texture, not a Camera or Gui
 
         static std::mutex _callbackMutex;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys; // Input keys queue

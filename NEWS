@@ -1,6 +1,28 @@
 Slash release notes
 ===================
 
+Splash 0.1.8 (2014-11-17)
+-------------------------
+New features:
+* NV swap group support
+* Mesh update through shared memory (shmdata)
+* Flip / flop for input textures
+* Color temperature correction
+
+Improvements:
+* Slight improvement of blending map computation
+* Camera movements now similar to Blender
+* Cleaned up header files
+* Updated GL debug filters (disabled by default)
+
+Bug fixed:
+* Concurrency issue in Link
+* Warnings related to GLM
+* Cleanup to compile on Ubuntu 14.04
+* Corrected performance issue in Threadpool
+* Corrected Threadpool issue with cores number detection
+* Channel inversion for RGBA input
+
 Splash 0.1.6 (2014-07-07)
 -------------------------
 New features:

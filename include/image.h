@@ -31,7 +31,6 @@
 
 #include "config.h"
 #include "coretypes.h"
-#include "log.h"
 
 namespace oiio = OIIO_NAMESPACE;
 
@@ -69,6 +68,8 @@ class Image : public BufferObject
                 _image.swap(i._image);
                 _bufferImage.swap(i._bufferImage);
                 _imageUpdated = i._imageUpdated;
+                _flip = i._flip;
+                _flop = i._flop;
                 _srgb = i._srgb;
                 _benchmark = i._benchmark;
                 _serializedBuffers[0] = i._serializedBuffers[0];
@@ -143,6 +144,8 @@ class Image : public BufferObject
     protected:
         oiio::ImageBuf _image;
         oiio::ImageBuf _bufferImage;
+        bool _flip {false};
+        bool _flop {false};
         bool _imageUpdated {false};
         bool _srgb {true};
         bool _benchmark {false};

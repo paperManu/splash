@@ -1,6 +1,15 @@
 #include "world.h"
 #include "timer.h"
 
+#include "image.h"
+#include "image_shmdata.h"
+#include "link.h"
+#include "log.h"
+#include "mesh.h"
+#include "mesh_shmdata.h"
+#include "scene.h"
+#include "threadpool.h"
+
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <json/reader.h>
@@ -106,7 +115,7 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type != "image" && type != "mesh" && type != "image_shmdata")
+    if (type != "image" && type != "image_shmdata" && type != "mesh" && type != "mesh_shmdata")
         return;
 
     BaseObjectPtr object;
@@ -118,6 +127,8 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        else if (type == string("mesh_shmdata"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
     }
     if (object.get() != nullptr)
     {
@@ -295,7 +306,7 @@ void World::applyConfig()
                     continue;
                 }
 
-                vector<Value> values;
+                Values values;
                 if (attr.isArray())
                     for (auto& v : attr)
                     {
@@ -484,6 +495,12 @@ bool World::loadConfig(string filename)
 /*************/
 void World::parseArguments(int argc, char** argv)
 {
+    cout << endl;
+    cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
+    cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
+    cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
+    cout << endl;
+
     int idx = 0;
     string filename {""};
     while (idx < argc)
@@ -493,7 +510,7 @@ void World::parseArguments(int argc, char** argv)
             filename = string(argv[idx + 1]);
             idx += 2;
         }
-        else if (string(argv[idx]) == "-d")
+        else if (string(argv[idx]) == "-d" || string(argv[idx]) == "--debug")
         {
 #ifdef DEBUG
             SLog::log.setVerbosity(Log::DEBUGGING);
@@ -507,14 +524,12 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
         {
-            cout << "Splash - a modular multi-output video mapper" << endl;
             cout << "Basic usage: splash -o [config.json]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
-            cout << "\t-d : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
-            cout << "\t-s : disable all messages" << endl;
+            cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
+            cout << "\t-s (--silent) : disable all messages" << endl;
             exit(0);
-            idx++;
         }
         else
             idx++;
@@ -522,67 +537,63 @@ void World::parseArguments(int argc, char** argv)
 
     if (filename != "")
         _status &= loadConfig(filename);
+    else
+        exit(0);
 }
 
 /*************/
-void World::setAttribute(string name, string attrib, std::vector<Value> args)
+void World::setAttribute(string name, string attrib, Values args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
 }
 
 /*************/
-void World::glfwErrorCallback(int code, const char* msg)
-{
-    SLog::log << Log::WARNING << "World::glfwErrorCallback - " << msg << Log::endl;
-}
-
-/*************/
 void World::registerAttributes()
 {
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
         _childProcessLaunched = true;
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         _doComputeBlending = true;
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _link->sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
         return true;
     });
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["framerate"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
         _quit = true;
         return true;
     });
 
-    _attribFunctions["save"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["save"] = AttributeFunctor([&](Values args) {
         SLog::log << "Saving configuration" << Log::endl;
         _doSaveConfig = true;
         return true;
     });
 
-    _attribFunctions["sceneConfig"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["sceneConfig"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         _lastConfigReceived = args[1].asString();
         return true;
     });
 
-    _attribFunctions["sendAll"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["sendAll"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -598,7 +609,7 @@ void World::registerAttributes()
         _link->sendMessage(name, attr, values);
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _link->sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});

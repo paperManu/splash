@@ -1,10 +1,16 @@
 #include "window.h"
+
 #include "camera.h"
+#include "geometry.h"
 #include "gui.h"
+#include "image.h"
+#include "log.h"
+#include "object.h"
+#include "shader.h"
+#include "texture.h"
 #include "timer.h"
 
 #include <functional>
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 using namespace std;
@@ -126,7 +132,6 @@ bool Window::linkTo(BaseObjectPtr obj)
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
-        _isLinkedToTexture = true;
         setTexture(tex);
         return true;
     }
@@ -166,7 +171,9 @@ bool Window::render()
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
 
+#ifdef DEBUG
     glGetError();
+#endif
     glDrawBuffer(GL_BACK);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -188,19 +195,25 @@ bool Window::render()
             if (_layout[j].asInt() != value)
                 resize = false;
     }
-    if (!_isLinkedToTexture && resize) // We don't do this if we are directly connected to a Texture (updated from an image)
+    if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
         for (auto& t : _inTextures)
             t->resize(w, h);
 
+#ifdef DEBUG
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
+#endif
 
     glDisable(GL_FRAMEBUFFER_SRGB);
 
     _window->releaseContext();
 
+#ifdef DEBUG
     return error != 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/
@@ -237,9 +250,9 @@ bool Window::switchFullscreen(int screenId)
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
-        window = glfwCreateWindow(vidmode->width, vidmode->height, _name.c_str(), monitors[_screenId], _window->getMainWindow());
+        window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), monitors[_screenId], _window->getMainWindow());
     else
-        window = glfwCreateWindow(vidmode->width, vidmode->height, _name.c_str(), 0, _window->getMainWindow());
+        window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
 
     if (!window)
     {
@@ -274,7 +287,7 @@ void Window::setTexture(TexturePtr tex)
 void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    std::vector<int> keys {key, scancode, action, mods};
+    vector<int> keys {key, scancode, action, mods};
     _keys.push_back(pair<GLFWwindow*, vector<int>>(win,keys));
 }
 
@@ -282,7 +295,7 @@ void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int
 void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    std::vector<int> btn {button, action, mods};
+    vector<int> btn {button, action, mods};
     _mouseBtn.push_back(pair<GLFWwindow*, vector<int>>(win,btn));
 }
 
@@ -290,7 +303,7 @@ void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    std::vector<double> pos {xpos, ypos};
+    vector<double> pos {xpos, ypos};
     _mousePos.first = win;
     _mousePos.second = move(pos);
 }
@@ -299,7 +312,7 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    std::vector<double> scroll {xoffset, yoffset};
+    vector<double> scroll {xoffset, yoffset};
     _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
 }
 
@@ -321,20 +334,28 @@ bool Window::setProjectionSurface()
     glfwSwapInterval(_swapInterval);
 
     // Setup the projection surface
+#ifdef DEBUG
     glGetError();
+#endif
 
     _screen = make_shared<Object>();
     _screen->setAttribute("fill", {"window"});
     GeometryPtr virtualScreen = make_shared<Geometry>();
     _screen->addGeometry(virtualScreen);
 
+#ifdef DEBUG
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
+#endif
 
     _window->releaseContext();
 
+#ifdef DEBUG
     return error == 0 ? true : false;
+#else
+    return true;
+#endif
 }
 
 /*************/
@@ -351,17 +372,17 @@ void Window::updateSwapInterval()
 /*************/
 void Window::registerAttributes()
 {
-    _attribFunctions["fullscreen"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["fullscreen"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         switchFullscreen(args[0].asInt());
         return true;
     }, [&]() {
-        return vector<Value>({_screenId});
+        return Values({_screenId});
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["layout"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _layout = args;
@@ -370,7 +391,7 @@ void Window::registerAttributes()
         return _layout;
     });
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());

@@ -268,6 +268,15 @@ class Log
         /*****/
         void toConsole(std::string msg)
         {
+            if (msg.find("[MESSAGE]") != std::string::npos)
+                msg.replace(msg.find("[MESSAGE]"), 9, "\033[32;1m[MESSAGE]\033[0m");
+            else if (msg.find("[DEBUG]") != std::string::npos)
+                msg.replace(msg.find("[DEBUG]"), 7, "\033[36;1m[DEBUG]\033[0m");
+            else if (msg.find("[WARNING]") != std::string::npos)
+                msg.replace(msg.find("[WARNING]"), 9, "\033[33;1m[WARNING]\033[0m");
+            else if (msg.find("[ERROR]") != std::string::npos)
+                msg.replace(msg.find("[ERROR]"), 7, "\033[31;1m[ERROR]\033[0m");
+
             std::cout << msg << std::endl;
         }
 };

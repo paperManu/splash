@@ -31,6 +31,7 @@
 #include "config.h"
 #include "coretypes.h"
 
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
@@ -95,7 +96,6 @@ class Shader : public BaseObject
 
                 _fill = s._fill;
                 _sideness = s._sideness;
-                _textureNbr = s._textureNbr;
                 _useBlendingMap = s._useBlendingMap;
                 _blendWidth = s._blendWidth;
                 _blackLevel = s._blackLevel;
@@ -144,8 +144,14 @@ class Shader : public BaseObject
          */
         void setModelViewProjectionMatrix(const glm::dmat4& mvp);
 
+        /**
+         * Set the currently queued uniforms updates
+         */
+        void updateUniforms();
+
     private:
         mutable std::mutex _mutex;
+        std::atomic_bool _activated {false};
 
         std::map<ShaderType, GLuint> _shaders;
         std::map<ShaderType, std::string> _shadersSource;
@@ -153,11 +159,11 @@ class Shader : public BaseObject
         bool _isLinked = {false};
         std::map<std::string, std::pair<Values, GLint>> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
+        std::vector<TexturePtr> _textures; // Currently used textures
 
         // Rendering parameters
         Fill _fill {texture};
         Sideness _sideness {doubleSided};
-        int _textureNbr {0};
         int _useBlendingMap {0};
         float _blendWidth {0.05f};
         float _blackLevel {0.f};

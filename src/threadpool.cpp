@@ -39,7 +39,8 @@ void Worker::operator() ()
 
         {
             pool.queue_mutex.lock();
-            pool.tasksFinished.push_back(id);
+            if (id != 0)
+                pool.tasksFinished.push_back(id);
             pool.queue_mutex.unlock();
         }
     }
@@ -50,7 +51,7 @@ ThreadPool::ThreadPool(size_t threads)
 {
     int nprocessors = threads;
     if (threads == 0)
-        nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+        nprocessors = std::max(sysconf(_SC_NPROCESSORS_ONLN * 2), 16l);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }
@@ -88,7 +89,7 @@ void ThreadPool::waitAllThreads()
 }
 
 /*************/
-void ThreadPool::waitThreads(vector<unsigned int> list)
+void ThreadPool::waitThreads(vector<unsigned int>& list)
 {
     timespec nap;
     nap.tv_sec = 0;

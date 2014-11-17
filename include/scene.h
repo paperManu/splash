@@ -33,18 +33,6 @@
 #include <GLFW/glfw3.h>
 #include <json/reader.h>
 
-#include "camera.h"
-#include "geometry.h"
-#include "gui.h"
-#include "image.h"
-#include "link.h"
-#include "log.h"
-#include "mesh.h"
-#include "object.h"
-#include "texture.h"
-#include "threadpool.h"
-#include "window.h"
-
 namespace Splash {
 
 class Scene;
@@ -137,7 +125,7 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessage(const std::string message, const std::vector<Value> value = {});
+        void sendMessage(const std::string message, const Values value = {});
 
     protected:
         GlWindowPtr _mainWindow;
@@ -162,6 +150,10 @@ class Scene : public RootObject
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
+
+        // NV Swap group specific
+        GLuint _maxSwapGroups {0};
+        GLuint _maxSwapBarriers {0};
 
         unsigned long _nextId {0};
 
@@ -197,6 +189,11 @@ class Scene : public RootObject
          * Callback for GLFW errors
          */
         static void glfwErrorCallback(int code, const char* msg);
+
+        /**
+         * Callback for GL errors and warnings
+         */
+        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
 
         /**
          * Register new functors to modify attributes

@@ -42,12 +42,9 @@
 #include <gsl/gsl_multimin.h>
 #include <GLFW/glfw3.h>
 
-#include "image_shmdata.h"
-#include "object.h"
-#include "texture.h"
-
 namespace Splash {
 
+/*************/
 class Camera : public BaseObject
 {
     public:
@@ -152,12 +149,12 @@ class Camera : public BaseObject
         /**
          * Get the coordinates of the closest vertex to the given point
          */
-        std::vector<Value> pickVertex(float x, float y);
+        Values pickVertex(float x, float y);
 
         /**
          * Get the coordinates of the closest calibration point
          */
-        std::vector<Value> pickCalibrationPoint(float x, float y);
+        Values pickCalibrationPoint(float x, float y);
 
         /**
          * Render this camera into its textures
@@ -168,11 +165,11 @@ class Camera : public BaseObject
          * Set the given calibration point
          * Returns true if the point already existed
          */
-        bool addCalibrationPoint(std::vector<Value> worldPoint);
+        bool addCalibrationPoint(Values worldPoint);
         void deselectCalibrationPoint();
         void moveCalibrationPoint(float dx, float dy);
-        void removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSet = false);
-        bool setCalibrationPoint(std::vector<Value> screenPoint);
+        void removeCalibrationPoint(Values worldPoint, bool unlessSet = false);
+        bool setCalibrationPoint(Values screenPoint);
 
         /**
          * Set the number of output buffers for this camera
@@ -219,6 +216,7 @@ class Camera : public BaseObject
         float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
         float _blackLevel {0.f};
         float _brightness {1.f};
+        float _colorTemperature {6500.f};
 
         // Calibration parameters
         bool _calibrationCalledOnce {false};

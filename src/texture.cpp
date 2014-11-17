@@ -1,4 +1,7 @@
 #include "texture.h"
+
+#include "image.h"
+#include "log.h"
 #include "threadpool.h"
 #include "timer.h"
 
@@ -42,11 +45,18 @@ Texture& Texture::operator=(ImagePtr& img)
 }
 
 /*************/
+void Texture::bind()
+{
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
+    glBindTexture(_texTarget, _glTex);
+}
+
+/*************/
 void Texture::generateMipmap() const
 {
-    glBindTexture(GL_TEXTURE_2D, _glTex);
+    glBindTexture(_texTarget, _glTex);
     glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(_texTarget, 0);
 }
 
 /*************/
@@ -87,7 +97,7 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
         glGenTextures(1, &_glTex);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glBindTexture(target, _glTex);
 
         if (internalFormat == GL_DEPTH_COMPONENT)
         {
@@ -116,14 +126,14 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
         }
 
         glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(target, 0);
     }
     else
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glBindTexture(target, _glTex);
         glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(target, 0);
     }
 
     _spec.width = width;
@@ -168,8 +178,17 @@ void Texture::reset(GLenum target, GLint level, GLint internalFormat, GLsizei wi
 /*************/
 void Texture::resize(int width, int height)
 {
+    if (!_resizable)
+        return;
     if (width != _spec.width && height != _spec.height)
         reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
+}
+
+/*************/
+void Texture::unbind()
+{
+    glActiveTexture((GLenum)_activeTexture);
+    glBindTexture(_texTarget, 0);
 }
 
 /*************/
@@ -186,8 +205,10 @@ void Texture::update()
     _img->update();
 
     ImageSpec spec = _img->getSpec();
-    vector<Value> srgb;
+    Values srgb, flip, flop;
     _img->getAttribute("srgb", srgb);
+    _img->getAttribute("flip", flip);
+    _img->getAttribute("flop", flop);
 
     if (!(bool)glIsTexture(_glTex))
     {
@@ -201,8 +222,12 @@ void Texture::update()
     GLint glChannelOrder;
     if (spec.channelnames == vector<string>({"B", "G", "R"}))
         glChannelOrder = GL_BGR;
+    else if (spec.channelnames == vector<string>({"R", "G", "B"}))
+        glChannelOrder = GL_RGB;
     else if (spec.channelnames == vector<string>({"B", "G", "R", "A"}))
         glChannelOrder = GL_BGRA;
+    else if (spec.channelnames == vector<string>({"R", "G", "B", "A"}))
+        glChannelOrder = GL_RGBA;
     else if (spec.channelnames == vector<string>({"R", "G", "B"})
           || spec.channelnames == vector<string>({"RGB_DXT1"}))
         glChannelOrder = GL_RGB;
@@ -331,7 +356,6 @@ void Texture::update()
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-        //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         _spec = spec;
@@ -363,7 +387,6 @@ void Texture::update()
             glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-        //glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
@@ -398,6 +421,9 @@ void Texture::update()
     else
         _shaderUniforms["YCoCg"] = Values({0});
 
+    _shaderUniforms["flip"] = Values({flip[0]});
+    _shaderUniforms["flop"] = Values({flop[0]});
+
     _timestamp = _img->getTimestamp();
 
 }
@@ -420,8 +446,12 @@ void Texture::flushPbo()
 /*************/
 void Texture::init()
 {
+    registerAttributes();
+
     _type = "texture";
     _timestamp = chrono::high_resolution_clock::now();
+
+    _texTarget = GL_TEXTURE_2D;
 
     glGenBuffers(2, _pbos);
 }
@@ -430,10 +460,23 @@ void Texture::init()
 void Texture::updatePbos(int width, int height, int bytes)
 {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_DYNAMIC_DRAW);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+}
+
+/*************/
+void Texture::registerAttributes()
+{
+    _attribFunctions["resizable"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _resizable = args[0].asInt() > 0 ? true : false;
+        return true;
+    }, [&]() {
+        return Values({_resizable});
+    });
 }
 
 } // end of namespace

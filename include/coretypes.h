@@ -27,6 +27,7 @@
 
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
+#define GLX_GLXEXT_PROTOTYPES
 
 #define SPLASH
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
@@ -37,6 +38,7 @@
 #define SPLASH_ALL_PAIRS "__ALL__"
 
 #include <chrono>
+#include <ostream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -50,6 +52,40 @@
 
 namespace Splash
 {
+
+/*************/
+// All object types are specified here,
+// so that we don't have to do it everywhere
+
+class Camera;
+class Geometry;
+class Gui;
+class GlvGlobalView;
+class GlvControl;
+class Image;
+class Image_Shmdata;
+class Link;
+class Mesh;
+class Mesh_Shmdata;
+class Object;
+class Scene;
+class Shader;
+class Texture;
+class Window;
+
+typedef std::shared_ptr<Camera> CameraPtr;
+typedef std::shared_ptr<Geometry> GeometryPtr;
+typedef std::shared_ptr<Gui> GuiPtr;
+typedef std::shared_ptr<Image> ImagePtr;
+typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
+typedef std::shared_ptr<Link> LinkPtr;
+typedef std::shared_ptr<Mesh> MeshPtr;
+typedef std::shared_ptr<Mesh_Shmdata> Mesh_ShmdataPtr;
+typedef std::shared_ptr<Object> ObjectPtr;
+typedef std::shared_ptr<Scene> ScenePtr;
+typedef std::shared_ptr<Shader> ShaderPtr;
+typedef std::shared_ptr<Texture> TexturePtr;
+typedef std::shared_ptr<Window> WindowPtr;
 
 /*************/
 struct SerializedObject
@@ -352,26 +388,26 @@ struct AttributeFunctor
 {
     public:
         AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(std::vector<Value>)> setFunc) {_setFunc = setFunc;}
-        AttributeFunctor(std::function<bool(std::vector<Value>)> setFunc,
-                            std::function<std::vector<Value>()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+        AttributeFunctor(std::function<bool(Values)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor(std::function<bool(Values)> setFunc,
+                            std::function<Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
 
-        bool operator()(std::vector<Value> args)
+        bool operator()(Values args)
         {
             if (!_setFunc)
                 return false;
             return _setFunc(args);
         }
-        std::vector<Value> operator()()
+        Values operator()()
         {
             if (!_getFunc)
-                return std::vector<Value>();
+                return Values();
             return _getFunc();
         }
 
     private:
-        std::function<bool(std::vector<Value>)> _setFunc;
-        std::function<std::vector<Value>()> _getFunc;
+        std::function<bool(Values)> _setFunc;
+        std::function<Values()> _getFunc;
 };
 
 class BaseObject;
@@ -409,14 +445,9 @@ class BaseObject
         virtual bool linkTo(BaseObjectPtr obj) {return false;}
 
         /**
-         * Register modifiable attributes
-         */
-        virtual void registerAttributes() {}
-
-        /**
          * Set the specified attribute
          */
-        bool setAttribute(std::string attrib, std::vector<Value> args)
+        bool setAttribute(std::string attrib, Values args)
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
@@ -426,7 +457,7 @@ class BaseObject
         /**
          * Get the specified attribute
          */
-        bool getAttribute(std::string attrib, std::vector<Value>& args)
+        bool getAttribute(std::string attrib, Values& args)
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
@@ -469,7 +500,7 @@ class BaseObject
 
             for (auto& attr : _attribFunctions)
             {
-                std::vector<Value> values;
+                Values values;
                 if (getAttribute(attr.first, values) == false || values.size() == 0)
                     continue;
 
@@ -503,6 +534,11 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
         std::map<std::string, AttributeFunctor> _attribFunctions;
+
+        /**
+         * Register new functors to modify attributes
+         */
+        virtual void registerAttributes() = 0;
 };
 
 /*************/
@@ -554,7 +590,7 @@ class BufferObject : public BaseObject
             }
 
             // Deserialize it right away, in a separate thread
-            SThread::pool.enqueue([&]() {
+            SThread::pool.enqueueWithoutId([&]() {
                 deserialize();
             });
         }
@@ -589,7 +625,7 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(std::string name, std::string attrib, std::vector<Value> args)
+        bool set(std::string name, std::string attrib, Values args)
         {
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 setAttribute(attrib, args);

@@ -1,5 +1,7 @@
 #include "geometry.h"
 
+#include "mesh.h"
+
 using namespace std;
 using namespace glm;
 
@@ -9,6 +11,7 @@ namespace Splash {
 Geometry::Geometry()
 {
     _type = "geometry";
+    registerAttributes();
 
     _mesh = make_shared<Mesh>();
     update();
@@ -88,6 +91,8 @@ void Geometry::update()
     // Update the vertex buffers if mesh was updated
     if (_timestamp != _mesh->getTimestamp())
     {
+        _mesh->update();
+
         glDeleteBuffers(1, &_vertexCoords);
         glDeleteBuffers(1, &_texCoords);
         glDeleteBuffers(1, &_normals);

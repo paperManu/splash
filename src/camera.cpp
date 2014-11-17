@@ -1,11 +1,20 @@
 #include "camera.h"
+
+#include "image_shmdata.h"
+#include "log.h"
+#include "mesh.h"
+#include "object.h"
+#include "shader.h"
+#include "texture.h"
 #include "timer.h"
 #include "threadpool.h"
 
+#include <fstream>
 #include <limits>
 
 #define GLM_FORCE_SSE2
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/simd_mat4.hpp>
@@ -100,10 +109,10 @@ void Camera::computeBlendingMap(ImagePtr& map)
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     // We want to render the object with a specific texture, containing texture coordinates
-    vector<vector<Value>> shaderFill;
+    vector<Values> shaderFill;
     for (auto& obj : _objects)
     {
-        vector<Value> fill;
+        Values fill;
         obj->getAttribute("fill", fill);
         obj->setAttribute("fill", {"uv"});
         shaderFill.push_back(fill);
@@ -134,7 +143,9 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+#ifdef DEBUG
     GLenum error = glGetError();
+#endif
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     ImageBuf img(_outTextures[0]->getSpec());
     glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.localpixels());
@@ -147,14 +158,16 @@ void Camera::computeBlendingMap(ImagePtr& map)
         obj->setAttribute("fill", shaderFill[fillIndex]);
         fillIndex++;
     }
+#ifdef DEBUG
     error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
+#endif
+
     _window->releaseContext();
 
     _writeToShm = writeToShm;
     setOutputSize(width, height);
-
-    if (error)
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
     oiio::ImageSpec mapSpec = map->getSpec();
@@ -167,28 +180,47 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
 
         // UV coordinates are mapped on 2 uchar each
-        int x = (int)round((p[0] * 65536.f + p[1] * 256.f) * 0.0000152587890625f * (float)mapSpec.width);
-        int y = (int)round((p[2] * 65536.f + p[3] * 256.f) * 0.0000152587890625f * (float)mapSpec.height);
+        int x = (int)floor((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
+        int y = (int)floor((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
-        if (isSet[y * mapSpec.width + x])
+        if (isSet[y * mapSpec.width + x] || x == 0 && y == 0)
             continue;
         isSet[y * mapSpec.width + x] = true;
 
-        float distX = (float)std::min(p.x(), img.spec().width - 1 - p.x()) / (float)img.spec().width;
-        float distY = (float)std::min(p.y(), img.spec().height - 1 - p.y()) / (float)img.spec().height;
+        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width;
+        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height;
         
+        unsigned short blendAddition = 0;
         if (_blendWidth > 0.f)
         {
             // Add some smoothness to the transition
-            float smoothDist = smoothstep(0.f, 1.f, std::min(distX, distY) / _blendWidth) * 256.f;
-            int blendValue = (int)std::min(256.f, smoothDist);
-            imageMap[y * mapSpec.width + x] += blendValue; // One more camera displaying this pixel
+            double smoothDist = smoothstep(0.0, 1.0, std::min(distX, distY) / _blendWidth) * 256.0;
+            int blendValue = (int)std::min(256.0, smoothDist);
+            blendAddition += blendValue; // One more camera displaying this pixel
         }
         else
-            imageMap[y * mapSpec.width + x] += 256; // One more camera displaying this pixel
+            blendAddition += 256; // One more camera displaying this pixel
 
         // We keep the real number of projectors, hidden higher in the shorts
-        imageMap[y * mapSpec.width + x] += 4096;
+        blendAddition += 4096;
+        imageMap[y * mapSpec.width + x] += blendAddition;
+
+        // Extend to neighbours (kind of reverse to effect of floor())
+        if (x < mapSpec.width - 1 && !isSet[y * mapSpec.width + x + 1])
+        {
+            imageMap[y * mapSpec.width + x + 1] += blendAddition;
+            isSet[y * mapSpec.width + x + 1] = true;
+        }
+        if (y < mapSpec.height - 1 && !isSet[(y + 1) * mapSpec.width + x])
+        {
+            imageMap[(y + 1) * mapSpec.width + x] += blendAddition;
+            isSet[(y + 1) * mapSpec.width + x] = true;
+            if (x < mapSpec.width - 1 && !isSet[(y + 1) * mapSpec.width + x + 1])
+            {
+                imageMap[(y + 1) * mapSpec.width + x + 1] += blendAddition;
+                isSet[(y + 1) * mapSpec.width + x + 1] = true;
+            }
+        }
     }
 }
 
@@ -200,7 +232,7 @@ bool Camera::doCalibration()
     for (auto& point : _calibrationPoints)
         if (point.isSet)
             pointsSet++;
-    // We need at least 4 points to get a meaningful calibration
+    // We need at least 6 points to get a meaningful calibration
     if (pointsSet < 6)
     {
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 6 points" << Log::endl;
@@ -328,7 +360,7 @@ bool Camera::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-vector<Value> Camera::pickVertex(float x, float y)
+Values Camera::pickVertex(float x, float y)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
     float realX = x * _width;
@@ -344,7 +376,7 @@ vector<Value> Camera::pickVertex(float x, float y)
     _window->releaseContext();
 
     if (depth == 1.f)
-        return vector<Value>();
+        return Values();
 
     // Unproject the point
     dvec3 screenPoint(realX, realY, depth);
@@ -364,11 +396,11 @@ vector<Value> Camera::pickVertex(float x, float y)
         }
     }
 
-    return vector<Value>({vertex.x, vertex.y, vertex.z});
+    return Values({vertex.x, vertex.y, vertex.z});
 }
 
 /*************/
-vector<Value> Camera::pickCalibrationPoint(float x, float y)
+Values Camera::pickCalibrationPoint(float x, float y)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
     float realX = x * _width;
@@ -384,7 +416,7 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
     _window->releaseContext();
 
     if (depth == 1.f)
-        return vector<Value>();
+        return Values();
 
     // Unproject the point
     dvec3 screenPoint(realX, realY, depth);
@@ -404,7 +436,7 @@ vector<Value> Camera::pickCalibrationPoint(float x, float y)
         }
     }
 
-    return vector<Value>({vertex.x, vertex.y, vertex.z});
+    return Values({vertex.x, vertex.y, vertex.z});
 }
 
 /*************/
@@ -420,7 +452,9 @@ bool Camera::render()
     if (_outTextures.size() < 1)
         return false;
 
+#ifdef DEBUG
     glGetError();
+#endif
     glViewport(0, 0, _width, _height);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
@@ -449,11 +483,12 @@ bool Camera::render()
         // Draw the objects
         for (auto& obj : _objects)
         {
+            obj->activate();
             obj->getShader()->setAttribute("blendWidth", {_blendWidth});
             obj->getShader()->setAttribute("blackLevel", {_blackLevel});
             obj->getShader()->setAttribute("brightness", {_brightness});
+            obj->getShader()->setAttribute("colorTemperature", {_colorTemperature});
 
-            obj->activate();
             obj->setViewProjectionMatrix(computeViewProjectionMatrix());
             obj->draw();
             obj->deactivate();
@@ -466,6 +501,8 @@ bool Camera::render()
             {
                 auto& point = _calibrationPoints[i];
                 ObjectPtr worldMarker = _models["3d_marker"];
+
+                worldMarker->activate();
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                 if (_selectedCalibrationPoint == i)
                     worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
@@ -473,7 +510,6 @@ bool Camera::render()
                     worldMarker->setAttribute("color", SPLASH_MARKER_SET);
                 else
                     worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
-                worldMarker->activate();
                 worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
                 worldMarker->draw();
                 worldMarker->deactivate();
@@ -481,13 +517,14 @@ bool Camera::render()
                 if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
                     ObjectPtr screenMarker = _models["2d_marker"];
+
+                    screenMarker->activate();
                     screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                     screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
                     if (_selectedCalibrationPoint == i)
                         screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                     else
                         screenMarker->setAttribute("color", SPLASH_MARKER_SET);
-                    screenMarker->activate();
                     screenMarker->setViewProjectionMatrix(dmat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();
@@ -499,16 +536,13 @@ bool Camera::render()
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_SCISSOR_TEST);
 
-    // We need to regenerate the mipmaps for all the output textures
-    glActiveTexture(GL_TEXTURE0);
-    for (auto t : _outTextures)
-        t->generateMipmap();
-
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
+#ifdef DEBUG
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+#endif
 
     // Output to a shared memory if set so
     if (_writeToShm)
@@ -541,11 +575,15 @@ bool Camera::render()
 
     _window->releaseContext();
 
+#ifdef DEBUG
     return error != 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/
-bool Camera::addCalibrationPoint(std::vector<Value> worldPoint)
+bool Camera::addCalibrationPoint(Values worldPoint)
 {
     if (worldPoint.size() < 3)
         return false;
@@ -585,7 +623,7 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 }
 
 /*************/
-void Camera::removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSet)
+void Camera::removeCalibrationPoint(Values worldPoint, bool unlessSet)
 {
     if (worldPoint.size() < 3)
         return;
@@ -605,7 +643,7 @@ void Camera::removeCalibrationPoint(std::vector<Value> worldPoint, bool unlessSe
 }
 
 /*************/
-bool Camera::setCalibrationPoint(std::vector<Value> screenPoint)
+bool Camera::setCalibrationPoint(Values screenPoint)
 {
     if (_selectedCalibrationPoint == -1)
         return false;
@@ -667,10 +705,16 @@ void Camera::setOutputSize(int width, int height)
 
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    _depthTexture->setAttribute("resizable", Values({1}));
     _depthTexture->resize(width, height);
+    _depthTexture->setAttribute("resizable", Values({0}));
 
     for (auto tex : _outTextures)
+    {
+        tex->setAttribute("resizable", Values({1}));
         tex->resize(width, height);
+        tex->setAttribute("resizable", Values({0}));
+    }
 
     _width = width;
     _height = height;
@@ -804,6 +848,15 @@ void Camera::loadDefaultModels()
     
     for (auto& file : files)
     {
+        if (!ifstream(file.second, ios::in | ios::binary))
+            if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
+                file.second = string(DATADIR) + file.second;
+            else
+            {
+                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
+                continue;
+            }
+
         MeshPtr mesh = make_shared<Mesh>();
         mesh->setAttribute("name", {file.first});
         mesh->setAttribute("file", {file.second});
@@ -822,63 +875,63 @@ void Camera::loadDefaultModels()
 /*************/
 void Camera::registerAttributes()
 {
-    _attribFunctions["eye"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["eye"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
-        return vector<Value>({_eye.x, _eye.y, _eye.z});
+        return Values({_eye.x, _eye.y, _eye.z});
     });
 
-    _attribFunctions["target"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["target"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
-        return vector<Value>({_target.x, _target.y, _target.z});
+        return Values({_target.x, _target.y, _target.z});
     });
 
-    _attribFunctions["fov"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["fov"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _fov = args[0].asFloat();
         return true;
     }, [&]() {
-        return vector<Value>({_fov});
+        return Values({_fov});
     });
 
-    _attribFunctions["up"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["up"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() {
-        return vector<Value>({_up.x, _up.y, _up.z});
+        return Values({_up.x, _up.y, _up.z});
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
     }, [&]() {
-        return vector<Value>({_width, _height});
+        return Values({_width, _height});
     });
 
-    _attribFunctions["principalPoint"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["principalPoint"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         _cx = args[0].asFloat();
         _cy = args[1].asFloat();
         return true;
     }, [&]() {
-        return vector<Value>({_cx, _cy});
+        return Values({_cx, _cy});
     });
 
     // More advanced attributes
-    _attribFunctions["moveEye"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["moveEye"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         _eye.x = _eye.x + args[0].asFloat();
@@ -887,7 +940,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["moveTarget"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["moveTarget"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         _target.x = _target.x + args[0].asFloat();
@@ -896,7 +949,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         auto direction = _target - _eye;
@@ -906,26 +959,51 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["pan"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 3)
+            return false;
+        dvec4 panV(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), 0.f);
+        dvec3 dirV = normalize(_eye - _target);
+        double alpha = dirV.y >= 0.0 ? acos(dirV.x) : 2 * M_PI - acos(dirV.x);
+        dmat4 rotZ = rotate(dmat4(1.f), (double)-alpha + M_PI/2.0, dvec3(0.0, 0.0, 1.0));
+        dvec4 moveV = panV * rotZ;
+        _target = _target + dvec3(moveV.x, moveV.y, moveV.z);
+        _eye = _eye + dvec3(moveV.x, moveV.y, moveV.z);
+
+        return true;
+    });
+
+    _attribFunctions["forward"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+
+        float value = args[0].asFloat();
+        dvec3 dirV = normalize(_eye - _target);
+        dirV *= value;
+        _target += dirV;
+        _eye += dirV;
+    });
+
+    _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         addCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
         return true;
     });
 
-    _attribFunctions["deselectedCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["deselectedCalibrationPoint"] = AttributeFunctor([&](Values args) {
         deselectCalibrationPoint();
         return true;
     });
 
-    _attribFunctions["moveCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["moveCalibrationPoint"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         moveCalibrationPoint(args[0].asFloat(), args[1].asFloat());
         return true;
     });
 
-    _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
         else if (args.size() == 3)
@@ -935,41 +1013,50 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
     });
 
     // Rendering options
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _blendWidth = args[0].asFloat();
         return true;
     }, [&]() {
-        return vector<Value>({_blendWidth});
+        return Values({_blendWidth});
     });
 
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _blackLevel = args[0].asFloat();
         return true;
     }, [&]() {
-        return vector<Value>({_blackLevel});
+        return Values({_blackLevel});
     });
 
-    _attribFunctions["brightness"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _colorTemperature = args[0].asFloat() * 100.f;
+        return true;
+    }, [&]() {
+        return Values({_colorTemperature / 100.f});
+    });
+
+    _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _brightness = args[0].asFloat();
         return true;
     }, [&]() {
-        return vector<Value>({_brightness});
+        return Values({_brightness});
     });
 
-    _attribFunctions["frame"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["frame"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -979,7 +1066,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["hide"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["hide"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -989,7 +1076,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
 
@@ -1005,7 +1092,7 @@ void Camera::registerAttributes()
     });
 
     // Various options
-    _attribFunctions["displayCalibration"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["displayCalibration"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1015,12 +1102,12 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](Values args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
     });
 
-    _attribFunctions["shared"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["shared"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1029,10 +1116,10 @@ void Camera::registerAttributes()
             _writeToShm = false;
         return true;
     }, [&]() {
-        return vector<Value>({_writeToShm});
+        return Values({_writeToShm});
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](vector<Value> args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _flashBG = args[0].asInt();
