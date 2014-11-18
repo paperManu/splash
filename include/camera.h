@@ -224,6 +224,7 @@ class Camera : public BaseObject
         bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
         {
+            CalibrationPoint() {}
             CalibrationPoint(glm::dvec3 w) {world = w; screen = glm::dvec2(0.f, 0.f);}
             CalibrationPoint(glm::dvec3 w, glm::dvec2 s) {world = w; screen = s;}
             glm::dvec3 world;

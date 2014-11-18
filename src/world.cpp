@@ -306,17 +306,27 @@ void World::applyConfig()
                     continue;
                 }
 
-                Values values;
-                if (attr.isArray())
-                    for (auto& v : attr)
+                // Helper function to read arrays
+                std::function<Values(Json::Value)> processArray;
+                processArray = [&processArray](Json::Value values) {
+                    Values outValues;
+                    for (auto& v : values)
                     {
                         if (v.isInt())
-                            values.emplace_back(v.asInt());
+                            outValues.emplace_back(v.asInt());
                         else if (v.isDouble())
-                            values.emplace_back(v.asFloat());
+                            outValues.emplace_back(v.asFloat());
+                        else if (v.isArray())
+                            outValues.emplace_back(processArray(v));
                         else
-                            values.emplace_back(v.asString());
+                            outValues.emplace_back(v.asString());
                     }
+                    return outValues;
+                };
+
+                Values values;
+                if (attr.isArray())
+                    values = processArray(attr);
                 else if (attr.isInt())
                     values.emplace_back(attr.asInt());
                 else if (attr.isDouble())
@@ -324,6 +334,8 @@ void World::applyConfig()
                 else if (attr.isString())
                     values.emplace_back(attr.asString());
 
+                if (objMembers[idxAttr] == "calibrationPoints")
+                    cout << "~~~~> " << values.size() << endl;
                 _link->sendMessage(name, objMembers[idxAttr], values);
                 if (s.first != _masterSceneName)
                 {

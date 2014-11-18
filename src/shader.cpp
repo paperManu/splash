@@ -527,10 +527,13 @@ void Shader::registerAttributes()
         if (args.size() != 1)
             return false;
 
+        _sideness = (Shader::Sideness)args[0].asInt();
         _uniforms["_sideness"].first = args;
         _uniformsToUpdate.push_back("_sideness");
 
         return true;
+    }, [&]() {
+        return Values({_sideness});
     });
 
     // Attribute to configure the placement of the various texture input

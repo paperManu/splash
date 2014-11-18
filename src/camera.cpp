@@ -1019,6 +1019,39 @@ void Camera::registerAttributes()
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
     });
 
+    // Store / restore calibration points
+    _attribFunctions["calibrationPoints"] = AttributeFunctor([&](Values args) {
+        if (args.size() % 6 != 0)
+            return false;
+
+        for (unsigned int i = 0; i < args.size() / 6; ++i)
+        {
+            CalibrationPoint c;
+            c.world[0] = args[i*6 + 0].asFloat();
+            c.world[1] = args[i*6 + 1].asFloat();
+            c.world[2] = args[i*6 + 2].asFloat();
+            c.screen[0] = args[i*6 + 3].asFloat();
+            c.screen[1] = args[i*6 + 4].asFloat();
+            c.isSet = args[i*6 + 5].asInt();
+
+            _calibrationPoints.push_back(c);
+        }
+
+        return true;
+    }, [&]() {
+        Values data;
+        for (auto& point : _calibrationPoints)
+        {
+            data.push_back(Value({point.world[0]}));
+            data.push_back(Value({point.world[1]}));
+            data.push_back(Value({point.world[2]}));
+            data.push_back(Value({point.screen[0]}));
+            data.push_back(Value({point.screen[1]}));
+            data.push_back(Value({point.isSet}));
+        }
+        return data;
+    });
+
     // Rendering options
     _attribFunctions["blendWidth"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)

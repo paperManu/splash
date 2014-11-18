@@ -240,7 +240,9 @@ void Object::registerAttributes()
         }
         return true;
     }, [&]() {
-        return Values({_shader->getSideness()});
+        Values sideness;
+        _shader->getAttribute("sideness", sideness);
+        return sideness;
     });
 
     _attribFunctions["fill"] = AttributeFunctor([&](Values args) {

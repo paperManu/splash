@@ -490,6 +490,32 @@ class BaseObject
         /**
          * Get the configuration as a json object
          */
+        Json::Value getValuesAsJson(Values values)
+        {
+            Json::Value jsValue;
+            for (auto& v : values)
+            {
+                switch (v.getType())
+                {
+                default:
+                    continue;
+                case Value::i:
+                    jsValue.append(v.asInt());
+                    break;
+                case Value::f:
+                    jsValue.append(v.asFloat());
+                    break;
+                case Value::s:
+                    jsValue.append(v.asString());
+                    break;
+                case Value::v:
+                    jsValue.append(getValuesAsJson(v.asValues()));
+                    break;
+                }
+            }
+            return jsValue;
+        }
+
         Json::Value getConfigurationAsJson()
         {
             Json::Value root;
@@ -505,24 +531,7 @@ class BaseObject
                     continue;
 
                 Json::Value jsValue;
-                for (auto& v : values)
-                {
-                    switch (v.getType())
-                    {
-                    default:
-                        continue;
-                    case Value::i:
-                        jsValue.append(v.asInt());
-                        break;
-                    case Value::f:
-                        jsValue.append(v.asFloat());
-                        break;
-                    case Value::s:
-                        jsValue.append(v.asString());
-                        break;
-                    }
-                }
-
+                jsValue = getValuesAsJson(values);
                 root[attr.first] = jsValue;
             }
             return root;
