@@ -334,8 +334,6 @@ void World::applyConfig()
                 else if (attr.isString())
                     values.emplace_back(attr.asString());
 
-                if (objMembers[idxAttr] == "calibrationPoints")
-                    cout << "~~~~> " << values.size() << endl;
                 _link->sendMessage(name, objMembers[idxAttr], values);
                 if (s.first != _masterSceneName)
                 {

@@ -1021,18 +1021,19 @@ void Camera::registerAttributes()
 
     // Store / restore calibration points
     _attribFunctions["calibrationPoints"] = AttributeFunctor([&](Values args) {
-        if (args.size() % 6 != 0)
-            return false;
-
-        for (unsigned int i = 0; i < args.size() / 6; ++i)
+        for (auto& arg : args)
         {
+            if (arg.getType() != Value::Type::v)
+                continue;
+
+            Values v = arg.asValues();
             CalibrationPoint c;
-            c.world[0] = args[i*6 + 0].asFloat();
-            c.world[1] = args[i*6 + 1].asFloat();
-            c.world[2] = args[i*6 + 2].asFloat();
-            c.screen[0] = args[i*6 + 3].asFloat();
-            c.screen[1] = args[i*6 + 4].asFloat();
-            c.isSet = args[i*6 + 5].asInt();
+            c.world[0] = v[0].asFloat();
+            c.world[1] = v[1].asFloat();
+            c.world[2] = v[2].asFloat();
+            c.screen[0] = v[3].asFloat();
+            c.screen[1] = v[4].asFloat();
+            c.isSet = v[5].asInt();
 
             _calibrationPoints.push_back(c);
         }
@@ -1040,15 +1041,8 @@ void Camera::registerAttributes()
         return true;
     }, [&]() {
         Values data;
-        for (auto& point : _calibrationPoints)
-        {
-            data.push_back(Value({point.world[0]}));
-            data.push_back(Value({point.world[1]}));
-            data.push_back(Value({point.world[2]}));
-            data.push_back(Value({point.screen[0]}));
-            data.push_back(Value({point.screen[1]}));
-            data.push_back(Value({point.isSet}));
-        }
+        for (auto& p : _calibrationPoints)
+            data.push_back(Values({p.world[0], p.world[1], p.world[2], p.screen[0], p.screen[1], p.isSet}));
         return data;
     });
 
