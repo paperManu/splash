@@ -105,7 +105,7 @@ class Image_Shmdata : public Image
 
         oiio::ImageSpec _writerSpec;
         int _writerInputSize {0};
-        unsigned long long _writerStartTime;
+        unsigned long long _writerStartTime {0};
         oiio::ImageBuf _writerBuffer;
 
         oiio::ImageBuf _readerBuffer;

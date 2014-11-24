@@ -982,6 +982,7 @@ void Camera::registerAttributes()
         dirV *= value;
         _target += dirV;
         _eye += dirV;
+        return true;
     });
 
     _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](Values args) {

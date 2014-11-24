@@ -257,7 +257,7 @@ void GlvGlobalView::onDraw(GLV& g)
         // Resize if needed
         Values size;
         _camera->getAttribute("size", size);
-        if (size[0].asInt() != w || size[1].asInt() != h)
+        if (size[0].asInt() != 0 && size[1].asInt() != 0 && (size[0].asInt() != w || size[1].asInt() != h))
             h = _baseWidth * size[1].asInt() / size[0].asInt();
 
         Values fov;
@@ -453,10 +453,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 scene->sendMessage("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
             return false;
         }
-        else
-        {
-            return true;
-        }
         break;
     }
     case Event::MouseDown:
@@ -496,6 +492,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     {
         // Pure precautions
         _previousPointAdded.clear();
+        return false;
     }
     case Event::MouseDrag:
     {

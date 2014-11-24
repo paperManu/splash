@@ -260,7 +260,9 @@ bool Gui::render()
                 dynamic_pointer_cast<Camera>(obj.second)->render();
     }
 
+#ifdef DEBUG
     GLenum error = 0;
+#endif
     if (_doNotRender == false)
     {
         if (!_window->setAsCurrentContext()) 
@@ -301,7 +303,11 @@ bool Gui::render()
             _doNotRender = true;
     }
 
+#ifdef DEBUG
     return error != 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/

@@ -185,7 +185,7 @@ class Camera : public BaseObject
         bool _isInitialized {false};
         GlWindowPtr _window;
 
-        GLuint _fbo;
+        GLuint _fbo {0};
         TexturePtr _depthTexture;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;

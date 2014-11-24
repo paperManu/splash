@@ -617,6 +617,7 @@ void World::registerAttributes()
         values.erase(values.begin());
         values.erase(values.begin());
         _link->sendMessage(name, attr, values);
+        return true;
     });
 
     _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {

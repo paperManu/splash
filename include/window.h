@@ -89,17 +89,17 @@ class Window : public BaseObject
         /**
          * Get the grabbed mouse action
          */
-        static int getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods);
+        static int getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods);
 
         /**
          * Get the mouse position
          */
-        static void getMousePos(GLFWwindow* win, int& xpos, int& ypos);
+        static void getMousePos(GLFWwindow*& win, int& xpos, int& ypos);
 
         /**
          * Get the mouse position
          */
-        static int getScroll(GLFWwindow* win, double& xoffset, double& yoffset);
+        static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
 
         /**
          * Check wether it is initialized

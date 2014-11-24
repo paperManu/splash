@@ -377,10 +377,10 @@ struct Value
 
     private:
         Type _type;
-        int _i;
-        float _f;
-        std::string _s;
-        Values _v;
+        int _i {0};
+        float _f {0.f};
+        std::string _s {""};
+        Values _v {};
 };
 
 /*************/
@@ -637,9 +637,9 @@ class RootObject : public BaseObject
         bool set(std::string name, std::string attrib, Values args)
         {
             if (name == _name || name == SPLASH_ALL_PAIRS)
-                setAttribute(attrib, args);
+                return setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
-                _objects[name]->setAttribute(attrib, args);
+                return _objects[name]->setAttribute(attrib, args);
         }
 
         /**

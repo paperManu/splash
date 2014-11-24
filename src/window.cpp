@@ -58,6 +58,7 @@ bool Window::getKey(int key)
 {
     if (glfwGetKey(_window->get(), key) == GLFW_PRESS)
         return true;
+    return false;
 }
 
 /*************/
@@ -80,7 +81,7 @@ int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 }
 
 /*************/
-int Window::getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods)
+int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 {
     lock_guard<mutex> lock(_callbackMutex);
     if (_mouseBtn.size() == 0)
@@ -99,7 +100,7 @@ int Window::getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods)
 }
 
 /*************/
-void Window::getMousePos(GLFWwindow* win, int& xpos, int& ypos)
+void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 {
     lock_guard<mutex> lock(_callbackMutex);
     if (_mousePos.second.size() != 2)
@@ -111,7 +112,7 @@ void Window::getMousePos(GLFWwindow* win, int& xpos, int& ypos)
 }
 
 /*************/
-int Window::getScroll(GLFWwindow* win, double& xoffset, double& yoffset)
+int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 {
     lock_guard<mutex> lock(_callbackMutex);
     if (_scroll.size() == 0)

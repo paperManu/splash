@@ -213,7 +213,7 @@ class Timer
     private:
         std::map<std::string, unsigned long long> _timeMap; 
         std::map<std::string, unsigned long long> _durationMap;
-        unsigned long long _currentDuration;
+        unsigned long long _currentDuration {0};
         bool _isDurationSet {false};
         std::mutex _mutex;
         bool _enabled {true};

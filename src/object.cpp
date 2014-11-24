@@ -166,17 +166,17 @@ float Object::pickVertex(dvec3 p, dvec3& v)
 /*************/
 void Object::resetBlendingMap()
 {
-    for (int i = 0; i < _textures.size();)
+    for (vector<TexturePtr>::iterator textureIt = _textures.begin(); textureIt != _textures.end();)
     {
         bool hasErased {false};
         for (auto& m : _blendMaps)
-            if (_textures[i] == m)
+            if (*textureIt == m)
             {
-                _textures.erase(_textures.begin() + i);
+                textureIt = _textures.erase(textureIt);
                 hasErased = true;
             }
         if (!hasErased)
-            ++i;
+            textureIt++;
     }
 
     _blendMaps.clear();

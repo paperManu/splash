@@ -68,7 +68,9 @@ BaseObjectPtr Scene::add(string type, string name)
     else
     {
         // Then, the objects not containing a context
-        _mainWindow->setAsCurrentContext();
+        if(!_mainWindow->setAsCurrentContext())
+    	    SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+
         if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
         else if (type == string("image") || type == string("image_shmdata"))
