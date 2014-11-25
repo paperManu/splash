@@ -397,46 +397,6 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](Values args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_blendWidth"].first = args;
-        _uniformsToUpdate.push_back("_blendWidth");
-
-        return true;
-    });
-
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](Values args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_blackLevel"].first = args;
-        _uniformsToUpdate.push_back("_blackLevel");
-
-        return true;
-    });
-
-    _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_brightness"].first = args;
-        _uniformsToUpdate.push_back("_brightness");
-
-        return true;
-    });
-
-    _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
-        if (args.size() != 1)
-            return false;
-
-        _uniforms["_colorTemperature"].first = args;
-        _uniformsToUpdate.push_back("_colorTemperature");
-
-        return true;
-    });
-
     _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;

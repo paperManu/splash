@@ -76,6 +76,8 @@ struct ShaderSources
         uniform float _blackLevel = 0.0;
         uniform float _brightness = 1.0;
         uniform float _colorTemperature = 6500.0;
+        uniform float _fovH = 0.0;
+        uniform float _fovV = 0.0;
 
         in VertexData
         {
@@ -144,7 +146,9 @@ struct ShaderSources
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
 
-            float angleToNormal = dot(normal, vec3(0.0, 0.0, 1.0));
+            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+            vec2 screenSize = vec2(tan(_fovH / 2.0), tan(_fovV / 2.0));
+            float angleToNormal = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
 
             if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
                 discard;
@@ -169,13 +173,16 @@ struct ShaderSources
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
-
+            
+            // Brightness correction
             if (_brightness != 1.0)
                 color.rgb = color.rgb * _brightness;
 
+            // Black level
             if (_blackLevel > 0.0 && _blackLevel < 1.0)
                 color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
 
+            // If no blending map has been computed
             if (_texBlendingMap == 0)
             {
                 if (_textureNbr > 0)
@@ -187,6 +194,7 @@ struct ShaderSources
                     fragColor.a = 1.0;
                 }
             }
+            // If there is a blending map
             else
             {
                 float blendFactor = texture(_tex1, texCoord).r * 65536.0;
@@ -203,9 +211,9 @@ struct ShaderSources
                     blendFactor = 1.0;
                 else if (_blendWidth > 0.0 && smoothBlend == true)
                 {
-                    vec2 screenPos = vec2((position.x / position.w + 1.0) / 2.0, (position.y / position.w + 1.0) / 2.0);
-                    float distX = min(screenPos.x, 1.0 - screenPos.x);
-                    float distY = min(screenPos.y, 1.0 - screenPos.y);
+                    vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
+                    float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
+                    float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
                     float dist = min(1.0, min(distX, distY) / _blendWidth);
                     dist = smoothstep(0.0, 1.0, dist);
                     blendFactor = 256.0 * dist / blendFactor;
@@ -225,7 +233,7 @@ struct ShaderSources
             fragColor.b /= bgRatio;
 
             // Finally, correct for the incidence
-            fragColor.rgb /= vec3(abs(angleToNormal) + 1e-4);
+            fragColor.rgb /= vec3(max(abs(angleToNormal), 1e-3));
         }
     )"};
 
