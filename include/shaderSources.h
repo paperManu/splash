@@ -54,7 +54,7 @@ struct ShaderSources
         {
             vertexOut.position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             gl_Position = vertexOut.position;
-            vertexOut.normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
+            vertexOut.normal = normalize((_normalMatrix * vec4(_normal, 0.0)).xyz);
             vertexOut.texCoord = _texcoord;
         }
     )"};
@@ -144,7 +144,9 @@ struct ShaderSources
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
 
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
+            float angleToNormal = dot(normal, vec3(0.0, 0.0, 1.0));
+
+            if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
                 discard;
 
             vec4 color;
@@ -221,6 +223,9 @@ struct ShaderSources
             float bgRatio = rgbTemp.b / rgbTemp.g;
             fragColor.r /= rgRatio;
             fragColor.b /= bgRatio;
+
+            // Finally, correct for the incidence
+            fragColor.rgb /= vec3(abs(angleToNormal) + 1e-4);
         }
     )"};
 
