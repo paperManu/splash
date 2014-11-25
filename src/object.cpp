@@ -190,9 +190,9 @@ void Object::setBlendingMap(TexturePtr& map)
 }
 
 /*************/
-void Object::setViewProjectionMatrix(const glm::dmat4& vp)
+void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
-    _shader->setModelViewProjectionMatrix(vp * computeModelMatrix());
+    _shader->setModelViewProjectionMatrix(mv * computeModelMatrix(), mp);
 }
 
 /*************/

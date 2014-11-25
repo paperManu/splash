@@ -138,7 +138,7 @@ class Object : public BaseObject
         /**
          * Set the view projection matrix
          */
-        void setViewProjectionMatrix(const glm::dmat4& mvp);
+        void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
     private:
         mutable std::mutex _mutex;

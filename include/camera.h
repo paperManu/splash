@@ -244,9 +244,9 @@ class Camera : public BaseObject
         glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
 
         /**
-         * Get the view projection matrix from the camera parameters
+         * Get the view matrix from the camera parameters
          */
-        glm::dmat4 computeViewProjectionMatrix();
+        glm::dmat4 computeViewMatrix();
 
         /**
          * Load some defaults models, like the locator for calibration

@@ -140,9 +140,9 @@ class Shader : public BaseObject
         void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name);
 
         /**
-         * Set the view projection matrix
+         * Set the model view and projection matrices
          */
-        void setModelViewProjectionMatrix(const glm::dmat4& mvp);
+        void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
         /**
          * Set the currently queued uniforms updates

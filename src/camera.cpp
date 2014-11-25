@@ -489,7 +489,7 @@ bool Camera::render()
             obj->getShader()->setAttribute("brightness", {_brightness});
             obj->getShader()->setAttribute("colorTemperature", {_colorTemperature});
 
-            obj->setViewProjectionMatrix(computeViewProjectionMatrix());
+            obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
             obj->draw();
             obj->deactivate();
         }
@@ -510,7 +510,7 @@ bool Camera::render()
                     worldMarker->setAttribute("color", SPLASH_MARKER_SET);
                 else
                     worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
-                worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
+                worldMarker->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
                 worldMarker->draw();
                 worldMarker->deactivate();
 
@@ -525,7 +525,7 @@ bool Camera::render()
                         screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                     else
                         screenMarker->setAttribute("color", SPLASH_MARKER_SET);
-                    screenMarker->setViewProjectionMatrix(dmat4(1.f));
+                    screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();
                 }
@@ -832,13 +832,10 @@ dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 }
 
 /*************/
-dmat4 Camera::computeViewProjectionMatrix()
+dmat4 Camera::computeViewMatrix()
 {
     dmat4 viewMatrix = lookAt(_eye, _target, _up);
-    dmat4 projMatrix = computeProjectionMatrix();
-    dmat4 viewProjectionMatrix = projMatrix * viewMatrix;
-
-    return viewProjectionMatrix;
+    return viewMatrix;
 }
 
 /*************/

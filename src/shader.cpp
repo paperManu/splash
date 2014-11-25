@@ -134,13 +134,14 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
 }
 
 /*************/
-void Shader::setModelViewProjectionMatrix(const glm::dmat4& mvp)
+void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
-    glm::mat4 floatMvp = (glm::mat4)mvp;
+    glm::mat4 floatMv = (glm::mat4)mv;
+    glm::mat4 floatMvp = (glm::mat4)(mp * mv);
     if (_uniforms.find("_modelViewProjectionMatrix") != _uniforms.end())
         glUniformMatrix4fv(_uniforms["_modelViewProjectionMatrix"].second, 1, GL_FALSE, glm::value_ptr(floatMvp));
     if (_uniforms.find("_normalMatrix") != _uniforms.end())
-        glUniformMatrix4fv(_uniforms["_normalMatrix"].second, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMvp))));
+        glUniformMatrix4fv(_uniforms["_normalMatrix"].second, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
 }
 
 /*************/

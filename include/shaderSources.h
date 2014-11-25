@@ -42,21 +42,25 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        smooth out vec4 position;
-        smooth out vec2 texCoord;
-        smooth out vec3 normal;
+
+        out VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec3 normal;
+        } vertexOut;
 
         void main(void)
         {
-            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
-            gl_Position = position;
-            normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
-            texCoord = _texcoord;
+            vertexOut.position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
+            gl_Position = vertexOut.position;
+            vertexOut.normal = (_normalMatrix * vec4(_normal, 0.0)).xyz;
+            vertexOut.texCoord = _texcoord;
         }
     )"};
 
     /**
-     * Default fragment shader
+     * Textured fragment shader
      */
     const std::string FRAGMENT_SHADER_TEXTURE {R"(
         #version 330 core
@@ -72,9 +76,14 @@ struct ShaderSources
         uniform float _blackLevel = 0.0;
         uniform float _brightness = 1.0;
         uniform float _colorTemperature = 6500.0;
-        in vec4 position;
-        in vec2 texCoord;
-        in vec3 normal;
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec3 normal;
+        } vertexIn;
+
         out vec4 fragColor;
         // Texture transformation
         uniform int _tex0_flip = 0;
@@ -131,7 +140,11 @@ struct ShaderSources
 
         void main(void)
         {
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
+            vec4 position = vertexIn.position;
+            vec2 texCoord = vertexIn.texCoord;
+            vec3 normal = vertexIn.normal;
+
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
                 discard;
 
             vec4 color;
@@ -221,12 +234,21 @@ struct ShaderSources
 
         uniform int _sideness = 0;
         uniform vec4 _color = vec4(0.0, 1.0, 0.0, 1.0);
-        in vec3 normal;
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec3 normal;
+        } vertexIn;
+
         out vec4 fragColor;
 
         void main(void)
         {
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
+            vec3 normal = vertexIn.normal;
+
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
                 discard;
 
             fragColor = _color;
@@ -243,13 +265,22 @@ struct ShaderSources
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
-        in vec2 texCoord;
-        in vec3 normal;
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec3 normal;
+        } vertexIn;
+
         out vec4 fragColor;
 
         void main(void)
         {
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
+            vec2 texCoord = vertexIn.texCoord;
+            vec3 normal = vertexIn.normal;
+
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
                 discard;
 
             float U = texCoord.x * 65536.0;
@@ -354,7 +385,7 @@ struct ShaderSources
         void main(void)
         {
             vec3 normal = vertexIn.normal;
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) >= PI && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) <= -PI && _sideness == 2))
+            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
                 discard;
 
             vec3 b = vertexIn.bcoord;
