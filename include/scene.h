@@ -162,6 +162,7 @@ class Scene : public RootObject
         ImagePtr _blendingMap;
 
         // List of actions to do during the next render loop
+        bool _redoUpdate {false}; // Due to PBO usage for texture, we need to update the next frame whatever happens
         bool _doComputeBlending {false};
         bool _doSaveNow {false};
 

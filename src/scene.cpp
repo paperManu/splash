@@ -219,13 +219,27 @@ void Scene::render()
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
-    
-    // Update the cameras
-    STimer::timer << "cameras";
+
+    // Check if anything needs to be updated
+    bool needsUpdate = _redoUpdate;
     for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    STimer::timer >> "cameras";
+    {
+        needsUpdate |= obj.second->wasUpdated();
+        obj.second->setNotUpdated();
+    }
+    
+    if (needsUpdate)
+    {
+        _redoUpdate = _redoUpdate ? false : true;
+        // Update the cameras
+        STimer::timer << "cameras";
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "camera")
+                isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
+        STimer::timer >> "cameras";
+    }
+    else
+        _redoUpdate = false;
 
     // Update the guis
     STimer::timer << "guis";

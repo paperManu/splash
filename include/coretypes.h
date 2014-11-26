@@ -37,6 +37,7 @@
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
+#include <atomic>
 #include <chrono>
 #include <ostream>
 #include <map>
@@ -451,6 +452,7 @@ class BaseObject
         {
             if (_attribFunctions.find(attrib) == _attribFunctions.end())
                 return false;
+            _updatedParams = true;
             return _attribFunctions[attrib](args);
         }
 
@@ -481,6 +483,16 @@ class BaseObject
 
             return attribs;
         }
+
+        /**
+         * Check whether the objects needs to be updated
+         */
+        virtual bool wasUpdated() {return _updatedParams;}
+
+        /**
+         * Reset the "was updated" status, if needed
+         */
+        virtual void setNotUpdated() {_updatedParams = false;}
         
         /**
          * Update the content of the object
@@ -543,6 +555,7 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
         std::map<std::string, AttributeFunctor> _attribFunctions;
+        bool _updatedParams {true};
 
         /**
          * Register new functors to modify attributes
