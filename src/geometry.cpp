@@ -42,7 +42,9 @@ void Geometry::activate()
 /*************/
 void Geometry::deactivate() const
 {
+#ifdef DEBUG
     glBindVertexArray(0);
+#endif
     _mutex.unlock();
 }
 

@@ -187,8 +187,10 @@ void Texture::resize(int width, int height)
 /*************/
 void Texture::unbind()
 {
+#ifdef DEBUG
     glActiveTexture((GLenum)_activeTexture);
     glBindTexture(_texTarget, 0);
+#endif
 }
 
 /*************/
@@ -356,7 +358,9 @@ void Texture::update()
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+#ifdef DEBUG
         glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 
         _spec = spec;
     }
@@ -387,7 +391,9 @@ void Texture::update()
             glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#ifdef DEBUG
         glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
         

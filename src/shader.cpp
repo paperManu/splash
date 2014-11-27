@@ -60,7 +60,9 @@ void Shader::activate()
 /*************/
 void Shader::deactivate()
 {
+#ifdef DEBUG
     glUseProgram(0);
+#endif
     _activated = false;
     for (int i = 0; i < _textures.size(); ++i)
         _textures[i]->unbind();
