@@ -73,8 +73,7 @@ struct ShaderSources
         uniform int _textureNbr = 0;
         uniform int _texBlendingMap = 0;
         uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
-        uniform vec2 _colorBalance = vec2(1.0); // r/g and b/g
-        uniform vec2 _fov = vec2(0.0); // fovX and fovY
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
 
         in VertexData
         {
@@ -104,7 +103,7 @@ struct ShaderSources
             vec3 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fov.x / 2.0), tan(_fov.y / 2.0));
+            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
             float angleToNormal = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
 
             if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
@@ -183,8 +182,8 @@ struct ShaderSources
                 fragColor.a = 1.0;
             }
 
-            fragColor.r /= _colorBalance.x;
-            fragColor.b /= _colorBalance.y;
+            fragColor.r /= _fovAndColorBalance.z;
+            fragColor.b /= _fovAndColorBalance.w;
 
             // Finally, correct for the incidence
             // anglToNormal can't be 0.0, it would have been discarded

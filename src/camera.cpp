@@ -485,9 +485,9 @@ bool Camera::render()
         {
             obj->activate();
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
-            obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
-            obj->getShader()->setAttribute("uniform", {"_fov", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0});
+            //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
+            obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
 
             obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
             obj->draw();
