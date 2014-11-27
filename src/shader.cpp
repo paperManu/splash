@@ -122,16 +122,19 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 /*************/
 void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
 {
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    texture->bind();
-    GLint uniform = glGetUniformLocation(_program, name.c_str());
-    glUniform1i(uniform, textureUnit);
-
-    _textures.push_back(texture);
-    if (_uniforms.find("_textureNbr") != _uniforms.end())
+    if (_uniforms.find(name) != _uniforms.end())
     {
-        _uniforms["_textureNbr"].first = Values({(int)_textures.size()});
-        _uniformsToUpdate.push_back("_textureNbr");
+        glActiveTexture(GL_TEXTURE0 + textureUnit);
+        texture->bind();
+
+        glUniform1i(_uniforms[name].second, textureUnit);
+
+        _textures.push_back(texture);
+        if (_uniforms.find("_textureNbr") != _uniforms.end())
+        {
+            _uniforms["_textureNbr"].first = Values({(int)_textures.size()});
+            _uniformsToUpdate.push_back("_textureNbr");
+        }
     }
 }
 
@@ -245,7 +248,9 @@ void Shader::parseUniforms(const std::string& src)
             _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "mat4")
             _uniforms[name] = pair<Values, GLint>({0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, glGetUniformLocation(_program, name.c_str()));
-        else if (type != "sampler2D")
+        else if (type == "sampler2D")
+            _uniforms[name] = pair<Values, GLint>({}, glGetUniformLocation(_program, name.c_str()));
+        else
             SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
 
         if (values.size() != 0)
