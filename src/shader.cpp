@@ -268,6 +268,12 @@ void Shader::parseUniforms(const std::string& src)
                 glGetUniformfv(_program, _uniforms[name].second, &v);
                 _uniforms[name].first = Values({v});
             }
+            else if (type == "vec2")
+            {
+                float v[2];
+                glGetUniformfv(_program, _uniforms[name].second, v);
+                _uniforms[name].first = Values({v[0], v[1]});
+            }
             else if (type == "vec3")
             {
                 float v[3];

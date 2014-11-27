@@ -181,7 +181,7 @@ bool Window::render()
 
     _screen->getShader()->setAttribute("layout", _layout);
     _screen->activate();
-    _screen->setViewProjectionMatrix(_viewProjectionMatrix, glm::dmat4(1.f));
+    //_screen->setViewProjectionMatrix(_viewProjectionMatrix, glm::dmat4(1.f));
     _screen->draw();
     _screen->deactivate();
 

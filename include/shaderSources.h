@@ -72,12 +72,9 @@ struct ShaderSources
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
         uniform int _texBlendingMap = 0;
-        uniform float _blendWidth = 0.05;
-        uniform float _blackLevel = 0.0;
-        uniform float _brightness = 1.0;
-        uniform vec2 _colorBalance = vec2(1.0);
-        uniform float _fovH = 0.0;
-        uniform float _fovV = 0.0;
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _colorBalance = vec2(1.0); // r/g and b/g
+        uniform vec2 _fov = vec2(0.0); // fovX and fovY
 
         in VertexData
         {
@@ -89,21 +86,25 @@ struct ShaderSources
         out vec4 fragColor;
         // Texture transformation
         uniform int _tex0_flip = 0;
-        uniform int _tex1_flip = 0;
         uniform int _tex0_flop = 0;
-        uniform int _tex1_flop = 0;
+        //uniform int _tex1_flip = 0;
+        //uniform int _tex1_flop = 0;
         // HapQ specific parameters
         uniform int _tex0_YCoCg = 0;
-        uniform int _tex1_YCoCg = 0;
+        //uniform int _tex1_YCoCg = 0;
 
         void main(void)
         {
+            float blendWidth = _cameraAttributes.x;
+            float blackLevel = _cameraAttributes.y;
+            float brightness = _cameraAttributes.z;
+
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovH / 2.0), tan(_fovV / 2.0));
+            vec2 screenSize = vec2(tan(_fov.x / 2.0), tan(_fov.y / 2.0));
             float angleToNormal = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
 
             if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
@@ -131,12 +132,12 @@ struct ShaderSources
             }
             
             // Brightness correction
-            if (_brightness != 1.0)
-                color.rgb = color.rgb * _brightness;
+            if (brightness != 1.0)
+                color.rgb = color.rgb * brightness;
 
             // Black level
-            if (_blackLevel > 0.0 && _blackLevel < 1.0)
-                color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
+            if (blackLevel > 0.0 && blackLevel < 1.0)
+                color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
 
             // If no blending map has been computed
             if (_texBlendingMap == 0)
@@ -160,17 +161,17 @@ struct ShaderSources
 
                 // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
                 bool smoothBlend = false;
-                if (color.r > _blackLevel * 2.0 || color.g > _blackLevel * 2.0 || color.b > _blackLevel * 2.0)
+                if (color.r > blackLevel * 2.0 || color.g > blackLevel * 2.0 || color.b > blackLevel * 2.0)
                     smoothBlend = true;
 
                 if (blendFactor == 0.0)
                     blendFactor = 1.0;
-                else if (_blendWidth > 0.0 && smoothBlend == true)
+                else if (blendWidth > 0.0 && smoothBlend == true)
                 {
                     vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
                     float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
                     float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
-                    float dist = min(1.0, min(distX, distY) / _blendWidth);
+                    float dist = min(1.0, min(distX, distY) / blendWidth);
                     dist = smoothstep(0.0, 1.0, dist);
                     blendFactor = 256.0 * dist / blendFactor;
                 }
@@ -373,14 +374,15 @@ struct ShaderSources
 
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
-        layout(location = 2) in vec3 _normal;
-        uniform mat4 _modelViewProjectionMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
+        //layout(location = 2) in vec3 _normal;
+        //uniform mat4 _modelViewProjectionMatrix;
+        //uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         smooth out vec2 texCoord;
 
         void main(void)
         {
-            gl_Position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
+            //gl_Position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
+            gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
             texCoord = _texcoord;
         }
     )"};
