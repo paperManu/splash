@@ -238,6 +238,11 @@ class Camera : public BaseObject
         static double cameraCalibration_f(const gsl_vector* v, void* params);
 
         /**
+         * Get the color balance (r/g and b/g) from a black body temperature
+         */
+        glm::vec2 colorBalanceFromTemperature(float temp);
+
+        /**
          * Get the frustum matrix from the current camera parameters
          */
         glm::dmat4 computeProjectionMatrix();

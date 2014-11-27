@@ -572,12 +572,12 @@ class BufferObject : public BaseObject
         /**
          * Returns true if the object has been updated
          */
-        bool wasUpdated() {return _updatedBuffer;}
+        bool wasUpdated() {return _updatedBuffer | BaseObject::wasUpdated();}
 
         /**
          * Set the updated buffer flag to false.
          */
-        void setNotUpdated() {_updatedBuffer = false;}
+        void setNotUpdated() {BaseObject::setNotUpdated(); _updatedBuffer = false;}
 
         /**
          * Update the Image from a serialized representation

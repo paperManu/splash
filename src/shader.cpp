@@ -229,6 +229,8 @@ void Shader::parseUniforms(const std::string& src)
             _uniforms[name] = pair<Values, GLint>({0}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "float")
             _uniforms[name] = pair<Values, GLint>({0.f}, glGetUniformLocation(_program, name.c_str()));
+        else if (type == "vec2")
+            _uniforms[name] = pair<Values, GLint>({0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "vec3")
             _uniforms[name] = pair<Values, GLint>({0.f, 0.f, 0.f}, glGetUniformLocation(_program, name.c_str()));
         else if (type == "vec4")

@@ -75,7 +75,7 @@ struct ShaderSources
         uniform float _blendWidth = 0.05;
         uniform float _blackLevel = 0.0;
         uniform float _brightness = 1.0;
-        uniform float _colorTemperature = 6500.0;
+        uniform vec2 _colorBalance = vec2(1.0);
         uniform float _fovH = 0.0;
         uniform float _fovV = 0.0;
 
@@ -95,50 +95,6 @@ struct ShaderSources
         // HapQ specific parameters
         uniform int _tex0_YCoCg = 0;
         uniform int _tex1_YCoCg = 0;
-
-        vec3 rgbFromTemp(float temp)
-        {
-            vec3 c;
-            float t = temp / 100.0;
-            if (t <= 66.0)
-                c.r = 255.0;
-            else
-            {
-                c.r = t - 60.0;
-                c.r = 329.698727466 * pow(c.r, -0.1332047592);
-                c.r = max(0.0, min(c.r, 255.0));
-            }
-
-            if (t <= 66)
-            {
-                c.g = t;
-                c.g = 99.4708025861 * log(c.g) - 161.1195681661;
-                c.g = max(0.0, min(c.g, 255.0));
-            }
-            else
-            {
-                c.g = t - 60.0;
-                c.g = 288.1221695283 * pow(c.g, -0.0755148492);
-                c.g = max(0.0, min(c.g, 255.0));
-            }
-
-            if (t >= 66)
-                c.b = 255.0;
-            else
-            {
-                if (t <= 19)
-                    c.b = 0.0;
-                else
-                {
-                    c.b = t - 10.0;
-                    c.b = 138.5177312231 * log(c.b) - 305.0447927307;
-                    c.b = max(0.0, min(c.b, 255.0));
-                }
-            }
-
-            c = c / 255.0;
-            return c;
-        }
 
         void main(void)
         {
@@ -226,14 +182,12 @@ struct ShaderSources
                 fragColor.a = 1.0;
             }
 
-            vec3 rgbTemp = rgbFromTemp(_colorTemperature);
-            float rgRatio = rgbTemp.r / rgbTemp.g;
-            float bgRatio = rgbTemp.b / rgbTemp.g;
-            fragColor.r /= rgRatio;
-            fragColor.b /= bgRatio;
+            fragColor.r /= _colorBalance.x;
+            fragColor.b /= _colorBalance.y;
 
             // Finally, correct for the incidence
-            fragColor.rgb /= vec3(max(abs(angleToNormal), 1e-3));
+            // anglToNormal can't be 0.0, it would have been discarded
+            fragColor.rgb /= vec3(abs(angleToNormal));
         }
     )"};
 
@@ -422,13 +376,11 @@ struct ShaderSources
         layout(location = 2) in vec3 _normal;
         uniform mat4 _modelViewProjectionMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        smooth out vec4 position;
         smooth out vec2 texCoord;
 
         void main(void)
         {
-            position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
-            gl_Position = position;
+            gl_Position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             texCoord = _texcoord;
         }
     )"};
@@ -444,7 +396,6 @@ struct ShaderSources
         uniform sampler2D _tex3;
         uniform int _textureNbr = 0;
         uniform ivec4 _layout = ivec4(0, 1, 2, 3);
-        in vec4 position;
         in vec2 texCoord;
         out vec4 fragColor;
 
