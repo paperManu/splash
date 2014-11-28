@@ -494,6 +494,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 
         char* pixels = (char*)(ctx->_readerBuffer).localpixels();
         vector<unsigned int> threadIds;
+#if SIMDPP_NO_SSE
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
@@ -525,6 +526,70 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                     }
             }));
         }
+#else
+        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        {
+            int width = ctx->_width;
+            int height = ctx->_height;
+
+            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                if (height - height / SPLASH_SHMDATA_THREADS * (block + 1) < height / SPLASH_SHMDATA_THREADS)
+                    lastLine = height;
+                else
+                    lastLine = height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y += 2)
+                    for (int x = 0; x + 7 < width; x += 8)
+                    {
+                        int16x8 yValue;
+                        int16x8 uValue;
+                        int16x8 vValue;
+                        uint8x16 loadBuf;
+
+                        load_u(loadBuf, &(YUV[y * width + x * 2]));
+                        loadBuf = unzip_hi(loadBuf, loadBuf);
+                        yValue = to_int16x8(loadBuf); // Get 8 Y values here
+                        load_u(loadBuf, &(YUV[y * width + x * 2]));
+                        loadBuf = unzip_lo(loadBuf, loadBuf);
+                        uValue = to_int16x8(loadBuf);
+                        vValue = unzip_hi(uValue, uValue); // Get 4 V values here
+                        uValue = unzip_lo(uValue, uValue); // Get 4 U values here
+
+                        int16x8 red, grn, blu;
+                        uint8x16 uRed, uGrn, uBlu;
+                        
+                        red = add(mul_lo(yValue, int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
+                        grn = add(mul_lo(yValue, int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
+                        blu = add(mul_lo(yValue, int16x8::make_const(74)), mul_lo(vValue, int16x8::make_const(129)));
+
+                        red = shift_r(red, 6);
+                        grn = shift_r(grn, 6);
+                        blu = shift_r(blu, 6);
+
+                        red = simdpp::min(red, int16x8::make_const(255));
+                        grn = simdpp::min(grn, int16x8::make_const(255));
+                        blu = simdpp::min(blu, int16x8::make_const(255));
+
+                        red = simdpp::max(red, int16x8::make_const(0));
+                        grn = simdpp::max(grn, int16x8::make_const(0));
+                        blu = simdpp::max(blu, int16x8::make_const(0));
+
+                        uRed = red;
+                        uRed = unzip_lo(uRed, uRed);
+                        uGrn = grn;
+                        uGrn = unzip_lo(uGrn, uGrn);
+                        uBlu = blu;
+                        uBlu = unzip_lo(uBlu, uBlu);
+
+                        alignas(32) char dst[48];
+                        store_packed3(dst, uBlu, uGrn, uRed);
+
+                        memcpy(&(pixels[y * width + x * 3]), dst, 24*sizeof(char));
+                    }
+            }));
+        }
+#endif
         SThread::pool.waitThreads(threadIds);
     }
     else
