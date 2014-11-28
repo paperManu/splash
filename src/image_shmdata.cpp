@@ -142,6 +142,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ctx->_isHap = false;
         ctx->_isYUV = false;
         ctx->_is420 = false;
+        ctx->_is422 = false;
         
         regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regGreen, regBlue, regFormatYUV;
         try
@@ -351,7 +352,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
         ctx->_readerBuffer.reset(spec);
     }
 
-    if (!ctx->_is420 && (ctx->_channels == 3 || ctx->_channels == 4))
+    if (!ctx->_isYUV && (ctx->_channels == 3 || ctx->_channels == 4))
     {
         char* pixels = (char*)(ctx->_readerBuffer).localpixels();
         vector<unsigned int> threadIds;
@@ -505,19 +506,19 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                 for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
                     for (int x = 0; x < ctx->_width; x+=2)
                     {
-                        int uValue = (int)(YUV[y * ctx->_width * 2 + x * 4]) - 128;
-                        int vValue = (int)(YUV[y * ctx->_width * 2 + x * 4 + 2]) - 128;
+                        int uValue = (int)(YUV[y * ctx->_width * 2 + x * 2]) - 128;
+                        int vValue = (int)(YUV[y * ctx->_width * 2 + x * 2 + 2]) - 128;
 
                         int rPart = 52298 * vValue;
                         int gPart = -12846 * uValue - 36641 * vValue;
                         int bPart = 66094 * uValue;
                        
-                        int yValue = (int)(YUV[y * ctx->_width * 2 + x * 4 + 1]) * 38142;
+                        int yValue = (int)(YUV[y * ctx->_width * 2 + x * 2 + 1]) * 38142;
                         pixels[(y * ctx->_width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
 
-                        yValue = (int)(YUV[y * ctx->_width * 2 + x * 4 + 3]) * 38142;
+                        yValue = (int)(YUV[y * ctx->_width * 2 + x * 2 + 3]) * 38142;
                         pixels[(y * ctx->_width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
