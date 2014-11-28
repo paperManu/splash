@@ -542,7 +542,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                 else
                     lastLine = height / SPLASH_SHMDATA_THREADS * (block + 1);
 
-                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y += 2)
+                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
                     for (int x = 0; x + 7 < width; x += 8)
                     {
                         int16x8 yValue;
@@ -550,14 +550,20 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                         int16x8 vValue;
                         uint8x16 loadBuf;
 
-                        load_u(loadBuf, &(YUV[y * width + x * 2]));
+                        load_u(loadBuf, &(YUV[y * width * 2 + x * 2]));
                         loadBuf = unzip_hi(loadBuf, loadBuf);
                         yValue = to_int16x8(loadBuf); // Get 8 Y values here
-                        load_u(loadBuf, &(YUV[y * width + x * 2]));
+                        load_u(loadBuf, &(YUV[y * width * 2 + x * 2]));
                         loadBuf = unzip_lo(loadBuf, loadBuf);
                         uValue = to_int16x8(loadBuf);
                         vValue = unzip_hi(uValue, uValue); // Get 4 V values here
                         uValue = unzip_lo(uValue, uValue); // Get 4 U values here
+
+                        vValue = zip_lo(vValue, vValue);
+                        uValue = zip_lo(uValue, uValue);
+
+                        uValue = sub(uValue, int16x8::make_const(128));
+                        vValue = sub(vValue, int16x8::make_const(128));
 
                         int16x8 red, grn, blu;
                         uint8x16 uRed, uGrn, uBlu;
@@ -588,7 +594,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                         alignas(32) char dst[48];
                         store_packed3(dst, uBlu, uGrn, uRed);
 
-                        memcpy(&(pixels[y * width + x * 3]), dst, 24*sizeof(char));
+                        memcpy(&(pixels[(y * width + x) * 3]), dst, 24*sizeof(char));
                     }
             }));
         }
