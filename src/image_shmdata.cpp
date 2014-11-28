@@ -231,6 +231,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                     sscanf(substr.c_str(), ")%s", format);
                     if (strstr(format, (char*)"I420") != nullptr)
                         ctx->_is420 = true;
+                    else if (strstr(format, (char*)"UYVY") != nullptr)
+                        ctx->_is422 = true;
                 }
             }
         }
@@ -483,6 +485,45 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
             }));
         }
 #endif
+        SThread::pool.waitThreads(threadIds);
+    }
+    else if (ctx->_is422)
+    {
+        const unsigned char* YUV = (const unsigned char*)data;
+
+        char* pixels = (char*)(ctx->_readerBuffer).localpixels();
+        vector<unsigned int> threadIds;
+        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        {
+            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
+                    lastLine = ctx->_height;
+                else
+                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
+                    for (int x = 0; x < ctx->_width; x+=2)
+                    {
+                        int uValue = (int)(YUV[y * ctx->_width * 2 + x * 4]) - 128;
+                        int vValue = (int)(YUV[y * ctx->_width * 2 + x * 4 + 2]) - 128;
+
+                        int rPart = 52298 * vValue;
+                        int gPart = -12846 * uValue - 36641 * vValue;
+                        int bPart = 66094 * uValue;
+                       
+                        int yValue = (int)(YUV[y * ctx->_width * 2 + x * 4 + 1]) * 38142;
+                        pixels[(y * ctx->_width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+
+                        yValue = (int)(YUV[y * ctx->_width * 2 + x * 4 + 3]) * 38142;
+                        pixels[(y * ctx->_width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+                    }
+            }));
+        }
         SThread::pool.waitThreads(threadIds);
     }
     else

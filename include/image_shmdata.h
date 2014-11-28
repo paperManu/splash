@@ -120,6 +120,7 @@ class Image_Shmdata : public Image
         bool _isHap {false};
         bool _isYUV {false};
         bool _is420 {false};
+        bool _is422 {false};
 
         // Hap specific attributes
         unsigned int _textureFormat {0};
