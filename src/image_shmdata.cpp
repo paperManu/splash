@@ -401,7 +401,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                        
                         int col = x;
                         int row = y;
-                        int yValue = (int)(Y[row * ctx->_width + col]) * 38142;
+                        int yValue = (int)(Y[row * ctx->_width + col] - 16) * 38142;
                         pixels[(row * ctx->_width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(row * ctx->_width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
@@ -453,6 +453,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                         {
                             load_u(loadBuf, &(Y[(y + l) * width + x]));
                             yValue[l] = to_int16x8(loadBuf);
+                            yValue[l] = sub(yValue[l], int16x8::make_const(16));
 
                             red = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
                             grn = add(mul_lo(yValue[l], int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
@@ -517,12 +518,12 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                         int gPart = -12846 * uValue - 36641 * vValue;
                         int bPart = 66094 * uValue;
                        
-                        int yValue = (int)(block[1]) * 38142;
+                        int yValue = (int)(block[1] - 16) * 38142;
                         pixels[(y * ctx->_width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
 
-                        yValue = (int)(block[3]) * 38142;
+                        yValue = (int)(block[3] - 16) * 38142;
                         pixels[(y * ctx->_width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(y * ctx->_width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
@@ -564,6 +565,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 
                         uValue = sub(uValue, int16x8::make_const(128));
                         vValue = sub(vValue, int16x8::make_const(128));
+                        yValue = sub(yValue, int16x8::make_const(16));
 
                         int16x8 red, grn, blu;
                         uint8x16 uRed, uGrn, uBlu;
