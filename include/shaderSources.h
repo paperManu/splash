@@ -119,6 +119,9 @@ struct ShaderSources
             else
                 color = texture(_tex0, texCoord);
 
+            color.r /= _fovAndColorBalance.z;
+            color.b /= _fovAndColorBalance.w;
+
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
             {
@@ -129,15 +132,11 @@ struct ShaderSources
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
-            
-            // Brightness correction
-            if (brightness != 1.0)
-                color.rgb = color.rgb * brightness;
 
             // Black level
             if (blackLevel > 0.0 && blackLevel < 1.0)
                 color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
-
+            
             // If no blending map has been computed
             if (_texBlendingMap == 0)
             {
@@ -182,12 +181,13 @@ struct ShaderSources
                 fragColor.a = 1.0;
             }
 
-            fragColor.r /= _fovAndColorBalance.z;
-            fragColor.b /= _fovAndColorBalance.w;
+            // Brightness correction
+            if (brightness != 1.0)
+                fragColor.rgb = fragColor.rgb * brightness;
 
             // Finally, correct for the incidence
-            // anglToNormal can't be 0.0, it would have been discarded
-            fragColor.rgb /= vec3(abs(angleToNormal));
+            // angleToNormal can't be 0.0, it would have been discarded
+            fragColor.rgb /= abs(angleToNormal);
         }
     )"};
 
