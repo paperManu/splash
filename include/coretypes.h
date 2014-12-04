@@ -209,7 +209,9 @@ class GlWindow
         bool setAsCurrentContext() const 
         {
             if (glfwGetCurrentContext() != NULL && glfwGetCurrentContext() != _window)
-                return false;
+                _previousWindow = glfwGetCurrentContext();
+            else if (glfwGetCurrentContext() == _window)
+                return true;
             _mutex.lock();
             glfwMakeContextCurrent(_window);
             return true;
@@ -222,13 +224,20 @@ class GlWindow
         {
             if (glfwGetCurrentContext() == _window)
             {
-                glfwMakeContextCurrent(NULL);
+                if (_previousWindow == nullptr)
+                    glfwMakeContextCurrent(NULL);
+                else
+                {
+                    glfwMakeContextCurrent(_previousWindow);
+                    _previousWindow = nullptr;
+                }
                 _mutex.unlock();
             }
         }
 
     private:
         mutable std::mutex _mutex;
+        mutable GLFWwindow* _previousWindow {nullptr};
         GLFWwindow* _window {nullptr};
         GLFWwindow* _mainWindow {nullptr};
 };

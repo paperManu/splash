@@ -211,6 +211,8 @@ void Scene::render()
     bool isError {false};
     vector<unsigned int> threadIds;
 
+    _mainWindow->setAsCurrentContext();
+
     // Swap all buffers at once
     STimer::timer << "swap";
     for (auto& obj : _objects)
@@ -258,6 +260,8 @@ void Scene::render()
         if (obj.second->getType() == "window")
             isError |= dynamic_pointer_cast<Window>(obj.second)->render();
     STimer::timer >> "windows";
+
+    _mainWindow->releaseContext();
 
     // Update the user events
     glfwPollEvents();
