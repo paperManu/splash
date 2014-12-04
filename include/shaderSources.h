@@ -152,18 +152,19 @@ struct ShaderSources
             // If there is a blending map
             else
             {
-                float blendFactor = texture(_tex1, texCoord).r * 65536.0;
+                int blendFactor = int(texture(_tex1, texCoord).r * 65536.0);
                 // Extract the number of cameras
-                float camNbr = floor(blendFactor / 4096.0);
-                blendFactor = blendFactor - camNbr * 4096.0;
+                int camNbr = blendFactor / 4096;
+                blendFactor = blendFactor - camNbr * 4096;
+                float blendFactorFloat = 0.0;
 
                 // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
                 bool smoothBlend = false;
                 if (color.r > blackLevel * 2.0 || color.g > blackLevel * 2.0 || color.b > blackLevel * 2.0)
                     smoothBlend = true;
 
-                if (blendFactor == 0.0)
-                    blendFactor = 1.0;
+                if (blendFactor == 0)
+                    blendFactorFloat = 0.05; // The non-visible part is kinda hidden
                 else if (blendWidth > 0.0 && smoothBlend == true)
                 {
                     vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
@@ -171,13 +172,13 @@ struct ShaderSources
                     float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
                     float dist = min(1.0, min(distX, distY) / blendWidth);
                     dist = smoothstep(0.0, 1.0, dist);
-                    blendFactor = 256.0 * dist / blendFactor;
+                    blendFactorFloat = 256.0 * dist / float(blendFactor);
                 }
                 else
                 {
-                    blendFactor = 1.0 / camNbr;
+                    blendFactorFloat = 1.0 / float(camNbr);
                 }
-                fragColor.rgb = color.rgb * min(1.0, blendFactor);
+                fragColor.rgb = color.rgb * min(1.0, blendFactorFloat);
                 fragColor.a = 1.0;
             }
 
