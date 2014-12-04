@@ -180,6 +180,7 @@ void Object::resetBlendingMap()
     }
 
     _blendMaps.clear();
+    _updatedParams = true;
 }
 
 /*************/
