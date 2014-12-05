@@ -31,6 +31,7 @@ Scene::Scene(std::string name)
 
     SLog::log << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
+    _type = "scene";
     _isRunning = true;
     _name = name;
     _sceneLoop = thread([&]() {
@@ -129,6 +130,7 @@ Json::Value Scene::getConfigurationAsJson()
 
     Json::Value root;
 
+    root[_name] = BaseObject::getConfigurationAsJson();
     for (auto& obj : _objects)
         root[obj.first] = obj.second->getConfigurationAsJson();
 
@@ -662,6 +664,16 @@ void Scene::registerAttributes()
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         _doComputeBlending = true;
         return true;
+    });
+    
+    _attribFunctions["blending"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() == 1)
+            _doComputeBlending = true;
+        return true;
+    }, [&]() {
+        return Values({_isBlendComputed});
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](Values args) {

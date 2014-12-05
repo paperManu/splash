@@ -10,6 +10,7 @@
 #include "scene.h"
 #include "threadpool.h"
 
+#include <chrono>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <json/reader.h>
@@ -288,12 +289,15 @@ void World::applyConfig()
             }
 
             string type = obj["type"].asString();
-            _link->sendMessage(s.first, "add", {type, name});
-            if (s.first != _masterSceneName)
-                _link->sendMessage(_masterSceneName, "addGhost", {type, name});
+            if (type != "scene")
+            {
+                _link->sendMessage(s.first, "add", {type, name});
+                if (s.first != _masterSceneName)
+                    _link->sendMessage(_masterSceneName, "addGhost", {type, name});
 
-            // Some objects are also created on this side, and linked with the distant one
-            addLocally(type, name, s.first);
+                // Some objects are also created on this side, and linked with the distant one
+                addLocally(type, name, s.first);
+            }
 
             // Set their attributes
             auto objMembers = obj.getMemberNames();
@@ -335,15 +339,18 @@ void World::applyConfig()
                     values.emplace_back(attr.asString());
 
                 _link->sendMessage(name, objMembers[idxAttr], values);
-                if (s.first != _masterSceneName)
+                if (type != "scene")
                 {
-                    Values ghostValues {name, objMembers[idxAttr]};
-                    for (auto& v : values)
-                        ghostValues.push_back(v);
-                    _link->sendMessage(_masterSceneName, "setGhost", ghostValues);
+                    if (s.first != _masterSceneName)
+                    {
+                        Values ghostValues {name, objMembers[idxAttr]};
+                        for (auto& v : values)
+                            ghostValues.push_back(v);
+                        _link->sendMessage(_masterSceneName, "setGhost", ghostValues);
+                    }
+                    // We also set the attribute locally, if the object exists
+                    set(name, objMembers[idxAttr], values);
                 }
-                // We also set the attribute locally, if the object exists
-                set(name, objMembers[idxAttr], values);
 
                 idxAttr++;
             }
