@@ -141,6 +141,8 @@ class Window : public BaseObject
         GlWindowPtr _window;
         int _screenId {-1};
         bool _fullscreen {false};
+        bool _withDecoration {true};
+        int _windowRect[4];
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
 
@@ -178,9 +180,19 @@ class Window : public BaseObject
         bool setProjectionSurface();
 
         /**
+         * Set whether the window has decorations
+         */
+        void setWindowDecoration(bool hasDecoration);
+
+        /**
          * Update the swap interval
          */
         void updateSwapInterval();
+
+        /**
+         * Update the window size and position
+         */
+        void updateWindowShape();
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

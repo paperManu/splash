@@ -45,6 +45,10 @@ Window::Window(GlWindowPtr w)
     setEventsCallbacks();
 
     registerAttributes();
+
+    // Get the default window size and position
+    glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
+    glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 }
 
 /*************/
@@ -360,6 +364,40 @@ bool Window::setProjectionSurface()
 }
 
 /*************/
+void Window::setWindowDecoration(bool hasDecoration)
+{
+    if (_screenId != -1)
+        return;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+    glfwWindowHint(GLFW_VISIBLE, true);
+    glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
+    glfwWindowHint(GLFW_DECORATED, hasDecoration);
+    GLFWwindow* window;
+    window = glfwCreateWindow(_windowRect[2], _windowRect[3], ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
+
+    // Reset hints to default ones
+    glfwWindowHint(GLFW_RESIZABLE, true);
+    glfwWindowHint(GLFW_DECORATED, true);
+
+    if (!window)
+    {
+        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to update window " << _name << Log::endl;
+        return;
+    }
+
+    _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
+    updateSwapInterval();
+
+    setEventsCallbacks();
+
+    return;
+}
+
+/*************/
 void Window::updateSwapInterval()
 {
     if (!_window->setAsCurrentContext()) 
@@ -371,15 +409,33 @@ void Window::updateSwapInterval()
 }
 
 /*************/
+void Window::updateWindowShape()
+{
+    glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
+    glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
+}
+
+/*************/
 void Window::registerAttributes()
 {
     _attribFunctions["fullscreen"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 1)
+        if (args.size() != 1)
             return false;
         switchFullscreen(args[0].asInt());
         return true;
     }, [&]() {
         return Values({_screenId});
+    });
+
+    _attribFunctions["decorated"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+        _withDecoration = args[0].asInt() == 0 ? false : true;
+        setWindowDecoration(_withDecoration);
+        updateWindowShape();
+        return true;
+    }, [&]() {
+        return Values({(int)_withDecoration});
     });
 
     // Attribute to configure the placement of the various texture input
@@ -392,8 +448,30 @@ void Window::registerAttributes()
         return _layout;
     });
 
+    _attribFunctions["position"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 2)
+            return false;
+        _windowRect[0] = args[0].asInt();
+        _windowRect[1] = args[1].asInt();
+        updateWindowShape();
+        return true;
+    }, [&]() {
+        return Values({_windowRect[0], _windowRect[1]});
+    });
+
+    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 2)
+            return false;
+        _windowRect[2] = args[0].asInt();
+        _windowRect[3] = args[1].asInt();
+        updateWindowShape();
+        return true;
+    }, [&]() {
+        return Values({_windowRect[2], _windowRect[3]});
+    });
+
     _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 1)
+        if (args.size() != 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());
         updateSwapInterval();
