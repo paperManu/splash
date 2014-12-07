@@ -208,9 +208,8 @@ class GlWindow
          */
         bool setAsCurrentContext() const 
         {
-            if (glfwGetCurrentContext() != NULL && glfwGetCurrentContext() != _window)
-                _previousWindow = glfwGetCurrentContext();
-            else if (glfwGetCurrentContext() == _window)
+            _previousWindow = glfwGetCurrentContext();
+            if (_previousWindow == _window)
                 return true;
             _mutex.lock();
             glfwMakeContextCurrent(_window);
@@ -222,7 +221,9 @@ class GlWindow
          */
         void releaseContext() const
         {
-            if (glfwGetCurrentContext() == _window)
+            if (_window == _previousWindow)
+                _previousWindow = nullptr;
+            else if (glfwGetCurrentContext() == _window)
             {
                 if (_previousWindow == nullptr)
                     glfwMakeContextCurrent(NULL);

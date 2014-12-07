@@ -59,11 +59,13 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _window->releaseContext();
 
     // Create the default GUI camera
-    _guiCamera = make_shared<Camera>(scene->_mainWindow);
+    scene->_mainWindow->setAsCurrentContext();
+    _guiCamera = make_shared<Camera>();
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
+    scene->_mainWindow->releaseContext();
 
     // Intialize the GUI widgets
     initGLV(_width, _height);

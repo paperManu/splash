@@ -51,7 +51,7 @@ class Camera : public BaseObject
         /**
          * Constructor
          */
-        Camera(GlWindowPtr w);
+        Camera();
 
         /**
          * Destructor
@@ -208,6 +208,7 @@ class Camera : public BaseObject
         // Camera parameters
         float _fov {35}; // This is the vertical FOV
         float _width {512}, _height {512};
+        float _newWidth {0}, _newHeight {0};
         float _near {0.1}, _far {100.0};
         float _cx {0.5}, _cy {0.5};
         glm::dvec3 _eye {1.0, 0.0, 5.0};
