@@ -330,6 +330,9 @@ bool Camera::doCalibration()
     SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
     SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
 
+    // Force camera update with the new parameters
+    _updatedParams = true;
+
     return true;
 }
 
