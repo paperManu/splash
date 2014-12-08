@@ -574,7 +574,8 @@ void World::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
-        _doComputeBlending = true;
+        if (args.size() == 0 || args[0].asInt() != 0)
+            _doComputeBlending = true;
         return true;
     });
 

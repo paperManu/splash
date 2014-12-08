@@ -57,9 +57,7 @@ BaseObjectPtr Scene::add(string type, string name)
 
     BaseObjectPtr obj;
     // First, the objects containing a context
-    if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_mainWindow));
-    else if (type == string("window"))
+    if (type == string("window"))
     {
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(getNewSharedWindow(name)));
         obj->setAttribute("swapInterval", {_swapInterval});
@@ -72,7 +70,9 @@ BaseObjectPtr Scene::add(string type, string name)
         if(!_mainWindow->setAsCurrentContext())
     	    SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-        if (type == string("geometry"))
+        if (type == string("camera"))
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>());
+        else if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
         else if (type == string("image") || type == string("image_shmdata"))
         {
@@ -213,8 +213,6 @@ void Scene::render()
     bool isError {false};
     vector<unsigned int> threadIds;
 
-    _mainWindow->setAsCurrentContext();
-
     // Swap all buffers at once
     STimer::timer << "swap";
     for (auto& obj : _objects)
@@ -258,12 +256,13 @@ void Scene::render()
 
     // Update the windows
     STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    threadIds.push_back(SThread::pool.enqueue([&]() {
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    }));
+    SThread::pool.waitThreads(threadIds);
     STimer::timer >> "windows";
-
-    _mainWindow->releaseContext();
 
     // Update the user events
     glfwPollEvents();
@@ -344,6 +343,8 @@ void Scene::run()
     while (_isRunning)
     {
         STimer::timer << "sceneLoop";
+        _mainWindow->setAsCurrentContext();
+
         if (_started)
         {
             unique_lock<mutex> lock(_configureMutex);
@@ -367,8 +368,15 @@ void Scene::run()
             _doComputeBlending = false;
         }
 
+        _mainWindow->releaseContext();
         STimer::timer >> "sceneLoop";
     }
+
+    // Cleanup every object
+    _mainWindow->setAsCurrentContext();
+    _objects.clear();
+    _ghostObjects.clear();
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -497,8 +505,9 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
+    GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
-    glfwMakeContextCurrent(window);
+    glWindow->setAsCurrentContext();
     if (SPLASH_GL_DEBUG)
     {
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
@@ -521,10 +530,9 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
     }
 #endif
+    glWindow->releaseContext();
 
-    glfwMakeContextCurrent(NULL);
-
-    return make_shared<GlWindow>(window, _mainWindow->get());
+    return glWindow;
 }
 
 /*************/
@@ -560,7 +568,7 @@ void Scene::init(std::string name)
     _mainWindow = make_shared<GlWindow>(window, window);
     _isInitialized = true;
 
-    glfwMakeContextCurrent(_mainWindow->get());
+    _mainWindow->setAsCurrentContext();
     // Activate GL debug messages
     if (SPLASH_GL_DEBUG)
     {
@@ -580,8 +588,7 @@ void Scene::init(std::string name)
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
     }
 #endif
-
-    glfwMakeContextCurrent(NULL);
+    _mainWindow->releaseContext();
 
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
@@ -596,11 +603,11 @@ void Scene::initBlendingMap()
     _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
-    glfwMakeContextCurrent(_mainWindow->get());
+    //glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture = make_shared<Texture>();
     _blendingTexture->disableFiltering();
     *_blendingTexture = _blendingMap;
-    glfwMakeContextCurrent(NULL);
+    //glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -664,16 +671,6 @@ void Scene::registerAttributes()
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         _doComputeBlending = true;
         return true;
-    });
-    
-    _attribFunctions["blending"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 1)
-            return false;
-        if (args[0].asInt() == 1)
-            _doComputeBlending = true;
-        return true;
-    }, [&]() {
-        return Values({_isBlendComputed});
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](Values args) {

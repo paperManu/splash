@@ -34,26 +34,16 @@ using namespace OIIO_NAMESPACE;
 namespace Splash {
 
 /*************/
-Camera::Camera(GlWindowPtr w)
+Camera::Camera()
 {
     _type = "camera";
 
-    if (w.get() == nullptr)
-        return;
-
-    _window = w;
-
     // Intialize FBO, textures and everything OpenGL
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
-    _window->releaseContext();
 
     setOutputNbr(1);
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
@@ -77,8 +67,6 @@ Camera::Camera(GlWindowPtr w)
 
     // Load some models
     loadDefaultModels();
-
-    _window->releaseContext();
 
     registerAttributes();
 }
@@ -106,8 +94,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
         return;
     }
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     // We want to render the object with a specific texture, containing texture coordinates
     vector<Values> shaderFill;
     for (auto& obj : _objects)
@@ -127,7 +113,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
         dims[1] = dims[0] * height / width;
     else
         dims[0] = dims[1] * width / height;
-    _window->releaseContext();
 
     bool writeToShm = _writeToShm;
     _writeToShm = false;
@@ -141,8 +126,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
     _drawFrame = drawFrame;
     _displayCalibration = displayCalibration;
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 #ifdef DEBUG
     GLenum error = glGetError();
 #endif
@@ -163,8 +146,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
     if (error)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 #endif
-
-    _window->releaseContext();
 
     _writeToShm = writeToShm;
     setOutputSize(width, height);
@@ -343,6 +324,9 @@ bool Camera::doCalibration()
     SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
     SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
 
+    // Force camera update with the new parameters
+    _updatedParams = true;
+
     return true;
 }
 
@@ -367,13 +351,10 @@ Values Camera::pickVertex(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    _window->releaseContext();
 
     if (depth == 1.f)
         return Values();
@@ -407,13 +388,10 @@ Values Camera::pickCalibrationPoint(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    _window->releaseContext();
 
     if (depth == 1.f)
         return Values();
@@ -442,12 +420,16 @@ Values Camera::pickCalibrationPoint(float x, float y)
 /*************/
 bool Camera::render()
 {
+    if (_newWidth != 0 && _newHeight != 0)
+    {
+        setOutputSize(_newWidth, _newHeight);
+        _newWidth = 0;
+        _newHeight = 0;
+    }
+
     ImageSpec spec = _outTextures[0]->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
-
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     if (_outTextures.size() < 1)
         return false;
@@ -573,8 +555,6 @@ bool Camera::render()
         _outShm->write(img, string("/tmp/splash_") + _name);
     }
 
-    _window->releaseContext();
-
 #ifdef DEBUG
     return error != 0 ? true : false;
 #else
@@ -662,9 +642,6 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
@@ -693,8 +670,6 @@ void Camera::setOutputNbr(int nbr)
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    _window->releaseContext();
 }
 
 /*************/
@@ -703,8 +678,6 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->setAttribute("resizable", Values({1}));
     _depthTexture->resize(width, height);
     _depthTexture->setAttribute("resizable", Values({0}));
@@ -730,8 +703,6 @@ void Camera::setOutputSize(int width, int height)
         glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     }
-
-    _window->releaseContext();
 }
 
 /*************/
@@ -964,7 +935,9 @@ void Camera::registerAttributes()
     _attribFunctions["size"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
-        setOutputSize(args[0].asInt(), args[1].asInt());
+        //setOutputSize(args[0].asInt(), args[1].asInt());
+        _newWidth = args[0].asInt();
+        _newHeight = args[1].asInt();
         return true;
     }, [&]() {
         return Values({_width, _height});

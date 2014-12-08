@@ -201,6 +201,7 @@ struct ShaderSources
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform vec4 _color = vec4(0.0, 1.0, 0.0, 1.0);
 
         in VertexData
@@ -214,9 +215,15 @@ struct ShaderSources
 
         void main(void)
         {
+            vec4 position = vertexIn.position;
+            vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
 
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
+            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
+            float angleToNormal = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
+
+            if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
                 discard;
 
             fragColor = _color;
@@ -233,6 +240,7 @@ struct ShaderSources
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
 
         in VertexData
         {
@@ -245,10 +253,15 @@ struct ShaderSources
 
         void main(void)
         {
+            vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
 
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
+            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
+            float angleToNormal = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
+
+            if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
                 discard;
 
             float U = texCoord.x * 65536.0;
