@@ -659,6 +659,7 @@ class RootObject : public BaseObject
          */
         bool set(std::string name, std::string attrib, Values args)
         {
+            std::lock_guard<std::mutex> lock(_setMutex);
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 return setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
@@ -671,6 +672,7 @@ class RootObject : public BaseObject
          */
         void setFromSerializedObject(const std::string name, const SerializedObjectPtr obj)
         {
+            std::lock_guard<std::mutex> lock(_setMutex);
             if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
                 std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
             else
@@ -678,6 +680,7 @@ class RootObject : public BaseObject
         }
 
     protected:
+        mutable std::mutex _setMutex;
         std::map<std::string, BaseObjectPtr> _objects;
 
         virtual void handleSerializedObject(const std::string name, const SerializedObjectPtr obj) {}

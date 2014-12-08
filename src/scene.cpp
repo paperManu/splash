@@ -207,9 +207,6 @@ void Scene::remove(string name)
 /*************/
 void Scene::render()
 {
-    if (!_started)
-        return;
-
     bool isError {false};
     vector<unsigned int> threadIds;
 
@@ -337,10 +334,15 @@ void Scene::run()
 {
     while (_isRunning)
     {
+        if (!_started)
+        {
+            this_thread::sleep_for(chrono::milliseconds(50));
+            continue;
+        }
+        
         STimer::timer << "sceneLoop";
         _mainWindow->setAsCurrentContext();
 
-        if (_started)
         {
             unique_lock<mutex> lock(_configureMutex);
             render();
@@ -359,6 +361,7 @@ void Scene::run()
         // Compute blending event
         if (_doComputeBlending)
         {
+            unique_lock<mutex> lock(_configureMutex);
             computeBlendingMap();
             _doComputeBlending = false;
         }
@@ -369,6 +372,7 @@ void Scene::run()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
+    lock_guard<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
