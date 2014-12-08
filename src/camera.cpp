@@ -38,12 +38,6 @@ Camera::Camera()
 {
     _type = "camera";
 
-    //if (w.get() == nullptr)
-    //    return;
-
-    // We need to know the context for resizing outside of the main loop
-    //_window = w;
-
     // Intialize FBO, textures and everything OpenGL
     glGetError();
     glGenFramebuffers(1, &_fbo);
@@ -684,8 +678,6 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    //if (!_window->setAsCurrentContext()) 
-    //	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->setAttribute("resizable", Values({1}));
     _depthTexture->resize(width, height);
     _depthTexture->setAttribute("resizable", Values({0}));
@@ -711,8 +703,6 @@ void Camera::setOutputSize(int width, int height)
         glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     }
-
-    //_window->releaseContext();
 }
 
 /*************/

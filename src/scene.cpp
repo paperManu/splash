@@ -672,16 +672,6 @@ void Scene::registerAttributes()
         _doComputeBlending = true;
         return true;
     });
-    
-    _attribFunctions["blending"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 1)
-            return false;
-        if (args[0].asInt() == 1)
-            _doComputeBlending = true;
-        return true;
-    }, [&]() {
-        return Values({_isBlendComputed});
-    });
 
     _attribFunctions["config"] = AttributeFunctor([&](Values args) {
         _doSaveNow = true;
