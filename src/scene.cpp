@@ -210,15 +210,6 @@ void Scene::render()
     bool isError {false};
     vector<unsigned int> threadIds;
 
-    // Swap all buffers at once
-    STimer::timer << "swap";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
-                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-            }));
-    _status = !isError;
-
     // Check if anything needs to be updated
     bool needsUpdate = _redoUpdate;
     for (auto& obj : _objects)
@@ -246,6 +237,15 @@ void Scene::render()
         if (obj.second->getType() == "gui")
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
+
+    // Swap all buffers at once
+    STimer::timer << "swap";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            threadIds.push_back(SThread::pool.enqueue([&]() {
+                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+            }));
+    _status = !isError;
 
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
