@@ -218,8 +218,6 @@ void Scene::render()
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
-    SThread::pool.waitThreads(threadIds);
-    STimer::timer >> "swap";
 
     // Check if anything needs to be updated
     bool needsUpdate = _redoUpdate;
@@ -248,6 +246,10 @@ void Scene::render()
         if (obj.second->getType() == "gui")
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
+
+    // Wait for buffer update and swap threads
+    SThread::pool.waitThreads(threadIds);
+    STimer::timer >> "swap";
 
     // Update the windows
     STimer::timer << "windows";
