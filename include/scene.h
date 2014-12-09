@@ -127,6 +127,12 @@ class Scene : public RootObject
          */
         void sendMessage(const std::string message, const Values value = {});
 
+        /**
+         * Wait for sync with this scene
+         * Has to be called within a GL object
+         */
+        void waitGLSync();
+
     protected:
         GlWindowPtr _mainWindow;
         bool _isRunning {false};
@@ -154,6 +160,9 @@ class Scene : public RootObject
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
         GLuint _maxSwapBarriers {0};
+
+        // Sync object
+        GLsync _glSync;
 
         unsigned long _nextId {0};
 

@@ -181,12 +181,6 @@ class Camera : public BaseObject
          */
         void setOutputSize(int width, int height);
 
-        /**
-         * Wait for synchronization with this camera
-         * This has to be called inside a GL context
-         */
-        void waitSync();
-
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
@@ -196,9 +190,6 @@ class Camera : public BaseObject
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
         Image_ShmdataPtr _outShm;
-
-        // Used to check synchronization
-        GLsync _glSync;
 
         // Objects for copying to host
         bool _writeToShm {false};

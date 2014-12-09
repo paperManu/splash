@@ -519,11 +519,6 @@ bool Camera::render()
     glDisable(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    if (glIsSync(_glSync) == GL_TRUE)
-        glDeleteSync(_glSync);
-    _glSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    glFlush();
-
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
@@ -710,14 +705,6 @@ void Camera::setOutputSize(int width, int height)
         glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     }
-}
-
-/*************/
-void Camera::waitSync()
-{
-    if (glIsSync(_glSync) == GL_FALSE)
-        return;
-    glWaitSync(_glSync, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/
