@@ -6,7 +6,6 @@
 #include "image.h"
 #include "log.h"
 #include "object.h"
-#include "scene.h"
 #include "shader.h"
 #include "texture.h"
 #include "timer.h"
@@ -27,16 +26,14 @@ pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 
 /*************/
-Window::Window(GlWindowPtr w, SceneWeakPtr s)
+Window::Window(GlWindowPtr w)
 {
     _type = "window";
 
-    if (w.get() == nullptr || s.lock().get() == nullptr)
+    if (w.get() == nullptr)
         return;
 
     _window = w;
-    _scene = s;
-
     _isInitialized = setProjectionSurface();
     if (!_isInitialized)
         SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
@@ -177,6 +174,10 @@ bool Window::render()
     	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glEnable(GL_FRAMEBUFFER_SRGB);
 
+    // Verify sync with the input cameras
+    for (auto& cam : _inCameras)
+        cam->waitSync();
+
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
@@ -187,11 +188,6 @@ bool Window::render()
     glDrawBuffer(GL_BACK);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    // Wait for all input buffers to be ready
-    {
-        _scene.lock()->waitGLSync();
-    }
 
     _screen->getShader()->setAttribute("layout", _layout);
     _screen->activate();

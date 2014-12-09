@@ -38,16 +38,13 @@
 
 namespace Splash {
 
-class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
-
 class Window : public BaseObject
 {
     public:
         /**
          * Constructor
          */
-        Window(GlWindowPtr w, SceneWeakPtr s);
+        Window(GlWindowPtr w);
 
         /**
          * Destructor
@@ -148,8 +145,6 @@ class Window : public BaseObject
         int _windowRect[4];
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
-
-        SceneWeakPtr _scene;
 
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;

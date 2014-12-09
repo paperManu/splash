@@ -59,7 +59,7 @@ BaseObjectPtr Scene::add(string type, string name)
     // First, the objects containing a context
     if (type == string("window"))
     {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(getNewSharedWindow(name), _self));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(getNewSharedWindow(name)));
         obj->setAttribute("swapInterval", {_swapInterval});
     }
     else if (type == string("gui"))
@@ -223,7 +223,6 @@ void Scene::render()
         _redoUpdate = _redoUpdate ? false : true;
         // Update the cameras
         STimer::timer << "cameras";
-        glDeleteSync(_glSync);
         for (auto& obj : _objects)
             if (obj.second->getType() == "camera")
                 isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
@@ -237,7 +236,6 @@ void Scene::render()
     for (auto& obj : _objects)
         if (obj.second->getType() == "gui")
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
-    _glSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     STimer::timer >> "guis";
 
     // Update the windows
@@ -405,12 +403,6 @@ void Scene::setAsWorldScene()
 void Scene::sendMessage(const string message, const Values value)
 {
     _link->sendMessage("world", message, value);
-}
-
-/*************/
-void Scene::waitGLSync()
-{
-    glWaitSync(_glSync, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/
