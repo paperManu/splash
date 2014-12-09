@@ -151,6 +151,8 @@ bool Window::linkTo(BaseObjectPtr obj)
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
+        if (find_if(_inCameras.begin(), _inCameras.end(), [&](CameraPtr c) {return c.get() == cam.get();}) == _inCameras.end())
+            _inCameras.push_back(cam);
         for (auto& tex : cam->getTextures())
             setTexture(tex);
         return true;
@@ -171,6 +173,10 @@ bool Window::render()
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glEnable(GL_FRAMEBUFFER_SRGB);
+
+    // Verify sync with the input cameras
+    for (auto& cam : _inCameras)
+        cam->waitSync();
 
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);

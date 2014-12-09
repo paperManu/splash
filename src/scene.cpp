@@ -238,6 +238,17 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
 
+    // Update the windows
+    STimer::timer << "windows";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            threadIds.push_back(SThread::pool.enqueue([&]() {
+                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+            }));
+    SThread::pool.waitThreads(threadIds);
+    threadIds.clear();
+    STimer::timer >> "windows";
+
     // Swap all buffers at once
     STimer::timer << "swap";
     for (auto& obj : _objects)
@@ -246,19 +257,13 @@ void Scene::render()
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
-
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
+    threadIds.clear();
     STimer::timer >> "swap";
 
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    STimer::timer >> "windows";
-
     // Update the user events
+    STimer::timer << "events";
     glfwPollEvents();
     // Mouse position
     {
@@ -329,6 +334,7 @@ void Scene::render()
             if (obj.second->getType() == "gui")
                 dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
+    STimer::timer >> "events";
 }
 
 /*************/

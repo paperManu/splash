@@ -148,6 +148,7 @@ class Window : public BaseObject
 
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;
+        std::vector<CameraPtr> _inCameras;
         std::vector<TexturePtr> _inTextures;
 
         static std::mutex _callbackMutex;
