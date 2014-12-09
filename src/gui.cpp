@@ -393,7 +393,7 @@ void Gui::initGLV(int width, int height)
         cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
         win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
-        //buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
+        buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
 
         // Create the text message
@@ -405,7 +405,7 @@ void Gui::initGLV(int width, int height)
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
-        stream << "Events: " << setprecision(4) << evt << " ms\n";
+        stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
 
         return stream.str();
     });
