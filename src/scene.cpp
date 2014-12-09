@@ -208,7 +208,29 @@ void Scene::remove(string name)
 void Scene::render()
 {
     bool isError {false};
-    vector<unsigned int> threadIds;
+    vector<unsigned int> windowsThread;
+
+    // Prepare the windows to be updated
+    glDeleteSync(_glSync);
+    windowsThread.push_back(SThread::pool.enqueue([&]() {
+        STimer::timer << "windows";
+        vector<unsigned int> threads;
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                threads.push_back(SThread::pool.enqueue([&]() {
+                    isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+                }));
+        // Swap all buffers at once
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                threads.push_back(SThread::pool.enqueue([&]() {
+                    dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+                }));
+        _status = !isError;
+        // Wait for buffer update and swap threads
+        SThread::pool.waitThreads(threads);
+        STimer::timer >> "windows";
+    }));
 
     // Check if anything needs to be updated
     bool needsUpdate = _redoUpdate;
@@ -223,7 +245,6 @@ void Scene::render()
         _redoUpdate = _redoUpdate ? false : true;
         // Update the cameras
         STimer::timer << "cameras";
-        glDeleteSync(_glSync);
         for (auto& obj : _objects)
             if (obj.second->getType() == "camera")
                 isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
@@ -240,29 +261,8 @@ void Scene::render()
     _glSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     STimer::timer >> "guis";
 
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
-                isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-            }));
-    SThread::pool.waitThreads(threadIds);
-    threadIds.clear();
-    STimer::timer >> "windows";
-
-    // Swap all buffers at once
-    STimer::timer << "swap";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
-                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-            }));
-    _status = !isError;
-    // Wait for buffer update and swap threads
-    SThread::pool.waitThreads(threadIds);
-    threadIds.clear();
-    STimer::timer >> "swap";
+    // Wait for the specified threads to finish
+    SThread::pool.waitThreads(windowsThread);
 
     // Update the user events
     STimer::timer << "events";
