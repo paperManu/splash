@@ -28,6 +28,7 @@
 #include "config.h"
 #include "coretypes.h"
 
+#include <atomic>
 #include <cstddef>
 #include <vector>
 #include <GLFW/glfw3.h>
@@ -159,7 +160,7 @@ class Scene : public RootObject
 
         // Texture upload context
         GlWindowPtr _textureUploadWindow;
-        GLsync _textureUploadFence;
+        std::atomic_bool _textureUploadDone {false};
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};

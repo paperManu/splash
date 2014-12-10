@@ -219,17 +219,21 @@ void Scene::render()
     }
 
     // Update all textures which need to be
-    glDeleteSync(_textureUploadFence);
+    _textureUploadDone = false;
     threadIds.push_back(SThread::pool.enqueue([&]() {
         STimer::timer << "textureUpload";
         _textureUploadWindow->setAsCurrentContext();
+
         for (auto& obj : _objects)
             if (obj.second->getType() == "texture")
                 dynamic_pointer_cast<Texture>(obj.second)->update();
-        _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        glFinish();
+        _textureUploadDone = true;
+
         for (auto& obj : _objects)
             if (obj.second->getType() == "texture")
                 dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
+
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
     }));
@@ -237,7 +241,6 @@ void Scene::render()
     if (needsUpdate)
     {
         _redoUpdate = _redoUpdate ? false : true;
-        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
         // Update the cameras
         STimer::timer << "cameras";
         for (auto& obj : _objects)
@@ -422,7 +425,8 @@ void Scene::sendMessage(const string message, const Values value)
 /*************/
 void Scene::waitTextureUpload()
 {
-    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+    while (!_textureUploadDone)
+        this_thread::sleep_for(chrono::microseconds(10));
 }
 
 /*************/
