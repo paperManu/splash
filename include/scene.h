@@ -151,6 +151,9 @@ class Scene : public RootObject
         bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
+        // Texture upload context
+        GlWindowPtr _textureUploadWindow;
+
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
         GLuint _maxSwapBarriers {0};

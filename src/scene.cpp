@@ -217,10 +217,24 @@ void Scene::render()
         needsUpdate |= obj.second->wasUpdated();
         obj.second->setNotUpdated();
     }
+
+    // Update all textures which need to be
+    GLsync textureUploadFence;
+    threadIds.push_back(SThread::pool.enqueue([&]() {
+        STimer::timer << "textureUpload";
+        _textureUploadWindow->setAsCurrentContext();
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->update();
+        textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        _textureUploadWindow->releaseContext();
+        STimer::timer >> "textureUpload";
+    }));
     
     if (needsUpdate)
     {
         _redoUpdate = _redoUpdate ? false : true;
+        glWaitSync(textureUploadFence, 0, GL_TIMEOUT_IGNORED);
         // Update the cameras
         STimer::timer << "cameras";
         for (auto& obj : _objects)
@@ -230,6 +244,9 @@ void Scene::render()
     }
     else
         _redoUpdate = false;
+
+    // Texture upload should be done now
+    SThread::pool.waitThreads(threadIds);
 
     // Update the guis
     STimer::timer << "guis";
@@ -590,6 +607,8 @@ void Scene::init(std::string name)
     }
 #endif
     _mainWindow->releaseContext();
+
+    _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
