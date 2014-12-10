@@ -20,6 +20,19 @@ namespace Splash {
 /*************/
 Object::Object()
 {
+    init();
+}
+
+/*************/
+Object::Object(RootObjectWeakPtr root)
+       : BaseObject(root)
+{
+    init();
+}
+
+/*************/
+void Object::init()
+{
     _type = "object";
 
     _shader = make_shared<Shader>();
@@ -56,7 +69,7 @@ void Object::activate()
     GLuint texUnit = 0;
     for (auto& t : _textures)
     {
-        t->update();
+        //t->update();
         t->lock();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
 
@@ -119,9 +132,13 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex = make_shared<Texture>();
+        TexturePtr tex = make_shared<Texture>(_root);
+        tex->setName(getName() + "_" + obj->getName() + "_tex");
         if (tex->linkTo(obj))
+        {
+            _root.lock()->registerObject(tex);
             return linkTo(tex);
+        }
         else
             return false;
     }

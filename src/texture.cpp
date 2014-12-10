@@ -21,8 +21,24 @@ Texture::Texture()
 }
 
 /*************/
+Texture::Texture(RootObjectWeakPtr root)
+        : BaseObject(root)
+{
+    init();
+}
+
+/*************/
 Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                  GLint border, GLenum format, GLenum type, const GLvoid* data)
+{
+    init();
+    reset(target, level, internalFormat, width, height, border, format, type, data); 
+}
+
+/*************/
+Texture::Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                 GLint border, GLenum format, GLenum type, const GLvoid* data)
+        : BaseObject(root)
 {
     init();
     reset(target, level, internalFormat, width, height, border, format, type, data); 

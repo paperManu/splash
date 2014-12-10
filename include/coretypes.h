@@ -423,11 +423,15 @@ struct AttributeFunctor
 
 class BaseObject;
 typedef std::shared_ptr<BaseObject> BaseObjectPtr;
+class RootObject;
+typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
 
 /*************/
 class BaseObject
 {
     public:
+        BaseObject() {}
+        BaseObject(RootObjectWeakPtr root) {_root = root;}
         virtual ~BaseObject() {}
 
         std::string getType() const {return _type;}
@@ -564,6 +568,7 @@ class BaseObject
         std::string _type {"baseobject"};
         std::string _remoteType {""};
         std::string _name {""};
+        RootObjectWeakPtr _root;
         std::map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
 
@@ -577,6 +582,9 @@ class BaseObject
 class BufferObject : public BaseObject
 {
     public:
+        BufferObject() {}
+        BufferObject(RootObjectWeakPtr root) : BaseObject(root) {}
+
         virtual ~BufferObject() {}
 
         /**
@@ -653,6 +661,15 @@ class RootObject : public BaseObject
 {
     public:
         virtual ~RootObject() {}
+
+        /**
+         * Register an object which was created elsewhere
+         */
+        void registerObject(BaseObjectPtr object)
+        {
+            if (object.get() != nullptr && _objects.find(object->getName()) == _objects.end())
+                _objects[object->getName()] = object;
+        }
 
         /**
          * Set the attribute of the named object with the given args

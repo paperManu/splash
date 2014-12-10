@@ -41,6 +41,7 @@ class Object : public BaseObject
          * Constructor
          */
         Object();
+        Object(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -152,6 +153,11 @@ class Object : public BaseObject
         glm::dvec3 _scale {1.0, 1.0, 1.0};
 
         std::string _fill {"texture"};
+
+        /**
+         * Init function called by constructor
+         */
+        void init();
 
         /**
          * Compute the matrix corresponding to the object position

@@ -85,7 +85,7 @@ BaseObjectPtr Scene::add(string type, string name)
             obj->setRemoteType(type);
         }
         else if (type == string("object"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>());
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
         else if (type == string("texture"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture>());
         _mainWindow->releaseContext();
