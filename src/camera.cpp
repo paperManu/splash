@@ -4,6 +4,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
+#include "scene.h"
 #include "shader.h"
 #include "texture.h"
 #include "timer.h"
@@ -34,7 +35,14 @@ using namespace OIIO_NAMESPACE;
 namespace Splash {
 
 /*************/
-Camera::Camera()
+Camera::Camera(RootObjectWeakPtr root)
+       : BaseObject(root)
+{
+    init();
+}
+
+/*************/
+void Camera::init()
 {
     _type = "camera";
 
@@ -459,6 +467,10 @@ bool Camera::render()
     else
         glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Wait for textures to be uploaded
+    //RootObjectPtr root = _root.lock();
+    //dynamic_pointer_cast<Scene>(root)->waitTextureUpload();
 
     if (!_hidden)
     {

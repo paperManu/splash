@@ -60,7 +60,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 
     // Create the default GUI camera
     scene->_mainWindow->setAsCurrentContext();
-    _guiCamera = make_shared<Camera>();
+    _guiCamera = make_shared<Camera>(s);
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});

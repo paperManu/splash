@@ -71,7 +71,7 @@ BaseObjectPtr Scene::add(string type, string name)
     	    SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
         if (type == string("camera"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>());
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
         else if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
         else if (type == string("image") || type == string("image_shmdata"))
@@ -219,14 +219,17 @@ void Scene::render()
     }
 
     // Update all textures which need to be
-    GLsync textureUploadFence;
+    glDeleteSync(_textureUploadFence);
     threadIds.push_back(SThread::pool.enqueue([&]() {
         STimer::timer << "textureUpload";
         _textureUploadWindow->setAsCurrentContext();
         for (auto& obj : _objects)
             if (obj.second->getType() == "texture")
                 dynamic_pointer_cast<Texture>(obj.second)->update();
-        textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
     }));
@@ -234,7 +237,7 @@ void Scene::render()
     if (needsUpdate)
     {
         _redoUpdate = _redoUpdate ? false : true;
-        glWaitSync(textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
         // Update the cameras
         STimer::timer << "cameras";
         for (auto& obj : _objects)
@@ -245,15 +248,15 @@ void Scene::render()
     else
         _redoUpdate = false;
 
-    // Texture upload should be done now
-    SThread::pool.waitThreads(threadIds);
-
     // Update the guis
     STimer::timer << "guis";
     for (auto& obj : _objects)
         if (obj.second->getType() == "gui")
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
+
+    // Texture upload should be done now
+    SThread::pool.waitThreads(threadIds);
 
     // Swap all buffers at once
     STimer::timer << "swap";
@@ -414,6 +417,12 @@ void Scene::setAsWorldScene()
 void Scene::sendMessage(const string message, const Values value)
 {
     _link->sendMessage("world", message, value);
+}
+
+/*************/
+void Scene::waitTextureUpload()
+{
+    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/

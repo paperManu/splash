@@ -51,7 +51,7 @@ class Camera : public BaseObject
         /**
          * Constructor
          */
-        Camera();
+        Camera(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -253,6 +253,11 @@ class Camera : public BaseObject
          * Get the view matrix from the camera parameters
          */
         glm::dmat4 computeViewMatrix();
+
+        /**
+         * Init function called in constructors
+         */
+        void init();
 
         /**
          * Load some defaults models, like the locator for calibration

@@ -99,7 +99,7 @@ void Object::deactivate()
 {
     for (auto& t : _textures)
     {
-        t->flushPbo();
+        //t->flushPbo();
         t->unlock();
     }
 

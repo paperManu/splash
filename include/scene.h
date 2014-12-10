@@ -127,6 +127,12 @@ class Scene : public RootObject
          */
         void sendMessage(const std::string message, const Values value = {});
 
+        /**
+         * Wait for synchronization with texture upload
+         * Has to be called from a GL context
+         */
+        void waitTextureUpload();
+
     protected:
         GlWindowPtr _mainWindow;
         bool _isRunning {false};
@@ -153,6 +159,7 @@ class Scene : public RootObject
 
         // Texture upload context
         GlWindowPtr _textureUploadWindow;
+        GLsync _textureUploadFence;
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
