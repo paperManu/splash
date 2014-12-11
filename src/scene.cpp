@@ -39,13 +39,25 @@ Scene::Scene(std::string name)
         registerAttributes();
         run();
     });
+
+    _textureUploadLoop = thread([&]() {
+        textureUploadRun();
+    });
 }
 
 /*************/
 Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+    _textureUploadLoop.join();
     _sceneLoop.join();
+
+    // Cleanup every object
+    _mainWindow->setAsCurrentContext();
+    lock_guard<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
+    _objects.clear();
+    _ghostObjects.clear();
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -217,39 +229,19 @@ void Scene::render()
         needsUpdate |= obj.second->wasUpdated();
         obj.second->setNotUpdated();
     }
-
-    // Update all textures which need to be
-    _textureUploadDone = false;
-    threadIds.push_back(SThread::pool.enqueue([&]() {
-        STimer::timer << "textureUpload";
-        _textureUploadWindow->setAsCurrentContext();
-
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "texture")
-                dynamic_pointer_cast<Texture>(obj.second)->update();
-        glFinish();
-        _textureUploadDone = true;
-
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "texture")
-                dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
-
-        _textureUploadWindow->releaseContext();
-        STimer::timer >> "textureUpload";
-    }));
     
+    STimer::timer << "cameras";
     if (needsUpdate)
     {
         _redoUpdate = _redoUpdate ? false : true;
         // Update the cameras
-        STimer::timer << "cameras";
         for (auto& obj : _objects)
             if (obj.second->getType() == "camera")
                 isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-        STimer::timer >> "cameras";
     }
     else
         _redoUpdate = false;
+    STimer::timer >> "cameras";
 
     // Update the guis
     STimer::timer << "guis";
@@ -394,13 +386,38 @@ void Scene::run()
         _mainWindow->releaseContext();
         STimer::timer >> "sceneLoop";
     }
+}
 
-    // Cleanup every object
-    _mainWindow->setAsCurrentContext();
-    lock_guard<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
-    _objects.clear();
-    _ghostObjects.clear();
-    _mainWindow->releaseContext();
+/*************/
+void Scene::textureUploadRun()
+{
+    while (_isRunning)
+    {
+        if (!_started)
+        {
+            this_thread::sleep_for(chrono::milliseconds(50));
+            continue;
+        }
+
+        STimer::timer << "textureUpload";
+        _textureUploadWindow->setAsCurrentContext();
+
+        unique_lock<mutex> lock(_textureUploadSetupMutex);
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->update();
+        _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        lock.unlock();
+
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
+
+        _textureUploadWindow->releaseContext();
+        STimer::timer >> "textureUpload";
+
+        this_thread::yield();
+    }
 }
 
 /*************/
@@ -425,8 +442,8 @@ void Scene::sendMessage(const string message, const Values value)
 /*************/
 void Scene::waitTextureUpload()
 {
-    while (!_textureUploadDone)
-        this_thread::sleep_for(chrono::microseconds(10));
+    unique_lock<mutex> lock(_textureUploadSetupMutex);
+    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/

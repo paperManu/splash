@@ -109,11 +109,6 @@ class Scene : public RootObject
         void render();
 
         /**
-         * Main loop for the scene
-         */
-        void run();
-
-        /**
          * Set the Scene as the master one
          */
         void setAsMaster() {_isMaster = true;}
@@ -159,8 +154,11 @@ class Scene : public RootObject
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
         // Texture upload context
+        std::thread _textureUploadLoop;
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
+        std::mutex _textureUploadSetupMutex;
+        GLsync _textureUploadFence;
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
@@ -206,6 +204,16 @@ class Scene : public RootObject
          * Callback for GL errors and warnings
          */
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+
+        /**
+         * Main loop for the scene
+         */
+        void run();
+
+        /**
+         * Texture update loop
+         */
+        void textureUploadRun();
 
         /**
          * Register new functors to modify attributes
