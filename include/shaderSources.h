@@ -134,8 +134,8 @@ struct ShaderSources
             }
 
             // Black level
-            if (blackLevel > 0.0 && blackLevel < 1.0)
-                color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
+            //if (blackLevel > 0.0 && blackLevel < 1.0)
+            //    color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
             
             // If no blending map has been computed
             if (_texBlendingMap == 0)
@@ -165,30 +165,30 @@ struct ShaderSources
 
                 if (blendFactor == 0)
                     blendFactorFloat = 0.05; // The non-visible part is kinda hidden
-                else if (blendWidth > 0.0 && smoothBlend == true)
-                {
-                    vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
-                    float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
-                    float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
-                    float dist = min(1.0, min(distX, distY) / blendWidth);
-                    dist = smoothstep(0.0, 1.0, dist);
-                    blendFactorFloat = 256.0 * dist / float(blendFactor);
-                }
-                else
-                {
+                //else if (blendWidth > 0.0 && smoothBlend == true)
+                //{
+                //    vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
+                //    float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
+                //    float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
+                //    float dist = min(1.0, min(distX, distY) / blendWidth);
+                //    dist = smoothstep(0.0, 1.0, dist);
+                //    blendFactorFloat = 256.0 * dist / float(blendFactor);
+                //}
+                //else
+                //{
                     blendFactorFloat = 1.0 / float(camNbr);
-                }
+                //}
                 fragColor.rgb = color.rgb * min(1.0, blendFactorFloat);
                 fragColor.a = 1.0;
             }
 
             // Brightness correction
-            if (brightness != 1.0)
-                fragColor.rgb = fragColor.rgb * brightness;
+            //if (brightness != 1.0)
+            //    fragColor.rgb = fragColor.rgb * brightness;
 
             // Finally, correct for the incidence
             // angleToNormal can't be 0.0, it would have been discarded
-            fragColor.rgb /= abs(angleToNormal);
+            //fragColor.rgb /= abs(angleToNormal);
         }
     )"};
 
@@ -319,6 +319,7 @@ struct ShaderSources
             vec2 texcoord;
             vec3 normal;
             vec3 bcoord;
+            vec4 position;
         } vertexOut;
 
         void main()
@@ -328,6 +329,7 @@ struct ShaderSources
             vertexOut.texcoord = vertexIn[0].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[0].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
+            vertexOut.position = v;
             EmitVertex();
 
             v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.0);
@@ -335,6 +337,7 @@ struct ShaderSources
             vertexOut.texcoord = vertexIn[1].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[1].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
+            vertexOut.position = v;
             EmitVertex();
 
             v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.0);
@@ -342,6 +345,7 @@ struct ShaderSources
             vertexOut.texcoord = vertexIn[2].texcoord;
             vertexOut.normal = (_normalMatrix * vec4(vertexIn[2].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
+            vertexOut.position = v;
             EmitVertex();
 
             EndPrimitive();
@@ -358,15 +362,23 @@ struct ShaderSources
             vec2 texcoord;
             vec3 normal;
             vec3 bcoord;
+            vec4 position;
         } vertexIn;
 
         uniform int _sideness = 0;
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
         void main(void)
         {
+            vec4 position = vertexIn.position;
             vec3 normal = vertexIn.normal;
-            if ((dot(normal, vec3(0.0, 0.0, 1.0)) <= 0.0 && _sideness == 1) || (dot(normal, vec3(0.0, 0.0, 1.0)) >= 0.0 && _sideness == 2))
+
+            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
+            float angleToNormal = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
+
+            if ((angleToNormal <= 0.0 && _sideness == 1) || (angleToNormal >= 0.0 && _sideness == 2))
                 discard;
 
             vec3 b = vertexIn.bcoord;
