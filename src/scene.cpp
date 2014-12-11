@@ -660,7 +660,7 @@ void Scene::initBlendingMap()
     _objects["blendingMap"] = _blendingMap;
 
     //glfwMakeContextCurrent(_mainWindow->get());
-    _blendingTexture = make_shared<Texture>();
+    _blendingTexture = make_shared<Texture>(_self);
     _blendingTexture->disableFiltering();
     *_blendingTexture = _blendingMap;
     //glfwMakeContextCurrent(NULL);

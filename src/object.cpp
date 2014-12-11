@@ -57,6 +57,9 @@ void Object::activate()
     _mutex.lock(); 
     _shader->setAttribute("fill", {_fill});
 
+    for (auto& m : _blendMaps)
+        m->update();
+
     if (_blendMaps.size() != 0)
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
@@ -97,6 +100,9 @@ dmat4 Object::computeModelMatrix() const
 /*************/
 void Object::deactivate()
 {
+    for (auto& m : _blendMaps)
+        m->flushPbo();
+
     for (auto& t : _textures)
     {
         //t->flushPbo();
