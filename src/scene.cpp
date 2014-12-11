@@ -231,6 +231,10 @@ void Scene::render()
     }
     
     STimer::timer << "cameras";
+    // We wait for textures to be uploaded, and we prevent any upload while rendering
+    // cameras to prevent tearing
+    unique_lock<mutex> lock(_textureUploadSetupMutex);
+    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
     if (needsUpdate)
     {
         _redoUpdate = _redoUpdate ? false : true;
@@ -241,6 +245,7 @@ void Scene::render()
     }
     else
         _redoUpdate = false;
+    lock.unlock();
     STimer::timer >> "cameras";
 
     // Update the guis
@@ -416,7 +421,8 @@ void Scene::textureUploadRun()
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
 
-        this_thread::yield();
+        //this_thread::yield();
+        this_thread::sleep_for(chrono::milliseconds(1));
     }
 }
 
