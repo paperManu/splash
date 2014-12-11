@@ -664,10 +664,11 @@ class RootObject : public BaseObject
 
         /**
          * Register an object which was created elsewhere
+         * If an object was the same name exists, it is replaced
          */
         void registerObject(BaseObjectPtr object)
         {
-            if (object.get() != nullptr && _objects.find(object->getName()) == _objects.end())
+            if (object.get() != nullptr)
                 _objects[object->getName()] = object;
         }
 

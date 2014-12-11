@@ -134,8 +134,8 @@ struct ShaderSources
             }
 
             // Black level
-            //if (blackLevel > 0.0 && blackLevel < 1.0)
-            //    color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
+            if (blackLevel > 0.0 && blackLevel < 1.0)
+                color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
             
             // If no blending map has been computed
             if (_texBlendingMap == 0)
@@ -165,30 +165,31 @@ struct ShaderSources
 
                 if (blendFactor == 0)
                     blendFactorFloat = 0.05; // The non-visible part is kinda hidden
-                //else if (blendWidth > 0.0 && smoothBlend == true)
-                //{
-                //    vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
-                //    float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
-                //    float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
-                //    float dist = min(1.0, min(distX, distY) / blendWidth);
-                //    dist = smoothstep(0.0, 1.0, dist);
-                //    blendFactorFloat = 256.0 * dist / float(blendFactor);
-                //}
-                //else
-                //{
+                else if (blendWidth > 0.0 && smoothBlend == true)
+                {
+                    vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
+                    float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
+                    float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
+                    float dist = min(1.0, min(distX, distY) / blendWidth);
+                    dist = smoothstep(0.0, 1.0, dist);
+                    blendFactorFloat = 256.0 * dist / float(blendFactor);
+                }
+                else
+                {
                     blendFactorFloat = 1.0 / float(camNbr);
-                //}
+                }
                 fragColor.rgb = color.rgb * min(1.0, blendFactorFloat);
                 fragColor.a = 1.0;
             }
 
             // Brightness correction
-            //if (brightness != 1.0)
-            //    fragColor.rgb = fragColor.rgb * brightness;
+            if (brightness != 1.0)
+                fragColor.rgb = fragColor.rgb * brightness;
 
             // Finally, correct for the incidence
             // angleToNormal can't be 0.0, it would have been discarded
-            //fragColor.rgb /= abs(angleToNormal);
+            // TODO: this has to also use shift values to be meaningful
+            fragColor.rgb /= abs(angleToNormal);
         }
     )"};
 
