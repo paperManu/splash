@@ -421,8 +421,8 @@ void Scene::textureUploadRun()
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
 
-        //this_thread::yield();
-        this_thread::sleep_for(chrono::milliseconds(1));
+        this_thread::yield();
+        //this_thread::sleep_for(chrono::milliseconds(1));
     }
 }
 
