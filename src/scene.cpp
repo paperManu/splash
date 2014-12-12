@@ -552,6 +552,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     }
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
     GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
     if (!window)
@@ -607,6 +608,7 @@ void Scene::init(std::string name)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
 

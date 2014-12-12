@@ -835,8 +835,8 @@ vec2 Camera::colorBalanceFromTemperature(float temp)
     vec2 colorBalance;
     colorBalance.x = c.r / c.g;
     colorBalance.y = c.b / c.g;
+
     return colorBalance;
-  
 }
 
 /*************/
@@ -1104,6 +1104,7 @@ void Camera::registerAttributes()
         if (args.size() < 1)
             return false;
         _colorTemperature = args[0].asFloat() * 100.f;
+        _colorTemperature = std::max(1000.f, std::min(15000.f, _colorTemperature));
         return true;
     }, [&]() {
         return Values({_colorTemperature / 100.f});
