@@ -143,6 +143,8 @@ class Window : public BaseObject
         bool _fullscreen {false};
         bool _withDecoration {true};
         int _windowRect[4];
+        bool _srgb {true};
+        float _gammaCorrection {2.2f};
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
 

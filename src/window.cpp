@@ -170,7 +170,8 @@ bool Window::render()
 {
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    glEnable(GL_FRAMEBUFFER_SRGB);
+    if (_srgb)
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
@@ -184,6 +185,7 @@ bool Window::render()
     glClear(GL_COLOR_BUFFER_BIT);
 
     _screen->getShader()->setAttribute("layout", _layout);
+    _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
     _screen->activate();
     //_screen->setViewProjectionMatrix(_viewProjectionMatrix, glm::dmat4(1.f));
     _screen->draw();
@@ -210,7 +212,8 @@ bool Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 #endif
 
-    glDisable(GL_FRAMEBUFFER_SRGB);
+    if (_srgb)
+        glDisable(GL_FRAMEBUFFER_SRGB);
 
     _window->releaseContext();
 
@@ -436,6 +439,27 @@ void Window::registerAttributes()
         return true;
     }, [&]() {
         return Values({(int)_withDecoration});
+    });
+
+    _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+        if (args[0].asInt() != 0)
+            _srgb = true;
+        else
+            _srgb = false;
+        return true;
+    }, [&]() {
+        return Values({_srgb});
+    });
+
+    _attribFunctions["gamma"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+        _gammaCorrection = args[0].asFloat();
+        return true;
+    }, [&]() {
+        return Values({_gammaCorrection});
     });
 
     // Attribute to configure the placement of the various texture input

@@ -425,6 +425,7 @@ struct ShaderSources
         uniform sampler2D _tex3;
         uniform int _textureNbr = 0;
         uniform ivec4 _layout = ivec4(0, 1, 2, 3);
+        uniform vec2 _gamma = vec2(1.0, 2.2);
         in vec2 texCoord;
         out vec4 fragColor;
 
@@ -452,19 +453,22 @@ struct ShaderSources
             if (_textureNbr > 1 && texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
-                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+                fragColor.rgb = mix(color.rgb, fragColor.rgb, 1.0 - color.a);
             }
             if (_textureNbr > 2 && texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
-                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+                fragColor.rgb = mix(color.rgb, fragColor.rgb, 1.0 - color.a);
             }
             if (_textureNbr > 3 && texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
-                fragColor.rgb = fragColor.rgb * (1.0 - color.a) + color.rgb * color.a;
+                fragColor.rgb = mix(color.rgb, fragColor.rgb, 1.0 - color.a);
             }
             fragColor.a = 1.0;
+
+            if (_gamma.x != 1.0)
+                fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));
         }
     )"};
 
