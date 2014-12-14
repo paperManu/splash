@@ -421,8 +421,8 @@ void Scene::textureUploadRun()
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
 
-        this_thread::yield();
-        //this_thread::sleep_for(chrono::milliseconds(1));
+        int elapsed = STimer::timer.getDuration("textureUpload");
+        this_thread::sleep_for(chrono::microseconds(2000 - elapsed));
     }
 }
 
