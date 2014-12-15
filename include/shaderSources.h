@@ -453,17 +453,17 @@ struct ShaderSources
             if (_textureNbr > 1 && texCoord.x > float(_layout[1]) / frames && texCoord.x < (float(_layout[1]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(color.rgb, fragColor.rgb, 1.0 - color.a);
+                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
             }
             if (_textureNbr > 2 && texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(color.rgb, fragColor.rgb, 1.0 - color.a);
+                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
             }
             if (_textureNbr > 3 && texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
-                fragColor.rgb = mix(color.rgb, fragColor.rgb, 1.0 - color.a);
+                fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
             }
             fragColor.a = 1.0;
 

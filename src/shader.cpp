@@ -542,6 +542,10 @@ void Shader::registerAttributes()
         for (int i = 1; i < args.size(); ++i)
             uniformArgs.push_back(args[i]);
 
+        // Check if the values changed from previous use
+        if (_uniforms.find(uniformName) != _uniforms.end() && Value(uniformArgs) == Value(_uniforms[uniformName].first))
+            return true;
+
         _uniforms[uniformName].first = uniformArgs;
         _uniformsToUpdate.push_back(uniformName);
 

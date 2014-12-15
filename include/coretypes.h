@@ -308,6 +308,27 @@ struct Value
             return *this;
         }
 
+        bool operator==(Value v)
+        {
+            if (_type != v._type)
+                return false;
+            else if (_type == Type::i)
+                return _i == v._i;
+            else if (_type == Type::f)
+                return _f == v._f;
+            else if (_type == Type::s)
+                return _s == v._s;
+            else if (_type == Type::v)
+            {
+                if (_v.size() != v._v.size())
+                    return false;
+                bool isEqual = true;
+                for (int i = 0; i < _v.size(); ++i)
+                    isEqual &= (_v[i] == v._v[i]);
+                return isEqual;
+            }
+        }
+
         int asInt()
         {
             if (_type == Type::i)
