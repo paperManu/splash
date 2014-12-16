@@ -57,7 +57,7 @@ Window::Window(RootObjectWeakPtr root)
     // Create the render FBO
     glGetError();
     glGenFramebuffers(1, &_renderFbo);
-    setupFBO();
+    setupRenderFBO();
 
     glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -68,19 +68,7 @@ Window::Window(RootObjectWeakPtr root)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // And the read framebuffer
-    _window->setAsCurrentContext();
-    glGetError();
-    glGenFramebuffers(1, &_readFbo);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, _readFbo);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
-    _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
-    else
-        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    _window->releaseContext();
+    setupReadFBO();
 }
 
 /*************/
@@ -205,7 +193,7 @@ bool Window::linkTo(BaseObjectPtr obj)
 bool Window::render()
 {
     // Update the FBO configuration if needed
-    setupFBO();
+    setupRenderFBO();
 
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
@@ -266,7 +254,7 @@ bool Window::render()
 }
 
 /*************/
-void Window::setupFBO()
+void Window::setupRenderFBO()
 {
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
     glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
@@ -303,6 +291,27 @@ void Window::setupFBO()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+/*************/
+void Window::setupReadFBO()
+{
+    _window->setAsCurrentContext();
+    glGetError();
+    if (_readFbo != 0)
+        glDeleteFramebuffers(1, &_readFbo);
+
+    glGenFramebuffers(1, &_readFbo);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, _readFbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
+    else
+        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    _window->releaseContext();
 }
 
 /*************/
@@ -359,6 +368,7 @@ bool Window::switchFullscreen(int screenId)
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
+    setupReadFBO();
 
     setEventsCallbacks();
 
@@ -483,7 +493,7 @@ void Window::setWindowDecoration(bool hasDecoration)
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
-    setupFBO();
+    setupRenderFBO();
 
     setEventsCallbacks();
 
@@ -507,7 +517,7 @@ void Window::updateWindowShape()
     glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
     glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
 
-    setupFBO();
+    setupRenderFBO();
 }
 
 /*************/

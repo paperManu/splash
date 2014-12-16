@@ -175,9 +175,10 @@ GLM
         static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
 
         /**
-         * Set FBO up
+         * Set FBOs up
          */
-        void setupFBO();
+        void setupRenderFBO();
+        void setupReadFBO();
 
         /**
          * Register new functors to modify attributes
