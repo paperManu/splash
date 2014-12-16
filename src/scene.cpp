@@ -68,13 +68,7 @@ BaseObjectPtr Scene::add(string type, string name)
     unique_lock<mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
-    // First, the objects containing a context
-    if (type == string("window"))
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(getNewSharedWindow(name)));
-        obj->setAttribute("swapInterval", {_swapInterval});
-    }
-    else if (type == string("gui"))
+    if (type == string("gui"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
     else
     {
@@ -82,7 +76,12 @@ BaseObjectPtr Scene::add(string type, string name)
         if(!_mainWindow->setAsCurrentContext())
     	    SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-        if (type == string("camera"))
+        if (type == string("window"))
+        {
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
+            obj->setAttribute("swapInterval", {_swapInterval});
+        }
+        else if (type == string("camera"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
         else if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
@@ -258,6 +257,13 @@ void Scene::render()
     // Texture upload should be done now
     SThread::pool.waitThreads(threadIds);
 
+    // Update the windows
+    STimer::timer << "windows";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    STimer::timer >> "windows";
+
     // Swap all buffers at once
     STimer::timer << "swap";
     for (auto& obj : _objects)
@@ -270,13 +276,6 @@ void Scene::render()
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
     STimer::timer >> "swap";
-
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    STimer::timer >> "windows";
 
     // Update the user events
     glfwPollEvents();

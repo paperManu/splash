@@ -44,7 +44,7 @@ class Window : public BaseObject
         /**
          * Constructor
          */
-        Window(GlWindowPtr w);
+        Window(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -122,7 +122,9 @@ class Window : public BaseObject
         bool render();
 
         /**
-         * Set the window to fullscreen
+         * Set the window to fullscreenGLM
+GLM
+
          */
         bool switchFullscreen(int screenId = -1);
 
@@ -148,6 +150,12 @@ class Window : public BaseObject
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
 
+        // Offscreen rendering related objects
+        GLuint _renderFbo {0};
+        GLuint _readFbo {0};
+        TexturePtr _depthTexture {nullptr};
+        TexturePtr _colorTexture {nullptr};
+
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;
@@ -165,6 +173,11 @@ class Window : public BaseObject
         static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
         static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
+
+        /**
+         * Set FBO up
+         */
+        void setupFBO();
 
         /**
          * Register new functors to modify attributes

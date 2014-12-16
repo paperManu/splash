@@ -73,6 +73,11 @@ class Scene : public RootObject
         Json::Value getConfigurationAsJson();
 
         /**
+         * Get a glfw window sharing the same context as _mainWindow
+         */
+        GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
+
+        /**
          * Get the status of the scene, return true if all is well
          */
         bool getStatus() const {return _status;}
@@ -174,11 +179,6 @@ class Scene : public RootObject
         bool _redoUpdate {false}; // Due to PBO usage for texture, we need to update the next frame whatever happens
         bool _doComputeBlending {false};
         bool _doSaveNow {false};
-
-        /**
-         * Get a glfw window sharing the same context as _mainWindow
-         */
-        GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
 
         /**
          * Set up the context and everything

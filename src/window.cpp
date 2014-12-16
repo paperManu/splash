@@ -6,6 +6,7 @@
 #include "image.h"
 #include "log.h"
 #include "object.h"
+#include "scene.h"
 #include "shader.h"
 #include "texture.h"
 #include "timer.h"
@@ -26,10 +27,13 @@ pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 
 /*************/
-Window::Window(GlWindowPtr w)
+Window::Window(RootObjectWeakPtr root)
+       : BaseObject(root)
 {
     _type = "window";
 
+    ScenePtr scene = dynamic_pointer_cast<Scene>(root.lock());
+    GlWindowPtr w = scene->getNewSharedWindow();
     if (w.get() == nullptr)
         return;
 
@@ -49,12 +53,44 @@ Window::Window(GlWindowPtr w)
     // Get the default window size and position
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
     glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+
+    // Create the render FBO
+    glGetError();
+    glGenFramebuffers(1, &_renderFbo);
+    setupFBO();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
+    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
+    else
+        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // And the read framebuffer
+    _window->setAsCurrentContext();
+    glGetError();
+    glGenFramebuffers(1, &_readFbo);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, _readFbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+    _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
+    else
+        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    _window->releaseContext();
 }
 
 /*************/
 Window::~Window()
 {
+#ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
+#endif
+
+    glDeleteFramebuffers(1, &_renderFbo);
 }
 
 /*************/
@@ -168,10 +204,8 @@ bool Window::linkTo(BaseObjectPtr obj)
 /*************/
 bool Window::render()
 {
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    if (_srgb)
-        glEnable(GL_FRAMEBUFFER_SRGB);
+    // Update the FBO configuration if needed
+    setupFBO();
 
     int w, h;
     glfwGetWindowSize(_window->get(), &w, &h);
@@ -180,7 +214,15 @@ bool Window::render()
 #ifdef DEBUG
     glGetError();
 #endif
-    glDrawBuffer(GL_BACK);
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, fboBuffers);
+    glEnable(GL_DEPTH_TEST);
+
+    if (_srgb)
+        glEnable(GL_FRAMEBUFFER_SRGB);
+
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -212,10 +254,9 @@ bool Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 #endif
 
-    if (_srgb)
-        glDisable(GL_FRAMEBUFFER_SRGB);
-
-    _window->releaseContext();
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_FRAMEBUFFER_SRGB);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
 #ifdef DEBUG
     return error != 0 ? true : false;
@@ -225,10 +266,58 @@ bool Window::render()
 }
 
 /*************/
+void Window::setupFBO()
+{
+    glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
+    glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
+
+    if (!_depthTexture)
+    {
+        _depthTexture = make_shared<Texture>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+    }
+    else
+    {
+        _depthTexture->setAttribute("resizable", Values({1}));
+        _depthTexture->resize(_windowRect[2], _windowRect[3]);
+        _depthTexture->setAttribute("resizable", Values({0}));
+    }
+
+    if (!_colorTexture)
+    {
+        _colorTexture = make_shared<Texture>();
+        _colorTexture->disableFiltering();
+        _colorTexture->reset(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, _windowRect[2], _windowRect[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
+    }
+    else
+    {
+        _colorTexture->setAttribute("resizable", Values({1}));
+        _colorTexture->resize(_windowRect[2], _windowRect[3]);
+        _colorTexture->setAttribute("resizable", Values({0}));
+    }
+
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+/*************/
 void Window::swapBuffers()
 {
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
+    glDrawBuffer(GL_BACK);
+    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
+                      0, 0, _windowRect[2], _windowRect[3],
+                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
     glfwSwapBuffers(_window->get());
     _window->releaseContext();
 }
@@ -394,6 +483,7 @@ void Window::setWindowDecoration(bool hasDecoration)
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
+    setupFBO();
 
     setEventsCallbacks();
 
@@ -416,6 +506,8 @@ void Window::updateWindowShape()
 {
     glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
     glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
+
+    setupFBO();
 }
 
 /*************/

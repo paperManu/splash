@@ -85,6 +85,8 @@ Camera::~Camera()
 #ifdef DEBUG
     SLog::log<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
+
+    glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
