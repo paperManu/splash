@@ -52,14 +52,14 @@ void Camera::init()
 
     setOutputNbr(1);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
     else
         SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
@@ -652,7 +652,7 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
     {
@@ -682,7 +682,7 @@ void Camera::setOutputNbr(int nbr)
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
 /*************/
