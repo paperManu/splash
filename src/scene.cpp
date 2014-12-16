@@ -254,16 +254,6 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
     STimer::timer >> "guis";
 
-    // Texture upload should be done now
-    SThread::pool.waitThreads(threadIds);
-
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    STimer::timer >> "windows";
-
     // Swap all buffers at once
     STimer::timer << "swap";
     for (auto& obj : _objects)
@@ -276,6 +266,13 @@ void Scene::render()
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
     STimer::timer >> "swap";
+
+    // Update the windows
+    STimer::timer << "windows";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    STimer::timer >> "windows";
 
     // Update the user events
     glfwPollEvents();

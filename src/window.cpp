@@ -221,6 +221,8 @@ bool Window::render()
     _screen->draw();
     _screen->deactivate();
 
+    _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
     // Resize the input textures accordingly to the window size.
     // This goes upstream to the cameras and gui
     // Textures are resized to the number of "frame" there are, according to the layout
@@ -322,9 +324,10 @@ void Window::swapBuffers()
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
     glDrawBuffer(GL_BACK);
+    glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
-                      GL_COLOR_BUFFER_BIT, GL_LINEAR);
+                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     glfwSwapBuffers(_window->get());

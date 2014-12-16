@@ -155,6 +155,7 @@ GLM
         GLuint _readFbo {0};
         TexturePtr _depthTexture {nullptr};
         TexturePtr _colorTexture {nullptr};
+        GLsync _renderFence;
 
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;
