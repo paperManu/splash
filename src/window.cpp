@@ -497,6 +497,7 @@ void Window::setWindowDecoration(bool hasDecoration)
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
     setupRenderFBO();
+    setupReadFBO();
 
     setEventsCallbacks();
 
@@ -519,8 +520,6 @@ void Window::updateWindowShape()
 {
     glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
     glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
-
-    setupRenderFBO();
 }
 
 /*************/
