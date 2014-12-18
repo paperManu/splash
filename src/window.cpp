@@ -143,8 +143,12 @@ bool Window::linkTo(BaseObjectPtr obj)
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         TexturePtr tex = make_shared<Texture>();
+        tex->setName(getName() + "_" + obj->getName() + "_tex");
         if (tex->linkTo(obj))
+        {
+            _root.lock()->registerObject(tex);
             return linkTo(tex);
+        }
         else
             return false;
     }
