@@ -190,7 +190,7 @@ struct ShaderSources
             // Finally, correct for the incidence
             // angleToNormal can't be 0.0, it would have been discarded
             // TODO: this has to also use shift values to be meaningful
-            fragColor.rgb /= abs(angleToNormal);
+            fragColor.rgb /= cos(abs(angleToNormal));
         }
     )"};
 
