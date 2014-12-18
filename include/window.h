@@ -76,6 +76,12 @@ class Window : public BaseObject
                 _screen = w._screen;
                 _viewProjectionMatrix = w._viewProjectionMatrix;
                 _inTextures = w._inTextures;
+
+                _renderFbo = w._renderFbo;
+                _readFbo = w._readFbo;
+                _renderFence = w._renderFence;
+                _depthTexture = w._depthTexture;
+                _colorTexture = w._colorTexture;
             }
             return *this;
         }
@@ -122,9 +128,7 @@ class Window : public BaseObject
         bool render();
 
         /**
-         * Set the window to fullscreenGLM
-GLM
-
+         * Set the window to fullscreen
          */
         bool switchFullscreen(int screenId = -1);
 

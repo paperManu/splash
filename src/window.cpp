@@ -79,6 +79,7 @@ Window::~Window()
 #endif
 
     glDeleteFramebuffers(1, &_renderFbo);
+    glDeleteFramebuffers(1, &_readFbo);
 }
 
 /*************/
@@ -225,6 +226,7 @@ bool Window::render()
     _screen->draw();
     _screen->deactivate();
 
+    glDeleteSync(_renderFence);
     _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
     // Resize the input textures accordingly to the window size.
