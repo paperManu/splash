@@ -548,7 +548,10 @@ void Window::registerAttributes()
         updateWindowShape();
         return true;
     }, [&]() {
-        return Values({(int)_withDecoration});
+        if (_screenId != -1)
+            return Values();
+        else
+            return Values({(int)_withDecoration});
     });
 
     _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
@@ -590,7 +593,10 @@ void Window::registerAttributes()
         updateWindowShape();
         return true;
     }, [&]() {
-        return Values({_windowRect[0], _windowRect[1]});
+        if (_screenId != -1)
+            return Values();
+        else
+            return Values({_windowRect[0], _windowRect[1]});
     });
 
     _attribFunctions["size"] = AttributeFunctor([&](Values args) {
@@ -601,7 +607,10 @@ void Window::registerAttributes()
         updateWindowShape();
         return true;
     }, [&]() {
-        return Values({_windowRect[2], _windowRect[3]});
+        if (_screenId != -1)
+            return Values();
+        else
+            return Values({_windowRect[2], _windowRect[3]});
     });
 
     _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {

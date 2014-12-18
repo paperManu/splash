@@ -386,7 +386,7 @@ void Gui::initGLV(int width, int height)
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.99 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.01;
+        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
         worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
         upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
