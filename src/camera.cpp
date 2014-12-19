@@ -1,6 +1,6 @@
 #include "camera.h"
 
-#include "image_shmdata.h"
+#include "image.h"
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
@@ -124,8 +124,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
     else
         dims[0] = dims[1] * width / height;
 
-    bool writeToShm = _writeToShm;
-    _writeToShm = false;
     setOutputSize(dims[0] / 4, dims[1] / 4);
 
     // Render with the current texture, with no marker or frame
@@ -157,7 +155,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 #endif
 
-    _writeToShm = writeToShm;
     setOutputSize(width, height);
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
@@ -534,38 +531,6 @@ bool Camera::render()
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
-#endif
-
-    // Output to a shared memory if set so
-    if (_writeToShm)
-    {
-        // Only the first output texture can be sent currently
-        if (_outShm.get() == nullptr)
-            _outShm = make_shared<Image_Shmdata>();
-        
-        // First, we launch the copy to the host
-        ImageBuf img(_outTextures[0]->getSpec());
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
-        GLubyte* gpuPixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-        if (gpuPixels != NULL)
-        {
-            memcpy((void*)img.localpixels(), gpuPixels, _width * _height * 4);
-            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-        }
-        _pboReadIndex = (_pboReadIndex + 1) % 2;
-
-        // Then we launch the copy from the FBO to the PBO, which will be finished by next frame
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
-        glReadPixels(0, 0, _width, _height, GL_RGBA, GL_UNSIGNED_SHORT, 0);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-        _outShm->write(img, string("/tmp/splash_") + _name);
-    }
-
-#ifdef DEBUG
     return error != 0 ? true : false;
 #else
     return false;
@@ -704,18 +669,6 @@ void Camera::setOutputSize(int width, int height)
 
     _width = width;
     _height = height;
-
-    // PBOs related things
-    if (_writeToShm)
-    {
-        glDeleteBuffers(2, _pbos);
-        glGenBuffers(2, _pbos);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[0]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[1]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    }
 }
 
 /*************/
@@ -1170,18 +1123,6 @@ void Camera::registerAttributes()
     _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](Values args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
-    });
-
-    _attribFunctions["shared"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 1)
-            return false;
-        if (args[0].asInt() > 0)
-            _writeToShm = true;
-        else
-            _writeToShm = false;
-        return true;
-    }, [&]() {
-        return Values({_writeToShm});
     });
 
     _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {

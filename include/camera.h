@@ -79,12 +79,6 @@ class Camera : public BaseObject
                 _fbo = c._fbo;
                 _outTextures = c._outTextures;
                 _objects = c._objects;
-                _outShm = c._outShm;
-
-                _writeToShm = c._writeToShm;
-                _pbos[0] = c._pbos[0];
-                _pbos[1] = c._pbos[1];
-                _pboReadIndex = c._pboReadIndex;
 
                 _drawFrame = c._drawFrame;
                 _wireframe = c._wireframe;
@@ -189,12 +183,6 @@ class Camera : public BaseObject
         TexturePtr _depthTexture;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
-        Image_ShmdataPtr _outShm;
-
-        // Objects for copying to host
-        bool _writeToShm {false};
-        GLuint _pbos[2];
-        int _pboReadIndex {0};
 
         // Rendering parameters
         bool _drawFrame {false};

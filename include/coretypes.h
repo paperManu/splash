@@ -584,6 +584,10 @@ class BaseObject
             return root;
         }
 
+    // Pubic attributes
+    public:
+        bool _savable {true};
+
     protected:
         unsigned long _id;
         std::string _type {"baseobject"};
@@ -690,7 +694,10 @@ class RootObject : public BaseObject
         void registerObject(BaseObjectPtr object)
         {
             if (object.get() != nullptr)
+            {
+                object->_savable = false; // This object was created on the fly. Do not save it
                 _objects[object->getName()] = object;
+            }
         }
 
         /**

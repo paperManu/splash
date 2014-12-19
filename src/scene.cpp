@@ -143,7 +143,8 @@ Json::Value Scene::getConfigurationAsJson()
 
     root[_name] = BaseObject::getConfigurationAsJson();
     for (auto& obj : _objects)
-        root[obj.first] = obj.second->getConfigurationAsJson();
+        if (obj.second->_savable)
+            root[obj.first] = obj.second->getConfigurationAsJson();
 
     return root;
 }
@@ -220,30 +221,15 @@ void Scene::render()
 {
     bool isError {false};
     vector<unsigned int> threadIds;
-
-    // Check if anything needs to be updated
-    bool needsUpdate = _redoUpdate;
-    for (auto& obj : _objects)
-    {
-        needsUpdate |= obj.second->wasUpdated();
-        obj.second->setNotUpdated();
-    }
     
     STimer::timer << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
     unique_lock<mutex> lock(_textureUploadSetupMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-    if (needsUpdate)
-    {
-        _redoUpdate = _redoUpdate ? false : true;
-        // Update the cameras
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    }
-    else
-        _redoUpdate = false;
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
     lock.unlock();
     STimer::timer >> "cameras";
 
@@ -501,6 +487,7 @@ void Scene::computeBlendingMap()
                 pixBuffer[y * w + x] = maxValue;
             }
         swap(*_blendingMap, *buffer);
+        _blendingMap->_savable = false;
         _blendingMap->updateTimestamp();
 
         // Small hack to handle the fact that texture transfer uses PBOs.
