@@ -254,12 +254,8 @@ bool Gui::render()
     if (_isVisible)
     {
         _doNotRender = false;
-        // Redraw the Gui camera, as well as the ghosts cameras if present
-        _glvGlobalView._guiCamera->render();
-        auto scene = _scene.lock();
-        for (auto& obj : scene->_ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->render();
+        // Render the visible camera
+        _glvGlobalView._camera->render();
     }
 
 #ifdef DEBUG
