@@ -57,7 +57,7 @@ void Link::connectTo(const string name)
     try
     {
         // Set the high water mark to a low value for the buffer output
-        int hwm = 100;
+        int hwm = 0;
         _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // Set the high water mark to a low value for the buffer output
