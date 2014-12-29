@@ -157,6 +157,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
     oiio::ImageSpec mapSpec = map->getSpec();
+    vector<unsigned short> camMap(mapSpec.width * mapSpec.height, 0);
     vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
     unsigned short* imageMap = (unsigned short*)map->data();
     
@@ -189,25 +190,57 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
         // We keep the real number of projectors, hidden higher in the shorts
         blendAddition += 4096;
-        imageMap[y * mapSpec.width + x] += blendAddition;
+        camMap[y * mapSpec.width + x] = blendAddition;
+    }
 
-        // Extend to neighbours (kind of reverse to effect of floor())
-        if (x < mapSpec.width - 1 && !isSet[y * mapSpec.width + x + 1])
+    // Fill the holes
+    for (unsigned int y = 0; y < mapSpec.height; ++y)
+    {
+        unsigned short lastFilledPixel = 0;
+        unsigned short nextFilledPixel = 0;
+        unsigned int holeStart = 0;
+        unsigned int holeEnd = 0;
+        bool hole = false;
+
+        for (unsigned int x = 0; x < mapSpec.width; ++x)
         {
-            imageMap[y * mapSpec.width + x + 1] += blendAddition;
-            isSet[y * mapSpec.width + x + 1] = true;
-        }
-        if (y < mapSpec.height - 1 && !isSet[(y + 1) * mapSpec.width + x])
-        {
-            imageMap[(y + 1) * mapSpec.width + x] += blendAddition;
-            isSet[(y + 1) * mapSpec.width + x] = true;
-            if (x < mapSpec.width - 1 && !isSet[(y + 1) * mapSpec.width + x + 1])
+            // If we have not yet found a filled pixel
+            if (isSet[y * mapSpec.width + x] == false && !hole)
+                continue;
+            // If this is the first filled pixel (beginning of a hole)
+            else if (isSet[y * mapSpec.width + x] == true && !hole)
             {
-                imageMap[(y + 1) * mapSpec.width + x + 1] += blendAddition;
-                isSet[(y + 1) * mapSpec.width + x + 1] = true;
+                lastFilledPixel = camMap[y * mapSpec.width + x];
+                holeStart = x;
+                for (unsigned int xx = x + 1; xx < mapSpec.width; ++xx)
+                {
+                    if (isSet[y * mapSpec.width + xx] == true)
+                    {
+                        nextFilledPixel = camMap[y * mapSpec.width + xx];
+                        holeEnd = xx;
+                        hole = true;
+                    }
+                }
+                continue;
             }
+            else if (isSet[y * mapSpec.width + x] == true && hole)
+            {
+                hole = false;
+                continue;
+            }
+            
+            // We have the beginning, the end and the size of the hole
+            unsigned short step = ((int)nextFilledPixel - (int)lastFilledPixel) * (int)(x - holeStart) / (int)(holeEnd - holeStart);
+            unsigned short pixelValue = lastFilledPixel + step;
+            camMap[y * mapSpec.width + x] = pixelValue;
+            isSet[y * mapSpec.width + x] = true;
         }
     }
+
+    // Add this camera's contribution to the blending map
+    for (unsigned int y = 0; y < mapSpec.height; ++y)
+        for (unsigned int x = 0; x < mapSpec.width; ++x)
+            imageMap[y + mapSpec.width * x] += camMap[y + mapSpec.width * x];
 }
 
 

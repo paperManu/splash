@@ -694,7 +694,7 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap = make_shared<Image>();
-    _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
+    _blendingMap->set(_blendingResolution, _blendingResolution, 1, TypeDesc::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
     _blendingTexture = make_shared<Texture>(_self);
@@ -757,6 +757,15 @@ void Scene::registerAttributes()
         string name = args[1].asString();
 
         addGhost(type, name);
+        return true;
+    });
+
+    _attribFunctions["blendingResolution"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        int resolution = args[0].asInt();
+        if (resolution >= 64)
+            _blendingResolution = resolution;
         return true;
     });
 
