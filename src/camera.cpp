@@ -108,6 +108,10 @@ void Camera::computeBlendingMap(ImagePtr& map)
         shaderFill.push_back(fill);
     }
 
+    // We do a "normal" render to ensure everything is correctly set
+    // and that no state change is waiting
+    render();
+
     // Increase the render size for more precision
     int width = _width;
     int height = _height;
