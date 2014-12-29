@@ -228,6 +228,9 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 /*************/
 bool Gui::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);

@@ -179,6 +179,35 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 }
 
 /*************/
+bool Scene::unlink(string first, string second)
+{
+    BaseObjectPtr source(nullptr);
+    BaseObjectPtr sink(nullptr);
+
+    if (_objects.find(first) != _objects.end())
+        source = _objects[first];
+    if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+
+    if (source.get() != nullptr && sink.get() != nullptr)
+        return unlink(source, sink);
+    else
+        return false;
+}
+
+/*************/
+bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
+{
+    unique_lock<mutex> lock(_configureMutex);
+
+    glfwMakeContextCurrent(_mainWindow->get());
+    bool result = first->unlinkFrom(second);
+    glfwMakeContextCurrent(NULL);
+
+    return result;
+}
+
+/*************/
 bool Scene::linkGhost(string first, string second)
 {
     BaseObjectPtr source(nullptr);
@@ -203,6 +232,29 @@ bool Scene::linkGhost(string first, string second)
         return false;
 
     return link(source, sink);
+}
+
+/*************/
+bool Scene::unlinkGhost(string first, string second)
+{
+    BaseObjectPtr source(nullptr);
+    BaseObjectPtr sink(nullptr);
+
+    if (_ghostObjects.find(first) != _ghostObjects.end())
+        source = _ghostObjects[first];
+    else if (_objects.find(first) != _objects.end())
+        source = _objects[first];
+    else
+        return false;
+
+    if (_ghostObjects.find(second) != _ghostObjects.end())
+        sink = _ghostObjects[second];
+    else if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+    else
+        return false;
+
+    return unlink(source, sink);
 }
 
 /*************/
@@ -645,11 +697,9 @@ void Scene::initBlendingMap()
     _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
-    //glfwMakeContextCurrent(_mainWindow->get());
     _blendingTexture = make_shared<Texture>(_self);
     _blendingTexture->disableFiltering();
     *_blendingTexture = _blendingMap;
-    //glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -741,8 +791,7 @@ void Scene::registerAttributes()
             return false;
         string src = args[0].asString();
         string dst = args[1].asString();
-        link(src, dst);
-        return true;
+        return link(src, dst);
     });
 
     _attribFunctions["linkGhost"] = AttributeFunctor([&](Values args) {
@@ -810,6 +859,22 @@ void Scene::registerAttributes()
         _started = false;
         _isRunning = false;
         return true;
+    });
+   
+    _attribFunctions["unlink"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 2)
+            return false;
+        string src = args[0].asString();
+        string dst = args[1].asString();
+        return unlink(src, dst);
+    });
+
+    _attribFunctions["unlinkGhost"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 2)
+            return false;
+        string src = args[0].asString();
+        string dst = args[1].asString();
+        return unlinkGhost(src, dst);
     });
  
     _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {

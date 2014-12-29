@@ -90,12 +90,6 @@ Camera::~Camera()
 }
 
 /*************/
-void Camera::addObject(ObjectPtr& obj)
-{
-    _objects.push_back(obj);
-}
-
-/*************/
 void Camera::computeBlendingMap(ImagePtr& map)
 {
     if (map->getSpec().format != oiio::TypeDesc::UINT16)
@@ -340,14 +334,27 @@ bool Camera::doCalibration()
 /*************/
 bool Camera::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
         ObjectPtr obj3D = dynamic_pointer_cast<Object>(obj);
-        addObject(obj3D);
+        _objects.push_back(obj3D);
         return true;
     }
 
     return false;
+}
+
+/*************/
+bool Camera::unlinkFrom(BaseObjectPtr obj)
+{
+    auto objIterator = find(_objects.begin(), _objects.end(), obj);
+    if (objIterator != _objects.end())
+        _objects.erase(objIterator);
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/

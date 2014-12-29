@@ -111,11 +111,6 @@ class Camera : public BaseObject
         }
 
         /**
-         * Add an object to render
-         */
-        void addObject(ObjectPtr& obj);
-
-        /**
          * Computes the blending map for this camera
          */
         void computeBlendingMap(ImagePtr& map);
@@ -136,9 +131,10 @@ class Camera : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
+        bool unlinkFrom(BaseObjectPtr obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point

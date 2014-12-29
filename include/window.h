@@ -118,9 +118,10 @@ class Window : public BaseObject
         bool isWindow(GLFWwindow* w) const {return (w == _window->get() ? true : false);}
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
+        bool unlinkFrom(BaseObjectPtr obj);
 
         /**
          * Render this window to screen
@@ -133,9 +134,10 @@ class Window : public BaseObject
         bool switchFullscreen(int screenId = -1);
 
         /**
-         * Set a new texture to draw
+         * Set / unset a new texture to draw
          */
         void setTexture(TexturePtr tex);
+        void unsetTexture(TexturePtr tex);
 
         /**
          * Swap the back and front buffers

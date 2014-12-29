@@ -130,6 +130,9 @@ void Object::draw()
 /*************/
 bool Object::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
@@ -184,6 +187,14 @@ float Object::pickVertex(dvec3 p, dvec3& v)
 
     v = closestVertex;
     return distance;
+}
+
+/*************/
+void Object::removeTexture(TexturePtr tex)
+{
+    auto texIterator = find(_textures.begin(), _textures.end(), tex);
+    if (texIterator != _textures.end())
+        _textures.erase(texIterator);
 }
 
 /*************/

@@ -51,6 +51,9 @@ void Geometry::deactivate() const
 /*************/
 bool Geometry::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
         MeshPtr mesh = dynamic_pointer_cast<Mesh>(obj);

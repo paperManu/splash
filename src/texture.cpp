@@ -78,6 +78,9 @@ void Texture::generateMipmap() const
 /*************/
 bool Texture::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         ImagePtr img = dynamic_pointer_cast<Image>(obj);

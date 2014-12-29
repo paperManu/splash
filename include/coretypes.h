@@ -37,6 +37,7 @@
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <ostream>
@@ -476,9 +477,28 @@ class BaseObject
         void setRemoteType(std::string type) {_remoteType = type;}
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj) {return false;}
+        virtual bool linkTo(BaseObjectPtr obj)
+        {
+            if (std::find(_linkedObjects.begin(), _linkedObjects.end(), obj) == _linkedObjects.end())
+            {
+                _linkedObjects.push_back(obj);
+                return true;
+            }
+            return false;
+        }
+
+        virtual bool unlinkFrom(BaseObjectPtr obj)
+        {
+            auto objIterator = std::find(_linkedObjects.begin(), _linkedObjects.end(), obj);
+            if (objIterator != _linkedObjects.end())
+            {
+                _linkedObjects.erase(objIterator);
+                return true;
+            }
+            return false;
+        }
 
         /**
          * Set the specified attribute
@@ -593,7 +613,10 @@ class BaseObject
         std::string _type {"baseobject"};
         std::string _remoteType {""};
         std::string _name {""};
+
         RootObjectWeakPtr _root;
+        std::vector<BaseObjectPtr> _linkedObjects;
+
         std::map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
 

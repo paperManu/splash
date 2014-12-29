@@ -122,6 +122,11 @@ class Object : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Remove a texture from this object
+         */
+        void removeTexture(const TexturePtr texture);
+
+        /**
          * Reset the blending to no blending at all
          */
         void resetBlendingMap();

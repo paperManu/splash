@@ -159,6 +159,9 @@ int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 /*************/
 bool Window::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
@@ -192,6 +195,43 @@ bool Window::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+bool Window::unlinkFrom(BaseObjectPtr obj)
+{
+    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    {
+        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        unsetTexture(tex);
+    }
+    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
+    {
+        // Look for the corresponding texture
+        string texName = getName() + "_" + obj->getName() + "_tex";
+        TexturePtr tex = nullptr;
+        for (auto& inTex : _inTextures)
+            if (inTex->getName() == texName)
+                tex = inTex;
+        if (tex != nullptr)
+        {
+            tex->unlinkFrom(obj);
+            unsetTexture(tex);
+        }
+    }
+    else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
+    {
+        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
+        for (auto& tex : cam->getTextures())
+            unsetTexture(tex);
+    }
+    else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
+    {
+        GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
+        unsetTexture(gui->getTexture());
+    }
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -387,16 +427,22 @@ bool Window::switchFullscreen(int screenId)
 /*************/
 void Window::setTexture(TexturePtr tex)
 {
-    bool isPresent = false;
-    for (auto t : _inTextures)
-        if (tex == t)
-            isPresent = true;
-
-    if (isPresent)
+    if (find(_inTextures.begin(), _inTextures.end(), tex) != _inTextures.end())
         return;
 
     _inTextures.push_back(tex);
     _screen->addTexture(tex);
+}
+
+/*************/
+void Window::unsetTexture(TexturePtr tex)
+{
+    auto texIterator = find(_inTextures.begin(), _inTextures.end(), tex);
+    if (texIterator != _inTextures.end())
+    {
+        _inTextures.erase(texIterator);
+        _screen->removeTexture(tex);
+    }
 }
 
 /*************/

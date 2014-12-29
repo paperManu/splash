@@ -93,15 +93,18 @@ class Scene : public RootObject
         bool isRunning() const {return _isRunning;}
 
         /**
-         * Link an object to another, base on their types
+         * Link / unlink an object to another, base on their types
          */
         bool link(std::string first, std::string second);
         bool link(BaseObjectPtr first, BaseObjectPtr second);
+        bool unlink(std::string first, std::string second);
+        bool unlink(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
-         * Link objects, at least one of them being a ghost
+         * Link / unlink objects, at least one of them being a ghost
          */
         bool linkGhost(std::string first, std::string second);
+        bool unlinkGhost(std::string first, std::string second);
 
         /**
          * Remove an object
