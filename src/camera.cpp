@@ -210,9 +210,14 @@ void Camera::computeBlendingMap(ImagePtr& map)
             // If this is the first filled pixel (beginning of a hole)
             else if (isSet[y * mapSpec.width + x] == true && !hole)
             {
+                // Check if the pixel right next to it is not set too
+                if (x < mapSpec.width - 1 && isSet[y * mapSpec.width + x + 1] == true)
+                    continue;
+
+                // It is indeed a hole: find its end
                 lastFilledPixel = camMap[y * mapSpec.width + x];
                 holeStart = x;
-                for (unsigned int xx = x + 1; xx < mapSpec.width; ++xx)
+                for (unsigned int xx = x + 2; xx < mapSpec.width; ++xx)
                 {
                     if (isSet[y * mapSpec.width + xx] == true)
                     {
@@ -226,6 +231,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
             else if (isSet[y * mapSpec.width + x] == true && hole)
             {
                 hole = false;
+                x -= 1; // Go back one pixel, to detect the next hole
                 continue;
             }
             
