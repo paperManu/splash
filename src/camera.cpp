@@ -420,7 +420,7 @@ Values Camera::pickVertex(float x, float y)
     dvec3 screenPoint(realX, realY, depth);
 
     float distance = numeric_limits<float>::max();
-    dvec3 vertex;
+    dvec4 vertex;
     for (auto& obj : _objects)
     {
         dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
@@ -430,11 +430,34 @@ Values Camera::pickVertex(float x, float y)
         if ((tmpDist = obj->pickVertex(point, closestVertex)) < distance)
         {
             distance = tmpDist;
-            vertex = closestVertex;
+            vertex = obj->getModelMatrix() * dvec4(closestVertex, 1.0);
         }
     }
 
     return Values({vertex.x, vertex.y, vertex.z});
+}
+
+/*************/
+Values Camera::pickFragment(float x, float y)
+{
+    // Convert the normalized coordinates ([0, 1]) to pixel coordinates
+    float realX = x * _width;
+    float realY = y * _height;
+
+    // Get the depth at the given point
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    float depth;
+    glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    if (depth == 1.f)
+        return Values();
+
+    // Unproject the point in world coordinates
+    dvec3 screenPoint(realX, realY, depth);
+    dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), computeProjectionMatrix(), dvec4(0, 0, _width, _height));
+
+    return Values({point.x, point.y, point.z});
 }
 
 /*************/
@@ -991,10 +1014,26 @@ void Camera::registerAttributes()
     _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
-        auto direction = _target - _eye;
-        auto rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
-        auto newDirection = dvec4(direction, 1.0) * rotZ;
+        dvec3 direction = _target - _eye;
+        dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+        dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
+        return true;
+    });
+
+    _attribFunctions["rotateAroundPoint"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 6)
+            return false;
+        dvec3 point(args[3].asFloat(), args[4].asFloat(), args[5].asFloat());
+        dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+        // Rotate the target, then the eye
+        dvec3 direction = point - _target;
+        dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
+        _target = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
+
+        direction = point - _eye;
+        newDirection = dvec4(direction, 1.0) * rotZ;
+        _eye = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
         return true;
     });
 

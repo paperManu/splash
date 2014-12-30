@@ -490,6 +490,7 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
     }
     case Event::MouseUp:
     {
+        _beginDrag = true; // We reset the beginDrag flag
         // Pure precautions
         _previousPointAdded.clear();
         return false;
@@ -508,7 +509,6 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
         else if (g.mouse().middle()) 
         {
             move(g.mouse().dx(), g.mouse().dy());
-            return false;
         }
         else if (g.mouse().right()) 
         {
@@ -518,14 +518,26 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 float dx = g.mouse().dx();
                 float dy = g.mouse().dy();
                 auto scene = _scene.lock();
+
+                // If the user clicked on an object, we set a new target on this object
+                static Values newTarget;
+                if (_beginDrag)
+                    newTarget = _camera->pickFragment(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
+
                 if (_camera != _guiCamera)
                 {
-                    scene->sendMessage("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
+                    if (newTarget.size() == 3)
+                        scene->sendMessage("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, 0, 0, newTarget[0].asFloat(), newTarget[1].asFloat(), newTarget[2].asFloat()});
+                    else
+                        scene->sendMessage("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
                     scene->sendMessage("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
                 }
                 else
                 {
-                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
+                    if (newTarget.size() == 3)
+                        _camera->setAttribute("rotateAroundPoint", {dx / 100.f, 0, 0, newTarget[0].asFloat(), newTarget[1].asFloat(), newTarget[2].asFloat()});
+                    else
+                        _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
                     _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
                 }
             }
@@ -549,9 +561,12 @@ bool GlvGlobalView::onEvent(Event::t e, GLV& g)
                 else
                     _camera->setAttribute("forward", {dy});
             }
-            return false;
         }
-        break;
+        else
+            break;
+
+        _beginDrag = false;
+        return false;
     }
     case Event::MouseWheel:
     {
