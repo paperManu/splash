@@ -138,6 +138,11 @@ class Camera : public BaseObject
         Values pickVertex(float x, float y);
 
         /**
+         * Get the coordinates of the given fragment (world coordinates)
+         */
+        Values pickFragment(float x, float y);
+
+        /**
          * Get the coordinates of the closest calibration point
          */
         Values pickCalibrationPoint(float x, float y);

@@ -108,6 +108,7 @@ class GlvGlobalView : public glv::View3D
         SceneWeakPtr _scene;
 
         bool _camerasHidden {false};
+        bool _beginDrag {true};
 
         // Store the previous camera values
         Values _eye, _target, _up, _fov, _principalPoint;
