@@ -661,6 +661,7 @@ void Scene::init(std::string name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
+    glewInit();
     // Activate GL debug messages
     if (SPLASH_GL_DEBUG)
     {
@@ -709,7 +710,7 @@ void Scene::glfwErrorCallback(int code, const char* msg)
 }
 
 /*************/
-void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, void* userParam)
 {
     string typeString {""};
     switch (type)

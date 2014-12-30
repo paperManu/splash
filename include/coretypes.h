@@ -22,10 +22,6 @@
  * A few, mostly basic, types
  */
 
-#ifndef SPLASH_CORETYPES_H
-#define SPLASH_CORETYPES_H
-
-#define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
 
@@ -46,11 +42,15 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <json/reader.h>
 
 #include "config.h"
 #include "threadpool.h"
+
+#ifndef SPLASH_CORETYPES_H
+#define SPLASH_CORETYPES_H
 
 namespace Splash
 {

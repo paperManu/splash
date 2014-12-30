@@ -31,7 +31,6 @@
 #include <atomic>
 #include <cstddef>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <json/reader.h>
 
 namespace Splash {
@@ -206,7 +205,7 @@ class Scene : public RootObject
         /**
          * Callback for GL errors and warnings
          */
-        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
 
         /**
          * Main loop for the scene

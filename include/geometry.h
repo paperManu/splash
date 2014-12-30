@@ -25,16 +25,12 @@
 #ifndef SPLASH_GEOMETRY_H
 #define SPLASH_GEOMETRY_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
 
 #include <chrono>
 #include <map>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
 namespace Splash {

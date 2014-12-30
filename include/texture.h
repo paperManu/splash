@@ -25,16 +25,12 @@
 #ifndef SPLASH_TEXTURE_H
 #define SPLASH_TEXTURE_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
 
 #include <chrono>
 #include <memory>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 

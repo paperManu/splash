@@ -54,7 +54,7 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
     int verticeNbr = *(intPtr++);
     int polyNbr = *(intPtr++);
 
-    MeshContainer::VertexHandle vertices[verticeNbr];
+    vector<MeshContainer::VertexHandle> vertices(verticeNbr);
 
     floatPtr += 2;
     // First, create the vertices with no UV, normals or faces

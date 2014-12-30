@@ -29,14 +29,13 @@
 #define SPLASH_GLV_FONTSIZE 8.0
 #define SPLASH_GLV_FONTWIDTH 2.0
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
+#include "config.h"
+#include "coretypes.h"
 
 #include <atomic>
 #include <deque>
 #include <functional>
 #include <memory>
-#include <GLFW/glfw3.h>
 #include <glv.h>
 
 #include "camera.h"

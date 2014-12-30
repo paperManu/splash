@@ -79,6 +79,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lOpenImageIO \
+	-ljsoncpp \
 	-lsnappy \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
