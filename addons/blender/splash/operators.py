@@ -181,6 +181,8 @@ class SplashActivateSendMesh(Operator):
         # Mesh sending stuff
         if Splash.sendMesh not in bpy.app.handlers.scene_update_post:
             Splash._startTime = time.clock_gettime(time.CLOCK_REALTIME)
+            Splash._frameTimeMesh = 0
+            Splash._frameTimeTex = 0
 
             context = bpy.context
             if bpy.context.edit_object is not None:
