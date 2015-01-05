@@ -25,9 +25,6 @@
 #ifndef SPLASH_SHADER_H
 #define SPLASH_SHADER_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
 
@@ -36,7 +33,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <GLFW/glfw3.h>
 
 #include "texture.h"
 

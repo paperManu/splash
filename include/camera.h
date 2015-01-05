@@ -25,9 +25,6 @@
 #ifndef SPLASH_CAMERA_H
 #define SPLASH_CAMERA_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
 
@@ -40,7 +37,6 @@
 #include <glm/glm.hpp>
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
-#include <GLFW/glfw3.h>
 
 namespace Splash {
 

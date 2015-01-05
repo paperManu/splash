@@ -31,7 +31,6 @@
 #include <atomic>
 #include <cstddef>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <json/reader.h>
 
 namespace Splash {
