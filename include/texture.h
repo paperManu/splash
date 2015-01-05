@@ -175,7 +175,7 @@ class Texture : public BaseObject
     private:
         mutable std::mutex _mutex;
 
-        GLuint _glTex = {0};
+        GLuint _glTex {0};
         oiio::ImageSpec _spec;
         GLuint _pbos[2];
         int _pboReadIndex {0};

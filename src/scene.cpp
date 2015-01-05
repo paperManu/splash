@@ -34,15 +34,16 @@ Scene::Scene(std::string name)
     _type = "scene";
     _isRunning = true;
     _name = name;
-    _sceneLoop = thread([&]() {
-        init(_name);
-        registerAttributes();
-        run();
-    });
+
+    registerAttributes();
+
+    init(_name);
 
     _textureUploadLoop = thread([&]() {
         textureUploadRun();
     });
+
+    run();
 }
 
 /*************/
@@ -579,15 +580,21 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if HAVE_OSX
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
     }
     else
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+#if HAVE_OSX
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
+#endif
     }
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
-    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    //glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
     GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
@@ -599,12 +606,14 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
+#if not HAVE_OSX
     if (SPLASH_GL_DEBUG)
     {
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
     }
+#endif
 
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
@@ -643,10 +652,13 @@ void Scene::init(std::string name)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
-    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    //glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
+#if HAVE_OSX
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
     GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
 
@@ -661,14 +673,28 @@ void Scene::init(std::string name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
-    glewInit();
+#if HAVE_OSX
+    glewExperimental = GL_TRUE;
+    GLenum glewError = glewInit();
+    if (GLEW_OK != glewError)
+    {
+        string glewStringError = string((const char*)glewGetErrorString(glewError));
+        SLog::log << Log::ERROR << "Scene::" << __FUNCTION__ << " - Error while initializing GLEW: " << glewStringError << Log::endl;
+        _isInitialized = false;
+        return;
+    }
+    else
+#endif
+
     // Activate GL debug messages
+#if not HAVE_OSX
     if (SPLASH_GL_DEBUG)
     {
         glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
     }
+#endif
 
     // Check for swap groups
 #ifdef GLX_NV_swap_group

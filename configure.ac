@@ -39,6 +39,7 @@ fi
 case "$host" in *-darwin* | *-macos10*)
   LIBTOOL="glibtool"
   CXXFLAGS+=" -D__Darwin"
+  CXX="g++"
   LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
   if test -d /opt/local ; then
 	CPPFLAGS+=" -I/usr/local/include -I/opt/local/include"
@@ -73,10 +74,10 @@ if test "x${have_glfw}" = "xfalse" ; then
 fi
 
 # OpenGL
-PKG_CHECK_MODULES([GL], [gl >= 2.3])
-if test "x${have_gl}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing opengl])
-fi
+#PKG_CHECK_MODULES([GL], [gl >= 2.3])
+#if test "x${have_gl}" = "xfalse" ; then
+#	AC_MSG_ERROR([Missing opengl])
+#fi
 
 # GLM
 AC_LANG_PUSH([C++])

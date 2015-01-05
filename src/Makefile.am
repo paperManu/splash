@@ -112,6 +112,11 @@ splash_CXXFLAGS = \
 splash_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
 
+if HAVE_OSX
+splash_LDFLAGS += \
+	/usr/lib/libstdc++.6.dylib
+endif
+
 #*************#
 splash_scene_DEPENDENCIES = libsplash-@LIBSPLASH_API_VERSION@.la
 
@@ -130,6 +135,11 @@ splash_scene_CXXFLAGS = \
 
 splash_scene_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+
+if HAVE_OSX
+splash_scene_LDFLAGS += \
+	/usr/lib/libstdc++.6.dylib
+endif
 
 #*************#
 noinst_HEADERS = \
