@@ -22,6 +22,7 @@ import bmesh
 import struct
 import time
 import os
+import numpy
 from bpy.types import Operator
 from bpy.props import (StringProperty,
                        BoolProperty,
@@ -148,12 +149,13 @@ class Splash:
     
             Splash._texSize[0] = Splash._texture.size[0]
             Splash._texSize[1] = Splash._texture.size[1]
-            Splash._texWriter = Writer(path=Splash._texWriterPath, datatype="video/x-raw-rgb, bpp=(int)24, endianness=(int)4321, depth=(int)24, red_mask=(int)16711680, green_mask=(int)65280, blue_mask=(int)255, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(Splash._texSize[0], Splash._texSize[1]))
+            Splash._texWriter = Writer(path=Splash._texWriterPath, datatype="video/x-raw-rgb, bpp=(int)32, endianness=(int)4321, depth=(int)32, red_mask=(int)-16777216, green_mask=(int)16711680, blue_mask=(int)65280, alpha_mask=(int)255, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(Splash._texSize[0], Splash._texSize[1]))
     
         buffer = bytearray()
-        pixels = [int(pix * 255) for pix in Splash._texture.pixels]
-        for pix in range(Splash._texture.size[0] * Splash._texture.size[1]):
-            buffer += struct.pack("BBB", pixels[pix*4], pixels[pix*4+1], pixels[pix*4+2])
+        pixels = [pix for pix in Splash._texture.pixels]
+        pixels = numpy.array(pixels)
+        pixels = (pixels * 255.0).astype(numpy.ubyte)
+        buffer += pixels.tostring()
         currentTime = time.clock_gettime(time.CLOCK_REALTIME) - Splash._startTime
         Splash._texWriter.push(buffer, floor(currentTime * 1e9))
 
