@@ -176,9 +176,6 @@ class SplashActivateSendMesh(Operator):
 
         Splash._updatePeriodObject = splash.updatePeriodObject
         Splash._updatePeriodEdit = splash.updatePeriodEdit
-        
-        # Texture shmdata writer is also handled here
-        Splash._texWriterPath = splash.outputPathPrefix + "_texture"
 
         # Mesh sending stuff
         if Splash.sendMesh not in bpy.app.handlers.scene_update_post:
@@ -229,9 +226,15 @@ class SplashSendTexture(Operator):
     def execute(self, context):
         scene = bpy.context.scene
         splash = scene.splash
+        
+        Splash._texWriterPath = splash.outputPathPrefix + "_texture"
+
+        textureName = splash.textureName
+        if textureName == "":
+            return {'FINISHED'}
 
         Splash._updatePeriodTexture = splash.updatePeriodTexture
-        Splash._texture = bpy.data.images[splash.textureName]
+        Splash._texture = bpy.data.images[textureName]
 
         Splash.sendTexture(scene)
 

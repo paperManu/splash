@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Splash output",
     "author": "Emmanuel Durand",
-    "version": (0, 1, 0),
+    "version": (0, 1, 9),
     "blender": (2, 72, 0),
     "location": "3D View > Toolbox",
     "description": "Utility tools to connect Blender to the Splash videomapper",
@@ -36,6 +36,7 @@ else:
     import bpy
     from bpy.props import (StringProperty,
                            BoolProperty,
+                           EnumProperty,
                            IntProperty,
                            FloatProperty,
                            PointerProperty,
@@ -46,6 +47,12 @@ else:
                            )
     from . import ui
     from . import operators
+
+def getImageList(scene, context):
+    images = []
+    for image in bpy.data.images:
+        images.append((image.name, image.name, ""))
+    return images
 
 class SplashSettings(PropertyGroup):
     outputActive = BoolProperty(
@@ -83,10 +90,10 @@ class SplashSettings(PropertyGroup):
         default=0.05,
         min=0.01, max=1.0,
         )
-    textureName = StringProperty(
-        name="Texture name",
-        description="Name of the texture to send",
-        default="splashTexture", maxlen=1024, subtype="NONE",
+    textureName = EnumProperty(
+        name="Images",
+        description="Available images to send",
+        items=getImageList
         )
     updatePeriodTexture = FloatProperty(
         name="Update period for the texture",
