@@ -132,7 +132,7 @@ void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, cons
         _textures.push_back(texture);
         if (_uniforms.find("_textureNbr") != _uniforms.end())
         {
-            _uniforms["_textureNbr"].first = Values({(int)_textures.size()});
+            _uniforms["_textureNbr"].first = {(int)_textures.size()};
             _uniformsToUpdate.push_back("_textureNbr");
         }
     }
@@ -265,49 +265,49 @@ void Shader::parseUniforms(const std::string& src)
             {
                 int v;
                 glGetUniformiv(_program, _uniforms[name].second, &v);
-                _uniforms[name].first = Values({v});
+                _uniforms[name].first = {v};
             }
             else if (type == "float")
             {
                 float v;
                 glGetUniformfv(_program, _uniforms[name].second, &v);
-                _uniforms[name].first = Values({v});
+                _uniforms[name].first = {v};
             }
             else if (type == "vec2")
             {
                 float v[2];
                 glGetUniformfv(_program, _uniforms[name].second, v);
-                _uniforms[name].first = Values({v[0], v[1]});
+                _uniforms[name].first = {v[0], v[1]};
             }
             else if (type == "vec3")
             {
                 float v[3];
                 glGetUniformfv(_program, _uniforms[name].second, v);
-                _uniforms[name].first = Values({v[0], v[1], v[2]});
+                _uniforms[name].first = {v[0], v[1], v[2]};
             }
             else if (type == "vec4")
             {
                 float v[4];
                 glGetUniformfv(_program, _uniforms[name].second, v);
-                _uniforms[name].first = Values({v[0], v[1], v[2], v[3]});
+                _uniforms[name].first = {v[0], v[1], v[2], v[3]};
             }
             else if (type == "ivec2")
             {
                 int v[2];
                 glGetUniformiv(_program, _uniforms[name].second, v);
-                _uniforms[name].first = Values({v[0], v[1]});
+                _uniforms[name].first = {v[0], v[1]};
             }
             else if (type == "ivec3")
             {
                 int v[3];
                 glGetUniformiv(_program, _uniforms[name].second, v);
-                _uniforms[name].first = Values({v[0], v[1], v[2]});
+                _uniforms[name].first = {v[0], v[1], v[2]};
             }
             else if (type == "ivec4")
             {
                 int v[4];
                 glGetUniformiv(_program, _uniforms[name].second, v);
-                _uniforms[name].first = Values({v[0], v[1], v[2], v[3]});
+                _uniforms[name].first = {v[0], v[1], v[2], v[3]};
             }
         }
     }
@@ -456,7 +456,7 @@ void Shader::registerAttributes()
             compileProgram();
         }
         return true;
-    }, [&]() {
+    }, [&]() -> Values {
         string fill;
         if (_fill == texture)
             fill = "texture";
@@ -468,7 +468,7 @@ void Shader::registerAttributes()
             fill = "wireframe";
         else if (_fill == window)
             fill = "window";
-        return Values({fill});
+        return {fill};
     });
 
     _attribFunctions["color"] = AttributeFunctor([&](Values args) {
@@ -508,8 +508,8 @@ void Shader::registerAttributes()
         _uniformsToUpdate.push_back("_sideness");
 
         return true;
-    }, [&]() {
-        return Values({_sideness});
+    }, [&]() -> Values {
+        return {_sideness};
     });
 
     // Attribute to configure the placement of the various texture input
@@ -517,7 +517,7 @@ void Shader::registerAttributes()
         if (args.size() < 1 || args.size() > 4)
             return false;
 
-        _uniforms["_layout"].first = Values({0, 0, 0, 0});
+        _uniforms["_layout"].first = {0, 0, 0, 0};
         for (int i = 0; i < args.size() && i < 4; ++i)
         {
             _layout[i] = args[i].asInt();

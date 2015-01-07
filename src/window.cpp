@@ -316,9 +316,9 @@ void Window::setupRenderFBO()
     }
     else
     {
-        _depthTexture->setAttribute("resizable", Values({1}));
+        _depthTexture->setAttribute("resizable", {1});
         _depthTexture->resize(_windowRect[2], _windowRect[3]);
-        _depthTexture->setAttribute("resizable", Values({0}));
+        _depthTexture->setAttribute("resizable", {0});
     }
 
     if (!_colorTexture)
@@ -330,9 +330,9 @@ void Window::setupRenderFBO()
     }
     else
     {
-        _colorTexture->setAttribute("resizable", Values({1}));
+        _colorTexture->setAttribute("resizable", {1});
         _colorTexture->resize(_windowRect[2], _windowRect[3]);
-        _colorTexture->setAttribute("resizable", Values({0}));
+        _colorTexture->setAttribute("resizable", {0});
     }
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -582,8 +582,8 @@ void Window::registerAttributes()
             return false;
         switchFullscreen(args[0].asInt());
         return true;
-    }, [&]() {
-        return Values({_screenId});
+    }, [&]() -> Values {
+        return {_screenId};
     });
 
     _attribFunctions["decorated"] = AttributeFunctor([&](Values args) {
@@ -593,11 +593,11 @@ void Window::registerAttributes()
         setWindowDecoration(_withDecoration);
         updateWindowShape();
         return true;
-    }, [&]() {
+    }, [&]() -> Values {
         if (_screenId != -1)
             return Values();
         else
-            return Values({(int)_withDecoration});
+            return {(int)_withDecoration};
     });
 
     _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
@@ -608,8 +608,8 @@ void Window::registerAttributes()
         else
             _srgb = false;
         return true;
-    }, [&]() {
-        return Values({_srgb});
+    }, [&]() -> Values {
+        return {_srgb};
     });
 
     _attribFunctions["gamma"] = AttributeFunctor([&](Values args) {
@@ -617,8 +617,8 @@ void Window::registerAttributes()
             return false;
         _gammaCorrection = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_gammaCorrection});
+    }, [&]() -> Values {
+        return {_gammaCorrection};
     });
 
     // Attribute to configure the placement of the various texture input
@@ -638,11 +638,11 @@ void Window::registerAttributes()
         _windowRect[1] = args[1].asInt();
         updateWindowShape();
         return true;
-    }, [&]() {
+    }, [&]() -> Values {
         if (_screenId != -1)
-            return Values();
+            return {};
         else
-            return Values({_windowRect[0], _windowRect[1]});
+            return {_windowRect[0], _windowRect[1]};
     });
 
     _attribFunctions["size"] = AttributeFunctor([&](Values args) {
@@ -652,11 +652,11 @@ void Window::registerAttributes()
         _windowRect[3] = args[1].asInt();
         updateWindowShape();
         return true;
-    }, [&]() {
+    }, [&]() -> Values {
         if (_screenId != -1)
-            return Values();
+            return {};
         else
-            return Values({_windowRect[2], _windowRect[3]});
+            return {_windowRect[2], _windowRect[3]};
     });
 
     _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {

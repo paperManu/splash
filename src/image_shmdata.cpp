@@ -293,7 +293,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
     // Check if we need to resize the reader buffer
     // We set the size so as to have just enough place for the given texture format
     oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();
-    if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height && textureFormat != ctx->_textureFormat)
+    if (bufSpec.width != ctx->_width || (bufSpec.height != ctx->_height && textureFormat != ctx->_textureFormat))
     {
         ctx->_textureFormat = textureFormat;
 

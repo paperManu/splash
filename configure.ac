@@ -166,6 +166,8 @@ AM_CONDITIONAL(HAVE_TESTS, test "x$with_tests" != "xno")
 
 AC_CONFIG_FILES([
 	Makefile
+    addons/Makefile
+    addons/blender/Makefile
 	src/Makefile
 	data/Makefile
 	tests/Makefile

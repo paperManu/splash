@@ -333,6 +333,8 @@ struct Value
                     isEqual &= (_v[i] == v._v[i]);
                 return isEqual;
             }
+            else
+                return false;
         }
 
         int asInt()
@@ -378,13 +380,15 @@ struct Value
         Values asValues()
         {
             if (_type == Type::i)
-                return Values({_i});
+                return {_i};
             else if (_type == Type::f)
-                return Values({_f});
+                return {_f};
             else if (_type == Type::s)
-                return Values({_s});
+                return {_s};
             else if (_type == Type::v)
                 return _v;
+            else
+                return {};
         }
 
         void* data()
@@ -738,6 +742,8 @@ class RootObject : public BaseObject
                 return setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
                 return _objects[name]->setAttribute(attrib, args);
+            else
+                return false;
         }
 
         /**

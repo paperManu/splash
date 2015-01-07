@@ -65,6 +65,7 @@ void World::run()
                 SerializedObjectPtr obj;
                 BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 if (bufferObj.get() != nullptr)
+                {
                     if (bufferObj->wasUpdated()) // if the buffer has been updated
                     {
                         obj = bufferObj->serialize();
@@ -73,6 +74,7 @@ void World::run()
                     }
                     else
                         return; // if not, exit this thread
+                }
             }));
         }
         SThread::pool.waitThreads(threadIds);
