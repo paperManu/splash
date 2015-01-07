@@ -196,7 +196,7 @@ void GlvControl::changeTarget(string name)
         _isDistant = false;
 
     // We don't allow modification of Window parameters yet
-    if (!_isDistant && scene->_objects[name]->getType() == "window" || _isDistant && scene->_ghostObjects[name]->getType() == "window")
+    if ((!_isDistant && scene->_objects[name]->getType() == "window") || (_isDistant && scene->_ghostObjects[name]->getType() == "window"))
         return;
 
     map<string, Values> attribs;

@@ -294,8 +294,8 @@ void Image::registerAttributes()
             return false;
         _flip = (args[0].asInt() > 0) ? true : false;
         return true;
-    }, [&]() {
-        return Values({_flip});
+    }, [&]() -> Values {
+        return {_flip};
     });
 
     _attribFunctions["flop"] = AttributeFunctor([&](Values args) {
@@ -303,8 +303,8 @@ void Image::registerAttributes()
             return false;
         _flop = (args[0].asInt() > 0) ? true : false;
         return true;
-    }, [&]() {
-        return Values({_flop});
+    }, [&]() -> Values {
+        return {_flop};
     });
 
     _attribFunctions["file"] = AttributeFunctor([&](Values args) {
@@ -318,8 +318,8 @@ void Image::registerAttributes()
             return false;
         _srgb = (args[0].asInt() > 0) ? true : false;     
         return true;
-    }, [&]() {
-        return Values({_srgb});
+    }, [&]() -> Values {
+        return {_srgb};
     });
 
     _attribFunctions["benchmark"] = AttributeFunctor([&](Values args) {

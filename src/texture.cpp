@@ -442,12 +442,12 @@ void Texture::update()
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
     if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
-        _shaderUniforms["YCoCg"] = Values({1});
+        _shaderUniforms["YCoCg"] = {1};
     else
-        _shaderUniforms["YCoCg"] = Values({0});
+        _shaderUniforms["YCoCg"] = {0};
 
-    _shaderUniforms["flip"] = Values({flip[0]});
-    _shaderUniforms["flop"] = Values({flop[0]});
+    _shaderUniforms["flip"] = flip;
+    _shaderUniforms["flop"] = flop;
 
     _timestamp = _img->getTimestamp();
 
@@ -499,8 +499,8 @@ void Texture::registerAttributes()
             return false;
         _resizable = args[0].asInt() > 0 ? true : false;
         return true;
-    }, [&]() {
-        return Values({_resizable});
+    }, [&]() -> Values {
+        return {_resizable};
     });
 }
 

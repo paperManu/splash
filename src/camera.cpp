@@ -170,7 +170,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
         int x = (int)floor((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
         int y = (int)floor((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
-        if (isSet[y * mapSpec.width + x] || x == 0 && y == 0)
+        if (isSet[y * mapSpec.width + x] || (x == 0 && y == 0))
             continue;
         isSet[y * mapSpec.width + x] = true;
 
@@ -434,7 +434,7 @@ Values Camera::pickVertex(float x, float y)
         }
     }
 
-    return Values({vertex.x, vertex.y, vertex.z});
+    return {vertex.x, vertex.y, vertex.z};
 }
 
 /*************/
@@ -457,7 +457,7 @@ Values Camera::pickFragment(float x, float y)
     dvec3 screenPoint(realX, realY, depth);
     dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), computeProjectionMatrix(), dvec4(0, 0, _width, _height));
 
-    return Values({point.x, point.y, point.z});
+    return {point.x, point.y, point.z};
 }
 
 /*************/
@@ -494,7 +494,7 @@ Values Camera::pickCalibrationPoint(float x, float y)
         }
     }
 
-    return Values({vertex.x, vertex.y, vertex.z});
+    return {vertex.x, vertex.y, vertex.z};
 }
 
 /*************/
@@ -576,7 +576,7 @@ bool Camera::render()
                 worldMarker->draw();
                 worldMarker->deactivate();
 
-                if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
+                if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
                     ObjectPtr screenMarker = _models["2d_marker"];
 
@@ -729,15 +729,15 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    _depthTexture->setAttribute("resizable", Values({1}));
+    _depthTexture->setAttribute("resizable", {1});
     _depthTexture->resize(width, height);
-    _depthTexture->setAttribute("resizable", Values({0}));
+    _depthTexture->setAttribute("resizable", {0});
 
     for (auto tex : _outTextures)
     {
-        tex->setAttribute("resizable", Values({1}));
+        tex->setAttribute("resizable", {1});
         tex->resize(width, height);
-        tex->setAttribute("resizable", Values({0}));
+        tex->setAttribute("resizable", {0});
     }
 
     _width = width;
@@ -909,6 +909,7 @@ void Camera::loadDefaultModels()
     for (auto& file : files)
     {
         if (!ifstream(file.second, ios::in | ios::binary))
+        {
             if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
                 file.second = string(DATADIR) + file.second;
             else
@@ -916,6 +917,7 @@ void Camera::loadDefaultModels()
                 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
                 continue;
             }
+        }
 
         MeshPtr mesh = make_shared<Mesh>();
         mesh->setAttribute("name", {file.first});
@@ -940,8 +942,8 @@ void Camera::registerAttributes()
             return false;
         _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_eye.x, _eye.y, _eye.z});
+    }, [&]() -> Values {
+        return {_eye.x, _eye.y, _eye.z};
     });
 
     _attribFunctions["target"] = AttributeFunctor([&](Values args) {
@@ -949,8 +951,8 @@ void Camera::registerAttributes()
             return false;
         _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_target.x, _target.y, _target.z});
+    }, [&]() -> Values {
+        return {_target.x, _target.y, _target.z};
     });
 
     _attribFunctions["fov"] = AttributeFunctor([&](Values args) {
@@ -958,8 +960,8 @@ void Camera::registerAttributes()
             return false;
         _fov = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_fov});
+    }, [&]() -> Values {
+        return {_fov};
     });
 
     _attribFunctions["up"] = AttributeFunctor([&](Values args) {
@@ -967,8 +969,8 @@ void Camera::registerAttributes()
             return false;
         _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_up.x, _up.y, _up.z});
+    }, [&]() -> Values {
+        return {_up.x, _up.y, _up.z};
     });
 
     _attribFunctions["size"] = AttributeFunctor([&](Values args) {
@@ -978,8 +980,8 @@ void Camera::registerAttributes()
         _newWidth = args[0].asInt();
         _newHeight = args[1].asInt();
         return true;
-    }, [&]() {
-        return Values({_width, _height});
+    }, [&]() -> Values {
+        return {_width, _height};
     });
 
     _attribFunctions["principalPoint"] = AttributeFunctor([&](Values args) {
@@ -988,8 +990,8 @@ void Camera::registerAttributes()
         _cx = args[0].asFloat();
         _cy = args[1].asFloat();
         return true;
-    }, [&]() {
-        return Values({_cx, _cy});
+    }, [&]() -> Values {
+        return {_cx, _cy};
     });
 
     // More advanced attributes
@@ -1118,10 +1120,13 @@ void Camera::registerAttributes()
         }
 
         return true;
-    }, [&]() {
+    }, [&]() -> Values {
         Values data;
         for (auto& p : _calibrationPoints)
-            data.push_back(Values({p.world[0], p.world[1], p.world[2], p.screen[0], p.screen[1], p.isSet}));
+        {
+            Values d {p.world[0], p.world[1], p.world[2], p.screen[0], p.screen[1], p.isSet};
+            data.emplace_back(d);
+        }
         return data;
     });
 
@@ -1131,8 +1136,8 @@ void Camera::registerAttributes()
             return false;
         _blendWidth = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_blendWidth});
+    }, [&]() -> Values {
+        return {_blendWidth};
     });
 
     _attribFunctions["blackLevel"] = AttributeFunctor([&](Values args) {
@@ -1140,8 +1145,8 @@ void Camera::registerAttributes()
             return false;
         _blackLevel = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_blackLevel});
+    }, [&]() -> Values {
+        return {_blackLevel};
     });
 
     _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
@@ -1150,8 +1155,8 @@ void Camera::registerAttributes()
         _colorTemperature = args[0].asFloat() * 100.f;
         _colorTemperature = std::max(1000.f, std::min(15000.f, _colorTemperature));
         return true;
-    }, [&]() {
-        return Values({_colorTemperature / 100.f});
+    }, [&]() -> Values {
+        return {_colorTemperature / 100.f};
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
@@ -1159,8 +1164,8 @@ void Camera::registerAttributes()
             return false;
         _brightness = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_brightness});
+    }, [&]() -> Values {
+        return {_brightness};
     });
 
     _attribFunctions["frame"] = AttributeFunctor([&](Values args) {

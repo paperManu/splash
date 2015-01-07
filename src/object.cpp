@@ -238,8 +238,8 @@ void Object::registerAttributes()
             return false;
         _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_position.x, _position.y, _position.z});
+    }, [&]() -> Values {
+        return {_position.x, _position.y, _position.z};
     });
 
     _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
@@ -253,8 +253,8 @@ void Object::registerAttributes()
 
         _shader->setAttribute("scale", args);
         return true;
-    }, [&]() {
-        return Values({_scale.x, _scale.y, _scale.z});
+    }, [&]() -> Values {
+        return {_scale.x, _scale.y, _scale.z};
     });
 
     _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
@@ -285,8 +285,8 @@ void Object::registerAttributes()
             return false;
         _fill = args[0].asString();
         return true;
-    }, [&]() {
-        return Values({_fill});
+    }, [&]() -> Values {
+        return {_fill};
     });
 
     _attribFunctions["color"] = AttributeFunctor([&](Values args) {

@@ -36,7 +36,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
         TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         _depthTexture = move(texture);
-        _depthTexture->setAttribute("resizable", Values({1}));
+        _depthTexture->setAttribute("resizable", {1});
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -44,7 +44,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
         TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         _outTexture = move(texture);
-        _outTexture->setAttribute("resizable", Values({1}));
+        _outTexture->setAttribute("resizable", {1});
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
 
@@ -94,7 +94,7 @@ void Gui::key(int& key, int& action, int& mods)
             _glv.setKeyUp(glfwToGlvKey(key));
         else if (action == GLFW_REPEAT)
             _glv.setKeyDown(glfwToGlvKey(key));
-        _glv.setKeyModifiers(mods && GLFW_MOD_SHIFT, mods && GLFW_MOD_ALT, mods && GLFW_MOD_CONTROL, false, false);
+        _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
         _glv.propagateEvent();
         break;
     }
