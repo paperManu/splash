@@ -277,13 +277,14 @@ void Scene::render()
     STimer::timer << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
-    unique_lock<mutex> lock(_textureUploadSetupMutex);
+    unique_lock<mutex> lock(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    lock.unlock();
     STimer::timer >> "cameras";
+    lock.unlock();
+    _textureUploadCondition.notify_one();
 
     // Update the guis
     STimer::timer << "guis";
@@ -438,10 +439,13 @@ void Scene::textureUploadRun()
             continue;
         }
 
+        unique_lock<mutex> conditionLock(_textureUploadConditionMutex);
+        _textureUploadCondition.wait(conditionLock);
+        unique_lock<mutex> lock(_textureUploadMutex);
+
         STimer::timer << "textureUpload";
         _textureUploadWindow->setAsCurrentContext();
 
-        unique_lock<mutex> lock(_textureUploadSetupMutex);
         for (auto& obj : _objects)
             if (obj.second->getType() == "texture")
                 dynamic_pointer_cast<Texture>(obj.second)->update();
@@ -455,9 +459,6 @@ void Scene::textureUploadRun()
 
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
-
-        int elapsed = STimer::timer.getDuration("textureUpload");
-        this_thread::sleep_for(chrono::microseconds(2000 - elapsed));
     }
 }
 
@@ -483,7 +484,7 @@ void Scene::sendMessage(const string message, const Values value)
 /*************/
 void Scene::waitTextureUpload()
 {
-    unique_lock<mutex> lock(_textureUploadSetupMutex);
+    unique_lock<mutex> lock(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 

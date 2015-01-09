@@ -164,7 +164,9 @@ class Scene : public RootObject
         std::thread _textureUploadLoop;
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
-        std::mutex _textureUploadSetupMutex;
+        std::mutex _textureUploadMutex;
+        std::condition_variable _textureUploadCondition;
+        std::mutex _textureUploadConditionMutex;
         GLsync _textureUploadFence;
 
         // NV Swap group specific
