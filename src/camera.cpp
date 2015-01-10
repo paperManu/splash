@@ -780,13 +780,13 @@ void Camera::setOutputSize(int width, int height)
 
     _depthTexture->setAttribute("resizable", {1});
     _depthTexture->resize(width, height);
-    _depthTexture->setAttribute("resizable", {0});
+    _depthTexture->setAttribute("resizable", {_automaticResize});
 
     for (auto tex : _outTextures)
     {
         tex->setAttribute("resizable", {1});
         tex->resize(width, height);
-        tex->setAttribute("resizable", {0});
+        tex->setAttribute("resizable", {_automaticResize});
     }
 
     _width = width;
@@ -1022,9 +1022,9 @@ void Camera::registerAttributes()
     _attribFunctions["size"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
-        //setOutputSize(args[0].asInt(), args[1].asInt());
         _newWidth = args[0].asInt();
         _newHeight = args[1].asInt();
+        _automaticResize = false; // Automatic resize is disabled when size is specified
         return true;
     }, [&]() -> Values {
         return {_width, _height};

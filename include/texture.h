@@ -182,7 +182,7 @@ class Texture : public BaseObject
         std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
-        bool _resizable {false};
+        bool _resizable {true};
         bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;

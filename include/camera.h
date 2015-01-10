@@ -186,6 +186,7 @@ class Camera : public BaseObject
         bool _wireframe {false};
         bool _hidden {false};
         bool _flashBG {false};
+        bool _automaticResize {true};
 
         // Some default models use in various situations
         std::map<std::string, ObjectPtr> _models;
