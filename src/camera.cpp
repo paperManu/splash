@@ -281,10 +281,12 @@ bool Camera::doCalibration()
     float fovOriginal = _fov;
 
     double minValue = numeric_limits<double>::max();
+    vector<double> selectedValues(8);
 
     mutex gslMutex;
     vector<unsigned int> threadIds;
-    for (int index = 0; index < 32; ++index)
+    // First step: we try a bunch of starts and keep the best one
+    for (int index = 0; index < 4; ++index)
     {
         threadIds.push_back(SThread::pool.enqueue([&]() {
             gsl_multimin_fminimizer* minimizer;
@@ -330,26 +332,8 @@ bool Camera::doCalibration()
                 if (localMinimum < minValue)
                 {
                     minValue = localMinimum;
-
-                    _fov = gsl_vector_get(minimizer->x, 0);
-                    _cy = gsl_vector_get(minimizer->x, 1);
-
-                    dvec3 euler;
-                    for (int i = 0; i < 3; ++i)
-                    {
-                        _eye[i] = gsl_vector_get(minimizer->x, i + 2);
-                        euler[i] = gsl_vector_get(minimizer->x, i + 5);
-                    }
-                    dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
-                    dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
-                    dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
-                    for (int i = 0; i < 3; ++i)
-                    {
-                        _target[i] = target[i];
-                        _up[i] = up[i];
-                    }
-                    _target = normalize(_target);
-                    _up = normalize(_up);
+                    for (int i = 0; i < 8; ++i)
+                        selectedValues[i] = gsl_vector_get(minimizer->x, i);
                 }
 
                 gsl_vector_free(x);
@@ -361,6 +345,74 @@ bool Camera::doCalibration()
     }
     SThread::pool.waitThreads(threadIds);
 
+    // Second step: we improve on the best result from the previous step
+    for (int index = 0; index < 8; ++index)
+    {
+        gsl_multimin_fminimizer* minimizer;
+        minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 8);
+
+        gsl_vector* step = gsl_vector_alloc(8);
+        gsl_vector_set(step, 0, 1.0);
+        gsl_vector_set(step, 1, 0.05);
+        for (int i = 2; i < 8; ++i)
+            gsl_vector_set(step, i, 0.01);
+
+        gsl_vector* x = gsl_vector_alloc(8);
+        for (int i = 0; i < 8; ++i)
+            gsl_vector_set(x, i, selectedValues[i]);
+
+        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+        size_t iter = 0;
+        int status = GSL_CONTINUE;
+        double localMinimum = numeric_limits<double>::max();
+        while(status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
+        {
+            iter++;
+            status = gsl_multimin_fminimizer_iterate(minimizer);
+            if (status)
+            {
+                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                break;
+            }
+
+            status = gsl_multimin_test_size(minimizer->size, 1e-6);
+            localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+        }
+
+        lock_guard<mutex> lock(gslMutex);
+        if (localMinimum < minValue)
+        {
+            minValue = localMinimum;
+            for (int i = 0; i < 8; ++i)
+                selectedValues[i] = gsl_vector_get(minimizer->x, i);
+        }
+
+        gsl_vector_free(x);
+        gsl_vector_free(step);
+        gsl_multimin_fminimizer_free(minimizer);
+    }
+
+    // Third step: convert the values to camera parameters
+    _fov = selectedValues[0];
+    _cy = selectedValues[1];
+
+    dvec3 euler;
+    for (int i = 0; i < 3; ++i)
+    {
+        _eye[i] = selectedValues[i + 2];
+        euler[i] = selectedValues[i + 5];
+    }
+    dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
+    dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
+    dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
+    for (int i = 0; i < 3; ++i)
+    {
+        _target[i] = target[i];
+        _up[i] = up[i];
+    }
+    _target = normalize(_target);
+    _up = normalize(_up);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
     SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
