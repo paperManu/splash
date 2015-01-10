@@ -267,7 +267,7 @@ bool Camera::doCalibration()
     _calibrationCalledOnce = true;
 
     gsl_multimin_function calibrationFunc;
-    calibrationFunc.n = 9;
+    calibrationFunc.n = 8;
     calibrationFunc.f = &Camera::cameraCalibration_f;
     calibrationFunc.params = (void*)this;
 
@@ -288,26 +288,23 @@ bool Camera::doCalibration()
     {
         threadIds.push_back(SThread::pool.enqueue([&]() {
             gsl_multimin_fminimizer* minimizer;
-            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
+            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 8);
 
-            for (double s = 0.0; s < 1.0; s += 0.25)
-            for (double t = 0.0; t < 1.0; t += 0.25)
+            for (double t = 0.0; t < 1.0; t += 0.2)
             {
-                gsl_vector* step = gsl_vector_alloc(9);
+                gsl_vector* step = gsl_vector_alloc(8);
                 gsl_vector_set(step, 0, 10.0);
                 gsl_vector_set(step, 1, 0.1);
-                gsl_vector_set(step, 2, 0.1);
-                for (int i = 3; i < 9; ++i)
+                for (int i = 2; i < 8; ++i)
                     gsl_vector_set(step, i, 0.1);
 
-                gsl_vector* x = gsl_vector_alloc(9);
+                gsl_vector* x = gsl_vector_alloc(8);
                 gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
-                gsl_vector_set(x, 1, s);
-                gsl_vector_set(x, 2, t);
+                gsl_vector_set(x, 1, t);
                 for (int i = 0; i < 3; ++i)
                 {
-                    gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                    gsl_vector_set(x, i + 6, 0.0);
+                    gsl_vector_set(x, i + 2, eyeOriginal[i]);
+                    gsl_vector_set(x, i + 5, 0.0);
                 }
 
                 gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
@@ -333,11 +330,15 @@ bool Camera::doCalibration()
                 if (localMinimum < minValue)
                 {
                     minValue = localMinimum;
+
+                    _fov = gsl_vector_get(minimizer->x, 0);
+                    _cy = gsl_vector_get(minimizer->x, 1);
+
                     dvec3 euler;
                     for (int i = 0; i < 3; ++i)
                     {
-                        _eye[i] = gsl_vector_get(minimizer->x, i + 3);
-                        euler[i] = gsl_vector_get(minimizer->x, i + 6);
+                        _eye[i] = gsl_vector_get(minimizer->x, i + 2);
+                        euler[i] = gsl_vector_get(minimizer->x, i + 5);
                     }
                     dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
                     dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
@@ -349,10 +350,6 @@ bool Camera::doCalibration()
                     }
                     _target = normalize(_target);
                     _up = normalize(_up);
-
-                    _fov = gsl_vector_get(minimizer->x, 0);
-                    _cx = gsl_vector_get(minimizer->x, 1);
-                    _cy = gsl_vector_get(minimizer->x, 2);
                 }
 
                 gsl_vector_free(x);
@@ -753,16 +750,15 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     Camera* camera = (Camera*)params;
 
     double fov = gsl_vector_get(v, 0);
-    double cx = gsl_vector_get(v, 1);
-    double cy = gsl_vector_get(v, 2);
+    double cy = gsl_vector_get(v, 1);
     dvec3 eye;
     dvec3 target;
     dvec3 up;
     dvec3 euler;
     for (int i = 0; i < 3; ++i)
     {
-        eye[i] = gsl_vector_get(v, i + 3);
-        euler[i] = gsl_vector_get(v, i + 6);
+        eye[i] = gsl_vector_get(v, i + 2);
+        euler[i] = gsl_vector_get(v, i + 5);
     }
     dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
     dvec4 targetTmp = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
@@ -772,8 +768,6 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         target[i] = targetTmp[i];
         up[i] = upTmp[i];
     }
-    //target = normalize(target);
-    //up = normalize(up);
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
@@ -791,7 +785,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
-    dmat4 projM = dmat4(camera->computeProjectionMatrix(fov, cx, cy));
+    dmat4 projM = dmat4(camera->computeProjectionMatrix(fov, 0.5, cy));
     dmat4 modelM(1.0);
     dvec4 viewport(0, 0, camera->_width, camera->_height);
 
