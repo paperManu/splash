@@ -49,7 +49,6 @@ Scene::Scene(std::string name)
 Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
-    _textureUploadCondition.notify_one();
     _textureUploadLoop.join();
     _sceneLoop.join();
 
@@ -280,12 +279,15 @@ void Scene::render()
     // cameras to prevent tearing
     unique_lock<mutex> lock(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+    glDeleteSync(_textureUploadFence);
+
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
     STimer::timer >> "cameras";
+
+    _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     lock.unlock();
-    _textureUploadCondition.notify_one();
 
     // Update the guis
     STimer::timer << "guis";
@@ -440,17 +442,16 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        unique_lock<mutex> conditionLock(_textureUploadConditionMutex);
-        _textureUploadCondition.wait(conditionLock);
         unique_lock<mutex> lock(_textureUploadMutex);
 
-        STimer::timer << "textureUpload";
         _textureUploadWindow->setAsCurrentContext();
+        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+        glDeleteSync(_textureUploadFence);
 
+        STimer::timer << "textureUpload";
         for (auto& obj : _objects)
             if (obj.second->getType() == "texture")
                 dynamic_pointer_cast<Texture>(obj.second)->update();
-        glDeleteSync(_textureUploadFence);
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lock.unlock();
 
