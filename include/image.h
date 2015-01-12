@@ -151,6 +151,11 @@ class Image : public BufferObject
         bool _benchmark {false};
 
         void createDefaultImage(); //< Create a default pattern
+
+        /**
+         * Read the specified image file
+         */
+        bool readFile(const std::string& filename);
         
     private:
         // Serialization is done in a double-buffer way,

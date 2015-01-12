@@ -89,6 +89,15 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	$(SHMDATA_LIBS) \
 	$(ZMQ_LIBS)
 
+# GPhoto related
+if HAVE_GPHOTO
+if HAVE_GLIB
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_gphoto.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GPHOTO_CFLAGS) $(GLIB_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GPHOTO_LIBS) $(GLIB_LIBS)
+endif
+endif
+
 #*************#
 bin_PROGRAMS = splash \
 	splash-scene
@@ -137,6 +146,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_shmdata.h \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \

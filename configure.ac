@@ -16,7 +16,8 @@ AC_DEFINE(LIBSPLASH_API_VERSION, ["0.1"], [API version])
 AC_PROG_CXX
 AC_PROG_CC_C_O
 
-CXXFLAGS="$CXXFLAGS -std=c++11"
+CXX="clang++"
+CXXFLAGS="$CXXFLAGS -O3 -std=c++11"
 
 export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 
@@ -56,6 +57,20 @@ AC_LANG_POP
 if test "$HAVE_GLM" = "false" ; then
 	AC_MSG_ERROR([Missing glm])
 fi
+
+# GPhoto
+PKG_CHECK_MODULES([GPHOTO], [libgphoto2])
+if test "x${have_gphoto}" = "xfalse" ; then
+    AC_MSG_WARN([Missing libgphoto2-dev])
+fi
+AM_CONDITIONAL(HAVE_GPHOTO, test -n "GPHOTO_LIBS")
+
+# Glib, needed for GPhoto
+PKG_CHECK_MODULES([GLIB], [glib-2.0])
+if test "x${have_glib}" = "xfalse" ; then
+    AC_MSG_WARN([Missing libglib2.0-dev])
+fi
+AM_CONDITIONAL(HAVE_GLIB, test -n "GLIB_LIBS")
 
 # Glew, needed by the embedded GLV library
 PKG_CHECK_MODULES([GLEW], [glew])

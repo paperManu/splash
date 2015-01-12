@@ -203,6 +203,12 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 /*************/
 bool Image::read(const string& filename)
 {
+    return readFile(filename);
+}
+
+/*************/
+bool Image::readFile(const string& filename)
+{
     oiio::ImageInput* in = oiio::ImageInput::open(filename);
     if (!in)
     {

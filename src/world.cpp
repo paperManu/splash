@@ -2,6 +2,7 @@
 #include "timer.h"
 
 #include "image.h"
+#include "image_gphoto.h"
 #include "image_shmdata.h"
 #include "link.h"
 #include "log.h"
@@ -118,7 +119,7 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type != "image" && type != "image_shmdata" && type != "mesh" && type != "mesh_shmdata")
+    if (type.find("image") == string::npos && type.find("mesh") == string::npos)
         return;
 
     BaseObjectPtr object;
@@ -128,6 +129,8 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+        else if (type == string("image_gphoto"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
         else if (type == string("mesh_shmdata"))

@@ -85,7 +85,7 @@ BaseObjectPtr Scene::add(string type, string name)
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
         else if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
-        else if (type == string("image") || type == string("image_shmdata"))
+        else if (type.find("image") == 0)
         {
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
             obj->setRemoteType(type);
