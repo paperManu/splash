@@ -36,7 +36,7 @@ bool GlvTextBox::onEvent(Event::t e, GLV& g)
     default:
         break;
     case Event::KeyDown:
-        SLog::log << Log::MESSAGE << "Key down: " << (char)g.keyboard().key() << Log::endl;
+        SLog::log << Log::DEBUGGING << "Key down: " << (char)g.keyboard().key() << Log::endl;
         return false;
     case Event::MouseDrag:
         if (g.mouse().middle())
