@@ -257,10 +257,10 @@ bool Camera::doCalibration()
     for (auto& point : _calibrationPoints)
         if (point.isSet)
             pointsSet++;
-    // We need at least 6 points to get a meaningful calibration
-    if (pointsSet < 6)
+    // We need at least 7 points to get a meaningful calibration
+    if (pointsSet < 7)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 6 points" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 7 points" << Log::endl;
         return false;
     }
 
@@ -395,6 +395,7 @@ bool Camera::doCalibration()
 
     // Third step: convert the values to camera parameters
     _fov = selectedValues[0];
+    _cx = 0.5; // Again, no shift along the X axis
     _cy = selectedValues[1];
 
     dvec3 euler;
