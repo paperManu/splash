@@ -101,7 +101,7 @@ void Image_GPhoto::detectCameras()
 }
 
 /*************/
-void Image_GPhoto::doCapture()
+void Image_GPhoto::capture()
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
 
@@ -258,6 +258,29 @@ void Image_GPhoto::registerAttributes()
         return {_srgb};
     });
 
+    _attribFunctions["aperture"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+        return doSetProperty("aperture", args[0].asString());
+    }, [&]() -> Values {
+        string value;
+        if (doGetProperty("aperture", value))
+            return {value};
+        else
+            return {};
+    });
+
+    _attribFunctions["isospeed"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+        return doSetProperty("iso", args[0].asString());
+    }, [&]() -> Values {
+        string value;
+        if (doGetProperty("iso", value))
+            return {value};
+        else
+            return {};
+    });
     _attribFunctions["shutterspeed"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
@@ -271,7 +294,7 @@ void Image_GPhoto::registerAttributes()
     // Actions
     _attribFunctions["capture"] = AttributeFunctor([&](Values args) {
         SThread::pool.enqueue([&]() {
-            doCapture();
+            capture();
         });
         return true;
     });

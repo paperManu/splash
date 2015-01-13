@@ -448,6 +448,13 @@ void World::saveConfig()
 }
 
 /*************/
+Values World::getObjectsNameByType(string type)
+{
+    Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
+    return answer[2].asValues();
+}
+
+/*************/
 void World::handleSerializedObject(const string name, const SerializedObjectPtr obj)
 {
     _link->sendBuffer(name, obj);
@@ -573,6 +580,17 @@ void World::setAttribute(string name, string attrib, Values args)
 /*************/
 void World::registerAttributes()
 {
+    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            _colorCalibrator = make_shared<ColorCalibrator>(_self);
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->update();
+        });
+        return true;
+    });
+
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
         _childProcessLaunched = true;
         return true;

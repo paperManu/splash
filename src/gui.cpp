@@ -122,6 +122,15 @@ void Gui::key(int& key, int& action, int& mods)
         }
         break;
     }
+    case GLFW_KEY_P:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("calibrateColor");
+        }
+        break;
+    }
     case GLFW_KEY_S:
     {
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
@@ -427,11 +436,12 @@ void Gui::initGLV(int width, int height)
         text += " H: hide all but the selected camera\n";
         text += " T: textured draw mode\n";
         text += " W: wireframe draw mode\n";
+        text += " P: launch color calibration\n";
 
         return text;
     });
     _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 12 + 8);
     _glvHelp.style(&_style);
 
     // Controls

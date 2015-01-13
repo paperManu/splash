@@ -81,6 +81,7 @@ typedef std::shared_ptr<Camera> CameraPtr;
 typedef std::shared_ptr<Geometry> GeometryPtr;
 typedef std::shared_ptr<Gui> GuiPtr;
 typedef std::shared_ptr<Image> ImagePtr;
+typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
 typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
 typedef std::shared_ptr<Link> LinkPtr;
 typedef std::shared_ptr<Mesh> MeshPtr;

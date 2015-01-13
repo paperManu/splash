@@ -178,10 +178,6 @@ class Scene : public RootObject
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
 
-        // List of actions to do during the next render loop
-        bool _doComputeBlending {false};
-        bool _doSaveNow {false};
-
         /**
          * Set up the context and everything
          */

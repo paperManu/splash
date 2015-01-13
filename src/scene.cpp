@@ -399,36 +399,16 @@ void Scene::run()
             this_thread::sleep_for(chrono::milliseconds(50));
             continue;
         }
+
         
         STimer::timer << "sceneLoop";
+
+        this_thread::yield(); // Allows other threads to catch this mutex
+        lock_guard<recursive_mutex> lock(_configureMutex);
         _mainWindow->setAsCurrentContext();
-
-        {
-            lock_guard<recursive_mutex> lock(_configureMutex);
-            render();
-        }
-
-        // Saving event
-        if (_doSaveNow)
-        {
-            lock_guard<recursive_mutex> lock(_configureMutex);
-
-            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-            Json::Value config = getConfigurationAsJson();
-            string configStr = config.toStyledString();
-            sendMessageToWorld("answerMessage", {"config", _name, configStr});
-            _doSaveNow = false;
-        }
-        
-        // Compute blending event
-        if (_doComputeBlending)
-        {
-            lock_guard<recursive_mutex> lock(_configureMutex);
-            computeBlendingMap();
-            _doComputeBlending = false;
-        }
-
+        render();
         _mainWindow->releaseContext();
+
         STimer::timer >> "sceneLoop";
     }
 }
@@ -495,6 +475,9 @@ void Scene::waitTextureUpload()
 /*************/
 void Scene::computeBlendingMap()
 {
+    lock_guard<recursive_mutex> lock(_configureMutex);
+    _mainWindow->setAsCurrentContext();
+
     if (_isBlendComputed)
     {
         for (auto& obj : _objects)
@@ -565,6 +548,8 @@ void Scene::computeBlendingMap()
 
         SLog::log << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
     }
+
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -775,12 +760,16 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
-        _doComputeBlending = true;
+        computeBlendingMap();
         return true;
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](Values args) {
-        _doSaveNow = true;
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+        Json::Value config = getConfigurationAsJson();
+        string configStr = config.toStyledString();
+        sendMessageToWorld("answerMessage", {"config", _name, configStr});
         return true;
     });
 
@@ -797,6 +786,21 @@ void Scene::registerAttributes()
         for (auto& obj : _objects)
             if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+        return true;
+    });
+
+    _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        string type = args[0].asString();
+        Values list;
+        for (auto& obj : _objects)
+            if (obj.second->getType() == type)
+                list.push_back(obj.second->getName());
+        for (auto& obj : _ghostObjects)
+            if (obj.second->getType() == type)
+                list.push_back(obj.second->getName());
+        sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
         return true;
     });
    

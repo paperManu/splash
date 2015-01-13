@@ -37,6 +37,8 @@
 #include <vector>
 #include <glm/glm.hpp>
 
+#include "colorcalibrator.h"
+
 namespace Splash {
 
 class World;
@@ -45,6 +47,8 @@ typedef std::shared_ptr<World> WorldPtr;
 /*************/
 class World : public RootObject
 {
+    friend ColorCalibrator;
+
     public:
         /**
          * Constructor
@@ -84,10 +88,6 @@ class World : public RootObject
         unsigned long _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;
 
-        //Values _lastAnswerReceived {};
-        //std::mutex _answerMutex;
-        //std::string _answerExpected {""};
-
         std::string _configFilename;
         Json::Value _config;
         bool _childProcessLaunched {false};
@@ -95,6 +95,9 @@ class World : public RootObject
         // List of actions to do during the next loop
         bool _doComputeBlending {false};
         bool _doSaveConfig {false};
+
+        // Objects in charge of calibration
+        ColorCalibratorPtr _colorCalibrator;
 
         /**
          * Add an object to the world (used for Images and Meshes currently)
@@ -115,6 +118,11 @@ class World : public RootObject
          * Get the next available id
          */
         unsigned long getId() {return ++_nextId;}
+
+        /**
+         * Get the list of objects by their type
+         */
+        Values getObjectsNameByType(std::string type);
 
         /**
          * Redefinition of a method from RootObject

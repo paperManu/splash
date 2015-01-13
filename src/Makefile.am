@@ -15,6 +15,7 @@ lib_LTLIBRARIES = \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
+	colorcalibrator.cpp \
 	geometry.cpp \
 	gui.cpp \
 	image.cpp \
@@ -140,6 +141,7 @@ splash_scene_LDFLAGS = \
 #*************#
 noinst_HEADERS = \
 	$(top_srcdir)/include/camera.h \
+	$(top_srcdir)/include/colorcalibrator.h \
 	$(top_srcdir)/include/coretypes.h \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gui.h \

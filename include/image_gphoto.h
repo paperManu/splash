@@ -71,6 +71,11 @@ class Image_GPhoto : public Image
         }
 
         /**
+         * Capture a new photo
+         */
+        void capture();
+
+        /**
          * Set the path to read from
          */
         bool read(const std::string& filename);
@@ -104,7 +109,6 @@ class Image_GPhoto : public Image
         /**
          * Various commands sent to the camera
          */
-        void doCapture();
         bool doSetProperty(std::string name, std::string value);
         bool doGetProperty(std::string name, std::string& value);
 
