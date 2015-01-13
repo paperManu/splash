@@ -104,6 +104,7 @@ void Image_GPhoto::detectCameras()
 void Image_GPhoto::doCapture()
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
+
     if (_selectedCameraIndex == -1)
     {
         SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
@@ -135,6 +136,7 @@ void Image_GPhoto::doCapture()
 bool Image_GPhoto::doSetProperty(string name, string value)
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
+
     if (_selectedCameraIndex == -1)
     {
         SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
@@ -160,6 +162,7 @@ bool Image_GPhoto::doSetProperty(string name, string value)
 bool Image_GPhoto::doGetProperty(string name, string& value)
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
+
     if (_selectedCameraIndex == -1)
     {
         SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
@@ -269,6 +272,13 @@ void Image_GPhoto::registerAttributes()
     _attribFunctions["capture"] = AttributeFunctor([&](Values args) {
         SThread::pool.enqueue([&]() {
             doCapture();
+        });
+        return true;
+    });
+
+    _attribFunctions["detect"] = AttributeFunctor([&](Values args) {
+        SThread::pool.enqueue([&]() {
+            detectCameras();
         });
         return true;
     });

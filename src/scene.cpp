@@ -65,7 +65,7 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
     if (type == string("gui"))
@@ -129,7 +129,7 @@ void Scene::addGhost(string type, string name)
     BaseObjectPtr obj = add(type, name);
 
     // And move it to _ghostObjects
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -137,7 +137,7 @@ void Scene::addGhost(string type, string name)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     Json::Value root;
 
@@ -169,7 +169,7 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
@@ -198,7 +198,7 @@ bool Scene::unlink(string first, string second)
 /*************/
 bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = first->unlinkFrom(second);
@@ -404,24 +404,26 @@ void Scene::run()
         _mainWindow->setAsCurrentContext();
 
         {
-            unique_lock<mutex> lock(_configureMutex);
+            lock_guard<recursive_mutex> lock(_configureMutex);
             render();
         }
 
         // Saving event
         if (_doSaveNow)
         {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+
             setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
             Json::Value config = getConfigurationAsJson();
             string configStr = config.toStyledString();
-            sendMessage("sceneConfig", {_name, configStr});
+            sendMessageToWorld("answerMessage", {"config", _name, configStr});
             _doSaveNow = false;
         }
         
         // Compute blending event
         if (_doComputeBlending)
         {
-            unique_lock<mutex> lock(_configureMutex);
+            lock_guard<recursive_mutex> lock(_configureMutex);
             computeBlendingMap();
             _doComputeBlending = false;
         }
@@ -478,9 +480,9 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessage(const string message, const Values value)
+void Scene::sendMessageToWorld(const string message, const Values value)
 {
-    _link->sendMessage("world", message, value);
+    RootObject::sendMessage("world", message, value);
 }
 
 /*************/
@@ -690,7 +692,7 @@ void Scene::init(std::string name)
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
-    _link->sendMessage("world", "childProcessLaunched", {});
+    sendMessageToWorld("childProcessLaunched", {});
 }
 
 /*************/

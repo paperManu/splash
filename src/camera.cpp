@@ -27,6 +27,7 @@
 #define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
 #define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
+#define SPLASH_CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
 
 using namespace std;
 using namespace glm;
@@ -584,8 +585,8 @@ bool Camera::render()
         glScissor(SPLASH_SCISSOR_WIDTH, SPLASH_SCISSOR_WIDTH, _width - SPLASH_SCISSOR_WIDTH * 2, _height - SPLASH_SCISSOR_WIDTH * 2);
     }
 
-    if (_flashBG && !_hidden)
-        glClearColor(0.6, 0.6, 0.6, 1.0);
+    if (_flashBG)
+        glClearColor(_clearColor.r, _clearColor.g, _clearColor.b, _clearColor.a);
     else
         glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1194,6 +1195,17 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_blackLevel};
+    });
+
+    _attribFunctions["clearColor"] = AttributeFunctor([&](Values args) {
+        if (args.size() == 0)
+            _clearColor = SPLASH_CAMERA_FLASH_COLOR;
+        else if (args.size() == 4)
+            _clearColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        else
+            return false;
+
+        return true;
     });
 
     _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
