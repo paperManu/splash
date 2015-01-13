@@ -269,6 +269,22 @@ void Image::update()
 }
 
 /*************/
+bool Image::write(const std::string& filename)
+{
+    oiio::ImageOutput* out = oiio::ImageOutput::create(filename);
+    if (!out)
+        return false;
+
+    lock_guard<mutex> lock(_readMutex);
+    out->open(filename, _image.spec());
+    out->write_image(_image.spec().format, _image.localpixels());
+    out->close();
+    delete out;
+
+    return true;
+}
+
+/*************/
 void Image::createDefaultImage()
 {
     oiio::ImageSpec spec(512, 512, 4, oiio::TypeDesc::UINT8);

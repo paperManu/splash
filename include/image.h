@@ -142,6 +142,11 @@ class Image : public BufferObject
          */
         virtual void update();
 
+        /**
+         * Write the current buffer to the specified file
+         */
+        bool write(const std::string& filename);
+
     protected:
         oiio::ImageBuf _image;
         oiio::ImageBuf _bufferImage;
