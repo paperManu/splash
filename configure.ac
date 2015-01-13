@@ -59,18 +59,10 @@ if test "$HAVE_GLM" = "false" ; then
 fi
 
 # GPhoto
-PKG_CHECK_MODULES([GPHOTO], [libgphoto2])
-if test "x${have_gphoto}" = "xfalse" ; then
-    AC_MSG_WARN([Missing libgphoto2-dev])
-fi
+PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
+    AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected]),
+    AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
 AM_CONDITIONAL(HAVE_GPHOTO, test -n "GPHOTO_LIBS")
-
-# Glib, needed for GPhoto
-PKG_CHECK_MODULES([GLIB], [glib-2.0])
-if test "x${have_glib}" = "xfalse" ; then
-    AC_MSG_WARN([Missing libglib2.0-dev])
-fi
-AM_CONDITIONAL(HAVE_GLIB, test -n "GLIB_LIBS")
 
 # Glew, needed by the embedded GLV library
 PKG_CHECK_MODULES([GLEW], [glew])

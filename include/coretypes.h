@@ -64,7 +64,9 @@ class Gui;
 class GlvGlobalView;
 class GlvControl;
 class Image;
+#if HAVE_GPHOTO
 class Image_GPhoto;
+#endif
 class Image_Shmdata;
 class Link;
 class Mesh;

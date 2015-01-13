@@ -91,11 +91,9 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 
 # GPhoto related
 if HAVE_GPHOTO
-if HAVE_GLIB
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_gphoto.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GPHOTO_CFLAGS) $(GLIB_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GPHOTO_LIBS) $(GLIB_LIBS)
-endif
 endif
 
 #*************#

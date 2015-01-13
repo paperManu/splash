@@ -2,7 +2,9 @@
 #include "timer.h"
 
 #include "image.h"
+#if HAVE_GPHOTO
 #include "image_gphoto.h"
+#endif
 #include "image_shmdata.h"
 #include "link.h"
 #include "log.h"
@@ -129,8 +131,10 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+#if HAVE_GPHOTO
         else if (type == string("image_gphoto"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());
+#endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
         else if (type == string("mesh_shmdata"))
