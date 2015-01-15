@@ -4,6 +4,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/piccante/include \
 	-DGLV_GLFW \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \

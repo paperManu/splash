@@ -91,6 +91,10 @@ class Image_GPhoto : public Image
             bool canTether {false};
             bool canConfig {false};
             bool canImport {false};
+
+            std::vector<std::string> shutterspeeds;
+            std::vector<std::string> apertures;
+            std::vector<std::string> isos;
         };
 
         std::recursive_mutex _gpMutex;
@@ -113,6 +117,12 @@ class Image_GPhoto : public Image
         bool doGetProperty(std::string name, std::string& value);
 
         /**
+         * Conversion between float and shutterspeed (as a string)
+         */
+        float getFloatFromShutterspeedString(std::string speed);
+        std::string getShutterspeedStringFromFloat(float duration);
+
+        /**
          * Initialize the whole gphoto context
          */
         void init();
@@ -121,6 +131,7 @@ class Image_GPhoto : public Image
          * Initialize the given camera
          */
         bool initCamera(GPhotoCamera& camera);
+        void initCameraProperty(GPhotoCamera& camera, std::string property, std::vector<std::string>& values);
 
         /**
          * Release the given camera

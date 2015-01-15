@@ -126,10 +126,14 @@ void Image_GPhoto::capture()
                 SLog::log << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name) << Log::endl;
             close(handle);
         }
+        gp_camera_file_delete(camera.cam, filePath.folder, filePath.name, _gpContext);
     }
 
     // Read the downloaded file
     readFile(string("/tmp/") + string(filePath.name));
+
+    // Delete the file
+    remove((string("/tmp/") + string(filePath.name)).c_str());
 }
 
 /*************/
@@ -145,13 +149,11 @@ bool Image_GPhoto::doSetProperty(string name, string value)
 
     GPhotoCamera* camera = &(_cameras[_selectedCameraIndex]);
 
-    CameraWidget* config;
     CameraWidget* widget;
-    gp_camera_get_config(camera->cam, &config, _gpContext);
-    if (gp_widget_get_child_by_name(config, name.c_str(), &widget) == GP_OK)
+    if (gp_widget_get_child_by_name(camera->configuration, name.c_str(), &widget) == GP_OK)
     {
         gp_widget_set_value(widget, value.c_str());
-        gp_camera_set_config(camera->cam, config, _gpContext);
+        gp_camera_set_config(camera->cam, camera->configuration, _gpContext);
         return true;
     }
 
@@ -171,10 +173,10 @@ bool Image_GPhoto::doGetProperty(string name, string& value)
 
     GPhotoCamera* camera = &(_cameras[_selectedCameraIndex]);
 
-    CameraWidget* config;
+    //CameraWidget* config;
     CameraWidget* widget;
-    gp_camera_get_config(camera->cam, &config, _gpContext);
-    if (gp_widget_get_child_by_name(config, name.c_str(), &widget) == GP_OK)
+    //gp_camera_get_config(camera->cam, &config, _gpContext);
+    if (gp_widget_get_child_by_name(camera->configuration, name.c_str(), &widget) == GP_OK)
     {
         const char* cvalue = nullptr;
         gp_widget_get_value(widget, &cvalue);
@@ -183,6 +185,46 @@ bool Image_GPhoto::doGetProperty(string name, string& value)
     }
 
     return false;
+}
+
+/*************/
+float Image_GPhoto::getFloatFromShutterspeedString(std::string speed)
+{
+    float num = 1.f;
+    float denom = 1.f;
+    if (speed.find("1/") != string::npos)
+        denom = stof(speed.substr(2));
+    else
+    {
+        try
+        {
+            num = stof(speed);
+        }
+        catch (std::invalid_argument)
+        {
+            num = 1.f;
+        }
+    }
+    return num / denom;
+}
+
+/*************/
+string Image_GPhoto::getShutterspeedStringFromFloat(float duration)
+{
+    float diff = numeric_limits<float>::max();
+    string selectedSpeed = "1/20"; // If not correct value has been found, return this arbitrary value
+
+    for (auto& speed : _cameras[_selectedCameraIndex].shutterspeeds)
+    {
+        float value = getFloatFromShutterspeedString(speed);
+        if (std::abs(duration - value) < diff)
+        {
+            diff = std::abs(duration - value);
+            selectedSpeed = speed;
+        }
+    }
+
+    return selectedSpeed;
 }
 
 /*************/
@@ -227,12 +269,38 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
 
         gp_camera_get_config(camera.cam, &camera.configuration, _gpContext);
 
+        // Get the available shutterspeeds
+        initCameraProperty(camera, "shutterspeed", camera.shutterspeeds);
+        initCameraProperty(camera, "aperture", camera.apertures);
+        initCameraProperty(camera, "iso", camera.isos);
+
         return true;
     }
     else
     {
         SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " already initialized" << Log::endl;
         return false;
+    }
+}
+
+/*************/
+void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, string property, vector<string>& values)
+{
+    values.clear();
+    CameraWidget* widget;
+    if (gp_widget_get_child_by_name(camera.configuration, property.c_str(), &widget) == GP_OK)
+    {
+        const char* value = nullptr;
+        int propCount = gp_widget_count_choices(widget);
+        for (int i = 0; i < propCount; ++i)
+        {
+            gp_widget_get_choice(widget, i, &value);
+            values.push_back({value});
+        }
+    }
+    else
+    {
+        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Property " << property << " is not available for camera " << camera.model << Log::endl;
     }
 }
 
@@ -284,11 +352,12 @@ void Image_GPhoto::registerAttributes()
     _attribFunctions["shutterspeed"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
-        return doSetProperty("shutterspeed", args[0].asString());
+        return doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
     }, [&]() -> Values {
         string value;
         doGetProperty("shutterspeed", value);
-        return {value};
+        float duration = getFloatFromShutterspeedString(value);
+        return {duration};
     });
 
     // Actions

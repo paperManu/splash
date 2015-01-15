@@ -29,10 +29,14 @@
 #include "coretypes.h"
 #include "basetypes.h"
 
+namespace pic {
+class Image;
+class CameraResponseFunction;
+}
+
 namespace Splash {
 
 class World;
-typedef std::weak_ptr<World> WorldWeakPtr;
 
 /*************/
 class ColorCalibrator : public BaseObject
@@ -41,7 +45,7 @@ class ColorCalibrator : public BaseObject
         /**
          * Constructor
          */
-        ColorCalibrator(WorldWeakPtr world);
+        ColorCalibrator(std::weak_ptr<World> world);
 
         /**
          * Destructor
@@ -73,8 +77,28 @@ class ColorCalibrator : public BaseObject
         void update();
 
     private:
-        WorldWeakPtr _world;
+        std::weak_ptr<World> _world;
         Image_GPhotoPtr _gcamera;
+        std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
+
+        unsigned int _nbrImageHdr {3}; // Number of images to use for HDR capture
+        int _meanBoxSize {32}; // Size of the box over which to compute the mean value
+
+        /**
+         * Capture an HDR image from the gcamera
+         */
+        std::shared_ptr<pic::Image> captureHDR();
+
+        /**
+         * Get the mean value of the area around the maximum in the given image
+         */
+        std::vector<float> getMeanMaxValue(std::shared_ptr<pic::Image> image, std::vector<int>& coords);
+
+        /**
+         * Conversion between fraction (a string) and a pair of numerator and denominator
+         */
+        void getIntegersFromFraction(std::string fraction, int& num, int& denom);
+        std::string getFractionFromIntegers(int num, int denom);
         
         /**
          * Register new functors to modify attributes
