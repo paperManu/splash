@@ -22,7 +22,6 @@ ColorCalibrator::ColorCalibrator(std::weak_ptr<World> world)
 {
     _world = world;
     registerAttributes();
-    _gcamera = make_shared<Image_GPhoto>();
 }
 
 /*************/
@@ -33,6 +32,18 @@ ColorCalibrator::~ColorCalibrator()
 /*************/
 void ColorCalibrator::update()
 {
+    // Initialize camera
+    _gcamera = make_shared<Image_GPhoto>();
+
+    // Check whether the camera is ready
+    Values status;
+    _gcamera->getAttribute("ready", status);
+    if (status.size() == 0 || status[0].asInt() == 0)
+    {
+        SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
+        return;
+    }
+
     auto world = _world.lock();
     // Get the Camera list
     Values cameraList = world->getObjectsNameByType("camera");
@@ -43,6 +54,8 @@ void ColorCalibrator::update()
 
     world->sendMessage(cameraList[1].asString(), "hide", {1});
     world->sendMessage(cameraList[1].asString(), "flashBG", {1});
+
+    vector<vector<float>> allValues;
 
     world->sendMessage(cameraList[1].asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
     shared_ptr<pic::Image> hdr = captureHDR();
@@ -55,17 +68,24 @@ void ColorCalibrator::update()
     maxValue = getMeanMaxValue(hdr, coords);
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum value: " << maxValue[0] << " - " << maxValue[1] << " - " << maxValue[2] << Log::endl;
 
-    for (float r = 0.0; r <= 1.0; r += 0.1)
+    for (float r = 0.0; r <= 1.0; r += 0.05)
     {
         world->sendMessage(cameraList[1].asString(), "clearColor", {r, 0.0, 0.0, 1.0});
         hdr = captureHDR();
         maxValue = getMeanMaxValue(hdr, coords);
+        allValues.push_back(maxValue);
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum value: " << maxValue[0] << " - " << maxValue[1] << " - " << maxValue[2] << Log::endl;
     }
 
     world->sendMessage(cameraList[1].asString(), "clearColor", {});
     world->sendMessage(cameraList[1].asString(), "hide", {0});
     world->sendMessage(cameraList[1].asString(), "flashBG", {0});
+
+    cout << "---------" << endl;
+    for (auto& values : allValues)
+        cout << values[0] << " - " << values[1] << " - " << values[2] << endl;
+    
+    _gcamera.reset();
 }
 
 /*************/
@@ -188,23 +208,6 @@ vector<float> ColorCalibrator::getMeanMaxValue(shared_ptr<pic::Image> image, vec
     image->getMeanVal(&box, meanMaxValue.data());
 
     return meanMaxValue;
-}
-
-/*************/
-void ColorCalibrator::getIntegersFromFraction(std::string fraction, int& num, int& denom)
-{
-    num = 1;
-    denom = 1;
-    if (fraction.find("1/") != string::npos)
-        denom = stoi(fraction.substr(2));
-    else
-        num = stoi(fraction);
-}
-
-/*************/
-string ColorCalibrator::getFractionFromIntegers(int num, int denom)
-{
-    return to_string(num) + "/" + to_string(denom);
 }
 
 /*************/

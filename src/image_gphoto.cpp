@@ -51,6 +51,7 @@ bool Image_GPhoto::read(const string& filename)
 
     // TODO: handle selection by camera name
     _selectedCameraIndex = 0;
+    initCamera(_cameras[_selectedCameraIndex]);
 
     return true;
 }
@@ -83,20 +84,20 @@ void Image_GPhoto::detectCameras()
 
         if (!initCamera(camera))
         {
+            releaseCamera(camera);
             SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to initialize camera " << camera.model << " on port " << camera.port << Log::endl;
-            releaseCamera(camera);
-            continue;
         }
-
-        if (!camera.canTether && !camera.canImport)
+        else if (!camera.canTether && !camera.canImport)
         {
-            SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " does not support import or tethering" << Log::endl;
             releaseCamera(camera);
-            continue;
+            SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " does not support import or tethering" << Log::endl;
         }
-
-        SLog::log << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " initialized correctly" << Log::endl;
-        _cameras.push_back(camera);
+        else
+        {
+            releaseCamera(camera);
+            _cameras.push_back(camera);
+            SLog::log << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " initialized correctly" << Log::endl;
+        }
     }
 }
 
@@ -173,9 +174,7 @@ bool Image_GPhoto::doGetProperty(string name, string& value)
 
     GPhotoCamera* camera = &(_cameras[_selectedCameraIndex]);
 
-    //CameraWidget* config;
     CameraWidget* widget;
-    //gp_camera_get_config(camera->cam, &config, _gpContext);
     if (gp_widget_get_child_by_name(camera->configuration, name.c_str(), &widget) == GP_OK)
     {
         const char* cvalue = nullptr;
@@ -267,6 +266,9 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
         if (!(abilities.file_operations & GP_FILE_OPERATION_NONE))
             camera.canImport = true;
 
+        if (gp_camera_init(camera.cam, _gpContext) != GP_OK)
+            return false;
+
         gp_camera_get_config(camera.cam, &camera.configuration, _gpContext);
 
         // Get the available shutterspeeds
@@ -310,8 +312,13 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
     lock_guard<recursive_mutex> lock(_gpMutex);
 
     gp_camera_exit(camera.cam, _gpContext);
-    gp_camera_unref(camera.cam);
-    gp_widget_unref(camera.configuration);
+    if (camera.cam != nullptr)
+        gp_camera_unref(camera.cam);
+    if (camera.configuration != nullptr)
+        gp_widget_unref(camera.configuration);
+
+    camera.cam = nullptr;
+    camera.configuration = nullptr;
 }
 
 /*************/
@@ -373,6 +380,17 @@ void Image_GPhoto::registerAttributes()
             detectCameras();
         });
         return true;
+    });
+
+    // Status
+    _attribFunctions["ready"] = AttributeFunctor([&](Values args) {
+        return false;
+    }, [&]() -> Values {
+        lock_guard<recursive_mutex> lock(_gpMutex);
+        if (_selectedCameraIndex == -1)
+            return {0};
+        else
+            return {1};
     });
 }
 

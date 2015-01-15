@@ -95,12 +95,6 @@ class ColorCalibrator : public BaseObject
         std::vector<float> getMeanMaxValue(std::shared_ptr<pic::Image> image, std::vector<int>& coords);
 
         /**
-         * Conversion between fraction (a string) and a pair of numerator and denominator
-         */
-        void getIntegersFromFraction(std::string fraction, int& num, int& denom);
-        std::string getFractionFromIntegers(int num, int denom);
-        
-        /**
          * Register new functors to modify attributes
          */
         void registerAttributes();
