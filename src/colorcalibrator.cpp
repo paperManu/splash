@@ -45,47 +45,95 @@ void ColorCalibrator::update()
     }
 
     auto world = _world.lock();
-    // Get the Camera list
-    Values cameraList = world->getObjectsNameByType("camera");
-
+    // Compute the camera response function
     _nbrImageHdr = 5;
     captureHDR();
     _nbrImageHdr = 3;
 
-    world->sendMessage(cameraList[1].asString(), "hide", {1});
-    world->sendMessage(cameraList[1].asString(), "flashBG", {1});
-
-    vector<vector<float>> allValues;
-
-    world->sendMessage(cameraList[1].asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
-    shared_ptr<pic::Image> hdr = captureHDR();
-    vector<int> coords;
-    vector<float> maxValue = getMeanMaxValue(hdr, coords);
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum value: " << maxValue[0] << " - " << maxValue[1] << " - " << maxValue[2] << Log::endl;
-
-    world->sendMessage(cameraList[1].asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
-    hdr = captureHDR();
-    maxValue = getMeanMaxValue(hdr, coords);
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum value: " << maxValue[0] << " - " << maxValue[1] << " - " << maxValue[2] << Log::endl;
-
-    for (float r = 0.0; r <= 1.0; r += 0.05)
+    // Get the Camera list
+    Values cameraList = world->getObjectsNameByType("camera");
+    struct CalibrationParams
     {
-        world->sendMessage(cameraList[1].asString(), "clearColor", {r, 0.0, 0.0, 1.0});
-        hdr = captureHDR();
-        maxValue = getMeanMaxValue(hdr, coords);
-        allValues.push_back(maxValue);
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum value: " << maxValue[0] << " - " << maxValue[1] << " - " << maxValue[2] << Log::endl;
+        vector<int> camPos {2};
+        vector<float> minValues {3};
+        vector<float> maxValues {3};
+        vector<pair<float, vector<float>>> curves {3};
+    };
+    vector<CalibrationParams> calibrationParams;
+
+    // All cameras to black
+    for (auto& cam : cameraList)
+    {
+        world->sendMessage(cam.asString(), "hide", {1});
+        world->sendMessage(cam.asString(), "flashBG", {1});
+        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
     }
 
-    world->sendMessage(cameraList[1].asString(), "clearColor", {});
-    world->sendMessage(cameraList[1].asString(), "hide", {0});
-    world->sendMessage(cameraList[1].asString(), "flashBG", {0});
+    // Measure the min and max for each Camera
+    // and find the minimum and maximum for all of them
+    shared_ptr<pic::Image> hdr;
+    for (auto& cam : cameraList)
+    {
+        world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
+        hdr = captureHDR();
+        vector<int> coords = getMaxRegionCenter(hdr);
+        vector<float> maxValues = getMeanValue(hdr, coords);
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
 
-    cout << "---------" << endl;
-    for (auto& values : allValues)
-        cout << values[0] << " - " << values[1] << " - " << values[2] << endl;
+        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+        hdr = captureHDR();
+        vector<float> minValues = getMeanValue(hdr, coords);
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum values: " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
+
+        // Save the camera center for later use
+        CalibrationParams params;
+        params.camPos = coords;
+        params.minValues = minValues;
+        params.maxValues = maxValues;
+        calibrationParams.push_back(params);
+    }
+
+    // Find minimum and maximum luminance values
+    vector<float> minValues(3, 0.f);
+    vector<float> maxValues(3, numeric_limits<float>::max());
+    for (auto& params : calibrationParams)
+    {
+        minValues = std::max(minValues, params.minValues);
+        maxValues = std::min(maxValues, params.maxValues);
+    }
+
+    cout << "~~~~> " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << endl;
+    cout << "~~~~> " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << endl;
+
+    // Find color curves for each Camera
+    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    {
+        string camName = cameraList[i].asString();
+        CalibrationParams params = calibrationParams[i];
+
+        for (float r = 0.0; r <= 1.0; r += 0.1)
+        {
+            world->sendMessage(camName, "clearColor", {r, 0.0, 0.0, 1.0});
+            hdr = captureHDR();
+            vector<float> values = getMeanValue(hdr, params.camPos);
+            world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+
+            SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - RGB values: " << values[0] << " - " << values[1] << " - " << values[2] << Log::endl;
+
+            params.curves.push_back(pair<float, vector<float>>(r, values));
+        }
+    }
+
+    // Cameras back to normal
+    for (auto& cam : cameraList)
+    {
+        world->sendMessage(cam.asString(), "hide", {0});
+        world->sendMessage(cam.asString(), "flashBG", {0});
+        world->sendMessage(cam.asString(), "clearColor", {});
+    }
     
     _gcamera.reset();
+    _crf.reset();
 }
 
 /*************/
@@ -179,12 +227,14 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
 }
 
 /*************/
-vector<float> ColorCalibrator::getMeanMaxValue(shared_ptr<pic::Image> image, vector<int>& coords)
+vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
 {
     if (image == nullptr || !image->isValid())
-        return vector<float>();
+        return vector<int>();
 
-    vector<float> meanMaxValue(image->channels, numeric_limits<float>::min());
+    vector<int> coords;
+
+    // Find the maximum value
     float maxLinearLuminance = numeric_limits<float>::min();
     for (int y = 0; y < image->height; ++y)
         for (int x = 0; x < image->width; ++x)
@@ -194,14 +244,40 @@ vector<float> ColorCalibrator::getMeanMaxValue(shared_ptr<pic::Image> image, vec
             for (int c = 0; c < image->channels; ++c)
                 linlum += pixel[c];
             if (linlum > maxLinearLuminance)
-            {
                 maxLinearLuminance = linlum;
-                coords = vector<int>({x, y});
+        }
+
+    // Region of interest contains all pixels at least half
+    // as bright as the maximum
+    int maxX {0}, maxY {0}, minX {image->width}, minY {image->height};
+    for (int y = 0; y < image->height; ++y)
+        for (int x = 0; x < image->width; ++x)
+        {
+            float* pixel = (*image)(x, y);
+            float linlum = 0.f;
+            for (int c = 0; c < image->channels; ++c)
+                linlum += pixel[c];
+            if (linlum >= maxLinearLuminance * 0.5f)
+            {
+                minX = std::min(minX, x);
+                maxX = std::max(maxX, x);
+                minY = std::min(minY, y);
+                maxY = std::max(maxY, y);
             }
         }
 
+    coords = vector<int>({(maxX + minX) / 2, (maxY + minY) / 2});
+
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ")" << Log::endl;
 
+    return coords;
+}
+
+/*************/
+vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector<int> coords)
+{
+    vector<float> meanMaxValue(image->channels, numeric_limits<float>::min());
+    
     pic::BBox box(coords[0] - _meanBoxSize / 2, coords[0] + _meanBoxSize / 2,
                   coords[1] - _meanBoxSize / 2, coords[1] + _meanBoxSize / 2);
 

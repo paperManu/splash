@@ -90,9 +90,14 @@ class ColorCalibrator : public BaseObject
         std::shared_ptr<pic::Image> captureHDR();
 
         /**
-         * Get the mean value of the area around the maximum in the given image
+         * Find the center of region with max values
          */
-        std::vector<float> getMeanMaxValue(std::shared_ptr<pic::Image> image, std::vector<int>& coords);
+        std::vector<int> getMaxRegionCenter(std::shared_ptr<pic::Image> image);
+
+        /**
+         * Get the mean value of the area around the given coords
+         */
+        std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords);
 
         /**
          * Register new functors to modify attributes
