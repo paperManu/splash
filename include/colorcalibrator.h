@@ -29,6 +29,8 @@
 #include "coretypes.h"
 #include "basetypes.h"
 
+#include <utility>
+
 namespace pic {
 class Image;
 class CameraResponseFunction;
@@ -77,6 +79,19 @@ class ColorCalibrator : public BaseObject
         void update();
 
     private:
+        // Some internal types
+        typedef std::pair<float, float> Point;
+        typedef std::vector<Point> Curve;
+
+        struct CalibrationParams
+        {
+            std::vector<int> camPos {2};
+            std::vector<float> minValues {3};
+            std::vector<float> maxValues {3};
+            std::vector<Curve> curves {3};
+        };
+
+        // Attributes
         std::weak_ptr<World> _world;
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
@@ -88,6 +103,12 @@ class ColorCalibrator : public BaseObject
          * Capture an HDR image from the gcamera
          */
         std::shared_ptr<pic::Image> captureHDR();
+
+        /**
+         * Compute the inverse projection transformation function, typically
+         * correcting the projector non linearity for all three channels
+         */
+        std::vector<Curve> computeProjectorFunctionInverse(std::vector<Curve>& rgbCurves);
 
         /**
          * Find the center of region with max values

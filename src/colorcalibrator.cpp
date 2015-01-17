@@ -4,7 +4,8 @@
 #define PIC_DISABLE_QT
 
 #include <piccante.hpp>
-#include <utility>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_spline.h>
 
 #include "image_gphoto.h"
 #include "log.h"
@@ -52,13 +53,6 @@ void ColorCalibrator::update()
 
     // Get the Camera list
     Values cameraList = world->getObjectsNameByType("camera");
-    struct CalibrationParams
-    {
-        vector<int> camPos {2};
-        vector<float> minValues {3};
-        vector<float> maxValues {3};
-        vector<pair<float, vector<float>>> curves {3};
-    };
     vector<CalibrationParams> calibrationParams;
 
     // All cameras to black
@@ -120,8 +114,12 @@ void ColorCalibrator::update()
 
             SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - RGB values: " << values[0] << " - " << values[1] << " - " << values[2] << Log::endl;
 
-            params.curves.push_back(pair<float, vector<float>>(r, values));
+            params.curves[0].push_back(Point(r, values[0]));
+            params.curves[1].push_back(Point(r, values[1]));
+            params.curves[2].push_back(Point(r, values[2]));
         }
+
+        vector<Curve> projInvCurves = computeProjectorFunctionInverse(params.curves);
     }
 
     // Cameras back to normal
@@ -134,6 +132,64 @@ void ColorCalibrator::update()
     
     _gcamera.reset();
     _crf.reset();
+}
+
+/*************/
+vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(vector<Curve>& rgbCurves)
+{
+    vector<Curve> projInvCurves;
+
+    // Work on each curve independently
+    for (auto& curve : rgbCurves)
+    {
+        double yOffset = curve[0].second;
+        double yRange = curve[curve.size() - 1].second - curve[0].second;
+        if (yRange <= 0.f)
+        {
+            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Unable to compute projector inverse function curve on a channel" << Log::endl;
+            projInvCurves.push_back(Curve());
+            continue;
+        }
+
+        vector<double> rawX;
+        vector<double> rawY;
+
+        // Make sure the points are correctly ordered
+        sort(curve.begin(), curve.end(), [&](Point a, Point b) {
+            return a.second < b.second;
+        });
+        for (auto& point : curve)
+        {
+            rawX.push_back((point.second - yOffset) / yRange);
+            rawY.push_back(point.first);
+
+            cout << "---> " << rawX[rawX.size() - 1] << " - " << rawY[rawY.size() - 1] << endl;
+        }
+
+        gsl_interp_accel* acc = gsl_interp_accel_alloc();
+        gsl_spline* spline = gsl_spline_alloc(gsl_interp_cspline, curve.size());
+        gsl_spline_init(spline, rawX.data(), rawY.data(), curve.size());
+
+        Curve projInvCurve;
+        cout << "------------------------------------------------" << endl;
+        for (float x = 0.f; x <= 255.f; x += 1.f)
+        {
+            float realX = x / 255.f;
+            Point point;
+            point.first = realX;
+            point.second = gsl_spline_eval(spline, realX, acc);
+            projInvCurve.push_back(point);
+
+            cout << projInvCurve[projInvCurve.size() - 1].first << " " << projInvCurve[projInvCurve.size() - 1].second << endl;
+        }
+        cout << "------------------------------------------------" << endl;
+        projInvCurves.push_back(projInvCurve);
+
+        gsl_spline_free(spline);
+        gsl_interp_accel_free(acc);
+    }
+
+    return projInvCurves;
 }
 
 /*************/
