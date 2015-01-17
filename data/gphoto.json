@@ -16,11 +16,19 @@
          "type" : "camera",
          "up" : [ 0.0, 0.0, 1.0 ]
       },
-      "gimage" : {
-        "file" : "",
-        "type" : "image_gphoto",
-        "shutterspeed" : "1/20",
-        "srgb" : 1
+      "cam2" : {
+         "blackLevel" : [ 0.0 ],
+         "blendWidth" : [ 0.05000000074505806 ],
+         "brightness" : [ 1.0 ],
+         "colorTemperature" : [ 65.0 ],
+         "eye" : [ 0.4032992720603943, -0.7835989594459534, 0.5325532555580139 ],
+         "fov" : [ 35.0 ],
+         "principalPoint" : [ 0.50, 0.50 ],
+         "shared" : 0,
+         "size" : [ 1280.0, 800.0 ],
+         "target" : [ -0.9412840008735657, 1.704793334007263, 0.7225532531738281 ],
+         "type" : "camera",
+         "up" : [ 0.0, 0.0, 1.0 ]
       },
       "gui" : {
          "type" : "gui"
@@ -36,9 +44,11 @@
       "links" : [
          [ "mesh", "object" ],
          [ "object", "cam1" ],
+         [ "object", "cam2" ],
          [ "object", "gui" ],
-         [ "gimage", "object" ],
+         [ "image", "object" ],
          [ "cam1", "win1" ],
+         [ "cam2", "win2" ],
          [ "gui", "win1" ]
       ],
       "local" : {
@@ -56,13 +66,30 @@
          "sideness" : [ 2 ],
          "type" : "object"
       },
+      "shmimage" : {
+         "file" : "/tmp/switcher_default_video_video-0",
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image_shmdata"
+      },
       "win1" : {
-         "decorated" : [ 1 ],
+         "decorated" : [ 0 ],
          "fullscreen" : [ -1 ],
          "gamma" : [ 2.200000047683716 ],
          "layout" : [ 0, 0, 0, 0 ],
-         "position" : [ 537, 25 ],
-         "size" : [ 1280, 800 ],
+         "position" : [ 1920, 0 ],
+         "size" : [ 960, 1200 ],
+         "srgb" : [ 1 ],
+         "type" : "window"
+      },
+      "win2" : {
+         "decorated" : [ 0 ],
+         "fullscreen" : [ -1 ],
+         "gamma" : [ 2.200000047683716 ],
+         "layout" : [ 0, 0, 0, 0 ],
+         "position" : [ 2880, 0 ],
+         "size" : [ 960, 1200 ],
          "srgb" : [ 1 ],
          "type" : "window"
       }
