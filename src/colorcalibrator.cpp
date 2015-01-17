@@ -72,12 +72,12 @@ void ColorCalibrator::update()
         hdr = captureHDR();
         vector<int> coords = getMaxRegionCenter(hdr);
         vector<float> maxValues = getMeanValue(hdr, coords);
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values for camera " << cam.asString() << ": " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
 
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
         hdr = captureHDR();
         vector<float> minValues = getMeanValue(hdr, coords);
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum values: " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum values for camera " << cam.asString() << ": " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
 
         // Save the camera center for later use
         CalibrationParams params;
@@ -96,8 +96,8 @@ void ColorCalibrator::update()
         maxValues = std::min(maxValues, params.maxValues);
     }
 
-    cout << "~~~~> " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << endl;
-    cout << "~~~~> " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << endl;
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum overall values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum overall values: " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
 
     // Find color curves for each Camera
     for (unsigned int i = 0; i < cameraList.size(); ++i)
@@ -105,21 +105,29 @@ void ColorCalibrator::update()
         string camName = cameraList[i].asString();
         CalibrationParams params = calibrationParams[i];
 
-        for (float r = 0.0; r <= 1.0; r += 0.1)
+        for (int c = 0; c < 3; ++c)
         {
-            world->sendMessage(camName, "clearColor", {r, 0.0, 0.0, 1.0});
-            hdr = captureHDR();
-            vector<float> values = getMeanValue(hdr, params.camPos);
-            world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+            int samples = 10;
+            for (int s = 0; s <= samples; ++s)
+            {
+                float x = (float)s / (float)samples;
 
-            SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - RGB values: " << values[0] << " - " << values[1] << " - " << values[2] << Log::endl;
+                Values color(4, 0.0);
+                color[c] = x;
+                color[3] = 1.0;
 
-            params.curves[0].push_back(Point(r, values[0]));
-            params.curves[1].push_back(Point(r, values[1]));
-            params.curves[2].push_back(Point(r, values[2]));
+                world->sendMessage(camName, "clearColor", color);
+                hdr = captureHDR();
+                vector<float> values = getMeanValue(hdr, params.camPos);
+                world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+
+                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Color channel " << c << " value: " << values[c] << Log::endl;
+
+                params.curves[c].push_back(Point(x, values[c]));
+            }
         }
 
-        vector<Curve> projInvCurves = computeProjectorFunctionInverse(params.curves);
+        params.projectorCurves = computeProjectorFunctionInverse(params.curves);
     }
 
     // Cameras back to normal

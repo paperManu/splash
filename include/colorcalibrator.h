@@ -89,6 +89,7 @@ class ColorCalibrator : public BaseObject
             std::vector<float> minValues {3};
             std::vector<float> maxValues {3};
             std::vector<Curve> curves {3};
+            std::vector<Curve> projectorCurves;
         };
 
         // Attributes
