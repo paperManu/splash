@@ -64,9 +64,6 @@ class Gui;
 class GlvGlobalView;
 class GlvControl;
 class Image;
-#if HAVE_GPHOTO
-class Image_GPhoto;
-#endif
 class Image_Shmdata;
 class Link;
 class Mesh;
@@ -81,7 +78,6 @@ typedef std::shared_ptr<Camera> CameraPtr;
 typedef std::shared_ptr<Geometry> GeometryPtr;
 typedef std::shared_ptr<Gui> GuiPtr;
 typedef std::shared_ptr<Image> ImagePtr;
-typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
 typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
 typedef std::shared_ptr<Link> LinkPtr;
 typedef std::shared_ptr<Mesh> MeshPtr;
@@ -91,6 +87,14 @@ typedef std::shared_ptr<Scene> ScenePtr;
 typedef std::shared_ptr<Shader> ShaderPtr;
 typedef std::shared_ptr<Texture> TexturePtr;
 typedef std::shared_ptr<Window> WindowPtr;
+
+#if HAVE_GPHOTO
+class ColorCalibrator;
+class Image_GPhoto;
+
+typedef std::shared_ptr<ColorCalibrator> ColorCalibratorPtr;
+typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
+#endif
 
 /*************/
 struct SerializedObject

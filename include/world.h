@@ -37,8 +37,6 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "colorcalibrator.h"
-
 namespace Splash {
 
 class World;
@@ -47,7 +45,9 @@ typedef std::shared_ptr<World> WorldPtr;
 /*************/
 class World : public RootObject
 {
+#if HAVE_GPHOTO
     friend ColorCalibrator;
+#endif
 
     public:
         /**
@@ -97,7 +97,9 @@ class World : public RootObject
         bool _doSaveConfig {false};
 
         // Objects in charge of calibration
+#if HAVE_GPHOTO
         ColorCalibratorPtr _colorCalibrator;
+#endif
 
         /**
          * Add an object to the world (used for Images and Meshes currently)

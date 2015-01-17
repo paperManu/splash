@@ -61,7 +61,7 @@ fi
 PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
     AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected]),
     AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
-AM_CONDITIONAL(HAVE_GPHOTO, test -n "GPHOTO_LIBS")
+AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
 
 # Glew, needed by the embedded GLV library
 PKG_CHECK_MODULES([GLEW], [glew])

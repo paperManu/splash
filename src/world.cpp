@@ -2,9 +2,6 @@
 #include "timer.h"
 
 #include "image.h"
-#if HAVE_GPHOTO
-#include "image_gphoto.h"
-#endif
 #include "image_shmdata.h"
 #include "link.h"
 #include "log.h"
@@ -12,6 +9,11 @@
 #include "mesh_shmdata.h"
 #include "scene.h"
 #include "threadpool.h"
+
+#if HAVE_GPHOTO
+#include "colorcalibrator.h"
+#include "image_gphoto.h"
+#endif
 
 #include <chrono>
 #include <fstream>
@@ -580,6 +582,7 @@ void World::setAttribute(string name, string attrib, Values args)
 /*************/
 void World::registerAttributes()
 {
+#if HAVE_GPHOTO
     _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
         if (_colorCalibrator == nullptr)
             _colorCalibrator = make_shared<ColorCalibrator>(_self);
@@ -590,6 +593,7 @@ void World::registerAttributes()
         });
         return true;
     });
+#endif
 
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
         _childProcessLaunched = true;

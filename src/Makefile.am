@@ -16,7 +16,6 @@ lib_LTLIBRARIES = \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
-	colorcalibrator.cpp \
 	geometry.cpp \
 	gui.cpp \
 	image.cpp \
@@ -93,7 +92,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 
 # GPhoto related
 if HAVE_GPHOTO
-libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_gphoto.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += colorcalibrator.cpp image_gphoto.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GPHOTO_CFLAGS) $(GLIB_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GPHOTO_LIBS) $(GLIB_LIBS)
 endif
