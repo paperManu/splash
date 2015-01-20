@@ -74,6 +74,8 @@ struct ShaderSources
         uniform int _texBlendingMap = 0;
         uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _isColorLUT = 0;
+        uniform vec3 _colorLUT[256];
 
         in VertexData
         {
@@ -119,11 +121,6 @@ struct ShaderSources
             else
                 color = texture(_tex0, texCoord);
 
-            float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
-            color.r *= _fovAndColorBalance.z / maxBalanceRatio;
-            color.g *= 1.0 / maxBalanceRatio;
-            color.b *= _fovAndColorBalance.w / maxBalanceRatio;
-
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
             {
@@ -134,6 +131,19 @@ struct ShaderSources
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
+
+            // Color correction through a LUT
+            if (_isColorLUT != 0)
+            {
+                color.r = _colorLUT[int(color.r * 255.f)].r;
+                color.g = _colorLUT[int(color.g * 255.f)].g;
+                color.b = _colorLUT[int(color.b * 255.f)].b;
+            }
+
+            float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
+            color.r *= _fovAndColorBalance.z / maxBalanceRatio;
+            color.g *= 1.0 / maxBalanceRatio;
+            color.b *= _fovAndColorBalance.w / maxBalanceRatio;
 
             // Black level
             float blackCorrection = max(min(blackLevel, 1.0), 0.0);
@@ -190,7 +200,7 @@ struct ShaderSources
             // Finally, correct for the incidence
             // cosNormalAngle can't be 0.0, it would have been discarded
             // TODO: this has to also use shift values to be meaningful
-            fragColor.rgb /= abs(cosNormalAngle);
+            //fragColor.rgb /= abs(cosNormalAngle);
         }
     )"};
 

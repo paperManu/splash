@@ -110,7 +110,7 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_ESCAPE:
     {
         auto scene = _scene.lock();
-        scene->sendMessage("quit");
+        scene->sendMessageToWorld("quit");
         break;
     }
     case GLFW_KEY_B:
@@ -118,7 +118,33 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->sendMessage("computeBlending");
+            scene->sendMessageToWorld("computeBlending");
+        }
+        break;
+    }
+    case GLFW_KEY_L:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            vector<CameraPtr> cameras;
+            for (auto& obj : scene->_objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            for (auto& obj : scene->_ghostObjects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            for (auto& cam : cameras)
+                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
+        }
+        break;
+    }
+    case GLFW_KEY_P:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("calibrateColor");
         }
         break;
     }
@@ -127,7 +153,7 @@ void Gui::key(int& key, int& action, int& mods)
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->sendMessage("save");
+            scene->sendMessageToWorld("save");
         }
         break;
     }
@@ -138,9 +164,9 @@ void Gui::key(int& key, int& action, int& mods)
             auto scene = _scene.lock();
 
             if (_flashBG)
-                scene->sendMessage("flashBG", {0});
+                scene->sendMessageToWorld("flashBG", {0});
             else
-                scene->sendMessage("flashBG", {1});
+                scene->sendMessageToWorld("flashBG", {1});
 
             _flashBG = !_flashBG;
         }
@@ -150,14 +176,14 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_T: 
     {
         auto scene = _scene.lock();
-        scene->sendMessage("wireframe", {0});
+        scene->sendMessageToWorld("wireframe", {0});
         break;
     }
     // Switch the rendering to wireframe
     case GLFW_KEY_W:
     {
         auto scene = _scene.lock();
-        scene->sendMessage("wireframe", {1});
+        scene->sendMessageToWorld("wireframe", {1});
         break;
     }
     }
@@ -427,11 +453,13 @@ void Gui::initGLV(int width, int height)
         text += " H: hide all but the selected camera\n";
         text += " T: textured draw mode\n";
         text += " W: wireframe draw mode\n";
+        text += " P: launch color calibration\n";
+        text += " L: activate color LUT (if calibrated)\n";
 
         return text;
     });
     _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 13 + 8);
     _glvHelp.style(&_style);
 
     // Controls

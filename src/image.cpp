@@ -203,6 +203,12 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 /*************/
 bool Image::read(const string& filename)
 {
+    return readFile(filename);
+}
+
+/*************/
+bool Image::readFile(const string& filename)
+{
     oiio::ImageInput* in = oiio::ImageInput::open(filename);
     if (!in)
     {
@@ -260,6 +266,22 @@ void Image::update()
     }
     else if (_benchmark)
         updateTimestamp();
+}
+
+/*************/
+bool Image::write(const std::string& filename)
+{
+    oiio::ImageOutput* out = oiio::ImageOutput::create(filename);
+    if (!out)
+        return false;
+
+    lock_guard<mutex> lock(_readMutex);
+    out->open(filename, _image.spec());
+    out->write_image(_image.spec().format, _image.localpixels());
+    out->close();
+    delete out;
+
+    return true;
 }
 
 /*************/

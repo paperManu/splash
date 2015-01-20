@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <map>
 #include <mutex>
@@ -44,6 +45,10 @@ typedef std::shared_ptr<World> WorldPtr;
 /*************/
 class World : public RootObject
 {
+#if HAVE_GPHOTO
+    friend ColorCalibrator;
+#endif
+
     public:
         /**
          * Constructor
@@ -76,7 +81,6 @@ class World : public RootObject
         // World parameters
         unsigned int _worldFramerate {60};
 
-        std::shared_ptr<Link> _link; // link between this World and the Scenes
         std::map<std::string, ScenePtr> _scenes;
         std::map<std::string, std::thread> _scenesThread;
         std::string _masterSceneName {""};
@@ -86,12 +90,16 @@ class World : public RootObject
 
         std::string _configFilename;
         Json::Value _config;
-        std::string _lastConfigReceived {"none"};
         bool _childProcessLaunched {false};
 
         // List of actions to do during the next loop
         bool _doComputeBlending {false};
         bool _doSaveConfig {false};
+
+        // Objects in charge of calibration
+#if HAVE_GPHOTO
+        ColorCalibratorPtr _colorCalibrator;
+#endif
 
         /**
          * Add an object to the world (used for Images and Meshes currently)
@@ -112,6 +120,11 @@ class World : public RootObject
          * Get the next available id
          */
         unsigned long getId() {return ++_nextId;}
+
+        /**
+         * Get the list of objects by their type
+         */
+        Values getObjectsNameByType(std::string type);
 
         /**
          * Redefinition of a method from RootObject

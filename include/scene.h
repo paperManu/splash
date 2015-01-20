@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <cstddef>
@@ -128,7 +129,7 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessage(const std::string message, const Values value = {});
+        void sendMessageToWorld(const std::string message, const Values value = {});
 
         /**
          * Wait for synchronization with texture upload
@@ -149,10 +150,9 @@ class Scene : public RootObject
 
     private:
         ScenePtr _self;
-        std::shared_ptr<Link> _link;
         bool _started {false};
         std::thread _sceneLoop;
-        std::mutex _configureMutex;
+        std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};
@@ -177,10 +177,6 @@ class Scene : public RootObject
         unsigned int _blendingResolution {2048};
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
-
-        // List of actions to do during the next render loop
-        bool _doComputeBlending {false};
-        bool _doSaveNow {false};
 
         /**
          * Set up the context and everything

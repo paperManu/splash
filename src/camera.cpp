@@ -27,6 +27,7 @@
 #define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
 #define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
+#define SPLASH_CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
 
 using namespace std;
 using namespace glm;
@@ -584,8 +585,8 @@ bool Camera::render()
         glScissor(SPLASH_SCISSOR_WIDTH, SPLASH_SCISSOR_WIDTH, _width - SPLASH_SCISSOR_WIDTH * 2, _height - SPLASH_SCISSOR_WIDTH * 2);
     }
 
-    if (_flashBG && !_hidden)
-        glClearColor(0.6, 0.6, 0.6, 1.0);
+    if (_flashBG)
+        glClearColor(_clearColor.r, _clearColor.g, _clearColor.b, _clearColor.a);
     else
         glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -600,6 +601,15 @@ bool Camera::render()
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
             //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
+            if (_colorLUT.size() == 768 && _isColorLUTActivated)
+            {
+                obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
+                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 1});
+            }
+            else
+            {
+                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 0});
+            }
 
             obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
             obj->draw();
@@ -1196,6 +1206,17 @@ void Camera::registerAttributes()
         return {_blackLevel};
     });
 
+    _attribFunctions["clearColor"] = AttributeFunctor([&](Values args) {
+        if (args.size() == 0)
+            _clearColor = SPLASH_CAMERA_FLASH_COLOR;
+        else if (args.size() == 4)
+            _clearColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        else
+            return false;
+
+        return true;
+    });
+
     _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
@@ -1204,6 +1225,43 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_colorTemperature / 100.f};
+    });
+
+    _attribFunctions["colorLUT"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1 || args[0].getType() != Value::Type::v )
+            return false;
+        if (args[0].asValues().size() != 768)
+            return false;
+        for (auto& v : args[0].asValues())
+            if (v.getType() != Value::Type::f)
+                return false;
+
+        _colorLUT = args[0].asValues();
+
+        return true;
+    }, [&]() -> Values {
+        if (_colorLUT.size() == 768)
+            return {_colorLUT};
+        else
+            return {};
+    });
+
+    _attribFunctions["activateColorLUT"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() == 2)
+            _isColorLUTActivated = (_isColorLUTActivated != true);
+        else
+            _isColorLUTActivated = args[0].asInt();
+
+        if (_isColorLUTActivated)
+            SLog::log << Log::MESSAGE << "Camera[activateColorLUT] - Color lookup table activated for camera " << getName() << Log::endl;
+        else
+            SLog::log << Log::MESSAGE << "Camera[activateColorLUT] - Color lookup table deactivated for camera " << getName() << Log::endl;
+
+        return true;
+    }, [&]() -> Values {
+        return {(int)_isColorLUTActivated};
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {

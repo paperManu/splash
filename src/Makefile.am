@@ -4,6 +4,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/piccante/include \
 	-DGLV_GLFW \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \
@@ -89,6 +90,13 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	$(SHMDATA_LIBS) \
 	$(ZMQ_LIBS)
 
+# GPhoto related
+if HAVE_GPHOTO
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += colorcalibrator.cpp image_gphoto.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GPHOTO_CFLAGS) $(GLIB_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GPHOTO_LIBS) $(GLIB_LIBS)
+endif
+
 #*************#
 bin_PROGRAMS = splash \
 	splash-scene
@@ -133,10 +141,12 @@ splash_scene_LDFLAGS = \
 #*************#
 noinst_HEADERS = \
 	$(top_srcdir)/include/camera.h \
+	$(top_srcdir)/include/colorcalibrator.h \
 	$(top_srcdir)/include/coretypes.h \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_shmdata.h \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
