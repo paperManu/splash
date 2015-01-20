@@ -99,6 +99,7 @@ class ColorCalibrator : public BaseObject
 
         unsigned int _nbrImageHDR {3}; // Number of images to use for HDR capture
         double _hdrStep {1.0}; // Number of stops between to LDR images
+        unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
         int _meanBoxSize {32}; // Size of the box over which to compute the mean value
 
         /**

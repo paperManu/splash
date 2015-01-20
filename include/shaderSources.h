@@ -132,11 +132,12 @@ struct ShaderSources
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
 
+            // Color correction through a LUT
             if (_isColorLUT != 0)
             {
-                color.r = _colorLUT[int(color.r * 256.f)].r;
-                color.g = _colorLUT[int(color.g * 256.f)].g;
-                color.b = _colorLUT[int(color.b * 256.f)].b;
+                color.r = _colorLUT[int(color.r * 255.f)].r;
+                color.g = _colorLUT[int(color.g * 255.f)].g;
+                color.b = _colorLUT[int(color.b * 255.f)].b;
             }
 
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
@@ -199,7 +200,7 @@ struct ShaderSources
             // Finally, correct for the incidence
             // cosNormalAngle can't be 0.0, it would have been discarded
             // TODO: this has to also use shift values to be meaningful
-            fragColor.rgb /= abs(cosNormalAngle);
+            //fragColor.rgb /= abs(cosNormalAngle);
         }
     )"};
 

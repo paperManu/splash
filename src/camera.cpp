@@ -601,7 +601,7 @@ bool Camera::render()
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
             //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
-            if (_colorLUT.size() == 768)
+            if (_colorLUT.size() == 768 && _isColorLUTActivated)
             {
                 obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
                 obj->getShader()->setAttribute("uniform", {"_isColorLUT", 1});
@@ -1237,12 +1237,31 @@ void Camera::registerAttributes()
                 return false;
 
         _colorLUT = args[0].asValues();
+
         return true;
-    }, [&]() ->Values {
+    }, [&]() -> Values {
         if (_colorLUT.size() == 768)
             return {_colorLUT};
         else
             return {};
+    });
+
+    _attribFunctions["activateColorLUT"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        if (args[0].asInt() == 2)
+            _isColorLUTActivated = (_isColorLUTActivated != true);
+        else
+            _isColorLUTActivated = args[0].asInt();
+
+        if (_isColorLUTActivated)
+            SLog::log << Log::MESSAGE << "Camera[activateColorLUT] - Color lookup table activated for camera " << getName() << Log::endl;
+        else
+            SLog::log << Log::MESSAGE << "Camera[activateColorLUT] - Color lookup table deactivated for camera " << getName() << Log::endl;
+
+        return true;
+    }, [&]() -> Values {
+        return {(int)_isColorLUTActivated};
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {

@@ -122,6 +122,23 @@ void Gui::key(int& key, int& action, int& mods)
         }
         break;
     }
+    case GLFW_KEY_L:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            vector<CameraPtr> cameras;
+            for (auto& obj : scene->_objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            for (auto& obj : scene->_ghostObjects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            for (auto& cam : cameras)
+                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
+        }
+        break;
+    }
     case GLFW_KEY_P:
     {
         if (action == GLFW_PRESS)
@@ -437,11 +454,12 @@ void Gui::initGLV(int width, int height)
         text += " T: textured draw mode\n";
         text += " W: wireframe draw mode\n";
         text += " P: launch color calibration\n";
+        text += " L: activate color LUT (if calibrated)\n";
 
         return text;
     });
     _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 12 + 8);
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 13 + 8);
     _glvHelp.style(&_style);
 
     // Controls

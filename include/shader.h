@@ -154,7 +154,14 @@ class Shader : public BaseObject
         std::map<ShaderType, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
-        std::map<std::string, std::pair<Values, GLint>> _uniforms;
+
+        struct Uniform
+        {
+            Values values;
+            GLint glIndex;
+            std::string type;
+        };
+        std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 

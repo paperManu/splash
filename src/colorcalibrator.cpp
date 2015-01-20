@@ -117,7 +117,7 @@ void ColorCalibrator::update()
     _hdrStep = 0.5;
     captureHDR();
     _hdrStep = 1.0;
-    _nbrImageHDR = 1;
+    _nbrImageHDR = 2;
 
     for (auto& cam : cameraList)
         world->sendMessage(cam.asString(), "hide", {1});
@@ -129,36 +129,20 @@ void ColorCalibrator::update()
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
+        // Capture a view with no projection, to subtract ambient lighting
+        shared_ptr<pic::Image> ambientHDR = captureHDR();
+
         world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR();
+        *hdr -= *ambientHDR;
         vector<int> coords = getMaxRegionCenter(hdr);
-        //vector<float> maxValues = getMeanValue(hdr, coords);
-        //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values for camera " << cam.asString() << ": " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
-
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
-        //hdr = captureHDR();
-        //vector<float> minValues = getMeanValue(hdr, coords);
-        //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum values for camera " << cam.asString() << ": " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
 
         // Save the camera center for later use
         CalibrationParams params;
         params.camPos = coords;
-        //params.minValues = minValues;
-        //params.maxValues = maxValues;
         calibrationParams.push_back(params);
     }
-
-    // Find minimum and maximum luminance values
-    //vector<float> minValues(3, 0.f);
-    //vector<float> maxValues(3, numeric_limits<float>::max());
-    //for (auto& params : calibrationParams)
-    //{
-    //    minValues = std::max(minValues, params.minValues);
-    //    maxValues = std::min(maxValues, params.maxValues);
-    //}
-
-    //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum overall values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
-    //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum overall values: " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
 
     // Find color curves for each Camera
     for (unsigned int i = 0; i < cameraList.size(); ++i)
@@ -167,7 +151,7 @@ void ColorCalibrator::update()
 
         for (int c = 0; c < 3; ++c)
         {
-            int samples = 2;
+            int samples = _colorCurveSamples;
             for (int s = 0; s <= samples; ++s)
             {
                 float x = (float)s / (float)samples;
@@ -181,7 +165,7 @@ void ColorCalibrator::update()
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
-                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
+                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
 
                 calibrationParams[i].curves[c].push_back(Point(x, values[c]));
             }
@@ -225,12 +209,12 @@ void ColorCalibrator::update()
     {
         string camName = cameraList[i].asString();
         Values lut;
-        // TODO: send it as a Values containing triplets of Value
         for (unsigned int v = 0; v < 256; ++v)
             for (unsigned int c = 0; c < 3; ++c)
                 lut.push_back(calibrationParams[i].projectorCurves[c][v].second);
 
         world->sendMessage(camName, "colorLUT", {lut});
+        world->sendMessage(camName, "activateColorLUT", {1});
     }
 
     // Cameras back to normal
@@ -240,6 +224,8 @@ void ColorCalibrator::update()
         world->sendMessage(cam.asString(), "flashBG", {0});
         world->sendMessage(cam.asString(), "clearColor", {});
     }
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
     
     _gcamera.reset();
     _crf.reset();
