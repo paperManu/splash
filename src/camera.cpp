@@ -1255,9 +1255,9 @@ void Camera::registerAttributes()
             _isColorLUTActivated = args[0].asInt();
 
         if (_isColorLUTActivated)
-            SLog::log << Log::MESSAGE << "Camera[activateColorLUT] - Color lookup table activated for camera " << getName() << Log::endl;
+            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
         else
-            SLog::log << Log::MESSAGE << "Camera[activateColorLUT] - Color lookup table deactivated for camera " << getName() << Log::endl;
+            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table deactivated for camera " << getName() << Log::endl;
 
         return true;
     }, [&]() -> Values {

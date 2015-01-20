@@ -77,6 +77,11 @@ struct ShaderSources
         uniform int _isColorLUT = 0;
         uniform vec3 _colorLUT[256];
 
+        //layout(std140) uniform _LUT
+        //{
+        //    vec3 _colorLUT[256];
+        //};
+
         in VertexData
         {
             vec4 position;
@@ -135,9 +140,8 @@ struct ShaderSources
             // Color correction through a LUT
             if (_isColorLUT != 0)
             {
-                color.r = _colorLUT[int(color.r * 255.f)].r;
-                color.g = _colorLUT[int(color.g * 255.f)].g;
-                color.b = _colorLUT[int(color.b * 255.f)].b;
+                ivec3 icolor = ivec3(color.rgb * 255.f);
+                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
             }
 
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);

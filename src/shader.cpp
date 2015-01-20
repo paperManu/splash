@@ -54,6 +54,13 @@ void Shader::activate()
     }
 
     _activated = true;
+
+    for (auto& u : _uniforms)
+    {
+        if (u.second.type == "buffer")
+            glUniformBlockBinding(_program, u.second.glIndex, 1);
+    }
+
     glUseProgram(_program);
 }
 
@@ -214,134 +221,122 @@ void Shader::parseUniforms(const std::string& src)
     for (string line; getline(input, line);)
     {
         string::size_type position;
-        if ((position = line.find("uniform")) == string::npos)
-            continue;
-        string next = line.substr(position + 8);
-        string type, name;
-        istringstream lineStream(next);
-        getline(lineStream, type, ' ');
-        getline(lineStream, name, ' ');
+        if ((position = line.find("layout(std140) uniform")) != string::npos)
+        {
+            string next = line.substr(position + 23, string::npos);
+            string name = next.substr(0, next.find(" "));
 
-        if (name.find(";") != string::npos)
-            name = name.substr(0, name.size() - 1);
-        if (name.find("[") != string::npos)
-            name = name.substr(0, name.find("["));
-
-        Values values;
-        if (_uniforms.find(name) != _uniforms.end())
-            values = _uniforms[name].values;
-
-        _uniforms[name].type = type;
-
-        // Get the location
-        if (type == "int")
-        {
-            _uniforms[name].values = {0};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "float")
-        {
-            _uniforms[name].values = {0.f};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "vec2")
-        {
-            _uniforms[name].values = {0.f, 0.f};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "vec3")
-        {
-            _uniforms[name].values = {0.f, 0.f, 0.f};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "vec4")
-        {
-            _uniforms[name].values = {0.f, 0.f, 0.f, 0.f};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "ivec2")
-        {
-            _uniforms[name].values = {0, 0};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "ivec3")
-        {
-            _uniforms[name].values = {0, 0, 0};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "ivec4")
-        {
-            _uniforms[name].values = {0, 0, 0, 0};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "mat4")
-        {
-            _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else if (type == "sampler2D")
-        {
-            _uniforms[name].values = {};
-            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-        }
-        else
-            SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
-
-        if (values.size() != 0)
-        {
-            _uniforms[name].values = values;
-            _uniformsToUpdate.push_back(name);
+            _uniforms[name].type = "buffer";
+            _uniforms[name].glIndex = glGetUniformBlockIndex(_program, name.c_str());
+            glGenBuffers(1, &_uniforms[name].glBuffer);
+            _uniforms[name].glBufferReady = false;
         }
         else
         {
-            // Save the default value
+            if ((position = line.find("uniform")) == string::npos)
+                continue;
+
+            string next = line.substr(position + 8);
+            string type, name;
+            type = next.substr(0, next.find(" "));
+            next = next.substr(type.size() + 1, next.size());
+            name = next.substr(0, next.find(" "));
+
+            if (name.find(";") != string::npos)
+                name = name.substr(0, name.size() - 1);
+            if (name.find("[") != string::npos)
+                name = name.substr(0, name.find("["));
+
+            Values values;
+            if (_uniforms.find(name) != _uniforms.end())
+                values = _uniforms[name].values;
+
+            _uniforms[name].type = type;
+
+            // Get the location
+            _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
             if (type == "int")
-            {
-                int v;
-                glGetUniformiv(_program, _uniforms[name].glIndex, &v);
-                _uniforms[name].values = {v};
-            }
+                _uniforms[name].values = {0};
             else if (type == "float")
-            {
-                float v;
-                glGetUniformfv(_program, _uniforms[name].glIndex, &v);
-                _uniforms[name].values = {v};
-            }
+                _uniforms[name].values = {0.f};
             else if (type == "vec2")
-            {
-                float v[2];
-                glGetUniformfv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1]};
-            }
+                _uniforms[name].values = {0.f, 0.f};
             else if (type == "vec3")
-            {
-                float v[3];
-                glGetUniformfv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2]};
-            }
+                _uniforms[name].values = {0.f, 0.f, 0.f};
             else if (type == "vec4")
-            {
-                float v[4];
-                glGetUniformfv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2], v[3]};
-            }
+                _uniforms[name].values = {0.f, 0.f, 0.f, 0.f};
             else if (type == "ivec2")
-            {
-                int v[2];
-                glGetUniformiv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1]};
-            }
+                _uniforms[name].values = {0, 0};
             else if (type == "ivec3")
-            {
-                int v[3];
-                glGetUniformiv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2]};
-            }
+                _uniforms[name].values = {0, 0, 0};
             else if (type == "ivec4")
+                _uniforms[name].values = {0, 0, 0, 0};
+            else if (type == "mat4")
+                _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            else if (type == "sampler2D")
+                _uniforms[name].values = {};
+            else
             {
-                int v[4];
-                glGetUniformiv(_program, _uniforms[name].glIndex, v);
-                _uniforms[name].values = {v[0], v[1], v[2], v[3]};
+                _uniforms[name].glIndex = -1;
+                SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
+            }
+
+            if (values.size() != 0)
+            {
+                _uniforms[name].values = values;
+                _uniformsToUpdate.push_back(name);
+            }
+            else
+            {
+                // Save the default value
+                if (type == "int")
+                {
+                    int v;
+                    glGetUniformiv(_program, _uniforms[name].glIndex, &v);
+                    _uniforms[name].values = {v};
+                }
+                else if (type == "float")
+                {
+                    float v;
+                    glGetUniformfv(_program, _uniforms[name].glIndex, &v);
+                    _uniforms[name].values = {v};
+                }
+                else if (type == "vec2")
+                {
+                    float v[2];
+                    glGetUniformfv(_program, _uniforms[name].glIndex, v);
+                    _uniforms[name].values = {v[0], v[1]};
+                }
+                else if (type == "vec3")
+                {
+                    float v[3];
+                    glGetUniformfv(_program, _uniforms[name].glIndex, v);
+                    _uniforms[name].values = {v[0], v[1], v[2]};
+                }
+                else if (type == "vec4")
+                {
+                    float v[4];
+                    glGetUniformfv(_program, _uniforms[name].glIndex, v);
+                    _uniforms[name].values = {v[0], v[1], v[2], v[3]};
+                }
+                else if (type == "ivec2")
+                {
+                    int v[2];
+                    glGetUniformiv(_program, _uniforms[name].glIndex, v);
+                    _uniforms[name].values = {v[0], v[1]};
+                }
+                else if (type == "ivec3")
+                {
+                    int v[3];
+                    glGetUniformiv(_program, _uniforms[name].glIndex, v);
+                    _uniforms[name].values = {v[0], v[1], v[2]};
+                }
+                else if (type == "ivec4")
+                {
+                    int v[4];
+                    glGetUniformiv(_program, _uniforms[name].glIndex, v);
+                    _uniforms[name].values = {v[0], v[1], v[2], v[3]};
+                }
             }
         }
     }
@@ -350,8 +345,16 @@ void Shader::parseUniforms(const std::string& src)
     for (auto& u : _uniforms)
     {
         string name = u.first;
-        if (glGetUniformLocation(_program, name.c_str()) == -1)
-            u.second.glIndex = -1;
+        if (u.second.type != "buffer")
+        {
+            if (glGetUniformLocation(_program, name.c_str()) == -1)
+                u.second.glIndex = -1;
+        }
+        else
+        {
+            if (glGetUniformBlockIndex(_program, name.c_str()) == -1)
+                u.second.glIndex = -1;
+        }
     }
 }
 
@@ -421,7 +424,19 @@ void Shader::updateUniforms()
                     vector<int> data;
                     for (auto& v : _uniforms[u].values[0].asValues())
                         data.push_back(v.asInt());
-                    if (_uniforms[u].type == "int")
+                    if (_uniforms[u].type == "buffer")
+                    {
+                        glBindBuffer(GL_UNIFORM_BUFFER, _uniforms[u].glBuffer);
+                        if (!_uniforms[u].glBufferReady)
+                        {
+                            glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(int), NULL, GL_STATIC_DRAW);
+                            _uniforms[u].glBufferReady = true;
+                        }
+                        glBufferSubData(GL_UNIFORM_BUFFER, 0, data.size() * sizeof(int), data.data());
+                        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, _uniforms[u].glBuffer, 0, data.size() * sizeof(int));
+                    }
+                    else if (_uniforms[u].type == "int")
                         glUniform1iv(_uniforms[u].glIndex, data.size(), data.data());
                     else if (_uniforms[u].type == "ivec2")
                         glUniform2iv(_uniforms[u].glIndex, data.size() / 2, data.data());
@@ -435,7 +450,19 @@ void Shader::updateUniforms()
                     vector<float> data;
                     for (auto& v : _uniforms[u].values[0].asValues())
                         data.push_back(v.asFloat());
-                    if (_uniforms[u].type == "float")
+                    if (_uniforms[u].type == "buffer")
+                    {
+                        glBindBuffer(GL_UNIFORM_BUFFER, _uniforms[u].glBuffer);
+                        if (!_uniforms[u].glBufferReady)
+                        {
+                            glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(float), NULL, GL_STATIC_DRAW);
+                            _uniforms[u].glBufferReady = true;
+                        }
+                        glBufferSubData(GL_UNIFORM_BUFFER, 0, data.size() * sizeof(float), data.data());
+                        glBindBuffer(GL_UNIFORM_BUFFER, 0);
+                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, _uniforms[u].glBuffer, 0, data.size() * sizeof(float));
+                    }
+                    else if (_uniforms[u].type == "float")
                         glUniform1fv(_uniforms[u].glIndex, data.size(), data.data());
                     else if (_uniforms[u].type == "vec2")
                         glUniform2fv(_uniforms[u].glIndex, data.size() / 2, data.data());

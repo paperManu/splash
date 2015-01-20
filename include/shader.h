@@ -157,9 +157,11 @@ class Shader : public BaseObject
 
         struct Uniform
         {
-            Values values;
-            GLint glIndex;
-            std::string type;
+            std::string type {""};
+            Values values {};
+            GLint glIndex {-1};
+            GLuint glBuffer {0};
+            bool glBufferReady {false};
         };
         std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
