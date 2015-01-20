@@ -601,6 +601,15 @@ bool Camera::render()
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
             //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
+            if (_colorLUT.size() == 768)
+            {
+                obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
+                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 1});
+            }
+            else
+            {
+                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 0});
+            }
 
             obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
             obj->draw();
@@ -1216,6 +1225,24 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_colorTemperature / 100.f};
+    });
+
+    _attribFunctions["colorLUT"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1 || args[0].getType() != Value::Type::v )
+            return false;
+        if (args[0].asValues().size() != 768)
+            return false;
+        for (auto& v : args[0].asValues())
+            if (v.getType() != Value::Type::f)
+                return false;
+
+        _colorLUT = args[0].asValues();
+        return true;
+    }, [&]() ->Values {
+        if (_colorLUT.size() == 768)
+            return {_colorLUT};
+        else
+            return {};
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {

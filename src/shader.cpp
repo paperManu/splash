@@ -224,6 +224,8 @@ void Shader::parseUniforms(const std::string& src)
 
         if (name.find(";") != string::npos)
             name = name.substr(0, name.size() - 1);
+        if (name.find("[") != string::npos)
+            name = name.substr(0, name.find("["));
 
         Values values;
         if (_uniforms.find(name) != _uniforms.end())
@@ -378,6 +380,24 @@ void Shader::updateUniforms()
                     glUniform3f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat());
                 else if (size == 4)
                     glUniform4f(_uniforms[u].second, _uniforms[u].first[0].asFloat(), _uniforms[u].first[1].asFloat(), _uniforms[u].first[2].asFloat(), _uniforms[u].first[3].asFloat());
+            }
+            else if (type == Value::Type::v && _uniforms[u].first[0].asValues().size() > 0)
+            {
+                type = _uniforms[u].first[0].asValues()[0].getType();
+                if (type == Value::Type::i)
+                {
+                    vector<int> data;
+                    for (auto& v : _uniforms[u].first[0].asValues())
+                        data.push_back(v.asInt());
+                    glUniform3iv(_uniforms[u].second, _uniforms[u].first[0].size() / 3, data.data());
+                }
+                else if (type == Value::Type::f)
+                {
+                    vector<float> data;
+                    for (auto& v : _uniforms[u].first[0].asValues())
+                        data.push_back(v.asFloat());
+                    glUniform3fv(_uniforms[u].second, data.size() / 3, data.data());
+                }
             }
         }
 

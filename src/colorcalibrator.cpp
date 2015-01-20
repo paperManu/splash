@@ -19,6 +19,13 @@ namespace Splash
 {
 
 /*************/
+void gslErrorHandler(const char* reason, const char* file, int line, int gsl_errno)
+{
+    string errorString = string(reason);
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - An error in a GSL function has be caught: " << errorString << Log::endl;
+}
+
+/*************/
 ColorCalibrator::ColorCalibrator(std::weak_ptr<World> world)
 {
     _world = world;
@@ -28,6 +35,48 @@ ColorCalibrator::ColorCalibrator(std::weak_ptr<World> world)
 /*************/
 ColorCalibrator::~ColorCalibrator()
 {
+}
+
+/*************/
+void ColorCalibrator::findCorrectExposure()
+{
+    vector<int> coords(3, 0);
+    vector<float> maxValues(3, numeric_limits<float>::max());
+
+    _nbrImageHDR = 3;
+
+    while (true)
+    {
+        _crf.reset();
+
+        shared_ptr<pic::Image> hdr;
+        hdr = captureHDR();
+        coords = getMaxRegionCenter(hdr);
+        maxValues = getMeanValue(hdr);
+
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
+
+        std::sort(maxValues.begin(), maxValues.end());
+        if (maxValues[2] > 8.f)
+        {
+            Values res;
+            _gcamera->getAttribute("shutterspeed", res);
+            float speed = res[0].asFloat() * log2(maxValues[2]);
+            _gcamera->setAttribute("shutterspeed", {speed});
+        }
+        else if (maxValues[2] < 1.0f)
+        {
+            Values res;
+            _gcamera->getAttribute("shutterspeed", res);
+            float speed = res[0].asFloat() / log2(maxValues[2]);
+            _gcamera->setAttribute("shutterspeed", {speed});
+        }
+        else
+        {
+            _crf.reset();
+            break;
+        }
+    }
 }
 
 /*************/
@@ -46,68 +95,79 @@ void ColorCalibrator::update()
     }
 
     auto world = _world.lock();
-    // Compute the camera response function
-    _nbrImageHdr = 5;
-    captureHDR();
-    _nbrImageHdr = 3;
-
-    // Get the Camera list
     Values cameraList = world->getObjectsNameByType("camera");
-    vector<CalibrationParams> calibrationParams;
 
-    // All cameras to black
+    // Find the correct central exposure time
+    // All cameras to grey
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "hide", {1});
         world->sendMessage(cam.asString(), "flashBG", {1});
+        world->sendMessage(cam.asString(), "clearColor", {0.5, 0.5, 0.5, 1.0});
+    }
+    findCorrectExposure();
+    for (auto& cam : cameraList)
+    {
+        world->sendMessage(cam.asString(), "hide", {0});
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
     }
 
-    // Measure the min and max for each Camera
-    // and find the minimum and maximum for all of them
+    // Compute the camera response function
+    _nbrImageHDR = 5;
+    _hdrStep = 0.5;
+    captureHDR();
+    _hdrStep = 1.0;
+    _nbrImageHDR = 1;
+
+    for (auto& cam : cameraList)
+        world->sendMessage(cam.asString(), "hide", {1});
+
+    // Get the Camera list
+    vector<CalibrationParams> calibrationParams;
+
+    // Find the location of each projection
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR();
         vector<int> coords = getMaxRegionCenter(hdr);
-        vector<float> maxValues = getMeanValue(hdr, coords);
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values for camera " << cam.asString() << ": " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
+        //vector<float> maxValues = getMeanValue(hdr, coords);
+        //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values for camera " << cam.asString() << ": " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
 
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
-        hdr = captureHDR();
-        vector<float> minValues = getMeanValue(hdr, coords);
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum values for camera " << cam.asString() << ": " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
+        //hdr = captureHDR();
+        //vector<float> minValues = getMeanValue(hdr, coords);
+        //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum values for camera " << cam.asString() << ": " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
 
         // Save the camera center for later use
         CalibrationParams params;
         params.camPos = coords;
-        params.minValues = minValues;
-        params.maxValues = maxValues;
+        //params.minValues = minValues;
+        //params.maxValues = maxValues;
         calibrationParams.push_back(params);
     }
 
     // Find minimum and maximum luminance values
-    vector<float> minValues(3, 0.f);
-    vector<float> maxValues(3, numeric_limits<float>::max());
-    for (auto& params : calibrationParams)
-    {
-        minValues = std::max(minValues, params.minValues);
-        maxValues = std::min(maxValues, params.maxValues);
-    }
+    //vector<float> minValues(3, 0.f);
+    //vector<float> maxValues(3, numeric_limits<float>::max());
+    //for (auto& params : calibrationParams)
+    //{
+    //    minValues = std::max(minValues, params.minValues);
+    //    maxValues = std::min(maxValues, params.maxValues);
+    //}
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum overall values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum overall values: " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
+    //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum overall values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
+    //SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Minimum overall values: " << minValues[0] << " - " << minValues[1] << " - " << minValues[2] << Log::endl;
 
     // Find color curves for each Camera
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
         string camName = cameraList[i].asString();
-        CalibrationParams params = calibrationParams[i];
 
         for (int c = 0; c < 3; ++c)
         {
-            int samples = 10;
+            int samples = 2;
             for (int s = 0; s <= samples; ++s)
             {
                 float x = (float)s / (float)samples;
@@ -118,16 +178,59 @@ void ColorCalibrator::update()
 
                 world->sendMessage(camName, "clearColor", color);
                 hdr = captureHDR();
-                vector<float> values = getMeanValue(hdr, params.camPos);
+                vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
-                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Color channel " << c << " value: " << values[c] << Log::endl;
+                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
 
-                params.curves[c].push_back(Point(x, values[c]));
+                calibrationParams[i].curves[c].push_back(Point(x, values[c]));
             }
+
+            // Update min and max values
+            calibrationParams[i].minValues[c] = calibrationParams[i].curves[c][0].second;
+            calibrationParams[i].maxValues[c] = calibrationParams[i].curves[c][samples - 1].second;
         }
 
-        params.projectorCurves = computeProjectorFunctionInverse(params.curves);
+        calibrationParams[i].projectorCurves = computeProjectorFunctionInverse(calibrationParams[i].curves);
+    }
+
+    // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
+    vector<float> minValues(3, 0.f);
+    vector<float> maxValues(3, numeric_limits<float>::max());
+    for (auto& params : calibrationParams)
+    {
+        for (unsigned int c = 0; c < 3; ++c)
+        {
+            minValues[c] = std::max(minValues[c], params.minValues[c]);
+            maxValues[c] = std::min(maxValues[c], params.maxValues[c]);
+        }
+    }
+
+    // Offset and scale projector curves to fit in [minValue, maxValue] for all channels
+    for (auto& params : calibrationParams)
+    {
+        for (unsigned int c = 0; c < 3; ++c)
+        {
+            double range = params.maxValues[c] - params.minValues[c];
+            double offset = (minValues[c] - params.minValues[c]) / range;
+            double scale = (maxValues[c] - minValues[c]) / (params.maxValues[c] - params.minValues[c]);
+
+            for (auto& v : params.projectorCurves[c])
+                v.second = v.second * scale + offset;
+        }
+    }
+
+    // Send calibration to the cameras
+    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    {
+        string camName = cameraList[i].asString();
+        Values lut;
+        // TODO: send it as a Values containing triplets of Value
+        for (unsigned int v = 0; v < 256; ++v)
+            for (unsigned int c = 0; c < 3; ++c)
+                lut.push_back(calibrationParams[i].projectorCurves[c][v].second);
+
+        world->sendMessage(camName, "colorLUT", {lut});
     }
 
     // Cameras back to normal
@@ -143,8 +246,10 @@ void ColorCalibrator::update()
 }
 
 /*************/
-vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(vector<Curve>& rgbCurves)
+vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(vector<Curve> rgbCurves)
 {
+    gsl_set_error_handler(gslErrorHandler);
+
     vector<Curve> projInvCurves;
 
     // Work on each curve independently
@@ -166,36 +271,46 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
         sort(curve.begin(), curve.end(), [&](Point a, Point b) {
             return a.second < b.second;
         });
+        double previousAbscissa = -1.0;
         for (auto& point : curve)
         {
+            double abscissa = (point.second - yOffset) / yRange; 
+            if (abscissa == previousAbscissa)
+            {
+                SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value" << Log::endl;
+                continue;
+            }
+            previousAbscissa = abscissa;
+
             rawX.push_back((point.second - yOffset) / yRange);
             rawY.push_back(point.first);
-
-            cout << "---> " << rawX[rawX.size() - 1] << " - " << rawY[rawY.size() - 1] << endl;
         }
+
+        // Check that first and last points abscissas are 0 and 1, respectively, and shift them slightly
+        // to prevent floating point imprecision to cause an interpolation error
+        rawX[0] = std::max(0.0, rawX[0]) - 0.001;
+        rawX[rawX.size() - 1] = std::min(1.0, rawX[rawX.size() - 1]) + 0.001;
 
         gsl_interp_accel* acc = gsl_interp_accel_alloc();
         gsl_spline* spline = gsl_spline_alloc(gsl_interp_cspline, curve.size());
         gsl_spline_init(spline, rawX.data(), rawY.data(), curve.size());
 
         Curve projInvCurve;
-        cout << "------------------------------------------------" << endl;
-        for (float x = 0.f; x <= 255.f; x += 1.f)
+        for (double x = 0.0; x <= 255.0; x += 1.0)
         {
-            float realX = x / 255.f;
+            double realX = std::min(1.0, x / 255.0); // Make sure we don't try to go past 1.0
             Point point;
             point.first = realX;
             point.second = gsl_spline_eval(spline, realX, acc);
             projInvCurve.push_back(point);
-
-            cout << projInvCurve[projInvCurve.size() - 1].first << " " << projInvCurve[projInvCurve.size() - 1].second << endl;
         }
-        cout << "------------------------------------------------" << endl;
         projInvCurves.push_back(projInvCurve);
 
         gsl_spline_free(spline);
         gsl_interp_accel_free(acc);
     }
+
+    gsl_set_error_handler_off();
 
     return projInvCurves;
 }
@@ -203,22 +318,20 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 /*************/
 shared_ptr<pic::Image> ColorCalibrator::captureHDR()
 {
-    // TODO: find the optimal exposure. Currently we assume the camera is set correctly
-    // (same goes for focus and ISO settings)
     // Capture LDR images
     // Get the current shutterspeed
     Values res;
     _gcamera->getAttribute("shutterspeed", res);
-    float defaultSpeed = res[0].asFloat();
-    float nextSpeed = defaultSpeed;
+    double defaultSpeed = res[0].asFloat();
+    double nextSpeed = defaultSpeed;
 
     // Compute the parameters of the first capture
-    for (int steps = _nbrImageHdr / 2; steps > 0; --steps)
-        nextSpeed /= 2.f;
+    for (int steps = _nbrImageHDR / 2; steps > 0; --steps)
+        nextSpeed /= pow(2.0, _hdrStep);
 
-    vector<pic::Image> ldr(_nbrImageHdr);
-    vector<float> actualShutterSpeeds(_nbrImageHdr);
-    for (unsigned int i = 0; i < _nbrImageHdr; ++i)
+    vector<pic::Image> ldr(_nbrImageHDR);
+    vector<float> actualShutterSpeeds(_nbrImageHDR);
+    for (unsigned int i = 0; i < _nbrImageHDR; ++i)
     {
         _gcamera->setAttribute("shutterspeed", {nextSpeed});
         // We get the actual shutterspeed
@@ -237,7 +350,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
         ldr[i].Read(filename, pic::LT_NOR);
 
         // Update exposure for next step
-        nextSpeed *= 2.f;
+        nextSpeed *= pow(2.0, _hdrStep);
     }
 
     // Reset the shutterspeed
@@ -249,9 +362,9 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
         isValid |= image.isValid();
 
     // Align all exposures on the well-exposed one
-    int medianLDRIndex = _nbrImageHdr / 2 + 1;
-    vector<Eigen::Vector2i> shift(_nbrImageHdr);
-    for (unsigned int i = 0; i < _nbrImageHdr; ++i)
+    int medianLDRIndex = _nbrImageHDR / 2 + 1;
+    vector<Eigen::Vector2i> shift(_nbrImageHDR);
+    for (unsigned int i = 0; i < _nbrImageHDR; ++i)
     {
         if (i == medianLDRIndex)
             continue;
@@ -273,7 +386,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
         _crf->DebevecMalik(stack, actualShutterSpeeds.data());
     }
 
-    for (unsigned int i = 0; i < _nbrImageHdr; ++i)
+    for (unsigned int i = 0; i < _nbrImageHDR; ++i)
         stack[i]->exposure = actualShutterSpeeds[i];
 
     // Assemble the images into a single HDRI
@@ -342,10 +455,17 @@ vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector
 {
     vector<float> meanMaxValue(image->channels, numeric_limits<float>::min());
     
-    pic::BBox box(coords[0] - _meanBoxSize / 2, coords[0] + _meanBoxSize / 2,
-                  coords[1] - _meanBoxSize / 2, coords[1] + _meanBoxSize / 2);
+    if (coords.size() == 2)
+    {
+        pic::BBox box(coords[0] - _meanBoxSize / 2, coords[0] + _meanBoxSize / 2,
+                      coords[1] - _meanBoxSize / 2, coords[1] + _meanBoxSize / 2);
 
-    image->getMeanVal(&box, meanMaxValue.data());
+        image->getMeanVal(&box, meanMaxValue.data());
+    }
+    else
+    {
+        image->getMeanVal(nullptr, meanMaxValue.data());
+    }
 
     return meanMaxValue;
 }
