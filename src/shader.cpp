@@ -386,7 +386,10 @@ void Shader::updateUniforms()
                 continue;
 
             if (_uniforms[u].glIndex == -1)
+            {
+                _uniforms[u].values.clear(); // To make sure it is sent next time if the index is correctly set
                 continue;
+            }
 
             int size = _uniforms[u].values.size();
             int type = _uniforms[u].values[0].getType();
@@ -422,10 +425,11 @@ void Shader::updateUniforms()
                 if (type == Value::Type::i)
                 {
                     vector<int> data;
-                    for (auto& v : _uniforms[u].values[0].asValues())
-                        data.push_back(v.asInt());
                     if (_uniforms[u].type == "buffer")
                     {
+                        for (auto& v : _uniforms[u].values[0].asValues())
+                            data.push_back(v.asInt());
+
                         glBindBuffer(GL_UNIFORM_BUFFER, _uniforms[u].glBuffer);
                         if (!_uniforms[u].glBufferReady)
                         {
@@ -436,22 +440,29 @@ void Shader::updateUniforms()
                         glBindBuffer(GL_UNIFORM_BUFFER, 0);
                         glBindBufferRange(GL_UNIFORM_BUFFER, 1, _uniforms[u].glBuffer, 0, data.size() * sizeof(int));
                     }
-                    else if (_uniforms[u].type == "int")
-                        glUniform1iv(_uniforms[u].glIndex, data.size(), data.data());
-                    else if (_uniforms[u].type == "ivec2")
-                        glUniform2iv(_uniforms[u].glIndex, data.size() / 2, data.data());
-                    else if (_uniforms[u].type == "ivec3")
-                        glUniform3iv(_uniforms[u].glIndex, data.size() / 3, data.data());
-                    else if (_uniforms[u].type == "ivec4")
-                        glUniform4iv(_uniforms[u].glIndex, data.size() / 4, data.data());
+                    else
+                    {
+                        for (auto& v : _uniforms[u].values[0].asValues())
+                            data.push_back(v.asInt());
+
+                        if (_uniforms[u].type == "int")
+                            glUniform1iv(_uniforms[u].glIndex, data.size(), data.data());
+                        else if (_uniforms[u].type == "ivec2")
+                            glUniform2iv(_uniforms[u].glIndex, data.size() / 2, data.data());
+                        else if (_uniforms[u].type == "ivec3")
+                            glUniform3iv(_uniforms[u].glIndex, data.size() / 3, data.data());
+                        else if (_uniforms[u].type == "ivec4")
+                            glUniform4iv(_uniforms[u].glIndex, data.size() / 4, data.data());
+                    }
                 }
                 else if (type == Value::Type::f)
                 {
                     vector<float> data;
-                    for (auto& v : _uniforms[u].values[0].asValues())
-                        data.push_back(v.asFloat());
                     if (_uniforms[u].type == "buffer")
                     {
+                        for (auto& v : _uniforms[u].values[0].asValues())
+                            data.push_back(v.asFloat());
+
                         glBindBuffer(GL_UNIFORM_BUFFER, _uniforms[u].glBuffer);
                         if (!_uniforms[u].glBufferReady)
                         {
@@ -462,14 +473,20 @@ void Shader::updateUniforms()
                         glBindBuffer(GL_UNIFORM_BUFFER, 0);
                         glBindBufferRange(GL_UNIFORM_BUFFER, 1, _uniforms[u].glBuffer, 0, data.size() * sizeof(float));
                     }
-                    else if (_uniforms[u].type == "float")
-                        glUniform1fv(_uniforms[u].glIndex, data.size(), data.data());
-                    else if (_uniforms[u].type == "vec2")
-                        glUniform2fv(_uniforms[u].glIndex, data.size() / 2, data.data());
-                    else if (_uniforms[u].type == "vec3")
-                        glUniform3fv(_uniforms[u].glIndex, data.size() / 3, data.data());
-                    else if (_uniforms[u].type == "vec4")
-                        glUniform4fv(_uniforms[u].glIndex, data.size() / 4, data.data());
+                    else
+                    {
+                        for (auto& v : _uniforms[u].values[0].asValues())
+                            data.push_back(v.asFloat());
+
+                        if (_uniforms[u].type == "float")
+                            glUniform1fv(_uniforms[u].glIndex, data.size(), data.data());
+                        else if (_uniforms[u].type == "vec2")
+                            glUniform2fv(_uniforms[u].glIndex, data.size() / 2, data.data());
+                        else if (_uniforms[u].type == "vec3")
+                            glUniform3fv(_uniforms[u].glIndex, data.size() / 3, data.data());
+                        else if (_uniforms[u].type == "vec4")
+                            glUniform4fv(_uniforms[u].glIndex, data.size() / 4, data.data());
+                    }
                 }
             }
         }
