@@ -122,6 +122,8 @@ void ColorCalibrator::update()
     for (auto& cam : cameraList)
         world->sendMessage(cam.asString(), "hide", {1});
 
+    shared_ptr<pic::Image> ambientHDR = captureHDR();
+
     // Get the Camera list
     vector<CalibrationParams> calibrationParams;
 
@@ -129,9 +131,6 @@ void ColorCalibrator::update()
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
-        // Capture a view with no projection, to subtract ambient lighting
-        shared_ptr<pic::Image> ambientHDR = captureHDR();
-
         world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR();
         *hdr -= *ambientHDR;
@@ -162,6 +161,7 @@ void ColorCalibrator::update()
 
                 world->sendMessage(camName, "clearColor", color);
                 hdr = captureHDR();
+                *hdr -= *ambientHDR;
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 

@@ -1249,8 +1249,11 @@ void Camera::registerAttributes()
     _attribFunctions["activateColorLUT"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
+
         if (args[0].asInt() == 2)
             _isColorLUTActivated = (_isColorLUTActivated != true);
+        else if ((int)_isColorLUTActivated == args[0].asInt())
+            return true;
         else
             _isColorLUTActivated = args[0].asInt();
 
