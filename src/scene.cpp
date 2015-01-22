@@ -757,6 +757,8 @@ void Scene::registerAttributes()
         if (resolution >= 64)
             _blendingResolution = resolution;
         return true;
+    }, [&]() -> Values {
+        return {(int)_blendingResolution};
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
