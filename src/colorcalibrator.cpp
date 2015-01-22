@@ -57,14 +57,14 @@ void ColorCalibrator::findCorrectExposure()
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
 
         std::sort(maxValues.begin(), maxValues.end());
-        if (maxValues[2] > 8.f)
+        if (maxValues[2] > 4.f)
         {
             Values res;
             _gcamera->getAttribute("shutterspeed", res);
             float speed = res[0].asFloat() * log2(maxValues[2]);
             _gcamera->setAttribute("shutterspeed", {speed});
         }
-        else if (maxValues[2] < 1.0f)
+        else if (maxValues[2] < 2.0f)
         {
             Values res;
             _gcamera->getAttribute("shutterspeed", res);
@@ -113,11 +113,9 @@ void ColorCalibrator::update()
     }
 
     // Compute the camera response function
-    _nbrImageHDR = 5;
+    _nbrImageHDR = 7;
     _hdrStep = 0.5;
     captureHDR();
-    _hdrStep = 1.0;
-    _nbrImageHDR = 2;
 
     for (auto& cam : cameraList)
         world->sendMessage(cam.asString(), "hide", {1});
@@ -126,6 +124,8 @@ void ColorCalibrator::update()
     vector<CalibrationParams> calibrationParams;
 
     // Find the location of each projection
+    _hdrStep = 1.0;
+    _nbrImageHDR = 1;
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
@@ -150,6 +150,8 @@ void ColorCalibrator::update()
     }
 
     // Find color curves for each Camera
+    _hdrStep = 1.0;
+    _nbrImageHDR = 2;
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
         string camName = cameraList[i].asString();
@@ -234,76 +236,6 @@ void ColorCalibrator::update()
     
     _gcamera.reset();
     _crf.reset();
-}
-
-/*************/
-vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(vector<Curve> rgbCurves)
-{
-    gsl_set_error_handler(gslErrorHandler);
-
-    vector<Curve> projInvCurves;
-
-    // Work on each curve independently
-    for (auto& curve : rgbCurves)
-    {
-        double yOffset = curve[0].second;
-        double yRange = curve[curve.size() - 1].second - curve[0].second;
-        if (yRange <= 0.f)
-        {
-            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Unable to compute projector inverse function curve on a channel" << Log::endl;
-            projInvCurves.push_back(Curve());
-            continue;
-        }
-
-        vector<double> rawX;
-        vector<double> rawY;
-
-        // Make sure the points are correctly ordered
-        sort(curve.begin(), curve.end(), [&](Point a, Point b) {
-            return a.second < b.second;
-        });
-        double previousAbscissa = -1.0;
-        for (auto& point : curve)
-        {
-            double abscissa = (point.second - yOffset) / yRange; 
-            if (abscissa == previousAbscissa)
-            {
-                SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value" << Log::endl;
-                continue;
-            }
-            previousAbscissa = abscissa;
-
-            rawX.push_back((point.second - yOffset) / yRange);
-            rawY.push_back(point.first);
-        }
-
-        // Check that first and last points abscissas are 0 and 1, respectively, and shift them slightly
-        // to prevent floating point imprecision to cause an interpolation error
-        rawX[0] = std::max(0.0, rawX[0]) - 0.001;
-        rawX[rawX.size() - 1] = std::min(1.0, rawX[rawX.size() - 1]) + 0.001;
-
-        gsl_interp_accel* acc = gsl_interp_accel_alloc();
-        gsl_spline* spline = gsl_spline_alloc(gsl_interp_akima, curve.size());
-        gsl_spline_init(spline, rawX.data(), rawY.data(), curve.size());
-
-        Curve projInvCurve;
-        for (double x = 0.0; x <= 255.0; x += 1.0)
-        {
-            double realX = std::min(1.0, x / 255.0); // Make sure we don't try to go past 1.0
-            Point point;
-            point.first = realX;
-            point.second = gsl_spline_eval(spline, realX, acc);
-            projInvCurve.push_back(point);
-        }
-        projInvCurves.push_back(projInvCurve);
-
-        gsl_spline_free(spline);
-        gsl_interp_accel_free(acc);
-    }
-
-    gsl_set_error_handler_off();
-
-    return projInvCurves;
 }
 
 /*************/
@@ -392,6 +324,80 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - HDRI computed" << Log::endl;
 
     return hdr;
+}
+
+/*************/
+vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(vector<Curve> rgbCurves)
+{
+    gsl_set_error_handler(gslErrorHandler);
+
+    vector<Curve> projInvCurves;
+
+    // Work on each curve independently
+    for (auto& curve : rgbCurves)
+    {
+        double yOffset = curve[0].second;
+        double yRange = curve[curve.size() - 1].second - curve[0].second;
+        if (yRange <= 0.f)
+        {
+            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Unable to compute projector inverse function curve on a channel" << Log::endl;
+            projInvCurves.push_back(Curve());
+            continue;
+        }
+
+        vector<double> rawX;
+        vector<double> rawY;
+
+        // Make sure the points are correctly ordered
+        sort(curve.begin(), curve.end(), [&](Point a, Point b) {
+            return a.second < b.second;
+        });
+        double previousAbscissa = -1.0;
+        for (auto& point : curve)
+        {
+            double abscissa = (point.second - yOffset) / yRange; 
+            if (abscissa == previousAbscissa)
+            {
+                SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value" << Log::endl;
+                continue;
+            }
+            previousAbscissa = abscissa;
+
+            rawX.push_back((point.second - yOffset) / yRange);
+            rawY.push_back(point.first);
+        }
+
+        // Check that first and last points abscissas are 0 and 1, respectively, and shift them slightly
+        // to prevent floating point imprecision to cause an interpolation error
+        rawX[0] = std::max(0.0, rawX[0]) - 0.001;
+        rawX[rawX.size() - 1] = std::min(1.0, rawX[rawX.size() - 1]) + 0.001;
+
+        gsl_interp_accel* acc = gsl_interp_accel_alloc();
+        gsl_spline* spline = nullptr;
+        if (rawX.size() >= 4)
+            spline = gsl_spline_alloc(gsl_interp_akima, curve.size());
+        else
+            spline = gsl_spline_alloc(gsl_interp_linear, curve.size());
+        gsl_spline_init(spline, rawX.data(), rawY.data(), curve.size());
+
+        Curve projInvCurve;
+        for (double x = 0.0; x <= 255.0; x += 1.0)
+        {
+            double realX = std::min(1.0, x / 255.0); // Make sure we don't try to go past 1.0
+            Point point;
+            point.first = realX;
+            point.second = gsl_spline_eval(spline, realX, acc);
+            projInvCurve.push_back(point);
+        }
+        projInvCurves.push_back(projInvCurve);
+
+        gsl_spline_free(spline);
+        gsl_interp_accel_free(acc);
+    }
+
+    gsl_set_error_handler_off();
+
+    return projInvCurves;
 }
 
 /*************/
