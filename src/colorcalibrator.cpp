@@ -44,11 +44,10 @@ void ColorCalibrator::findCorrectExposure()
     vector<float> maxValues(3, numeric_limits<float>::max());
 
     _nbrImageHDR = 3;
+    _hdrStep = 1.0;
 
     while (true)
     {
-        _crf.reset();
-
         shared_ptr<pic::Image> hdr;
         hdr = captureHDR();
         coords = getMaxRegionCenter(hdr);
@@ -73,7 +72,6 @@ void ColorCalibrator::findCorrectExposure()
         }
         else
         {
-            _crf.reset();
             break;
         }
     }
@@ -113,9 +111,12 @@ void ColorCalibrator::update()
     }
 
     // Compute the camera response function
-    _nbrImageHDR = 7;
-    _hdrStep = 0.5;
-    captureHDR();
+    if (_crf == nullptr)
+    {
+        _nbrImageHDR = 7;
+        _hdrStep = 0.5;
+        captureHDR();
+    }
 
     for (auto& cam : cameraList)
         world->sendMessage(cam.asString(), "hide", {1});
@@ -124,8 +125,8 @@ void ColorCalibrator::update()
     vector<CalibrationParams> calibrationParams;
 
     // Find the location of each projection
-    _hdrStep = 1.0;
     _nbrImageHDR = 1;
+    _hdrStep = 1.0;
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
@@ -234,8 +235,36 @@ void ColorCalibrator::update()
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
     
+    // Free camera
     _gcamera.reset();
+}
+
+/*************/
+void ColorCalibrator::updateCRF()
+{
+    // Initialize camera
+    _gcamera = make_shared<Image_GPhoto>();
+
+    // Check whether the camera is ready
+    Values status;
+    _gcamera->getAttribute("ready", status);
+    if (status.size() == 0 || status[0].asInt() == 0)
+    {
+        SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
+        return;
+    }
+
     _crf.reset();
+    findCorrectExposure();
+
+    // Compute the camera response function
+    _crf.reset();
+    _nbrImageHDR = 7;
+    _hdrStep = 0.5;
+    captureHDR();
+
+    // Free camera
+    _gcamera.reset();
 }
 
 /*************/

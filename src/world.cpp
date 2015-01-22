@@ -593,6 +593,17 @@ void World::registerAttributes()
         });
         return true;
     });
+
+    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            _colorCalibrator = make_shared<ColorCalibrator>(_self);
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->updateCRF();
+        });
+        return true;
+    });
 #endif
 
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {

@@ -78,6 +78,11 @@ class ColorCalibrator : public BaseObject
          */
         void update();
 
+        /**
+         * Update the color response function of the physical camera
+         */
+        void updateCRF();
+
     private:
         // Some internal types
         typedef std::pair<float, float> Point;
