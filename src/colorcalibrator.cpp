@@ -41,7 +41,7 @@ ColorCalibrator::~ColorCalibrator()
 void ColorCalibrator::findCorrectExposure()
 {
     vector<int> coords(3, 0);
-    vector<float> maxValues(3, numeric_limits<float>::max());
+    vector<float> meanValues(3, numeric_limits<float>::max());
 
     _nbrImageHDR = 3;
     _hdrStep = 1.0;
@@ -50,24 +50,16 @@ void ColorCalibrator::findCorrectExposure()
     {
         shared_ptr<pic::Image> hdr;
         hdr = captureHDR();
-        coords = getMaxRegionCenter(hdr);
-        maxValues = getMeanValue(hdr);
+        meanValues = getMeanValue(hdr);
 
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << maxValues[0] << " - " << maxValues[1] << " - " << maxValues[2] << Log::endl;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << meanValues[0] << " - " << meanValues[1] << " - " << meanValues[2] << Log::endl;
 
-        std::sort(maxValues.begin(), maxValues.end());
-        if (maxValues[2] > 4.f)
+        std::sort(meanValues.begin(), meanValues.end());
+        if (meanValues[2] > 4.f || meanValues[2] < 1.0f)
         {
             Values res;
             _gcamera->getAttribute("shutterspeed", res);
-            float speed = res[0].asFloat() * log2(maxValues[2]);
-            _gcamera->setAttribute("shutterspeed", {speed});
-        }
-        else if (maxValues[2] < 2.0f)
-        {
-            Values res;
-            _gcamera->getAttribute("shutterspeed", res);
-            float speed = res[0].asFloat() / log2(maxValues[2]);
+            float speed = res[0].asFloat() * pow(2.0, log2(meanValues[2]));
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else

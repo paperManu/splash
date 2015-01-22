@@ -137,13 +137,6 @@ struct ShaderSources
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
 
-            // Color correction through a LUT
-            if (_isColorLUT != 0)
-            {
-                ivec3 icolor = ivec3(round(color.rgb * 255.f));
-                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
-            }
-
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
@@ -156,13 +149,10 @@ struct ShaderSources
             // If no blending map has been computed
             if (_texBlendingMap == 0)
             {
-                if (_textureNbr > 0)
-                    fragColor = color;
                 if (_textureNbr > 1)
                 {
                     vec4 color2 = texture(_tex1, texCoord);
-                    fragColor.rgb = fragColor.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
-                    fragColor.a = 1.0;
+                    color.rgb = color.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
                 }
             }
             // If there is a blending map
@@ -194,17 +184,26 @@ struct ShaderSources
                 {
                     blendFactorFloat = 1.0 / float(camNbr);
                 }
-                fragColor.rgb = color.rgb * min(1.0, blendFactorFloat);
-                fragColor.a = 1.0;
+                color.rgb = color.rgb * min(1.0, pow(blendFactorFloat, 1.0/2.2));
             }
 
             // Brightness correction
-            fragColor.rgb = fragColor.rgb * brightness;
+            color.rgb = color.rgb * brightness;
 
             // Finally, correct for the incidence
             // cosNormalAngle can't be 0.0, it would have been discarded
             // TODO: this has to also use shift values to be meaningful
-            //fragColor.rgb /= abs(cosNormalAngle);
+            //color.rgb /= abs(cosNormalAngle);
+
+            // Color correction through a LUT
+            if (_isColorLUT != 0)
+            {
+                ivec3 icolor = ivec3(round(color.rgb * 255.f));
+                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
+            }
+            
+            fragColor.rgb = color.rgb;
+            fragColor.a = 1.0;
         }
     )"};
 
