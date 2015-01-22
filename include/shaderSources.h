@@ -140,7 +140,7 @@ struct ShaderSources
             // Color correction through a LUT
             if (_isColorLUT != 0)
             {
-                ivec3 icolor = ivec3(color.rgb * 255.f);
+                ivec3 icolor = ivec3(round(color.rgb * 255.f));
                 color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
             }
 

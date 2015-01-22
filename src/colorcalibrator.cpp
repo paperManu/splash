@@ -129,11 +129,17 @@ void ColorCalibrator::update()
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
-        shared_ptr<pic::Image> ambientHDR = captureHDR();
-
+        // Activate the target projector
         world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR();
-        *hdr -= *ambientHDR;
+
+        // Activate all the other ones
+        for (auto& otherCam : cameraList)
+            world->sendMessage(otherCam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
+        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+        shared_ptr<pic::Image> othersHdr = captureHDR();
+
+        *hdr -= *othersHdr;
         vector<int> coords = getMaxRegionCenter(hdr);
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
 
@@ -277,7 +283,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
         rawX[rawX.size() - 1] = std::min(1.0, rawX[rawX.size() - 1]) + 0.001;
 
         gsl_interp_accel* acc = gsl_interp_accel_alloc();
-        gsl_spline* spline = gsl_spline_alloc(gsl_interp_cspline, curve.size());
+        gsl_spline* spline = gsl_spline_alloc(gsl_interp_akima, curve.size());
         gsl_spline_init(spline, rawX.data(), rawY.data(), curve.size());
 
         Curve projInvCurve;
