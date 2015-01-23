@@ -184,7 +184,7 @@ struct ShaderSources
                 {
                     blendFactorFloat = 1.0 / float(camNbr);
                 }
-                color.rgb = color.rgb * min(1.0, pow(blendFactorFloat, 1.0/2.2));
+                color.rgb = color.rgb * min(1.0, blendFactorFloat);
             }
 
             // Brightness correction
