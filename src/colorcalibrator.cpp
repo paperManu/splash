@@ -7,6 +7,14 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
 
+#define GLM_FORCE_SSE2
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/simd_mat4.hpp>
+#include <glm/gtx/simd_vec4.hpp>
+
 #include "image_gphoto.h"
 #include "log.h"
 #include "timer.h"
@@ -142,6 +150,40 @@ void ColorCalibrator::update()
         calibrationParams.push_back(params);
     }
 
+    // Find color mixing matrix
+    _hdrStep = 1.0;
+    _nbrImageHDR = 2;
+    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    {
+        string camName = cameraList[i].asString();
+
+        vector<vector<float>> lowValues(3);
+        vector<vector<float>> highValues(3);
+        glm::mat3 mixRGB;
+        for (int c = 0; c < 3; ++c)
+        {
+            // We take two HDR: at min and max value for each channel
+            // Then we compute the linear relation between this channel and
+            // the other two
+            Values color(4, 0.0);
+            color[3] = 1.0;
+            world->sendMessage(camName, "clearColor", color);
+            hdr = captureHDR();
+            lowValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
+
+            color[c] = 1.0;
+            world->sendMessage(camName, "clearColor", color);
+            hdr = captureHDR();
+            highValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
+        }
+
+        for (int c = 0; c < 3; ++c)
+            for (int otherC = 0; otherC < 3; ++otherC)
+                mixRGB[c][otherC] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
+
+        calibrationParams[i].mixRGB = glm::affineInverse(mixRGB);
+    }
+
     // Find color curves for each Camera
     _hdrStep = 1.0;
     _nbrImageHDR = 2;
@@ -156,8 +198,15 @@ void ColorCalibrator::update()
             {
                 float x = (float)s / (float)samples;
 
+                // We apply the inverse rgb mixing matrix to separate as much as possible the channels
+                glm::vec3 rgb;
+                rgb[c] = x;
+                rgb = glm::clamp(calibrationParams[i].mixRGB * rgb, glm::vec3(0.0), glm::vec3(1.0));
+
                 Values color(4, 0.0);
-                color[c] = x;
+                color[0] = rgb[0];
+                color[1] = rgb[1];
+                color[2] = rgb[2];
                 color[3] = 1.0;
 
                 world->sendMessage(camName, "clearColor", color);
@@ -167,12 +216,12 @@ void ColorCalibrator::update()
 
                 SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
 
-                calibrationParams[i].curves[c].push_back(Point(x, values[c]));
+                calibrationParams[i].curves[c].push_back(Point(x, values));
             }
 
             // Update min and max values
-            calibrationParams[i].minValues[c] = calibrationParams[i].curves[c][0].second;
-            calibrationParams[i].maxValues[c] = calibrationParams[i].curves[c][samples - 1].second;
+            calibrationParams[i].minValues[c] = calibrationParams[i].curves[c][0].second[c];
+            calibrationParams[i].maxValues[c] = calibrationParams[i].curves[c][samples - 1].second[c];
         }
 
         calibrationParams[i].projectorCurves = computeProjectorFunctionInverse(calibrationParams[i].curves);
@@ -200,7 +249,7 @@ void ColorCalibrator::update()
             double scale = (maxValues[c] - minValues[c]) / (params.maxValues[c] - params.minValues[c]);
 
             for (auto& v : params.projectorCurves[c])
-                v.second = v.second * scale + offset;
+                v.second.set(c, v.second[c] * scale + offset);
         }
     }
 
@@ -211,7 +260,7 @@ void ColorCalibrator::update()
         Values lut;
         for (unsigned int v = 0; v < 256; ++v)
             for (unsigned int c = 0; c < 3; ++c)
-                lut.push_back(calibrationParams[i].projectorCurves[c][v].second);
+                lut.push_back(calibrationParams[i].projectorCurves[c][v].second[c]);
 
         world->sendMessage(camName, "colorLUT", {lut});
         world->sendMessage(camName, "activateColorLUT", {1});
@@ -355,10 +404,11 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
     vector<Curve> projInvCurves;
 
     // Work on each curve independently
+    unsigned int c = 0;
     for (auto& curve : rgbCurves)
     {
-        double yOffset = curve[0].second;
-        double yRange = curve[curve.size() - 1].second - curve[0].second;
+        double yOffset = curve[0].second[c];
+        double yRange = curve[curve.size() - 1].second[c] - curve[0].second[c];
         if (yRange <= 0.f)
         {
             SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Unable to compute projector inverse function curve on a channel" << Log::endl;
@@ -371,12 +421,12 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 
         // Make sure the points are correctly ordered
         sort(curve.begin(), curve.end(), [&](Point a, Point b) {
-            return a.second < b.second;
+            return a.second[c] < b.second[c];
         });
         double previousAbscissa = -1.0;
         for (auto& point : curve)
         {
-            double abscissa = (point.second - yOffset) / yRange; 
+            double abscissa = (point.second[c] - yOffset) / yRange; 
             if (abscissa == previousAbscissa)
             {
                 SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value" << Log::endl;
@@ -384,7 +434,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
             }
             previousAbscissa = abscissa;
 
-            rawX.push_back((point.second - yOffset) / yRange);
+            rawX.push_back((point.second[c] - yOffset) / yRange);
             rawY.push_back(point.first);
         }
 
@@ -407,7 +457,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
             double realX = std::min(1.0, x / 255.0); // Make sure we don't try to go past 1.0
             Point point;
             point.first = realX;
-            point.second = gsl_spline_eval(spline, realX, acc);
+            point.second.set(c, gsl_spline_eval(spline, realX, acc));
             projInvCurve.push_back(point);
         }
         projInvCurves.push_back(projInvCurve);

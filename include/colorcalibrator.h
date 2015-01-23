@@ -30,6 +30,7 @@
 #include "basetypes.h"
 
 #include <utility>
+#include <glm/glm.hpp>
 
 namespace pic {
 class Image;
@@ -85,7 +86,53 @@ class ColorCalibrator : public BaseObject
 
     private:
         // Some internal types
-        typedef std::pair<float, float> Point;
+        struct RgbValue
+        {
+            RgbValue() {};
+            RgbValue(Values v)
+            {
+                if (v.size() != 3)
+                    return;
+                r = v[0].asFloat();
+                g = v[1].asFloat();
+                b = v[2].asFloat();
+            }
+            RgbValue(std::vector<float> v)
+            {
+                if (v.size() != 3)
+                    return;
+                r = v[0];
+                g = v[1];
+                b = v[2];
+            }
+
+            float operator[](int i)
+            {
+                if (i == 0)
+                    return r;
+                else if (i == 1)
+                    return g;
+                else if (i == 2)
+                    return b;
+                else
+                    return 0.f;
+            }
+
+            void set(int i, float v)
+            {
+                if (i == 0)
+                    r = v;
+                else if (i == 1)
+                    g = v;
+                else if (i == 2)
+                    b = v;
+            }
+
+            float r {0.f};
+            float g {0.f};
+            float b {0.f};
+        };
+        typedef std::pair<float, RgbValue> Point;
         typedef std::vector<Point> Curve;
 
         struct CalibrationParams
@@ -95,6 +142,7 @@ class ColorCalibrator : public BaseObject
             std::vector<float> maxValues {3};
             std::vector<Curve> curves {3};
             std::vector<Curve> projectorCurves;
+            glm::mat3 mixRGB;
         };
 
         // Attributes
