@@ -150,15 +150,12 @@ class ColorCalibrator : public BaseObject
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
-        unsigned int _nbrImageHDR {3}; // Number of images to use for HDR capture
-        double _hdrStep {1.0}; // Number of stops between to LDR images
         unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
-        int _meanBoxSize {32}; // Size of the box over which to compute the mean value
 
         /**
          * Capture an HDR image from the gcamera
          */
-        std::shared_ptr<pic::Image> captureHDR();
+        std::shared_ptr<pic::Image> captureHDR(unsigned int nbrLDR = 3, double step = 1.0);
 
         /**
          * Compute the inverse projection transformation function, typically
@@ -179,7 +176,7 @@ class ColorCalibrator : public BaseObject
         /**
          * Get the mean value of the area around the given coords
          */
-        std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>());
+        std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
 
         /**
          * Register new functors to modify attributes

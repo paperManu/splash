@@ -51,23 +51,22 @@ void ColorCalibrator::findCorrectExposure()
     vector<int> coords(3, 0);
     vector<float> meanValues(3, numeric_limits<float>::max());
 
-    _nbrImageHDR = 3;
-    _hdrStep = 1.0;
-
     while (true)
     {
         shared_ptr<pic::Image> hdr;
-        hdr = captureHDR();
-        meanValues = getMeanValue(hdr);
+        hdr = captureHDR(3, 1.0);
+        vector<int> coords = getMaxRegionCenter(hdr);
+        meanValues = getMeanValue(hdr, coords, 256);
 
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << meanValues[0] << " - " << meanValues[1] << " - " << meanValues[2] << Log::endl;
 
         std::sort(meanValues.begin(), meanValues.end());
-        if (meanValues[2] > 4.f || meanValues[2] < 1.0f)
+        double lum = sqrt(meanValues[0]*meanValues[0] + meanValues[1]*meanValues[1] + meanValues[2]*meanValues[2]);
+        if (lum > 8.f || lum < 1.0f)
         {
             Values res;
             _gcamera->getAttribute("shutterspeed", res);
-            float speed = res[0].asFloat() * pow(2.0, log2(meanValues[2]));
+            float speed = res[0].asFloat() * pow(2.0, log2(lum));
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else
@@ -112,11 +111,7 @@ void ColorCalibrator::update()
 
     // Compute the camera response function
     if (_crf == nullptr)
-    {
-        _nbrImageHDR = 7;
-        _hdrStep = 0.5;
-        captureHDR();
-    }
+        captureHDR(7, 0.5);
 
     for (auto& cam : cameraList)
         world->sendMessage(cam.asString(), "hide", {1});
@@ -125,20 +120,18 @@ void ColorCalibrator::update()
     vector<CalibrationParams> calibrationParams;
 
     // Find the location of each projection
-    _nbrImageHDR = 1;
-    _hdrStep = 1.0;
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
         // Activate the target projector
         world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
-        hdr = captureHDR();
+        hdr = captureHDR(1);
 
         // Activate all the other ones
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
-        shared_ptr<pic::Image> othersHdr = captureHDR();
+        shared_ptr<pic::Image> othersHdr = captureHDR(1);
 
         *hdr -= *othersHdr;
         vector<int> coords = getMaxRegionCenter(hdr);
@@ -151,8 +144,6 @@ void ColorCalibrator::update()
     }
 
     // Find color mixing matrix
-    _hdrStep = 1.0;
-    _nbrImageHDR = 2;
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
         string camName = cameraList[i].asString();
@@ -166,27 +157,28 @@ void ColorCalibrator::update()
             // Then we compute the linear relation between this channel and
             // the other two
             Values color(4, 0.0);
+            color[c] = 0.05;
             color[3] = 1.0;
             world->sendMessage(camName, "clearColor", color);
-            hdr = captureHDR();
+            hdr = captureHDR(2, 1.0);
             lowValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
 
             color[c] = 1.0;
             world->sendMessage(camName, "clearColor", color);
-            hdr = captureHDR();
+            hdr = captureHDR(2, 1.0);
             highValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
         }
+
+        world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
         for (int c = 0; c < 3; ++c)
             for (int otherC = 0; otherC < 3; ++otherC)
                 mixRGB[c][otherC] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
 
-        calibrationParams[i].mixRGB = glm::affineInverse(mixRGB);
+        calibrationParams[i].mixRGB = glm::inverse(mixRGB);
     }
 
     // Find color curves for each Camera
-    _hdrStep = 1.0;
-    _nbrImageHDR = 2;
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
         string camName = cameraList[i].asString();
@@ -210,7 +202,7 @@ void ColorCalibrator::update()
                 color[3] = 1.0;
 
                 world->sendMessage(camName, "clearColor", color);
-                hdr = captureHDR();
+                hdr = captureHDR(2, 1.0);
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
@@ -297,19 +289,16 @@ void ColorCalibrator::updateCRF()
 
     _crf.reset();
     findCorrectExposure();
-
     // Compute the camera response function
     _crf.reset();
-    _nbrImageHDR = 7;
-    _hdrStep = 0.5;
-    captureHDR();
+    captureHDR(7, 0.5);
 
     // Free camera
     _gcamera.reset();
 }
 
 /*************/
-shared_ptr<pic::Image> ColorCalibrator::captureHDR()
+shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double step)
 {
     // Capture LDR images
     // Get the current shutterspeed
@@ -319,12 +308,12 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
     double nextSpeed = defaultSpeed;
 
     // Compute the parameters of the first capture
-    for (int steps = _nbrImageHDR / 2; steps > 0; --steps)
-        nextSpeed /= pow(2.0, _hdrStep);
+    for (int steps = nbrLDR / 2; steps > 0; --steps)
+        nextSpeed /= pow(2.0, step);
 
-    vector<pic::Image> ldr(_nbrImageHDR);
-    vector<float> actualShutterSpeeds(_nbrImageHDR);
-    for (unsigned int i = 0; i < _nbrImageHDR; ++i)
+    vector<pic::Image> ldr(nbrLDR);
+    vector<float> actualShutterSpeeds(nbrLDR);
+    for (unsigned int i = 0; i < nbrLDR; ++i)
     {
         _gcamera->setAttribute("shutterspeed", {nextSpeed});
         // We get the actual shutterspeed
@@ -343,7 +332,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
         ldr[i].Read(filename, pic::LT_NOR);
 
         // Update exposure for next step
-        nextSpeed *= pow(2.0, _hdrStep);
+        nextSpeed *= pow(2.0, step);
     }
 
     // Reset the shutterspeed
@@ -355,9 +344,9 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
         isValid |= image.isValid();
 
     // Align all exposures on the well-exposed one
-    int medianLDRIndex = _nbrImageHDR / 2 + 1;
-    vector<Eigen::Vector2i> shift(_nbrImageHDR);
-    for (unsigned int i = 0; i < _nbrImageHDR; ++i)
+    int medianLDRIndex = nbrLDR / 2 + 1;
+    vector<Eigen::Vector2i> shift(nbrLDR);
+    for (unsigned int i = 0; i < nbrLDR; ++i)
     {
         if (i == medianLDRIndex)
             continue;
@@ -379,7 +368,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR()
         _crf->DebevecMalik(stack, actualShutterSpeeds.data());
     }
 
-    for (unsigned int i = 0; i < _nbrImageHDR; ++i)
+    for (unsigned int i = 0; i < nbrLDR; ++i)
         stack[i]->exposure = actualShutterSpeeds[i];
 
     // Assemble the images into a single HDRI
@@ -404,7 +393,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
     vector<Curve> projInvCurves;
 
     // Work on each curve independently
-    unsigned int c = 0;
+    unsigned int c = 0; // index of the current channel
     for (auto& curve : rgbCurves)
     {
         double yOffset = curve[0].second[c];
@@ -464,6 +453,8 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 
         gsl_spline_free(spline);
         gsl_interp_accel_free(acc);
+
+        c++; // increment the current channel
     }
 
     gsl_set_error_handler_off();
@@ -519,14 +510,14 @@ vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
 }
 
 /*************/
-vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector<int> coords)
+vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector<int> coords, int boxSize)
 {
     vector<float> meanMaxValue(image->channels, numeric_limits<float>::min());
     
     if (coords.size() == 2)
     {
-        pic::BBox box(coords[0] - _meanBoxSize / 2, coords[0] + _meanBoxSize / 2,
-                      coords[1] - _meanBoxSize / 2, coords[1] + _meanBoxSize / 2);
+        pic::BBox box(coords[0] - boxSize / 2, coords[0] + boxSize / 2,
+                      coords[1] - boxSize / 2, coords[1] + boxSize / 2);
 
         image->getMeanVal(&box, meanMaxValue.data());
     }
