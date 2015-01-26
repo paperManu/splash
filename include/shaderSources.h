@@ -76,6 +76,9 @@ struct ShaderSources
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec3 _colorLUT[256];
+        uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
+                                            0.0, 1.0, 0.0,
+                                            0.0, 0.0, 1.0);
 
         //layout(std140) uniform _LUT
         //{
@@ -200,6 +203,7 @@ struct ShaderSources
             {
                 ivec3 icolor = ivec3(round(color.rgb * 255.f));
                 color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
+                color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
             
             fragColor.rgb = color.rgb;

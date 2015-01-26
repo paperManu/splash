@@ -605,11 +605,19 @@ bool Camera::render()
             {
                 obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
                 obj->getShader()->setAttribute("uniform", {"_isColorLUT", 1});
+
+                Values m(10);
+                m[0] = "_colorMixMatrix";
+                for (int u = 0; u < 3; ++u)
+                    for (int v = 0; v < 3; ++v)
+                        m[u*3 + v + 1] = _colorMixMatrix[u][v];
+                obj->getShader()->setAttribute("uniform", m);
             }
             else
             {
                 obj->getShader()->setAttribute("uniform", {"_isColorLUT", 0});
             }
+
 
             obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
             obj->draw();
@@ -1265,6 +1273,24 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_isColorLUTActivated};
+    });
+
+    _attribFunctions["colorMixMatrix"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1 || args[0].getType() != Value::Type::v)
+            return false;
+        if (args[0].asValues().size() != 9)
+            return false;
+
+        for (int u = 0; u < 3; ++u)
+            for (int v = 0; v < 3; ++v)
+                _colorMixMatrix[u][v] = args[0].asValues()[u*3 + v].asFloat();
+        return true;
+    }, [&]() -> Values {
+        Values m(9);
+        for (int u = 0; u < 3; ++u)
+            for (int v = 0; v < 3; ++v)
+                m[u*3 + v] = _colorMixMatrix[u][v];
+        return {m};
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {

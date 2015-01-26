@@ -189,8 +189,11 @@ class Camera : public BaseObject
         bool _flashBG {false};
         bool _automaticResize {true};
         glm::dvec4 _clearColor {0.6, 0.6, 0.6, 1.0};
+
+        // Color correction
         Values _colorLUT {0};
         bool _isColorLUTActivated {false};
+        glm::mat3 _colorMixMatrix;
 
         // Some default models use in various situations
         std::map<std::string, ObjectPtr> _models;

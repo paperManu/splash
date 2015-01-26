@@ -271,6 +271,8 @@ void Shader::parseUniforms(const std::string& src)
                 _uniforms[name].values = {0, 0, 0};
             else if (type == "ivec4")
                 _uniforms[name].values = {0, 0, 0, 0};
+            else if (type == "mat3")
+                _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             else if (type == "mat4")
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             else if (type == "sampler2D")
@@ -394,9 +396,6 @@ void Shader::updateUniforms()
             int size = _uniforms[u].values.size();
             int type = _uniforms[u].values[0].getType();
 
-            if (size > 4)
-                continue;
-
             if (type == Value::Type::i)
             {
                 if (size == 1)
@@ -418,6 +417,13 @@ void Shader::updateUniforms()
                     glUniform3f(_uniforms[u].glIndex, _uniforms[u].values[0].asFloat(), _uniforms[u].values[1].asFloat(), _uniforms[u].values[2].asFloat());
                 else if (size == 4)
                     glUniform4f(_uniforms[u].glIndex, _uniforms[u].values[0].asFloat(), _uniforms[u].values[1].asFloat(), _uniforms[u].values[2].asFloat(), _uniforms[u].values[3].asFloat());
+                else if (size == 9)
+                {
+                    vector<float> m(9);
+                    for (unsigned int i = 0; i < 9; ++i)
+                        m[i] = _uniforms[u].values[i].asFloat();
+                    glUniformMatrix3fv(_uniforms[u].glIndex, 1, GL_FALSE, m.data());
+                }
             }
             else if (type == Value::Type::v && _uniforms[u].values[0].asValues().size() > 0)
             {

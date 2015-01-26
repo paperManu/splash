@@ -102,7 +102,7 @@ void ColorCalibrator::update()
         world->sendMessage(cam.asString(), "flashBG", {1});
         world->sendMessage(cam.asString(), "clearColor", {0.5, 0.5, 0.5, 1.0});
     }
-    findCorrectExposure();
+    //findCorrectExposure();
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "hide", {0});
@@ -135,13 +135,17 @@ void ColorCalibrator::update()
 
         *hdr -= *othersHdr;
         vector<int> coords = getMaxRegionCenter(hdr);
-        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+        for (auto& otherCam : cameraList)
+            world->sendMessage(otherCam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
 
         // Save the camera center for later use
         CalibrationParams params;
         params.camPos = coords;
         calibrationParams.push_back(params);
     }
+
+    // Get the surrounding light
+    shared_ptr<pic::Image> surroundHDR = captureHDR(3, 1.0);
 
     // Find color mixing matrix
     for (unsigned int i = 0; i < cameraList.size(); ++i)
@@ -161,11 +165,13 @@ void ColorCalibrator::update()
             color[3] = 1.0;
             world->sendMessage(camName, "clearColor", color);
             hdr = captureHDR(2, 1.0);
+            *hdr -= *surroundHDR;
             lowValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
 
             color[c] = 1.0;
             world->sendMessage(camName, "clearColor", color);
             hdr = captureHDR(2, 1.0);
+            *hdr -= *surroundHDR;
             highValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
         }
 
@@ -203,6 +209,7 @@ void ColorCalibrator::update()
 
                 world->sendMessage(camName, "clearColor", color);
                 hdr = captureHDR(2, 1.0);
+                *hdr -= *surroundHDR;
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
@@ -256,6 +263,13 @@ void ColorCalibrator::update()
 
         world->sendMessage(camName, "colorLUT", {lut});
         world->sendMessage(camName, "activateColorLUT", {1});
+
+        Values m(9);
+        for (int u = 0; u < 3; ++u)
+            for (int v = 0; v < 3; ++v)
+                m[u*3 + v] = calibrationParams[i].mixRGB[u][v];
+
+        world->sendMessage(camName, "colorMixMatrix", {m});
     }
 
     // Cameras back to normal
@@ -288,7 +302,7 @@ void ColorCalibrator::updateCRF()
     }
 
     _crf.reset();
-    findCorrectExposure();
+    //findCorrectExposure();
     // Compute the camera response function
     _crf.reset();
     captureHDR(7, 0.5);
@@ -342,19 +356,6 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     bool isValid = true;
     for (auto& image : ldr)
         isValid |= image.isValid();
-
-    // Align all exposures on the well-exposed one
-    int medianLDRIndex = nbrLDR / 2 + 1;
-    vector<Eigen::Vector2i> shift(nbrLDR);
-    for (unsigned int i = 0; i < nbrLDR; ++i)
-    {
-        if (i == medianLDRIndex)
-            continue;
-
-        pic::Image* shiftedImage = pic::WardAlignment::Execute(&ldr[medianLDRIndex], &ldr[i], shift[i]);
-        ldr[i].Assign(shiftedImage);
-        delete shiftedImage;
-    }
 
     vector<pic::Image*> stack;
     for (auto& image : ldr)
