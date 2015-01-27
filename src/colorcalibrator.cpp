@@ -53,20 +53,36 @@ void ColorCalibrator::findCorrectExposure()
 
     while (true)
     {
-        shared_ptr<pic::Image> hdr;
-        hdr = captureHDR(3, 1.0);
-        vector<int> coords = getMaxRegionCenter(hdr);
-        meanValues = getMeanValue(hdr, coords, 256);
+        Values res;
+        _gcamera->getAttribute("shutterspeed", res);
+        _gcamera->capture();
+        _gcamera->update();
+        _gcamera->write("/tmp/tmp.tga");
+        oiio::ImageBuf img = _gcamera->get();
+        oiio::ImageSpec spec = _gcamera->getSpec();
 
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum values: " << meanValues[0] << " - " << meanValues[1] << " - " << meanValues[2] << Log::endl;
-
-        std::sort(meanValues.begin(), meanValues.end());
-        double lum = sqrt(meanValues[0]*meanValues[0] + meanValues[1]*meanValues[1] + meanValues[2]*meanValues[2]);
-        if (lum > 8.f || lum < 1.0f)
+        unsigned long total = spec.width * spec.height * spec.nchannels;
+        unsigned long sum = 0;
+        for (oiio::ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
         {
-            Values res;
-            _gcamera->getAttribute("shutterspeed", res);
-            float speed = res[0].asFloat() * pow(2.0, log2(lum));
+            if (!p.exists())
+                continue;
+
+            for (int c = 0; c < img.nchannels(); ++c)
+                sum += (unsigned long)(255.f * p[c]);
+        }
+
+        float meanValue = (float)sum / (float)total;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
+
+        if (meanValue < 100.f)
+        {
+            float speed = res[0].asFloat() * 2.0;
+            _gcamera->setAttribute("shutterspeed", {speed});
+        }
+        else if (meanValue > 200.f)
+        {
+            float speed = res[0].asFloat() / 2.0;
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else
@@ -102,7 +118,7 @@ void ColorCalibrator::update()
         world->sendMessage(cam.asString(), "flashBG", {1});
         world->sendMessage(cam.asString(), "clearColor", {0.5, 0.5, 0.5, 1.0});
     }
-    //findCorrectExposure();
+    findCorrectExposure();
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "hide", {0});
@@ -295,8 +311,8 @@ void ColorCalibrator::updateCRF()
         return;
     }
 
-    _crf.reset();
-    //findCorrectExposure();
+    findCorrectExposure();
+
     // Compute the camera response function
     _crf.reset();
     captureHDR(7, 0.5);
