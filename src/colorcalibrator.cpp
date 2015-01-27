@@ -144,9 +144,6 @@ void ColorCalibrator::update()
         calibrationParams.push_back(params);
     }
 
-    // Get the surrounding light
-    shared_ptr<pic::Image> surroundHDR = captureHDR(3, 1.0);
-
     // Find color mixing matrix
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
@@ -157,21 +154,19 @@ void ColorCalibrator::update()
         glm::mat3 mixRGB;
         for (int c = 0; c < 3; ++c)
         {
-            // We take two HDR: at min and max value for each channel
+            // We take two HDR: at middle and max value for each channel
             // Then we compute the linear relation between this channel and
             // the other two
             Values color(4, 0.0);
-            color[c] = 0.05;
+            color[c] = 0.5;
             color[3] = 1.0;
             world->sendMessage(camName, "clearColor", color);
-            hdr = captureHDR(2, 1.0);
-            *hdr -= *surroundHDR;
+            hdr = captureHDR(1);
             lowValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
 
             color[c] = 1.0;
             world->sendMessage(camName, "clearColor", color);
-            hdr = captureHDR(2, 1.0);
-            *hdr -= *surroundHDR;
+            hdr = captureHDR(1);
             highValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
         }
 
@@ -179,7 +174,7 @@ void ColorCalibrator::update()
 
         for (int c = 0; c < 3; ++c)
             for (int otherC = 0; otherC < 3; ++otherC)
-                mixRGB[c][otherC] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
+                mixRGB[otherC][c] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
 
         calibrationParams[i].mixRGB = glm::inverse(mixRGB);
     }
@@ -209,7 +204,6 @@ void ColorCalibrator::update()
 
                 world->sendMessage(camName, "clearColor", color);
                 hdr = captureHDR(2, 1.0);
-                *hdr -= *surroundHDR;
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
@@ -464,6 +458,27 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 }
 
 /*************/
+double computeMoment(shared_ptr<pic::Image> image, int i, int j, double targetLum = 0.0)
+{
+    double moment = 0.0;
+
+    for (int y = 0; y < image->height; ++y)
+        for (int x = 0; x < image->width; ++x)
+        {
+            float* pixel = (*image)(x, y);
+            double linlum = 0.f;
+            for (int c = 0; c < image->channels; ++c)
+                linlum += pixel[c];
+            if (targetLum == 0.0)
+                moment += pow(x, i) * pow(y, j) * linlum;
+            else if (linlum >= targetLum * 0.5)
+                moment += pow(x, i) * pow(y, j);
+        }
+
+    return moment;
+}
+
+/*************/
 vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
 {
     if (image == nullptr || !image->isValid())
@@ -484,26 +499,13 @@ vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
                 maxLinearLuminance = linlum;
         }
 
-    // Region of interest contains all pixels at least half
-    // as bright as the maximum
-    int maxX {0}, maxY {0}, minX {image->width}, minY {image->height};
-    for (int y = 0; y < image->height; ++y)
-        for (int x = 0; x < image->width; ++x)
-        {
-            float* pixel = (*image)(x, y);
-            float linlum = 0.f;
-            for (int c = 0; c < image->channels; ++c)
-                linlum += pixel[c];
-            if (linlum >= maxLinearLuminance * 0.5f)
-            {
-                minX = std::min(minX, x);
-                maxX = std::max(maxX, x);
-                minY = std::min(minY, y);
-                maxY = std::max(maxY, y);
-            }
-        }
+    // Compute the binary moments of all pixels brighter than maxLinearLuminance
+    vector<double> moments(3, 0.0);
+    moments[0] = computeMoment(image, 0, 0, maxLinearLuminance);
+    moments[1] = computeMoment(image, 1, 0, maxLinearLuminance);
+    moments[2] = computeMoment(image, 0, 1, maxLinearLuminance);
 
-    coords = vector<int>({(maxX + minX) / 2, (maxY + minY) / 2});
+    coords = vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0])});
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ")" << Log::endl;
 
