@@ -46,53 +46,6 @@ ColorCalibrator::~ColorCalibrator()
 }
 
 /*************/
-void ColorCalibrator::findCorrectExposure()
-{
-    vector<int> coords(3, 0);
-    vector<float> meanValues(3, numeric_limits<float>::max());
-
-    while (true)
-    {
-        Values res;
-        _gcamera->getAttribute("shutterspeed", res);
-        _gcamera->capture();
-        _gcamera->update();
-        _gcamera->write("/tmp/tmp.tga");
-        oiio::ImageBuf img = _gcamera->get();
-        oiio::ImageSpec spec = _gcamera->getSpec();
-
-        unsigned long total = spec.width * spec.height * spec.nchannels;
-        unsigned long sum = 0;
-        for (oiio::ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
-        {
-            if (!p.exists())
-                continue;
-
-            for (int c = 0; c < img.nchannels(); ++c)
-                sum += (unsigned long)(255.f * p[c]);
-        }
-
-        float meanValue = (float)sum / (float)total;
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
-
-        if (meanValue < 100.f)
-        {
-            float speed = res[0].asFloat() * 2.0;
-            _gcamera->setAttribute("shutterspeed", {speed});
-        }
-        else if (meanValue > 200.f)
-        {
-            float speed = res[0].asFloat() / 2.0;
-            _gcamera->setAttribute("shutterspeed", {speed});
-        }
-        else
-        {
-            break;
-        }
-    }
-}
-
-/*************/
 void ColorCalibrator::update()
 {
     // Initialize camera
@@ -110,22 +63,34 @@ void ColorCalibrator::update()
     auto world = _world.lock();
     Values cameraList = world->getObjectsNameByType("camera");
 
-    // Find the correct central exposure time
-    // All cameras to grey
+    //
+    // Find the exposure times for all black and all white
+    //
+    float minimumExposureTime;
+    float maximumExposureTime;
+    // All cameras to white
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "hide", {1});
         world->sendMessage(cam.asString(), "flashBG", {1});
-        world->sendMessage(cam.asString(), "clearColor", {0.5, 0.5, 0.5, 1.0});
+        world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
     }
-    findCorrectExposure();
-    for (auto& cam : cameraList)
-    {
-        world->sendMessage(cam.asString(), "hide", {0});
-        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
-    }
+    minimumExposureTime = findCorrectExposure();
 
+    // All cameras to (almost) black
+    for (auto& cam : cameraList)
+        world->sendMessage(cam.asString(), "clearColor", {0.1, 0.1, 0.1, 1.0});
+    maximumExposureTime = findCorrectExposure();
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum exposure time: " << maximumExposureTime << " - Minimum exposure time: " << minimumExposureTime << Log::endl;
+
+    // All cameras to normal
+    for (auto& cam : cameraList)
+        world->sendMessage(cam.asString(), "hide", {0});
+
+    //
     // Compute the camera response function
+    //
     if (_crf == nullptr)
         captureHDR(7, 0.5);
 
@@ -135,7 +100,10 @@ void ColorCalibrator::update()
     // Get the Camera list
     vector<CalibrationParams> calibrationParams;
 
+    //
     // Find the location of each projection
+    //
+    _gcamera->setAttribute("shutterspeed", {minimumExposureTime});
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
@@ -160,42 +128,9 @@ void ColorCalibrator::update()
         calibrationParams.push_back(params);
     }
 
-    // Find color mixing matrix
-    for (unsigned int i = 0; i < cameraList.size(); ++i)
-    {
-        string camName = cameraList[i].asString();
-
-        vector<vector<float>> lowValues(3);
-        vector<vector<float>> highValues(3);
-        glm::mat3 mixRGB;
-        for (int c = 0; c < 3; ++c)
-        {
-            // We take two HDR: at middle and max value for each channel
-            // Then we compute the linear relation between this channel and
-            // the other two
-            Values color(4, 0.0);
-            color[c] = 0.5;
-            color[3] = 1.0;
-            world->sendMessage(camName, "clearColor", color);
-            hdr = captureHDR(1);
-            lowValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
-
-            color[c] = 1.0;
-            world->sendMessage(camName, "clearColor", color);
-            hdr = captureHDR(1);
-            highValues[c] = getMeanValue(hdr, calibrationParams[i].camPos);
-        }
-
-        world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
-
-        for (int c = 0; c < 3; ++c)
-            for (int otherC = 0; otherC < 3; ++otherC)
-                mixRGB[otherC][c] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
-
-        calibrationParams[i].mixRGB = glm::inverse(mixRGB);
-    }
-
+    //
     // Find color curves for each Camera
+    //
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
         string camName = cameraList[i].asString();
@@ -207,28 +142,24 @@ void ColorCalibrator::update()
             {
                 float x = (float)s / (float)samples;
 
-                // We apply the inverse rgb mixing matrix to separate as much as possible the channels
-                glm::vec3 rgb;
-                rgb[c] = x;
-                rgb = glm::clamp(calibrationParams[i].mixRGB * rgb, glm::vec3(0.0), glm::vec3(1.0));
-
+                // Set the color
                 Values color(4, 0.0);
-                color[0] = rgb[0];
-                color[1] = rgb[1];
-                color[2] = rgb[2];
+                color[c] = x;
                 color[3] = 1.0;
-
                 world->sendMessage(camName, "clearColor", color);
+
+                // Set approximately the exposure
+                _gcamera->setAttribute("shutterspeed", {maximumExposureTime - (maximumExposureTime - minimumExposureTime) * x});
+
                 hdr = captureHDR(2, 1.0);
-                vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos);
-                world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
-
-                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
-
+                vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos, 64);
                 calibrationParams[i].curves[c].push_back(Point(x, values));
+
+                world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
             }
 
-            // Update min and max values
+            // Update min and max values, added to the black level
             calibrationParams[i].minValues[c] = calibrationParams[i].curves[c][0].second[c];
             calibrationParams[i].maxValues[c] = calibrationParams[i].curves[c][samples - 1].second[c];
         }
@@ -236,7 +167,41 @@ void ColorCalibrator::update()
         calibrationParams[i].projectorCurves = computeProjectorFunctionInverse(calibrationParams[i].curves);
     }
 
+    //
+    // Find color mixing matrix
+    //
+    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    {
+        string camName = cameraList[i].asString();
+
+        vector<vector<float>> lowValues(3);
+        vector<vector<float>> highValues(3);
+        glm::mat3 mixRGB;
+
+        // Get the middle and max values from the previous captures
+        for (int c = 0; c < 3; ++c)
+        {
+            lowValues[c].push_back(calibrationParams[i].curves[c][1].second[0]);
+            lowValues[c].push_back(calibrationParams[i].curves[c][1].second[1]);
+            lowValues[c].push_back(calibrationParams[i].curves[c][1].second[2]);
+
+            highValues[c].push_back(calibrationParams[i].curves[c][_colorCurveSamples - 1].second[0]);
+            highValues[c].push_back(calibrationParams[i].curves[c][_colorCurveSamples - 1].second[1]);
+            highValues[c].push_back(calibrationParams[i].curves[c][_colorCurveSamples - 1].second[2]);
+        }
+
+        world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+
+        for (int c = 0; c < 3; ++c)
+            for (int otherC = 0; otherC < 3; ++otherC)
+                mixRGB[otherC][c] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
+
+        calibrationParams[i].mixRGB = glm::inverse(mixRGB);
+    }
+
+    //
     // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
+    //
     vector<float> minValues(3, 0.f);
     vector<float> maxValues(3, numeric_limits<float>::max());
     for (auto& params : calibrationParams)
@@ -248,21 +213,32 @@ void ColorCalibrator::update()
         }
     }
 
+    //
     // Offset and scale projector curves to fit in [minValue, maxValue] for all channels
+    //
     for (auto& params : calibrationParams)
     {
+        // We use a common scale and offset to keep color balance
+        double commonScale = numeric_limits<double>::max();
+        double commonOffset = numeric_limits<double>::min();
         for (unsigned int c = 0; c < 3; ++c)
         {
             double range = params.maxValues[c] - params.minValues[c];
             double offset = (minValues[c] - params.minValues[c]) / range;
             double scale = (maxValues[c] - minValues[c]) / (params.maxValues[c] - params.minValues[c]);
 
-            for (auto& v : params.projectorCurves[c])
-                v.second.set(c, v.second[c] * scale + offset);
+            commonOffset = std::max(offset, commonOffset);
+            commonScale = std::min(scale, commonScale);
         }
+
+        for (unsigned int c = 0; c < 3; ++c)
+            for (auto& v : params.projectorCurves[c])
+                v.second.set(c, v.second[c] * commonScale + commonOffset);
     }
 
+    //
     // Send calibration to the cameras
+    //
     for (unsigned int i = 0; i < cameraList.size(); ++i)
     {
         string camName = cameraList[i].asString();
@@ -282,7 +258,9 @@ void ColorCalibrator::update()
         world->sendMessage(camName, "colorMixMatrix", {m});
     }
 
+    //
     // Cameras back to normal
+    //
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "hide", {0});
@@ -315,7 +293,7 @@ void ColorCalibrator::updateCRF()
 
     // Compute the camera response function
     _crf.reset();
-    captureHDR(7, 0.5);
+    captureHDR(7, 1.0);
 
     // Free camera
     _gcamera.reset();
@@ -423,11 +401,13 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
         sort(curve.begin(), curve.end(), [&](Point a, Point b) {
             return a.second[c] < b.second[c];
         });
+
+        double epsilon = 0.001;
         double previousAbscissa = -1.0;
         for (auto& point : curve)
         {
             double abscissa = (point.second[c] - yOffset) / yRange; 
-            if (abscissa == previousAbscissa)
+            if (abs(abscissa - previousAbscissa) < epsilon)
             {
                 SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value" << Log::endl;
                 continue;
@@ -487,11 +467,58 @@ double computeMoment(shared_ptr<pic::Image> image, int i, int j, double targetLu
                 linlum += pixel[c];
             if (targetLum == 0.0)
                 moment += pow(x, i) * pow(y, j) * linlum;
-            else if (linlum >= targetLum * 0.5)
+            else if (linlum >= targetLum * 0.7)
                 moment += pow(x, i) * pow(y, j);
         }
 
     return moment;
+}
+
+/*************/
+float ColorCalibrator::findCorrectExposure()
+{
+    Values res;
+    while (true)
+    {
+        _gcamera->getAttribute("shutterspeed", res);
+        _gcamera->capture();
+        _gcamera->update();
+        oiio::ImageBuf img = _gcamera->get();
+        oiio::ImageSpec spec = _gcamera->getSpec();
+
+        unsigned long total = spec.width * spec.height * spec.nchannels;
+        unsigned long sum = 0;
+        for (oiio::ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
+        {
+            if (!p.exists())
+                continue;
+
+            for (int c = 0; c < img.nchannels(); ++c)
+                sum += (unsigned long)(255.f * p[c]);
+        }
+
+        float meanValue = (float)sum / (float)total;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
+
+        if (meanValue < 100.f)
+        {
+            float speed = res[0].asFloat() * std::max(1.5f, 160.f / meanValue);
+            _gcamera->setAttribute("shutterspeed", {speed});
+        }
+        else if (meanValue > 160.f)
+        {
+            float speed = res[0].asFloat() / std::max(1.5f, 220.f / meanValue);
+            _gcamera->setAttribute("shutterspeed", {speed});
+        }
+        else
+        {
+            break;
+        }
+    }
+    if (res.size() == 0)
+        return 0.f;
+    else
+        return res[0].asFloat();
 }
 
 /*************/

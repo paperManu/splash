@@ -138,6 +138,7 @@ class ColorCalibrator : public BaseObject
         struct CalibrationParams
         {
             std::vector<int> camPos {2};
+            std::vector<float> blackValues {3};
             std::vector<float> minValues {3};
             std::vector<float> maxValues {3};
             std::vector<Curve> curves {3};
@@ -166,7 +167,7 @@ class ColorCalibrator : public BaseObject
         /**
          * Find the exposure which gives correctly exposed photos
          */
-        void findCorrectExposure();
+        float findCorrectExposure();
 
         /**
          * Find the center of region with max values

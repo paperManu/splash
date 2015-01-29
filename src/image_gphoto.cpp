@@ -215,6 +215,8 @@ string Image_GPhoto::getShutterspeedStringFromFloat(float duration)
 
     for (auto& speed : _cameras[_selectedCameraIndex].shutterspeeds)
     {
+        if (speed == "Bulb")
+            continue;
         float value = getFloatFromShutterspeedString(speed);
         if (std::abs(duration - value) < diff)
         {
