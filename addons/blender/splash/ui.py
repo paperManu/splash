@@ -40,11 +40,11 @@ class SplashToolbar:
         col = layout.column()
         rowsub = col.row()
         colsub = rowsub.column()
-        colsub.operator("splash.activate_send_mesh", text="Activate mesh output")
+        colsub.operator("splash.activate_send_mesh", text="Output selected mesh")
         rowsub = col.row(align=True)
-        rowsub.prop(splash, "outputActive", text="")
-        rowsub.prop(splash, "targetObject", text="")
-        rowsub.enabled = False
+        rowsub.prop(splash, "targetNames", text="")
+        rowsub = col.row(align=True)
+        rowsub.operator("splash.stop_selected_mesh", text="Stop selection")
         col = layout.column()
         col.label("Update periods:")
         col = layout.column()
@@ -57,7 +57,7 @@ class SplashToolbar:
         col = layout.column()
         col.label("Texture:")
         col.prop(splash, "textureName", text="")
-        col.operator("splash.send_texture", text="Send texture")
+        col.operator("splash.send_texture", text="Send texture for selected mesh")
 
 # Panel is available in object and editmode
 class SplashToolbarObject(Panel, SplashToolbar):
