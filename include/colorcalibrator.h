@@ -137,10 +137,10 @@ class ColorCalibrator : public BaseObject
 
         struct CalibrationParams
         {
-            std::vector<int> camPos {2};
-            std::vector<float> blackValues {3};
-            std::vector<float> minValues {3};
-            std::vector<float> maxValues {3};
+            std::vector<int> camPos {0, 0};
+            std::vector<float> blackValues {0.f, 0.f, 0.f};
+            std::vector<float> minValues {0.f, 0.f, 0.f};
+            std::vector<float> maxValues {0.f, 0.f, 0.f};
             std::vector<Curve> curves {3};
             std::vector<Curve> projectorCurves;
             glm::mat3 mixRGB;
@@ -151,7 +151,7 @@ class ColorCalibrator : public BaseObject
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
-        unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
+        unsigned int _colorCurveSamples {4}; // Number of samples for each channels to create the color curves
 
         /**
          * Capture an HDR image from the gcamera

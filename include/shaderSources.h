@@ -203,7 +203,7 @@ struct ShaderSources
             {
                 ivec3 icolor = ivec3(round(color.rgb * 255.f));
                 color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
-                color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
+                //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
             
             fragColor.rgb = color.rgb;

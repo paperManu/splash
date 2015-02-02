@@ -46,6 +46,20 @@ ColorCalibrator::~ColorCalibrator()
 }
 
 /*************/
+float rgbToLuminance(float r, float g, float b)
+{
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/*************/
+float rgbToLuminance(vector<float> rgb)
+{
+    if (rgb.size() < 3)
+        return 0.f;
+    return rgbToLuminance(rgb[0], rgb[1], rgb[2]);
+}
+
+/*************/
 void ColorCalibrator::update()
 {
     // Initialize camera
@@ -66,23 +80,20 @@ void ColorCalibrator::update()
     //
     // Find the exposure times for all black and all white
     //
-    float minimumExposureTime;
-    float maximumExposureTime;
+    float mediumExposureTime;
     // All cameras to white
     for (auto& cam : cameraList)
     {
         world->sendMessage(cam.asString(), "hide", {1});
         world->sendMessage(cam.asString(), "flashBG", {1});
-        world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
+        world->sendMessage(cam.asString(), "clearColor", {0.7, 0.7, 0.7, 1.0});
     }
-    minimumExposureTime = findCorrectExposure();
+    mediumExposureTime = findCorrectExposure();
 
-    // All cameras to (almost) black
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
+
     for (auto& cam : cameraList)
-        world->sendMessage(cam.asString(), "clearColor", {0.1, 0.1, 0.1, 1.0});
-    maximumExposureTime = findCorrectExposure();
-
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum exposure time: " << maximumExposureTime << " - Minimum exposure time: " << minimumExposureTime << Log::endl;
+        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
 
     // All cameras to normal
     for (auto& cam : cameraList)
@@ -103,7 +114,7 @@ void ColorCalibrator::update()
     //
     // Find the location of each projection
     //
-    _gcamera->setAttribute("shutterspeed", {minimumExposureTime});
+    _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
@@ -149,7 +160,7 @@ void ColorCalibrator::update()
                 world->sendMessage(camName, "clearColor", color);
 
                 // Set approximately the exposure
-                _gcamera->setAttribute("shutterspeed", {maximumExposureTime - (maximumExposureTime - minimumExposureTime) * x});
+                _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
                 hdr = captureHDR(2, 1.0);
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos, 64);
@@ -202,8 +213,9 @@ void ColorCalibrator::update()
     //
     // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
     //
-    vector<float> minValues(3, 0.f);
-    vector<float> maxValues(3, numeric_limits<float>::max());
+    // Fourth values contain luminance (calculated using other values)
+    vector<float> minValues(4, 0.f);
+    vector<float> maxValues(4, numeric_limits<float>::max());
     for (auto& params : calibrationParams)
     {
         for (unsigned int c = 0; c < 3; ++c)
@@ -211,6 +223,8 @@ void ColorCalibrator::update()
             minValues[c] = std::max(minValues[c], params.minValues[c]);
             maxValues[c] = std::min(maxValues[c], params.maxValues[c]);
         }
+        minValues[3] = std::max(minValues[3], rgbToLuminance(params.minValues));
+        maxValues[3] = std::min(maxValues[3], rgbToLuminance(params.maxValues));
     }
 
     //
@@ -219,21 +233,13 @@ void ColorCalibrator::update()
     for (auto& params : calibrationParams)
     {
         // We use a common scale and offset to keep color balance
-        double commonScale = numeric_limits<double>::max();
-        double commonOffset = numeric_limits<double>::min();
-        for (unsigned int c = 0; c < 3; ++c)
-        {
-            double range = params.maxValues[c] - params.minValues[c];
-            double offset = (minValues[c] - params.minValues[c]) / range;
-            double scale = (maxValues[c] - minValues[c]) / (params.maxValues[c] - params.minValues[c]);
-
-            commonOffset = std::max(offset, commonOffset);
-            commonScale = std::min(scale, commonScale);
-        }
+        float range = rgbToLuminance(params.maxValues) - rgbToLuminance(params.minValues);
+        float offset = (minValues[3] - rgbToLuminance(params.minValues)) / range;
+        float scale = (maxValues[3] - minValues[3]) / range;
 
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
-                v.second.set(c, v.second[c] * commonScale + commonOffset);
+                v.second.set(c, v.second[c] * scale + offset);
     }
 
     //
@@ -354,14 +360,14 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     {
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Generating camera response function" << Log::endl;
         _crf = make_shared<pic::CameraResponseFunction>();
-        _crf->DebevecMalik(stack, actualShutterSpeeds.data());
+        _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_AKYUZ);
     }
 
     for (unsigned int i = 0; i < nbrLDR; ++i)
         stack[i]->exposure = actualShutterSpeeds[i];
 
     // Assemble the images into a single HDRI
-    pic::FilterAssembleHDR assembleHDR(pic::CRF_GAUSS, pic::LIN_ICFR, &_crf->icrf);
+    pic::FilterAssembleHDR assembleHDR(pic::CRF_AKYUZ, pic::LIN_ICFR, &_crf->icrf);
     pic::Image* temporaryHDR = assembleHDR.ProcessP(stack, nullptr);
 
     shared_ptr<pic::Image> hdr = make_shared<pic::Image>();
@@ -425,7 +431,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 
         gsl_interp_accel* acc = gsl_interp_accel_alloc();
         gsl_spline* spline = nullptr;
-        if (rawX.size() >= 4)
+        if (rawX.size() > 4)
             spline = gsl_spline_alloc(gsl_interp_akima, curve.size());
         else
             spline = gsl_spline_alloc(gsl_interp_linear, curve.size());
@@ -467,7 +473,7 @@ double computeMoment(shared_ptr<pic::Image> image, int i, int j, double targetLu
                 linlum += pixel[c];
             if (targetLum == 0.0)
                 moment += pow(x, i) * pow(y, j) * linlum;
-            else if (linlum >= targetLum * 0.7)
+            else if (linlum >= targetLum * 0.5)
                 moment += pow(x, i) * pow(y, j);
         }
 
@@ -486,15 +492,14 @@ float ColorCalibrator::findCorrectExposure()
         oiio::ImageBuf img = _gcamera->get();
         oiio::ImageSpec spec = _gcamera->getSpec();
 
-        unsigned long total = spec.width * spec.height * spec.nchannels;
+        unsigned long total = spec.width * spec.height;
         unsigned long sum = 0;
         for (oiio::ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
         {
             if (!p.exists())
                 continue;
 
-            for (int c = 0; c < img.nchannels(); ++c)
-                sum += (unsigned long)(255.f * p[c]);
+            sum += (unsigned long)(255.f * (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]));
         }
 
         float meanValue = (float)sum / (float)total;
@@ -502,12 +507,12 @@ float ColorCalibrator::findCorrectExposure()
 
         if (meanValue < 100.f)
         {
-            float speed = res[0].asFloat() * std::max(1.5f, 160.f / meanValue);
+            float speed = res[0].asFloat() * std::max(1.5f, 100.f / meanValue);
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else if (meanValue > 160.f)
         {
-            float speed = res[0].asFloat() / std::max(1.5f, 220.f / meanValue);
+            float speed = res[0].asFloat() / std::max(1.5f, 160.f / meanValue);
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else
