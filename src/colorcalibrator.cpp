@@ -128,8 +128,10 @@ void ColorCalibrator::update()
         world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
         shared_ptr<pic::Image> othersHdr = captureHDR(1);
 
-        *hdr -= *othersHdr;
-        vector<int> coords = getMaxRegionCenter(hdr);
+        shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
+        *diffHdr = *hdr;
+        *diffHdr -= *othersHdr;
+        vector<int> coords = getMaxRegionCenter(diffHdr);
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
 
@@ -163,7 +165,7 @@ void ColorCalibrator::update()
                 // Set approximately the exposure
                 _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
-                hdr = captureHDR(2, 1.0);
+                hdr = captureHDR(1, 1.0);
                 vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos, 64);
                 calibrationParams[i].curves[c].push_back(Point(x, values));
 
@@ -215,23 +217,25 @@ void ColorCalibrator::update()
     // Compute and apply the white balance
     //
     RgbValue meanWhiteBalance;
+    int index = 0;
     for (auto& params : calibrationParams)
     {
         params.whiteBalance = params.whitePoint / params.whitePoint[1];
         meanWhiteBalance = meanWhiteBalance + params.whiteBalance;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
     }
 
     meanWhiteBalance = meanWhiteBalance / (float)calibrationParams.size();
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean white balance: " << meanWhiteBalance[0] << " / " << meanWhiteBalance[1] << " / " << meanWhiteBalance[2] << Log::endl;
 
-    int index = 0;
+    index = 0;
     for (auto& params : calibrationParams)
     {
         RgbValue whiteBalance;
         whiteBalance = meanWhiteBalance / params.whiteBalance;
         whiteBalance.normalize();
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
