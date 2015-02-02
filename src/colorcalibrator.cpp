@@ -103,7 +103,7 @@ void ColorCalibrator::update()
     // Compute the camera response function
     //
     if (_crf == nullptr)
-        captureHDR(7, 0.5);
+        captureHDR(9, 0.33);
 
     for (auto& cam : cameraList)
         world->sendMessage(cam.asString(), "hide", {1});
@@ -136,6 +136,7 @@ void ColorCalibrator::update()
         // Save the camera center for later use
         CalibrationParams params;
         params.camPos = coords;
+        params.whitePoint = getMeanValue(hdr, coords);
         calibrationParams.push_back(params);
     }
 
@@ -171,8 +172,8 @@ void ColorCalibrator::update()
             }
 
             // Update min and max values, added to the black level
-            calibrationParams[i].minValues[c] = calibrationParams[i].curves[c][0].second[c];
-            calibrationParams[i].maxValues[c] = calibrationParams[i].curves[c][samples - 1].second[c];
+            calibrationParams[i].minValues.set(c, calibrationParams[i].curves[c][0].second[c]);
+            calibrationParams[i].maxValues.set(c, calibrationParams[i].curves[c][samples - 1].second[c]);
         }
 
         calibrationParams[i].projectorCurves = computeProjectorFunctionInverse(calibrationParams[i].curves);
@@ -211,6 +212,38 @@ void ColorCalibrator::update()
     }
 
     //
+    // Compute and apply the white balance
+    //
+    RgbValue meanWhiteBalance;
+    for (auto& params : calibrationParams)
+    {
+        params.whiteBalance = params.whitePoint / params.whitePoint[1];
+        meanWhiteBalance = meanWhiteBalance + params.whiteBalance;
+    }
+
+    meanWhiteBalance = meanWhiteBalance / (float)calibrationParams.size();
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean white balance: " << meanWhiteBalance[0] << " / " << meanWhiteBalance[1] << " / " << meanWhiteBalance[2] << Log::endl;
+
+    int index = 0;
+    for (auto& params : calibrationParams)
+    {
+        RgbValue whiteBalance;
+        whiteBalance = meanWhiteBalance / params.whiteBalance;
+        whiteBalance.normalize();
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+
+        for (unsigned int c = 0; c < 3; ++c)
+            for (auto& v : params.projectorCurves[c])
+                v.second.set(c, v.second[c] * whiteBalance[c]);
+
+        params.minValues = params.minValues * whiteBalance;
+        params.maxValues = params.maxValues * whiteBalance;
+
+        index++;
+    }
+
+    //
     // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
     //
     // Fourth values contain luminance (calculated using other values)
@@ -223,8 +256,8 @@ void ColorCalibrator::update()
             minValues[c] = std::max(minValues[c], params.minValues[c]);
             maxValues[c] = std::min(maxValues[c], params.maxValues[c]);
         }
-        minValues[3] = std::max(minValues[3], rgbToLuminance(params.minValues));
-        maxValues[3] = std::min(maxValues[3], rgbToLuminance(params.maxValues));
+        minValues[3] = std::max(minValues[3], params.minValues.luminance());
+        maxValues[3] = std::min(maxValues[3], params.maxValues.luminance());
     }
 
     //
@@ -233,8 +266,8 @@ void ColorCalibrator::update()
     for (auto& params : calibrationParams)
     {
         // We use a common scale and offset to keep color balance
-        float range = rgbToLuminance(params.maxValues) - rgbToLuminance(params.minValues);
-        float offset = (minValues[3] - rgbToLuminance(params.minValues)) / range;
+        float range = params.maxValues.luminance() - params.minValues.luminance();
+        float offset = (minValues[3] - params.minValues.luminance()) / range;
         float scale = (maxValues[3] - minValues[3]) / range;
 
         for (unsigned int c = 0; c < 3; ++c)
@@ -299,7 +332,7 @@ void ColorCalibrator::updateCRF()
 
     // Compute the camera response function
     _crf.reset();
-    captureHDR(7, 1.0);
+    captureHDR(9, 0.33);
 
     // Free camera
     _gcamera.reset();
@@ -360,7 +393,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     {
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Generating camera response function" << Log::endl;
         _crf = make_shared<pic::CameraResponseFunction>();
-        _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_AKYUZ);
+        _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_AKYUZ, 200);
     }
 
     for (unsigned int i = 0; i < nbrLDR; ++i)

@@ -85,7 +85,9 @@ class ColorCalibrator : public BaseObject
         void updateCRF();
 
     private:
+        //
         // Some internal types
+        //
         struct RgbValue
         {
             RgbValue() {};
@@ -118,6 +120,67 @@ class ColorCalibrator : public BaseObject
                     return 0.f;
             }
 
+            RgbValue operator*(const float v) const 
+            {
+                RgbValue tmp = *this;
+                tmp.r *= v;
+                tmp.g *= v;
+                tmp.b *= v;
+                return tmp;
+            }
+
+            RgbValue operator/(const float v) const 
+            {
+                RgbValue tmp = *this;
+                tmp.r /= v;
+                tmp.g /= v;
+                tmp.b /= v;
+                return tmp;
+            }
+
+            RgbValue operator*(const RgbValue c) const 
+            {
+                RgbValue tmp = *this;
+                tmp.r *= c.r;
+                tmp.g *= c.g;
+                tmp.b *= c.b;
+                return tmp;
+            }
+
+            RgbValue operator/(const RgbValue c) const 
+            {
+                RgbValue tmp = *this;
+                tmp.r /= c.r;
+                tmp.g /= c.g;
+                tmp.b /= c.b;
+                return tmp;
+            }
+
+            RgbValue operator+(const RgbValue c) const 
+            {
+                RgbValue tmp = *this;
+                tmp.r += c.r;
+                tmp.g += c.g;
+                tmp.b += c.b;
+                return tmp;
+            }
+
+            // Get the luminance, considering a D65 illuminant
+            float luminance() const 
+            {
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            }
+
+            // Normalizes in a colorspace manner, i.e so that max value = 1.f
+            RgbValue& normalize()
+            {
+                float max = std::max(std::max(r, g), b);
+                r /= max;
+                g /= max;
+                b /= max;
+                return *this;
+            }
+
             void set(int i, float v)
             {
                 if (i == 0)
@@ -138,15 +201,18 @@ class ColorCalibrator : public BaseObject
         struct CalibrationParams
         {
             std::vector<int> camPos {0, 0};
-            std::vector<float> blackValues {0.f, 0.f, 0.f};
-            std::vector<float> minValues {0.f, 0.f, 0.f};
-            std::vector<float> maxValues {0.f, 0.f, 0.f};
+            RgbValue whitePoint;
+            RgbValue whiteBalance;
+            RgbValue minValues;
+            RgbValue maxValues;
             std::vector<Curve> curves {3};
             std::vector<Curve> projectorCurves;
             glm::mat3 mixRGB;
         };
 
+        //
         // Attributes
+        //
         std::weak_ptr<World> _world;
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
