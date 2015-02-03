@@ -46,20 +46,6 @@ ColorCalibrator::~ColorCalibrator()
 }
 
 /*************/
-float rgbToLuminance(float r, float g, float b)
-{
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-/*************/
-float rgbToLuminance(vector<float> rgb)
-{
-    if (rgb.size() < 3)
-        return 0.f;
-    return rgbToLuminance(rgb[0], rgb[1], rgb[2]);
-}
-
-/*************/
 void ColorCalibrator::update()
 {
     // Initialize camera
@@ -118,6 +104,8 @@ void ColorCalibrator::update()
     shared_ptr<pic::Image> hdr;
     for (auto& cam : cameraList)
     {
+        CalibrationParams params;
+
         // Activate the target projector
         world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR(1);
@@ -131,14 +119,14 @@ void ColorCalibrator::update()
         shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
         *diffHdr = *hdr;
         *diffHdr -= *othersHdr;
-        vector<int> coords = getMaxRegionCenter(diffHdr);
+        diffHdr->clamp(0.f, numeric_limits<float>::max());
+        diffHdr->Write("/tmp/diff.hdr");
+        params.camROI = getMaxRegionROI(diffHdr);
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
 
         // Save the camera center for later use
-        CalibrationParams params;
-        params.camPos = coords;
-        params.whitePoint = getMeanValue(hdr, coords);
+        params.whitePoint = getMeanValue(hdr, params.camROI, params.camROI[2]);
         calibrationParams.push_back(params);
     }
 
@@ -166,7 +154,7 @@ void ColorCalibrator::update()
                 _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
                 hdr = captureHDR(1, 1.0);
-                vector<float> values = getMeanValue(hdr, calibrationParams[i].camPos, 64);
+                vector<float> values = getMeanValue(hdr, calibrationParams[i].camROI, calibrationParams[i].camROI[2]);
                 calibrationParams[i].curves[c].push_back(Point(x, values));
 
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
@@ -188,20 +176,15 @@ void ColorCalibrator::update()
     {
         string camName = cameraList[i].asString();
 
-        vector<vector<float>> lowValues(3);
-        vector<vector<float>> highValues(3);
+        vector<RgbValue> lowValues(3);
+        vector<RgbValue> highValues(3);
         glm::mat3 mixRGB;
 
         // Get the middle and max values from the previous captures
         for (int c = 0; c < 3; ++c)
         {
-            lowValues[c].push_back(calibrationParams[i].curves[c][1].second[0]);
-            lowValues[c].push_back(calibrationParams[i].curves[c][1].second[1]);
-            lowValues[c].push_back(calibrationParams[i].curves[c][1].second[2]);
-
-            highValues[c].push_back(calibrationParams[i].curves[c][_colorCurveSamples - 1].second[0]);
-            highValues[c].push_back(calibrationParams[i].curves[c][_colorCurveSamples - 1].second[1]);
-            highValues[c].push_back(calibrationParams[i].curves[c][_colorCurveSamples - 1].second[2]);
+            lowValues[c] = calibrationParams[i].curves[c][1].second;
+            highValues[c] = calibrationParams[i].curves[c][_colorCurveSamples - 1].second;
         }
 
         world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
@@ -397,20 +380,21 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     {
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Generating camera response function" << Log::endl;
         _crf = make_shared<pic::CameraResponseFunction>();
-        _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_AKYUZ, 200);
+        _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_DEB97, 200);
     }
 
     for (unsigned int i = 0; i < nbrLDR; ++i)
         stack[i]->exposure = actualShutterSpeeds[i];
 
     // Assemble the images into a single HDRI
-    pic::FilterAssembleHDR assembleHDR(pic::CRF_AKYUZ, pic::LIN_ICFR, &_crf->icrf);
+    pic::FilterAssembleHDR assembleHDR(pic::CRF_GAUSS, pic::LIN_ICFR, &_crf->icrf);
     pic::Image* temporaryHDR = assembleHDR.ProcessP(stack, nullptr);
 
     shared_ptr<pic::Image> hdr = make_shared<pic::Image>();
     hdr->Assign(temporaryHDR);
     delete temporaryHDR;
 
+    hdr->clamp(0.f, numeric_limits<float>::max());
     hdr->Write("/tmp/splash_hdr.hdr");
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - HDRI computed" << Log::endl;
 
@@ -428,6 +412,11 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
     unsigned int c = 0; // index of the current channel
     for (auto& curve : rgbCurves)
     {
+        // Make sure the points are correctly ordered
+        std::sort(curve.begin(), curve.end(), [&](Point a, Point b) {
+            return a.second[c] < b.second[c];
+        });
+
         double yOffset = curve[0].second[c];
         double yRange = curve[curve.size() - 1].second[c] - curve[0].second[c];
         if (yRange <= 0.f)
@@ -440,25 +429,22 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
         vector<double> rawX;
         vector<double> rawY;
 
-        // Make sure the points are correctly ordered
-        sort(curve.begin(), curve.end(), [&](Point a, Point b) {
-            return a.second[c] < b.second[c];
-        });
-
         double epsilon = 0.001;
         double previousAbscissa = -1.0;
         for (auto& point : curve)
         {
             double abscissa = (point.second[c] - yOffset) / yRange; 
-            if (abs(abscissa - previousAbscissa) < epsilon)
+            if (std::abs(abscissa - previousAbscissa) < epsilon)
             {
-                SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value" << Log::endl;
-                continue;
+                SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value " << abscissa << " from channel " << c << Log::endl;
             }
-            previousAbscissa = abscissa;
+            else
+            {
+                previousAbscissa = abscissa;
 
-            rawX.push_back((point.second[c] - yOffset) / yRange);
-            rawY.push_back(point.first);
+                rawX.push_back((point.second[c] - yOffset) / yRange);
+                rawY.push_back(point.first);
+            }
         }
 
         // Check that first and last points abscissas are 0 and 1, respectively, and shift them slightly
@@ -469,10 +455,10 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
         gsl_interp_accel* acc = gsl_interp_accel_alloc();
         gsl_spline* spline = nullptr;
         if (rawX.size() > 4)
-            spline = gsl_spline_alloc(gsl_interp_akima, curve.size());
+            spline = gsl_spline_alloc(gsl_interp_akima, rawX.size());
         else
-            spline = gsl_spline_alloc(gsl_interp_linear, curve.size());
-        gsl_spline_init(spline, rawX.data(), rawY.data(), curve.size());
+            spline = gsl_spline_alloc(gsl_interp_linear, rawX.size());
+        gsl_spline_init(spline, rawX.data(), rawY.data(), rawX.size());
 
         Curve projInvCurve;
         for (double x = 0.0; x <= 255.0; x += 1.0)
@@ -529,11 +515,17 @@ float ColorCalibrator::findCorrectExposure()
         oiio::ImageBuf img = _gcamera->get();
         oiio::ImageSpec spec = _gcamera->getSpec();
 
-        unsigned long total = spec.width * spec.height;
+        // Exposure is found from a centered area, covering 4% of the frame
+        int roiSize = spec.width / 5;
+        unsigned long total = roiSize * roiSize;
         unsigned long sum = 0;
         for (oiio::ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
         {
             if (!p.exists())
+                continue;
+
+            if (p.x() < spec.width / 2 - roiSize / 2 || p.x() > spec.width / 2 + roiSize / 2
+                || p.y() < spec.height / 2 - roiSize / 2 || p.y() > spec.height / 2 + roiSize / 2)
                 continue;
 
             sum += (unsigned long)(255.f * (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]));
@@ -564,7 +556,7 @@ float ColorCalibrator::findCorrectExposure()
 }
 
 /*************/
-vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
+vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
 {
     if (image == nullptr || !image->isValid())
         return vector<int>();
@@ -577,9 +569,7 @@ vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
         for (int x = 0; x < image->width; ++x)
         {
             float* pixel = (*image)(x, y);
-            float linlum = 0.f;
-            for (int c = 0; c < image->channels; ++c)
-                linlum += pixel[c];
+            float linlum = pixel[0] + pixel[1] + pixel[2];
             if (linlum > maxLinearLuminance)
                 maxLinearLuminance = linlum;
         }
@@ -590,9 +580,9 @@ vector<int> ColorCalibrator::getMaxRegionCenter(shared_ptr<pic::Image> image)
     moments[1] = computeMoment(image, 1, 0, maxLinearLuminance);
     moments[2] = computeMoment(image, 0, 1, maxLinearLuminance);
 
-    coords = vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0])});
+    coords = vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0]), (int)(sqrt(moments[0]) / 2.0)});
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ")" << Log::endl;
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ") - Estimated side size: " << coords[2] << Log::endl;
 
     return coords;
 }
@@ -602,7 +592,7 @@ vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector
 {
     vector<float> meanMaxValue(image->channels, numeric_limits<float>::min());
     
-    if (coords.size() == 2)
+    if (coords.size() >= 2)
     {
         pic::BBox box(coords[0] - boxSize / 2, coords[0] + boxSize / 2,
                       coords[1] - boxSize / 2, coords[1] + boxSize / 2);

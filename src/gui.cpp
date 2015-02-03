@@ -122,6 +122,7 @@ void Gui::key(int& key, int& action, int& mods)
         }
         break;
     }
+#if HAVE_GPHOTO
     case GLFW_KEY_L:
     {
         if (action == GLFW_PRESS)
@@ -160,6 +161,7 @@ void Gui::key(int& key, int& action, int& mods)
         }
         break;
     }
+#endif
     case GLFW_KEY_S:
     {
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
@@ -465,14 +467,20 @@ void Gui::initGLV(int width, int height)
         text += " H: hide all but the selected camera\n";
         text += " T: textured draw mode\n";
         text += " W: wireframe draw mode\n";
+#if HAVE_GPHOTO
         text += " O: launch camera calibration\n";
         text += " P: launch projectors calibration\n";
         text += " L: activate color LUT (if calibrated)\n";
+#endif
 
         return text;
     });
     _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
+#if HAVE_GPHOTO
     _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 14 + 8);
+#else
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
+#endif
     _glvHelp.style(&_style);
 
     // Controls

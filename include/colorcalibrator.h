@@ -200,7 +200,7 @@ class ColorCalibrator : public BaseObject
 
         struct CalibrationParams
         {
-            std::vector<int> camPos {0, 0};
+            std::vector<int> camROI {0, 0};
             RgbValue whitePoint;
             RgbValue whiteBalance;
             RgbValue minValues;
@@ -238,7 +238,7 @@ class ColorCalibrator : public BaseObject
         /**
          * Find the center of region with max values
          */
-        std::vector<int> getMaxRegionCenter(std::shared_ptr<pic::Image> image);
+        std::vector<int> getMaxRegionROI(std::shared_ptr<pic::Image> image);
 
         /**
          * Get the mean value of the area around the given coords
