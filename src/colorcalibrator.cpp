@@ -199,24 +199,28 @@ void ColorCalibrator::update()
     //
     // Compute and apply the white balance
     //
-    RgbValue meanWhiteBalance;
+    RgbValue minWhiteBalance;
+    float minLuminance = numeric_limits<float>::max();
     int index = 0;
     for (auto& params : calibrationParams)
     {
         params.whiteBalance = params.whitePoint / params.whitePoint[1];
-        meanWhiteBalance = meanWhiteBalance + params.whiteBalance;
+        if (params.whitePoint.luminance() < minLuminance)
+        {
+            minLuminance = params.whitePoint.luminance();
+            minWhiteBalance = params.whiteBalance;
+        }
+
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
     }
 
-    meanWhiteBalance = meanWhiteBalance / (float)calibrationParams.size();
-
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean white balance: " << meanWhiteBalance[0] << " / " << meanWhiteBalance[1] << " / " << meanWhiteBalance[2] << Log::endl;
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << minWhiteBalance[0] << " / " << minWhiteBalance[1] << " / " << minWhiteBalance[2] << Log::endl;
 
     index = 0;
     for (auto& params : calibrationParams)
     {
         RgbValue whiteBalance;
-        whiteBalance = meanWhiteBalance / params.whiteBalance;
+        whiteBalance = minWhiteBalance / params.whiteBalance;
         whiteBalance.normalize();
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 

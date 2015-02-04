@@ -165,7 +165,7 @@ class ColorCalibrator : public BaseObject
                 return tmp;
             }
 
-            // Get the luminance, considering a D65 illuminant
+            // Get the luminance, considering a sRGB linearized color space
             float luminance() const 
             {
                 return 0.2126 * r + 0.7152 * g + 0.0722 * b;
