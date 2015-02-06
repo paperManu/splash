@@ -200,7 +200,9 @@ class ColorCalibrator : public BaseObject
 
         struct CalibrationParams
         {
+            std::string camName {};
             std::vector<int> camROI {0, 0};
+            std::vector<bool> maskROI;
             RgbValue whitePoint;
             RgbValue whiteBalance;
             RgbValue minValues;
@@ -218,6 +220,9 @@ class ColorCalibrator : public BaseObject
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
         unsigned int _colorCurveSamples {4}; // Number of samples for each channels to create the color curves
+        double _minimumROIArea {0.005}; // Minimum area size for projection detection, as a fraction of the image size
+
+        std::vector<CalibrationParams> _calibrationParams;
 
         /**
          * Capture an HDR image from the gcamera
@@ -241,9 +246,15 @@ class ColorCalibrator : public BaseObject
         std::vector<int> getMaxRegionROI(std::shared_ptr<pic::Image> image);
 
         /**
+         * Get a mask of the projectors surface
+         */
+        std::vector<bool> getMaskROI(std::shared_ptr<pic::Image> image);
+
+        /**
          * Get the mean value of the area around the given coords
          */
         std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
+        std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<bool> mask);
 
         /**
          * Register new functors to modify attributes

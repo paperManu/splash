@@ -61,29 +61,38 @@ void ColorCalibrator::update()
     }
 
     auto world = _world.lock();
+    // Get the Camera list
     Values cameraList = world->getObjectsNameByType("camera");
+
+    _calibrationParams.clear();
+    for (auto& cam : cameraList)
+    {
+        CalibrationParams params;
+        params.camName = cam.asString();
+        _calibrationParams.push_back(params);
+    }
 
     //
     // Find the exposure times for all black and all white
     //
     float mediumExposureTime;
     // All cameras to white
-    for (auto& cam : cameraList)
+    for (auto& params : _calibrationParams)
     {
-        world->sendMessage(cam.asString(), "hide", {1});
-        world->sendMessage(cam.asString(), "flashBG", {1});
-        world->sendMessage(cam.asString(), "clearColor", {0.7, 0.7, 0.7, 1.0});
+        world->sendMessage(params.camName, "hide", {1});
+        world->sendMessage(params.camName, "flashBG", {1});
+        world->sendMessage(params.camName, "clearColor", {0.7, 0.7, 0.7, 1.0});
     }
     mediumExposureTime = findCorrectExposure();
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
 
-    for (auto& cam : cameraList)
-        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+    for (auto& params : _calibrationParams)
+        world->sendMessage(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
 
     // All cameras to normal
-    for (auto& cam : cameraList)
-        world->sendMessage(cam.asString(), "hide", {0});
+    for (auto& params : _calibrationParams)
+        world->sendMessage(params.camName, "hide", {0});
 
     //
     // Compute the camera response function
@@ -91,51 +100,59 @@ void ColorCalibrator::update()
     if (_crf == nullptr)
         captureHDR(9, 0.33);
 
-    for (auto& cam : cameraList)
-        world->sendMessage(cam.asString(), "hide", {1});
+    for (auto& params : _calibrationParams)
+        world->sendMessage(params.camName, "hide", {1});
 
-    // Get the Camera list
-    vector<CalibrationParams> calibrationParams;
 
     //
     // Find the location of each projection
     //
     _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
     shared_ptr<pic::Image> hdr;
-    for (auto& cam : cameraList)
+    for (auto& params : _calibrationParams)
     {
-        CalibrationParams params;
-
         // Activate the target projector
-        world->sendMessage(cam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
+        world->sendMessage(params.camName, "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR(1);
 
         // Activate all the other ones
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
-        world->sendMessage(cam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+        world->sendMessage(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
         shared_ptr<pic::Image> othersHdr = captureHDR(1);
 
         shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
         *diffHdr = *hdr;
-        *diffHdr -= *othersHdr;
+        *diffHdr -= (*othersHdr * 2.f);
         diffHdr->clamp(0.f, numeric_limits<float>::max());
-        diffHdr->Write("/tmp/diff.hdr");
-        params.camROI = getMaxRegionROI(diffHdr);
+        //diffHdr->Write("/tmp/diff_" + params.camName + ".hdr");
+        params.maskROI = getMaskROI(diffHdr);
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
 
+        // Test: save masked image
+        //for (int y = 0; y < hdr->height; ++y)
+        //    for (int x = 0; x < hdr->width; ++x)
+        //    {
+        //        if (false == params.maskROI[y * hdr->width + x])
+        //        {
+        //            (*hdr)(x, y)[0] = 0.f;
+        //            (*hdr)(x, y)[1] = 0.f;
+        //            (*hdr)(x, y)[2] = 0.f;
+        //        }
+        //    }
+        //hdr->Write("/tmp/hdr_mask_" + params.camName + ".hdr");
+
         // Save the camera center for later use
-        params.whitePoint = getMeanValue(hdr, params.camROI, params.camROI[2]);
-        calibrationParams.push_back(params);
+        params.whitePoint = getMeanValue(hdr, params.maskROI);
     }
 
     //
     // Find color curves for each Camera
     //
-    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    for (auto& params : _calibrationParams)
     {
-        string camName = cameraList[i].asString();
+        string camName = params.camName;
 
         for (int c = 0; c < 3; ++c)
         {
@@ -154,27 +171,27 @@ void ColorCalibrator::update()
                 _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
                 hdr = captureHDR(1, 1.0);
-                vector<float> values = getMeanValue(hdr, calibrationParams[i].camROI, calibrationParams[i].camROI[2]);
-                calibrationParams[i].curves[c].push_back(Point(x, values));
+                vector<float> values = getMeanValue(hdr, params.maskROI);
+                params.curves[c].push_back(Point(x, values));
 
                 world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
                 SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
             }
 
             // Update min and max values, added to the black level
-            calibrationParams[i].minValues.set(c, calibrationParams[i].curves[c][0].second[c]);
-            calibrationParams[i].maxValues.set(c, calibrationParams[i].curves[c][samples - 1].second[c]);
+            params.minValues.set(c, params.curves[c][0].second[c]);
+            params.maxValues.set(c, params.curves[c][samples].second[c]);
         }
 
-        calibrationParams[i].projectorCurves = computeProjectorFunctionInverse(calibrationParams[i].curves);
+        params.projectorCurves = computeProjectorFunctionInverse(params.curves);
     }
 
     //
     // Find color mixing matrix
     //
-    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    for (auto& params : _calibrationParams)
     {
-        string camName = cameraList[i].asString();
+        string camName = params.camName;
 
         vector<RgbValue> lowValues(3);
         vector<RgbValue> highValues(3);
@@ -183,8 +200,8 @@ void ColorCalibrator::update()
         // Get the middle and max values from the previous captures
         for (int c = 0; c < 3; ++c)
         {
-            lowValues[c] = calibrationParams[i].curves[c][1].second;
-            highValues[c] = calibrationParams[i].curves[c][_colorCurveSamples - 1].second;
+            lowValues[c] = params.curves[c][1].second;
+            highValues[c] = params.curves[c][_colorCurveSamples - 1].second;
         }
 
         world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
@@ -193,7 +210,7 @@ void ColorCalibrator::update()
             for (int otherC = 0; otherC < 3; ++otherC)
                 mixRGB[otherC][c] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
 
-        calibrationParams[i].mixRGB = glm::inverse(mixRGB);
+        params.mixRGB = glm::inverse(mixRGB);
     }
 
     //
@@ -201,8 +218,7 @@ void ColorCalibrator::update()
     //
     RgbValue minWhiteBalance;
     float minLuminance = numeric_limits<float>::max();
-    int index = 0;
-    for (auto& params : calibrationParams)
+    for (auto& params : _calibrationParams)
     {
         params.whiteBalance = params.whitePoint / params.whitePoint[1];
         if (params.whitePoint.luminance() < minLuminance)
@@ -211,18 +227,17 @@ void ColorCalibrator::update()
             minWhiteBalance = params.whiteBalance;
         }
 
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
     }
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << minWhiteBalance[0] << " / " << minWhiteBalance[1] << " / " << minWhiteBalance[2] << Log::endl;
 
-    index = 0;
-    for (auto& params : calibrationParams)
+    for (auto& params : _calibrationParams)
     {
         RgbValue whiteBalance;
         whiteBalance = minWhiteBalance / params.whiteBalance;
         whiteBalance.normalize();
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << index << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
@@ -230,8 +245,6 @@ void ColorCalibrator::update()
 
         params.minValues = params.minValues * whiteBalance;
         params.maxValues = params.maxValues * whiteBalance;
-
-        index++;
     }
 
     //
@@ -240,7 +253,7 @@ void ColorCalibrator::update()
     // Fourth values contain luminance (calculated using other values)
     vector<float> minValues(4, 0.f);
     vector<float> maxValues(4, numeric_limits<float>::max());
-    for (auto& params : calibrationParams)
+    for (auto& params : _calibrationParams)
     {
         for (unsigned int c = 0; c < 3; ++c)
         {
@@ -254,7 +267,7 @@ void ColorCalibrator::update()
     //
     // Offset and scale projector curves to fit in [minValue, maxValue] for all channels
     //
-    for (auto& params : calibrationParams)
+    for (auto& params : _calibrationParams)
     {
         // We use a common scale and offset to keep color balance
         float range = params.maxValues.luminance() - params.minValues.luminance();
@@ -269,13 +282,13 @@ void ColorCalibrator::update()
     //
     // Send calibration to the cameras
     //
-    for (unsigned int i = 0; i < cameraList.size(); ++i)
+    for (auto& params : _calibrationParams)
     {
-        string camName = cameraList[i].asString();
+        string camName = params.camName;
         Values lut;
         for (unsigned int v = 0; v < 256; ++v)
             for (unsigned int c = 0; c < 3; ++c)
-                lut.push_back(calibrationParams[i].projectorCurves[c][v].second[c]);
+                lut.push_back(params.projectorCurves[c][v].second[c]);
 
         world->sendMessage(camName, "colorLUT", {lut});
         world->sendMessage(camName, "activateColorLUT", {1});
@@ -283,7 +296,7 @@ void ColorCalibrator::update()
         Values m(9);
         for (int u = 0; u < 3; ++u)
             for (int v = 0; v < 3; ++v)
-                m[u*3 + v] = calibrationParams[i].mixRGB[u][v];
+                m[u*3 + v] = params.mixRGB[u][v];
 
         world->sendMessage(camName, "colorMixMatrix", {m});
     }
@@ -291,11 +304,11 @@ void ColorCalibrator::update()
     //
     // Cameras back to normal
     //
-    for (auto& cam : cameraList)
+    for (auto& params : _calibrationParams)
     {
-        world->sendMessage(cam.asString(), "hide", {0});
-        world->sendMessage(cam.asString(), "flashBG", {0});
-        world->sendMessage(cam.asString(), "clearColor", {});
+        world->sendMessage(params.camName, "hide", {0});
+        world->sendMessage(params.camName, "flashBG", {0});
+        world->sendMessage(params.camName, "clearColor", {});
     }
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
@@ -487,29 +500,10 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 }
 
 /*************/
-double computeMoment(shared_ptr<pic::Image> image, int i, int j, double targetLum = 0.0)
-{
-    double moment = 0.0;
-
-    for (int y = 0; y < image->height; ++y)
-        for (int x = 0; x < image->width; ++x)
-        {
-            float* pixel = (*image)(x, y);
-            double linlum = 0.f;
-            for (int c = 0; c < image->channels; ++c)
-                linlum += pixel[c];
-            if (targetLum == 0.0)
-                moment += pow(x, i) * pow(y, j) * linlum;
-            else if (linlum >= targetLum * 0.5)
-                moment += pow(x, i) * pow(y, j);
-        }
-
-    return moment;
-}
-
-/*************/
 float ColorCalibrator::findCorrectExposure()
 {
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Finding correct exposure time" << Log::endl;
+
     Values res;
     while (true)
     {
@@ -560,6 +554,29 @@ float ColorCalibrator::findCorrectExposure()
 }
 
 /*************/
+double computeMoment(shared_ptr<pic::Image> image, int i, int j, double minTargetLum = 0.0, double maxTargetLum = 0.0)
+{
+    double moment = 0.0;
+
+    for (int y = 0; y < image->height; ++y)
+        for (int x = 0; x < image->width; ++x)
+        {
+            float* pixel = (*image)(x, y);
+            double linlum = 0.f;
+            for (int c = 0; c < image->channels; ++c)
+                linlum += pixel[c];
+            if (minTargetLum == 0.0)
+                moment += pow(x, i) * pow(y, j) * linlum;
+            else if (maxTargetLum == 0.0 && linlum >= minTargetLum)
+                moment += pow(x, i) * pow(y, j);
+            else if (linlum >= minTargetLum && linlum <= maxTargetLum)
+                moment += pow(x, i) * pow(y, j);
+        }
+
+    return moment;
+}
+
+/*************/
 vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
 {
     if (image == nullptr || !image->isValid())
@@ -580,15 +597,81 @@ vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
 
     // Compute the binary moments of all pixels brighter than maxLinearLuminance
     vector<double> moments(3, 0.0);
-    moments[0] = computeMoment(image, 0, 0, maxLinearLuminance);
-    moments[1] = computeMoment(image, 1, 0, maxLinearLuminance);
-    moments[2] = computeMoment(image, 0, 1, maxLinearLuminance);
+    double iteration = 0.0;
+    while(moments[0] < _minimumROIArea * image->width * image->height)
+    {
+        double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 2);
+        double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
+        moments[0] = computeMoment(image, 0, 0, minTargetLuminance, maxTargetLuminance);
+        moments[1] = computeMoment(image, 1, 0, minTargetLuminance, maxTargetLuminance);
+        moments[2] = computeMoment(image, 0, 1, minTargetLuminance, maxTargetLuminance);
+        iteration += 0.5;
+    }
 
     coords = vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0]), (int)(sqrt(moments[0]) / 2.0)});
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ") - Estimated side size: " << coords[2] << Log::endl;
 
     return coords;
+}
+
+/*************/
+vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
+{
+    if (image == nullptr || !image->isValid())
+        return vector<bool>();
+
+    vector<int> coords;
+
+    // Find the maximum value
+    float maxLinearLuminance = numeric_limits<float>::min();
+    for (int y = 0; y < image->height; ++y)
+        for (int x = 0; x < image->width; ++x)
+        {
+            float* pixel = (*image)(x, y);
+            float linlum = pixel[0] + pixel[1] + pixel[2];
+            if (linlum > maxLinearLuminance)
+                maxLinearLuminance = linlum;
+        }
+
+    // Compute the binary moments of all pixels brighter than maxLinearLuminance
+    vector<bool> mask;
+    unsigned long meanX, meanY;
+    double totalPixelMask = 0;
+    double iteration = 0.0;
+    while (totalPixelMask < _minimumROIArea * image->width * image->height)
+    {
+        totalPixelMask = 0;
+        meanX = 0;
+        meanY = 0;
+        mask = vector<bool>(image->height * image->width, false);
+
+        double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 2);
+        double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
+
+        for (int y = 0; y < image->height; ++y)
+            for (int x = 0; x < image->width; ++x)
+            {
+                float* pixel = (*image)(x, y);
+                float linlum = pixel[0] + pixel[1] + pixel[2];
+                if (linlum > minTargetLuminance && linlum < maxLinearLuminance)
+                {
+                    mask[y * image->width + x] = true;
+                    meanX += x;
+                    meanY += y;
+                    totalPixelMask++;
+                }
+            }
+
+        iteration += 0.5;
+    }
+
+    meanX /= totalPixelMask;
+    meanY /= totalPixelMask;
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Region of interest center: [" << meanX << ", " << meanY << "] - Size: " << (int)totalPixelMask << Log::endl;
+
+    return mask;
 }
 
 /*************/
@@ -609,6 +692,37 @@ vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector
     }
 
     return meanMaxValue;
+}
+
+/*************/
+vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector<bool> mask)
+{
+    vector<float> meanValue(3, 0.f);
+    unsigned int nbrPixels = 0;
+
+    if (mask.size() != image->width * image->height)
+        return vector<float>(3, 0.f);
+
+    for (int y = 0; y < image->height; ++y)
+        for (int x = 0; x < image->width; ++x)
+        {
+            if (true == mask[y * image->width + x])
+            {
+                meanValue[0] += (*image)(x, y)[0];
+                meanValue[1] += (*image)(x, y)[1];
+                meanValue[2] += (*image)(x, y)[2];
+                nbrPixels++;
+            }
+        }
+
+    if (nbrPixels == 0)
+        return vector<float>(3, 0.f);
+
+    meanValue[0] /= (float)nbrPixels;
+    meanValue[1] /= (float)nbrPixels;
+    meanValue[2] /= (float)nbrPixels;
+
+    return meanValue;
 }
 
 /*************/
