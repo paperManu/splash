@@ -427,6 +427,32 @@ struct Value
         Values _v {};
 };
 
+/*************/
+template <typename F>
+class ScopeGuard
+{
+    public:
+        explicit ScopeGuard(F &&f) :
+            f_(std::move(f)) {}
+        ~ScopeGuard()
+        {
+            f_();
+        }
+    private:
+        F f_;
+};
+
+enum class ScopeGuardOnExit { };
+template <typename F>
+ScopeGuard<F> operator+(ScopeGuardOnExit, F&& f)
+{
+    return ScopeGuard<F>(std::forward<F>(f));
+}
+
+#define CONCATENATE_IMPL(s1, s2) s1##s2
+#define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
+#define OnScopeExit auto CONCATENATE(on_scope_exit_var, __LINE__) = ScopeGuardOnExit() + [&]()
+
 } // end of namespace
 
 #endif // SPLASH_CORETYPES_H

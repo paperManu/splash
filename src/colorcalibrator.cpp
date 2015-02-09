@@ -50,6 +50,8 @@ void ColorCalibrator::update()
 {
     // Initialize camera
     _gcamera = make_shared<Image_GPhoto>();
+    // Prepare for freeing the camera when leaving scope
+    OnScopeExit{_gcamera.reset();};
 
     // Check whether the camera is ready
     Values status;
@@ -114,12 +116,16 @@ void ColorCalibrator::update()
         // Activate the target projector
         world->sendMessage(params.camName, "clearColor", {1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR(1);
+        if (nullptr == hdr)
+            return;
 
         // Activate all the other ones
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
         world->sendMessage(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
         shared_ptr<pic::Image> othersHdr = captureHDR(1);
+        if (nullptr == othersHdr)
+            return;
 
         shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
         *diffHdr = *hdr;
@@ -171,6 +177,8 @@ void ColorCalibrator::update()
                 _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
                 hdr = captureHDR(1, 1.0);
+                if (nullptr == hdr)
+                    return;
                 vector<float> values = getMeanValue(hdr, params.maskROI);
                 params.curves[c].push_back(Point(x, values));
 
@@ -312,9 +320,6 @@ void ColorCalibrator::update()
     }
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
-    
-    // Free camera
-    _gcamera.reset();
 }
 
 /*************/
@@ -364,20 +369,24 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         // We get the actual shutterspeed
         _gcamera->getAttribute("shutterspeed", res);
         nextSpeed = res[0].asFloat();
-
         actualShutterSpeeds[i] = nextSpeed;
 
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Capturing LDRI with a " << nextSpeed << "sec exposure time" << Log::endl;
 
+        // Update exposure for next step
+        nextSpeed *= pow(2.0, step);
+
         string filename = "/tmp/splash_ldr_sample_" + to_string(i) + ".tga";
-        _gcamera->capture();
+        int status = _gcamera->capture();
+        if (false == status)
+        {
+            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Error while capturing LDRI" << Log::endl;
+            return shared_ptr<pic::Image>();
+        }
         _gcamera->update();
         _gcamera->write(filename);
 
         ldr[i].Read(filename, pic::LT_NOR);
-
-        // Update exposure for next step
-        nextSpeed *= pow(2.0, step);
     }
 
     // Reset the shutterspeed
@@ -508,7 +517,13 @@ float ColorCalibrator::findCorrectExposure()
     while (true)
     {
         _gcamera->getAttribute("shutterspeed", res);
-        _gcamera->capture();
+        int status = _gcamera->capture();
+        if (false == status)
+        {
+            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - There was an issue during capture." << Log::endl;
+            return 0.f;
+        }
+
         _gcamera->update();
         oiio::ImageBuf img = _gcamera->get();
         oiio::ImageSpec spec = _gcamera->getSpec();

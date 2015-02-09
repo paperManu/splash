@@ -102,39 +102,53 @@ void Image_GPhoto::detectCameras()
 }
 
 /*************/
-void Image_GPhoto::capture()
+bool Image_GPhoto::capture()
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
 
     if (_selectedCameraIndex == -1)
     {
         SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
-        return;
+        return false;
     }
 
     GPhotoCamera camera = _cameras[_selectedCameraIndex];
 
     CameraFilePath filePath;
-    int res = GP_OK;
+    int res;
     if ((res = gp_camera_capture(camera.cam, GP_CAPTURE_IMAGE, &filePath, _gpContext)) == GP_OK)
     {
-        CameraFile* destination;
-        int handle = open((string("/tmp/") + string(filePath.name)).c_str(), O_CREAT | O_WRONLY, 0666);
-        if (handle != -1)
+        if (string(filePath.name).find(".jpg") != string::npos || string(filePath.name).find(".JPG") != string::npos)
         {
-            gp_file_new_from_fd(&destination, handle);
-            if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
-                SLog::log << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name) << Log::endl;
-            close(handle);
+            CameraFile* destination;
+            int handle = open((string("/tmp/") + string(filePath.name)).c_str(), O_CREAT | O_WRONLY, 0666);
+            if (handle != -1)
+            {
+                gp_file_new_from_fd(&destination, handle);
+                if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
+                    SLog::log << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name) << Log::endl;
+                close(handle);
+            }
+ 
+            // Read the downloaded file
+            readFile(string("/tmp/") + string(filePath.name));
         }
+        else
+        {
+            SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Captured image filetype is not jpeg. Maybe the camera is set to RAW?" << Log::endl;
+            res = GP_ERROR;
+        }
+
         gp_camera_file_delete(camera.cam, filePath.folder, filePath.name, _gpContext);
+
+        // Delete the file
+        remove((string("/tmp/") + string(filePath.name)).c_str());
     }
 
-    // Read the downloaded file
-    readFile(string("/tmp/") + string(filePath.name));
-
-    // Delete the file
-    remove((string("/tmp/") + string(filePath.name)).c_str());
+    if (res != GP_OK)
+        return false;
+    else
+        return true;
 }
 
 /*************/
@@ -361,7 +375,8 @@ void Image_GPhoto::registerAttributes()
     _attribFunctions["shutterspeed"] = AttributeFunctor([&](Values args) {
         if (args.size() != 1)
             return false;
-        return doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
+        doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
+        return true;
     }, [&]() -> Values {
         string value;
         doGetProperty("shutterspeed", value);

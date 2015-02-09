@@ -73,7 +73,7 @@ class Image_GPhoto : public Image
         /**
          * Capture a new photo
          */
-        void capture();
+        bool capture();
 
         /**
          * Set the path to read from
