@@ -307,6 +307,10 @@ void ColorCalibrator::update()
                 m[u*3 + v] = params.mixRGB[u][v];
 
         world->sendMessage(camName, "colorMixMatrix", {m});
+
+        // Also, we set some parameters to default as they interfer with the calibration
+        world->sendMessage(camName, "brightness", {1.0});
+        world->sendMessage(camName, "colorTemperature", {65.0});
     }
 
     //
@@ -661,7 +665,7 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
         meanY = 0;
         mask = vector<bool>(image->height * image->width, false);
 
-        double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 2);
+        double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 8);
         double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
 
         for (int y = 0; y < image->height; ++y)
@@ -678,7 +682,7 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
                 }
             }
 
-        iteration += 0.5;
+        iteration += 1.0;
     }
 
     meanX /= totalPixelMask;

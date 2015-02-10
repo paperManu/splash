@@ -428,6 +428,7 @@ struct Value
 };
 
 /*************/
+// OnScopeExit, taken from Switcher (https://github.com/nicobou/switcher)
 template <typename F>
 class ScopeGuard
 {
