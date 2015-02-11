@@ -43,7 +43,6 @@
 #include <string>
 #include <vector>
 #include <GLFW/glfw3.h>
-#include <json/reader.h>
 
 #include "config.h"
 #include "threadpool.h"

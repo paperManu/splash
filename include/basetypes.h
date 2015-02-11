@@ -26,6 +26,7 @@
 #define SPLASH_BASETYPES_H
 
 #include <condition_variable>
+#include <json/reader.h>
 
 #include "coretypes.h"
 #include "link.h"

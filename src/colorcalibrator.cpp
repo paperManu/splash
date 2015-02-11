@@ -723,7 +723,7 @@ vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector
 }
 
 /*************/
-ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesOnly()
+RgbValue ColorCalibrator::equalizeWhiteBalancesOnly()
 {
     RgbValue whiteBalance;
     float numCameras = 0.f;
@@ -743,7 +743,7 @@ ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesOnly()
 }
 
 /*************/
-ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
+RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
 {
     RgbValue minWhiteBalance;
     float minLuminance = numeric_limits<float>::max();
@@ -765,7 +765,7 @@ ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
 }
 
 /*************/
-ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
+RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 {
     RgbValue whiteBalance(1.f, 1.f, 1.f);
     float delta = numeric_limits<float>::max();

@@ -37,3 +37,4 @@ tests/check_world
 tests/check_gui
 tests/*.log
 tests/*.trs
+tools/splash-check-calibration
