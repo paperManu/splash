@@ -107,6 +107,12 @@ class ColorCalibrator : public BaseObject
                 g = v[1];
                 b = v[2];
             }
+            RgbValue(float pr, float pg, float pb)
+            {
+                r = pr;
+                g = pg;
+                b = pb;
+            }
 
             float operator[](int i)
             {
@@ -219,7 +225,7 @@ class ColorCalibrator : public BaseObject
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
-        unsigned int _colorCurveSamples {4}; // Number of samples for each channels to create the color curves
+        unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
         double _minimumROIArea {0.005}; // Minimum area size for projection detection, as a fraction of the image size
 
         std::vector<CalibrationParams> _calibrationParams;
@@ -255,6 +261,14 @@ class ColorCalibrator : public BaseObject
          */
         std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
         std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<bool> mask);
+
+        /**
+         * White balance equalization strategies
+         */
+        std::function<RgbValue()> equalizeWhiteBalances;
+        RgbValue equalizeWhiteBalancesOnly(); // Only equalize WB without caring about luminance
+        RgbValue equalizeWhiteBalancesFromWeakestLum(); // Match all WB with the one of the weakest projector
+        RgbValue equalizeWhiteBalancesMaximizeMinLum(); // Match WB so as to maximize minimum luminance
 
         /**
          * Register new functors to modify attributes

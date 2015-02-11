@@ -38,6 +38,9 @@ ColorCalibrator::ColorCalibrator(std::weak_ptr<World> world)
 {
     _world = world;
     registerAttributes();
+
+    // Set up the calibration strategy
+    equalizeWhiteBalances = std::bind(&ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum, this);
 }
 
 /*************/
@@ -131,23 +134,9 @@ void ColorCalibrator::update()
         *diffHdr = *hdr;
         *diffHdr -= (*othersHdr * 2.f);
         diffHdr->clamp(0.f, numeric_limits<float>::max());
-        //diffHdr->Write("/tmp/diff_" + params.camName + ".hdr");
         params.maskROI = getMaskROI(diffHdr);
         for (auto& otherCam : cameraList)
             world->sendMessage(otherCam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
-
-        // Test: save masked image
-        //for (int y = 0; y < hdr->height; ++y)
-        //    for (int x = 0; x < hdr->width; ++x)
-        //    {
-        //        if (false == params.maskROI[y * hdr->width + x])
-        //        {
-        //            (*hdr)(x, y)[0] = 0.f;
-        //            (*hdr)(x, y)[1] = 0.f;
-        //            (*hdr)(x, y)[2] = 0.f;
-        //        }
-        //    }
-        //hdr->Write("/tmp/hdr_mask_" + params.camName + ".hdr");
 
         // Save the camera center for later use
         params.whitePoint = getMeanValue(hdr, params.maskROI);
@@ -163,9 +152,9 @@ void ColorCalibrator::update()
         for (int c = 0; c < 3; ++c)
         {
             int samples = _colorCurveSamples;
-            for (int s = 0; s <= samples; ++s)
+            for (int s = 0; s < samples; ++s)
             {
-                float x = (float)s / (float)samples;
+                float x = (float)s / (float)(samples - 1);
 
                 // Set the color
                 Values color(4, 0.0);
@@ -224,26 +213,12 @@ void ColorCalibrator::update()
     //
     // Compute and apply the white balance
     //
-    RgbValue minWhiteBalance;
-    float minLuminance = numeric_limits<float>::max();
-    for (auto& params : _calibrationParams)
-    {
-        params.whiteBalance = params.whitePoint / params.whitePoint[1];
-        if (params.whitePoint.luminance() < minLuminance)
-        {
-            minLuminance = params.whitePoint.luminance();
-            minWhiteBalance = params.whiteBalance;
-        }
-
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
-    }
-
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << minWhiteBalance[0] << " / " << minWhiteBalance[1] << " / " << minWhiteBalance[2] << Log::endl;
+    RgbValue targetWhiteBalance = equalizeWhiteBalances();
 
     for (auto& params : _calibrationParams)
     {
         RgbValue whiteBalance;
-        whiteBalance = minWhiteBalance / params.whiteBalance;
+        whiteBalance = targetWhiteBalance / params.whiteBalance;
         whiteBalance.normalize();
         SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
@@ -385,7 +360,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         if (false == status)
         {
             SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Error while capturing LDRI" << Log::endl;
-            return shared_ptr<pic::Image>();
+            return {};
         }
         _gcamera->update();
         _gcamera->write(filename);
@@ -400,6 +375,9 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     bool isValid = true;
     for (auto& image : ldr)
         isValid |= image.isValid();
+
+    if (!isValid)
+        return {};
 
     vector<pic::Image*> stack;
     for (auto& image : ldr)
@@ -742,6 +720,101 @@ vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector
     meanValue[2] /= (float)nbrPixels;
 
     return meanValue;
+}
+
+/*************/
+ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesOnly()
+{
+    RgbValue whiteBalance;
+    float numCameras = 0.f;
+    for (auto& params : _calibrationParams)
+    {
+        params.whiteBalance = params.whitePoint / params.whitePoint[1];
+        whiteBalance = whiteBalance + params.whiteBalance;
+        numCameras++;
+
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
+    }
+    whiteBalance = whiteBalance / numCameras;
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+
+    return whiteBalance;
+}
+
+/*************/
+ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
+{
+    RgbValue minWhiteBalance;
+    float minLuminance = numeric_limits<float>::max();
+    for (auto& params : _calibrationParams)
+    {
+        params.whiteBalance = params.whitePoint / params.whitePoint[1];
+        if (params.whitePoint.luminance() < minLuminance)
+        {
+            minLuminance = params.whitePoint.luminance();
+            minWhiteBalance = params.whiteBalance;
+        }
+
+        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
+    }
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << minWhiteBalance[0] << " / " << minWhiteBalance[1] << " / " << minWhiteBalance[2] << Log::endl;
+
+    return minWhiteBalance;
+}
+
+/*************/
+ColorCalibrator::RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
+{
+    RgbValue whiteBalance(1.f, 1.f, 1.f);
+    float delta = numeric_limits<float>::max();
+    float targetDelta = numeric_limits<float>::max();
+    
+    // Target delta is set to 1% of the minimum luminance
+    for (auto& params : _calibrationParams)
+        targetDelta = std::min(targetDelta, params.whitePoint.luminance() * 0.01f);
+
+    // Get the individual white balances
+    for (auto& params : _calibrationParams)
+        params.whiteBalance = params.whitePoint / params.whitePoint[1];
+
+    int iteration = 1;
+    while (delta > targetDelta)
+    {
+        // Get the current minimum luminance
+        float previousMinLum = numeric_limits<float>::max();
+        int minIndex = 0;
+        for (int i = 0; i < _calibrationParams.size(); ++i)
+        {
+            CalibrationParams& params = _calibrationParams[i];
+            RgbValue whiteBalanced = params.whitePoint * (params.whiteBalance / whiteBalance).normalize();
+            if (whiteBalanced.luminance() < previousMinLum)
+            {
+                previousMinLum = whiteBalanced.luminance();
+                minIndex = i;
+            }
+        }
+
+        whiteBalance = whiteBalance * 0.5 + _calibrationParams[minIndex].whiteBalance * 0.5;
+
+        // Get the new minimum luminance
+        float newMinLum = numeric_limits<float>::max();
+        for (auto& params : _calibrationParams)
+        {
+            RgbValue whiteBalanced = params.whitePoint * (params.whiteBalance / whiteBalance).normalize();
+            newMinLum = std::min(newMinLum, whiteBalanced.luminance());
+        }
+
+        delta = std::abs(newMinLum - previousMinLum);
+
+        SLog::log << Log::DEBUGGING << "ColorCalibrator::" << __FUNCTION__ << " - White balance at iteration " << iteration << ": " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << " with a delta of " << delta * 100.f / newMinLum << "%" << Log::endl;
+        iteration++;
+    }
+
+    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Optimized white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+
+    return whiteBalance;
 }
 
 /*************/
