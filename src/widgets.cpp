@@ -677,12 +677,12 @@ bool GlvGraph::onEvent(Event::t e, GLV& g)
     case Event::KeyDown:
         if ((char)g.keyboard().key() == 'N')
         {
-            _target++;
+            _target--;
             return false;
         }
-        else if ((char)g.keyboard().key() == 'P')
+        else if ((char)g.keyboard().key() == 'M')
         {
-            _target--;
+            _target++;
             return false;
         }
         break;
