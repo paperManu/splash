@@ -45,6 +45,7 @@ class Image_GPhoto : public Image
          * Constructor
          */
         Image_GPhoto();
+        Image_GPhoto(std::string cameraName);
 
         /**
          * Destructor
@@ -76,9 +77,9 @@ class Image_GPhoto : public Image
         bool capture();
 
         /**
-         * Set the path to read from
+         * Set the camera to read from
          */
-        bool read(const std::string& filename);
+        bool read(const std::string& cameraName);
 
     private:
         struct GPhotoCamera

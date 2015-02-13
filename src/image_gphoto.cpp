@@ -15,13 +15,14 @@ namespace Splash
 /*************/
 Image_GPhoto::Image_GPhoto()
 {
-    _type = "image_gphoto";
-
-    registerAttributes();
     init();
-    detectCameras();
+}
 
-    read("");
+/*************/
+Image_GPhoto::Image_GPhoto(std::string cameraName)
+{
+    init();
+    read(cameraName);
 }
 
 /*************/
@@ -38,7 +39,7 @@ Image_GPhoto::~Image_GPhoto()
 }
 
 /*************/
-bool Image_GPhoto::read(const string& filename)
+bool Image_GPhoto::read(const string& cameraName)
 {
     // If filename is empty, we connect to the first available camera
     lock_guard<recursive_mutex> lock(_gpMutex);    
@@ -49,11 +50,29 @@ bool Image_GPhoto::read(const string& filename)
         return false;
     }
 
-    // TODO: handle selection by camera name
-    _selectedCameraIndex = 0;
-    initCamera(_cameras[_selectedCameraIndex]);
+    if (cameraName == "")
+    {
+        // Default behavior: select the first available camera
+        _selectedCameraIndex = 0;
+        initCamera(_cameras[_selectedCameraIndex]);
+        return true;
+    }
+    else
+    {
+        for (unsigned int i = 0; i < _cameras.size(); ++i)
+        {
+            GPhotoCamera& camera = _cameras[i];
 
-    return true;
+            if (camera.model == cameraName)
+            {
+                _selectedCameraIndex = i;
+                initCamera(_cameras[_selectedCameraIndex]);
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /*************/
@@ -245,6 +264,10 @@ string Image_GPhoto::getShutterspeedStringFromFloat(float duration)
 /*************/
 void Image_GPhoto::init()
 {
+    _type = "image_gphoto";
+
+    registerAttributes();
+
     lock_guard<recursive_mutex> lock(_gpMutex);
 
     _gpContext = gp_context_new();
@@ -252,6 +275,8 @@ void Image_GPhoto::init()
     gp_abilities_list_load(_gpCams, _gpContext);
 
     SLog::log << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Loaded " << gp_abilities_list_count(_gpCams) << " camera drivers" << Log::endl;
+
+    detectCameras();
 }
 
 /*************/
