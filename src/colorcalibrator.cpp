@@ -149,6 +149,8 @@ void ColorCalibrator::update()
     {
         string camName = params.camName;
 
+        RgbValue minValues;
+        RgbValue maxValues;
         for (int c = 0; c < 3; ++c)
         {
             int samples = _colorCurveSamples;
@@ -176,9 +178,12 @@ void ColorCalibrator::update()
             }
 
             // Update min and max values, added to the black level
-            params.minValues.set(c, params.curves[c][0].second[c]);
-            params.maxValues.set(c, params.curves[c][samples].second[c]);
+            minValues[c] = params.curves[c][0].second[c];
+            maxValues[c] = params.curves[c][samples].second[c];
         }
+
+        params.minValues = minValues;
+        params.maxValues = maxValues;
 
         params.projectorCurves = computeProjectorFunctionInverse(params.curves);
     }
@@ -224,7 +229,7 @@ void ColorCalibrator::update()
 
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
-                v.second.set(c, v.second[c] * whiteBalance[c]);
+                v.second[c] = v.second[c] * whiteBalance[c];
 
         params.minValues = params.minValues * whiteBalance;
         params.maxValues = params.maxValues * whiteBalance;
@@ -259,7 +264,7 @@ void ColorCalibrator::update()
 
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
-                v.second.set(c, v.second[c] * scale + offset);
+                v.second[c] = v.second[c] * scale + offset;
     }
 
     //
@@ -474,7 +479,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
             double realX = std::min(1.0, x / 255.0); // Make sure we don't try to go past 1.0
             Point point;
             point.first = realX;
-            point.second.set(c, gsl_spline_eval(spline, realX, acc));
+            point.second[c] = gsl_spline_eval(spline, realX, acc);
             projInvCurve.push_back(point);
         }
         projInvCurves.push_back(projInvCurve);

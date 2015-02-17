@@ -59,16 +59,14 @@ struct RgbValue
         b = pb;
     }
 
-    float operator[](int i)
+    float& operator[](unsigned int c)
     {
-        if (i == 0)
+        if (c == 0 || c > 2)
             return r;
-        else if (i == 1)
+        else if (c == 1)
             return g;
-        else if (i == 2)
-            return b;
         else
-            return 0.f;
+            return b;
     }
 
     RgbValue operator*(const float v) const 
