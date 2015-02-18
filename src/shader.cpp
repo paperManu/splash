@@ -220,6 +220,12 @@ void Shader::parseUniforms(const std::string& src)
     istringstream input(src);
     for (string line; getline(input, line);)
     {
+        // Remove white spaces
+        while (line.substr(0, 1) == " ")
+            line = line.substr(1);
+        if (line.substr(0, 2) == "//")
+            continue;
+
         string::size_type position;
         if ((position = line.find("layout(std140) uniform")) != string::npos)
         {

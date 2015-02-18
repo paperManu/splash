@@ -80,11 +80,6 @@ struct ShaderSources
                                             0.0, 1.0, 0.0,
                                             0.0, 0.0, 1.0);
 
-        //layout(std140) uniform _LUT
-        //{
-        //    vec3 _colorLUT[256];
-        //};
-
         in VertexData
         {
             vec4 position;
