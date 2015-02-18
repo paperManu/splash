@@ -21,8 +21,24 @@ Texture::Texture()
 }
 
 /*************/
+Texture::Texture(RootObjectWeakPtr root)
+        : BaseObject(root)
+{
+    init();
+}
+
+/*************/
 Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                  GLint border, GLenum format, GLenum type, const GLvoid* data)
+{
+    init();
+    reset(target, level, internalFormat, width, height, border, format, type, data); 
+}
+
+/*************/
+Texture::Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                 GLint border, GLenum format, GLenum type, const GLvoid* data)
+        : BaseObject(root)
 {
     init();
     reset(target, level, internalFormat, width, height, border, format, type, data); 
@@ -62,6 +78,9 @@ void Texture::generateMipmap() const
 /*************/
 bool Texture::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         ImagePtr img = dynamic_pointer_cast<Image>(obj);
@@ -187,8 +206,10 @@ void Texture::resize(int width, int height)
 /*************/
 void Texture::unbind()
 {
+#ifdef DEBUG
     glActiveTexture((GLenum)_activeTexture);
     glBindTexture(_texTarget, 0);
+#endif
 }
 
 /*************/
@@ -356,7 +377,9 @@ void Texture::update()
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+#ifdef DEBUG
         glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 
         _spec = spec;
     }
@@ -387,7 +410,9 @@ void Texture::update()
             glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, imageDataSize, 0);
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#ifdef DEBUG
         glBindTexture(GL_TEXTURE_2D, 0);
+#endif
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
         
@@ -417,12 +442,12 @@ void Texture::update()
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
     if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
-        _shaderUniforms["YCoCg"] = Values({1});
+        _shaderUniforms["YCoCg"] = {1};
     else
-        _shaderUniforms["YCoCg"] = Values({0});
+        _shaderUniforms["YCoCg"] = {0};
 
-    _shaderUniforms["flip"] = Values({flip[0]});
-    _shaderUniforms["flop"] = Values({flop[0]});
+    _shaderUniforms["flip"] = flip;
+    _shaderUniforms["flop"] = flop;
 
     _timestamp = _img->getTimestamp();
 
@@ -474,8 +499,8 @@ void Texture::registerAttributes()
             return false;
         _resizable = args[0].asInt() > 0 ? true : false;
         return true;
-    }, [&]() {
-        return Values({_resizable});
+    }, [&]() -> Values {
+        return {_resizable};
     });
 }
 

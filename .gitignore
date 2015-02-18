@@ -6,6 +6,7 @@
 *.libs
 *.deps
 *.html
+*.zip
 aclocal.m4
 Makefile
 Makefile.in
@@ -36,3 +37,4 @@ tests/check_world
 tests/check_gui
 tests/*.log
 tests/*.trs
+tools/splash-check-calibration

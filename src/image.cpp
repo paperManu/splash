@@ -203,6 +203,12 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 /*************/
 bool Image::read(const string& filename)
 {
+    return readFile(filename);
+}
+
+/*************/
+bool Image::readFile(const string& filename)
+{
     oiio::ImageInput* in = oiio::ImageInput::open(filename);
     if (!in)
     {
@@ -263,6 +269,22 @@ void Image::update()
 }
 
 /*************/
+bool Image::write(const std::string& filename)
+{
+    oiio::ImageOutput* out = oiio::ImageOutput::create(filename);
+    if (!out)
+        return false;
+
+    lock_guard<mutex> lock(_readMutex);
+    out->open(filename, _image.spec());
+    out->write_image(_image.spec().format, _image.localpixels());
+    out->close();
+    delete out;
+
+    return true;
+}
+
+/*************/
 void Image::createDefaultImage()
 {
     oiio::ImageSpec spec(512, 512, 4, oiio::TypeDesc::UINT8);
@@ -294,8 +316,8 @@ void Image::registerAttributes()
             return false;
         _flip = (args[0].asInt() > 0) ? true : false;
         return true;
-    }, [&]() {
-        return Values({_flip});
+    }, [&]() -> Values {
+        return {_flip};
     });
 
     _attribFunctions["flop"] = AttributeFunctor([&](Values args) {
@@ -303,8 +325,8 @@ void Image::registerAttributes()
             return false;
         _flop = (args[0].asInt() > 0) ? true : false;
         return true;
-    }, [&]() {
-        return Values({_flop});
+    }, [&]() -> Values {
+        return {_flop};
     });
 
     _attribFunctions["file"] = AttributeFunctor([&](Values args) {
@@ -318,8 +340,8 @@ void Image::registerAttributes()
             return false;
         _srgb = (args[0].asInt() > 0) ? true : false;     
         return true;
-    }, [&]() {
-        return Values({_srgb});
+    }, [&]() -> Values {
+        return {_srgb};
     });
 
     _attribFunctions["benchmark"] = AttributeFunctor([&](Values args) {

@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <memory>
 #include <vector>
@@ -41,6 +42,7 @@ class Object : public BaseObject
          * Constructor
          */
         Object();
+        Object(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -121,6 +123,11 @@ class Object : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Remove a texture from this object
+         */
+        void removeTexture(const TexturePtr texture);
+
+        /**
          * Reset the blending to no blending at all
          */
         void resetBlendingMap();
@@ -138,7 +145,7 @@ class Object : public BaseObject
         /**
          * Set the view projection matrix
          */
-        void setViewProjectionMatrix(const glm::dmat4& mvp);
+        void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
     private:
         mutable std::mutex _mutex;
@@ -152,6 +159,11 @@ class Object : public BaseObject
         glm::dvec3 _scale {1.0, 1.0, 1.0};
 
         std::string _fill {"texture"};
+
+        /**
+         * Init function called by constructor
+         */
+        void init();
 
         /**
          * Compute the matrix corresponding to the object position

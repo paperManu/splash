@@ -25,11 +25,9 @@
 #ifndef SPLASH_CAMERA_H
 #define SPLASH_CAMERA_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <functional>
 #include <map>
@@ -40,7 +38,6 @@
 #include <glm/glm.hpp>
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
-#include <GLFW/glfw3.h>
 
 namespace Splash {
 
@@ -51,7 +48,7 @@ class Camera : public BaseObject
         /**
          * Constructor
          */
-        Camera(GlWindowPtr w);
+        Camera(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -79,12 +76,6 @@ class Camera : public BaseObject
                 _fbo = c._fbo;
                 _outTextures = c._outTextures;
                 _objects = c._objects;
-                _outShm = c._outShm;
-
-                _writeToShm = c._writeToShm;
-                _pbos[0] = c._pbos[0];
-                _pbos[1] = c._pbos[1];
-                _pboReadIndex = c._pboReadIndex;
 
                 _drawFrame = c._drawFrame;
                 _wireframe = c._wireframe;
@@ -117,11 +108,6 @@ class Camera : public BaseObject
         }
 
         /**
-         * Add an object to render
-         */
-        void addObject(ObjectPtr& obj);
-
-        /**
          * Computes the blending map for this camera
          */
         void computeBlendingMap(ImagePtr& map);
@@ -142,14 +128,20 @@ class Camera : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
+        bool unlinkFrom(BaseObjectPtr obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
          */
         Values pickVertex(float x, float y);
+
+        /**
+         * Get the coordinates of the given fragment (world coordinates)
+         */
+        Values pickFragment(float x, float y);
 
         /**
          * Get the coordinates of the closest calibration point
@@ -185,22 +177,23 @@ class Camera : public BaseObject
         bool _isInitialized {false};
         GlWindowPtr _window;
 
-        GLuint _fbo;
+        GLuint _fbo {0};
         TexturePtr _depthTexture;
         std::vector<TexturePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
-        Image_ShmdataPtr _outShm;
-
-        // Objects for copying to host
-        bool _writeToShm {false};
-        GLuint _pbos[2];
-        int _pboReadIndex {0};
 
         // Rendering parameters
         bool _drawFrame {false};
         bool _wireframe {false};
         bool _hidden {false};
         bool _flashBG {false};
+        bool _automaticResize {true};
+        glm::dvec4 _clearColor {0.6, 0.6, 0.6, 1.0};
+
+        // Color correction
+        Values _colorLUT {0};
+        bool _isColorLUTActivated {false};
+        glm::mat3 _colorMixMatrix;
 
         // Some default models use in various situations
         std::map<std::string, ObjectPtr> _models;
@@ -208,6 +201,7 @@ class Camera : public BaseObject
         // Camera parameters
         float _fov {35}; // This is the vertical FOV
         float _width {512}, _height {512};
+        float _newWidth {0}, _newHeight {0};
         float _near {0.1}, _far {100.0};
         float _cx {0.5}, _cy {0.5};
         glm::dvec3 _eye {1.0, 0.0, 5.0};
@@ -224,6 +218,7 @@ class Camera : public BaseObject
         bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
         {
+            CalibrationPoint() {}
             CalibrationPoint(glm::dvec3 w) {world = w; screen = glm::dvec2(0.f, 0.f);}
             CalibrationPoint(glm::dvec3 w, glm::dvec2 s) {world = w; screen = s;}
             glm::dvec3 world;
@@ -237,15 +232,25 @@ class Camera : public BaseObject
         static double cameraCalibration_f(const gsl_vector* v, void* params);
 
         /**
+         * Get the color balance (r/g and b/g) from a black body temperature
+         */
+        glm::vec2 colorBalanceFromTemperature(float temp);
+
+        /**
          * Get the frustum matrix from the current camera parameters
          */
         glm::dmat4 computeProjectionMatrix();
         glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
 
         /**
-         * Get the view projection matrix from the camera parameters
+         * Get the view matrix from the camera parameters
          */
-        glm::dmat4 computeViewProjectionMatrix();
+        glm::dmat4 computeViewMatrix();
+
+        /**
+         * Init function called in constructors
+         */
+        void init();
 
         /**
          * Load some defaults models, like the locator for calibration

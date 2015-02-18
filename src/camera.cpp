@@ -1,9 +1,10 @@
 #include "camera.h"
 
-#include "image_shmdata.h"
+#include "image.h"
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
+#include "scene.h"
 #include "shader.h"
 #include "texture.h"
 #include "timer.h"
@@ -26,6 +27,7 @@
 #define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
 #define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
+#define SPLASH_CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
 
 using namespace std;
 using namespace glm;
@@ -34,34 +36,31 @@ using namespace OIIO_NAMESPACE;
 namespace Splash {
 
 /*************/
-Camera::Camera(GlWindowPtr w)
+Camera::Camera(RootObjectWeakPtr root)
+       : BaseObject(root)
+{
+    init();
+}
+
+/*************/
+void Camera::init()
 {
     _type = "camera";
 
-    if (w.get() == nullptr)
-        return;
-
-    _window = w;
-
     // Intialize FBO, textures and everything OpenGL
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
-    _window->releaseContext();
 
     setOutputNbr(1);
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
     else
         SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
@@ -78,8 +77,6 @@ Camera::Camera(GlWindowPtr w)
     // Load some models
     loadDefaultModels();
 
-    _window->releaseContext();
-
     registerAttributes();
 }
 
@@ -89,12 +86,8 @@ Camera::~Camera()
 #ifdef DEBUG
     SLog::log<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
-}
 
-/*************/
-void Camera::addObject(ObjectPtr& obj)
-{
-    _objects.push_back(obj);
+    glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
@@ -106,8 +99,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
         return;
     }
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     // We want to render the object with a specific texture, containing texture coordinates
     vector<Values> shaderFill;
     for (auto& obj : _objects)
@@ -118,6 +109,10 @@ void Camera::computeBlendingMap(ImagePtr& map)
         shaderFill.push_back(fill);
     }
 
+    // We do a "normal" render to ensure everything is correctly set
+    // and that no state change is waiting
+    render();
+
     // Increase the render size for more precision
     int width = _width;
     int height = _height;
@@ -127,10 +122,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
         dims[1] = dims[0] * height / width;
     else
         dims[0] = dims[1] * width / height;
-    _window->releaseContext();
 
-    bool writeToShm = _writeToShm;
-    _writeToShm = false;
     setOutputSize(dims[0] / 4, dims[1] / 4);
 
     // Render with the current texture, with no marker or frame
@@ -141,8 +133,6 @@ void Camera::computeBlendingMap(ImagePtr& map)
     _drawFrame = drawFrame;
     _displayCalibration = displayCalibration;
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 #ifdef DEBUG
     GLenum error = glGetError();
 #endif
@@ -164,13 +154,11 @@ void Camera::computeBlendingMap(ImagePtr& map)
         SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 #endif
 
-    _window->releaseContext();
-
-    _writeToShm = writeToShm;
     setOutputSize(width, height);
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
     oiio::ImageSpec mapSpec = map->getSpec();
+    vector<unsigned short> camMap(mapSpec.width * mapSpec.height, 0);
     vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
     unsigned short* imageMap = (unsigned short*)map->data();
     
@@ -183,7 +171,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
         int x = (int)floor((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
         int y = (int)floor((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
-        if (isSet[y * mapSpec.width + x] || x == 0 && y == 0)
+        if (isSet[y * mapSpec.width + x] || (x == 0 && y == 0))
             continue;
         isSet[y * mapSpec.width + x] = true;
 
@@ -203,25 +191,63 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
         // We keep the real number of projectors, hidden higher in the shorts
         blendAddition += 4096;
-        imageMap[y * mapSpec.width + x] += blendAddition;
+        camMap[y * mapSpec.width + x] = blendAddition;
+    }
 
-        // Extend to neighbours (kind of reverse to effect of floor())
-        if (x < mapSpec.width - 1 && !isSet[y * mapSpec.width + x + 1])
+    // Fill the holes
+    for (unsigned int y = 0; y < mapSpec.height; ++y)
+    {
+        unsigned short lastFilledPixel = 0;
+        unsigned short nextFilledPixel = 0;
+        unsigned int holeStart = 0;
+        unsigned int holeEnd = 0;
+        bool hole = false;
+
+        for (unsigned int x = 0; x < mapSpec.width; ++x)
         {
-            imageMap[y * mapSpec.width + x + 1] += blendAddition;
-            isSet[y * mapSpec.width + x + 1] = true;
-        }
-        if (y < mapSpec.height - 1 && !isSet[(y + 1) * mapSpec.width + x])
-        {
-            imageMap[(y + 1) * mapSpec.width + x] += blendAddition;
-            isSet[(y + 1) * mapSpec.width + x] = true;
-            if (x < mapSpec.width - 1 && !isSet[(y + 1) * mapSpec.width + x + 1])
+            // If we have not yet found a filled pixel
+            if (isSet[y * mapSpec.width + x] == false && !hole)
+                continue;
+            // If this is the first filled pixel (beginning of a hole)
+            else if (isSet[y * mapSpec.width + x] == true && !hole)
             {
-                imageMap[(y + 1) * mapSpec.width + x + 1] += blendAddition;
-                isSet[(y + 1) * mapSpec.width + x + 1] = true;
+                // Check if the pixel right next to it is not set too
+                if (x < mapSpec.width - 1 && isSet[y * mapSpec.width + x + 1] == true)
+                    continue;
+
+                // It is indeed a hole: find its end
+                lastFilledPixel = camMap[y * mapSpec.width + x];
+                holeStart = x;
+                for (unsigned int xx = x + 2; xx < mapSpec.width; ++xx)
+                {
+                    if (isSet[y * mapSpec.width + xx] == true)
+                    {
+                        nextFilledPixel = camMap[y * mapSpec.width + xx];
+                        holeEnd = xx;
+                        hole = true;
+                    }
+                }
+                continue;
             }
+            else if (isSet[y * mapSpec.width + x] == true && hole)
+            {
+                hole = false;
+                x -= 1; // Go back one pixel, to detect the next hole
+                continue;
+            }
+            
+            // We have the beginning, the end and the size of the hole
+            unsigned short step = ((int)nextFilledPixel - (int)lastFilledPixel) * (int)(x - holeStart) / (int)(holeEnd - holeStart);
+            unsigned short pixelValue = lastFilledPixel + step;
+            camMap[y * mapSpec.width + x] = pixelValue;
+            isSet[y * mapSpec.width + x] = true;
         }
     }
+
+    // Add this camera's contribution to the blending map
+    for (unsigned int y = 0; y < mapSpec.height; ++y)
+        for (unsigned int x = 0; x < mapSpec.width; ++x)
+            imageMap[y + mapSpec.width * x] += camMap[y + mapSpec.width * x];
 }
 
 
@@ -232,17 +258,17 @@ bool Camera::doCalibration()
     for (auto& point : _calibrationPoints)
         if (point.isSet)
             pointsSet++;
-    // We need at least 6 points to get a meaningful calibration
-    if (pointsSet < 6)
+    // We need at least 7 points to get a meaningful calibration
+    if (pointsSet < 7)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 6 points" << Log::endl;
+        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 7 points" << Log::endl;
         return false;
     }
 
     _calibrationCalledOnce = true;
 
     gsl_multimin_function calibrationFunc;
-    calibrationFunc.n = 9;
+    calibrationFunc.n = 8;
     calibrationFunc.f = &Camera::cameraCalibration_f;
     calibrationFunc.params = (void*)this;
 
@@ -256,33 +282,32 @@ bool Camera::doCalibration()
     float fovOriginal = _fov;
 
     double minValue = numeric_limits<double>::max();
+    vector<double> selectedValues(8);
 
     mutex gslMutex;
     vector<unsigned int> threadIds;
-    for (int index = 0; index < 32; ++index)
+    // First step: we try a bunch of starts and keep the best one
+    for (int index = 0; index < 4; ++index)
     {
         threadIds.push_back(SThread::pool.enqueue([&]() {
             gsl_multimin_fminimizer* minimizer;
-            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
+            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 8);
 
-            for (double s = 0.0; s < 1.0; s += 0.25)
-            for (double t = 0.0; t < 1.0; t += 0.25)
+            for (double t = 0.0; t < 1.0; t += 0.2)
             {
-                gsl_vector* step = gsl_vector_alloc(9);
+                gsl_vector* step = gsl_vector_alloc(8);
                 gsl_vector_set(step, 0, 10.0);
                 gsl_vector_set(step, 1, 0.1);
-                gsl_vector_set(step, 2, 0.1);
-                for (int i = 3; i < 9; ++i)
+                for (int i = 2; i < 8; ++i)
                     gsl_vector_set(step, i, 0.1);
 
-                gsl_vector* x = gsl_vector_alloc(9);
+                gsl_vector* x = gsl_vector_alloc(8);
                 gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
-                gsl_vector_set(x, 1, s);
-                gsl_vector_set(x, 2, t);
+                gsl_vector_set(x, 1, t);
                 for (int i = 0; i < 3; ++i)
                 {
-                    gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                    gsl_vector_set(x, i + 6, 0.0);
+                    gsl_vector_set(x, i + 2, eyeOriginal[i]);
+                    gsl_vector_set(x, i + 5, 0.0);
                 }
 
                 gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
@@ -308,26 +333,8 @@ bool Camera::doCalibration()
                 if (localMinimum < minValue)
                 {
                     minValue = localMinimum;
-                    dvec3 euler;
-                    for (int i = 0; i < 3; ++i)
-                    {
-                        _eye[i] = gsl_vector_get(minimizer->x, i + 3);
-                        euler[i] = gsl_vector_get(minimizer->x, i + 6);
-                    }
-                    dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
-                    dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
-                    dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
-                    for (int i = 0; i < 3; ++i)
-                    {
-                        _target[i] = target[i];
-                        _up[i] = up[i];
-                    }
-                    _target = normalize(_target);
-                    _up = normalize(_up);
-
-                    _fov = gsl_vector_get(minimizer->x, 0);
-                    _cx = gsl_vector_get(minimizer->x, 1);
-                    _cy = gsl_vector_get(minimizer->x, 2);
+                    for (int i = 0; i < 8; ++i)
+                        selectedValues[i] = gsl_vector_get(minimizer->x, i);
                 }
 
                 gsl_vector_free(x);
@@ -339,9 +346,81 @@ bool Camera::doCalibration()
     }
     SThread::pool.waitThreads(threadIds);
 
+    // Second step: we improve on the best result from the previous step
+    for (int index = 0; index < 8; ++index)
+    {
+        gsl_multimin_fminimizer* minimizer;
+        minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 8);
+
+        gsl_vector* step = gsl_vector_alloc(8);
+        gsl_vector_set(step, 0, 1.0);
+        gsl_vector_set(step, 1, 0.05);
+        for (int i = 2; i < 8; ++i)
+            gsl_vector_set(step, i, 0.01);
+
+        gsl_vector* x = gsl_vector_alloc(8);
+        for (int i = 0; i < 8; ++i)
+            gsl_vector_set(x, i, selectedValues[i]);
+
+        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+        size_t iter = 0;
+        int status = GSL_CONTINUE;
+        double localMinimum = numeric_limits<double>::max();
+        while(status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
+        {
+            iter++;
+            status = gsl_multimin_fminimizer_iterate(minimizer);
+            if (status)
+            {
+                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                break;
+            }
+
+            status = gsl_multimin_test_size(minimizer->size, 1e-6);
+            localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+        }
+
+        lock_guard<mutex> lock(gslMutex);
+        if (localMinimum < minValue)
+        {
+            minValue = localMinimum;
+            for (int i = 0; i < 8; ++i)
+                selectedValues[i] = gsl_vector_get(minimizer->x, i);
+        }
+
+        gsl_vector_free(x);
+        gsl_vector_free(step);
+        gsl_multimin_fminimizer_free(minimizer);
+    }
+
+    // Third step: convert the values to camera parameters
+    _fov = selectedValues[0];
+    _cx = 0.5; // Again, no shift along the X axis
+    _cy = selectedValues[1];
+
+    dvec3 euler;
+    for (int i = 0; i < 3; ++i)
+    {
+        _eye[i] = selectedValues[i + 2];
+        euler[i] = selectedValues[i + 5];
+    }
+    dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
+    dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
+    dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
+    for (int i = 0; i < 3; ++i)
+    {
+        _target[i] = target[i];
+        _up[i] = up[i];
+    }
+    _target = normalize(_target);
+    _up = normalize(_up);
 
     SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
     SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
+
+    // Force camera update with the new parameters
+    _updatedParams = true;
 
     return true;
 }
@@ -349,14 +428,27 @@ bool Camera::doCalibration()
 /*************/
 bool Camera::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
         ObjectPtr obj3D = dynamic_pointer_cast<Object>(obj);
-        addObject(obj3D);
+        _objects.push_back(obj3D);
         return true;
     }
 
     return false;
+}
+
+/*************/
+bool Camera::unlinkFrom(BaseObjectPtr obj)
+{
+    auto objIterator = find(_objects.begin(), _objects.end(), obj);
+    if (objIterator != _objects.end())
+        _objects.erase(objIterator);
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -367,13 +459,10 @@ Values Camera::pickVertex(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    _window->releaseContext();
 
     if (depth == 1.f)
         return Values();
@@ -382,7 +471,7 @@ Values Camera::pickVertex(float x, float y)
     dvec3 screenPoint(realX, realY, depth);
 
     float distance = numeric_limits<float>::max();
-    dvec3 vertex;
+    dvec4 vertex;
     for (auto& obj : _objects)
     {
         dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
@@ -392,11 +481,34 @@ Values Camera::pickVertex(float x, float y)
         if ((tmpDist = obj->pickVertex(point, closestVertex)) < distance)
         {
             distance = tmpDist;
-            vertex = closestVertex;
+            vertex = obj->getModelMatrix() * dvec4(closestVertex, 1.0);
         }
     }
 
-    return Values({vertex.x, vertex.y, vertex.z});
+    return {vertex.x, vertex.y, vertex.z};
+}
+
+/*************/
+Values Camera::pickFragment(float x, float y)
+{
+    // Convert the normalized coordinates ([0, 1]) to pixel coordinates
+    float realX = x * _width;
+    float realY = y * _height;
+
+    // Get the depth at the given point
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    float depth;
+    glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    if (depth == 1.f)
+        return Values();
+
+    // Unproject the point in world coordinates
+    dvec3 screenPoint(realX, realY, depth);
+    dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), computeProjectionMatrix(), dvec4(0, 0, _width, _height));
+
+    return {point.x, point.y, point.z};
 }
 
 /*************/
@@ -407,13 +519,10 @@ Values Camera::pickCalibrationPoint(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    _window->releaseContext();
 
     if (depth == 1.f)
         return Values();
@@ -436,18 +545,22 @@ Values Camera::pickCalibrationPoint(float x, float y)
         }
     }
 
-    return Values({vertex.x, vertex.y, vertex.z});
+    return {vertex.x, vertex.y, vertex.z};
 }
 
 /*************/
 bool Camera::render()
 {
+    if (_newWidth != 0 && _newHeight != 0)
+    {
+        setOutputSize(_newWidth, _newHeight);
+        _newWidth = 0;
+        _newHeight = 0;
+    }
+
     ImageSpec spec = _outTextures[0]->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
-
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     if (_outTextures.size() < 1)
         return false;
@@ -472,8 +585,8 @@ bool Camera::render()
         glScissor(SPLASH_SCISSOR_WIDTH, SPLASH_SCISSOR_WIDTH, _width - SPLASH_SCISSOR_WIDTH * 2, _height - SPLASH_SCISSOR_WIDTH * 2);
     }
 
-    if (_flashBG && !_hidden)
-        glClearColor(0.6, 0.6, 0.6, 1.0);
+    if (_flashBG)
+        glClearColor(_clearColor.r, _clearColor.g, _clearColor.b, _clearColor.a);
     else
         glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -484,12 +597,29 @@ bool Camera::render()
         for (auto& obj : _objects)
         {
             obj->activate();
-            obj->getShader()->setAttribute("blendWidth", {_blendWidth});
-            obj->getShader()->setAttribute("blackLevel", {_blackLevel});
-            obj->getShader()->setAttribute("brightness", {_brightness});
-            obj->getShader()->setAttribute("colorTemperature", {_colorTemperature});
+            vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
+            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
+            //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
+            obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
+            if (_colorLUT.size() == 768 && _isColorLUTActivated)
+            {
+                obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
+                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 1});
 
-            obj->setViewProjectionMatrix(computeViewProjectionMatrix());
+                Values m(10);
+                m[0] = "_colorMixMatrix";
+                for (int u = 0; u < 3; ++u)
+                    for (int v = 0; v < 3; ++v)
+                        m[u*3 + v + 1] = _colorMixMatrix[u][v];
+                obj->getShader()->setAttribute("uniform", m);
+            }
+            else
+            {
+                obj->getShader()->setAttribute("uniform", {"_isColorLUT", 0});
+            }
+
+
+            obj->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
             obj->draw();
             obj->deactivate();
         }
@@ -510,11 +640,11 @@ bool Camera::render()
                     worldMarker->setAttribute("color", SPLASH_MARKER_SET);
                 else
                     worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
-                worldMarker->setViewProjectionMatrix(computeViewProjectionMatrix());
+                worldMarker->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
                 worldMarker->draw();
                 worldMarker->deactivate();
 
-                if (point.isSet && _selectedCalibrationPoint == i || _showAllCalibrationPoints) // Draw the target position on screen as well
+                if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
                     ObjectPtr screenMarker = _models["2d_marker"];
 
@@ -525,7 +655,7 @@ bool Camera::render()
                         screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                     else
                         screenMarker->setAttribute("color", SPLASH_MARKER_SET);
-                    screenMarker->setViewProjectionMatrix(dmat4(1.f));
+                    screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();
                 }
@@ -542,40 +672,6 @@ bool Camera::render()
     GLenum error = glGetError();
     if (error)
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
-#endif
-
-    // Output to a shared memory if set so
-    if (_writeToShm)
-    {
-        // Only the first output texture can be sent currently
-        if (_outShm.get() == nullptr)
-            _outShm = make_shared<Image_Shmdata>();
-        
-        // First, we launch the copy to the host
-        ImageBuf img(_outTextures[0]->getSpec());
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
-        GLubyte* gpuPixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-        if (gpuPixels != NULL)
-        {
-            memcpy((void*)img.localpixels(), gpuPixels, _width * _height * 4);
-            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-        }
-        _pboReadIndex = (_pboReadIndex + 1) % 2;
-
-        // Then we launch the copy from the FBO to the PBO, which will be finished by next frame
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboReadIndex]);
-        glReadPixels(0, 0, _width, _height, GL_RGBA, GL_UNSIGNED_SHORT, 0);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-        _outShm->write(img, string("/tmp/splash_") + _name);
-    }
-
-    _window->releaseContext();
-
-#ifdef DEBUG
     return error != 0 ? true : false;
 #else
     return false;
@@ -662,10 +758,7 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     if (!_depthTexture)
     {
@@ -692,9 +785,10 @@ void Camera::setOutputNbr(int nbr)
         }
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    _window->releaseContext();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
 /*************/
@@ -703,35 +797,19 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    _depthTexture->setAttribute("resizable", Values({1}));
+    _depthTexture->setAttribute("resizable", {1});
     _depthTexture->resize(width, height);
-    _depthTexture->setAttribute("resizable", Values({0}));
+    _depthTexture->setAttribute("resizable", {_automaticResize});
 
     for (auto tex : _outTextures)
     {
-        tex->setAttribute("resizable", Values({1}));
+        tex->setAttribute("resizable", {1});
         tex->resize(width, height);
-        tex->setAttribute("resizable", Values({0}));
+        tex->setAttribute("resizable", {_automaticResize});
     }
 
     _width = width;
     _height = height;
-
-    // PBOs related things
-    if (_writeToShm)
-    {
-        glDeleteBuffers(2, _pbos);
-        glGenBuffers(2, _pbos);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[0]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[1]);
-        glBufferData(GL_PIXEL_PACK_BUFFER, _width * _height * 4, 0, GL_STREAM_READ);
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    }
-
-    _window->releaseContext();
 }
 
 /*************/
@@ -743,16 +821,15 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     Camera* camera = (Camera*)params;
 
     double fov = gsl_vector_get(v, 0);
-    double cx = gsl_vector_get(v, 1);
-    double cy = gsl_vector_get(v, 2);
+    double cy = gsl_vector_get(v, 1);
     dvec3 eye;
     dvec3 target;
     dvec3 up;
     dvec3 euler;
     for (int i = 0; i < 3; ++i)
     {
-        eye[i] = gsl_vector_get(v, i + 3);
-        euler[i] = gsl_vector_get(v, i + 6);
+        eye[i] = gsl_vector_get(v, i + 2);
+        euler[i] = gsl_vector_get(v, i + 5);
     }
     dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
     dvec4 targetTmp = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
@@ -762,8 +839,6 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         target[i] = targetTmp[i];
         up[i] = upTmp[i];
     }
-    //target = normalize(target);
-    //up = normalize(up);
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
@@ -777,11 +852,11 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << cx << " " << camera->_height - cy << Log::endl;
+    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cy): " << fov << " " << camera->_height - cy << Log::endl;
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
-    dmat4 projM = dmat4(camera->computeProjectionMatrix(fov, cx, cy));
+    dmat4 projM = dmat4(camera->computeProjectionMatrix(fov, 0.5, cy));
     dmat4 modelM(1.0);
     dvec4 viewport(0, 0, camera->_width, camera->_height);
 
@@ -802,6 +877,59 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #endif
 
     return summedDistance;
+}
+
+/*************/
+vec2 Camera::colorBalanceFromTemperature(float temp)
+{
+    using glm::min;
+    using glm::max;
+    using glm::pow;
+    using glm::log;
+
+    dvec3 c;
+    float t = temp / 100.0;
+    if (t <= 66.0)
+        c.r = 255.0;
+    else
+    {
+        c.r = t - 60.0;
+        c.r = 329.698727466 * pow(c.r, -0.1332047592);
+        c.r = max(0.0, min(c.r, 255.0));
+    }
+  
+    if (t <= 66)
+    {
+        c.g = t;
+        c.g = 99.4708025861 * log(c.g) - 161.1195681661;
+        c.g = max(0.0, min(c.g, 255.0));
+    }
+    else
+    {
+        c.g = t - 60.0;
+        c.g = 288.1221695283 * pow(c.g, -0.0755148492);
+        c.g = max(0.0, min(c.g, 255.0));
+    }
+  
+    if (t >= 66)
+        c.b = 255.0;
+    else
+    {
+        if (t <= 19)
+            c.b = 0.0;
+        else
+        {
+            c.b = t - 10.0;
+            c.b = 138.5177312231 * log(c.b) - 305.0447927307;
+            c.b = max(0.0, min(c.b, 255.0));
+        }
+    }
+  
+    vec2 colorBalance;
+    colorBalance.x = c.r / c.g;
+    colorBalance.y = c.b / c.g;
+
+    return colorBalance;
 }
 
 /*************/
@@ -832,13 +960,10 @@ dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 }
 
 /*************/
-dmat4 Camera::computeViewProjectionMatrix()
+dmat4 Camera::computeViewMatrix()
 {
     dmat4 viewMatrix = lookAt(_eye, _target, _up);
-    dmat4 projMatrix = computeProjectionMatrix();
-    dmat4 viewProjectionMatrix = projMatrix * viewMatrix;
-
-    return viewProjectionMatrix;
+    return viewMatrix;
 }
 
 /*************/
@@ -849,6 +974,7 @@ void Camera::loadDefaultModels()
     for (auto& file : files)
     {
         if (!ifstream(file.second, ios::in | ios::binary))
+        {
             if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
                 file.second = string(DATADIR) + file.second;
             else
@@ -856,6 +982,7 @@ void Camera::loadDefaultModels()
                 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
                 continue;
             }
+        }
 
         MeshPtr mesh = make_shared<Mesh>();
         mesh->setAttribute("name", {file.first});
@@ -880,8 +1007,8 @@ void Camera::registerAttributes()
             return false;
         _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_eye.x, _eye.y, _eye.z});
+    }, [&]() -> Values {
+        return {_eye.x, _eye.y, _eye.z};
     });
 
     _attribFunctions["target"] = AttributeFunctor([&](Values args) {
@@ -889,8 +1016,8 @@ void Camera::registerAttributes()
             return false;
         _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_target.x, _target.y, _target.z});
+    }, [&]() -> Values {
+        return {_target.x, _target.y, _target.z};
     });
 
     _attribFunctions["fov"] = AttributeFunctor([&](Values args) {
@@ -898,8 +1025,8 @@ void Camera::registerAttributes()
             return false;
         _fov = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_fov});
+    }, [&]() -> Values {
+        return {_fov};
     });
 
     _attribFunctions["up"] = AttributeFunctor([&](Values args) {
@@ -907,17 +1034,19 @@ void Camera::registerAttributes()
             return false;
         _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_up.x, _up.y, _up.z});
+    }, [&]() -> Values {
+        return {_up.x, _up.y, _up.z};
     });
 
     _attribFunctions["size"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
-        setOutputSize(args[0].asInt(), args[1].asInt());
+        _newWidth = args[0].asInt();
+        _newHeight = args[1].asInt();
+        _automaticResize = false; // Automatic resize is disabled when size is specified
         return true;
-    }, [&]() {
-        return Values({_width, _height});
+    }, [&]() -> Values {
+        return {_width, _height};
     });
 
     _attribFunctions["principalPoint"] = AttributeFunctor([&](Values args) {
@@ -926,8 +1055,8 @@ void Camera::registerAttributes()
         _cx = args[0].asFloat();
         _cy = args[1].asFloat();
         return true;
-    }, [&]() {
-        return Values({_cx, _cy});
+    }, [&]() -> Values {
+        return {_cx, _cy};
     });
 
     // More advanced attributes
@@ -952,10 +1081,26 @@ void Camera::registerAttributes()
     _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](Values args) {
         if (args.size() < 3)
             return false;
-        auto direction = _target - _eye;
-        auto rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
-        auto newDirection = dvec4(direction, 1.0) * rotZ;
+        dvec3 direction = _target - _eye;
+        dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+        dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
+        return true;
+    });
+
+    _attribFunctions["rotateAroundPoint"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 6)
+            return false;
+        dvec3 point(args[3].asFloat(), args[4].asFloat(), args[5].asFloat());
+        dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+        // Rotate the target, then the eye
+        dvec3 direction = point - _target;
+        dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
+        _target = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
+
+        direction = point - _eye;
+        newDirection = dvec4(direction, 1.0) * rotZ;
+        _eye = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
         return true;
     });
 
@@ -982,6 +1127,7 @@ void Camera::registerAttributes()
         dirV *= value;
         _target += dirV;
         _eye += dirV;
+        return true;
     });
 
     _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](Values args) {
@@ -1019,14 +1165,44 @@ void Camera::registerAttributes()
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
     });
 
+    // Store / restore calibration points
+    _attribFunctions["calibrationPoints"] = AttributeFunctor([&](Values args) {
+        for (auto& arg : args)
+        {
+            if (arg.getType() != Value::Type::v)
+                continue;
+
+            Values v = arg.asValues();
+            CalibrationPoint c;
+            c.world[0] = v[0].asFloat();
+            c.world[1] = v[1].asFloat();
+            c.world[2] = v[2].asFloat();
+            c.screen[0] = v[3].asFloat();
+            c.screen[1] = v[4].asFloat();
+            c.isSet = v[5].asInt();
+
+            _calibrationPoints.push_back(c);
+        }
+
+        return true;
+    }, [&]() -> Values {
+        Values data;
+        for (auto& p : _calibrationPoints)
+        {
+            Values d {p.world[0], p.world[1], p.world[2], p.screen[0], p.screen[1], p.isSet};
+            data.emplace_back(d);
+        }
+        return data;
+    });
+
     // Rendering options
     _attribFunctions["blendWidth"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _blendWidth = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_blendWidth});
+    }, [&]() -> Values {
+        return {_blendWidth};
     });
 
     _attribFunctions["blackLevel"] = AttributeFunctor([&](Values args) {
@@ -1034,17 +1210,87 @@ void Camera::registerAttributes()
             return false;
         _blackLevel = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_blackLevel});
+    }, [&]() -> Values {
+        return {_blackLevel};
+    });
+
+    _attribFunctions["clearColor"] = AttributeFunctor([&](Values args) {
+        if (args.size() == 0)
+            _clearColor = SPLASH_CAMERA_FLASH_COLOR;
+        else if (args.size() == 4)
+            _clearColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        else
+            return false;
+
+        return true;
     });
 
     _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
         _colorTemperature = args[0].asFloat() * 100.f;
+        _colorTemperature = std::max(1000.f, std::min(15000.f, _colorTemperature));
         return true;
-    }, [&]() {
-        return Values({_colorTemperature / 100.f});
+    }, [&]() -> Values {
+        return {_colorTemperature / 100.f};
+    });
+
+    _attribFunctions["colorLUT"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1 || args[0].getType() != Value::Type::v )
+            return false;
+        if (args[0].asValues().size() != 768)
+            return false;
+        for (auto& v : args[0].asValues())
+            if (v.getType() != Value::Type::f)
+                return false;
+
+        _colorLUT = args[0].asValues();
+
+        return true;
+    }, [&]() -> Values {
+        if (_colorLUT.size() == 768)
+            return {_colorLUT};
+        else
+            return {};
+    });
+
+    _attribFunctions["activateColorLUT"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+
+        if (args[0].asInt() == 2)
+            _isColorLUTActivated = (_isColorLUTActivated != true);
+        else if ((int)_isColorLUTActivated == args[0].asInt())
+            return true;
+        else
+            _isColorLUTActivated = args[0].asInt();
+
+        if (_isColorLUTActivated)
+            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
+        else
+            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table deactivated for camera " << getName() << Log::endl;
+
+        return true;
+    }, [&]() -> Values {
+        return {(int)_isColorLUTActivated};
+    });
+
+    _attribFunctions["colorMixMatrix"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1 || args[0].getType() != Value::Type::v)
+            return false;
+        if (args[0].asValues().size() != 9)
+            return false;
+
+        for (int u = 0; u < 3; ++u)
+            for (int v = 0; v < 3; ++v)
+                _colorMixMatrix[u][v] = args[0].asValues()[u*3 + v].asFloat();
+        return true;
+    }, [&]() -> Values {
+        Values m(9);
+        for (int u = 0; u < 3; ++u)
+            for (int v = 0; v < 3; ++v)
+                m[u*3 + v] = _colorMixMatrix[u][v];
+        return {m};
     });
 
     _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
@@ -1052,8 +1298,8 @@ void Camera::registerAttributes()
             return false;
         _brightness = args[0].asFloat();
         return true;
-    }, [&]() {
-        return Values({_brightness});
+    }, [&]() -> Values {
+        return {_brightness};
     });
 
     _attribFunctions["frame"] = AttributeFunctor([&](Values args) {
@@ -1105,18 +1351,6 @@ void Camera::registerAttributes()
     _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](Values args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
-    });
-
-    _attribFunctions["shared"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 1)
-            return false;
-        if (args[0].asInt() > 0)
-            _writeToShm = true;
-        else
-            _writeToShm = false;
-        return true;
-    }, [&]() {
-        return Values({_writeToShm});
     });
 
     _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {

@@ -31,6 +31,7 @@ Scene::Scene(std::string name)
 
     SLog::log << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
+    _type = "scene";
     _isRunning = true;
     _name = name;
     _sceneLoop = thread([&]() {
@@ -38,13 +39,25 @@ Scene::Scene(std::string name)
         registerAttributes();
         run();
     });
+
+    _textureUploadLoop = thread([&]() {
+        textureUploadRun();
+    });
 }
 
 /*************/
 Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+    _textureUploadLoop.join();
     _sceneLoop.join();
+
+    // Cleanup every object
+    _mainWindow->setAsCurrentContext();
+    lock_guard<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
+    _objects.clear();
+    _ghostObjects.clear();
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -52,26 +65,27 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
-    // First, the objects containing a context
-    if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_mainWindow));
-    else if (type == string("window"))
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(getNewSharedWindow(name)));
-        obj->setAttribute("swapInterval", {_swapInterval});
-    }
-    else if (type == string("gui"))
+    if (type == string("gui"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
     else
     {
         // Then, the objects not containing a context
-        _mainWindow->setAsCurrentContext();
-        if (type == string("geometry"))
+        if(!_mainWindow->setAsCurrentContext())
+    	    SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+
+        if (type == string("window"))
+        {
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
+            obj->setAttribute("swapInterval", {_swapInterval});
+        }
+        else if (type == string("camera"))
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
+        else if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
-        else if (type == string("image") || type == string("image_shmdata"))
+        else if (type.find("image") == 0)
         {
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
             obj->setRemoteType(type);
@@ -82,7 +96,7 @@ BaseObjectPtr Scene::add(string type, string name)
             obj->setRemoteType(type);
         }
         else if (type == string("object"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>());
+            obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
         else if (type == string("texture"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture>());
         _mainWindow->releaseContext();
@@ -115,7 +129,7 @@ void Scene::addGhost(string type, string name)
     BaseObjectPtr obj = add(type, name);
 
     // And move it to _ghostObjects
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -123,12 +137,14 @@ void Scene::addGhost(string type, string name)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     Json::Value root;
 
+    root[_name] = BaseObject::getConfigurationAsJson();
     for (auto& obj : _objects)
-        root[obj.first] = obj.second->getConfigurationAsJson();
+        if (obj.second->_savable)
+            root[obj.first] = obj.second->getConfigurationAsJson();
 
     return root;
 }
@@ -153,10 +169,39 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
+    glfwMakeContextCurrent(NULL);
+
+    return result;
+}
+
+/*************/
+bool Scene::unlink(string first, string second)
+{
+    BaseObjectPtr source(nullptr);
+    BaseObjectPtr sink(nullptr);
+
+    if (_objects.find(first) != _objects.end())
+        source = _objects[first];
+    if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+
+    if (source.get() != nullptr && sink.get() != nullptr)
+        return unlink(source, sink);
+    else
+        return false;
+}
+
+/*************/
+bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
+{
+    lock_guard<recursive_mutex> lock(_configureMutex);
+
+    glfwMakeContextCurrent(_mainWindow->get());
+    bool result = first->unlinkFrom(second);
     glfwMakeContextCurrent(NULL);
 
     return result;
@@ -190,6 +235,29 @@ bool Scene::linkGhost(string first, string second)
 }
 
 /*************/
+bool Scene::unlinkGhost(string first, string second)
+{
+    BaseObjectPtr source(nullptr);
+    BaseObjectPtr sink(nullptr);
+
+    if (_ghostObjects.find(first) != _ghostObjects.end())
+        source = _ghostObjects[first];
+    else if (_objects.find(first) != _objects.end())
+        source = _objects[first];
+    else
+        return false;
+
+    if (_ghostObjects.find(second) != _ghostObjects.end())
+        sink = _ghostObjects[second];
+    else if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+    else
+        return false;
+
+    return unlink(source, sink);
+}
+
+/*************/
 void Scene::remove(string name)
 {
     BaseObjectPtr obj;
@@ -203,11 +271,37 @@ void Scene::remove(string name)
 /*************/
 void Scene::render()
 {
-    if (!_started)
-        return;
-
     bool isError {false};
     vector<unsigned int> threadIds;
+    
+    STimer::timer << "cameras";
+    // We wait for textures to be uploaded, and we prevent any upload while rendering
+    // cameras to prevent tearing
+    unique_lock<mutex> lock(_textureUploadMutex);
+    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+    glDeleteSync(_textureUploadFence);
+
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
+    STimer::timer >> "cameras";
+
+    _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    lock.unlock();
+
+    // Update the guis
+    STimer::timer << "guis";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "gui")
+            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
+    STimer::timer >> "guis";
+
+    // Update the windows
+    STimer::timer << "windows";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    STimer::timer >> "windows";
 
     // Swap all buffers at once
     STimer::timer << "swap";
@@ -217,31 +311,10 @@ void Scene::render()
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
-    
-    // Update the cameras
-    STimer::timer << "cameras";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    STimer::timer >> "cameras";
-
-    // Update the guis
-    STimer::timer << "guis";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "gui")
-            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
-    STimer::timer >> "guis";
 
     // Wait for buffer update and swap threads
     SThread::pool.waitThreads(threadIds);
     STimer::timer >> "swap";
-
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    STimer::timer >> "windows";
 
     // Update the user events
     glfwPollEvents();
@@ -321,31 +394,55 @@ void Scene::run()
 {
     while (_isRunning)
     {
-        STimer::timer << "sceneLoop";
-        if (_started)
+        if (!_started)
         {
-            unique_lock<mutex> lock(_configureMutex);
-            render();
+            this_thread::sleep_for(chrono::milliseconds(50));
+            continue;
         }
 
-        // Saving event
-        if (_doSaveNow)
-        {
-            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-            Json::Value config = getConfigurationAsJson();
-            string configStr = config.toStyledString();
-            sendMessage("sceneConfig", {_name, configStr});
-            _doSaveNow = false;
-        }
         
-        // Compute blending event
-        if (_doComputeBlending)
-        {
-            computeBlendingMap();
-            _doComputeBlending = false;
-        }
+        STimer::timer << "sceneLoop";
+
+        this_thread::yield(); // Allows other threads to catch this mutex
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        _mainWindow->setAsCurrentContext();
+        render();
+        _mainWindow->releaseContext();
 
         STimer::timer >> "sceneLoop";
+    }
+}
+
+/*************/
+void Scene::textureUploadRun()
+{
+    while (_isRunning)
+    {
+        if (!_started)
+        {
+            this_thread::sleep_for(chrono::milliseconds(50));
+            continue;
+        }
+
+        unique_lock<mutex> lock(_textureUploadMutex);
+
+        _textureUploadWindow->setAsCurrentContext();
+        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+        glDeleteSync(_textureUploadFence);
+
+        STimer::timer << "textureUpload";
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->update();
+        _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        lock.unlock();
+
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "texture")
+                dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
+
+        _textureUploadWindow->releaseContext();
+        STimer::timer >> "textureUpload";
     }
 }
 
@@ -363,14 +460,24 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessage(const string message, const Values value)
+void Scene::sendMessageToWorld(const string message, const Values value)
 {
-    _link->sendMessage("world", message, value);
+    RootObject::sendMessage("world", message, value);
+}
+
+/*************/
+void Scene::waitTextureUpload()
+{
+    unique_lock<mutex> lock(_textureUploadMutex);
+    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/
 void Scene::computeBlendingMap()
 {
+    lock_guard<recursive_mutex> lock(_configureMutex);
+    _mainWindow->setAsCurrentContext();
+
     if (_isBlendComputed)
     {
         for (auto& obj : _objects)
@@ -420,6 +527,7 @@ void Scene::computeBlendingMap()
                 pixBuffer[y * w + x] = maxValue;
             }
         swap(*_blendingMap, *buffer);
+        _blendingMap->_savable = false;
         _blendingMap->updateTimestamp();
 
         // Small hack to handle the fact that texture transfer uses PBOs.
@@ -440,6 +548,8 @@ void Scene::computeBlendingMap()
 
         SLog::log << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
     }
+
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -466,8 +576,13 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
     }
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
     GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
     if (!window)
@@ -475,20 +590,20 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
         return GlWindowPtr(nullptr);
     }
+    GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
-    glfwMakeContextCurrent(window);
-    if (SPLASH_GL_DEBUG)
-    {
-        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-    }
+    glWindow->setAsCurrentContext();
+#ifdef DEBUGGL
+    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+#endif
 
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
     {
         PFNGLXJOINSWAPGROUPNVPROC nvGLJoinSwapGroup = (PFNGLXJOINSWAPGROUPNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
-        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXJoinSwapGroupNV");
+        PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXBindSwapBarrierNV");
 
         bool nvResult = true;
         nvResult &= nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetX11Window(window), 1);
@@ -499,10 +614,9 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
     }
 #endif
+    glWindow->releaseContext();
 
-    glfwMakeContextCurrent(NULL);
-
-    return make_shared<GlWindow>(window, _mainWindow->get());
+    return glWindow;
 }
 
 /*************/
@@ -521,8 +635,13 @@ void Scene::init(std::string name)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
 
@@ -538,14 +657,13 @@ void Scene::init(std::string name)
     _mainWindow = make_shared<GlWindow>(window, window);
     _isInitialized = true;
 
-    glfwMakeContextCurrent(_mainWindow->get());
+    _mainWindow->setAsCurrentContext();
     // Activate GL debug messages
-    if (SPLASH_GL_DEBUG)
-    {
-        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-    }
+#ifdef DEBUGGL
+    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+#endif
 
     // Check for swap groups
 #ifdef GLX_NV_swap_group
@@ -558,27 +676,26 @@ void Scene::init(std::string name)
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
     }
 #endif
+    _mainWindow->releaseContext();
 
-    glfwMakeContextCurrent(NULL);
+    _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
-    _link->sendMessage("world", "childProcessLaunched", {});
+    sendMessageToWorld("childProcessLaunched", {});
 }
 
 /*************/
 void Scene::initBlendingMap()
 {
     _blendingMap = make_shared<Image>();
-    _blendingMap->set(2048, 2048, 1, TypeDesc::UINT16);
+    _blendingMap->set(_blendingResolution, _blendingResolution, 1, TypeDesc::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
-    glfwMakeContextCurrent(_mainWindow->get());
-    _blendingTexture = make_shared<Texture>();
+    _blendingTexture = make_shared<Texture>(_self);
     _blendingTexture->disableFiltering();
     *_blendingTexture = _blendingMap;
-    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -639,13 +756,28 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["blendingResolution"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        int resolution = args[0].asInt();
+        if (resolution >= 64)
+            _blendingResolution = resolution;
+        return true;
+    }, [&]() -> Values {
+        return {(int)_blendingResolution};
+    });
+
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
-        _doComputeBlending = true;
+        computeBlendingMap();
         return true;
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](Values args) {
-        _doSaveNow = true;
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+        Json::Value config = getConfigurationAsJson();
+        string configStr = config.toStyledString();
+        sendMessageToWorld("answerMessage", {"config", _name, configStr});
         return true;
     });
 
@@ -664,14 +796,28 @@ void Scene::registerAttributes()
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
         return true;
     });
+
+    _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        string type = args[0].asString();
+        Values list;
+        for (auto& obj : _objects)
+            if (obj.second->getType() == type)
+                list.push_back(obj.second->getName());
+        for (auto& obj : _ghostObjects)
+            if (obj.second->getType() == type)
+                list.push_back(obj.second->getName());
+        sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        return true;
+    });
    
     _attribFunctions["link"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
         string dst = args[1].asString();
-        link(src, dst);
-        return true;
+        return link(src, dst);
     });
 
     _attribFunctions["linkGhost"] = AttributeFunctor([&](Values args) {
@@ -739,6 +885,22 @@ void Scene::registerAttributes()
         _started = false;
         _isRunning = false;
         return true;
+    });
+   
+    _attribFunctions["unlink"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 2)
+            return false;
+        string src = args[0].asString();
+        string dst = args[1].asString();
+        return unlink(src, dst);
+    });
+
+    _attribFunctions["unlinkGhost"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 2)
+            return false;
+        string src = args[0].asString();
+        string dst = args[1].asString();
+        return unlinkGhost(src, dst);
     });
  
     _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {

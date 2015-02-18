@@ -211,7 +211,7 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
     copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
     currentObjPtr += sizeof(nbrVertices);
 
-    if (nbrVertices <= 0 || nbrVertices > obj->size())
+    if (nbrVertices < 0 || nbrVertices > obj->size())
     {
         SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Bad buffer received, discarding" << Log::endl;
         return false;

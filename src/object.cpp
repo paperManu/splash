@@ -20,6 +20,19 @@ namespace Splash {
 /*************/
 Object::Object()
 {
+    init();
+}
+
+/*************/
+Object::Object(RootObjectWeakPtr root)
+       : BaseObject(root)
+{
+    init();
+}
+
+/*************/
+void Object::init()
+{
     _type = "object";
 
     _shader = make_shared<Shader>();
@@ -44,6 +57,9 @@ void Object::activate()
     _mutex.lock(); 
     _shader->setAttribute("fill", {_fill});
 
+    for (auto& m : _blendMaps)
+        m->update();
+
     if (_blendMaps.size() != 0)
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
@@ -56,7 +72,7 @@ void Object::activate()
     GLuint texUnit = 0;
     for (auto& t : _textures)
     {
-        t->update();
+        //t->update();
         t->lock();
         _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
 
@@ -84,9 +100,12 @@ dmat4 Object::computeModelMatrix() const
 /*************/
 void Object::deactivate()
 {
+    for (auto& m : _blendMaps)
+        m->flushPbo();
+
     for (auto& t : _textures)
     {
-        t->flushPbo();
+        //t->flushPbo();
         t->unlock();
     }
 
@@ -111,6 +130,9 @@ void Object::draw()
 /*************/
 bool Object::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
@@ -119,9 +141,13 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex = make_shared<Texture>();
+        TexturePtr tex = make_shared<Texture>(_root);
+        tex->setName(getName() + "_" + obj->getName() + "_tex");
         if (tex->linkTo(obj))
+        {
+            _root.lock()->registerObject(tex);
             return linkTo(tex);
+        }
         else
             return false;
     }
@@ -164,22 +190,31 @@ float Object::pickVertex(dvec3 p, dvec3& v)
 }
 
 /*************/
+void Object::removeTexture(TexturePtr tex)
+{
+    auto texIterator = find(_textures.begin(), _textures.end(), tex);
+    if (texIterator != _textures.end())
+        _textures.erase(texIterator);
+}
+
+/*************/
 void Object::resetBlendingMap()
 {
-    for (int i = 0; i < _textures.size();)
+    for (vector<TexturePtr>::iterator textureIt = _textures.begin(); textureIt != _textures.end();)
     {
         bool hasErased {false};
         for (auto& m : _blendMaps)
-            if (_textures[i] == m)
+            if (*textureIt == m)
             {
-                _textures.erase(_textures.begin() + i);
+                textureIt = _textures.erase(textureIt);
                 hasErased = true;
             }
         if (!hasErased)
-            ++i;
+            textureIt++;
     }
 
     _blendMaps.clear();
+    _updatedParams = true;
 }
 
 /*************/
@@ -190,9 +225,9 @@ void Object::setBlendingMap(TexturePtr& map)
 }
 
 /*************/
-void Object::setViewProjectionMatrix(const glm::dmat4& vp)
+void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
-    _shader->setModelViewProjectionMatrix(vp * computeModelMatrix());
+    _shader->setModelViewProjectionMatrix(mv * computeModelMatrix(), mp);
 }
 
 /*************/
@@ -203,8 +238,8 @@ void Object::registerAttributes()
             return false;
         _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
-    }, [&]() {
-        return Values({_position.x, _position.y, _position.z});
+    }, [&]() -> Values {
+        return {_position.x, _position.y, _position.z};
     });
 
     _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
@@ -218,8 +253,8 @@ void Object::registerAttributes()
 
         _shader->setAttribute("scale", args);
         return true;
-    }, [&]() {
-        return Values({_scale.x, _scale.y, _scale.z});
+    }, [&]() -> Values {
+        return {_scale.x, _scale.y, _scale.z};
     });
 
     _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
@@ -240,7 +275,9 @@ void Object::registerAttributes()
         }
         return true;
     }, [&]() {
-        return Values({_shader->getSideness()});
+        Values sideness;
+        _shader->getAttribute("sideness", sideness);
+        return sideness;
     });
 
     _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
@@ -248,8 +285,8 @@ void Object::registerAttributes()
             return false;
         _fill = args[0].asString();
         return true;
-    }, [&]() {
-        return Values({_fill});
+    }, [&]() -> Values {
+        return {_fill};
     });
 
     _attribFunctions["color"] = AttributeFunctor([&](Values args) {

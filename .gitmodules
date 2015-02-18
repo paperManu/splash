@@ -10,3 +10,7 @@
 [submodule "external/hap"]
 	path = external/hap
 	url = https://github.com/Vidvox/hap.git
+[submodule "external/piccante"]
+	path = external/piccante
+	url = https://github.com/banterle/piccante.git
+	branch = master

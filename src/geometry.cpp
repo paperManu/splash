@@ -1,5 +1,6 @@
 #include "geometry.h"
 
+#include "log.h"
 #include "mesh.h"
 
 using namespace std;
@@ -42,13 +43,18 @@ void Geometry::activate()
 /*************/
 void Geometry::deactivate() const
 {
+#ifdef DEBUG
     glBindVertexArray(0);
+#endif
     _mutex.unlock();
 }
 
 /*************/
 bool Geometry::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
         MeshPtr mesh = dynamic_pointer_cast<Mesh>(obj);

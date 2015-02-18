@@ -27,10 +27,11 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
+#include <atomic>
 #include <cstddef>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <json/reader.h>
 
 namespace Splash {
@@ -72,6 +73,11 @@ class Scene : public RootObject
         Json::Value getConfigurationAsJson();
 
         /**
+         * Get a glfw window sharing the same context as _mainWindow
+         */
+        GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
+
+        /**
          * Get the status of the scene, return true if all is well
          */
         bool getStatus() const {return _status;}
@@ -87,15 +93,18 @@ class Scene : public RootObject
         bool isRunning() const {return _isRunning;}
 
         /**
-         * Link an object to another, base on their types
+         * Link / unlink an object to another, base on their types
          */
         bool link(std::string first, std::string second);
         bool link(BaseObjectPtr first, BaseObjectPtr second);
+        bool unlink(std::string first, std::string second);
+        bool unlink(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
-         * Link objects, at least one of them being a ghost
+         * Link / unlink objects, at least one of them being a ghost
          */
         bool linkGhost(std::string first, std::string second);
+        bool unlinkGhost(std::string first, std::string second);
 
         /**
          * Remove an object
@@ -106,11 +115,6 @@ class Scene : public RootObject
          * Render everything
          */
         void render();
-
-        /**
-         * Main loop for the scene
-         */
-        void run();
 
         /**
          * Set the Scene as the master one
@@ -125,7 +129,13 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessage(const std::string message, const Values value = {});
+        void sendMessageToWorld(const std::string message, const Values value = {});
+
+        /**
+         * Wait for synchronization with texture upload
+         * Has to be called from a GL context
+         */
+        void waitTextureUpload();
 
     protected:
         GlWindowPtr _mainWindow;
@@ -140,16 +150,22 @@ class Scene : public RootObject
 
     private:
         ScenePtr _self;
-        std::shared_ptr<Link> _link;
         bool _started {false};
         std::thread _sceneLoop;
-        std::mutex _configureMutex;
+        std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
+
+        // Texture upload context
+        std::thread _textureUploadLoop;
+        GlWindowPtr _textureUploadWindow;
+        std::atomic_bool _textureUploadDone {false};
+        std::mutex _textureUploadMutex;
+        GLsync _textureUploadFence;
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
@@ -158,17 +174,9 @@ class Scene : public RootObject
         unsigned long _nextId {0};
 
         // Blending map, used by all cameras (except the GUI camera)
+        unsigned int _blendingResolution {2048};
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
-
-        // List of actions to do during the next render loop
-        bool _doComputeBlending {false};
-        bool _doSaveNow {false};
-
-        /**
-         * Get a glfw window sharing the same context as _mainWindow
-         */
-        GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
 
         /**
          * Set up the context and everything
@@ -194,6 +202,16 @@ class Scene : public RootObject
          * Callback for GL errors and warnings
          */
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+
+        /**
+         * Main loop for the scene
+         */
+        void run();
+
+        /**
+         * Texture update loop
+         */
+        void textureUploadRun();
 
         /**
          * Register new functors to modify attributes

@@ -142,6 +142,7 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ctx->_isHap = false;
         ctx->_isYUV = false;
         ctx->_is420 = false;
+        ctx->_is422 = false;
         
         regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regGreen, regBlue, regFormatYUV;
         try
@@ -231,6 +232,8 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
                     sscanf(substr.c_str(), ")%s", format);
                     if (strstr(format, (char*)"I420") != nullptr)
                         ctx->_is420 = true;
+                    else if (strstr(format, (char*)"UYVY") != nullptr)
+                        ctx->_is422 = true;
                 }
             }
         }
@@ -290,7 +293,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
     // Check if we need to resize the reader buffer
     // We set the size so as to have just enough place for the given texture format
     oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();
-    if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height && textureFormat != ctx->_textureFormat)
+    if (bufSpec.width != ctx->_width || (bufSpec.height != ctx->_height && textureFormat != ctx->_textureFormat))
     {
         ctx->_textureFormat = textureFormat;
 
@@ -349,7 +352,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
         ctx->_readerBuffer.reset(spec);
     }
 
-    if (!ctx->_is420 && (ctx->_channels == 3 || ctx->_channels == 4))
+    if (!ctx->_isYUV && (ctx->_channels == 3 || ctx->_channels == 4))
     {
         char* pixels = (char*)(ctx->_readerBuffer).localpixels();
         vector<unsigned int> threadIds;
@@ -398,7 +401,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                        
                         int col = x;
                         int row = y;
-                        int yValue = (int)(Y[row * ctx->_width + col]) * 38142;
+                        int yValue = (int)(Y[row * ctx->_width + col] - 16) * 38142;
                         pixels[(row * ctx->_width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(row * ctx->_width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
@@ -450,6 +453,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                         {
                             load_u(loadBuf, &(Y[(y + l) * width + x]));
                             yValue[l] = to_int16x8(loadBuf);
+                            yValue[l] = sub(yValue[l], int16x8::make_const(16));
 
                             red = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
                             grn = add(mul_lo(yValue[l], int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
@@ -479,6 +483,120 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 
                             memcpy(&(pixels[((y + l) * width + x) * 3]), dst, 24*sizeof(char));
                         }
+                    }
+            }));
+        }
+#endif
+        SThread::pool.waitThreads(threadIds);
+    }
+    else if (ctx->_is422)
+    {
+        const unsigned char* YUV = (const unsigned char*)data;
+
+        char* pixels = (char*)(ctx->_readerBuffer).localpixels();
+        vector<unsigned int> threadIds;
+#if SIMDPP_NO_SSE
+        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        {
+            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
+                    lastLine = ctx->_height;
+                else
+                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
+                    for (int x = 0; x < ctx->_width; x+=2)
+                    {
+                        unsigned char block[4];
+                        memcpy(block, &YUV[y * ctx->_width * 2 + x * 2], 4 * sizeof(unsigned char));
+
+                        int uValue = (int)(block[0]) - 128;
+                        int vValue = (int)(block[2]) - 128;
+
+                        int rPart = 52298 * vValue;
+                        int gPart = -12846 * uValue - 36641 * vValue;
+                        int bPart = 66094 * uValue;
+                       
+                        int yValue = (int)(block[1] - 16) * 38142;
+                        pixels[(y * ctx->_width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+
+                        yValue = (int)(block[3] - 16) * 38142;
+                        pixels[(y * ctx->_width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(y * ctx->_width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+                    }
+            }));
+        }
+#else
+        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        {
+            int width = ctx->_width;
+            int height = ctx->_height;
+
+            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                if (height - height / SPLASH_SHMDATA_THREADS * (block + 1) < height / SPLASH_SHMDATA_THREADS)
+                    lastLine = height;
+                else
+                    lastLine = height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
+                    for (int x = 0; x + 7 < width; x += 8)
+                    {
+                        int16x8 yValue;
+                        int16x8 uValue;
+                        int16x8 vValue;
+                        uint8x16 loadBuf;
+
+                        load_u(loadBuf, &(YUV[y * width * 2 + x * 2]));
+                        loadBuf = unzip_hi(loadBuf, loadBuf);
+                        yValue = to_int16x8(loadBuf); // Get 8 Y values here
+                        load_u(loadBuf, &(YUV[y * width * 2 + x * 2]));
+                        loadBuf = unzip_lo(loadBuf, loadBuf);
+                        uValue = to_int16x8(loadBuf);
+                        vValue = unzip_hi(uValue, uValue); // Get 4 V values here
+                        uValue = unzip_lo(uValue, uValue); // Get 4 U values here
+
+                        vValue = zip_lo(vValue, vValue);
+                        uValue = zip_lo(uValue, uValue);
+
+                        uValue = sub(uValue, int16x8::make_const(128));
+                        vValue = sub(vValue, int16x8::make_const(128));
+                        yValue = sub(yValue, int16x8::make_const(16));
+
+                        int16x8 red, grn, blu;
+                        uint8x16 uRed, uGrn, uBlu;
+                        
+                        red = add(mul_lo(yValue, int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
+                        grn = add(mul_lo(yValue, int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
+                        blu = add(mul_lo(yValue, int16x8::make_const(74)), mul_lo(vValue, int16x8::make_const(129)));
+
+                        red = shift_r(red, 6);
+                        grn = shift_r(grn, 6);
+                        blu = shift_r(blu, 6);
+
+                        red = simdpp::min(red, int16x8::make_const(255));
+                        grn = simdpp::min(grn, int16x8::make_const(255));
+                        blu = simdpp::min(blu, int16x8::make_const(255));
+
+                        red = simdpp::max(red, int16x8::make_const(0));
+                        grn = simdpp::max(grn, int16x8::make_const(0));
+                        blu = simdpp::max(blu, int16x8::make_const(0));
+
+                        uRed = red;
+                        uRed = unzip_lo(uRed, uRed);
+                        uGrn = grn;
+                        uGrn = unzip_lo(uGrn, uGrn);
+                        uBlu = blu;
+                        uBlu = unzip_lo(uBlu, uBlu);
+
+                        alignas(32) char dst[48];
+                        store_packed3(dst, uBlu, uGrn, uRed);
+
+                        memcpy(&(pixels[(y * width + x) * 3]), dst, 24*sizeof(char));
                     }
             }));
         }

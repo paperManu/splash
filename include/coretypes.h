@@ -22,21 +22,18 @@
  * A few, mostly basic, types
  */
 
-#ifndef SPLASH_CORETYPES_H
-#define SPLASH_CORETYPES_H
-
-#define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
 
 #define SPLASH
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
 #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#define SPLASH_GL_DEBUG false
 #define SPLASH_SAMPLES 4
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
+#include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <ostream>
 #include <map>
@@ -45,10 +42,12 @@
 #include <string>
 #include <vector>
 #include <GLFW/glfw3.h>
-#include <json/reader.h>
 
 #include "config.h"
 #include "threadpool.h"
+
+#ifndef SPLASH_CORETYPES_H
+#define SPLASH_CORETYPES_H
 
 namespace Splash
 {
@@ -86,6 +85,14 @@ typedef std::shared_ptr<Scene> ScenePtr;
 typedef std::shared_ptr<Shader> ShaderPtr;
 typedef std::shared_ptr<Texture> TexturePtr;
 typedef std::shared_ptr<Window> WindowPtr;
+
+#if HAVE_GPHOTO
+class ColorCalibrator;
+class Image_GPhoto;
+
+typedef std::shared_ptr<ColorCalibrator> ColorCalibratorPtr;
+typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
+#endif
 
 /*************/
 struct SerializedObject
@@ -207,8 +214,9 @@ class GlWindow
          */
         bool setAsCurrentContext() const 
         {
-            if (glfwGetCurrentContext() != NULL && glfwGetCurrentContext() != _window)
-                return false;
+            _previousWindow = glfwGetCurrentContext();
+            if (_previousWindow == _window)
+                return true;
             _mutex.lock();
             glfwMakeContextCurrent(_window);
             return true;
@@ -219,15 +227,24 @@ class GlWindow
          */
         void releaseContext() const
         {
-            if (glfwGetCurrentContext() == _window)
+            if (_window == _previousWindow)
+                _previousWindow = nullptr;
+            else if (glfwGetCurrentContext() == _window)
             {
-                glfwMakeContextCurrent(NULL);
+                if (_previousWindow == nullptr)
+                    glfwMakeContextCurrent(NULL);
+                else
+                {
+                    glfwMakeContextCurrent(_previousWindow);
+                    _previousWindow = nullptr;
+                }
                 _mutex.unlock();
             }
         }
 
     private:
         mutable std::mutex _mutex;
+        mutable GLFWwindow* _previousWindow {nullptr};
         GLFWwindow* _window {nullptr};
         GLFWwindow* _mainWindow {nullptr};
 };
@@ -297,6 +314,29 @@ struct Value
             return *this;
         }
 
+        bool operator==(Value v)
+        {
+            if (_type != v._type)
+                return false;
+            else if (_type == Type::i)
+                return _i == v._i;
+            else if (_type == Type::f)
+                return _f == v._f;
+            else if (_type == Type::s)
+                return _s == v._s;
+            else if (_type == Type::v)
+            {
+                if (_v.size() != v._v.size())
+                    return false;
+                bool isEqual = true;
+                for (int i = 0; i < _v.size(); ++i)
+                    isEqual &= (_v[i] == v._v[i]);
+                return isEqual;
+            }
+            else
+                return false;
+        }
+
         int asInt()
         {
             if (_type == Type::i)
@@ -340,13 +380,15 @@ struct Value
         Values asValues()
         {
             if (_type == Type::i)
-                return Values({_i});
+                return {_i};
             else if (_type == Type::f)
-                return Values({_f});
+                return {_f};
             else if (_type == Type::s)
-                return Values({_s});
+                return {_s};
             else if (_type == Type::v)
                 return _v;
+            else
+                return {};
         }
 
         void* data()
@@ -377,281 +419,38 @@ struct Value
 
     private:
         Type _type;
-        int _i;
-        float _f;
-        std::string _s;
-        Values _v;
+        int _i {0};
+        float _f {0.f};
+        std::string _s {""};
+        Values _v {};
 };
 
 /*************/
-struct AttributeFunctor
+// OnScopeExit, taken from Switcher (https://github.com/nicobou/switcher)
+template <typename F>
+class ScopeGuard
 {
     public:
-        AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(Values)> setFunc) {_setFunc = setFunc;}
-        AttributeFunctor(std::function<bool(Values)> setFunc,
-                            std::function<Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
-
-        bool operator()(Values args)
+        explicit ScopeGuard(F &&f) :
+            f_(std::move(f)) {}
+        ~ScopeGuard()
         {
-            if (!_setFunc)
-                return false;
-            return _setFunc(args);
+            f_();
         }
-        Values operator()()
-        {
-            if (!_getFunc)
-                return Values();
-            return _getFunc();
-        }
-
     private:
-        std::function<bool(Values)> _setFunc;
-        std::function<Values()> _getFunc;
+        F f_;
 };
 
-class BaseObject;
-typedef std::shared_ptr<BaseObject> BaseObjectPtr;
-
-/*************/
-class BaseObject
+enum class ScopeGuardOnExit { };
+template <typename F>
+ScopeGuard<F> operator+(ScopeGuardOnExit, F&& f)
 {
-    public:
-        virtual ~BaseObject() {}
+    return ScopeGuard<F>(std::forward<F>(f));
+}
 
-        std::string getType() const {return _type;}
-
-        /**
-         * Set and get the id of the object
-         */
-        unsigned long getId() const {return _id;}
-        void setId(unsigned long id) {_id = id;}
-
-        /**
-         * Set and get the name of the object
-         */
-        std::string getName() const {return _name;}
-        void setName(std::string name) {_name = name;}
-
-        /**
-         * Set and get the remote type of the object
-         */
-        std::string getRemoteType() const {return _remoteType;}
-        void setRemoteType(std::string type) {_remoteType = type;}
-
-        /**
-         * Try to link the given BaseObject to this
-         */
-        virtual bool linkTo(BaseObjectPtr obj) {return false;}
-
-        /**
-         * Set the specified attribute
-         */
-        bool setAttribute(std::string attrib, Values args)
-        {
-            if (_attribFunctions.find(attrib) == _attribFunctions.end())
-                return false;
-            return _attribFunctions[attrib](args);
-        }
-
-        /**
-         * Get the specified attribute
-         */
-        bool getAttribute(std::string attrib, Values& args)
-        {
-            if (_attribFunctions.find(attrib) == _attribFunctions.end())
-                return false;
-            args = _attribFunctions[attrib]();
-            return true;
-        }
-
-        /**
-         * Get all the attributes as a map
-         */
-        std::map<std::string, Values> getAttributes()
-        {
-            std::map<std::string, Values> attribs;
-            for (auto& attr : _attribFunctions)
-            {
-                Values values;
-                if (getAttribute(attr.first, values) == false || values.size() == 0)
-                    continue;
-                attribs[attr.first] = values;
-            }
-
-            return attribs;
-        }
-        
-        /**
-         * Update the content of the object
-         */
-        virtual void update() {}
-
-        /**
-         * Get the configuration as a json object
-         */
-        Json::Value getConfigurationAsJson()
-        {
-            Json::Value root;
-            if (_remoteType == "")
-                root["type"] = _type;
-            else
-                root["type"] = _remoteType;
-
-            for (auto& attr : _attribFunctions)
-            {
-                Values values;
-                if (getAttribute(attr.first, values) == false || values.size() == 0)
-                    continue;
-
-                Json::Value jsValue;
-                for (auto& v : values)
-                {
-                    switch (v.getType())
-                    {
-                    default:
-                        continue;
-                    case Value::i:
-                        jsValue.append(v.asInt());
-                        break;
-                    case Value::f:
-                        jsValue.append(v.asFloat());
-                        break;
-                    case Value::s:
-                        jsValue.append(v.asString());
-                        break;
-                    }
-                }
-
-                root[attr.first] = jsValue;
-            }
-            return root;
-        }
-
-    protected:
-        unsigned long _id;
-        std::string _type {"baseobject"};
-        std::string _remoteType {""};
-        std::string _name {""};
-        std::map<std::string, AttributeFunctor> _attribFunctions;
-
-        /**
-         * Register new functors to modify attributes
-         */
-        virtual void registerAttributes() = 0;
-};
-
-/*************/
-class BufferObject : public BaseObject
-{
-    public:
-        virtual ~BufferObject() {}
-
-        /**
-         * Returns true if the object has been updated
-         */
-        bool wasUpdated() {return _updatedBuffer;}
-
-        /**
-         * Set the updated buffer flag to false.
-         */
-        void setNotUpdated() {_updatedBuffer = false;}
-
-        /**
-         * Update the Image from a serialized representation
-         * The second definition updates from the inner serialized object
-         */
-        virtual bool deserialize(const SerializedObjectPtr obj) = 0;
-        bool deserialize()
-        {
-            if (_newSerializedObject == false)
-                return true;
-
-            bool _returnValue = deserialize(_serializedObject);
-            _newSerializedObject = false;
-
-            return _returnValue;
-        }
-
-        /**
-         * Serialize the image
-         */
-        virtual SerializedObjectPtr serialize() const = 0;
-
-        /**
-         * Set the next serialized object to deserialize to buffer
-         */
-        void setSerializedObject(SerializedObjectPtr obj)
-        {
-            {
-                std::lock_guard<std::mutex> lock(_writeMutex);
-                _serializedObject = move(obj);
-                _newSerializedObject = true;
-            }
-
-            // Deserialize it right away, in a separate thread
-            SThread::pool.enqueueWithoutId([&]() {
-                deserialize();
-            });
-        }
-
-        /**
-         * Updates the timestamp of the object. Also, set the update flag to true
-         */
-        void updateTimestamp()
-        {
-            _timestamp = std::chrono::high_resolution_clock::now();
-            _updatedBuffer = true;
-        }
-
-    protected:
-        mutable std::mutex _readMutex;
-        mutable std::mutex _writeMutex;
-        std::chrono::high_resolution_clock::time_point _timestamp;
-        bool _updatedBuffer {false};
-
-        SerializedObjectPtr _serializedObject;
-        bool _newSerializedObject {false};
-};
-
-typedef std::shared_ptr<BufferObject> BufferObjectPtr;
-
-/*************/
-class RootObject : public BaseObject
-{
-    public:
-        virtual ~RootObject() {}
-
-        /**
-         * Set the attribute of the named object with the given args
-         */
-        bool set(std::string name, std::string attrib, Values args)
-        {
-            if (name == _name || name == SPLASH_ALL_PAIRS)
-                setAttribute(attrib, args);
-            else if (_objects.find(name) != _objects.end())
-                _objects[name]->setAttribute(attrib, args);
-        }
-
-        /**
-         * Set an object from its serialized form
-         * If non existant, it is handled by the handleSerializedObject method
-         */
-        void setFromSerializedObject(const std::string name, const SerializedObjectPtr obj)
-        {
-            if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
-                std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
-            else
-                handleSerializedObject(name, obj);
-        }
-
-    protected:
-        std::map<std::string, BaseObjectPtr> _objects;
-
-        virtual void handleSerializedObject(const std::string name, const SerializedObjectPtr obj) {}
-};
-
-typedef std::shared_ptr<RootObject> RootObjectPtr;
+#define CONCATENATE_IMPL(s1, s2) s1##s2
+#define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
+#define OnScopeExit auto CONCATENATE(on_scope_exit_var, __LINE__) = ScopeGuardOnExit() + [&]()
 
 } // end of namespace
 

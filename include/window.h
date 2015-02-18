@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <deque>
 #include <memory>
@@ -44,7 +45,7 @@ class Window : public BaseObject
         /**
          * Constructor
          */
-        Window(GlWindowPtr w);
+        Window(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -76,6 +77,12 @@ class Window : public BaseObject
                 _screen = w._screen;
                 _viewProjectionMatrix = w._viewProjectionMatrix;
                 _inTextures = w._inTextures;
+
+                _renderFbo = w._renderFbo;
+                _readFbo = w._readFbo;
+                _renderFence = w._renderFence;
+                _depthTexture = w._depthTexture;
+                _colorTexture = w._colorTexture;
             }
             return *this;
         }
@@ -89,17 +96,17 @@ class Window : public BaseObject
         /**
          * Get the grabbed mouse action
          */
-        static int getMouseBtn(GLFWwindow* win, int& btn, int& action, int& mods);
+        static int getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods);
 
         /**
          * Get the mouse position
          */
-        static void getMousePos(GLFWwindow* win, int& xpos, int& ypos);
+        static void getMousePos(GLFWwindow*& win, int& xpos, int& ypos);
 
         /**
          * Get the mouse position
          */
-        static int getScroll(GLFWwindow* win, double& xoffset, double& yoffset);
+        static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
 
         /**
          * Check wether it is initialized
@@ -112,9 +119,10 @@ class Window : public BaseObject
         bool isWindow(GLFWwindow* w) const {return (w == _window->get() ? true : false);}
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
+        bool unlinkFrom(BaseObjectPtr obj);
 
         /**
          * Render this window to screen
@@ -127,9 +135,10 @@ class Window : public BaseObject
         bool switchFullscreen(int screenId = -1);
 
         /**
-         * Set a new texture to draw
+         * Set / unset a new texture to draw
          */
         void setTexture(TexturePtr tex);
+        void unsetTexture(TexturePtr tex);
 
         /**
          * Swap the back and front buffers
@@ -141,8 +150,19 @@ class Window : public BaseObject
         GlWindowPtr _window;
         int _screenId {-1};
         bool _fullscreen {false};
+        bool _withDecoration {true};
+        int _windowRect[4];
+        bool _srgb {true};
+        float _gammaCorrection {2.2f};
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
+
+        // Offscreen rendering related objects
+        GLuint _renderFbo {0};
+        GLuint _readFbo {0};
+        TexturePtr _depthTexture {nullptr};
+        TexturePtr _colorTexture {nullptr};
+        GLsync _renderFence;
 
         ObjectPtr _screen;
         glm::dmat4 _viewProjectionMatrix;
@@ -163,6 +183,12 @@ class Window : public BaseObject
         static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
 
         /**
+         * Set FBOs up
+         */
+        void setupRenderFBO();
+        void setupReadFBO();
+
+        /**
          * Register new functors to modify attributes
          */
         void registerAttributes();
@@ -178,9 +204,19 @@ class Window : public BaseObject
         bool setProjectionSurface();
 
         /**
+         * Set whether the window has decorations
+         */
+        void setWindowDecoration(bool hasDecoration);
+
+        /**
          * Update the swap interval
          */
         void updateSwapInterval();
+
+        /**
+         * Update the window size and position
+         */
+        void updateWindowShape();
 };
 
 typedef std::shared_ptr<Window> WindowPtr;

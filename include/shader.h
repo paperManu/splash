@@ -25,18 +25,15 @@
 #ifndef SPLASH_SHADER_H
 #define SPLASH_SHADER_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <memory>
 #include <string>
 #include <vector>
 #include <map>
-#include <GLFW/glfw3.h>
 
 #include "texture.h"
 
@@ -140,9 +137,9 @@ class Shader : public BaseObject
         void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name);
 
         /**
-         * Set the view projection matrix
+         * Set the model view and projection matrices
          */
-        void setModelViewProjectionMatrix(const glm::dmat4& mvp);
+        void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
         /**
          * Set the currently queued uniforms updates
@@ -157,7 +154,16 @@ class Shader : public BaseObject
         std::map<ShaderType, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
-        std::map<std::string, std::pair<Values, GLint>> _uniforms;
+
+        struct Uniform
+        {
+            std::string type {""};
+            Values values {};
+            GLint glIndex {-1};
+            GLuint glBuffer {0};
+            bool glBufferReady {false};
+        };
+        std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 

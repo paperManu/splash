@@ -25,16 +25,13 @@
 #ifndef SPLASH_TEXTURE_H
 #define SPLASH_TEXTURE_H
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
-
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <chrono>
 #include <memory>
 #include <vector>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 
@@ -49,7 +46,10 @@ class Texture : public BaseObject
          * Constructor
          */
         Texture();
+        Texture(RootObjectWeakPtr root);
         Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                GLint border, GLenum format, GLenum type, const GLvoid* data);
+        Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                 GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
@@ -183,7 +183,7 @@ class Texture : public BaseObject
         std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
-        bool _resizable {false};
+        bool _resizable {true};
         bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;

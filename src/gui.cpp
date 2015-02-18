@@ -36,7 +36,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
         TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         _depthTexture = move(texture);
-        _depthTexture->setAttribute("resizable", Values({1}));
+        _depthTexture->setAttribute("resizable", {1});
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -44,7 +44,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
         TexturePtr texture = make_shared<Texture>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         _outTexture = move(texture);
-        _outTexture->setAttribute("resizable", Values({1}));
+        _outTexture->setAttribute("resizable", {1});
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
 
@@ -59,11 +59,13 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _window->releaseContext();
 
     // Create the default GUI camera
-    _guiCamera = make_shared<Camera>(scene->_mainWindow);
+    scene->_mainWindow->setAsCurrentContext();
+    _guiCamera = make_shared<Camera>(s);
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
+    scene->_mainWindow->releaseContext();
 
     // Intialize the GUI widgets
     initGLV(_width, _height);
@@ -92,7 +94,7 @@ void Gui::key(int& key, int& action, int& mods)
             _glv.setKeyUp(glfwToGlvKey(key));
         else if (action == GLFW_REPEAT)
             _glv.setKeyDown(glfwToGlvKey(key));
-        _glv.setKeyModifiers(mods && GLFW_MOD_SHIFT, mods && GLFW_MOD_ALT, mods && GLFW_MOD_CONTROL, false, false);
+        _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
         _glv.propagateEvent();
         break;
     }
@@ -108,7 +110,7 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_ESCAPE:
     {
         auto scene = _scene.lock();
-        scene->sendMessage("quit");
+        scene->sendMessageToWorld("quit");
         break;
     }
     case GLFW_KEY_B:
@@ -116,16 +118,56 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->sendMessage("computeBlending");
+            scene->sendMessageToWorld("computeBlending");
         }
         break;
     }
+#if HAVE_GPHOTO
+    case GLFW_KEY_L:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            vector<CameraPtr> cameras;
+            for (auto& obj : scene->_objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            for (auto& obj : scene->_ghostObjects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            for (auto& cam : cameras)
+            {
+                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
+                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorMixMatrix", 2});
+            }
+        }
+        break;
+    }
+    case GLFW_KEY_O:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("calibrateColorResponseFunction");
+        }
+        break;
+    }
+    case GLFW_KEY_P:
+    {
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("calibrateColor");
+        }
+        break;
+    }
+#endif
     case GLFW_KEY_S:
     {
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
         {
             auto scene = _scene.lock();
-            scene->sendMessage("save");
+            scene->sendMessageToWorld("save");
         }
         break;
     }
@@ -136,9 +178,9 @@ void Gui::key(int& key, int& action, int& mods)
             auto scene = _scene.lock();
 
             if (_flashBG)
-                scene->sendMessage("flashBG", {0});
+                scene->sendMessageToWorld("flashBG", {0});
             else
-                scene->sendMessage("flashBG", {1});
+                scene->sendMessageToWorld("flashBG", {1});
 
             _flashBG = !_flashBG;
         }
@@ -148,14 +190,14 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_T: 
     {
         auto scene = _scene.lock();
-        scene->sendMessage("wireframe", {0});
+        scene->sendMessageToWorld("wireframe", {0});
         break;
     }
     // Switch the rendering to wireframe
     case GLFW_KEY_W:
     {
         auto scene = _scene.lock();
-        scene->sendMessage("wireframe", {1});
+        scene->sendMessageToWorld("wireframe", {1});
         break;
     }
     }
@@ -226,6 +268,9 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 /*************/
 bool Gui::linkTo(BaseObjectPtr obj)
 {
+    // Mandatory before trying to link
+    BaseObject::linkTo(obj);
+
     if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
@@ -252,15 +297,13 @@ bool Gui::render()
     if (_isVisible)
     {
         _doNotRender = false;
-        // Redraw the Gui camera, as well as the ghosts cameras if present
-        _glvGlobalView._guiCamera->render();
-        auto scene = _scene.lock();
-        for (auto& obj : scene->_ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->render();
+        // Render the visible camera
+        _glvGlobalView._camera->render();
     }
 
+#ifdef DEBUG
     GLenum error = 0;
+#endif
     if (_doNotRender == false)
     {
         if (!_window->setAsCurrentContext()) 
@@ -301,7 +344,11 @@ bool Gui::render()
             _doNotRender = true;
     }
 
+#ifdef DEBUG
     return error != 0 ? true : false;
+#else
+    return false;
+#endif
 }
 
 /*************/
@@ -371,17 +418,17 @@ void Gui::initGLV(int width, int height)
         static float fps {0.f};
         static float worldFps {0.f};
         static float upl {0.f};
-        static float upd {0.f};
+        static float tex {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.9 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.1;
+        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
         worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
         upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
-        //upd = upd * 0.9 + STimer::timer["buffer object update"] * 0.001 * 0.1;
+        tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
         cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
         win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
@@ -393,7 +440,7 @@ void Gui::initGLV(int width, int height)
         stream << "Framerate: " << setprecision(4) << fps << " fps\n";
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
-        //stream << "Buffers deserialize: " << setprecision(4) << upd << " ms\n";
+        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
@@ -402,7 +449,7 @@ void Gui::initGLV(int width, int height)
         return stream.str();
     });
     _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 7 + 8);
+    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 8 + 8);
     _glvProfile.style(&_style);
 
     // Some help regarding keyboard shortcuts
@@ -420,11 +467,20 @@ void Gui::initGLV(int width, int height)
         text += " H: hide all but the selected camera\n";
         text += " T: textured draw mode\n";
         text += " W: wireframe draw mode\n";
+#if HAVE_GPHOTO
+        text += " O: launch camera calibration\n";
+        text += " P: launch projectors calibration\n";
+        text += " L: activate color LUT (if calibrated)\n";
+#endif
 
         return text;
     });
     _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
+#if HAVE_GPHOTO
+    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 14 + 8);
+#else
     _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
+#endif
     _glvHelp.style(&_style);
 
     // Controls

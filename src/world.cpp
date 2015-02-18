@@ -10,6 +10,12 @@
 #include "scene.h"
 #include "threadpool.h"
 
+#if HAVE_GPHOTO
+#include "colorcalibrator.h"
+#include "image_gphoto.h"
+#endif
+
+#include <chrono>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <json/reader.h>
@@ -64,6 +70,7 @@ void World::run()
                 SerializedObjectPtr obj;
                 BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 if (bufferObj.get() != nullptr)
+                {
                     if (bufferObj->wasUpdated()) // if the buffer has been updated
                     {
                         obj = bufferObj->serialize();
@@ -72,6 +79,7 @@ void World::run()
                     }
                     else
                         return; // if not, exit this thread
+                }
             }));
         }
         SThread::pool.waitThreads(threadIds);
@@ -80,16 +88,16 @@ void World::run()
         // Send current timings to all Scenes, for display purpose
         auto durationMap = STimer::timer.getDurationMap();
         for (auto& d : durationMap)
-            _link->sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+            sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
         // Send newer logs to all Scenes
         auto logs = SLog::log.getLogs();
         for (auto& log : logs)
-            _link->sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
+            sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
 
         if (_doComputeBlending)
         {
-            _link->sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
+            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
             _doComputeBlending = false;
         }
 
@@ -102,7 +110,7 @@ void World::run()
         if (_quit)
         {
             for (auto& s : _scenes)
-                _link->sendMessage(s.first, "quit", {});
+                sendMessage(s.first, "quit", {});
             break;
         }
 
@@ -115,7 +123,7 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type != "image" && type != "image_shmdata" && type != "mesh" && type != "mesh_shmdata")
+    if (type.find("image") == string::npos && type.find("mesh") == string::npos)
         return;
 
     BaseObjectPtr object;
@@ -125,6 +133,10 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+#if HAVE_GPHOTO
+        else if (type == string("image_gphoto"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());
+#endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
         else if (type == string("mesh_shmdata"))
@@ -251,7 +263,7 @@ void World::applyConfig()
                     v = param.asFloat();
                 else
                     v = param.asString();
-                _link->sendMessage(name, paramName, {v});
+                sendMessage(name, paramName, {v});
                 idx++;
             }
         }
@@ -273,7 +285,7 @@ void World::applyConfig()
 
         // Set if master
         if (s.first == _masterSceneName)
-            _link->sendMessage(_masterSceneName, "setMaster", {});
+            sendMessage(_masterSceneName, "setMaster", {});
 
         // Create the objects
         auto sceneMembers = jsScene.getMemberNames();
@@ -288,12 +300,15 @@ void World::applyConfig()
             }
 
             string type = obj["type"].asString();
-            _link->sendMessage(s.first, "add", {type, name});
-            if (s.first != _masterSceneName)
-                _link->sendMessage(_masterSceneName, "addGhost", {type, name});
+            if (type != "scene")
+            {
+                sendMessage(s.first, "add", {type, name});
+                if (s.first != _masterSceneName)
+                    sendMessage(_masterSceneName, "addGhost", {type, name});
 
-            // Some objects are also created on this side, and linked with the distant one
-            addLocally(type, name, s.first);
+                // Some objects are also created on this side, and linked with the distant one
+                addLocally(type, name, s.first);
+            }
 
             // Set their attributes
             auto objMembers = obj.getMemberNames();
@@ -306,17 +321,27 @@ void World::applyConfig()
                     continue;
                 }
 
-                Values values;
-                if (attr.isArray())
-                    for (auto& v : attr)
+                // Helper function to read arrays
+                std::function<Values(Json::Value)> processArray;
+                processArray = [&processArray](Json::Value values) {
+                    Values outValues;
+                    for (auto& v : values)
                     {
                         if (v.isInt())
-                            values.emplace_back(v.asInt());
+                            outValues.emplace_back(v.asInt());
                         else if (v.isDouble())
-                            values.emplace_back(v.asFloat());
+                            outValues.emplace_back(v.asFloat());
+                        else if (v.isArray())
+                            outValues.emplace_back(processArray(v));
                         else
-                            values.emplace_back(v.asString());
+                            outValues.emplace_back(v.asString());
                     }
+                    return outValues;
+                };
+
+                Values values;
+                if (attr.isArray())
+                    values = processArray(attr);
                 else if (attr.isInt())
                     values.emplace_back(attr.asInt());
                 else if (attr.isDouble())
@@ -324,16 +349,19 @@ void World::applyConfig()
                 else if (attr.isString())
                     values.emplace_back(attr.asString());
 
-                _link->sendMessage(name, objMembers[idxAttr], values);
-                if (s.first != _masterSceneName)
+                sendMessage(name, objMembers[idxAttr], values);
+                if (type != "scene")
                 {
-                    Values ghostValues {name, objMembers[idxAttr]};
-                    for (auto& v : values)
-                        ghostValues.push_back(v);
-                    _link->sendMessage(_masterSceneName, "setGhost", ghostValues);
+                    if (s.first != _masterSceneName)
+                    {
+                        Values ghostValues {name, objMembers[idxAttr]};
+                        for (auto& v : values)
+                            ghostValues.push_back(v);
+                        sendMessage(_masterSceneName, "setGhost", ghostValues);
+                    }
+                    // We also set the attribute locally, if the object exists
+                    set(name, objMembers[idxAttr], values);
                 }
-                // We also set the attribute locally, if the object exists
-                set(name, objMembers[idxAttr], values);
 
                 idxAttr++;
             }
@@ -354,16 +382,16 @@ void World::applyConfig()
             {
                 if (link.size() < 2)
                     continue;
-                _link->sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
+                sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
                 if (s.first != _masterSceneName)
-                    _link->sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
+                    sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
             }
             idx++;
         }
     }
 
     // Send the start message for all scenes
-    _link->sendMessage(SPLASH_ALL_PAIRS, "start", {});
+    sendMessage(SPLASH_ALL_PAIRS, "start", {});
 }
 
 /*************/
@@ -383,17 +411,13 @@ void World::saveConfig()
         root["scenes"].append(scene);
 
         // Get this scene's configuration
-        _link->sendMessage(s.first, "config", {});
-        timespec nap({0, (long int)1e6});
-        while (_lastConfigReceived == string("none"))
-            nanosleep(&nap, NULL);
+        Values answer = sendMessageWithAnswer(s.first, "config");
 
         // Parse the string to get a json
         Json::Value config;
         Json::Reader reader;
-        reader.parse(_lastConfigReceived, config);
+        reader.parse(answer[2].asString(), config);
         root[s.first] = config;
-        _lastConfigReceived = "none";
     }
 
     // Complete with the configuration from the world
@@ -423,6 +447,13 @@ void World::saveConfig()
     ofstream out(_configFilename, ios::binary);
     out << _config.toStyledString();
     out.close();
+}
+
+/*************/
+Values World::getObjectsNameByType(string type)
+{
+    Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
+    return answer[2].asValues();
 }
 
 /*************/
@@ -551,20 +582,45 @@ void World::setAttribute(string name, string attrib, Values args)
 /*************/
 void World::registerAttributes()
 {
+#if HAVE_GPHOTO
+    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            _colorCalibrator = make_shared<ColorCalibrator>(_self);
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->update();
+        });
+        return true;
+    });
+
+    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            _colorCalibrator = make_shared<ColorCalibrator>(_self);
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->updateCRF();
+        });
+        return true;
+    });
+#endif
+
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
         _childProcessLaunched = true;
         return true;
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
-        _doComputeBlending = true;
+        if (args.size() == 0 || args[0].asInt() != 0)
+            _doComputeBlending = true;
         return true;
     });
 
     _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
-        _link->sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
+        sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
         return true;
     });
 
@@ -586,13 +642,6 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sceneConfig"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 2)
-            return false;
-        _lastConfigReceived = args[1].asString();
-        return true;
-    });
-
     _attribFunctions["sendAll"] = AttributeFunctor([&](Values args) {
         if (args.size() < 2)
             return false;
@@ -602,17 +651,18 @@ void World::registerAttributes()
         for (int i = 2; i < args.size(); ++i)
             values.push_back(args[i]);
 
-        _link->sendMessage(_masterSceneName, "setGhost", values);
+        sendMessage(_masterSceneName, "setGhost", values);
         
         values.erase(values.begin());
         values.erase(values.begin());
-        _link->sendMessage(name, attr, values);
+        sendMessage(name, attr, values);
+        return true;
     });
 
     _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
-        _link->sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});
+        sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});
         return true;
     });
 }

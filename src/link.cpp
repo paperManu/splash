@@ -1,5 +1,6 @@
 #include "link.h"
 
+#include "basetypes.h"
 #include "log.h"
 #include "timer.h"
 
@@ -57,7 +58,7 @@ void Link::connectTo(const string name)
     try
     {
         // Set the high water mark to a low value for the buffer output
-        int hwm = 100;
+        int hwm = 0;
         _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // Set the high water mark to a low value for the buffer output
@@ -124,35 +125,47 @@ bool Link::sendMessage(const string name, const string attribute, const Values m
         memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
         _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
-        // Then, the size of the message
-        int size = message.size();
-        msg.rebuild(sizeof(size));
-        memcpy(msg.data(), (void*)&size, sizeof(size));
+        // Helper function to send messages
+        std::function<void(const Values message)> sendMessage;
+        sendMessage = [&](const Values message) {
+            // Size of the message
+            int size = message.size();
+            msg.rebuild(sizeof(size));
+            memcpy(msg.data(), (void*)&size, sizeof(size));
 
-        if (message.size() == 0)
-            _socketMessageOut->send(msg);
-        else
-            _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-        // And every message
-        for (int i = 0; i < message.size(); ++i)
-        {
-            auto v = message[i];
-            Value::Type valueType = v.getType();
-            int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
-            void* value = v.data();
-
-            msg.rebuild(sizeof(valueType));
-            memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
-            _socketMessageOut->send(msg, ZMQ_SNDMORE);
-            msg.rebuild(valueSize);
-            memcpy(msg.data(), value, valueSize);
-
-            if (i != message.size() - 1)
-                _socketMessageOut->send(msg, ZMQ_SNDMORE);
-            else
+            if (message.size() == 0)
                 _socketMessageOut->send(msg);
-        }
+            else
+                _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+            for (int i = 0; i < message.size(); ++i)
+            {
+                auto v = message[i];
+                Value::Type valueType = v.getType();
+
+                msg.rebuild(sizeof(valueType));
+                memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
+                _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+                if (valueType == Value::Type::v)
+                    sendMessage(v.asValues());
+                else
+                {
+                    int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
+                    void* value = v.data();
+                    msg.rebuild(valueSize);
+                    memcpy(msg.data(), value, valueSize);
+
+                    if (i != message.size() - 1)
+                        _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                    else
+                        _socketMessageOut->send(msg);
+                }
+            }
+        };
+
+        // Send the message
+        sendMessage(message);
     }
     catch (const zmq::error_t& e)
     {
@@ -199,13 +212,10 @@ void Link::handleInputMessages()
         _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());
         _socketMessageIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
-        while (true)
-        {
-            zmq::message_t msg;
-            _socketMessageIn->recv(&msg); // name of the target
-            string name((char*)msg.data());
-            _socketMessageIn->recv(&msg); // target's attribute
-            string attribute((char*)msg.data());
+        // Helper function to receive messages
+        zmq::message_t msg;
+        std::function<Values(void)> recvMessage;
+        recvMessage = [&]()->Values {
             _socketMessageIn->recv(&msg); // size of the message
             int size = *(int*)msg.data();
 
@@ -214,14 +224,30 @@ void Link::handleInputMessages()
             {
                 _socketMessageIn->recv(&msg);
                 Value::Type valueType = *(Value::Type*)msg.data();
-                _socketMessageIn->recv(&msg);
-                if (valueType == Value::Type::i)
-                    values.push_back(*(int*)msg.data());
-                else if (valueType == Value::Type::f)
-                    values.push_back(*(float*)msg.data());
-                else if (valueType == Value::Type::s)
-                    values.push_back(string((char*)msg.data()));
+                if (valueType == Value::Type::v)
+                    values.push_back(recvMessage());
+                else
+                {
+                    _socketMessageIn->recv(&msg);
+                    if (valueType == Value::Type::i)
+                        values.push_back(*(int*)msg.data());
+                    else if (valueType == Value::Type::f)
+                        values.push_back(*(float*)msg.data());
+                    else if (valueType == Value::Type::s)
+                        values.push_back(string((char*)msg.data()));
+                }
             }
+            return values;
+        };
+
+        while (true)
+        {
+            _socketMessageIn->recv(&msg); // name of the target
+            string name((char*)msg.data());
+            _socketMessageIn->recv(&msg); // target's attribute
+            string attribute((char*)msg.data());
+
+            Values values = recvMessage();
 
             auto root = _rootObject.lock();
             root->set(name, attribute, values);

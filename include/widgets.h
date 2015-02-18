@@ -29,14 +29,14 @@
 #define SPLASH_GLV_FONTSIZE 8.0
 #define SPLASH_GLV_FONTWIDTH 2.0
 
-#define GLFW_NO_GLU
-#define GL_GLEXT_PROTOTYPES
+#include "config.h"
+#include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <deque>
 #include <functional>
 #include <memory>
-#include <GLFW/glfw3.h>
 #include <glv.h>
 
 #include "camera.h"
@@ -109,6 +109,7 @@ class GlvGlobalView : public glv::View3D
         SceneWeakPtr _scene;
 
         bool _camerasHidden {false};
+        bool _beginDrag {true};
 
         // Store the previous camera values
         Values _eye, _target, _up, _fov, _principalPoint;

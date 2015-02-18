@@ -105,7 +105,7 @@ class Image_Shmdata : public Image
 
         oiio::ImageSpec _writerSpec;
         int _writerInputSize {0};
-        unsigned long long _writerStartTime;
+        unsigned long long _writerStartTime {0};
         oiio::ImageBuf _writerBuffer;
 
         oiio::ImageBuf _readerBuffer;
@@ -120,6 +120,7 @@ class Image_Shmdata : public Image
         bool _isHap {false};
         bool _isYUV {false};
         bool _is420 {false};
+        bool _is422 {false};
 
         // Hap specific attributes
         unsigned int _textureFormat {0};

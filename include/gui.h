@@ -34,6 +34,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <deque>
@@ -140,8 +141,8 @@ class Gui : public BaseObject
         GlvGlobalView _glvGlobalView;
         GlvGraph _glvGraph;
         GlvControl _glvControl;
-        glv::space_t _prevMouseX, _prevMouseY;
-        bool _flashBG; // Set to true if the BG is set to all white for all outputs
+        glv::space_t _prevMouseX {0}, _prevMouseY {0};
+        bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
         
         /**
          * Convert GLFW keys values to GLV
