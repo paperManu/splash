@@ -576,7 +576,11 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
     }
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
@@ -589,12 +593,11 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
-    if (SPLASH_GL_DEBUG)
-    {
-        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-    }
+#ifdef DEBUGGL
+    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+#endif
 
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
@@ -632,7 +635,11 @@ void Scene::init(std::string name)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
@@ -652,12 +659,11 @@ void Scene::init(std::string name)
 
     _mainWindow->setAsCurrentContext();
     // Activate GL debug messages
-    if (SPLASH_GL_DEBUG)
-    {
-        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-    }
+#ifdef DEBUGGL
+    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+#endif
 
     // Check for swap groups
 #ifdef GLX_NV_swap_group

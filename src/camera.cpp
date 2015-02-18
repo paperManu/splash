@@ -852,7 +852,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << cx << " " << camera->_height - cy << Log::endl;
+    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cy): " << fov << " " << camera->_height - cy << Log::endl;
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
