@@ -1,8 +1,22 @@
 Slash release notes
 ===================
 
-Splash 0.1.9 (xxxx-xx-xx)
+Splash 0.2.0 (2015-02-18)
 -------------------------
+New features:
+* First version of color and luminance automatic calibration through a camera
+* Support for Y422 / UYVY video feed
+* Blender addon to feed Splash
+
+Improvements:
+* More flexibility for window positioning
+* Overall performance improvements
+* Better blending map computation
+* Calibration points are saved (along calibration itself)
+
+Bug fixed:
+* Now needs 7 points for calibration (6 was not enough in many cases)
+* Various bug fixes and code cleanup
 
 Splash 0.1.8 (2014-11-17)
 -------------------------
