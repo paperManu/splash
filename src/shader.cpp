@@ -62,11 +62,28 @@ void Shader::activate()
     }
 
     glUseProgram(_program);
+
+    if (_sideness == doubleSided)
+    {
+        glDisable(GL_CULL_FACE);
+    }
+    else if (_sideness == singleSided)
+    {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+    }
+    else if (_sideness == inverted)
+    {
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_FRONT);
+    }
 }
 
 /*************/
 void Shader::deactivate()
 {
+    glDisable(GL_CULL_FACE);
+
 #ifdef DEBUG
     glUseProgram(0);
 #endif
@@ -626,9 +643,6 @@ void Shader::registerAttributes()
             return false;
 
         _sideness = (Shader::Sideness)args[0].asInt();
-        _uniforms["_sideness"].values = args;
-        _uniformsToUpdate.push_back("_sideness");
-
         return true;
     }, [&]() -> Values {
         return {_sideness};

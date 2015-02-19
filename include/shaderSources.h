@@ -108,11 +108,6 @@ struct ShaderSources
             vec3 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
 
             vec4 color;
             if (_tex0_flip == 1 && _tex0_flop == 0)
@@ -188,11 +183,6 @@ struct ShaderSources
             // Brightness correction
             color.rgb = color.rgb * brightness;
 
-            // Finally, correct for the incidence
-            // cosNormalAngle can't be 0.0, it would have been discarded
-            // TODO: this has to also use shift values to be meaningful
-            //color.rgb /= abs(cosNormalAngle);
-
             // Color correction through a LUT
             if (_isColorLUT != 0)
             {
@@ -233,13 +223,6 @@ struct ShaderSources
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
 
-            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
-
             fragColor = _color;
         }
     )"};
@@ -270,13 +253,6 @@ struct ShaderSources
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
-
-            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
 
             float U = texCoord.x * 65536.0;
             float V = texCoord.y * 65536.0;
@@ -387,13 +363,6 @@ struct ShaderSources
         {
             vec4 position = vertexIn.position;
             vec3 normal = vertexIn.normal;
-
-            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
 
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
