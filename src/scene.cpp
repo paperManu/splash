@@ -69,7 +69,7 @@ BaseObjectPtr Scene::add(string type, string name)
 
     BaseObjectPtr obj;
     if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
     else
     {
         // Then, the objects not containing a context

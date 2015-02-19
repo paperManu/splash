@@ -2,6 +2,7 @@ AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/GLV/GLV \
+	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \
@@ -34,8 +35,10 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	widgets.cpp \
 	world.cpp
 
-# GLV related sources
+# GUI related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/imgui/imgui.cpp \
+	\
 	$(top_srcdir)/external/GLV/src/glv_buttons.cpp \
 	$(top_srcdir)/external/GLV/src/glv_color_controls.cpp \
 	$(top_srcdir)/external/GLV/src/glv_color.cpp \

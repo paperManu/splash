@@ -14,3 +14,6 @@
 	path = external/piccante
 	url = https://github.com/banterle/piccante.git
 	branch = master
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui.git

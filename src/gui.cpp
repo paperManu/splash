@@ -16,6 +16,16 @@ namespace Splash
 {
 
 /*************/
+GLuint Gui::_imGuiShaderHandle, Gui::_imGuiVertHandle, Gui::_imGuiFragHandle;
+GLint Gui::_imGuiTextureLocation;
+GLint Gui::_imGuiProjMatrixLocation;
+GLint Gui::_imGuiPositionLocation;
+GLint Gui::_imGuiUVLocation;
+GLint Gui::_imGuiColorLocation;
+GLuint Gui::_imGuiVboHandle, Gui::_imGuiVaoHandle;
+size_t Gui::_imGuiVboMaxSize = 20000;
+
+/*************/
 Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 {
     _type = "gui";
@@ -70,6 +80,10 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     // Intialize the GUI widgets
     initGLV(_width, _height);
 
+    _window->setAsCurrentContext();
+    initImGui(_width, _height);
+    _window->releaseContext();
+
     registerAttributes();
 }
 
@@ -84,6 +98,15 @@ Gui::~Gui()
 /*************/
 void Gui::key(int& key, int& action, int& mods)
 {
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
+    if (action == GLFW_PRESS)
+        io.KeysDown[key] = true;
+    if (action == GLFW_RELEASE)
+        io.KeysDown[key] = false;
+    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+
     switch (key)
     {
     default:
@@ -206,6 +229,11 @@ void Gui::key(int& key, int& action, int& mods)
 /*************/
 void Gui::mousePosition(int xpos, int ypos)
 {
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
+
+    io.MousePos = ImVec2((float)xpos / io.DisplaySize.x, (float)ypos / io.DisplaySize.y);
+
     space_t x = (space_t)xpos;
     space_t y = (space_t)ypos;
 
@@ -231,18 +259,24 @@ void Gui::mousePosition(int xpos, int ypos)
 /*************/
 void Gui::mouseButton(int btn, int action, int mods)
 {
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
+
     int button {0};
     switch (btn)
     {
     default:
         break;
     case GLFW_MOUSE_BUTTON_LEFT:
+        io.MouseDown[0] = true;
         button = Mouse::Left;
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
+        io.MouseDown[1] = true;
         button = Mouse::Right;
         break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
+        io.MouseDown[2] = true;
         button = Mouse::Middle;
         break;
     }
@@ -261,6 +295,9 @@ void Gui::mouseButton(int btn, int action, int mods)
 /*************/
 void Gui::mouseScroll(double xoffset, double yoffset)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    io.MouseWheel += (float)yoffset;
+    
     _glv.setMouseWheel(yoffset);
     _glv.propagateEvent();
 }
@@ -290,6 +327,12 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
+#ifdef DEBUG
+    GLenum error = 0;
+#endif
+
+    using namespace ImGui;
+
     ImageSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
@@ -298,21 +341,29 @@ bool Gui::render()
     {
         _doNotRender = false;
         // Render the visible camera
-        _glvGlobalView._camera->render();
+        //_glvGlobalView._camera->render();
     }
 
-#ifdef DEBUG
-    GLenum error = 0;
-#endif
     if (_doNotRender == false)
     {
-        if (!_window->setAsCurrentContext()) 
-        	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-        glViewport(0, 0, _width, _height);
+        _window->setAsCurrentContext();
+        ImGui::NewFrame();
+
+        ImGuiIO& io = GetIO();
+        {
+            Text("Hello world!");
+            static float f;
+            SliderFloat("float", &f, 0.f, 1.f);
+            static char buf[256];
+            InputText("string", buf, 256);
+        }
+
+        ShowTestWindow();
 
 #ifdef DEBUG
         error = glGetError();
 #endif
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
         GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, fboBuffers);
@@ -321,10 +372,9 @@ bool Gui::render()
 
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
-        
-        if (_isVisible) 
-            _glv.drawWidgets(_width, _height, 0.016);
+
+        ImGui::Render();
+        io.MouseDown[0] = io.MouseDown[1] = io.MouseDown[2] = false;
 
         glActiveTexture(GL_TEXTURE0);
         _outTexture->generateMipmap();
@@ -335,7 +385,7 @@ bool Gui::render()
 #ifdef DEBUG
         error = glGetError();
         if (error)
-            SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+            SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 #endif
 
         _window->releaseContext();
@@ -361,13 +411,14 @@ void Gui::setOutputSize(int width, int height)
     	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
     _outTexture->resize(width, height);
-    _window->releaseContext();
 
     _width = width;
     _height = height;
     _doNotRender = false;
 
     initGLV(width, height);
+    initImGui(width, height);
+    _window->releaseContext();
 }
 
 /*************/
@@ -375,6 +426,217 @@ int Gui::glfwToGlvKey(int key)
 {
     // Nothing special noted yet...
     return key;
+}
+
+/*************/
+void Gui::initImGui(int width, int height)
+{
+    using namespace ImGui;
+
+    // Initialize GL stuff for ImGui
+    const std::string vertexShader {R"(
+        #version 330 core
+
+        uniform mat4 ProjMtx;
+        in vec2 Position;
+        in vec2 UV;
+        in vec4 Color;
+        out vec2 Frag_UV;
+        out vec4 Frag_Color;
+
+        void main()
+        {
+            Frag_UV = UV;
+            Frag_Color = Color;
+            gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
+        }
+    )"};
+
+    const std::string fragmentShader {R"(
+        #version 330 core
+
+        uniform sampler2D Texture;
+        in vec2 Frag_UV;
+        in vec4 Frag_Color;
+        out vec4 Out_Color;
+
+        void main()
+        {
+            Out_Color = Frag_Color * texture(Texture, Frag_UV.st);
+        }
+    )"};
+
+    _imGuiShaderHandle = glCreateProgram();
+    _imGuiVertHandle = glCreateShader(GL_VERTEX_SHADER);
+    _imGuiFragHandle = glCreateShader(GL_FRAGMENT_SHADER);
+    {
+        const char* shaderSrc = vertexShader.c_str();
+        glShaderSource(_imGuiVertHandle, 1, (const GLchar**)&shaderSrc, 0);
+    }
+    {
+        const char* shaderSrc = fragmentShader.c_str();
+        glShaderSource(_imGuiFragHandle, 1, (const GLchar**)&shaderSrc, 0);
+    }
+    glCompileShader(_imGuiVertHandle);
+    glCompileShader(_imGuiFragHandle);
+    glAttachShader(_imGuiShaderHandle, _imGuiVertHandle);
+    glAttachShader(_imGuiShaderHandle, _imGuiFragHandle);
+    glLinkProgram(_imGuiShaderHandle);
+
+    GLint status;
+    glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+
+        GLint length;
+        glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
+        char* log = (char*)malloc(length);
+        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log);
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        free(log);
+
+        // TODO: handle this case...
+        return;
+    }
+
+    _imGuiTextureLocation = glGetUniformLocation(_imGuiShaderHandle, "Texture");
+    _imGuiProjMatrixLocation = glGetUniformLocation(_imGuiShaderHandle, "ProjMtx");
+    _imGuiPositionLocation = glGetAttribLocation(_imGuiShaderHandle, "Position");
+    _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
+    _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
+
+    glGenBuffers(1, &_imGuiVboHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+    glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
+
+    glGenVertexArrays(1, &_imGuiVaoHandle);
+    glBindVertexArray(_imGuiVaoHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+    glEnableVertexAttribArray(_imGuiPositionLocation);
+    glEnableVertexAttribArray(_imGuiUVLocation);
+    glEnableVertexAttribArray(_imGuiColorLocation);
+
+    glVertexAttribPointer(_imGuiPositionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->pos));
+    glVertexAttribPointer(_imGuiUVLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->uv));
+    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->col));
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Initialize ImGui
+    ImGuiIO& io = GetIO();
+
+    io.DisplaySize.x = width;
+    io.DisplaySize.y = height;
+    io.DeltaTime = 1.f / 60.f;
+
+    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
+    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
+    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
+    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
+    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+
+    io.RenderDrawListsFn = Gui::imGuiRenderDrawLists;
+
+    unsigned char* pixels;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    GLuint texId;
+    glGenTextures(1, &texId);
+    glBindTexture(GL_TEXTURE_2D, texId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    io.Fonts->TexID = (void*)(intptr_t)texId;
+}
+
+/*************/
+void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
+{
+    if (!cmd_lists_count)
+        return;
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_SCISSOR_TEST);
+    glActiveTexture(GL_TEXTURE0);
+
+    const float width = ImGui::GetIO().DisplaySize.x;
+    const float height = ImGui::GetIO().DisplaySize.y;
+    const float orthoProjection[4][4] = 
+    {
+        { 2.0f/width,	0.0f,			0.0f,		0.0f },
+        { 0.0f,			2.0f/-height,	0.0f,		0.0f },
+        { 0.0f,			0.0f,			-1.0f,		0.0f },
+        { -1.0f,		1.0f,			0.0f,		1.0f },
+    };
+
+    glUseProgram(_imGuiShaderHandle);
+    glUniform1i(_imGuiTextureLocation, 0);
+    glUniformMatrix4fv(_imGuiProjMatrixLocation, 1, GL_FALSE, (float*)orthoProjection);
+
+    size_t totalVertexCount = 0;
+    for (int n = 0; n < cmd_lists_count; ++n)
+        totalVertexCount += cmd_lists[n]->vtx_buffer.size();
+    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+
+    size_t neededBufferSize = totalVertexCount * sizeof(ImDrawVert);
+    if (neededBufferSize > _imGuiVboMaxSize)
+    {
+        _imGuiVboMaxSize = neededBufferSize + 5000;
+        glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
+    }
+
+    unsigned char* bufferData = (unsigned char*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    if (!bufferData)
+        return;
+    for (int n = 0; n < cmd_lists_count; ++n)
+    {
+        const ImDrawList* cmdList = cmd_lists[n];
+        memcpy(bufferData, &cmdList->vtx_buffer[0], cmdList->vtx_buffer.size() * sizeof(ImDrawVert));
+        bufferData += cmdList->vtx_buffer.size() * sizeof(ImDrawVert);
+    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(_imGuiVaoHandle);
+
+    int cmd_offset = 0;
+    for (int n = 0; n < cmd_lists_count; ++n)
+    {
+        const ImDrawList* cmd_list = cmd_lists[n];
+        int vtx_offset = cmd_offset;
+        for (auto& pcmd : cmd_list->commands)
+        {
+            glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd.texture_id);
+            glScissor((int)pcmd.clip_rect.x, (int)(height - pcmd.clip_rect.w),
+                      (int)(pcmd.clip_rect.z - pcmd.clip_rect.x), (int)(pcmd.clip_rect.w - pcmd.clip_rect.y));
+            glDrawArrays(GL_TRIANGLES, vtx_offset, pcmd.vtx_count);
+            vtx_offset += pcmd.vtx_count;
+        }
+        cmd_offset = vtx_offset;
+    }
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glDisable(GL_SCISSOR_TEST);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 }
 
 /*************/

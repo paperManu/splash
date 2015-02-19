@@ -42,6 +42,8 @@
 #include <memory>
 #include <GLFW/glfw3.h>
 #include <glv.h>
+//#define ImVector std::vector
+#include <imgui.h>
 
 #include "widgets.h"
 
@@ -130,6 +132,16 @@ class Gui : public BaseObject
         // GUI specific camera
         CameraPtr _guiCamera;
 
+        // ImGUI related attributes
+        static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
+        static GLint _imGuiTextureLocation;
+        static GLint _imGuiProjMatrixLocation;
+        static GLint _imGuiPositionLocation;
+        static GLint _imGuiUVLocation;
+        static GLint _imGuiColorLocation;
+        static GLuint _imGuiVboHandle, _imGuiVaoHandle;
+        static size_t _imGuiVboMaxSize;
+
         // GLV related attributes
         bool _isVisible {false};
         bool _doNotRender {false};
@@ -148,6 +160,16 @@ class Gui : public BaseObject
          * Convert GLFW keys values to GLV
          */
         int glfwToGlvKey(int key);
+
+        /**
+         * Initialize ImGui
+         */
+        void initImGui(int width, int height);
+
+        /**
+         * ImGui render function
+         */
+        static void imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count);
 
         /**
          * Initialize GLV
