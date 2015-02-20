@@ -148,14 +148,15 @@ class Gui : public BaseObject
         static GLuint _imGuiVboHandle, _imGuiVaoHandle;
         static size_t _imGuiVboMaxSize;
 
+        // ImGUI objects
+        std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
+        //GuiTextBox _guiHelp;
+
         // GLV related attributes
-        bool _isVisible {true};
+        bool _isVisible {false};
         bool _doNotRender {false};
         glv::Style _style;
         glv::GLV _glv;
-        GlvTextBox _glvLog;
-        GlvTextBox _glvProfile;
-        GlvTextBox _glvHelp;
         GlvGlobalView _glvGlobalView;
         GlvGraph _glvGraph;
         GlvControl _glvControl;
@@ -171,6 +172,7 @@ class Gui : public BaseObject
          * Initialize ImGui
          */
         void initImGui(int width, int height);
+        void initImWidgets();
 
         /**
          * ImGui render function

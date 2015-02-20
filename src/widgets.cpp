@@ -4,6 +4,8 @@
 #include "scene.h"
 #include "timer.h"
 
+#include <imgui.h>
+
 using namespace std;
 using namespace glv;
 
@@ -11,46 +13,26 @@ namespace Splash
 {
 
 /*************/
-void GlvTextBox::onDraw(GLV& g)
+GuiWidget::GuiWidget(string name)
 {
-    try
-    {
-        draw::color(SPLASH_GLV_TEXTCOLOR);
-        draw::lineWidth(SPLASH_GLV_FONTWIDTH);
-
-        string text = getText(*this);
-
-        draw::text(text.c_str(), 4, 4, SPLASH_GLV_FONTSIZE);
-    }
-    catch (bad_function_call)
-    {
-        SLog::log << Log::ERROR << "GlvTextBox::" << __FUNCTION__ << " - Draw function is undefined" << Log::endl;
-    }
+    _name = name;
 }
 
 /*************/
-bool GlvTextBox::onEvent(Event::t e, GLV& g)
+GuiTextBox::GuiTextBox(string name)
+    : GuiWidget(name)
 {
-    switch (e)
-    {
-    default:
-        break;
-    case Event::KeyDown:
-        SLog::log << Log::DEBUGGING << "Key down: " << (char)g.keyboard().key() << Log::endl;
-        return false;
-    case Event::MouseDrag:
-        if (g.mouse().middle())
-        {
-            move(g.mouse().dx(), g.mouse().dy());
-            return false;
-        }
-        break;
-    case Event::MouseWheel:
-        int scrollOffset = _scrollOffset.fetch_add((int)g.mouse().dw());
-        return false;
-    }
+}
 
-    return true;
+/*************/
+void GuiTextBox::render()
+{
+    if (getText)
+    {
+        ImGui::Begin(_name.c_str());
+        ImGui::Text(getText().c_str());
+        ImGui::End();
+    }
 }
 
 /*************/

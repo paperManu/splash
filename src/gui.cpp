@@ -81,6 +81,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     // Intialize the GUI widgets
     _window->setAsCurrentContext();
     initImGui(_width, _height);
+    initImWidgets();
     _window->releaseContext();
 
     registerAttributes();
@@ -106,29 +107,18 @@ void Gui::unicodeChar(unsigned int& unicodeChar)
 /*************/
 void Gui::key(int& key, int& action, int& mods)
 {
-    using namespace ImGui;
-    ImGuiIO& io = GetIO();
-    if (action == GLFW_PRESS)
-        io.KeysDown[key] = true;
-    if (action == GLFW_RELEASE)
-        io.KeysDown[key] = false;
-    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
-    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
-
-    return;
-
     switch (key)
     {
     default:
     {
+        using namespace ImGui;
+        ImGuiIO& io = GetIO();
         if (action == GLFW_PRESS)
-            _glv.setKeyDown(glfwToGlvKey(key));
-        else if (action == GLFW_RELEASE)
-            _glv.setKeyUp(glfwToGlvKey(key));
-        else if (action == GLFW_REPEAT)
-            _glv.setKeyDown(glfwToGlvKey(key));
-        _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
-        _glv.propagateEvent();
+            io.KeysDown[key] = true;
+        if (action == GLFW_RELEASE)
+            io.KeysDown[key] = false;
+        io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+        io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
         break;
     }
     case GLFW_KEY_TAB:
@@ -136,7 +126,6 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             _isVisible = !_isVisible;
-            //STimer::timer.setStatus(_isVisible);
         }
         break;
     }
@@ -345,67 +334,56 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
-#ifdef DEBUG
-    GLenum error = 0;
-#endif
-
-    using namespace ImGui;
+    if (!_isInitialized)
+        return false;
 
     ImageSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
+#ifdef DEBUG
+    GLenum error = glGetError();
+#endif
+
+    _window->setAsCurrentContext();
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, fboBuffers);
+
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    //if (_isVisible)
+    //{
+    //    _doNotRender = false;
+    //    // Render the visible camera
+    //    _glvGlobalView._camera->render();
+    //}
+
     if (_isVisible)
     {
-        _doNotRender = false;
-        // Render the visible camera
-        //_glvGlobalView._camera->render();
-    }
-
-    if (_doNotRender == false)
-    {
-        _window->setAsCurrentContext();
-        ImGui::NewFrame();
+        using namespace ImGui;
 
         ImGuiIO& io = GetIO();
-        {
-            Text("Hello world!");
-            static float f;
-            SliderFloat("float", &f, 0.f, 1.f);
-            static char buf[256];
-            InputText("string", buf, 256);
+        ImGui::NewFrame();
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 
-            ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCondition_FirstUseEver);
-            bool showTestWindow = true;
-            ImGui::ShowTestWindow(&showTestWindow);
-        }
+        for (auto& widget : _guiWidgets)
+            widget->render();
 
         static double time = 0.0;
         const double currentTime = glfwGetTime();
         io.DeltaTime = (float)(currentTime - time);
         time = currentTime;
 
-#ifdef DEBUG
-        error = glGetError();
-#endif
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, fboBuffers);
-        //glEnable(GL_DEPTH_TEST);
-        //glDepthFunc(GL_LEQUAL);
-
-        glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-
         ImGui::Render();
-        //io.MouseDown[0] = io.MouseDown[1] = io.MouseDown[2] = false;
+    }
 
-        glDisable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glDisable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-        glActiveTexture(GL_TEXTURE0);
-        _outTexture->generateMipmap();
+    glActiveTexture(GL_TEXTURE0);
+    _outTexture->generateMipmap();
 
 #ifdef DEBUG
         error = glGetError();
@@ -413,11 +391,7 @@ bool Gui::render()
             SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 #endif
 
-        _window->releaseContext();
-
-        if (!_isVisible)
-            _doNotRender = true;
-    }
+    _window->releaseContext();
 
 #ifdef DEBUG
     return error != 0 ? true : false;
@@ -439,7 +413,7 @@ void Gui::setOutputSize(int width, int height)
 
     _width = width;
     _height = height;
-    _doNotRender = false;
+    //_doNotRender = false;
 
     initImGui(width, height);
     _window->releaseContext();
@@ -586,6 +560,93 @@ void Gui::initImGui(int width, int height)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     io.Fonts->TexID = (void*)(intptr_t)_imFontTextureId;
+
+    _isInitialized = true;
+}
+
+/*************/
+void Gui::initImWidgets()
+{
+    // Some help regarding keyboard shortcuts
+    shared_ptr<GuiTextBox> helpBox = make_shared<GuiTextBox>("Shortcuts");
+    helpBox->setTextFunc([]()
+    {
+        string text;
+        text += "Tab: show / hide this GUI\n";
+        text += "Shortcuts for the calibration view:\n";
+        text += " Space: switcher between cameras\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " F: white background instead of black\n";
+        text += " C: calibrate the selected camera\n";
+        text += " R: revert camera to previous calibration\n";
+        text += " B: compute the blending between all cameras\n";
+        text += " H: hide all but the selected camera\n";
+        text += " T: textured draw mode\n";
+        text += " W: wireframe draw mode\n";
+#if HAVE_GPHOTO
+        text += " O: launch camera calibration\n";
+        text += " P: launch projectors calibration\n";
+        text += " L: activate color LUT (if calibrated)\n";
+#endif
+
+        return text;
+    });
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
+
+    // FPS and timings
+    shared_ptr<GuiTextBox> timingBox = make_shared<GuiTextBox>("Timings");
+    timingBox->setTextFunc([]()
+    {
+        // Smooth the values
+        static float fps {0.f};
+        static float worldFps {0.f};
+        static float upl {0.f};
+        static float tex {0.f};
+        static float cam {0.f};
+        static float gui {0.f};
+        static float win {0.f};
+        static float buf {0.f};
+        static float evt {0.f};
+
+        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
+        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
+        upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
+        tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
+        cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
+        gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
+        win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
+        buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
+        evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
+
+        // Create the text message
+        ostringstream stream;
+        stream << "Framerate: " << setprecision(4) << fps << " fps\n";
+        stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
+        stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
+        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
+        stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
+        stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
+        stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
+        stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
+
+        return stream.str();
+    });
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
+
+    // Log display
+    shared_ptr<GuiTextBox> logBox = make_shared<GuiTextBox>("Logs");
+    logBox->setTextFunc([]()
+    {
+        int nbrLines = 10;
+        // Convert the last lines of the text log
+        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+        string text;
+        for (int i = logs.size() - nbrLines; i < logs.size(); ++i)
+            text += logs[i] + string("\n");
+
+        return text;
+    });
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 }
 
 /*************/
@@ -675,103 +736,6 @@ void Gui::initGLV(int width, int height)
 
     _style.color.set(Color(1.0, 0.5, 0.2, 0.7), 0.7);
 
-    // Log display
-    _glvLog.setTextFunc([](GlvTextBox& that)
-    {
-        // Compute the number of lines which would fit
-        int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing * that.fontSize);
-    
-        // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
-        string text;
-        int scrollOffset = that._scrollOffset;
-        scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));
-        that._scrollOffset = scrollOffset;
-        int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - scrollOffset)));
-        for (int i = offset; i < logs.size(); ++i)
-            text += logs[i] + string("\n");
-
-        return text;
-    });
-    _glvLog.width(width / 2 - 16);
-    _glvLog.height(height / 4 - 16);
-    _glvLog.bottom(height - 8);
-    _glvLog.left(8);
-    _glvLog.style(&_style);
-    _glv << _glvLog;
-
-    // FPS and timings
-    _glvProfile.setTextFunc([](GlvTextBox& that)
-    {
-        // Smooth the values
-        static float fps {0.f};
-        static float worldFps {0.f};
-        static float upl {0.f};
-        static float tex {0.f};
-        static float cam {0.f};
-        static float gui {0.f};
-        static float win {0.f};
-        static float buf {0.f};
-        static float evt {0.f};
-
-        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
-        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
-        upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
-        tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
-        cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
-        gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
-        win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
-        buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
-        evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
-
-        // Create the text message
-        ostringstream stream;
-        stream << "Framerate: " << setprecision(4) << fps << " fps\n";
-        stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
-        stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
-        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
-        stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
-        stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
-        stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
-        stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
-
-        return stream.str();
-    });
-    _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 8 + 8);
-    _glvProfile.style(&_style);
-
-    // Some help regarding keyboard shortcuts
-    _glvHelp.setTextFunc([](GlvTextBox& that)
-    {
-        string text;
-        text += "Tab: show / hide this GUI\n";
-        text += "Shortcuts for the calibration view:\n";
-        text += " Space: switcher between cameras\n";
-        text += " A: show / hide the target calibration point\n";
-        text += " F: white background instead of black\n";
-        text += " C: calibrate the selected camera\n";
-        text += " R: revert camera to previous calibration\n";
-        text += " B: compute the blending between all cameras\n";
-        text += " H: hide all but the selected camera\n";
-        text += " T: textured draw mode\n";
-        text += " W: wireframe draw mode\n";
-#if HAVE_GPHOTO
-        text += " O: launch camera calibration\n";
-        text += " P: launch projectors calibration\n";
-        text += " L: activate color LUT (if calibrated)\n";
-#endif
-
-        return text;
-    });
-    _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
-#if HAVE_GPHOTO
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 14 + 8);
-#else
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
-#endif
-    _glvHelp.style(&_style);
-
     // Controls
     _glvControl.width(200);
     _glvControl.height(128);
@@ -779,9 +743,6 @@ void Gui::initGLV(int width, int height)
     _glvControl.right(_width / 2 - 64);
     _glvControl.style(&_style);
     _glvControl.setScene(_scene);
-
-    Placer placer(_glv, Direction::S, Place::TL, 8, 8);
-    placer << _glvHelp << _glvProfile << _glvControl;
 
     // GUI camera view
     _glvGlobalView.set(Rect(8, 8, 800, 600));

@@ -50,19 +50,27 @@ class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 /*************/
-class GlvTextBox : public glv::View
+class GuiWidget
 {
     public:
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setTextFunc(std::function<std::string(GlvTextBox& that)> func) {getText = func;}
+        GuiWidget(std::string name = "");
+        virtual ~GuiWidget() {}
+        virtual void render() {}
 
-        float fontSize {8};
-        float lineSpacing {1};
-        std::atomic_int _scrollOffset {0};
+    protected:
+        std::string _name {""};
+};
+
+/*************/
+class GuiTextBox : public GuiWidget
+{
+    public:
+        GuiTextBox(std::string name = "");
+        void render();
+        void setTextFunc(std::function<std::string()> func) {getText = func;}
 
     private:
-        std::function<std::string(GlvTextBox& that)> getText;
+        std::function<std::string()> getText;
 };
 
 /*************/
