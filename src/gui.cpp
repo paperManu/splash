@@ -16,6 +16,7 @@ namespace Splash
 {
 
 /*************/
+GLuint Gui::_imFontTextureId;
 GLuint Gui::_imGuiShaderHandle, Gui::_imGuiVertHandle, Gui::_imGuiFragHandle;
 GLint Gui::_imGuiTextureLocation;
 GLint Gui::_imGuiProjMatrixLocation;
@@ -78,8 +79,6 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     scene->_mainWindow->releaseContext();
 
     // Intialize the GUI widgets
-    initGLV(_width, _height);
-
     _window->setAsCurrentContext();
     initImGui(_width, _height);
     _window->releaseContext();
@@ -96,6 +95,15 @@ Gui::~Gui()
 }
 
 /*************/
+void Gui::unicodeChar(unsigned int& unicodeChar)
+{
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
+    if (unicodeChar > 0 && unicodeChar < 0x10000)
+        io.AddInputCharacter((unsigned short)unicodeChar);
+}
+
+/*************/
 void Gui::key(int& key, int& action, int& mods)
 {
     using namespace ImGui;
@@ -106,6 +114,8 @@ void Gui::key(int& key, int& action, int& mods)
         io.KeysDown[key] = false;
     io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
     io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+
+    return;
 
     switch (key)
     {
@@ -232,7 +242,9 @@ void Gui::mousePosition(int xpos, int ypos)
     using namespace ImGui;
     ImGuiIO& io = GetIO();
 
-    io.MousePos = ImVec2((float)xpos / io.DisplaySize.x, (float)ypos / io.DisplaySize.y);
+    io.MousePos = ImVec2((float)xpos, (float)ypos);
+
+    return;
 
     space_t x = (space_t)xpos;
     space_t y = (space_t)ypos;
@@ -263,23 +275,27 @@ void Gui::mouseButton(int btn, int action, int mods)
     ImGuiIO& io = GetIO();
 
     int button {0};
+    bool isPressed = action == GLFW_PRESS ? true : false;
     switch (btn)
     {
     default:
         break;
     case GLFW_MOUSE_BUTTON_LEFT:
-        io.MouseDown[0] = true;
+        io.MouseDown[0] = isPressed;
         button = Mouse::Left;
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
-        io.MouseDown[1] = true;
+        io.MouseDown[1] = isPressed;
         button = Mouse::Right;
         break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
-        io.MouseDown[2] = true;
+        io.MouseDown[2] = isPressed;
         button = Mouse::Middle;
         break;
     }
+
+    return;
+
     _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
 
     space_t x = _glv.mouse().x();
@@ -297,6 +313,8 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.MouseWheel += (float)yoffset;
+
+    return;
     
     _glv.setMouseWheel(yoffset);
     _glv.propagateEvent();
@@ -356,9 +374,16 @@ bool Gui::render()
             SliderFloat("float", &f, 0.f, 1.f);
             static char buf[256];
             InputText("string", buf, 256);
+
+            ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCondition_FirstUseEver);
+            bool showTestWindow = true;
+            ImGui::ShowTestWindow(&showTestWindow);
         }
 
-        ShowTestWindow();
+        static double time = 0.0;
+        const double currentTime = glfwGetTime();
+        io.DeltaTime = (float)(currentTime - time);
+        time = currentTime;
 
 #ifdef DEBUG
         error = glGetError();
@@ -367,20 +392,20 @@ bool Gui::render()
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
         GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, fboBuffers);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
+        //glEnable(GL_DEPTH_TEST);
+        //glDepthFunc(GL_LEQUAL);
 
         glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui::Render();
-        io.MouseDown[0] = io.MouseDown[1] = io.MouseDown[2] = false;
-
-        glActiveTexture(GL_TEXTURE0);
-        _outTexture->generateMipmap();
+        //io.MouseDown[0] = io.MouseDown[1] = io.MouseDown[2] = false;
 
         glDisable(GL_DEPTH_TEST);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+        glActiveTexture(GL_TEXTURE0);
+        _outTexture->generateMipmap();
 
 #ifdef DEBUG
         error = glGetError();
@@ -416,7 +441,6 @@ void Gui::setOutputSize(int width, int height)
     _height = height;
     _doNotRender = false;
 
-    initGLV(width, height);
     initImGui(width, height);
     _window->releaseContext();
 }
@@ -448,6 +472,7 @@ void Gui::initImGui(int width, int height)
         {
             Frag_UV = UV;
             Frag_Color = Color;
+            Frag_Color.a += 0.5f;
             gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
         }
     )"};
@@ -519,7 +544,7 @@ void Gui::initImGui(int width, int height)
 
     glVertexAttribPointer(_imGuiPositionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->pos));
     glVertexAttribPointer(_imGuiUVLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->uv));
-    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->col));
+    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->col));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -551,14 +576,16 @@ void Gui::initImGui(int width, int height)
     io.RenderDrawListsFn = Gui::imGuiRenderDrawLists;
 
     unsigned char* pixels;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-    GLuint texId;
-    glGenTextures(1, &texId);
-    glBindTexture(GL_TEXTURE_2D, texId);
+    int w, h;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
+
+    glDeleteTextures(1, &_imFontTextureId);
+    glGenTextures(1, &_imFontTextureId);
+    glBindTexture(GL_TEXTURE_2D, _imFontTextureId);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    io.Fonts->TexID = (void*)(intptr_t)texId;
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    io.Fonts->TexID = (void*)(intptr_t)_imFontTextureId;
 }
 
 /*************/

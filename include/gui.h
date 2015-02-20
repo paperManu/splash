@@ -92,6 +92,11 @@ class Gui : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Forward a unicode char event
+         */
+        void unicodeChar(unsigned int& unicodeChar);
+
+        /**
          * Forward a key event
          */
         void key(int& key, int& action, int& mods);
@@ -133,6 +138,7 @@ class Gui : public BaseObject
         CameraPtr _guiCamera;
 
         // ImGUI related attributes
+        static GLuint _imFontTextureId;
         static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
         static GLint _imGuiTextureLocation;
         static GLint _imGuiProjMatrixLocation;
@@ -143,7 +149,7 @@ class Gui : public BaseObject
         static size_t _imGuiVboMaxSize;
 
         // GLV related attributes
-        bool _isVisible {false};
+        bool _isVisible {true};
         bool _doNotRender {false};
         glv::Style _style;
         glv::GLV _glv;

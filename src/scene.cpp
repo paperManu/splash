@@ -387,6 +387,30 @@ void Scene::render()
             if (obj.second->getType() == "gui")
                 dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
     }
+
+    // Unicode characters events
+    while (true)
+    {
+        GLFWwindow* win;
+        unsigned int unicodeChar;
+        if (!Window::getChars(win, unicodeChar))
+            break;
+
+        // Find where this action happened
+        WindowPtr eventWindow;
+        for (auto& w : _objects)
+            if (w.second->getType() == "window")
+            {
+                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                if (window->isWindow(win))
+                    eventWindow = window;
+            }
+
+        // Send the action to the GUI
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->unicodeChar(unicodeChar);
+    }
 }
 
 /*************/
