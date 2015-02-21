@@ -94,12 +94,12 @@ class Gui : public BaseObject
         /**
          * Forward a unicode char event
          */
-        void unicodeChar(unsigned int& unicodeChar);
+        void unicodeChar(unsigned int unicodeChar);
 
         /**
          * Forward a key event
          */
-        void key(int& key, int& action, int& mods);
+        void key(int key, int action, int mods);
 
         /**
          * Forward mouse events

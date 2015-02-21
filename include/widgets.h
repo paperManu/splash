@@ -74,29 +74,32 @@ class GuiTextBox : public GuiWidget
 };
 
 /*************/
-class GlvControl : public glv::View
+class GuiGlobalView : public GuiWidget
 {
     public:
-        GlvControl();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
+        GuiGlobalView(std::string name = "");
+        void render();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setCamera(CameraPtr cam);
+        void SetObject(ObjectPtr obj) {_camera->linkTo(obj);}
 
-    private:
+    protected:
+        CameraPtr _camera, _guiCamera;
         SceneWeakPtr _scene;
-        bool _ready {false};
+        int _baseWidth {800};
+        bool _camerasHidden {false};
+        bool _beginDrag {true};
+        bool _noMove {false};
 
-        int _objIndex {0};
-        bool _isDistant {false};
-        glv::Label _selectedObjectName;
-        glv::View _left, _right;
-        glv::Placer _titlePlacer;
+        // Store the previous camera values
+        Values _eye, _target, _up, _fov, _principalPoint;
+        Values _newTarget;
 
-        std::vector<glv::Label*> _properties;
-        std::vector<glv::NumberDialer*> _numbers;
+        // Previous point added
+        Values _previousPointAdded;
 
-        std::string getNameByIndex();
-        void changeTarget(std::string name);
+        void processKeyEvents();
+        void processMouseEvents();
 };
 
 /*************/
@@ -126,6 +129,32 @@ class GlvGlobalView : public glv::View3D
         Values _previousPointAdded;
 
         glv::Label _camLabel;
+};
+
+/*************/
+class GlvControl : public glv::View
+{
+    public:
+        GlvControl();
+        void onDraw(glv::GLV& g);
+        bool onEvent(glv::Event::t e, glv::GLV& g);
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        SceneWeakPtr _scene;
+        bool _ready {false};
+
+        int _objIndex {0};
+        bool _isDistant {false};
+        glv::Label _selectedObjectName;
+        glv::View _left, _right;
+        glv::Placer _titlePlacer;
+
+        std::vector<glv::Label*> _properties;
+        std::vector<glv::NumberDialer*> _numbers;
+
+        std::string getNameByIndex();
+        void changeTarget(std::string name);
 };
 
 /*************/

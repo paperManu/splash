@@ -96,7 +96,7 @@ Gui::~Gui()
 }
 
 /*************/
-void Gui::unicodeChar(unsigned int& unicodeChar)
+void Gui::unicodeChar(unsigned int unicodeChar)
 {
     using namespace ImGui;
     ImGuiIO& io = GetIO();
@@ -105,7 +105,7 @@ void Gui::unicodeChar(unsigned int& unicodeChar)
 }
 
 /*************/
-void Gui::key(int& key, int& action, int& mods)
+void Gui::key(int key, int action, int mods)
 {
     switch (key)
     {
@@ -119,6 +119,7 @@ void Gui::key(int& key, int& action, int& mods)
             io.KeysDown[key] = false;
         io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
         io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+    
         break;
     }
     case GLFW_KEY_TAB:
@@ -271,30 +272,19 @@ void Gui::mouseButton(int btn, int action, int mods)
         break;
     case GLFW_MOUSE_BUTTON_LEFT:
         io.MouseDown[0] = isPressed;
-        button = Mouse::Left;
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
         io.MouseDown[1] = isPressed;
-        button = Mouse::Right;
         break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
         io.MouseDown[2] = isPressed;
-        button = Mouse::Middle;
         break;
     }
 
+    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+
     return;
-
-    _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
-
-    space_t x = _glv.mouse().x();
-    space_t y = _glv.mouse().y();
-
-    if (action == GLFW_PRESS)
-        _glv.setMouseDown(x, y, button, 0);
-    if (action == GLFW_RELEASE)
-        _glv.setMouseUp(x, y, button, 0);
-    _glv.propagateEvent();
 }
 
 /*************/
@@ -346,6 +336,9 @@ bool Gui::render()
 #endif
 
     _window->setAsCurrentContext();
+
+    _guiCamera->render();
+
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, fboBuffers);
@@ -647,6 +640,12 @@ void Gui::initImWidgets()
         return text;
     });
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
+
+    // GUI camera view
+    shared_ptr<GuiGlobalView> globalView = make_shared<GuiGlobalView>("Views");
+    globalView->setCamera(_guiCamera);
+    globalView->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 }
 
 /*************/
