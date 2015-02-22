@@ -236,8 +236,13 @@ void GuiGlobalView::render()
         Values size;
         _camera->getAttribute("size", size);
 
-        int w = _baseWidth;
+        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+        ImVec2 winSize = ImGui::GetWindowSize();
+        int w = std::max(400.0, winSize.x - 2 * leftMargin);
         int h = w * size[1].asInt() / size[0].asInt();
+
+        _camWidth = w;
+        _camHeight = h;
 
         ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
         if (ImGui::IsItemHovered())
@@ -313,9 +318,6 @@ void GlvGlobalView::onDraw(GLV& g)
 void GuiGlobalView::processKeyEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
-
-    //if (!ImGui::IsMouseHoveringWindow())
-    //    return;
 
     if (io.KeysDown[' '] && io.KeysDownTime[' '] == 0.0)
     {
@@ -481,12 +483,14 @@ void GuiGlobalView::processKeyEvents()
 void GuiGlobalView::processMouseEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
-    //if (!ImGui::IsMouseHoveringWindow())
-    //    return;
 
     _noMove = false;
     if (io.MouseDown[0])
         _noMove = true;
+
+    // Get mouse pos
+    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth,
+                             -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
 
     if (io.MouseDown[0])
     {
@@ -494,24 +498,20 @@ void GuiGlobalView::processMouseEvents()
         if (_camera == _guiCamera)
             return;
 
-        // Get mouse pos
-        ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetWindowPos().x) / ImGui::GetWindowContentRegionMax().x,
-                                 (io.MousePos.y - ImGui::GetWindowPos().y) / ImGui::GetWindowContentRegionMax().y);
-
         // Set a calibration point
         auto scene = _scene.lock();
         if (io.KeyCtrl && io.MouseClicked[0])
         {
             auto scene = _scene.lock();
-            Values position = _camera->pickCalibrationPoint(mousePos.x, 1.f - mousePos.y);
+            Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
             if (position.size() == 3)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
         }
         else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", (mousePos.x * 2.f) - 1.f, 1.f - mousePos.y * 2.f});
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
         else if (io.MouseClicked[0]) // Add a new calibration point
         {
-            Values position = _camera->pickVertex(mousePos.x, 1.f - mousePos.y);
+            Values position = _camera->pickVertex(mousePos.x, mousePos.y);
             if (position.size() == 3)
             {
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
@@ -522,21 +522,9 @@ void GuiGlobalView::processMouseEvents()
         }
         return;
     }
-    //case Event::MouseUp:
-    //{
-    //    _beginDrag = true; // We reset the beginDrag flag
-    //    // Pure precautions
-    //    _previousPointAdded.clear();
-    //    return false;
-    //}
-    //case Event::MouseDrag:
-    //{
     if (io.MouseClicked[1])
     {
-        // If the user clicked on an object, we set a new target on this object
-        ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetWindowPos().x) / ImGui::GetWindowContentRegionMax().x,
-                                 (io.MousePos.y - ImGui::GetWindowPos().y) / ImGui::GetWindowContentRegionMax().y);
-        _newTarget = _camera->pickFragment(mousePos.x, 1.f - mousePos.y);
+        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y);
     }
     if (io.MouseDownTime[1] > 0.0) 
     {
@@ -546,9 +534,6 @@ void GuiGlobalView::processMouseEvents()
             float dx = io.MouseDelta.x;
             float dy = io.MouseDelta.y;
             auto scene = _scene.lock();
-
-            ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetWindowPos().x) / ImGui::GetWindowContentRegionMax().x,
-                                     (io.MousePos.y - ImGui::GetWindowPos().y) / ImGui::GetWindowContentRegionMax().y);
 
             if (_camera != _guiCamera)
             {

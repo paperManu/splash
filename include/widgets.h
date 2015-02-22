@@ -86,10 +86,12 @@ class GuiGlobalView : public GuiWidget
     protected:
         CameraPtr _camera, _guiCamera;
         SceneWeakPtr _scene;
-        int _baseWidth {800};
         bool _camerasHidden {false};
         bool _beginDrag {true};
         bool _noMove {false};
+
+        // Size of the view
+        int _camWidth, _camHeight;
 
         // Store the previous camera values
         Values _eye, _target, _up, _fov, _principalPoint;

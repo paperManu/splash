@@ -335,9 +335,11 @@ bool Gui::render()
     GLenum error = glGetError();
 #endif
 
-    _window->setAsCurrentContext();
+    // We render the gui Camera now, for context reasons
+    if (_isVisible)
+        _guiCamera->render();
 
-    _guiCamera->render();
+    _window->setAsCurrentContext();
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
@@ -345,13 +347,6 @@ bool Gui::render()
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT);
-
-    //if (_isVisible)
-    //{
-    //    _doNotRender = false;
-    //    // Render the visible camera
-    //    _glvGlobalView._camera->render();
-    //}
 
     if (_isVisible)
     {
@@ -634,8 +629,12 @@ void Gui::initImWidgets()
         // Convert the last lines of the text log
         vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
         string text;
-        for (int i = logs.size() - nbrLines; i < logs.size(); ++i)
-            text += logs[i] + string("\n");
+        int start = std::max(0, (int)logs.size() - nbrLines);
+        for (int i = start; i < logs.size(); ++i)
+        {
+            if (i >= 0)
+                text += logs[i] + string("\n");
+        }
 
         return text;
     });
