@@ -63,12 +63,6 @@ PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
     AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
 AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
 
-# Glew, needed by the embedded GLV library
-PKG_CHECK_MODULES([GLEW], [glew])
-if test "x${have_glew}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing GLEW])
-fi
-
 # OpenImageIO
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADER([OpenImageIO/imageio.h],

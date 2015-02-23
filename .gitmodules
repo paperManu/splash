@@ -1,6 +1,3 @@
-[submodule "external/GLV"]
-	path = external/GLV
-	url = https://github.com/paperManu/GLV.git
 [submodule "external/bandit"]
 	path = external/bandit
 	url = https://github.com/joakimkarlsson/bandit.git
