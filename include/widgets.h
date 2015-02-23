@@ -105,35 +105,6 @@ class GuiGlobalView : public GuiWidget
 };
 
 /*************/
-class GlvGlobalView : public glv::View3D
-{
-    friend Gui;
-    public:
-        GlvGlobalView();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
-        void setCamera(CameraPtr cam);
-        void setObject(ObjectPtr obj) {_camera->linkTo(obj);}
-
-    protected:
-        int _baseWidth {800};
-        CameraPtr _camera, _guiCamera;
-        SceneWeakPtr _scene;
-
-        bool _camerasHidden {false};
-        bool _beginDrag {true};
-
-        // Store the previous camera values
-        Values _eye, _target, _up, _fov, _principalPoint;
-
-        // Previous point added
-        Values _previousPointAdded;
-
-        glv::Label _camLabel;
-};
-
-/*************/
 class GlvControl : public glv::View
 {
     public:
@@ -160,22 +131,14 @@ class GlvControl : public glv::View
 };
 
 /*************/
-class GlvGraph : public glv::View
+class GuiGraph : public GuiWidget
 {
     public:
-        GlvGraph();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void onResize(glv::space_t dx, glv::space_t dy);
+        GuiGraph(std::string name) : GuiWidget(name) {}
+        void render();
 
     private:
-        glv::Plot _plot;
-        glv::PlotFunction1D _plotFunction;
-        glv::Label _graphLabel, _scaleLabel;
-        glv::Style _style;
-
-        std::atomic_uint _target {0};
-
+        std::atomic_uint _target;
         unsigned int _maxHistoryLength {500};
         std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };

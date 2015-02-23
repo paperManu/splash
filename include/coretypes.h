@@ -61,7 +61,6 @@ class Geometry;
 class Gui;
 class GuiWidget;
 class GuiGlobalView;
-class GlvGlobalView;
 class GlvControl;
 class Image;
 class Image_Shmdata;

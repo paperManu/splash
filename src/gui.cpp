@@ -305,13 +305,7 @@ bool Gui::linkTo(BaseObjectPtr obj)
     // Mandatory before trying to link
     BaseObject::linkTo(obj);
 
-    if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
-    {
-        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
-        _glvGlobalView.setCamera(cam);
-        return true;
-    }
-    else if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
         ObjectPtr object = dynamic_pointer_cast<Object>(obj);
         _guiCamera->linkTo(object);
@@ -645,6 +639,10 @@ void Gui::initImWidgets()
     globalView->setCamera(_guiCamera);
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
+
+    // Performace graph
+    shared_ptr<GuiGraph> perfGraph = make_shared<GuiGraph>("Performance Graph");
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 }
 
 /*************/
@@ -741,22 +739,6 @@ void Gui::initGLV(int width, int height)
     _glvControl.right(_width / 2 - 64);
     _glvControl.style(&_style);
     _glvControl.setScene(_scene);
-
-    // GUI camera view
-    _glvGlobalView.set(Rect(8, 8, 800, 600));
-    _glvGlobalView.right(width - 8);
-    _glvGlobalView.style(&_style);
-    _glvGlobalView.setCamera(_guiCamera);
-    _glvGlobalView.setScene(_scene);
-    _glv << _glvGlobalView;
-
-    // Performance graphs
-    _glvGraph.width(_width / 2 - 16);
-    _glvGraph.height(_height / 4 - 16);
-    _glvGraph.bottom(height - 8);
-    _glvGraph.right(_width - 8);
-    _glvGraph.style(&_style);
-    _glv << _glvGraph;
 }
 
 /*************/

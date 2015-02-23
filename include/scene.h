@@ -45,7 +45,6 @@ class Scene : public RootObject
     friend GuiWidget;
     friend GuiGlobalView;
     friend Gui;
-    friend GlvGlobalView;
     friend GlvControl;
 
     public:

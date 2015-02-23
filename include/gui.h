@@ -157,8 +157,6 @@ class Gui : public BaseObject
         bool _doNotRender {false};
         glv::Style _style;
         glv::GLV _glv;
-        GlvGlobalView _glvGlobalView;
-        GlvGraph _glvGraph;
         GlvControl _glvControl;
         glv::space_t _prevMouseX {0}, _prevMouseY {0};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
