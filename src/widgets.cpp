@@ -38,57 +38,26 @@ void GuiControl::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        if (ImGui::Button("Previous"))
+        // Select the object the control
         {
             vector<string> objectNames = getObjectNames();
-            if (objectNames.size() != 0)
-            {
-                string newTarget = "";
-                bool matched = false;
-                for (auto& name : objectNames)
-                {
-                    if (matched)
-                        newTarget = name;
-                    if (name == _targetObjectName)
-                        matched = true;
-                }
-
-                if (newTarget == "")
-                    newTarget = objectNames[0];
-                _targetObjectName = newTarget;
-            }
+            vector<const char*> items;
+            for (auto& name : objectNames)
+                items.push_back(name.c_str());
+            ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
         }
-        ImGui::SameLine();
-        if (ImGui::Button("Next"))
-        {
-            vector<string> objectNames = getObjectNames();
-            if (objectNames.size() != 0)
-            {
-                string newTarget = "";
-                string previous = "";
-                for (auto& name : objectNames)
-                {
-                    if (name == _targetObjectName)
-                        newTarget = previous;
-                    previous = name;
-                }
-
-                if (newTarget == "")
-                    newTarget = objectNames[objectNames.size() - 1];
-                _targetObjectName = newTarget;
-            }
-        }
-        ImGui::SameLine();
-        ImGui::Text(_targetObjectName.c_str());
 
         // Initialize the target
-        if (_targetObjectName == "")
+        if (_targetIndex >= 0)
         {
             vector<string> objectNames = getObjectNames();
-            if (objectNames.size() == 0)
+            if (objectNames.size() <= _targetIndex)
                 return;
-            _targetObjectName = objectNames[0];
+            _targetObjectName = objectNames[_targetIndex];
         }
+
+        if (_targetObjectName == "")
+            return;
 
         auto scene = _scene.lock();
 
@@ -106,28 +75,85 @@ void GuiControl::render()
         {
             if (attr.second.size() > 4)
                 continue;
-            ImGui::Text(attr.first.c_str());
-            for (auto& v : attr.second)
+
+            if (attr.second[0].getType() == Value::Type::i
+                || attr.second[0].getType() == Value::Type::f)
             {
-                if (v.getType() == Value::Type::i)
+                int precision = 0;
+                if (attr.second[0].getType() == Value::Type::f)
+                    precision = 2;
+
+                if (attr.second.size() == 1)
                 {
-                    int tmp = v.asInt();
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(80);
-                    ImGui::InputInt("", &tmp, 0, 0);
+                    float tmp = attr.second[0].asFloat();
+                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, 0.01f * tmp, 0.01f * tmp, precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                        }
+                    }
                 }
-                else if (v.getType() == Value::Type::f)
+                else if (attr.second.size() == 2)
                 {
-                    float tmp = v.asFloat();
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(80);
-                    ImGui::InputFloat("", &tmp, 0.f, 0.f, 2);
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
+                        }
+                    }
                 }
-                else if (v.getType() == Value::Type::s)
+                else if (attr.second.size() == 3)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    tmp.push_back(attr.second[2].asFloat());
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
+                        }
+                    }
+                }
+                else if (attr.second.size() == 4)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    tmp.push_back(attr.second[2].asFloat());
+                    tmp.push_back(attr.second[3].asFloat());
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                        }
+                    }
+                }
+            }
+            else if (attr.second[0].getType() == Value::Type::s)
+            {
+                for (auto& v : attr.second)
                 {
                     string tmp = v.asString();
-                    ImGui::SameLine();
-                    ImGui::PushItemWidth(120);
                     ImGui::Text(tmp.c_str());
                 }
             }

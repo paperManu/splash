@@ -116,8 +116,9 @@ class GuiControl : public GuiWidget
 
     private:
         SceneWeakPtr _scene;
+        int _targetIndex {-1};
         std::string _targetObjectName {};
-
+        
         std::vector<std::string> getObjectNames();
 };
 

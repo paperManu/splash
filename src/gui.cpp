@@ -325,7 +325,7 @@ bool Gui::render()
         ImGui::NewFrame();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 
-        ImGui::Begin("Splash", nullptr, ImVec2(600, 600), 0.9f, _windowFlags);
+        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(600, 600), 0.9f, _windowFlags);
         _windowFlags = 0;
         for (auto& widget : _guiWidgets)
         {
