@@ -92,6 +92,11 @@ Gui::~Gui()
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
+
+    glDeleteTextures(1, &_imFontTextureId);
+    glDeleteProgram(_imGuiShaderHandle);
+    glDeleteBuffers(1, &_imGuiVboHandle);
+    glDeleteVertexArrays(1, &_imGuiVaoHandle);
 }
 
 /*************/
@@ -667,7 +672,7 @@ void Gui::initImWidgets()
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
-    // Performace graph
+    // Performance graph
     shared_ptr<GuiGraph> perfGraph = make_shared<GuiGraph>("Performance Graph");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 }

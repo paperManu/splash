@@ -78,6 +78,20 @@ class Gui : public BaseObject
             _objects = c._objects;
             _scene = c._scene;
             _guiCamera = c._guiCamera;
+            _guiWidgets = c._guiWidgets;
+
+            _imFontTextureId = c._imFontTextureId;
+            _imGuiShaderHandle = c._imGuiShaderHandle;
+            _imGuiVertHandle = c._imGuiVertHandle;
+            _imGuiFragHandle = c._imGuiFragHandle;
+            _imGuiTextureLocation = c._imGuiTextureLocation;
+            _imGuiProjMatrixLocation = c._imGuiProjMatrixLocation;
+            _imGuiPositionLocation = c._imGuiPositionLocation;
+            _imGuiUVLocation = c._imGuiUVLocation;
+            _imGuiColorLocation = c._imGuiColorLocation;
+            _imGuiVboHandle = c._imGuiVboHandle;
+            _imGuiVaoHandle = c._imGuiVaoHandle;
+            _imGuiVboMaxSize = c._imGuiVboMaxSize;
         }
 
         /**
