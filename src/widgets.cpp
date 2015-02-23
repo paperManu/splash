@@ -193,7 +193,7 @@ void GuiGlobalView::render()
 
             double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
             ImVec2 winSize = ImGui::GetWindowSize();
-            int w = std::max(400.0, winSize.x - 2 * leftMargin);
+            int w = std::max(400.0, winSize.x - 4 * leftMargin);
             int h = w * size[1].asInt() / size[0].asInt();
 
             _camWidth = w;

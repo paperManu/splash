@@ -131,7 +131,7 @@ class GuiGraph : public GuiWidget
 
     private:
         std::atomic_uint _target;
-        unsigned int _maxHistoryLength {500};
+        unsigned int _maxHistoryLength {300};
         std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
