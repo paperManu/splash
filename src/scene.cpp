@@ -69,7 +69,7 @@ BaseObjectPtr Scene::add(string type, string name)
 
     BaseObjectPtr obj;
     if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
     else
     {
         // Then, the objects not containing a context
@@ -386,6 +386,30 @@ void Scene::render()
         for (auto& obj : _objects)
             if (obj.second->getType() == "gui")
                 dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
+    }
+
+    // Unicode characters events
+    while (true)
+    {
+        GLFWwindow* win;
+        unsigned int unicodeChar;
+        if (!Window::getChars(win, unicodeChar))
+            break;
+
+        // Find where this action happened
+        WindowPtr eventWindow;
+        for (auto& w : _objects)
+            if (w.second->getType() == "window")
+            {
+                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                if (window->isWindow(win))
+                    eventWindow = window;
+            }
+
+        // Send the action to the GUI
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "gui")
+                dynamic_pointer_cast<Gui>(obj.second)->unicodeChar(unicodeChar);
     }
 }
 

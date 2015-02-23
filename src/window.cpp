@@ -22,6 +22,7 @@ namespace Splash {
 /*************/
 mutex Window::_callbackMutex;
 deque<pair<GLFWwindow*, vector<int>>> Window::_keys;
+deque<pair<GLFWwindow*, unsigned int>> Window::_chars;
 deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
@@ -80,6 +81,21 @@ Window::~Window()
 
     glDeleteFramebuffers(1, &_renderFbo);
     glDeleteFramebuffers(1, &_readFbo);
+}
+
+/*************/
+int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    if (_chars.size() == 0)
+        return 0;
+
+    win = _chars.front().first;
+    codepoint = _chars.front().second;
+
+    _chars.pop_front();
+
+    return _chars.size() + 1;
 }
 
 /*************/
@@ -454,7 +470,14 @@ void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int
 {
     lock_guard<mutex> lock(_callbackMutex);
     vector<int> keys {key, scancode, action, mods};
-    _keys.push_back(pair<GLFWwindow*, vector<int>>(win,keys));
+    _keys.push_back(pair<GLFWwindow*, vector<int>>(win, keys));
+}
+
+/*************/
+void Window::charCallback(GLFWwindow* win, unsigned int codepoint)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    _chars.push_back(pair<GLFWwindow*, unsigned int>(win, codepoint));
 }
 
 /*************/
@@ -486,6 +509,7 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 void Window::setEventsCallbacks()
 {
     glfwSetKeyCallback(_window->get(), Window::keyCallback);
+    glfwSetCharCallback(_window->get(), Window::charCallback);
     glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
     glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
     glfwSetScrollCallback(_window->get(), Window::scrollCallback);

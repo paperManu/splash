@@ -59,8 +59,9 @@ namespace Splash
 class Camera;
 class Geometry;
 class Gui;
-class GlvGlobalView;
-class GlvControl;
+class GuiWidget;
+class GuiGlobalView;
+class GuiControl;
 class Image;
 class Image_Shmdata;
 class Link;

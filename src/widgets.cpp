@@ -4,155 +4,165 @@
 #include "scene.h"
 #include "timer.h"
 
+#include <imgui.h>
+
 using namespace std;
-using namespace glv;
 
 namespace Splash
 {
 
 /*************/
-void GlvTextBox::onDraw(GLV& g)
+GuiWidget::GuiWidget(string name)
 {
-    try
-    {
-        draw::color(SPLASH_GLV_TEXTCOLOR);
-        draw::lineWidth(SPLASH_GLV_FONTWIDTH);
+    _name = name;
+}
 
-        string text = getText(*this);
+/*************/
+GuiTextBox::GuiTextBox(string name)
+    : GuiWidget(name)
+{
+}
 
-        draw::text(text.c_str(), 4, 4, SPLASH_GLV_FONTSIZE);
-    }
-    catch (bad_function_call)
+/*************/
+void GuiTextBox::render()
+{
+    if (getText)
     {
-        SLog::log << Log::ERROR << "GlvTextBox::" << __FUNCTION__ << " - Draw function is undefined" << Log::endl;
+        if (ImGui::CollapsingHeader(_name.c_str()))
+            ImGui::Text(getText().c_str());
     }
 }
 
 /*************/
-bool GlvTextBox::onEvent(Event::t e, GLV& g)
+void GuiControl::render()
 {
-    switch (e)
+    if (ImGui::CollapsingHeader(_name.c_str()))
     {
-    default:
-        break;
-    case Event::KeyDown:
-        SLog::log << Log::DEBUGGING << "Key down: " << (char)g.keyboard().key() << Log::endl;
-        return false;
-    case Event::MouseDrag:
-        if (g.mouse().middle())
+        // Select the object the control
         {
-            move(g.mouse().dx(), g.mouse().dy());
-            return false;
+            vector<string> objectNames = getObjectNames();
+            vector<const char*> items;
+            for (auto& name : objectNames)
+                items.push_back(name.c_str());
+            ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
         }
-        break;
-    case Event::MouseWheel:
-        int scrollOffset = _scrollOffset.fetch_add((int)g.mouse().dw());
-        return false;
-    }
 
-    return true;
-}
-
-/*************/
-GlvControl::GlvControl()
-{
-    _selectedObjectName.colors().set(Color(1.0));
-    _selectedObjectName.top(8);
-    _selectedObjectName.left(8);
-
-    _left = View(Rect(16, 16));
-    _left.name("left");
-    _right = View(Rect(16, 16));
-    _right.name("right");
-}
-
-/*************/
-void GlvControl::onDraw(GLV& g)
-{
-    if (!_ready)
-    {
-        string objName = getNameByIndex();
-        changeTarget(objName);
-
-        _left.style(&style());
-        _right.style(&style());
-
-        _ready = true;
-    }
-
-    // Update all the values currently displayed
-    if (g.focusedView() == this || g.focusedView()->parent == this)
-    {
-        for (int i = 0; i < _properties.size(); ++i)
+        // Initialize the target
+        if (_targetIndex >= 0)
         {
-            auto scene = _scene.lock();
-            string objName = getNameByIndex();
+            vector<string> objectNames = getObjectNames();
+            if (objectNames.size() <= _targetIndex)
+                return;
+            _targetObjectName = objectNames[_targetIndex];
+        }
 
-            if (!_isDistant)
-                scene->_objects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
-            else
+        if (_targetObjectName == "")
+            return;
+
+        auto scene = _scene.lock();
+
+        bool isDistant = false;
+        if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
+            isDistant = true;
+
+        map<string, Values> attributes;
+        if (!isDistant)
+            attributes = scene->_objects[_targetObjectName]->getAttributes();
+        else
+            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes();
+
+        for (auto& attr : attributes)
+        {
+            if (attr.second.size() > 4)
+                continue;
+
+            if (attr.second[0].getType() == Value::Type::i
+                || attr.second[0].getType() == Value::Type::f)
             {
-                scene->_ghostObjects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
-                scene->sendMessageToWorld("sendAll", {objName, _properties[i]->getValue(), _numbers[i]->getValue()});
+                int precision = 0;
+                if (attr.second[0].getType() == Value::Type::f)
+                    precision = 2;
+
+                if (attr.second.size() == 1)
+                {
+                    float tmp = attr.second[0].asFloat();
+                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, 0.01f * tmp, 0.01f * tmp, precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                        }
+                    }
+                }
+                else if (attr.second.size() == 2)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
+                        }
+                    }
+                }
+                else if (attr.second.size() == 3)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    tmp.push_back(attr.second[2].asFloat());
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
+                        }
+                    }
+                }
+                else if (attr.second.size() == 4)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    tmp.push_back(attr.second[2].asFloat());
+                    tmp.push_back(attr.second[3].asFloat());
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    {
+                        if (!isDistant)
+                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                        else
+                        {
+                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                        }
+                    }
+                }
+            }
+            else if (attr.second[0].getType() == Value::Type::s)
+            {
+                for (auto& v : attr.second)
+                {
+                    string tmp = v.asString();
+                    ImGui::Text(tmp.c_str());
+                }
             }
         }
     }
-    else
-    {
-        for (int i = 0; i < _properties.size(); ++i)
-        {
-            auto scene = _scene.lock();
-            string objName = getNameByIndex();
-
-            Values values;
-            if (!_isDistant)
-                scene->_objects[objName]->getAttribute(_properties[i]->getValue(), values);
-            else
-                scene->_ghostObjects[objName]->getAttribute(_properties[i]->getValue(), values);
-
-            if (values.size() != 0)
-                _numbers[i]->setValue(values[0].asFloat());
-        }
-    }
 }
 
 /*************/
-bool GlvControl::onEvent(Event::t e, GLV& g)
-{
-    switch (e)
-    {
-    default:
-        break;
-    case Event::MouseDown:
-    {
-        string viewName = g.focusedView()->name();
-        if (viewName == "left")
-            _objIndex--;
-        else if (viewName == "right")
-            _objIndex++;
-        else
-            return true;
-
-        string objName = getNameByIndex();
-        changeTarget(objName);
-        return false;
-    }
-    case Event::MouseDrag:
-    {
-        // Drag the window
-        if (g.mouse().middle()) 
-        {
-            move(g.mouse().dx(), g.mouse().dy());
-            return false;
-        }
-    }
-    }
-
-    return true;
-}
-
-/*************/
-string GlvControl::getNameByIndex()
+vector<string> GuiControl::getObjectNames()
 {
     auto scene = _scene.lock();
     vector<string> objNames;
@@ -161,472 +171,331 @@ string GlvControl::getNameByIndex()
         objNames.push_back(o.first);
     for (auto& o : scene->_ghostObjects)
         objNames.push_back(o.first);
-    
-    if (objNames.size() == 0)
-        return "";
 
-    _objIndex = _objIndex < 0 ? 0 : _objIndex >= objNames.size() ? objNames.size() - 1 : _objIndex;
-    return objNames[_objIndex];
+    return objNames;
 }
 
 /*************/
-void GlvControl::changeTarget(string name)
+GuiGlobalView::GuiGlobalView(string name)
+    : GuiWidget(name)
 {
-    // Reset the height of the view
-    h = 28;
-
-    auto scene = _scene.lock();
-
-    for (auto& p : _properties)
-        p->remove();
-    _properties.clear();
-
-    for (auto& n : _numbers)
-        n->remove();
-    _numbers.clear();
-
-    if (scene->_objects.find(name) == scene->_objects.end() && scene->_ghostObjects.find(name) == scene->_ghostObjects.end())
-        return;
-
-    _selectedObjectName.setValue(name);
-
-    if (scene->_ghostObjects.find(name) != scene->_ghostObjects.end())
-        _isDistant = true;
-    else
-        _isDistant = false;
-
-    // We don't allow modification of Window parameters yet
-    if ((!_isDistant && scene->_objects[name]->getType() == "window") || (_isDistant && scene->_ghostObjects[name]->getType() == "window"))
-        return;
-
-    map<string, Values> attribs;
-    if (!_isDistant)
-        attribs = scene->_objects[name]->getAttributes();
-    else
-        attribs = scene->_ghostObjects[name]->getAttributes();
-
-    int position = 28;
-    for (auto& a : attribs)
-    {
-        // Only show single values properties
-        if (a.second.size() > 1)
-            continue;
-        glv::Label* label = new glv::Label();
-        label->top(position);
-        label->left(8);
-        label->setValue(a.first);
-        _properties.push_back(label);
-        *this << *label;
-
-        glv::NumberDialer* number = new glv::NumberDialer();
-        number->style(&style());
-        number->top(position);
-        number->right(w);
-        number->resize(2, 2);
-        number->setValue(a.second[0].asFloat());
-        _numbers.push_back(number);
-        *this << *number;
-
-        position += 16;
-    }
-
-    h = position;
-    _titlePlacer = Placer(*this, Direction::E, Place::TL, 8, 8, 4);
-    _titlePlacer << _left << _right << _selectedObjectName;
 }
 
 /*************/
-GlvGlobalView::GlvGlobalView()
+void GuiGlobalView::render()
 {
-    _camLabel.colors().set(Color(1.0));
-    _camLabel.top(8);
-    _camLabel.left(8);
-
-    *this << _camLabel;
-}
-
-/*************/
-void GlvGlobalView::onDraw(GLV& g)
-{
-    if (_camera.get() == nullptr)
+    if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        draw::color(0.0, 1.0, 0.0, 1.0);
-    }
-    else
-    {
-        // Resize if needed
-        Values size;
-        _camera->getAttribute("size", size);
-        if (size[0].asInt() != 0 && size[1].asInt() != 0 && (size[0].asInt() != w || size[1].asInt() != h))
-            h = _baseWidth * size[1].asInt() / size[0].asInt();
+        if (_camera != nullptr)
+        {
+            Values size;
+            _camera->getAttribute("size", size);
 
-        Values fov;
-        _camera->getAttribute("fov", fov);
-        _camLabel.setValue(_camera->getName() + " - " + fov[0].asString() + "°");
+            double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+            ImVec2 winSize = ImGui::GetWindowSize();
+            int w = std::max(400.0, winSize.x - 2 * leftMargin);
+            int h = w * size[1].asInt() / size[0].asInt();
 
-        float vertcoords[] = {0,0, 0,height(), width(),0, width(),height()};
-        float texcoords[] = {0,1, 0,0, 1,1, 1,0};
+            _camWidth = w;
+            _camHeight = h;
 
-        glGetError();
-        glEnable(GL_TEXTURE_2D);
-
-        draw::color(1.0, 1.0, 1.0, 1.0);
-        glBindTexture(GL_TEXTURE_2D, _camera->getTextures()[0]->getTexId());
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glVertexPointer(2, GL_FLOAT, 0, vertcoords);
-        glTexCoordPointer(2, GL_FLOAT, 0, texcoords);
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        glDisable(GL_TEXTURE_2D);
+            ImGui::Text(("Current camera: " + _camera->getName()).c_str());
+            ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+            if (ImGui::IsItemHovered())
+            {
+                processKeyEvents();
+                processMouseEvents();
+            }
+        }
     }
 }
 
 /*************/
-bool GlvGlobalView::onEvent(Event::t e, GLV& g)
+int GuiGlobalView::updateWindowFlags()
 {
-    switch (e)
-    {
-    default:
-        break;
-    case Event::KeyDown:
-    {
-        auto key = g.keyboard().key();
-        // Switch between scene cameras and guiCamera
-        if (key ==  ' ')
-        {
-            auto scene = _scene.lock();
-            vector<CameraPtr> cameras;
-            for (auto& obj : scene->_objects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& obj : scene->_ghostObjects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-
-            // Ensure that all cameras are shown
-            _camerasHidden = false;
-            for (auto& cam : cameras)
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
-
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
-
-            if (cameras.size() == 0)
-                _camera = _guiCamera;
-            else if (_camera == _guiCamera)
-                _camera = cameras[0];
-            else
-            {
-                for (int i = 0; i < cameras.size(); ++i)
-                {
-                    if (cameras[i] == _camera && i == cameras.size() - 1)
-                    {
-                        _camera = _guiCamera;
-                        break;
-                    }
-                    else if (cameras[i] == _camera)
-                    {
-                        _camera = cameras[i + 1];
-                        break;
-                    }
-                }
-            }
-
-            if (_camera != _guiCamera)
-            {
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
-            }
-
-            return false;
-        }
-        // Show all the calibration points for the selected camera
-        else if (key == 'A')
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
-            return false;
-        }
-        else if (key == 'C')
-        {
-             // We keep the current values
-            _camera->getAttribute("eye", _eye);
-            _camera->getAttribute("target", _target);
-            _camera->getAttribute("up", _up);
-            _camera->getAttribute("fov", _fov);
-            _camera->getAttribute("principalPoint", _principalPoint);
-
-            // Calibration
-            _camera->doCalibration();
-
-            bool isDistant {false};
-            auto scene = _scene.lock();
-            for (auto& obj : scene->_ghostObjects)
-                if (_camera->getName() == obj.second->getName())
-                    isDistant = true;
-            
-            if (isDistant)
-            {
-                vector<string> properties {"eye", "target", "up", "fov", "principalPoint"};
-                auto scene = _scene.lock();
-                for (auto& p : properties)
-                {
-                    Values values;
-                    _camera->getAttribute(p, values);
-
-                    Values sendValues {_camera->getName(), p};
-                    for (auto& v : values)
-                        sendValues.push_back(v);
-
-                    scene->sendMessageToWorld("sendAll", sendValues);
-                }
-            }
-
-            return false;
-        }
-        else if (key == 'H')
-        {
-            auto scene = _scene.lock();
-            vector<CameraPtr> cameras;
-            for (auto& obj : scene->_objects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& obj : scene->_ghostObjects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-
-            if (!_camerasHidden)
-            {
-                for (auto& cam : cameras)
-                    if (cam.get() != _camera.get())
-                        scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 1});
-                _camerasHidden = true;
-            }
-            else
-            {
-                for (auto& cam : cameras)
-                    if (cam.get() != _camera.get())
-                        scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
-                _camerasHidden = false;
-            }
-        }
-        // Reset to the previous camera calibration
-        else if (key == 'R')
-        {
-            _camera->setAttribute("eye", _eye);
-            _camera->setAttribute("target", _target);
-            _camera->setAttribute("up", _up);
-            _camera->setAttribute("fov", _fov);
-            _camera->setAttribute("principalPoint", _principalPoint);
-
-            auto scene = _scene.lock();
-            for (auto& obj : scene->_ghostObjects)
-                if (_camera->getName() == obj.second->getName())
-                {
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", _eye[0], _eye[1], _eye[2]});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", _target[0], _target[1], _target[2]});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", _up[0], _up[1], _up[2]});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", _fov[0]});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", _principalPoint[0], _principalPoint[1]});
-                }
-        }
-        // Arrow keys
-        else if (key >= 262 && key <= 265)
-        {
-            auto scene = _scene.lock();
-
-            float delta = 1.f;
-            if (g.keyboard().shift())
-                delta = 0.1f;
-            else if (g.keyboard().ctrl())
-                delta = 10.f;
-                
-            if (key == 262)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", delta, 0});
-            else if (key == 263)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", -delta, 0});
-            else if (key == 264)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, -delta});
-            else if (key == 265)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
-            return false;
-        }
-        break;
-    }
-    case Event::MouseDown:
-    {
-        // If selected camera is guiCamera, do nothing
-        if (_camera == _guiCamera)
-            return false;
-
-        // Set a calibration point
-        if (g.mouse().left()) 
-        {
-            auto scene = _scene.lock();
-            if (g.keyboard().ctrl())
-            {
-                auto scene = _scene.lock();
-                Values position = _camera->pickCalibrationPoint(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-                if (position.size() == 3)
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
-            }
-            else if (g.keyboard().shift()) // Define the screenpoint corresponding to the selected calibration point
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
-            else // Add a new calibration point
-            {
-                Values position = _camera->pickVertex(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-                if (position.size() == 3)
-                {
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
-                    _previousPointAdded = position;
-                }
-                else
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "deselectCalibrationPoint"});
-            }
-        }
-        return false;
-    }
-    case Event::MouseUp:
-    {
-        _beginDrag = true; // We reset the beginDrag flag
-        // Pure precautions
-        _previousPointAdded.clear();
-        return false;
-    }
-    case Event::MouseDrag:
-    {
-        // Drag the window
-        if (g.mouse().left())
-        {
-            if (g.keyboard().shift())
-            {
-                auto scene = _scene.lock();
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", (g.mouse().xRel() / w * 2.f) - 1.f, 1.f - (g.mouse().yRel() / h) * 2.f});
-            }
-        }
-        else if (g.mouse().middle()) 
-        {
-            move(g.mouse().dx(), g.mouse().dy());
-        }
-        else if (g.mouse().right()) 
-        {
-            // Move the camera
-            if (!g.keyboard().ctrl() && !g.keyboard().shift())
-            {
-                float dx = g.mouse().dx();
-                float dy = g.mouse().dy();
-                auto scene = _scene.lock();
-
-                // If the user clicked on an object, we set a new target on this object
-                static Values newTarget;
-                if (_beginDrag)
-                    newTarget = _camera->pickFragment(g.mouse().xRel() / w, 1.f - g.mouse().yRel() / h);
-
-                if (_camera != _guiCamera)
-                {
-                    if (newTarget.size() == 3)
-                        scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, 0, 0, newTarget[0].asFloat(), newTarget[1].asFloat(), newTarget[2].asFloat()});
-                    else
-                        scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
-                }
-                else
-                {
-                    if (newTarget.size() == 3)
-                        _camera->setAttribute("rotateAroundPoint", {dx / 100.f, 0, 0, newTarget[0].asFloat(), newTarget[1].asFloat(), newTarget[2].asFloat()});
-                    else
-                        _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
-                    _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
-                }
-            }
-            // Move the target and the camera (in the camera plane)
-            else if (g.keyboard().shift() && !g.keyboard().ctrl())
-            {
-                float dx = g.mouse().dx();
-                float dy = g.mouse().dy();
-                auto scene = _scene.lock();
-                if (_camera != _guiCamera)
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", dx / 100.f, 0, dy / 100.f});
-                else
-                    _camera->setAttribute("pan", {dx / 100.f, 0, dy / 100.f});
-            }
-            else if (!g.keyboard().shift() && g.keyboard().ctrl())
-            {
-                float dy = g.mouse().dy() / 100.f;
-                auto scene = _scene.lock();
-                if (_camera != _guiCamera)
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "forward", dy});
-                else
-                    _camera->setAttribute("forward", {dy});
-            }
-        }
-        else
-            break;
-
-        _beginDrag = false;
-        return false;
-    }
-    case Event::MouseWheel:
-    {
-        Values fov;
-        _camera->getAttribute("fov", fov);
-        float camFov = fov[0].asFloat();
-
-        camFov += g.mouse().dw();
-        camFov = std::max(2.f, std::min(180.f, camFov));
-
-        auto scene = _scene.lock();
-        if (_camera != _guiCamera)
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", camFov});
-        else
-            _camera->setAttribute("fov", {camFov});
-
-        return false;
-    }
-    }
-
-    return true;
+    ImGuiWindowFlags flags = 0;
+    if (_noMove)
+        flags |= ImGuiWindowFlags_NoMove;
+    return flags;
 }
 
 /*************/
-void GlvGlobalView::setCamera(CameraPtr cam)
+void GuiGlobalView::setCamera(CameraPtr cam)
 {
-    if (cam.get() != nullptr)
+    if (cam != nullptr)
     {
         _camera = cam;
         _guiCamera = cam;
-        _camera->setAttribute("size", {width(), height()});
+        _camera->setAttribute("size", {800, 600});
     }
 }
 
 /*************/
-GlvGraph::GlvGraph()
+void GuiGlobalView::processKeyEvents()
 {
-    _plotFunction = PlotFunction1D(Color(1), 2, draw::LineStrip);
-    _plot.add(_plotFunction);
-    _plot.data().resize(1, _maxHistoryLength);
-    _plot.range(0.0, _plot.data().size(1), 0).range(0.0, 20.0, 1);
-    _plot.major(20, 0).minor(4, 0).major(5, 1).minor(0, 1);
-    _plot.disable(Controllable);
-    *this << _plot;
+    ImGuiIO& io = ImGui::GetIO();
 
-    _graphLabel.setValue("Graph").colors().set(Color(1.0));
-    _graphLabel.top(8);
-    _graphLabel.left(8);
+    if (io.KeysDown[' '] && io.KeysDownTime[' '] == 0.0)
+    {
+        auto scene = _scene.lock();
+        vector<CameraPtr> cameras;
+        for (auto& obj : scene->_objects)
+            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+        for (auto& obj : scene->_ghostObjects)
+            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
-    _scaleLabel.top(8);
-    _scaleLabel.right(w - 24);
-    _plot << _graphLabel;
-    _plot << _scaleLabel;
+        // Ensure that all cameras are shown
+        _camerasHidden = false;
+        for (auto& cam : cameras)
+            scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+
+        if (cameras.size() == 0)
+            _camera = _guiCamera;
+        else if (_camera == _guiCamera)
+            _camera = cameras[0];
+        else
+        {
+            for (int i = 0; i < cameras.size(); ++i)
+            {
+                if (cameras[i] == _camera && i == cameras.size() - 1)
+                {
+                    _camera = _guiCamera;
+                    break;
+                }
+                else if (cameras[i] == _camera)
+                {
+                    _camera = cameras[i + 1];
+                    break;
+                }
+            }
+        }
+
+        if (_camera != _guiCamera)
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+        }
+
+        return;
+    }
+    else if (io.KeysDown['A'] && io.KeysDownTime['A'] == 0.0)
+    {
+        auto scene = _scene.lock();
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
+        return;
+    }
+    else if (io.KeysDown['C'] && io.KeysDownTime['C'] == 0.0)
+    {
+         // We keep the current values
+        _camera->getAttribute("eye", _eye);
+        _camera->getAttribute("target", _target);
+        _camera->getAttribute("up", _up);
+        _camera->getAttribute("fov", _fov);
+        _camera->getAttribute("principalPoint", _principalPoint);
+
+        // Calibration
+        _camera->doCalibration();
+
+        bool isDistant {false};
+        auto scene = _scene.lock();
+        for (auto& obj : scene->_ghostObjects)
+            if (_camera->getName() == obj.second->getName())
+                isDistant = true;
+        
+        if (isDistant)
+        {
+            vector<string> properties {"eye", "target", "up", "fov", "principalPoint"};
+            auto scene = _scene.lock();
+            for (auto& p : properties)
+            {
+                Values values;
+                _camera->getAttribute(p, values);
+
+                Values sendValues {_camera->getName(), p};
+                for (auto& v : values)
+                    sendValues.push_back(v);
+
+                scene->sendMessageToWorld("sendAll", sendValues);
+            }
+        }
+
+        return;
+    }
+    else if (io.KeysDown['H'] && io.KeysDownTime['H'] == 0.0)
+    {
+        auto scene = _scene.lock();
+        vector<CameraPtr> cameras;
+        for (auto& obj : scene->_objects)
+            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+        for (auto& obj : scene->_ghostObjects)
+            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+        if (!_camerasHidden)
+        {
+            for (auto& cam : cameras)
+                if (cam.get() != _camera.get())
+                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 1});
+            _camerasHidden = true;
+        }
+        else
+        {
+            for (auto& cam : cameras)
+                if (cam.get() != _camera.get())
+                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+            _camerasHidden = false;
+        }
+    }
+    // Reset to the previous camera calibration
+    else if (io.KeysDown['R'] && io.KeysDownTime['R'] == 0.0)
+    {
+        _camera->setAttribute("eye", _eye);
+        _camera->setAttribute("target", _target);
+        _camera->setAttribute("up", _up);
+        _camera->setAttribute("fov", _fov);
+        _camera->setAttribute("principalPoint", _principalPoint);
+
+        auto scene = _scene.lock();
+        for (auto& obj : scene->_ghostObjects)
+            if (_camera->getName() == obj.second->getName())
+            {
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", _eye[0], _eye[1], _eye[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", _target[0], _target[1], _target[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", _up[0], _up[1], _up[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", _fov[0]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", _principalPoint[0], _principalPoint[1]});
+            }
+    }
+    // Arrow keys
+    else
+    {
+        auto scene = _scene.lock();
+
+        float delta = 1.f;
+        if (io.KeyShift)
+            delta = 0.1f;
+        else if (io.KeyCtrl)
+            delta = 10.f;
+            
+        if (io.KeysDown[262])
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", delta, 0});
+        if (io.KeysDown[263])
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", -delta, 0});
+        if (io.KeysDown[264])
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, -delta});
+        if (io.KeysDown[265])
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
+        return;
+    }
 }
 
 /*************/
-void GlvGraph::onDraw(GLV& g)
+void GuiGlobalView::processMouseEvents()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    _noMove = false;
+    if (io.MouseDown[0])
+        _noMove = true;
+
+    // Get mouse pos
+    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth,
+                             -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
+
+    if (io.MouseDown[0])
+    {
+        // If selected camera is guiCamera, do nothing
+        if (_camera == _guiCamera)
+            return;
+
+        // Set a calibration point
+        auto scene = _scene.lock();
+        if (io.KeyCtrl && io.MouseClicked[0])
+        {
+            auto scene = _scene.lock();
+            Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
+            if (position.size() == 3)
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
+        }
+        else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
+        else if (io.MouseClicked[0]) // Add a new calibration point
+        {
+            Values position = _camera->pickVertex(mousePos.x, mousePos.y);
+            if (position.size() == 3)
+            {
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
+                _previousPointAdded = position;
+            }
+            else
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "deselectCalibrationPoint"});
+        }
+        return;
+    }
+    if (io.MouseClicked[1])
+    {
+        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y);
+    }
+    if (io.MouseDownTime[1] > 0.0) 
+    {
+        // Move the camera
+        if (!io.KeyCtrl && !io.KeyShift)
+        {
+            float dx = io.MouseDelta.x;
+            float dy = io.MouseDelta.y;
+            auto scene = _scene.lock();
+
+            if (_camera != _guiCamera)
+            {
+                if (_newTarget.size() == 3)
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, 0, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                else
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
+            }
+            else
+            {
+                if (_newTarget.size() == 3)
+                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, 0, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                else
+                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
+                _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
+            }
+        }
+        // Move the target and the camera (in the camera plane)
+        else if (io.KeyShift && !io.KeyCtrl)
+        {
+            float dx = io.MouseDelta.x;
+            float dy = io.MouseDelta.y;
+            auto scene = _scene.lock();
+            if (_camera != _guiCamera)
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", dx / 100.f, 0, dy / 100.f});
+            else
+                _camera->setAttribute("pan", {dx / 100.f, 0, dy / 100.f});
+        }
+        else if (!io.KeyShift && io.KeyCtrl)
+        {
+            float dy = io.MouseDelta.y / 100.f;
+            auto scene = _scene.lock();
+            if (_camera != _guiCamera)
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "forward", dy});
+            else
+                _camera->setAttribute("forward", {dy});
+        }
+    }
+}
+
+/*************/
+void GuiGraph::render()
 {
     map<string, unsigned long long> durationMap = STimer::timer.getDurationMap();
-    
+
     for (auto& t : durationMap)
     {
         if (_durationGraph.find(t.first) == _durationGraph.end())
@@ -642,70 +511,23 @@ void GlvGraph::onDraw(GLV& g)
     if (_durationGraph.size() == 0)
         return;
 
-    unsigned int target = _target;
-    if (target >= _durationGraph.size())
-        _target = target = 0;
-
-    auto durationIt = _durationGraph.begin();
-    for (int i = 0; i < target; ++i)
-        durationIt++;
-
-    float maxValue {0.f};
-    int index = 0;
-    _graphLabel.setValue((*durationIt).first);
-    for (auto v : (*durationIt).second)
+    if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        maxValue = std::max((float)v * 0.001f, maxValue);
-        _plot.data().assign((float)v * 0.001f, index);
-        index++;
+        for (auto& duration : _durationGraph)
+        {
+            float maxValue {0.f};
+            vector<float> values;
+            for (auto& v : duration.second)
+            {
+                maxValue = std::max((float)v * 0.001f, maxValue);
+                values.push_back((float)v * 0.001f);
+            }
+
+            maxValue = ceil(maxValue * 0.1f) * 10.f;
+
+            ImGui::PlotLines(duration.first.c_str(), values.data(), values.size(), values.size(), (to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(0, 80));
+        }
     }
-
-    maxValue = ceil(maxValue * 0.1f) * 10.f;
-    _plot.range(0.0, maxValue, 1);
-
-    _scaleLabel.setValue(to_string((int)maxValue) + " ms");
-    _scaleLabel.right(w - 8);
-}
-
-/*************/
-bool GlvGraph::onEvent(Event::t e, GLV& g)
-{
-    switch (e)
-    {
-    default:
-        break;
-    case Event::KeyDown:
-        if ((char)g.keyboard().key() == 'N')
-        {
-            _target--;
-            return false;
-        }
-        else if ((char)g.keyboard().key() == 'M')
-        {
-            _target++;
-            return false;
-        }
-        break;
-    case Event::MouseDrag:
-        if (g.mouse().middle())
-        {
-            move(g.mouse().dx(), g.mouse().dy());
-            return false;
-        }
-        break;
-    }
-
-    return true;
-}
-
-/*************/
-void GlvGraph::onResize(glv::space_t dx, glv::space_t dy)
-{
-    _style = style();
-    _plot.style(&_style);
-    _plot.width(w);
-    _plot.height(h);
-    _plot.range(0.0, _plot.data().size(1), 0).range(0.0, 20.0, 1);
 }
 
 } // end of namespace

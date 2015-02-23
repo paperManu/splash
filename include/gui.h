@@ -41,7 +41,8 @@
 #include <functional>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include <glv.h>
+//#define ImVector std::vector
+#include <imgui.h>
 
 #include "widgets.h"
 
@@ -90,9 +91,14 @@ class Gui : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Forward a unicode char event
+         */
+        void unicodeChar(unsigned int unicodeChar);
+
+        /**
          * Forward a key event
          */
-        void key(int& key, int& action, int& mods);
+        void key(int key, int action, int mods);
 
         /**
          * Forward mouse events
@@ -130,24 +136,36 @@ class Gui : public BaseObject
         // GUI specific camera
         CameraPtr _guiCamera;
 
+        // ImGUI related attributes
+        static GLuint _imFontTextureId;
+        static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
+        static GLint _imGuiTextureLocation;
+        static GLint _imGuiProjMatrixLocation;
+        static GLint _imGuiPositionLocation;
+        static GLint _imGuiUVLocation;
+        static GLint _imGuiColorLocation;
+        static GLuint _imGuiVboHandle, _imGuiVaoHandle;
+        static size_t _imGuiVboMaxSize;
+
+        // ImGUI objects
+        ImGuiWindowFlags _windowFlags {0};
+        std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
+
         // GLV related attributes
         bool _isVisible {false};
         bool _doNotRender {false};
-        glv::Style _style;
-        glv::GLV _glv;
-        GlvTextBox _glvLog;
-        GlvTextBox _glvProfile;
-        GlvTextBox _glvHelp;
-        GlvGlobalView _glvGlobalView;
-        GlvGraph _glvGraph;
-        GlvControl _glvControl;
-        glv::space_t _prevMouseX {0}, _prevMouseY {0};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
-        
+
         /**
-         * Convert GLFW keys values to GLV
+         * Initialize ImGui
          */
-        int glfwToGlvKey(int key);
+        void initImGui(int width, int height);
+        void initImWidgets();
+
+        /**
+         * ImGui render function
+         */
+        static void imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count);
 
         /**
          * Initialize GLV

@@ -42,9 +42,10 @@ typedef std::shared_ptr<Scene> ScenePtr;
 /*************/
 class Scene : public RootObject
 {
+    friend GuiWidget;
+    friend GuiGlobalView;
+    friend GuiControl;
     friend Gui;
-    friend GlvGlobalView;
-    friend GlvControl;
 
     public:
         /**
