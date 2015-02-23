@@ -86,7 +86,8 @@ void GuiControl::render()
                 if (attr.second.size() == 1)
                 {
                     float tmp = attr.second[0].asFloat();
-                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, 0.01f * tmp, 0.01f * tmp, precision))
+                    float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
+                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
@@ -203,9 +204,12 @@ void GuiGlobalView::render()
             ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHovered())
             {
+                _noMove = true;
                 processKeyEvents();
                 processMouseEvents();
             }
+            else
+                _noMove = false;
         }
     }
 }
@@ -215,7 +219,10 @@ int GuiGlobalView::updateWindowFlags()
 {
     ImGuiWindowFlags flags = 0;
     if (_noMove)
+    {
         flags |= ImGuiWindowFlags_NoMove;
+        flags |= ImGuiWindowFlags_NoScrollWithMouse;
+    }
     return flags;
 }
 
@@ -400,10 +407,6 @@ void GuiGlobalView::processMouseEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    _noMove = false;
-    if (io.MouseDown[0])
-        _noMove = true;
-
     // Get mouse pos
     ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth,
                              -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
@@ -488,6 +491,21 @@ void GuiGlobalView::processMouseEvents()
             else
                 _camera->setAttribute("forward", {dy});
         }
+    }
+    if (io.MouseWheel != 0)
+    {
+        Values fov;
+        _camera->getAttribute("fov", fov);
+        float camFov = fov[0].asFloat();
+
+        camFov += io.MouseWheel;
+        camFov = std::max(2.f, std::min(180.f, camFov));
+
+        auto scene = _scene.lock();
+        if (_camera != _guiCamera)
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", camFov});
+        else
+            _camera->setAttribute("fov", {camFov});
     }
 }
 
