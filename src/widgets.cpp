@@ -7,7 +7,6 @@
 #include <imgui.h>
 
 using namespace std;
-using namespace glv;
 
 namespace Splash
 {
@@ -29,112 +28,115 @@ void GuiTextBox::render()
 {
     if (getText)
     {
-        ImGui::Begin(_name.c_str());
-        ImGui::Text(getText().c_str());
-        ImGui::End();
+        if (ImGui::CollapsingHeader(_name.c_str()))
+            ImGui::Text(getText().c_str());
     }
 }
 
 /*************/
-GlvControl::GlvControl()
+void GuiControl::render()
 {
-    _selectedObjectName.colors().set(Color(1.0));
-    _selectedObjectName.top(8);
-    _selectedObjectName.left(8);
-
-    _left = View(Rect(16, 16));
-    _left.name("left");
-    _right = View(Rect(16, 16));
-    _right.name("right");
-}
-
-/*************/
-void GlvControl::onDraw(GLV& g)
-{
-    if (!_ready)
+    if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        string objName = getNameByIndex();
-        changeTarget(objName);
-
-        _left.style(&style());
-        _right.style(&style());
-
-        _ready = true;
-    }
-
-    // Update all the values currently displayed
-    if (g.focusedView() == this || g.focusedView()->parent == this)
-    {
-        for (int i = 0; i < _properties.size(); ++i)
+        if (ImGui::Button("Previous"))
         {
-            auto scene = _scene.lock();
-            string objName = getNameByIndex();
-
-            if (!_isDistant)
-                scene->_objects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
-            else
+            vector<string> objectNames = getObjectNames();
+            if (objectNames.size() != 0)
             {
-                scene->_ghostObjects[objName]->setAttribute(_properties[i]->getValue(), {_numbers[i]->getValue()});
-                scene->sendMessageToWorld("sendAll", {objName, _properties[i]->getValue(), _numbers[i]->getValue()});
+                string newTarget = "";
+                bool matched = false;
+                for (auto& name : objectNames)
+                {
+                    if (matched)
+                        newTarget = name;
+                    if (name == _targetObjectName)
+                        matched = true;
+                }
+
+                if (newTarget == "")
+                    newTarget = objectNames[0];
+                _targetObjectName = newTarget;
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Next"))
+        {
+            vector<string> objectNames = getObjectNames();
+            if (objectNames.size() != 0)
+            {
+                string newTarget = "";
+                string previous = "";
+                for (auto& name : objectNames)
+                {
+                    if (name == _targetObjectName)
+                        newTarget = previous;
+                    previous = name;
+                }
+
+                if (newTarget == "")
+                    newTarget = objectNames[objectNames.size() - 1];
+                _targetObjectName = newTarget;
+            }
+        }
+        ImGui::SameLine();
+        ImGui::Text(_targetObjectName.c_str());
+
+        // Initialize the target
+        if (_targetObjectName == "")
+        {
+            vector<string> objectNames = getObjectNames();
+            if (objectNames.size() == 0)
+                return;
+            _targetObjectName = objectNames[0];
+        }
+
+        auto scene = _scene.lock();
+
+        bool isDistant = false;
+        if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
+            isDistant = true;
+
+        map<string, Values> attributes;
+        if (!isDistant)
+            attributes = scene->_objects[_targetObjectName]->getAttributes();
+        else
+            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes();
+
+        for (auto& attr : attributes)
+        {
+            if (attr.second.size() > 4)
+                continue;
+            ImGui::Text(attr.first.c_str());
+            for (auto& v : attr.second)
+            {
+                if (v.getType() == Value::Type::i)
+                {
+                    int tmp = v.asInt();
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(80);
+                    ImGui::InputInt("", &tmp, 0, 0);
+                }
+                else if (v.getType() == Value::Type::f)
+                {
+                    float tmp = v.asFloat();
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(80);
+                    ImGui::InputFloat("", &tmp, 0.f, 0.f, 2);
+                }
+                else if (v.getType() == Value::Type::s)
+                {
+                    string tmp = v.asString();
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(120);
+                    ImGui::Text(tmp.c_str());
+                }
             }
         }
     }
-    else
-    {
-        for (int i = 0; i < _properties.size(); ++i)
-        {
-            auto scene = _scene.lock();
-            string objName = getNameByIndex();
-
-            Values values;
-            if (!_isDistant)
-                scene->_objects[objName]->getAttribute(_properties[i]->getValue(), values);
-            else
-                scene->_ghostObjects[objName]->getAttribute(_properties[i]->getValue(), values);
-
-            if (values.size() != 0)
-                _numbers[i]->setValue(values[0].asFloat());
-        }
-    }
 }
 
 /*************/
-bool GlvControl::onEvent(Event::t e, GLV& g)
-{
-    switch (e)
-    {
-    default:
-        break;
-    case Event::MouseDown:
-    {
-        string viewName = g.focusedView()->name();
-        if (viewName == "left")
-            _objIndex--;
-        else if (viewName == "right")
-            _objIndex++;
-        else
-            return true;
-
-        string objName = getNameByIndex();
-        changeTarget(objName);
-        return false;
-    }
-    case Event::MouseDrag:
-    {
-        // Drag the window
-        if (g.mouse().middle()) 
-        {
-            move(g.mouse().dx(), g.mouse().dy());
-            return false;
-        }
-    }
-    }
-
-    return true;
-}
-
-/*************/
-string GlvControl::getNameByIndex()
+vector<string> GuiControl::getObjectNames()
 {
     auto scene = _scene.lock();
     vector<string> objNames;
@@ -143,78 +145,8 @@ string GlvControl::getNameByIndex()
         objNames.push_back(o.first);
     for (auto& o : scene->_ghostObjects)
         objNames.push_back(o.first);
-    
-    if (objNames.size() == 0)
-        return "";
 
-    _objIndex = _objIndex < 0 ? 0 : _objIndex >= objNames.size() ? objNames.size() - 1 : _objIndex;
-    return objNames[_objIndex];
-}
-
-/*************/
-void GlvControl::changeTarget(string name)
-{
-    // Reset the height of the view
-    h = 28;
-
-    auto scene = _scene.lock();
-
-    for (auto& p : _properties)
-        p->remove();
-    _properties.clear();
-
-    for (auto& n : _numbers)
-        n->remove();
-    _numbers.clear();
-
-    if (scene->_objects.find(name) == scene->_objects.end() && scene->_ghostObjects.find(name) == scene->_ghostObjects.end())
-        return;
-
-    _selectedObjectName.setValue(name);
-
-    if (scene->_ghostObjects.find(name) != scene->_ghostObjects.end())
-        _isDistant = true;
-    else
-        _isDistant = false;
-
-    // We don't allow modification of Window parameters yet
-    if ((!_isDistant && scene->_objects[name]->getType() == "window") || (_isDistant && scene->_ghostObjects[name]->getType() == "window"))
-        return;
-
-    map<string, Values> attribs;
-    if (!_isDistant)
-        attribs = scene->_objects[name]->getAttributes();
-    else
-        attribs = scene->_ghostObjects[name]->getAttributes();
-
-    int position = 28;
-    for (auto& a : attribs)
-    {
-        // Only show single values properties
-        if (a.second.size() > 1)
-            continue;
-        glv::Label* label = new glv::Label();
-        label->top(position);
-        label->left(8);
-        label->setValue(a.first);
-        _properties.push_back(label);
-        *this << *label;
-
-        glv::NumberDialer* number = new glv::NumberDialer();
-        number->style(&style());
-        number->top(position);
-        number->right(w);
-        number->resize(2, 2);
-        number->setValue(a.second[0].asFloat());
-        _numbers.push_back(number);
-        *this << *number;
-
-        position += 16;
-    }
-
-    h = position;
-    _titlePlacer = Placer(*this, Direction::E, Place::TL, 8, 8, 4);
-    _titlePlacer << _left << _right << _selectedObjectName;
+    return objNames;
 }
 
 /*************/
@@ -226,33 +158,39 @@ GuiGlobalView::GuiGlobalView(string name)
 /*************/
 void GuiGlobalView::render()
 {
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        if (_camera != nullptr)
+        {
+            Values size;
+            _camera->getAttribute("size", size);
+
+            double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+            ImVec2 winSize = ImGui::GetWindowSize();
+            int w = std::max(400.0, winSize.x - 2 * leftMargin);
+            int h = w * size[1].asInt() / size[0].asInt();
+
+            _camWidth = w;
+            _camHeight = h;
+
+            ImGui::Text(("Current camera: " + _camera->getName()).c_str());
+            ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+            if (ImGui::IsItemHovered())
+            {
+                processKeyEvents();
+                processMouseEvents();
+            }
+        }
+    }
+}
+
+/*************/
+int GuiGlobalView::updateWindowFlags()
+{
     ImGuiWindowFlags flags = 0;
     if (_noMove)
         flags |= ImGuiWindowFlags_NoMove;
-    ImGui::Begin(_name.c_str(), nullptr, ImVec2(0, 0), -1.f, flags);
-
-    if (_camera != nullptr)
-    {
-        Values size;
-        _camera->getAttribute("size", size);
-
-        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-        ImVec2 winSize = ImGui::GetWindowSize();
-        int w = std::max(400.0, winSize.x - 2 * leftMargin);
-        int h = w * size[1].asInt() / size[0].asInt();
-
-        _camWidth = w;
-        _camHeight = h;
-
-        ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-        if (ImGui::IsItemHovered())
-        {
-            processKeyEvents();
-            processMouseEvents();
-        }
-    }
-
-    ImGui::End();
+    return flags;
 }
 
 /*************/
@@ -547,22 +485,23 @@ void GuiGraph::render()
     if (_durationGraph.size() == 0)
         return;
 
-    ImGui::Begin(_name.c_str(), nullptr, ImVec2(400, 300), 0.65f);
-    for (auto& duration : _durationGraph)
+    if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        float maxValue {0.f};
-        vector<float> values;
-        for (auto& v : duration.second)
+        for (auto& duration : _durationGraph)
         {
-            maxValue = std::max((float)v * 0.001f, maxValue);
-            values.push_back((float)v * 0.001f);
+            float maxValue {0.f};
+            vector<float> values;
+            for (auto& v : duration.second)
+            {
+                maxValue = std::max((float)v * 0.001f, maxValue);
+                values.push_back((float)v * 0.001f);
+            }
+
+            maxValue = ceil(maxValue * 0.1f) * 10.f;
+
+            ImGui::PlotLines(duration.first.c_str(), values.data(), values.size(), values.size(), (to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(0, 80));
         }
-
-        maxValue = ceil(maxValue * 0.1f) * 10.f;
-
-        ImGui::PlotLines(duration.first.c_str(), values.data(), values.size(), values.size(), (to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(0, 80));
     }
-    ImGui::End();
 }
 
 } // end of namespace

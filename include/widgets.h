@@ -37,7 +37,6 @@
 #include <deque>
 #include <functional>
 #include <memory>
-#include <glv.h>
 
 #include "camera.h"
 #include "object.h"
@@ -56,6 +55,7 @@ class GuiWidget
         GuiWidget(std::string name = "");
         virtual ~GuiWidget() {}
         virtual void render() {}
+        virtual int updateWindowFlags() {return 0;}
 
     protected:
         std::string _name {""};
@@ -79,6 +79,7 @@ class GuiGlobalView : public GuiWidget
     public:
         GuiGlobalView(std::string name = "");
         void render();
+        int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
         void SetObject(ObjectPtr obj) {_camera->linkTo(obj);}
@@ -105,29 +106,19 @@ class GuiGlobalView : public GuiWidget
 };
 
 /*************/
-class GlvControl : public glv::View
+class GuiControl : public GuiWidget
 {
     public:
-        GlvControl();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
+        GuiControl(std::string name) : GuiWidget(name) {}
+        void render();
+        int updateWindowFlags() {return 0;}
         void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
         SceneWeakPtr _scene;
-        bool _ready {false};
+        std::string _targetObjectName {};
 
-        int _objIndex {0};
-        bool _isDistant {false};
-        glv::Label _selectedObjectName;
-        glv::View _left, _right;
-        glv::Placer _titlePlacer;
-
-        std::vector<glv::Label*> _properties;
-        std::vector<glv::NumberDialer*> _numbers;
-
-        std::string getNameByIndex();
-        void changeTarget(std::string name);
+        std::vector<std::string> getObjectNames();
 };
 
 /*************/

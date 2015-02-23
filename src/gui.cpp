@@ -9,7 +9,6 @@
 #include "threadpool.h"
 
 using namespace std;
-using namespace glv;
 using namespace OIIO_NAMESPACE;
 
 namespace Splash
@@ -235,27 +234,6 @@ void Gui::mousePosition(int xpos, int ypos)
     io.MousePos = ImVec2((float)xpos, (float)ypos);
 
     return;
-
-    space_t x = (space_t)xpos;
-    space_t y = (space_t)ypos;
-
-    // If no movement, no message
-    if (_prevMouseX == x && _prevMouseY == y)
-        return;
-
-    _prevMouseX = x;
-    _prevMouseY = y;
-
-    space_t relx = x;
-    space_t rely = y;
-
-    if (_glv.mouse().left() || _glv.mouse().right() || _glv.mouse().middle())
-        _glv.setMouseMotion(relx, rely, Event::MouseDrag);
-    else
-        _glv.setMouseMotion(relx, rely, Event::MouseMove);
-
-    _glv.setMousePos((int)x, (int)y, relx, rely);
-    _glv.propagateEvent();
 }
 
 /*************/
@@ -294,9 +272,6 @@ void Gui::mouseScroll(double xoffset, double yoffset)
     io.MouseWheel += (float)yoffset;
 
     return;
-    
-    _glv.setMouseWheel(yoffset);
-    _glv.propagateEvent();
 }
 
 /*************/
@@ -350,8 +325,14 @@ bool Gui::render()
         ImGui::NewFrame();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 
+        ImGui::Begin("Splash", nullptr, ImVec2(600, 600), 0.9f, _windowFlags);
+        _windowFlags = 0;
         for (auto& widget : _guiWidgets)
+        {
             widget->render();
+            _windowFlags |= widget->updateWindowFlags();
+        }
+        ImGui::End();
 
         static double time = 0.0;
         const double currentTime = glfwGetTime();
@@ -402,13 +383,6 @@ void Gui::setOutputSize(int width, int height)
 }
 
 /*************/
-int Gui::glfwToGlvKey(int key)
-{
-    // Nothing special noted yet...
-    return key;
-}
-
-/*************/
 void Gui::initImGui(int width, int height)
 {
     using namespace ImGui;
@@ -428,7 +402,7 @@ void Gui::initImGui(int width, int height)
         {
             Frag_UV = UV;
             Frag_Color = Color;
-            Frag_Color.a += 0.5f;
+            //Frag_Color.a += 0.5f;
             gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
         }
     )"};
@@ -506,6 +480,8 @@ void Gui::initImGui(int width, int height)
 
     // Initialize ImGui
     ImGuiIO& io = GetIO();
+
+    io.IniFilename = nullptr;
 
     io.DisplaySize.x = width;
     io.DisplaySize.y = height;
@@ -634,6 +610,11 @@ void Gui::initImWidgets()
     });
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 
+    // Control
+    shared_ptr<GuiControl> controlView = make_shared<GuiControl>("Controls");
+    controlView->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
+
     // GUI camera view
     shared_ptr<GuiGlobalView> globalView = make_shared<GuiGlobalView>("Views");
     globalView->setCamera(_guiCamera);
@@ -726,19 +707,6 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
 /*************/
 void Gui::initGLV(int width, int height)
 {
-    _glv.width(width);
-    _glv.height(height);
-    _glv.disable(DrawBack);
-
-    _style.color.set(Color(1.0, 0.5, 0.2, 0.7), 0.7);
-
-    // Controls
-    _glvControl.width(200);
-    _glvControl.height(128);
-    _glvControl.top(8);
-    _glvControl.right(_width / 2 - 64);
-    _glvControl.style(&_style);
-    _glvControl.setScene(_scene);
 }
 
 /*************/

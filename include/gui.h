@@ -41,7 +41,6 @@
 #include <functional>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include <glv.h>
 //#define ImVector std::vector
 #include <imgui.h>
 
@@ -149,22 +148,13 @@ class Gui : public BaseObject
         static size_t _imGuiVboMaxSize;
 
         // ImGUI objects
+        ImGuiWindowFlags _windowFlags {0};
         std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
-        //GuiTextBox _guiHelp;
 
         // GLV related attributes
         bool _isVisible {false};
         bool _doNotRender {false};
-        glv::Style _style;
-        glv::GLV _glv;
-        GlvControl _glvControl;
-        glv::space_t _prevMouseX {0}, _prevMouseY {0};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
-        
-        /**
-         * Convert GLFW keys values to GLV
-         */
-        int glfwToGlvKey(int key);
 
         /**
          * Initialize ImGui
