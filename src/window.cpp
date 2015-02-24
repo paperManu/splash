@@ -384,9 +384,10 @@ void Window::swapBuffers()
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
+    glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
     glDrawBuffer(GL_BACK);
-    glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
