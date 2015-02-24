@@ -290,7 +290,7 @@ void ColorCalibrator::update()
 
         // Also, we set some parameters to default as they interfer with the calibration
         world->sendMessage(camName, "brightness", {1.0});
-        world->sendMessage(camName, "colorTemperature", {65.0});
+        world->sendMessage(camName, "colorTemperature", {6500.0});
     }
 
     //
