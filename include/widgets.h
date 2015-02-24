@@ -103,6 +103,12 @@ class GuiGlobalView : public GuiWidget
 
         void processKeyEvents();
         void processMouseEvents();
+
+        // Actions
+        void doCalibration();
+        void switchHideOtherCameras();
+        void nextCamera();
+        void showAllCalibrationPoints();
 };
 
 /*************/

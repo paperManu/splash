@@ -165,10 +165,10 @@ class Gui : public BaseObject
         ImGuiWindowFlags _windowFlags {0};
         std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
 
-        // GLV related attributes
+        // Gui related attributes
         bool _isVisible {false};
-        bool _doNotRender {false};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
+        bool _wireframe {false};
 
         /**
          * Initialize ImGui
@@ -182,14 +182,14 @@ class Gui : public BaseObject
         static void imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count);
 
         /**
-         * Initialize GLV
+         * Actions
          */
-        void initGLV(int width, int height);
-
-        /**
-         * Update the content of the GLV widgets
-         */
-        void updateGLV();
+        void activateLUT();
+        void calibrateColorResponseFunction();
+        void calibrateColors();
+        void computeBlending();
+        void flashBackground();
+        void saveConfiguration();
 
         /**
          * Register new functors to modify attributes

@@ -109,6 +109,63 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 }
 
 /*************/
+void Gui::computeBlending()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("computeBlending");
+}
+
+/*************/
+void Gui::activateLUT()
+{
+    auto scene = _scene.lock();
+    vector<CameraPtr> cameras;
+    for (auto& obj : scene->_objects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& cam : cameras)
+    {
+        scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
+        scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorMixMatrix", 2});
+    }
+}
+
+/*************/
+void Gui::calibrateColorResponseFunction()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("calibrateColorResponseFunction");
+}
+
+/*************/
+void Gui::calibrateColors()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("calibrateColor");
+}
+
+/*************/
+void Gui::saveConfiguration()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("save");
+}
+
+/*************/
+void Gui::flashBackground()
+{
+    auto scene = _scene.lock();
+    if (_flashBG)
+        scene->sendMessageToWorld("flashBG", {0});
+    else
+        scene->sendMessageToWorld("flashBG", {1});
+    _flashBG = !_flashBG;
+}
+
+/*************/
 void Gui::key(int key, int action, int mods)
 {
     switch (key)
@@ -144,8 +201,7 @@ void Gui::key(int key, int action, int mods)
     {
         if (action == GLFW_PRESS)
         {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("computeBlending");
+            computeBlending();
         }
         break;
     }
@@ -154,69 +210,40 @@ void Gui::key(int key, int action, int mods)
     {
         if (action == GLFW_PRESS)
         {
-            auto scene = _scene.lock();
-            vector<CameraPtr> cameras;
-            for (auto& obj : scene->_objects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& obj : scene->_ghostObjects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& cam : cameras)
-            {
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorMixMatrix", 2});
-            }
+            activateLUT();
         }
         break;
     }
     case GLFW_KEY_O:
     {
         if (action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("calibrateColorResponseFunction");
-        }
+            calibrateColorResponseFunction();
         break;
     }
     case GLFW_KEY_P:
     {
         if (action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("calibrateColor");
-        }
+            calibrateColors();
         break;
     }
 #endif
     case GLFW_KEY_S:
     {
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("save");
-        }
+            saveConfiguration();
         break;
     }
     case GLFW_KEY_F:
     {
         if (action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-
-            if (_flashBG)
-                scene->sendMessageToWorld("flashBG", {0});
-            else
-                scene->sendMessageToWorld("flashBG", {1});
-
-            _flashBG = !_flashBG;
-        }
+            flashBackground();
         break;
     }
     // Switch the rendering to textured
     case GLFW_KEY_T: 
     {
         auto scene = _scene.lock();
+        _wireframe = false;
         scene->sendMessageToWorld("wireframe", {0});
         break;
     }
@@ -224,6 +251,7 @@ void Gui::key(int key, int action, int mods)
     case GLFW_KEY_W:
     {
         auto scene = _scene.lock();
+        _wireframe = true;
         scene->sendMessageToWorld("wireframe", {1});
         break;
     }
@@ -332,6 +360,43 @@ bool Gui::render()
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(600, 800), 0.95f, _windowFlags);
         _windowFlags = 0;
+
+        // Some global buttons
+        if (ImGui::CollapsingHeader("Base commands", nullptr, true, true))
+        {
+#if HAVE_GPHOTO
+            ImGui::Columns(2);
+            ImGui::Text("General");
+            ImGui::NextColumn();
+            ImGui::Text("Color calibration");
+            ImGui::NextColumn();
+            ImGui::Separator();
+#endif
+            if (ImGui::Button("Save configuration"))
+                saveConfiguration();
+            if (ImGui::Button("Compute blending map"))
+                computeBlending();
+            if (ImGui::Button("Flash background"))
+                flashBackground();
+            if (ImGui::Button("Wireframe / Textured"))
+            {
+                auto scene = _scene.lock();
+                _wireframe = !_wireframe;
+                scene->sendMessageToWorld("wireframe", {(int)_wireframe});
+            }
+#if HAVE_GPHOTO
+            ImGui::NextColumn();
+            if (ImGui::Button("Calibrate camera response"))
+                calibrateColorResponseFunction();
+            if (ImGui::Button("Calibrate displays / projectors"))
+                calibrateColors();
+            if (ImGui::Button("Activate correction"))
+                activateLUT();
+            ImGui::Columns(1);
+#endif
+        }
+
+        // Specific widgets
         for (auto& widget : _guiWidgets)
         {
             widget->render();
@@ -385,7 +450,6 @@ void Gui::setOutputSize(int width, int height)
 
     _width = width;
     _height = height;
-    //_doNotRender = false;
 
     initImGui(width, height);
     _window->releaseContext();
@@ -753,11 +817,6 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
     glDisable(GL_SCISSOR_TEST);
     glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
-}
-
-/*************/
-void Gui::initGLV(int width, int height)
-{
 }
 
 /*************/

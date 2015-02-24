@@ -224,7 +224,20 @@ void GuiGlobalView::render()
             _camWidth = w;
             _camHeight = h;
 
+            if (ImGui::Button("Next camera"))
+                nextCamera();
+            ImGui::SameLine();
+            if (ImGui::Button("Hide other cameras"))
+                switchHideOtherCameras();
+            ImGui::SameLine();
+            if (ImGui::Button("Show all points"))
+                showAllCalibrationPoints();
+            ImGui::SameLine();
+            if (ImGui::Button("Calibrate camera"))
+                doCalibration();
+
             ImGui::Text(("Current camera: " + _camera->getName()).c_str());
+
             ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHovered())
             {
@@ -262,126 +275,153 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
+void GuiGlobalView::nextCamera()
+{
+    auto scene = _scene.lock();
+    vector<CameraPtr> cameras;
+    for (auto& obj : scene->_objects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+    // Ensure that all cameras are shown
+    _camerasHidden = false;
+    for (auto& cam : cameras)
+        scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+
+    scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
+    scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+
+    if (cameras.size() == 0)
+        _camera = _guiCamera;
+    else if (_camera == _guiCamera)
+        _camera = cameras[0];
+    else
+    {
+        for (int i = 0; i < cameras.size(); ++i)
+        {
+            if (cameras[i] == _camera && i == cameras.size() - 1)
+            {
+                _camera = _guiCamera;
+                break;
+            }
+            else if (cameras[i] == _camera)
+            {
+                _camera = cameras[i + 1];
+                break;
+            }
+        }
+    }
+
+    if (_camera != _guiCamera)
+    {
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+    }
+
+    return;
+}
+
+/*************/
+void GuiGlobalView::showAllCalibrationPoints()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
+}
+
+/*************/
+void GuiGlobalView::doCalibration()
+{
+     // We keep the current values
+    _camera->getAttribute("eye", _eye);
+    _camera->getAttribute("target", _target);
+    _camera->getAttribute("up", _up);
+    _camera->getAttribute("fov", _fov);
+    _camera->getAttribute("principalPoint", _principalPoint);
+
+    // Calibration
+    _camera->doCalibration();
+
+    bool isDistant {false};
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_ghostObjects)
+        if (_camera->getName() == obj.second->getName())
+            isDistant = true;
+    
+    if (isDistant)
+    {
+        vector<string> properties {"eye", "target", "up", "fov", "principalPoint"};
+        auto scene = _scene.lock();
+        for (auto& p : properties)
+        {
+            Values values;
+            _camera->getAttribute(p, values);
+
+            Values sendValues {_camera->getName(), p};
+            for (auto& v : values)
+                sendValues.push_back(v);
+
+            scene->sendMessageToWorld("sendAll", sendValues);
+        }
+    }
+
+    return;
+}
+
+/*************/
+void GuiGlobalView::switchHideOtherCameras()
+{
+    auto scene = _scene.lock();
+    vector<CameraPtr> cameras;
+    for (auto& obj : scene->_objects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+    if (!_camerasHidden)
+    {
+        for (auto& cam : cameras)
+            if (cam.get() != _camera.get())
+                scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 1});
+        _camerasHidden = true;
+    }
+    else
+    {
+        for (auto& cam : cameras)
+            if (cam.get() != _camera.get())
+                scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+        _camerasHidden = false;
+    }
+}
+
+/*************/
 void GuiGlobalView::processKeyEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     if (io.KeysDown[' '] && io.KeysDownTime[' '] == 0.0)
     {
-        auto scene = _scene.lock();
-        vector<CameraPtr> cameras;
-        for (auto& obj : scene->_objects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-        for (auto& obj : scene->_ghostObjects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-
-        // Ensure that all cameras are shown
-        _camerasHidden = false;
-        for (auto& cam : cameras)
-            scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
-
-        scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
-        scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
-
-        if (cameras.size() == 0)
-            _camera = _guiCamera;
-        else if (_camera == _guiCamera)
-            _camera = cameras[0];
-        else
-        {
-            for (int i = 0; i < cameras.size(); ++i)
-            {
-                if (cameras[i] == _camera && i == cameras.size() - 1)
-                {
-                    _camera = _guiCamera;
-                    break;
-                }
-                else if (cameras[i] == _camera)
-                {
-                    _camera = cameras[i + 1];
-                    break;
-                }
-            }
-        }
-
-        if (_camera != _guiCamera)
-        {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
-        }
-
+        nextCamera();
         return;
     }
     else if (io.KeysDown['A'] && io.KeysDownTime['A'] == 0.0)
     {
-        auto scene = _scene.lock();
-        scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
+        showAllCalibrationPoints();
         return;
     }
     else if (io.KeysDown['C'] && io.KeysDownTime['C'] == 0.0)
     {
-         // We keep the current values
-        _camera->getAttribute("eye", _eye);
-        _camera->getAttribute("target", _target);
-        _camera->getAttribute("up", _up);
-        _camera->getAttribute("fov", _fov);
-        _camera->getAttribute("principalPoint", _principalPoint);
-
-        // Calibration
-        _camera->doCalibration();
-
-        bool isDistant {false};
-        auto scene = _scene.lock();
-        for (auto& obj : scene->_ghostObjects)
-            if (_camera->getName() == obj.second->getName())
-                isDistant = true;
-        
-        if (isDistant)
-        {
-            vector<string> properties {"eye", "target", "up", "fov", "principalPoint"};
-            auto scene = _scene.lock();
-            for (auto& p : properties)
-            {
-                Values values;
-                _camera->getAttribute(p, values);
-
-                Values sendValues {_camera->getName(), p};
-                for (auto& v : values)
-                    sendValues.push_back(v);
-
-                scene->sendMessageToWorld("sendAll", sendValues);
-            }
-        }
-
+        doCalibration();
         return;
     }
     else if (io.KeysDown['H'] && io.KeysDownTime['H'] == 0.0)
     {
-        auto scene = _scene.lock();
-        vector<CameraPtr> cameras;
-        for (auto& obj : scene->_objects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-        for (auto& obj : scene->_ghostObjects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-
-        if (!_camerasHidden)
-        {
-            for (auto& cam : cameras)
-                if (cam.get() != _camera.get())
-                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 1});
-            _camerasHidden = true;
-        }
-        else
-        {
-            for (auto& cam : cameras)
-                if (cam.get() != _camera.get())
-                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
-            _camerasHidden = false;
-        }
+        switchHideOtherCameras();
+        return;
     }
     // Reset to the previous camera calibration
     else if (io.KeysDown['R'] && io.KeysDownTime['R'] == 0.0)
