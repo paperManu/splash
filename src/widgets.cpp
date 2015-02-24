@@ -73,7 +73,7 @@ void GuiControl::render()
 
         for (auto& attr : attributes)
         {
-            if (attr.second.size() > 4)
+            if (attr.second.size() > 4 || attr.second.size() == 0)
                 continue;
 
             if (attr.second[0].getType() == Value::Type::i
@@ -147,6 +147,30 @@ void GuiControl::render()
                             scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
                             scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
                         }
+                    }
+                }
+            }
+            else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
+            {
+                // We skip anything that looks like a vector / matrix
+                // (for usefulness reasons...)
+                Values values = attr.second[0].asValues();
+                if (values.size() > 16)
+                {
+                    if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
+                    {
+                        float minValue = numeric_limits<float>::max();
+                        float maxValue = numeric_limits<float>::min();
+                        vector<float> samples;
+                        for (auto& v : values)
+                        {
+                            float value = v.asFloat();
+                            maxValue = std::max(value, maxValue);
+                            minValue = std::min(value, minValue);
+                            samples.push_back(value);
+                        }
+                        
+                        ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
                     }
                 }
             }
