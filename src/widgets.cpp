@@ -213,6 +213,8 @@ void GuiGlobalView::render()
     {
         if (_camera != nullptr)
         {
+            _camera->render();
+
             Values size;
             _camera->getAttribute("size", size);
 

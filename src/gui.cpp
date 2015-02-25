@@ -337,26 +337,12 @@ bool Gui::render()
     GLenum error = glGetError();
 #endif
 
-    // We render the gui Camera now, for context reasons
-    if (_isVisible)
-        _guiCamera->render();
-
-    _window->setAsCurrentContext();
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
-
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     if (_isVisible)
     {
         using namespace ImGui;
 
         ImGuiIO& io = GetIO();
         ImGui::NewFrame();
-        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(600, 800), 0.95f, _windowFlags);
         _windowFlags = 0;
@@ -413,7 +399,22 @@ bool Gui::render()
         io.DeltaTime = (float)(currentTime - time);
         time = currentTime;
 
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, fboBuffers);
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         ImGui::Render();
+    }
+    else
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, fboBuffers);
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT);
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -423,14 +424,10 @@ bool Gui::render()
     _outTexture->generateMipmap();
 
 #ifdef DEBUG
-        error = glGetError();
-        if (error)
-            SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
-#endif
+    error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 
-    _window->releaseContext();
-
-#ifdef DEBUG
     return error != 0 ? true : false;
 #else
     return false;
