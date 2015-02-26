@@ -860,6 +860,21 @@ void ColorCalibrator::registerAttributes()
     }, [&]() -> Values {
         return {_hdrStep};
     });
+
+    _attribFunctions["equalizeMethod"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _equalizationMethod = std::max(0, std::min(2, args[0].asInt()));
+        if (_equalizationMethod == 0)
+            equalizeWhiteBalances = std::bind(&ColorCalibrator::equalizeWhiteBalancesOnly, this);
+        else if (_equalizationMethod == 1)
+            equalizeWhiteBalances = std::bind(&ColorCalibrator::equalizeWhiteBalancesFromWeakestLum, this);
+        else if (_equalizationMethod == 2)
+            equalizeWhiteBalances = std::bind(&ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum, this);
+        return true;
+    }, [&]() -> Values {
+        return {_equalizationMethod};
+    });
 }
 
 } // end of namespace

@@ -344,7 +344,7 @@ bool Gui::render()
         ImGuiIO& io = GetIO();
         ImGui::NewFrame();
 
-        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(600, 800), 0.95f, _windowFlags);
+        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 800), 0.95f, _windowFlags);
         _windowFlags = 0;
 
         // Some global buttons

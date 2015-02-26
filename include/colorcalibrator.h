@@ -118,6 +118,7 @@ class ColorCalibrator : public BaseObject
         double _minimumROIArea {0.005}; // Minimum area size for projection detection, as a fraction of the image size
         int _imagePerHDR {1}; // Number of images taken for each color-measuring HDR
         double _hdrStep {1.0}; // Stops between images taken for color-measuring HDR
+        int _equalizationMethod {2}; //
 
         std::vector<CalibrationParams> _calibrationParams;
 
