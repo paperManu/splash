@@ -179,7 +179,7 @@ void ColorCalibrator::update()
 
             // Update min and max values, added to the black level
             minValues[c] = params.curves[c][0].second[c];
-            maxValues[c] = params.curves[c][samples].second[c];
+            maxValues[c] = params.curves[c][samples - 1].second[c];
         }
 
         params.minValues = minValues;
