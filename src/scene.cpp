@@ -977,16 +977,6 @@ void Scene::registerAttributes()
         });
         return true;
     });
-
-    _attribFunctions["calibrateColorSetParameter"] = AttributeFunctor([&](Values args) {
-        if (args.size() != 2 || args[0].getType() != Value::Type::s)
-            return false;
-
-        string name = args[0].asString();
-        _colorCalibrator->setAttribute(name, {args[1]});
-
-        return true;
-    });
 #endif
 
 }
