@@ -2,6 +2,9 @@
 #include "timer.h"
 
 #include "image.h"
+#if HAVE_GPHOTO
+#include "image_gphoto.h"
+#endif
 #include "image_shmdata.h"
 #include "link.h"
 #include "log.h"
@@ -9,11 +12,6 @@
 #include "mesh_shmdata.h"
 #include "scene.h"
 #include "threadpool.h"
-
-#if HAVE_GPHOTO
-#include "colorcalibrator.h"
-#include "image_gphoto.h"
-#endif
 
 #include <chrono>
 #include <fstream>
@@ -582,43 +580,6 @@ void World::setAttribute(string name, string attrib, Values args)
 /*************/
 void World::registerAttributes()
 {
-#if HAVE_GPHOTO
-    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
-        if (_colorCalibrator == nullptr)
-            _colorCalibrator = make_shared<ColorCalibrator>(_self);
-        // This needs to be launched in another thread, as the set mutex is already locked
-        // (and we will need it later)
-        SThread::pool.enqueue([&]() {
-            _colorCalibrator->update();
-        });
-        return true;
-    });
-
-    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
-        if (_colorCalibrator == nullptr)
-            _colorCalibrator = make_shared<ColorCalibrator>(_self);
-        // This needs to be launched in another thread, as the set mutex is already locked
-        // (and we will need it later)
-        SThread::pool.enqueue([&]() {
-            _colorCalibrator->updateCRF();
-        });
-        return true;
-    });
-
-    _attribFunctions["calibrateColorSetParameter"] = AttributeFunctor([&](Values args) {
-        if (args.size() != 2 || args[0].getType() != Value::Type::s)
-            return false;
-
-        if (_colorCalibrator == nullptr)
-            _colorCalibrator = make_shared<ColorCalibrator>(_self);
-
-        string name = args[0].asString();
-        _colorCalibrator->setAttribute(name, {args[1]});
-
-        return true;
-    });
-#endif
-
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
         _childProcessLaunched = true;
         return true;

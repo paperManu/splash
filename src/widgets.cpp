@@ -4,6 +4,10 @@
 #include "scene.h"
 #include "timer.h"
 
+#if HAVE_GPHOTO
+#include "colorcalibrator.h"
+#endif
+
 #include <imgui.h>
 
 using namespace std;
@@ -610,39 +614,6 @@ void GuiGraph::render()
             maxValue = ceil(maxValue * 0.1f) * 10.f;
 
             ImGui::PlotLines(duration.first.c_str(), values.data(), values.size(), values.size(), (to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(0, 80));
-        }
-    }
-}
-
-/*************/
-void GuiColorCalibration::render()
-{
-    if (ImGui::CollapsingHeader(_name.c_str()))
-    {
-        auto scene = _scene.lock();
-        
-        float step = 1.f;
-        if (ImGui::InputFloat("Color samples", &_colorCurveSamples, step, step, 0))
-        {
-            _colorCurveSamples = std::max(3.f, _colorCurveSamples);
-            scene->sendMessageToWorld("calibrateColorSetParameter", {"colorSamples", round(_colorCurveSamples)});
-        }
-        step = 0.1f;
-        if (ImGui::InputFloat("Detection threshold", &_displayDetectionThreshold, step, step, 1))
-        {
-            scene->sendMessageToWorld("calibrateColorSetParameter", {"detectionThresholdFactor", _displayDetectionThreshold});
-        }
-        step = 1.f;
-        if (ImGui::InputFloat("Image per HDR", &_imagePerHDR, step, step, 0))
-        {
-            _imagePerHDR = std::max(1.f, _imagePerHDR);
-            scene->sendMessageToWorld("calibrateColorSetParameter", {"imagePerHDR", round(_imagePerHDR)});
-        }
-        step = 0.1f;
-        if (ImGui::InputFloat("HDR step", &_hdrStep, step, step, 1))
-        {
-            _hdrStep = std::max(0.3f, _hdrStep);
-            scene->sendMessageToWorld("calibrateColorSetParameter", {"hdrStep", _hdrStep});
         }
     }
 }

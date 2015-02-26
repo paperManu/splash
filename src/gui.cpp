@@ -137,14 +137,14 @@ void Gui::activateLUT()
 void Gui::calibrateColorResponseFunction()
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("calibrateColorResponseFunction");
+    scene->setAttribute("calibrateColorResponseFunction", {});
 }
 
 /*************/
 void Gui::calibrateColors()
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("calibrateColor");
+    scene->setAttribute("calibrateColor", {});
 }
 
 /*************/
@@ -721,13 +721,6 @@ void Gui::initImWidgets()
         return text;
     });
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
-
-#if HAVE_GPHOTO
-    // Color calibration
-    shared_ptr<GuiColorCalibration> colorCalibrationView = make_shared<GuiColorCalibration>("Color calibration parameters");
-    colorCalibrationView->setScene(_scene);
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(colorCalibrationView));
-#endif
 
     // Control
     shared_ptr<GuiControl> controlView = make_shared<GuiControl>("Controls");

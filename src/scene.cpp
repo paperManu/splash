@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include <utility>
+
 #include "camera.h"
 #include "geometry.h"
 #include "gui.h"
@@ -13,6 +15,10 @@
 #include "threadpool.h"
 #include "timer.h"
 #include "window.h"
+
+#if HAVE_GPHOTO
+#include "colorcalibrator.h"
+#endif
 
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
@@ -43,6 +49,13 @@ Scene::Scene(std::string name)
     _textureUploadLoop = thread([&]() {
         textureUploadRun();
     });
+
+#if HAVE_GPHOTO
+    // Initialize the color calibration object
+    _colorCalibrator = make_shared<ColorCalibrator>(_self);
+    _colorCalibrator->setName("colorCalibrator");
+    _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
+#endif
 }
 
 /*************/
@@ -644,6 +657,19 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 }
 
 /*************/
+Values Scene::getObjectsNameByType(string type)
+{
+    Values list;
+    for (auto& obj : _objects)
+        if (obj.second->getType() == type)
+            list.push_back(obj.second->getName());
+    for (auto& obj : _ghostObjects)
+        if (obj.second->getType() == type)
+            list.push_back(obj.second->getName());
+    return list;
+}
+
+/*************/
 void Scene::init(std::string name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
@@ -825,13 +851,7 @@ void Scene::registerAttributes()
         if (args.size() < 1)
             return false;
         string type = args[0].asString();
-        Values list;
-        for (auto& obj : _objects)
-            if (obj.second->getType() == type)
-                list.push_back(obj.second->getName());
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == type)
-                list.push_back(obj.second->getName());
+        Values list = getObjectsNameByType(type);
         sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
         return true;
     });
@@ -938,6 +958,37 @@ void Scene::registerAttributes()
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
         return true;
     });
+
+#if HAVE_GPHOTO
+    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->update();
+        });
+        return true;
+    });
+
+    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->updateCRF();
+        });
+        return true;
+    });
+
+    _attribFunctions["calibrateColorSetParameter"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 2 || args[0].getType() != Value::Type::s)
+            return false;
+
+        string name = args[0].asString();
+        _colorCalibrator->setAttribute(name, {args[1]});
+
+        return true;
+    });
+#endif
+
 }
 
 } // end of namespace

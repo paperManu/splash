@@ -45,10 +45,6 @@ typedef std::shared_ptr<World> WorldPtr;
 /*************/
 class World : public RootObject
 {
-#if HAVE_GPHOTO
-    friend ColorCalibrator;
-#endif
-
     public:
         /**
          * Constructor
@@ -95,11 +91,6 @@ class World : public RootObject
         // List of actions to do during the next loop
         bool _doComputeBlending {false};
         bool _doSaveConfig {false};
-
-        // Objects in charge of calibration
-#if HAVE_GPHOTO
-        ColorCalibratorPtr _colorCalibrator;
-#endif
 
         /**
          * Add an object to the world (used for Images and Meshes currently)

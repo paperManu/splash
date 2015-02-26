@@ -141,22 +141,6 @@ class GuiGraph : public GuiWidget
         std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
-/*************/
-class GuiColorCalibration : public GuiWidget
-{
-    public:
-        GuiColorCalibration(std::string name) : GuiWidget(name) {}
-        void render();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
-
-    private:
-        SceneWeakPtr _scene;
-        float _colorCurveSamples {5.f};
-        float _displayDetectionThreshold {1.f};
-        float _imagePerHDR {1.f};
-        float _hdrStep {1.f};
-};
-
 } // end of namespace
 
 #endif // SPLASH_WIDGETS_H

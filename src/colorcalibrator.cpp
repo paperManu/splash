@@ -19,7 +19,7 @@
 #include "log.h"
 #include "timer.h"
 #include "threadpool.h"
-#include "world.h"
+#include "scene.h"
 
 using namespace std;
 
@@ -34,9 +34,9 @@ void gslErrorHandler(const char* reason, const char* file, int line, int gsl_err
 }
 
 /*************/
-ColorCalibrator::ColorCalibrator(std::weak_ptr<World> world)
+ColorCalibrator::ColorCalibrator(std::weak_ptr<Scene> scene)
 {
-    _world = world;
+    _scene = scene;
     registerAttributes();
 
     // Set up the calibration strategy
@@ -65,9 +65,9 @@ void ColorCalibrator::update()
         return;
     }
 
-    auto world = _world.lock();
+    auto scene = _scene.lock();
     // Get the Camera list
-    Values cameraList = world->getObjectsNameByType("camera");
+    Values cameraList = scene->getObjectsNameByType("camera");
 
     _calibrationParams.clear();
     for (auto& cam : cameraList)
@@ -84,20 +84,20 @@ void ColorCalibrator::update()
     // All cameras to white
     for (auto& params : _calibrationParams)
     {
-        world->sendMessage(params.camName, "hide", {1});
-        world->sendMessage(params.camName, "flashBG", {1});
-        world->sendMessage(params.camName, "clearColor", {0.7, 0.7, 0.7, 1.0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 1});
+        scene->sendMessageToWorld("sendAll", {params.camName, "flashBG", 1});
+        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.7, 0.7, 0.7, 1.0});
     }
     mediumExposureTime = findCorrectExposure();
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
 
     for (auto& params : _calibrationParams)
-        world->sendMessage(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
 
     // All cameras to normal
     for (auto& params : _calibrationParams)
-        world->sendMessage(params.camName, "hide", {0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 0});
 
     //
     // Compute the camera response function
@@ -106,7 +106,7 @@ void ColorCalibrator::update()
         captureHDR(9, 0.33);
 
     for (auto& params : _calibrationParams)
-        world->sendMessage(params.camName, "hide", {1});
+        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 1});
 
 
     //
@@ -117,15 +117,15 @@ void ColorCalibrator::update()
     for (auto& params : _calibrationParams)
     {
         // Activate the target projector
-        world->sendMessage(params.camName, "clearColor", {1.0, 1.0, 1.0, 1.0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 1.0, 1.0, 1.0, 1.0});
         hdr = captureHDR(1);
         if (nullptr == hdr)
             return;
 
         // Activate all the other ones
         for (auto& otherCam : cameraList)
-            world->sendMessage(otherCam.asString(), "clearColor", {1.0, 1.0, 1.0, 1.0});
-        world->sendMessage(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+            scene->sendMessageToWorld("sendAll", {otherCam.asString(), "clearColor", 1.0, 1.0, 1.0, 1.0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
         shared_ptr<pic::Image> othersHdr = captureHDR(1);
         if (nullptr == othersHdr)
             return;
@@ -136,7 +136,7 @@ void ColorCalibrator::update()
         diffHdr->clamp(0.f, numeric_limits<float>::max());
         params.maskROI = getMaskROI(diffHdr);
         for (auto& otherCam : cameraList)
-            world->sendMessage(otherCam.asString(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+            scene->sendMessageToWorld("sendAll", {otherCam.asString(), "clearColor", 0.0, 0.0, 0.0, 1.0});
 
         // Save the camera center for later use
         params.whitePoint = getMeanValue(hdr, params.maskROI);
@@ -162,7 +162,7 @@ void ColorCalibrator::update()
                 Values color(4, 0.0);
                 color[c] = x;
                 color[3] = 1.0;
-                world->sendMessage(camName, "clearColor", color);
+                scene->sendMessageToWorld("sendAll", {camName, "clearColor", color[0], color[1], color[2], color[3]});
 
                 // Set approximately the exposure
                 _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
@@ -173,7 +173,7 @@ void ColorCalibrator::update()
                 vector<float> values = getMeanValue(hdr, params.maskROI);
                 params.curves[c].push_back(Point(x, values));
 
-                world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+                scene->sendMessageToWorld("sendAll", {camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
                 SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
             }
 
@@ -206,7 +206,7 @@ void ColorCalibrator::update()
             highValues[c] = params.curves[c][_colorCurveSamples - 1].second;
         }
 
-        world->sendMessage(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+        scene->sendMessageToWorld("sendAll", {camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
 
         for (int c = 0; c < 3; ++c)
             for (int otherC = 0; otherC < 3; ++otherC)
@@ -278,19 +278,19 @@ void ColorCalibrator::update()
             for (unsigned int c = 0; c < 3; ++c)
                 lut.push_back(params.projectorCurves[c][v].second[c]);
 
-        world->sendMessage(camName, "colorLUT", {lut});
-        world->sendMessage(camName, "activateColorLUT", {1});
+        scene->sendMessageToWorld("sendAll", {camName, "colorLUT", lut});
+        scene->sendMessageToWorld("sendAll", {camName, "activateColorLUT", 1});
 
         Values m(9);
         for (int u = 0; u < 3; ++u)
             for (int v = 0; v < 3; ++v)
                 m[u*3 + v] = params.mixRGB[u][v];
 
-        world->sendMessage(camName, "colorMixMatrix", {m});
+        scene->sendMessageToWorld("sendAll", {camName, "colorMixMatrix", m});
 
         // Also, we set some parameters to default as they interfer with the calibration
-        world->sendMessage(camName, "brightness", {1.0});
-        world->sendMessage(camName, "colorTemperature", {6500.0});
+        scene->sendMessageToWorld("sendAll", {camName, "brightness", 1.0});
+        scene->sendMessageToWorld("sendAll", {camName, "colorTemperature", 6500.0});
     }
 
     //
@@ -298,9 +298,9 @@ void ColorCalibrator::update()
     //
     for (auto& params : _calibrationParams)
     {
-        world->sendMessage(params.camName, "hide", {0});
-        world->sendMessage(params.camName, "flashBG", {0});
-        world->sendMessage(params.camName, "clearColor", {});
+        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "flashBG", 0});
+        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor"});
     }
 
     SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;

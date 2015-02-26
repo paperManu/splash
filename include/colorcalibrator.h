@@ -49,7 +49,7 @@ class ColorCalibrator : public BaseObject
         /**
          * Constructor
          */
-        ColorCalibrator(std::weak_ptr<World> world);
+        ColorCalibrator(std::weak_ptr<Scene> scene);
 
         /**
          * Destructor
@@ -109,7 +109,7 @@ class ColorCalibrator : public BaseObject
         //
         // Attributes
         //
-        std::weak_ptr<World> _world;
+        std::weak_ptr<Scene> _scene;
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
