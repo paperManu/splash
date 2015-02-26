@@ -132,7 +132,7 @@ void ColorCalibrator::update()
 
         shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
         *diffHdr = *hdr;
-        *diffHdr -= (*othersHdr * 2.f);
+        *diffHdr -= (*othersHdr * _displayDetectionThreshold);
         diffHdr->clamp(0.f, numeric_limits<float>::max());
         params.maskROI = getMaskROI(diffHdr);
         for (auto& otherCam : cameraList)
@@ -167,7 +167,7 @@ void ColorCalibrator::update()
                 // Set approximately the exposure
                 _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
-                hdr = captureHDR(1, 1.0);
+                hdr = captureHDR(_imagePerHDR, _hdrStep);
                 if (nullptr == hdr)
                     return;
                 vector<float> values = getMeanValue(hdr, params.maskROI);
@@ -825,6 +825,41 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 /*************/
 void ColorCalibrator::registerAttributes()
 {
+    _attribFunctions["colorSamples"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _colorCurveSamples = std::max(3, args[0].asInt());
+        return true;
+    }, [&]() -> Values {
+        return {(int)_colorCurveSamples};
+    });
+
+    _attribFunctions["detectionThresholdFactor"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _displayDetectionThreshold = std::max(0.5f, args[0].asFloat());
+        return true;
+    }, [&]() -> Values {
+        return {_displayDetectionThreshold};
+    });
+
+    _attribFunctions["imagePerHDR"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _imagePerHDR = std::max(1, args[0].asInt());
+        return true;
+    }, [&]() -> Values {
+        return {_imagePerHDR};
+    });
+
+    _attribFunctions["hdrStep"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        _hdrStep = std::max(0.3f, args[0].asFloat());
+        return true;
+    }, [&]() -> Values {
+        return {_hdrStep};
+    });
 }
 
 } // end of namespace

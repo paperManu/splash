@@ -114,7 +114,10 @@ class ColorCalibrator : public BaseObject
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
         unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
+        double _displayDetectionThreshold {1.f}; // Coefficient applied while detecting displays / projectors, increase to get rid of ambiant lights
         double _minimumROIArea {0.005}; // Minimum area size for projection detection, as a fraction of the image size
+        int _imagePerHDR {1}; // Number of images taken for each color-measuring HDR
+        double _hdrStep {1.0}; // Stops between images taken for color-measuring HDR
 
         std::vector<CalibrationParams> _calibrationParams;
 

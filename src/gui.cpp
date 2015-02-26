@@ -722,6 +722,13 @@ void Gui::initImWidgets()
     });
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 
+#if HAVE_GPHOTO
+    // Color calibration
+    shared_ptr<GuiColorCalibration> colorCalibrationView = make_shared<GuiColorCalibration>("Color calibration parameters");
+    colorCalibrationView->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(colorCalibrationView));
+#endif
+
     // Control
     shared_ptr<GuiControl> controlView = make_shared<GuiControl>("Controls");
     controlView->setScene(_scene);
