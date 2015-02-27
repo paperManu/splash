@@ -644,13 +644,13 @@ void Gui::initImWidgets()
         string text;
         text += "Tab: show / hide this GUI\n";
         text += "Shortcuts for the calibration view:\n";
-        text += " Space: switcher between cameras\n";
+        text += " Space: switche between cameras (when hovering the Views panel)\n";
         text += " A: show / hide the target calibration point\n";
         text += " F: white background instead of black\n";
-        text += " C: calibrate the selected camera\n";
-        text += " R: revert camera to previous calibration\n";
+        text += " C: calibrate the selected camera (when hovering the Views panel)\n";
+        text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
         text += " B: compute the blending between all cameras\n";
-        text += " H: hide all but the selected camera\n";
+        text += " H: hide all but the selected camera (when hovering the Views panel)\n";
         text += " T: textured draw mode\n";
         text += " W: wireframe draw mode\n";
 #if HAVE_GPHOTO
