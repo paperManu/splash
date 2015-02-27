@@ -446,7 +446,7 @@ struct ShaderSources
                 vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
             }
-            fragColor.a = 1.0;
+            //fragColor.a = 1.0;
 
             if (_gamma.x != 1.0)
                 fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));

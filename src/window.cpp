@@ -205,8 +205,11 @@ bool Window::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
+        if (_guiTexture != nullptr)
+            _screenGui->removeTexture(_guiTexture);
         GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
-        setTexture(gui->getTexture());
+        _guiTexture = gui->getTexture();
+        _screenGui->addTexture(_guiTexture);
         return true;
     }
 
@@ -244,7 +247,11 @@ bool Window::unlinkFrom(BaseObjectPtr obj)
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
         GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
-        unsetTexture(gui->getTexture());
+        if (gui->getTexture() == _guiTexture)
+        {
+            _screenGui->removeTexture(_guiTexture);
+            _guiTexture = nullptr;
+        }
     }
 
     return BaseObject::unlinkFrom(obj);
@@ -267,7 +274,10 @@ bool Window::render()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, fboBuffers);
-    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if (_srgb)
         glEnable(GL_FRAMEBUFFER_SRGB);
@@ -278,9 +288,15 @@ bool Window::render()
     _screen->getShader()->setAttribute("layout", _layout);
     _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
     _screen->activate();
-    //_screen->setViewProjectionMatrix(_viewProjectionMatrix, glm::dmat4(1.f));
     _screen->draw();
     _screen->deactivate();
+
+    if (_guiTexture != nullptr)
+    {
+        _screenGui->activate();
+        _screenGui->draw();
+        _screenGui->deactivate();
+    }
 
     glDeleteSync(_renderFence);
     _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -297,8 +313,12 @@ bool Window::render()
                 resize = false;
     }
     if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
+    {
         for (auto& t : _inTextures)
             t->resize(w, h);
+    }
+    if (_guiTexture != nullptr)
+        _guiTexture->resize(w, h);
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -306,6 +326,7 @@ bool Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 #endif
 
+    glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -533,6 +554,11 @@ bool Window::setProjectionSurface()
     _screen->setAttribute("fill", {"window"});
     GeometryPtr virtualScreen = make_shared<Geometry>();
     _screen->addGeometry(virtualScreen);
+
+    _screenGui = make_shared<Object>();
+    _screenGui->setAttribute("fill", {"window"});
+    virtualScreen = make_shared<Geometry>();
+    _screenGui->addGeometry(virtualScreen);
 
 #ifdef DEBUG
     GLenum error = glGetError();

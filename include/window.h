@@ -170,8 +170,10 @@ class Window : public BaseObject
         GLsync _renderFence;
 
         ObjectPtr _screen;
+        ObjectPtr _screenGui;
         glm::dmat4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;
+        TexturePtr _guiTexture {nullptr}; // The gui has its own texture
 
         static std::mutex _callbackMutex;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys; // Input keys queue

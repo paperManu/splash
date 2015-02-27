@@ -49,13 +49,6 @@ Scene::Scene(std::string name)
     _textureUploadLoop = thread([&]() {
         textureUploadRun();
     });
-
-#if HAVE_GPHOTO
-    // Initialize the color calibration object
-    _colorCalibrator = make_shared<ColorCalibrator>(_self);
-    _colorCalibrator->setName("colorCalibrator");
-    _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
-#endif
 }
 
 /*************/
@@ -81,9 +74,9 @@ BaseObjectPtr Scene::add(string type, string name)
     lock_guard<recursive_mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
-    if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
-    else
+    //if (type == string("gui"))
+    //    obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
+    //else
     {
         // Then, the objects not containing a context
         if(!_mainWindow->setAsCurrentContext())
@@ -123,6 +116,18 @@ BaseObjectPtr Scene::add(string type, string name)
             _objects[to_string(obj->getId())] = obj;
         else
             _objects[name] = obj;
+
+        // Some objects have to be connected to the gui (if the Scene is master)
+        if (_gui != nullptr)
+        {
+            if (obj->getType() == "object")
+                link(obj, dynamic_pointer_cast<BaseObject>(_gui));
+            else if (obj->getType() == "window" && !_guiLinkedToWindow)
+            {
+                link(dynamic_pointer_cast<BaseObject>(_gui), obj);
+                _guiLinkedToWindow = true;
+            }
+        }
     }
 
     return obj;
@@ -302,12 +307,11 @@ void Scene::render()
     _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     lock.unlock();
 
-    // Update the guis
-    STimer::timer << "guis";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "gui")
-            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
-    STimer::timer >> "guis";
+    // Update the gui
+    STimer::timer << "gui";
+    if (_gui != nullptr)
+        isError |= _gui->render();
+    STimer::timer >> "gui";
 
     // Update the windows
     STimer::timer << "windows";
@@ -336,9 +340,8 @@ void Scene::render()
         GLFWwindow* win;
         int xpos, ypos;
         Window::getMousePos(win, xpos, ypos);
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mousePosition(xpos, ypos);
+        if (_gui != nullptr)
+            _gui->mousePosition(xpos, ypos);
     }
 
     // Mouse events
@@ -349,9 +352,8 @@ void Scene::render()
         if (!Window::getMouseBtn(win, btn, action, mods))
             break;
         
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mouseButton(btn, action, mods);
+        if (_gui != nullptr)
+            _gui->mouseButton(btn, action, mods);
     }
 
     // Scrolling events
@@ -362,9 +364,8 @@ void Scene::render()
         if (!Window::getScroll(win, xoffset, yoffset))
             break;
 
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mouseScroll(xoffset, yoffset);
+        if (_gui != nullptr)
+            _gui->mouseScroll(xoffset, yoffset);
     }
 
     // Keyboard events
@@ -396,9 +397,8 @@ void Scene::render()
         }
 
         // Send the action to the GUI
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
+        if (_gui != nullptr)
+            _gui->key(key, action, mods);
     }
 
     // Unicode characters events
@@ -420,9 +420,8 @@ void Scene::render()
             }
 
         // Send the action to the GUI
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->unicodeChar(unicodeChar);
+        if (_gui != nullptr)
+            _gui->unicodeChar(unicodeChar);
     }
 }
 
@@ -481,6 +480,22 @@ void Scene::textureUploadRun()
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
     }
+}
+
+/*************/
+void Scene::setAsMaster()
+{
+    _isMaster = true;
+
+    _gui = make_shared<Gui>(_mainWindow, _self);
+    _gui->setName("gui");
+
+#if HAVE_GPHOTO
+    // Initialize the color calibration object
+    _colorCalibrator = make_shared<ColorCalibrator>(_self);
+    _colorCalibrator->setName("colorCalibrator");
+    _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
+#endif
 }
 
 /*************/
@@ -961,6 +976,8 @@ void Scene::registerAttributes()
 
 #if HAVE_GPHOTO
     _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            return false;
         // This needs to be launched in another thread, as the set mutex is already locked
         // (and we will need it later)
         SThread::pool.enqueue([&]() {
@@ -970,6 +987,8 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            return false;
         // This needs to be launched in another thread, as the set mutex is already locked
         // (and we will need it later)
         SThread::pool.enqueue([&]() {

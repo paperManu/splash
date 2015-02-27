@@ -127,7 +127,7 @@ class Scene : public RootObject
         /**
          * Set the Scene as the master one
          */
-        void setAsMaster() {_isMaster = true;}
+        void setAsMaster();
 
         /**
          * Give a special behavior to the scene, making it the main window of the World
@@ -151,6 +151,9 @@ class Scene : public RootObject
 
         std::map<std::string, BaseObjectPtr> _ghostObjects;
 
+        // Gui exists in master scene whatever the configuration
+        GuiPtr _gui;
+        bool _guiLinkedToWindow {false};
         // Objects in charge of calibration
 #if HAVE_GPHOTO
         ColorCalibratorPtr _colorCalibrator;
