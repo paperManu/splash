@@ -142,6 +142,12 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
 	\
+	$(top_srcdir)/external/imgui/imgui.h \
+	$(top_srcdir)/external/imgui/imconfig.h \
+	$(top_srcdir)/external/imgui/stb_rect_pack.h \
+	$(top_srcdir)/external/imgui/stb_textedit.h \
+	$(top_srcdir)/external/imgui/stb_truetype.h \
+	\
 	$(top_srcdir)/external/libsimdpp/simdpp/null/bitwise.h \
 	$(top_srcdir)/external/libsimdpp/simdpp/null/math.h \
 	$(top_srcdir)/external/libsimdpp/simdpp/null/mask.h \
