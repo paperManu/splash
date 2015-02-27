@@ -1,6 +1,20 @@
 Slash release notes
 ===================
 
+Splash 0.2.4 (2015-xx-xx)
+-------------------------
+
+Splash 0.2.2 (2015-02-27)
+-------------------------
+New features:
+* New GUI, more complete and user friendly, based in ImGui (removed GLV)
+
+Improvements:
+* Fully OpenGL 3 as GLV has been removed. Less context switching.
+
+Bug fixed:
+* A bug in color calibration prevented it to work in some cases
+
 Splash 0.2.0 (2015-02-18)
 -------------------------
 New features:
