@@ -142,7 +142,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
                     tmp.push_back(attr.second[3].asFloat());
-                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
