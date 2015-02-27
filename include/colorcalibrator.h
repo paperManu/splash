@@ -49,7 +49,7 @@ class ColorCalibrator : public BaseObject
         /**
          * Constructor
          */
-        ColorCalibrator(std::weak_ptr<World> world);
+        ColorCalibrator(std::weak_ptr<Scene> scene);
 
         /**
          * Destructor
@@ -109,12 +109,16 @@ class ColorCalibrator : public BaseObject
         //
         // Attributes
         //
-        std::weak_ptr<World> _world;
+        std::weak_ptr<Scene> _scene;
         Image_GPhotoPtr _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
         unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
+        double _displayDetectionThreshold {1.f}; // Coefficient applied while detecting displays / projectors, increase to get rid of ambiant lights
         double _minimumROIArea {0.005}; // Minimum area size for projection detection, as a fraction of the image size
+        int _imagePerHDR {1}; // Number of images taken for each color-measuring HDR
+        double _hdrStep {1.0}; // Stops between images taken for color-measuring HDR
+        int _equalizationMethod {2}; //
 
         std::vector<CalibrationParams> _calibrationParams;
 

@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.2.0, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.2.2, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:2:0])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:2:2])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.2])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.2"], [API version])
 
@@ -62,12 +62,6 @@ PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
     AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected]),
     AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
 AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
-
-# Glew, needed by the embedded GLV library
-PKG_CHECK_MODULES([GLEW], [glew])
-if test "x${have_glew}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing GLEW])
-fi
 
 # OpenImageIO
 AC_LANG_PUSH([C++])

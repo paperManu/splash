@@ -41,7 +41,8 @@
 #include <functional>
 #include <memory>
 #include <GLFW/glfw3.h>
-#include <glv.h>
+//#define ImVector std::vector
+#include <imgui.h>
 
 #include "widgets.h"
 
@@ -77,6 +78,20 @@ class Gui : public BaseObject
             _objects = c._objects;
             _scene = c._scene;
             _guiCamera = c._guiCamera;
+            _guiWidgets = c._guiWidgets;
+
+            _imFontTextureId = c._imFontTextureId;
+            _imGuiShaderHandle = c._imGuiShaderHandle;
+            _imGuiVertHandle = c._imGuiVertHandle;
+            _imGuiFragHandle = c._imGuiFragHandle;
+            _imGuiTextureLocation = c._imGuiTextureLocation;
+            _imGuiProjMatrixLocation = c._imGuiProjMatrixLocation;
+            _imGuiPositionLocation = c._imGuiPositionLocation;
+            _imGuiUVLocation = c._imGuiUVLocation;
+            _imGuiColorLocation = c._imGuiColorLocation;
+            _imGuiVboHandle = c._imGuiVboHandle;
+            _imGuiVaoHandle = c._imGuiVaoHandle;
+            _imGuiVboMaxSize = c._imGuiVboMaxSize;
         }
 
         /**
@@ -90,9 +105,14 @@ class Gui : public BaseObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Forward a unicode char event
+         */
+        void unicodeChar(unsigned int unicodeChar);
+
+        /**
          * Forward a key event
          */
-        void key(int& key, int& action, int& mods);
+        void key(int key, int action, int mods);
 
         /**
          * Forward mouse events
@@ -130,34 +150,46 @@ class Gui : public BaseObject
         // GUI specific camera
         CameraPtr _guiCamera;
 
-        // GLV related attributes
+        // ImGUI related attributes
+        static GLuint _imFontTextureId;
+        static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
+        static GLint _imGuiTextureLocation;
+        static GLint _imGuiProjMatrixLocation;
+        static GLint _imGuiPositionLocation;
+        static GLint _imGuiUVLocation;
+        static GLint _imGuiColorLocation;
+        static GLuint _imGuiVboHandle, _imGuiVaoHandle;
+        static size_t _imGuiVboMaxSize;
+
+        // ImGUI objects
+        ImGuiWindowFlags _windowFlags {0};
+        std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
+
+        // Gui related attributes
         bool _isVisible {false};
-        bool _doNotRender {false};
-        glv::Style _style;
-        glv::GLV _glv;
-        GlvTextBox _glvLog;
-        GlvTextBox _glvProfile;
-        GlvTextBox _glvHelp;
-        GlvGlobalView _glvGlobalView;
-        GlvGraph _glvGraph;
-        GlvControl _glvControl;
-        glv::space_t _prevMouseX {0}, _prevMouseY {0};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
-        
-        /**
-         * Convert GLFW keys values to GLV
-         */
-        int glfwToGlvKey(int key);
+        bool _wireframe {false};
 
         /**
-         * Initialize GLV
+         * Initialize ImGui
          */
-        void initGLV(int width, int height);
+        void initImGui(int width, int height);
+        void initImWidgets();
 
         /**
-         * Update the content of the GLV widgets
+         * ImGui render function
          */
-        void updateGLV();
+        static void imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count);
+
+        /**
+         * Actions
+         */
+        void activateLUT();
+        void calibrateColorResponseFunction();
+        void calibrateColors();
+        void computeBlending();
+        void flashBackground();
+        void saveConfiguration();
 
         /**
          * Register new functors to modify attributes

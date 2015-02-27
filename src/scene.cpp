@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include <utility>
+
 #include "camera.h"
 #include "geometry.h"
 #include "gui.h"
@@ -13,6 +15,10 @@
 #include "threadpool.h"
 #include "timer.h"
 #include "window.h"
+
+#if HAVE_GPHOTO
+#include "colorcalibrator.h"
+#endif
 
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
@@ -68,9 +74,9 @@ BaseObjectPtr Scene::add(string type, string name)
     lock_guard<recursive_mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
-    if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
-    else
+    //if (type == string("gui"))
+    //    obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
+    //else
     {
         // Then, the objects not containing a context
         if(!_mainWindow->setAsCurrentContext())
@@ -110,6 +116,18 @@ BaseObjectPtr Scene::add(string type, string name)
             _objects[to_string(obj->getId())] = obj;
         else
             _objects[name] = obj;
+
+        // Some objects have to be connected to the gui (if the Scene is master)
+        if (_gui != nullptr)
+        {
+            if (obj->getType() == "object")
+                link(obj, dynamic_pointer_cast<BaseObject>(_gui));
+            else if (obj->getType() == "window" && !_guiLinkedToWindow)
+            {
+                link(dynamic_pointer_cast<BaseObject>(_gui), obj);
+                _guiLinkedToWindow = true;
+            }
+        }
     }
 
     return obj;
@@ -289,12 +307,11 @@ void Scene::render()
     _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     lock.unlock();
 
-    // Update the guis
-    STimer::timer << "guis";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "gui")
-            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
-    STimer::timer >> "guis";
+    // Update the gui
+    STimer::timer << "gui";
+    if (_gui != nullptr)
+        isError |= _gui->render();
+    STimer::timer >> "gui";
 
     // Update the windows
     STimer::timer << "windows";
@@ -323,9 +340,8 @@ void Scene::render()
         GLFWwindow* win;
         int xpos, ypos;
         Window::getMousePos(win, xpos, ypos);
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mousePosition(xpos, ypos);
+        if (_gui != nullptr)
+            _gui->mousePosition(xpos, ypos);
     }
 
     // Mouse events
@@ -336,9 +352,8 @@ void Scene::render()
         if (!Window::getMouseBtn(win, btn, action, mods))
             break;
         
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mouseButton(btn, action, mods);
+        if (_gui != nullptr)
+            _gui->mouseButton(btn, action, mods);
     }
 
     // Scrolling events
@@ -349,9 +364,8 @@ void Scene::render()
         if (!Window::getScroll(win, xoffset, yoffset))
             break;
 
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mouseScroll(xoffset, yoffset);
+        if (_gui != nullptr)
+            _gui->mouseScroll(xoffset, yoffset);
     }
 
     // Keyboard events
@@ -383,9 +397,31 @@ void Scene::render()
         }
 
         // Send the action to the GUI
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
+        if (_gui != nullptr)
+            _gui->key(key, action, mods);
+    }
+
+    // Unicode characters events
+    while (true)
+    {
+        GLFWwindow* win;
+        unsigned int unicodeChar;
+        if (!Window::getChars(win, unicodeChar))
+            break;
+
+        // Find where this action happened
+        WindowPtr eventWindow;
+        for (auto& w : _objects)
+            if (w.second->getType() == "window")
+            {
+                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                if (window->isWindow(win))
+                    eventWindow = window;
+            }
+
+        // Send the action to the GUI
+        if (_gui != nullptr)
+            _gui->unicodeChar(unicodeChar);
     }
 }
 
@@ -444,6 +480,22 @@ void Scene::textureUploadRun()
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
     }
+}
+
+/*************/
+void Scene::setAsMaster()
+{
+    _isMaster = true;
+
+    _gui = make_shared<Gui>(_mainWindow, _self);
+    _gui->setName("gui");
+
+#if HAVE_GPHOTO
+    // Initialize the color calibration object
+    _colorCalibrator = make_shared<ColorCalibrator>(_self);
+    _colorCalibrator->setName("colorCalibrator");
+    _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
+#endif
 }
 
 /*************/
@@ -617,6 +669,19 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     glWindow->releaseContext();
 
     return glWindow;
+}
+
+/*************/
+Values Scene::getObjectsNameByType(string type)
+{
+    Values list;
+    for (auto& obj : _objects)
+        if (obj.second->getType() == type)
+            list.push_back(obj.second->getName());
+    for (auto& obj : _ghostObjects)
+        if (obj.second->getType() == type)
+            list.push_back(obj.second->getName());
+    return list;
 }
 
 /*************/
@@ -801,13 +866,7 @@ void Scene::registerAttributes()
         if (args.size() < 1)
             return false;
         string type = args[0].asString();
-        Values list;
-        for (auto& obj : _objects)
-            if (obj.second->getType() == type)
-                list.push_back(obj.second->getName());
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == type)
-                list.push_back(obj.second->getName());
+        Values list = getObjectsNameByType(type);
         sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
         return true;
     });
@@ -914,6 +973,31 @@ void Scene::registerAttributes()
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
         return true;
     });
+
+#if HAVE_GPHOTO
+    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            return false;
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->update();
+        });
+        return true;
+    });
+
+    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            return false;
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->updateCRF();
+        });
+        return true;
+    });
+#endif
+
 }
 
 } // end of namespace

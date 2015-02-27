@@ -4,7 +4,7 @@
     "encoding" : "UTF-8",
 
     "world" : {
-        "framerate" : 300
+        "framerate" : 60
     },
 
     "scenes" : [
@@ -13,14 +13,14 @@
             "address" : "localhost",
             "spawn" : 1,
             "display" : 0,
-            "swapInterval" : 0
+            "swapInterval" : 1
         },
         {
             "name" : "second",
             "address" : "localhost",
             "spawn" : 1,
             "display" : 0,
-            "swapInterval" : 0
+            "swapInterval" : 1
         }
     ],
 
@@ -41,24 +41,21 @@
             "blendWidth" : 0.05,
             "shared" : 0
         },
-        "win1" : {"type" : "window", "fullscreen" : 0},
-        "win2" : {"type" : "window", "fullscreen" : 1},
+        "win1" : {"type" : "window", "fullscreen" : -1},
+        "win2" : {"type" : "window", "fullscreen" : -1},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
         "image" : {"type" : "image", "file" : "color_map_3k.png", "benchmark" : 0},
-        "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-        "gui" : {"type" : "gui"},
+        //"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
 
         "links" : [
             ["mesh", "object"],
             ["object", "cam1"],
             ["object", "cam2"],
-            ["object", "gui"],
-            ["shmimage", "object"],
+            ["image", "object"],
             ["cam1", "win1"],
-            ["cam2", "win2"],
-            ["gui", "win1"]
+            ["cam2", "win2"]
         ]
     },
 
@@ -79,20 +76,19 @@
             "blendWidth" : 0.05,
             "shared" : 0
         },
-        "win3" : {"type" : "window", "fullscreen" : 2},
-        "win4" : {"type" : "window", "fullscreen" : 3},
+        "win3" : {"type" : "window", "fullscreen" : -1},
+        "win4" : {"type" : "window", "fullscreen" : -1},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
         "object" : {"type" : "object", "sideness" : 2},
         "image" : {"type" : "image", "file" : "color_map_3k.png", "benchmark" : 0},
-        "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
+        //"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
 
         "links" : [
             ["mesh", "object"],
             ["object", "cam3"],
             ["object", "cam4"],
-            ["object", "gui"],
-            ["shmimage", "object"],
+            ["image", "object"],
             ["cam3", "win3"],
             ["cam4", "win4"]
         ]

@@ -1228,11 +1228,11 @@ void Camera::registerAttributes()
     _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
         if (args.size() < 1)
             return false;
-        _colorTemperature = args[0].asFloat() * 100.f;
+        _colorTemperature = args[0].asFloat();
         _colorTemperature = std::max(1000.f, std::min(15000.f, _colorTemperature));
         return true;
     }, [&]() -> Values {
-        return {_colorTemperature / 100.f};
+        return {_colorTemperature};
     });
 
     _attribFunctions["colorLUT"] = AttributeFunctor([&](Values args) {

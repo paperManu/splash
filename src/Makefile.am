@@ -1,11 +1,10 @@
 AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/external/GLV/GLV \
+	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \
-	-DGLV_GLFW \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
@@ -34,42 +33,20 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	widgets.cpp \
 	world.cpp
 
-# GLV related sources
+# GUI related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
-	$(top_srcdir)/external/GLV/src/glv_buttons.cpp \
-	$(top_srcdir)/external/GLV/src/glv_color_controls.cpp \
-	$(top_srcdir)/external/GLV/src/glv_color.cpp \
-	$(top_srcdir)/external/GLV/src/glv_core.cpp \
-	$(top_srcdir)/external/GLV/src/glv_draw.cpp \
-	$(top_srcdir)/external/GLV/src/glv_font.cpp \
-	$(top_srcdir)/external/GLV/src/glv_glv.cpp \
-	$(top_srcdir)/external/GLV/src/glv_grid.cpp \
-	$(top_srcdir)/external/GLV/src/glv_inputdevice.cpp \
-	$(top_srcdir)/external/GLV/src/glv_layout.cpp \
-	$(top_srcdir)/external/GLV/src/glv_model.cpp \
-	$(top_srcdir)/external/GLV/src/glv_notification.cpp \
-	$(top_srcdir)/external/GLV/src/glv_plots.cpp \
-	$(top_srcdir)/external/GLV/src/glv_preset_controls.cpp \
-	$(top_srcdir)/external/GLV/src/glv_sliders.cpp \
-	$(top_srcdir)/external/GLV/src/glv_sono.cpp \
-	$(top_srcdir)/external/GLV/src/glv_texture.cpp \
-	$(top_srcdir)/external/GLV/src/glv_textview.cpp \
-	$(top_srcdir)/external/GLV/src/glv_view3D.cpp \
-	$(top_srcdir)/external/GLV/src/glv_view.cpp \
-	$(top_srcdir)/external/GLV/src/glv_widget.cpp
+	$(top_srcdir)/external/imgui/imgui.cpp
 
 # Hap related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/hap/source/hap.c
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
-	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/libsimdpp/simdpp \
 	-I$(top_srcdir)/external/bandit/bandit \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
-	$(GLEW_CFLAGS) \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENMESH_CFLAGS) \
@@ -83,7 +60,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lsnappy \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
-	$(GLEW_LIBS) \
 	$(GSL_LIBS) \
 	$(JSONCPP_LIBS) \
 	$(OPENMESH_LIBS) \
@@ -165,6 +141,12 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/widgets.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
+	\
+	$(top_srcdir)/external/imgui/imgui.h \
+	$(top_srcdir)/external/imgui/imconfig.h \
+	$(top_srcdir)/external/imgui/stb_rect_pack.h \
+	$(top_srcdir)/external/imgui/stb_textedit.h \
+	$(top_srcdir)/external/imgui/stb_truetype.h \
 	\
 	$(top_srcdir)/external/libsimdpp/simdpp/null/bitwise.h \
 	$(top_srcdir)/external/libsimdpp/simdpp/null/math.h \
@@ -257,34 +239,6 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/libsimdpp/test/test_results.h \
 	$(top_srcdir)/external/libsimdpp/test/arch_registration.h \
 	$(top_srcdir)/external/libsimdpp/perf/perf.h \
-	\
-	$(top_srcdir)/external/GLV/test/test_glv.h \
-	$(top_srcdir)/external/GLV/example/example.h \
-	$(top_srcdir)/external/GLV/GLV/glv_color.h \
-	$(top_srcdir)/external/GLV/GLV/glv_core.h \
-	$(top_srcdir)/external/GLV/GLV/glv_sliders.h \
-	$(top_srcdir)/external/GLV/GLV/glv_draw.h \
-	$(top_srcdir)/external/GLV/GLV/glv_font.h \
-	$(top_srcdir)/external/GLV/GLV/glv_texture.h \
-	$(top_srcdir)/external/GLV/GLV/glv_color_controls.h \
-	$(top_srcdir)/external/GLV/GLV/glv_sono.h \
-	$(top_srcdir)/external/GLV/GLV/glv_rect.h \
-	$(top_srcdir)/external/GLV/GLV/glv_binding.h \
-	$(top_srcdir)/external/GLV/GLV/glv_model.h \
-	$(top_srcdir)/external/GLV/GLV/glv_notification.h \
-	$(top_srcdir)/external/GLV/GLV/glv_buttons.h \
-	$(top_srcdir)/external/GLV/GLV/glv_conf.h \
-	$(top_srcdir)/external/GLV/GLV/glv_view3D.h \
-	$(top_srcdir)/external/GLV/GLV/glv_layout.h \
-	$(top_srcdir)/external/GLV/GLV/glv_preset_controls.h \
-	$(top_srcdir)/external/GLV/GLV/glv_behavior.h \
-	$(top_srcdir)/external/GLV/GLV/glv_plots.h \
-	$(top_srcdir)/external/GLV/GLV/glv_textview.h \
-	$(top_srcdir)/external/GLV/GLV/glv_widget.h \
-	$(top_srcdir)/external/GLV/GLV/glv.h \
-	$(top_srcdir)/external/GLV/GLV/glv_icon.h \
-	$(top_srcdir)/external/GLV/GLV/glv_util.h \
-	$(top_srcdir)/external/GLV/GLV/glv_grid.h \
 	\
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x2.inl \
 	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x4.inl \

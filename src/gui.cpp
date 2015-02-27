@@ -9,11 +9,21 @@
 #include "threadpool.h"
 
 using namespace std;
-using namespace glv;
 using namespace OIIO_NAMESPACE;
 
 namespace Splash
 {
+
+/*************/
+GLuint Gui::_imFontTextureId;
+GLuint Gui::_imGuiShaderHandle, Gui::_imGuiVertHandle, Gui::_imGuiFragHandle;
+GLint Gui::_imGuiTextureLocation;
+GLint Gui::_imGuiProjMatrixLocation;
+GLint Gui::_imGuiPositionLocation;
+GLint Gui::_imGuiUVLocation;
+GLint Gui::_imGuiColorLocation;
+GLuint Gui::_imGuiVboHandle, Gui::_imGuiVaoHandle;
+size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
 Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
@@ -68,7 +78,10 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     scene->_mainWindow->releaseContext();
 
     // Intialize the GUI widgets
-    initGLV(_width, _height);
+    _window->setAsCurrentContext();
+    initImGui(_width, _height);
+    initImWidgets();
+    _window->releaseContext();
 
     registerAttributes();
 }
@@ -79,23 +92,95 @@ Gui::~Gui()
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
+
+    glDeleteTextures(1, &_imFontTextureId);
+    glDeleteProgram(_imGuiShaderHandle);
+    glDeleteBuffers(1, &_imGuiVboHandle);
+    glDeleteVertexArrays(1, &_imGuiVaoHandle);
 }
 
 /*************/
-void Gui::key(int& key, int& action, int& mods)
+void Gui::unicodeChar(unsigned int unicodeChar)
+{
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
+    if (unicodeChar > 0 && unicodeChar < 0x10000)
+        io.AddInputCharacter((unsigned short)unicodeChar);
+}
+
+/*************/
+void Gui::computeBlending()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("computeBlending");
+}
+
+/*************/
+void Gui::activateLUT()
+{
+    auto scene = _scene.lock();
+    vector<CameraPtr> cameras;
+    for (auto& obj : scene->_objects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& cam : cameras)
+    {
+        scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
+        scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorMixMatrix", 2});
+    }
+}
+
+/*************/
+void Gui::calibrateColorResponseFunction()
+{
+    auto scene = _scene.lock();
+    scene->setAttribute("calibrateColorResponseFunction", {});
+}
+
+/*************/
+void Gui::calibrateColors()
+{
+    auto scene = _scene.lock();
+    scene->setAttribute("calibrateColor", {});
+}
+
+/*************/
+void Gui::saveConfiguration()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("save");
+}
+
+/*************/
+void Gui::flashBackground()
+{
+    auto scene = _scene.lock();
+    if (_flashBG)
+        scene->sendMessageToWorld("flashBG", {0});
+    else
+        scene->sendMessageToWorld("flashBG", {1});
+    _flashBG = !_flashBG;
+}
+
+/*************/
+void Gui::key(int key, int action, int mods)
 {
     switch (key)
     {
     default:
     {
+        using namespace ImGui;
+        ImGuiIO& io = GetIO();
         if (action == GLFW_PRESS)
-            _glv.setKeyDown(glfwToGlvKey(key));
-        else if (action == GLFW_RELEASE)
-            _glv.setKeyUp(glfwToGlvKey(key));
-        else if (action == GLFW_REPEAT)
-            _glv.setKeyDown(glfwToGlvKey(key));
-        _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
-        _glv.propagateEvent();
+            io.KeysDown[key] = true;
+        if (action == GLFW_RELEASE)
+            io.KeysDown[key] = false;
+        io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+        io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+    
         break;
     }
     case GLFW_KEY_TAB:
@@ -103,7 +188,6 @@ void Gui::key(int& key, int& action, int& mods)
         if (action == GLFW_PRESS)
         {
             _isVisible = !_isVisible;
-            //STimer::timer.setStatus(_isVisible);
         }
         break;
     }
@@ -117,8 +201,7 @@ void Gui::key(int& key, int& action, int& mods)
     {
         if (action == GLFW_PRESS)
         {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("computeBlending");
+            computeBlending();
         }
         break;
     }
@@ -127,69 +210,40 @@ void Gui::key(int& key, int& action, int& mods)
     {
         if (action == GLFW_PRESS)
         {
-            auto scene = _scene.lock();
-            vector<CameraPtr> cameras;
-            for (auto& obj : scene->_objects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& obj : scene->_ghostObjects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& cam : cameras)
-            {
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorMixMatrix", 2});
-            }
+            activateLUT();
         }
         break;
     }
     case GLFW_KEY_O:
     {
         if (action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("calibrateColorResponseFunction");
-        }
+            calibrateColorResponseFunction();
         break;
     }
     case GLFW_KEY_P:
     {
         if (action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("calibrateColor");
-        }
+            calibrateColors();
         break;
     }
 #endif
     case GLFW_KEY_S:
     {
         if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("save");
-        }
+            saveConfiguration();
         break;
     }
     case GLFW_KEY_F:
     {
         if (action == GLFW_PRESS)
-        {
-            auto scene = _scene.lock();
-
-            if (_flashBG)
-                scene->sendMessageToWorld("flashBG", {0});
-            else
-                scene->sendMessageToWorld("flashBG", {1});
-
-            _flashBG = !_flashBG;
-        }
+            flashBackground();
         break;
     }
     // Switch the rendering to textured
     case GLFW_KEY_T: 
     {
         auto scene = _scene.lock();
+        _wireframe = false;
         scene->sendMessageToWorld("wireframe", {0});
         break;
     }
@@ -197,6 +251,7 @@ void Gui::key(int& key, int& action, int& mods)
     case GLFW_KEY_W:
     {
         auto scene = _scene.lock();
+        _wireframe = true;
         scene->sendMessageToWorld("wireframe", {1});
         break;
     }
@@ -206,63 +261,50 @@ void Gui::key(int& key, int& action, int& mods)
 /*************/
 void Gui::mousePosition(int xpos, int ypos)
 {
-    space_t x = (space_t)xpos;
-    space_t y = (space_t)ypos;
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
 
-    // If no movement, no message
-    if (_prevMouseX == x && _prevMouseY == y)
-        return;
+    io.MousePos = ImVec2((float)xpos, (float)ypos);
 
-    _prevMouseX = x;
-    _prevMouseY = y;
-
-    space_t relx = x;
-    space_t rely = y;
-
-    if (_glv.mouse().left() || _glv.mouse().right() || _glv.mouse().middle())
-        _glv.setMouseMotion(relx, rely, Event::MouseDrag);
-    else
-        _glv.setMouseMotion(relx, rely, Event::MouseMove);
-
-    _glv.setMousePos((int)x, (int)y, relx, rely);
-    _glv.propagateEvent();
+    return;
 }
 
 /*************/
 void Gui::mouseButton(int btn, int action, int mods)
 {
+    using namespace ImGui;
+    ImGuiIO& io = GetIO();
+
     int button {0};
+    bool isPressed = action == GLFW_PRESS ? true : false;
     switch (btn)
     {
     default:
         break;
     case GLFW_MOUSE_BUTTON_LEFT:
-        button = Mouse::Left;
+        io.MouseDown[0] = isPressed;
         break;
     case GLFW_MOUSE_BUTTON_RIGHT:
-        button = Mouse::Right;
+        io.MouseDown[1] = isPressed;
         break;
     case GLFW_MOUSE_BUTTON_MIDDLE:
-        button = Mouse::Middle;
+        io.MouseDown[2] = isPressed;
         break;
     }
-    _glv.setKeyModifiers(mods & GLFW_MOD_SHIFT, mods & GLFW_MOD_ALT, mods & GLFW_MOD_CONTROL, false, false);
 
-    space_t x = _glv.mouse().x();
-    space_t y = _glv.mouse().y();
+    io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
+    io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
 
-    if (action == GLFW_PRESS)
-        _glv.setMouseDown(x, y, button, 0);
-    if (action == GLFW_RELEASE)
-        _glv.setMouseUp(x, y, button, 0);
-    _glv.propagateEvent();
+    return;
 }
 
 /*************/
 void Gui::mouseScroll(double xoffset, double yoffset)
 {
-    _glv.setMouseWheel(yoffset);
-    _glv.propagateEvent();
+    ImGuiIO& io = ImGui::GetIO();
+    io.MouseWheel += (float)yoffset;
+
+    return;
 }
 
 /*************/
@@ -271,13 +313,7 @@ bool Gui::linkTo(BaseObjectPtr obj)
     // Mandatory before trying to link
     BaseObject::linkTo(obj);
 
-    if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
-    {
-        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
-        _glvGlobalView.setCamera(cam);
-        return true;
-    }
-    else if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
         ObjectPtr object = dynamic_pointer_cast<Object>(obj);
         _guiCamera->linkTo(object);
@@ -290,61 +326,108 @@ bool Gui::linkTo(BaseObjectPtr obj)
 /*************/
 bool Gui::render()
 {
+    if (!_isInitialized)
+        return false;
+
     ImageSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
+#ifdef DEBUG
+    GLenum error = glGetError();
+#endif
+
     if (_isVisible)
     {
-        _doNotRender = false;
-        // Render the visible camera
-        _glvGlobalView._camera->render();
-    }
+        using namespace ImGui;
 
-#ifdef DEBUG
-    GLenum error = 0;
-#endif
-    if (_doNotRender == false)
-    {
-        if (!_window->setAsCurrentContext()) 
-        	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-        glViewport(0, 0, _width, _height);
+        ImGuiIO& io = GetIO();
+        ImGui::NewFrame();
 
-#ifdef DEBUG
-        error = glGetError();
+        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 800), 0.95f, _windowFlags);
+        _windowFlags = 0;
+
+        // Some global buttons
+        if (ImGui::CollapsingHeader("Base commands", nullptr, true, true))
+        {
+#if HAVE_GPHOTO
+            ImGui::Columns(2);
+            ImGui::Text("General");
+            ImGui::NextColumn();
+            ImGui::Text("Color calibration");
+            ImGui::NextColumn();
+            ImGui::Separator();
 #endif
+            if (ImGui::Button("Save configuration"))
+                saveConfiguration();
+            if (ImGui::Button("Compute blending map"))
+                computeBlending();
+            if (ImGui::Button("Flash background"))
+                flashBackground();
+            if (ImGui::Button("Wireframe / Textured"))
+            {
+                auto scene = _scene.lock();
+                _wireframe = !_wireframe;
+                scene->sendMessageToWorld("wireframe", {(int)_wireframe});
+            }
+#if HAVE_GPHOTO
+            ImGui::NextColumn();
+            if (ImGui::Button("Calibrate camera response"))
+                calibrateColorResponseFunction();
+            if (ImGui::Button("Calibrate displays / projectors"))
+                calibrateColors();
+            if (ImGui::Button("Activate correction"))
+                activateLUT();
+            ImGui::Columns(1);
+#endif
+        }
+
+        // Specific widgets
+        for (auto& widget : _guiWidgets)
+        {
+            widget->render();
+            _windowFlags |= widget->updateWindowFlags();
+        }
+        ImGui::End();
+
+        // Uncomment to show styling gui!
+        //ImGuiStyle& style = ImGui::GetStyle();
+        //ImGui::ShowStyleEditor(&style);
+
+        static double time = 0.0;
+        const double currentTime = glfwGetTime();
+        io.DeltaTime = (float)(currentTime - time);
+        time = currentTime;
+
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
         GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
         glDrawBuffers(1, fboBuffers);
-        glEnable(GL_DEPTH_TEST);
-        glDepthFunc(GL_LEQUAL);
-
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0.0, 0.0, 0.0, 0.0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
-        
-        if (_isVisible) 
-            _glv.drawWidgets(_width, _height, 0.016);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-        glActiveTexture(GL_TEXTURE0);
-        _outTexture->generateMipmap();
-
-        glDisable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-#ifdef DEBUG
-        error = glGetError();
-        if (error)
-            SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
-#endif
-
-        _window->releaseContext();
-
-        if (!_isVisible)
-            _doNotRender = true;
+        ImGui::Render();
+    }
+    else
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glDrawBuffers(1, fboBuffers);
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT);
     }
 
+    glDisable(GL_DEPTH_TEST);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    glActiveTexture(GL_TEXTURE0);
+    _outTexture->generateMipmap();
+
 #ifdef DEBUG
+    error = glGetError();
+    if (error)
+        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
+
     return error != 0 ? true : false;
 #else
     return false;
@@ -361,58 +444,228 @@ void Gui::setOutputSize(int width, int height)
     	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->resize(width, height);
     _outTexture->resize(width, height);
-    _window->releaseContext();
 
     _width = width;
     _height = height;
-    _doNotRender = false;
 
-    initGLV(width, height);
+    initImGui(width, height);
+    _window->releaseContext();
 }
 
 /*************/
-int Gui::glfwToGlvKey(int key)
+void Gui::initImGui(int width, int height)
 {
-    // Nothing special noted yet...
-    return key;
-}
+    using namespace ImGui;
 
-/*************/
-void Gui::initGLV(int width, int height)
-{
-    _glv.width(width);
-    _glv.height(height);
-    _glv.disable(DrawBack);
+    // Initialize GL stuff for ImGui
+    const std::string vertexShader {R"(
+        #version 330 core
 
-    _style.color.set(Color(1.0, 0.5, 0.2, 0.7), 0.7);
+        uniform mat4 ProjMtx;
+        in vec2 Position;
+        in vec2 UV;
+        in vec4 Color;
+        out vec2 Frag_UV;
+        out vec4 Frag_Color;
 
-    // Log display
-    _glvLog.setTextFunc([](GlvTextBox& that)
+        void main()
+        {
+            Frag_UV = UV;
+            Frag_Color = Color;
+            //Frag_Color.a += 0.5f;
+            gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
+        }
+    )"};
+
+    const std::string fragmentShader {R"(
+        #version 330 core
+
+        uniform sampler2D Texture;
+        in vec2 Frag_UV;
+        in vec4 Frag_Color;
+        out vec4 Out_Color;
+
+        void main()
+        {
+            Out_Color = Frag_Color * texture(Texture, Frag_UV.st);
+        }
+    )"};
+
+    _imGuiShaderHandle = glCreateProgram();
+    _imGuiVertHandle = glCreateShader(GL_VERTEX_SHADER);
+    _imGuiFragHandle = glCreateShader(GL_FRAGMENT_SHADER);
     {
-        // Compute the number of lines which would fit
-        int nbrLines = that.height() / (int)(that.fontSize + that.lineSpacing * that.fontSize);
-    
-        // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+        const char* shaderSrc = vertexShader.c_str();
+        glShaderSource(_imGuiVertHandle, 1, (const GLchar**)&shaderSrc, 0);
+    }
+    {
+        const char* shaderSrc = fragmentShader.c_str();
+        glShaderSource(_imGuiFragHandle, 1, (const GLchar**)&shaderSrc, 0);
+    }
+    glCompileShader(_imGuiVertHandle);
+    glCompileShader(_imGuiFragHandle);
+    glAttachShader(_imGuiShaderHandle, _imGuiVertHandle);
+    glAttachShader(_imGuiShaderHandle, _imGuiFragHandle);
+    glLinkProgram(_imGuiShaderHandle);
+
+    GLint status;
+    glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+
+        GLint length;
+        glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
+        char* log = (char*)malloc(length);
+        glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log);
+        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        free(log);
+
+        // TODO: handle this case...
+        return;
+    }
+
+    _imGuiTextureLocation = glGetUniformLocation(_imGuiShaderHandle, "Texture");
+    _imGuiProjMatrixLocation = glGetUniformLocation(_imGuiShaderHandle, "ProjMtx");
+    _imGuiPositionLocation = glGetAttribLocation(_imGuiShaderHandle, "Position");
+    _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
+    _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
+
+    glGenBuffers(1, &_imGuiVboHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+    glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
+
+    glGenVertexArrays(1, &_imGuiVaoHandle);
+    glBindVertexArray(_imGuiVaoHandle);
+    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+    glEnableVertexAttribArray(_imGuiPositionLocation);
+    glEnableVertexAttribArray(_imGuiUVLocation);
+    glEnableVertexAttribArray(_imGuiColorLocation);
+
+    glVertexAttribPointer(_imGuiPositionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->pos));
+    glVertexAttribPointer(_imGuiUVLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->uv));
+    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->col));
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    // Initialize ImGui
+    ImGuiIO& io = GetIO();
+
+    io.IniFilename = nullptr;
+
+    io.DisplaySize.x = width;
+    io.DisplaySize.y = height;
+    io.DeltaTime = 1.f / 60.f;
+
+    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
+    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
+    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
+    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
+    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
+    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+
+    io.RenderDrawListsFn = Gui::imGuiRenderDrawLists;
+
+    // Set style
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style.Colors[ImGuiCol_Border]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
+    style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
+    style.Colors[ImGuiCol_TitleBg]               = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
+    style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.81f, 0.40f, 0.25f, 0.45f);
+    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.79f, 0.40f, 0.25f, 0.15f);
+    style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
+    style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
+    style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.20f, 0.20f, 0.20f, 0.99f);
+    style.Colors[ImGuiCol_CheckHovered]          = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
+    style.Colors[ImGuiCol_CheckActive]           = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
+    style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
+    style.Colors[ImGuiCol_SliderGrab]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+    style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_Button]                = ImVec4(0.67f, 0.40f, 0.40f, 0.60f);
+    style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.67f, 0.40f, 0.40f, 1.00f);
+    style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_Header]                = ImVec4(0.81f, 0.40f, 0.24f, 0.45f);
+    style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
+    style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.79f, 0.53f, 0.21f, 0.80f);
+    style.Colors[ImGuiCol_Column]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.60f, 0.40f, 0.40f, 1.00f);
+    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.80f, 0.47f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_ResizeGrip]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+    style.Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
+    style.Colors[ImGuiCol_ResizeGripActive]      = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
+    style.Colors[ImGuiCol_CloseButton]           = ImVec4(0.81f, 0.50f, 0.28f, 0.50f);
+    style.Colors[ImGuiCol_CloseButtonHovered]    = ImVec4(0.70f, 0.70f, 0.90f, 0.60f);
+    style.Colors[ImGuiCol_CloseButtonActive]     = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+    style.Colors[ImGuiCol_PlotLines]             = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogram]         = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+    style.Colors[ImGuiCol_TooltipBg]             = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
+
+    unsigned char* pixels;
+    int w, h;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
+
+    glDeleteTextures(1, &_imFontTextureId);
+    glGenTextures(1, &_imFontTextureId);
+    glBindTexture(GL_TEXTURE_2D, _imFontTextureId);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    io.Fonts->TexID = (void*)(intptr_t)_imFontTextureId;
+
+    _isInitialized = true;
+}
+
+/*************/
+void Gui::initImWidgets()
+{
+    // Some help regarding keyboard shortcuts
+    shared_ptr<GuiTextBox> helpBox = make_shared<GuiTextBox>("Shortcuts");
+    helpBox->setTextFunc([]()
+    {
         string text;
-        int scrollOffset = that._scrollOffset;
-        scrollOffset = std::max(0, std::min((int)logs.size() - nbrLines, scrollOffset));
-        that._scrollOffset = scrollOffset;
-        int offset = std::min((int)logs.size() - 1, std::max(0, ((int)logs.size() - nbrLines - scrollOffset)));
-        for (int i = offset; i < logs.size(); ++i)
-            text += logs[i] + string("\n");
+        text += "Tab: show / hide this GUI\n";
+        text += "Shortcuts for the calibration view:\n";
+        text += " Space: switche between cameras (when hovering the Views panel)\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " F: white background instead of black\n";
+        text += " C: calibrate the selected camera (when hovering the Views panel)\n";
+        text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
+        text += " B: compute the blending between all cameras\n";
+        text += " H: hide all but the selected camera (when hovering the Views panel)\n";
+        text += " T: textured draw mode\n";
+        text += " W: wireframe draw mode\n";
+#if HAVE_GPHOTO
+        text += " O: launch camera calibration\n";
+        text += " P: launch projectors calibration\n";
+        text += " L: activate color LUT (if calibrated)\n";
+#endif
 
         return text;
     });
-    _glvLog.width(width / 2 - 16);
-    _glvLog.height(height / 4 - 16);
-    _glvLog.bottom(height - 8);
-    _glvLog.left(8);
-    _glvLog.style(&_style);
-    _glv << _glvLog;
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
 
     // FPS and timings
-    _glvProfile.setTextFunc([](GlvTextBox& that)
+    shared_ptr<GuiTextBox> timingBox = make_shared<GuiTextBox>("Timings");
+    timingBox->setTextFunc([]()
     {
         // Smooth the values
         static float fps {0.f};
@@ -448,67 +701,119 @@ void Gui::initGLV(int width, int height)
 
         return stream.str();
     });
-    _glvProfile.width(SPLASH_GLV_FONTSIZE * 36);
-    _glvProfile.height(SPLASH_GLV_FONTSIZE * 2 * 8 + 8);
-    _glvProfile.style(&_style);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
 
-    // Some help regarding keyboard shortcuts
-    _glvHelp.setTextFunc([](GlvTextBox& that)
+    // Log display
+    shared_ptr<GuiTextBox> logBox = make_shared<GuiTextBox>("Logs");
+    logBox->setTextFunc([]()
     {
+        int nbrLines = 10;
+        // Convert the last lines of the text log
+        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
         string text;
-        text += "Tab: show / hide this GUI\n";
-        text += "Shortcuts for the calibration view:\n";
-        text += " Space: switcher between cameras\n";
-        text += " A: show / hide the target calibration point\n";
-        text += " F: white background instead of black\n";
-        text += " C: calibrate the selected camera\n";
-        text += " R: revert camera to previous calibration\n";
-        text += " B: compute the blending between all cameras\n";
-        text += " H: hide all but the selected camera\n";
-        text += " T: textured draw mode\n";
-        text += " W: wireframe draw mode\n";
-#if HAVE_GPHOTO
-        text += " O: launch camera calibration\n";
-        text += " P: launch projectors calibration\n";
-        text += " L: activate color LUT (if calibrated)\n";
-#endif
+        int start = std::max(0, (int)logs.size() - nbrLines);
+        for (int i = start; i < logs.size(); ++i)
+        {
+            if (i >= 0)
+                text += logs[i] + string("\n");
+        }
 
         return text;
     });
-    _glvHelp.width(SPLASH_GLV_FONTSIZE * 48);
-#if HAVE_GPHOTO
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 14 + 8);
-#else
-    _glvHelp.height(SPLASH_GLV_FONTSIZE * 2 * 11 + 8);
-#endif
-    _glvHelp.style(&_style);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 
-    // Controls
-    _glvControl.width(200);
-    _glvControl.height(128);
-    _glvControl.top(8);
-    _glvControl.right(_width / 2 - 64);
-    _glvControl.style(&_style);
-    _glvControl.setScene(_scene);
-
-    Placer placer(_glv, Direction::S, Place::TL, 8, 8);
-    placer << _glvHelp << _glvProfile << _glvControl;
+    // Control
+    shared_ptr<GuiControl> controlView = make_shared<GuiControl>("Controls");
+    controlView->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
     // GUI camera view
-    _glvGlobalView.set(Rect(8, 8, 800, 600));
-    _glvGlobalView.right(width - 8);
-    _glvGlobalView.style(&_style);
-    _glvGlobalView.setCamera(_guiCamera);
-    _glvGlobalView.setScene(_scene);
-    _glv << _glvGlobalView;
+    shared_ptr<GuiGlobalView> globalView = make_shared<GuiGlobalView>("Views");
+    globalView->setCamera(_guiCamera);
+    globalView->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
-    // Performance graphs
-    _glvGraph.width(_width / 2 - 16);
-    _glvGraph.height(_height / 4 - 16);
-    _glvGraph.bottom(height - 8);
-    _glvGraph.right(_width - 8);
-    _glvGraph.style(&_style);
-    _glv << _glvGraph;
+    // Performance graph
+    shared_ptr<GuiGraph> perfGraph = make_shared<GuiGraph>("Performance Graph");
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
+}
+
+/*************/
+void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
+{
+    if (!cmd_lists_count)
+        return;
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_SCISSOR_TEST);
+    glActiveTexture(GL_TEXTURE0);
+
+    const float width = ImGui::GetIO().DisplaySize.x;
+    const float height = ImGui::GetIO().DisplaySize.y;
+    const float orthoProjection[4][4] = 
+    {
+        { 2.0f/width,	0.0f,			0.0f,		0.0f },
+        { 0.0f,			2.0f/-height,	0.0f,		0.0f },
+        { 0.0f,			0.0f,			-1.0f,		0.0f },
+        { -1.0f,		1.0f,			0.0f,		1.0f },
+    };
+
+    glUseProgram(_imGuiShaderHandle);
+    glUniform1i(_imGuiTextureLocation, 0);
+    glUniformMatrix4fv(_imGuiProjMatrixLocation, 1, GL_FALSE, (float*)orthoProjection);
+
+    size_t totalVertexCount = 0;
+    for (int n = 0; n < cmd_lists_count; ++n)
+        totalVertexCount += cmd_lists[n]->vtx_buffer.size();
+    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+
+    size_t neededBufferSize = totalVertexCount * sizeof(ImDrawVert);
+    if (neededBufferSize > _imGuiVboMaxSize)
+    {
+        _imGuiVboMaxSize = neededBufferSize + 5000;
+        glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
+    }
+
+    unsigned char* bufferData = (unsigned char*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    if (!bufferData)
+        return;
+    for (int n = 0; n < cmd_lists_count; ++n)
+    {
+        const ImDrawList* cmdList = cmd_lists[n];
+        memcpy(bufferData, &cmdList->vtx_buffer[0], cmdList->vtx_buffer.size() * sizeof(ImDrawVert));
+        bufferData += cmdList->vtx_buffer.size() * sizeof(ImDrawVert);
+    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(_imGuiVaoHandle);
+
+    int cmd_offset = 0;
+    for (int n = 0; n < cmd_lists_count; ++n)
+    {
+        const ImDrawList* cmd_list = cmd_lists[n];
+        int vtx_offset = cmd_offset;
+        for (auto& pcmd : cmd_list->commands)
+        {
+            glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd.texture_id);
+            glScissor((int)pcmd.clip_rect.x, (int)(height - pcmd.clip_rect.w),
+                      (int)(pcmd.clip_rect.z - pcmd.clip_rect.x), (int)(pcmd.clip_rect.w - pcmd.clip_rect.y));
+            glDrawArrays(GL_TRIANGLES, vtx_offset, pcmd.vtx_count);
+            vtx_offset += pcmd.vtx_count;
+        }
+        cmd_offset = vtx_offset;
+    }
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glDisable(GL_SCISSOR_TEST);
+    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_BLEND);
 }
 
 /*************/

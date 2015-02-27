@@ -42,9 +42,12 @@ typedef std::shared_ptr<Scene> ScenePtr;
 /*************/
 class Scene : public RootObject
 {
+    friend ColorCalibrator;
+    friend GuiColorCalibration;
+    friend GuiControl;
+    friend GuiGlobalView;
+    friend GuiWidget;
     friend Gui;
-    friend GlvGlobalView;
-    friend GlvControl;
 
     public:
         /**
@@ -76,6 +79,11 @@ class Scene : public RootObject
          * Get a glfw window sharing the same context as _mainWindow
          */
         GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
+
+        /**
+         * Get the list of objects by their type
+         */
+        Values getObjectsNameByType(std::string type);
 
         /**
          * Get the status of the scene, return true if all is well
@@ -119,7 +127,7 @@ class Scene : public RootObject
         /**
          * Set the Scene as the master one
          */
-        void setAsMaster() {_isMaster = true;}
+        void setAsMaster();
 
         /**
          * Give a special behavior to the scene, making it the main window of the World
@@ -142,6 +150,14 @@ class Scene : public RootObject
         bool _isRunning {false};
 
         std::map<std::string, BaseObjectPtr> _ghostObjects;
+
+        // Gui exists in master scene whatever the configuration
+        GuiPtr _gui;
+        bool _guiLinkedToWindow {false};
+        // Objects in charge of calibration
+#if HAVE_GPHOTO
+        ColorCalibratorPtr _colorCalibrator;
+#endif
 
         /**
          * Creates the blending map from the current calibration of the cameras
