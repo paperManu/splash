@@ -45,6 +45,8 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
 
     lock_guard<mutex> lock(ctx->_writeMutex);
 
+    STimer::timer << "mesh_shmdata " + ctx->_name;
+
     ctx->_bufferMesh.clear();
 
     // Read the number of vertices and polys
@@ -99,6 +101,8 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
     ctx->updateTimestamp();
 
     shmdata_any_reader_free(shmbuf);
+
+    STimer::timer >> "mesh_shmdata " + ctx->_name;
 }
 
 /*************/
