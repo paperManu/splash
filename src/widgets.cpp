@@ -217,6 +217,9 @@ void GuiGlobalView::render()
     {
         if (_camera != nullptr)
         {
+            if (_camera == _guiCamera)
+                _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
+
             _camera->render();
 
             Values size;

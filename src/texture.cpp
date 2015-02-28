@@ -199,7 +199,7 @@ void Texture::resize(int width, int height)
 {
     if (!_resizable)
         return;
-    if (width != _spec.width && height != _spec.height)
+    if (width != _spec.width || height != _spec.height)
         reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
 }
 
