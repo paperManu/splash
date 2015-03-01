@@ -92,8 +92,6 @@ vector<float> Mesh::getUVCoords() const
         return vector<float>();
     }
 
-
-
     return coords;
 }
 
@@ -123,8 +121,6 @@ vector<float> Mesh::getNormals() const
         SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
         return vector<float>();
     }
-
-
 
     return normals;
 }
@@ -172,7 +168,7 @@ SerializedObjectPtr Mesh::serialize() const
     lock_guard<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
-    for (auto d : data)
+    for (auto& d : data)
         totalSize += d.size() * sizeof(d[0]);
     obj->resize(totalSize);
 
@@ -181,7 +177,7 @@ SerializedObjectPtr Mesh::serialize() const
     copy(ptr, ptr + sizeof(nbrVertices), currentObjPtr);
     currentObjPtr += sizeof(nbrVertices);
 
-    for (auto d : data)
+    for (auto& d : data)
     {
         ptr = reinterpret_cast<const char*>(d.data());
         copy(ptr, ptr + d.size() * sizeof(float), currentObjPtr);
