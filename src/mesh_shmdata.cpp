@@ -41,14 +41,6 @@ bool Mesh_Shmdata::read(const string& filename)
 void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
     const char* type_description, void* user_data)
 {
-    Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
-
-    lock_guard<mutex> lock(ctx->_writeMutex);
-
-    STimer::timer << "mesh_shmdata " + ctx->_name;
-
-    ctx->_bufferMesh.clear();
-
     // Read the number of vertices and polys
     int* intPtr = (int*)data;
     float* floatPtr = (float*)data;
@@ -56,19 +48,23 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
     int verticeNbr = *(intPtr++);
     int polyNbr = *(intPtr++);
 
-    vector<MeshContainer::VertexHandle> vertices(verticeNbr);
+    vector<glm::vec4> vertices(verticeNbr);
+    vector<glm::vec2> uvs(verticeNbr);
+    vector<glm::vec3> normals(verticeNbr);
 
     floatPtr += 2;
     // First, create the vertices with no UV, normals or faces
     for (int v = 0; v < verticeNbr; ++v)
     {
-        vertices[v] = ctx->_bufferMesh.add_vertex(MeshContainer::Point(floatPtr[0], floatPtr[1], floatPtr[2]));
+        vertices[v] = glm::vec4(floatPtr[0], floatPtr[1], floatPtr[2], 1.f);
+        uvs[v] = glm::vec2(floatPtr[3], floatPtr[4]);
+        normals[v] = glm::vec3(floatPtr[5], floatPtr[6], floatPtr[7]);
         floatPtr += 8;
     }
 
     intPtr += 8 * verticeNbr;
     // Then create the faces
-    vector<MeshContainer::VertexHandle> faceHandle;
+    MeshContainer newMesh;
     for (int p = 0; p < polyNbr; ++p)
     {
         int size = *(intPtr++);
@@ -76,27 +72,21 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
         // This can lead to bad shapes especially for polys larger than quads
         for (int tri = 0; tri < size - 2; ++tri)
         {
-            faceHandle.clear();
-            faceHandle.push_back(vertices[*intPtr]);
-            faceHandle.push_back(vertices[*(intPtr + 1 + tri)]);
-            faceHandle.push_back(vertices[*(intPtr + 2 + tri)]);
-            ctx->_bufferMesh.add_face(faceHandle);
+            for (int vert = 0; vert < 3; ++vert)
+            {
+                newMesh.vertices.push_back(vertices[*(intPtr + vert + tri)]);
+                newMesh.uvs.push_back(uvs[*(intPtr + vert + tri)]);
+                newMesh.normals.push_back(normals[*(intPtr + vert + tri)]);
+            }
         }
         intPtr += size;
     }
 
-    // Add the UV coords and the normals
-    floatPtr = (float*)data;
-    floatPtr += 5; // Go to the first UV data
-    ctx->_bufferMesh.request_vertex_texcoords2D();
-    ctx->_bufferMesh.request_vertex_normals();
-    for (int v = 0; v < verticeNbr; ++v)
-    {
-        ctx->_bufferMesh.set_texcoord2D(vertices[v], MeshContainer::TexCoord2D(floatPtr[0], floatPtr[1]));
-        ctx->_bufferMesh.set_normal(vertices[v], MeshContainer::Normal(floatPtr[2], floatPtr[3], floatPtr[4]));
-        floatPtr += 8;
-    }
+    Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
+    lock_guard<mutex> lock(ctx->_writeMutex);
+    STimer::timer << "mesh_shmdata " + ctx->_name;
 
+    ctx->_bufferMesh = std::move(newMesh);
     ctx->_meshUpdated = true;
     ctx->updateTimestamp();
 

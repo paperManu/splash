@@ -33,6 +33,7 @@
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <glm/glm.hpp>
 #include <OpenMesh/Core/IO/MeshIO.hh>
 #include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
@@ -43,8 +44,6 @@ namespace Splash {
 class Mesh : public BufferObject
 {
     public:
-        typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
-
         /**
          * Constructor
          */
@@ -111,12 +110,22 @@ class Mesh : public BufferObject
         virtual void update();
 
     protected:
+        struct MeshContainer
+        {
+            std::vector<glm::vec4> vertices;
+            std::vector<glm::vec2> uvs;
+            std::vector<glm::vec3> normals;
+        };
+
         MeshContainer _mesh;
         MeshContainer _bufferMesh;
         bool _meshUpdated {false};
         bool _benchmark {false};
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
+
+        typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> OpenMeshContainer;
+        MeshContainer convertToInnerMesh(OpenMeshContainer mesh); //< Converts the given OpenMesh to our simple mesh representation
         
         /**
          * Register new functors to modify attributes

@@ -33,6 +33,7 @@
 namespace Splash
 {
 
+/*************/
 struct RgbValue
 {
     RgbValue() {};

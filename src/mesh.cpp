@@ -36,92 +36,42 @@ bool Mesh::operator==(Mesh& otherMesh) const
 /*************/
 vector<float> Mesh::getVertCoords() const
 {
-    vector<float> coords;
     lock_guard<mutex> lock(_readMutex);
-    coords.resize(_mesh.n_faces() * 3 * 4);
-
-    int idx = 0;
-
-    try
+    vector<float> coords;
+    for (auto& v : _mesh.vertices)
     {
-        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
-        {
-            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
-            {
-                auto point = _mesh.point(vertex);
-                for (int i = 0; i < 3; ++i)
-                    coords[idx + i] = point[i];
-                coords[idx + 3] = 1.f; // We add this to get normalized coordinates
-                idx += 4;
-            });
-        });
+        coords.push_back(v[0]);
+        coords.push_back(v[1]);
+        coords.push_back(v[2]);
+        coords.push_back(v[3]);
     }
-    catch (...)
-    {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
-        return vector<float>();
-    }
-
     return coords;
 }
 
 /*************/
 vector<float> Mesh::getUVCoords() const
 {
-    vector<float> coords;
     lock_guard<mutex> lock(_readMutex);
-    coords.resize(_mesh.n_faces() * 3 * 2);
-
-    int idx = 0;
-    try
+    vector<float> coords;
+    for (auto& u : _mesh.uvs)
     {
-        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
-        {
-            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
-            {
-                auto tex = _mesh.texcoord2D(vertex);
-                for (int i = 0; i < 2; ++i)
-                    coords[idx + i] = tex[i];
-                idx += 2;
-            });
-        });
+        coords.push_back(u[0]);
+        coords.push_back(u[1]);
     }
-    catch (...)
-    {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
-        return vector<float>();
-    }
-
     return coords;
 }
 
 /*************/
 vector<float> Mesh::getNormals() const
 {
-    vector<float> normals;
     lock_guard<mutex> lock(_readMutex);
-    normals.resize(_mesh.n_faces() * 3 * 3);
-
-    int idx = 0;
-    try
+    vector<float> normals;
+    for (auto& n : _mesh.normals)
     {
-        for_each (_mesh.faces_begin(), _mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
-        {
-            for_each (_mesh.cfv_begin(face), _mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
-            {
-                auto normal = _mesh.normal(vertex);
-                for (int i = 0; i < 3; ++i)
-                    normals[idx + i] = normal[i];
-                idx += 3;
-            });
-        });
+        normals.push_back(n[0]);
+        normals.push_back(n[1]);
+        normals.push_back(n[2]);
     }
-    catch (...)
-    {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
-        return vector<float>();
-    }
-
     return normals;
 }
 
@@ -131,7 +81,7 @@ bool Mesh::read(const string& filename)
     OpenMesh::IO::Options readOptions;
     readOptions += OpenMesh::IO::Options::VertexTexCoord;
 
-    MeshContainer mesh;
+    OpenMeshContainer mesh;
     mesh.request_vertex_texcoords2D();
     if (!OpenMesh::IO::read_mesh(mesh, filename, readOptions))
     {
@@ -146,7 +96,7 @@ bool Mesh::read(const string& filename)
     mesh.release_face_normals();
 
     lock_guard<mutex> lock(_writeMutex);
-    _mesh = mesh;
+    _mesh = convertToInnerMesh(mesh);
     updateTimestamp();
 
     return true;
@@ -230,38 +180,30 @@ bool Mesh::deserialize(const SerializedObjectPtr obj)
 
         // Next step: use these values to reset the vertices of _mesh
         MeshContainer mesh;
-        //_mesh.clear();
-        for (int face = 0; face < nbrVertices / 3; ++face)
-        {
-            MeshContainer::VertexHandle vertices[3];
-            vertices[0] = mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 0], data[0][face * 3 * 4 + 1], data[0][face * 3 * 4 + 2]));
-            vertices[1] = mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 4], data[0][face * 3 * 4 + 5], data[0][face * 3 * 4 + 6]));
-            vertices[2] = mesh.add_vertex(MeshContainer::Point(data[0][face * 3 * 4 + 8], data[0][face * 3 * 4 + 9], data[0][face * 3 * 4 + 10]));
 
-            vector<MeshContainer::VertexHandle> faceHandle;
-            faceHandle.clear();
-            faceHandle.push_back(vertices[0]);
-            faceHandle.push_back(vertices[1]);
-            faceHandle.push_back(vertices[2]);
-            mesh.add_face(faceHandle);
+        mesh.vertices.resize(data[0].size() / 4);
+        for (unsigned int i = 0; i < data[0].size() / 4; ++i)
+        {
+            mesh.vertices[i][0] = data[0][i*4 + 0];
+            mesh.vertices[i][1] = data[0][i*4 + 1];
+            mesh.vertices[i][2] = data[0][i*4 + 2];
+            mesh.vertices[i][3] = data[0][i*4 + 3];
         }
 
-        // We are also loading uv coords and normals
-        mesh.request_vertex_normals();
-        mesh.request_vertex_texcoords2D();
-        int faceIdx = 0;
-        for_each (mesh.faces_begin(), mesh.faces_end(), [&] (const MeshContainer::FaceHandle& face)
+        mesh.uvs.resize(data[1].size() / 2);
+        for (unsigned int i = 0; i < data[1].size() / 2; ++i)
         {
-            int vertexIdx = 0;
-            for_each (mesh.cfv_begin(face), mesh.cfv_end(face), [&] (const MeshContainer::VertexHandle& vertex)
-            {
-                int floatIdx = faceIdx * 3 + vertexIdx;
-                mesh.set_texcoord2D(vertex, MeshContainer::TexCoord2D(data[1][floatIdx * 2 + 0], data[1][floatIdx * 2 + 1]));
-                mesh.set_normal(vertex, MeshContainer::Normal(data[2][floatIdx * 3 + 0], data[2][floatIdx * 3 + 1], data[2][floatIdx * 3 + 2]));
-                vertexIdx++;
-            });
-            faceIdx++;
-        });
+            mesh.uvs[i][0] = data[1][i*2 + 0];
+            mesh.uvs[i][1] = data[1][i*2 + 1];
+        }
+
+        mesh.normals.resize(data[2].size() / 3);
+        for (unsigned int i = 0; i < data[2].size() / 3; ++i)
+        {
+            mesh.normals[i][0] = data[0][i*3 + 0];
+            mesh.normals[i][1] = data[0][i*3 + 1];
+            mesh.normals[i][2] = data[0][i*3 + 2];
+        }
 
         _bufferMesh = mesh;
         _meshUpdated = true;
@@ -297,45 +239,78 @@ void Mesh::update()
 /*************/
 void Mesh::createDefaultMesh()
 {
-    lock_guard<mutex> lock(_writeMutex);
-
-    _mesh.clear();
+    MeshContainer mesh;
 
     // Create the vertices
-    MeshContainer::VertexHandle vertices[4];
-    vertices[0] = _mesh.add_vertex(MeshContainer::Point(-1, -1, 0));
-    vertices[1] = _mesh.add_vertex(MeshContainer::Point(1, -1, 0));
-    vertices[2] = _mesh.add_vertex(MeshContainer::Point(1, 1, 0));
-    vertices[3] = _mesh.add_vertex(MeshContainer::Point(-1, 1, 0));
+    mesh.vertices.push_back(glm::vec4(-1.0, -1.0, 0.0, 1.0));
+    mesh.vertices.push_back(glm::vec4(1.0, -1.0, 0.0, 1.0));
+    mesh.vertices.push_back(glm::vec4(1.0, 1.0, 0.0, 1.0));
+    mesh.vertices.push_back(glm::vec4(1.0, 1.0, 0.0, 1.0));
+    mesh.vertices.push_back(glm::vec4(-1.0, 1.0, 0.0, 1.0));
+    mesh.vertices.push_back(glm::vec4(-1.0, -1.0, 0.0, 1.0));
 
-    // Then the faces
-    vector<MeshContainer::VertexHandle> faceHandle;
-    faceHandle.clear();
-    faceHandle.push_back(vertices[0]);
-    faceHandle.push_back(vertices[1]);
-    faceHandle.push_back(vertices[2]);
-    _mesh.add_face(faceHandle);
+    mesh.uvs.push_back(glm::vec2(0.0, 0.0));
+    mesh.uvs.push_back(glm::vec2(1.0, 0.0));
+    mesh.uvs.push_back(glm::vec2(1.0, 1.0));
+    mesh.uvs.push_back(glm::vec2(1.0, 1.0));
+    mesh.uvs.push_back(glm::vec2(0.0, 1.0));
+    mesh.uvs.push_back(glm::vec2(0.0, 0.0));
 
-    faceHandle.clear();
-    faceHandle.push_back(vertices[2]);
-    faceHandle.push_back(vertices[3]);
-    faceHandle.push_back(vertices[0]);
-    _mesh.add_face(faceHandle);
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
 
-    // Update the normals
-    _mesh.request_vertex_normals();
-    _mesh.request_face_normals();
-    _mesh.update_normals();
-    _mesh.release_face_normals();
-
-    // Add the UV coords
-    _mesh.request_vertex_texcoords2D();
-    _mesh.set_texcoord2D(vertices[0], MeshContainer::TexCoord2D(0, 0));
-    _mesh.set_texcoord2D(vertices[1], MeshContainer::TexCoord2D(1, 0));
-    _mesh.set_texcoord2D(vertices[2], MeshContainer::TexCoord2D(1, 1));
-    _mesh.set_texcoord2D(vertices[3], MeshContainer::TexCoord2D(0, 1));
+    lock_guard<mutex> lock(_writeMutex);
+    _mesh = std::move(mesh);
 
     updateTimestamp();
+}
+
+/*************/
+Mesh::MeshContainer Mesh::convertToInnerMesh(OpenMeshContainer mesh)
+{
+    MeshContainer convertedMesh;
+
+    if (mesh.n_faces() == 0)
+        return convertedMesh;
+
+    convertedMesh.vertices.resize(mesh.n_faces() * 3);
+    convertedMesh.uvs.resize(mesh.n_faces() * 3);
+    convertedMesh.normals.resize(mesh.n_faces() * 3);
+    int idx = 0;
+    try
+    {
+        for_each (mesh.faces_begin(), mesh.faces_end(), [&] (const OpenMeshContainer::FaceHandle& face)
+        {
+            for_each (mesh.cfv_begin(face), mesh.cfv_end(face), [&] (const OpenMeshContainer::VertexHandle& vertex)
+            {
+                auto point = mesh.point(vertex);
+                for (int i = 0; i < 3; ++i)
+                    convertedMesh.vertices[idx][i] = point[i];
+                convertedMesh.vertices[idx][3] = 1.f; // We add this to get normalized coordinates
+
+                auto tex = mesh.texcoord2D(vertex);
+                for (int i = 0; i < 2; ++i)
+                    convertedMesh.uvs[idx][i] = tex[i];
+
+                auto normal = mesh.normal(vertex);
+                for (int i = 0; i < 3; ++i)
+                    convertedMesh.normals[idx][i] = normal[i];
+
+                idx++;
+            });
+        });
+    }
+    catch (...)
+    {
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
+        return MeshContainer();
+    }
+
+    return convertedMesh;
 }
 
 /*************/
