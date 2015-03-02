@@ -34,8 +34,6 @@
 #include <mutex>
 #include <vector>
 #include <glm/glm.hpp>
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 
 #include "coretypes.h"
 
@@ -123,9 +121,6 @@ class Mesh : public BufferObject
         bool _benchmark {false};
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
-
-        typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> OpenMeshContainer;
-        MeshContainer convertToInnerMesh(OpenMeshContainer mesh); //< Converts the given OpenMesh to our simple mesh representation
         
         /**
          * Register new functors to modify attributes

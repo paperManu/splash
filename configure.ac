@@ -83,12 +83,6 @@ if test "$HAVE_SNAPPY" = "false" ; then
     AC_MSG_ERROR([Missing Snappy])
 fi
 
-# OpenMesh
-PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
-if test "x${have_openmesh}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing openmesh])
-fi
-
 # JSoncpp
 PKG_CHECK_MODULES([JSONCPP], [jsoncpp])
 if test "x${have_jsoncpp}" = "xfalse" ; then

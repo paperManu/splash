@@ -49,7 +49,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	$(GLM_CFLAGS) \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
-	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS) \
     $(SIMD_FLAGS) \
 	$(SIMDPP_FLAGS) \
@@ -62,7 +61,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	$(GL_LIBS) \
 	$(GSL_LIBS) \
 	$(JSONCPP_LIBS) \
-	$(OPENMESH_LIBS) \
 	$(SHMDATA_LIBS) \
 	$(ZMQ_LIBS)
 
@@ -89,7 +87,6 @@ splash_CXXFLAGS = \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
-	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
@@ -108,7 +105,6 @@ splash_scene_CXXFLAGS = \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
-	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS)
 
 splash_scene_LDFLAGS = \
@@ -130,6 +126,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
+	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \

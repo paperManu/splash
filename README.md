@@ -63,7 +63,6 @@ Splash relies on a few libraries to get the job done. These libraries are:
 - [OpenGL](http://opengl.org),
 - [GLFW](http://glfw.org) to handle the GL context creation,
 - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-- [OpenMesh](http://openmesh.org) to load and manipulate meshes,
 - [OpenImageIO](http://www.openimageio.org) to load and manipulate image buffers,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
@@ -80,7 +79,7 @@ A few more libraries are used as submodules in the git repository:
 - [Piccante](https://github.com/banterle/piccante) to create HDR images.
 
 ### Dependencies installation
-Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenMesh, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
 Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
@@ -98,11 +97,11 @@ Your first option to install Splash is to use the packaged version:
 
 And you should be ready to go!
 
-If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations. Also, OpenMesh is not in the default Ubuntu repository, so it has been packaged by the Metalab and is only available for Ubuntu 13.10 yet. If you want to install Splash on another revision you have to compile OpenMesh by yourself.
+If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
     sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
     sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt-get install libglfw3-dev libopenmesh-dev
+    sudo apt-get install libglfw3-dev
 
     git clone git://github.com/paperManu/splash
     cd splash

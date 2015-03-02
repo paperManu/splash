@@ -1,6 +1,7 @@
 #include "mesh.h"
 
 #include "log.h"
+#include "meshLoader.h"
 #include "timer.h"
 
 using namespace std;
@@ -78,25 +79,20 @@ vector<float> Mesh::getNormals() const
 /*************/
 bool Mesh::read(const string& filename)
 {
-    OpenMesh::IO::Options readOptions;
-    readOptions += OpenMesh::IO::Options::VertexTexCoord;
-
-    OpenMeshContainer mesh;
-    mesh.request_vertex_texcoords2D();
-    if (!OpenMesh::IO::read_mesh(mesh, filename, readOptions))
+    Loader::Obj objLoader;
+    if (!objLoader.load(filename))
     {
         SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file" << Log::endl;
         return false;
     }
-    
-    // Update the normals
-    mesh.request_vertex_normals();
-    mesh.request_face_normals();
-    mesh.update_normals();
-    mesh.release_face_normals();
+
+    MeshContainer mesh;
+    mesh.vertices = objLoader.getVertices();
+    mesh.uvs = objLoader.getUVs();
+    mesh.normals = objLoader.getNormals();
 
     lock_guard<mutex> lock(_writeMutex);
-    _mesh = convertToInnerMesh(mesh);
+    _mesh = mesh;
     updateTimestamp();
 
     return true;
@@ -267,50 +263,6 @@ void Mesh::createDefaultMesh()
     _mesh = std::move(mesh);
 
     updateTimestamp();
-}
-
-/*************/
-Mesh::MeshContainer Mesh::convertToInnerMesh(OpenMeshContainer mesh)
-{
-    MeshContainer convertedMesh;
-
-    if (mesh.n_faces() == 0)
-        return convertedMesh;
-
-    convertedMesh.vertices.resize(mesh.n_faces() * 3);
-    convertedMesh.uvs.resize(mesh.n_faces() * 3);
-    convertedMesh.normals.resize(mesh.n_faces() * 3);
-    int idx = 0;
-    try
-    {
-        for_each (mesh.faces_begin(), mesh.faces_end(), [&] (const OpenMeshContainer::FaceHandle& face)
-        {
-            for_each (mesh.cfv_begin(face), mesh.cfv_end(face), [&] (const OpenMeshContainer::VertexHandle& vertex)
-            {
-                auto point = mesh.point(vertex);
-                for (int i = 0; i < 3; ++i)
-                    convertedMesh.vertices[idx][i] = point[i];
-                convertedMesh.vertices[idx][3] = 1.f; // We add this to get normalized coordinates
-
-                auto tex = mesh.texcoord2D(vertex);
-                for (int i = 0; i < 2; ++i)
-                    convertedMesh.uvs[idx][i] = tex[i];
-
-                auto normal = mesh.normal(vertex);
-                for (int i = 0; i < 3; ++i)
-                    convertedMesh.normals[idx][i] = normal[i];
-
-                idx++;
-            });
-        });
-    }
-    catch (...)
-    {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - The mesh seems to be malformed." << Log::endl;
-        return MeshContainer();
-    }
-
-    return convertedMesh;
 }
 
 /*************/
