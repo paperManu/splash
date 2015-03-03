@@ -149,6 +149,11 @@ class Camera : public BaseObject
         Values pickCalibrationPoint(float x, float y);
 
         /**
+         * Pick the closest calibration point or vertex
+         */
+        Values pickVertexOrCalibrationPoint(float x, float y);
+
+        /**
          * Render this camera into its textures
          */
         bool render();
@@ -160,7 +165,7 @@ class Camera : public BaseObject
         bool addCalibrationPoint(Values worldPoint);
         void deselectCalibrationPoint();
         void moveCalibrationPoint(float dx, float dy);
-        void removeCalibrationPoint(Values worldPoint, bool unlessSet = false);
+        void removeCalibrationPoint(Values point, bool unlessSet = false);
         bool setCalibrationPoint(Values screenPoint);
 
         /**

@@ -515,38 +515,63 @@ Values Camera::pickFragment(float x, float y)
 /*************/
 Values Camera::pickCalibrationPoint(float x, float y)
 {
-    // Convert the normalized coordinates ([0, 1]) to pixel coordinates
-    float realX = x * _width;
-    float realY = y * _height;
+    dvec3 screenPoint(x * _width, y * _height, 0.0);
 
-    // Get the depth at the given point
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-    float depth;
-    glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    dmat4 lookM = lookAt(_eye, _target, _up);
+    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dvec4 viewport(0, 0, _width, _height);
 
-    if (depth == 1.f)
-        return Values();
+    double minDist = numeric_limits<double>::max();
+    int index = -1;
 
-    // Unproject the point
-    dvec3 screenPoint(realX, realY, depth);
-
-    float distance = numeric_limits<float>::max();
-    dvec3 vertex;
-    for (auto& cPoint : _calibrationPoints)
+    for (int i = 0; i < _calibrationPoints.size(); ++i)
     {
-        dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up),
-                               computeProjectionMatrix(), dvec4(0, 0, _width, _height));
-        glm::dvec3 closestVertex;
-        float tmpDist;
-        if ((tmpDist = length(point - cPoint.world)) < distance)
+        dvec3 projectedPoint = project(_calibrationPoints[i].world, lookM, projM, viewport);
+        projectedPoint.z = 0.0;
+        if (length(projectedPoint - screenPoint) < minDist)
         {
-            distance = tmpDist;
-            vertex = cPoint.world;
+            minDist = length(projectedPoint - screenPoint);
+            index = i;
         }
     }
 
-    return {vertex.x, vertex.y, vertex.z};
+    if (index != -1)
+    {
+        dvec3 vertex = _calibrationPoints[index].world;
+        return {vertex[0], vertex[1], vertex[2]};
+    }
+    else
+        return Values();
+}
+
+/*************/
+Values Camera::pickVertexOrCalibrationPoint(float x, float y)
+{
+    Values vertex = pickVertex(x, y);
+    Values point = pickCalibrationPoint(x, y);
+
+    dvec3 screenPoint(x * _width, y * _height, 0.0);
+
+    dmat4 lookM = lookAt(_eye, _target, _up);
+    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dvec4 viewport(0, 0, _width, _height);
+
+    if (vertex.size() == 0 && point.size() == 0)
+        return Values();
+    else if (vertex.size() == 0)
+        return point;
+    else if (point.size() == 0)
+        return vertex;
+    else
+    {
+        double vertexDist = length(screenPoint - project(dvec3(vertex[0].asFloat(), vertex[1].asFloat(), vertex[2].asFloat()), lookM, projM, viewport));
+        double pointDist = length(screenPoint - project(dvec3(point[0].asFloat(), point[1].asFloat(), point[2].asFloat()), lookM, projM, viewport));
+
+        if (pointDist <= vertexDist)
+            return point;
+        else
+            return vertex;
+    }
 }
 
 /*************/
@@ -720,23 +745,51 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 }
 
 /*************/
-void Camera::removeCalibrationPoint(Values worldPoint, bool unlessSet)
+void Camera::removeCalibrationPoint(Values point, bool unlessSet)
 {
-    if (worldPoint.size() < 3)
-        return;
+    if (point.size() == 2)
+    {
+        dvec3 screenPoint(point[0].asFloat(), point[1].asFloat(), 0.0);
 
-    dvec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+        dmat4 lookM = lookAt(_eye, _target, _up);
+        dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+        dvec4 viewport(0, 0, _width, _height);
 
-    for (int i = 0; i < _calibrationPoints.size(); ++i)
-        if (_calibrationPoints[i].world == world)
+        double minDist = numeric_limits<double>::max();
+        int index = -1;
+
+        for (int i = 0; i < _calibrationPoints.size(); ++i)
         {
-            if (_calibrationPoints[i].isSet == true && unlessSet)
-                continue;
-            _calibrationPoints.erase(_calibrationPoints.begin() + i);
-            _selectedCalibrationPoint = -1;
+            dvec3 projectedPoint = project(_calibrationPoints[i].world, lookM, projM, viewport);
+            projectedPoint.z = 0.0;
+            if (length(projectedPoint - screenPoint) < minDist)
+            {
+                minDist = length(projectedPoint - screenPoint);
+                index = i;
+            }
         }
 
-    _calibrationCalledOnce = false;
+        if (index != -1)
+        {
+            _calibrationPoints.erase(_calibrationPoints.begin() + index);
+            _calibrationCalledOnce = false;
+        }
+    }
+    else if (point.size() == 3)
+    {
+        dvec3 world(point[0].asFloat(), point[1].asFloat(), point[2].asFloat());
+
+        for (int i = 0; i < _calibrationPoints.size(); ++i)
+            if (_calibrationPoints[i].world == world)
+            {
+                if (_calibrationPoints[i].isSet == true && unlessSet)
+                    continue;
+                _calibrationPoints.erase(_calibrationPoints.begin() + i);
+                _selectedCalibrationPoint = -1;
+            }
+
+        _calibrationCalledOnce = false;
+    }
 }
 
 /*************/
@@ -1170,7 +1223,7 @@ void Camera::registerAttributes()
     });
 
     _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 3)
+        if (args.size() < 2)
             return false;
         else if (args.size() == 3)
             removeCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});

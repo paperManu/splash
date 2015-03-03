@@ -503,7 +503,7 @@ void GuiGlobalView::processMouseEvents()
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
         else if (io.MouseClicked[0]) // Add a new calibration point
         {
-            Values position = _camera->pickVertex(mousePos.x, mousePos.y);
+            Values position = _camera->pickVertexOrCalibrationPoint(mousePos.x, mousePos.y);
             if (position.size() == 3)
             {
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
