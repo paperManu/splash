@@ -20,6 +20,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtx/simd_vec4.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
 #define SPLASH_WORLDMARKER_SCALE 0.015
@@ -1085,6 +1086,13 @@ void Camera::registerAttributes()
         dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
         dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
+
+        direction = _eye - _target;
+        direction = rotate(direction, (double)args[1].asFloat(), dvec3(direction[1], -direction[0], 0.0));
+        dvec3 newEye = direction + _target;
+        if (angle(normalize(dvec3(newEye[0], newEye[1], std::abs(newEye[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
+            _eye = direction + _target;
+
         return true;
     });
 
@@ -1093,7 +1101,8 @@ void Camera::registerAttributes()
             return false;
         dvec3 point(args[3].asFloat(), args[4].asFloat(), args[5].asFloat());
         dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
-        // Rotate the target, then the eye
+
+        // Rotate the target around Z, then the eye
         dvec3 direction = point - _target;
         dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
         _target = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
@@ -1101,6 +1110,16 @@ void Camera::registerAttributes()
         direction = point - _eye;
         newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
+
+        // Rotate around the X axis
+        direction = _eye - _target;
+        direction = direction / length(direction) * length(_eye - point);
+        dvec3 _target = _eye - direction;
+        direction = rotate(direction, (double)args[1].asFloat(), dvec3(direction[1], -direction[0], 0.0));
+        dvec3 newEye = direction + _target;
+        if (angle(normalize(dvec3(newEye[0], newEye[1], std::abs(newEye[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
+            _eye = direction + _target;
+
         return true;
     });
 
@@ -1109,11 +1128,12 @@ void Camera::registerAttributes()
             return false;
         dvec4 panV(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), 0.f);
         dvec3 dirV = normalize(_eye - _target);
-        double alpha = dirV.y >= 0.0 ? acos(dirV.x) : 2 * M_PI - acos(dirV.x);
-        dmat4 rotZ = rotate(dmat4(1.f), (double)-alpha + M_PI/2.0, dvec3(0.0, 0.0, 1.0));
-        dvec4 moveV = panV * rotZ;
-        _target = _target + dvec3(moveV.x, moveV.y, moveV.z);
-        _eye = _eye + dvec3(moveV.x, moveV.y, moveV.z);
+
+        dmat4 rotMat = inverse(computeViewMatrix());
+        panV = rotMat * panV;
+        _target = _target + dvec3(panV[0], panV[1], panV[2]);
+        _eye = _eye + dvec3(panV[0], panV[1], panV[2]);
+        panV = normalize(panV);
 
         return true;
     });

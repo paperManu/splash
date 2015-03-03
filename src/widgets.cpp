@@ -530,18 +530,16 @@ void GuiGlobalView::processMouseEvents()
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, 0, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
                 else
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, dy / 100.f, 0});
             }
             else
             {
                 if (_newTarget.size() == 3)
-                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, 0, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
                 else
-                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
-                _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
+                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
         }
         // Move the target and the camera (in the camera plane)
@@ -551,9 +549,9 @@ void GuiGlobalView::processMouseEvents()
             float dy = io.MouseDelta.y;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", dx / 100.f, 0, dy / 100.f});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", -dx / 100.f, dy / 100.f, 0.f});
             else
-                _camera->setAttribute("pan", {dx / 100.f, 0, dy / 100.f});
+                _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0});
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
