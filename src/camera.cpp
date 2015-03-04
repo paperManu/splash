@@ -1165,13 +1165,21 @@ void Camera::registerAttributes()
         _eye = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
 
         // Rotate around the X axis
-        direction = _eye - _target;
-        direction = direction / length(direction) * length(_eye - point);
-        dvec3 _target = _eye - direction;
-        direction = rotate(direction, (double)args[1].asFloat(), dvec3(direction[1], -direction[0], 0.0));
-        dvec3 newEye = direction + _target;
-        if (angle(normalize(dvec3(newEye[0], newEye[1], std::abs(newEye[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
-            _eye = direction + _target;
+        dvec3 axis = normalize(_eye - _target);
+        direction = point - _target;
+        dvec3 tmpTarget = rotate(direction, (double)args[1].asFloat(), dvec3(axis[1], -axis[0], 0.0));
+        tmpTarget = point - tmpTarget;
+
+        direction = point - _eye;
+        dvec3 tmpEye = rotate(direction, (double)args[1].asFloat(), dvec3(axis[1], -axis[0], 0.0));
+        tmpEye = point - tmpEye;
+        
+        direction = tmpEye - tmpTarget;
+        if (angle(normalize(dvec3(direction[0], direction[1], std::abs(direction[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
+        {
+            _eye = tmpEye;
+            _target = tmpTarget;
+        }
 
         return true;
     });
