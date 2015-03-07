@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <cstddef>
@@ -41,9 +42,12 @@ typedef std::shared_ptr<Scene> ScenePtr;
 /*************/
 class Scene : public RootObject
 {
+    friend ColorCalibrator;
+    friend GuiColorCalibration;
+    friend GuiControl;
+    friend GuiGlobalView;
+    friend GuiWidget;
     friend Gui;
-    friend GlvGlobalView;
-    friend GlvControl;
 
     public:
         /**
@@ -75,6 +79,11 @@ class Scene : public RootObject
          * Get a glfw window sharing the same context as _mainWindow
          */
         GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
+
+        /**
+         * Get the list of objects by their type
+         */
+        Values getObjectsNameByType(std::string type);
 
         /**
          * Get the status of the scene, return true if all is well
@@ -118,7 +127,7 @@ class Scene : public RootObject
         /**
          * Set the Scene as the master one
          */
-        void setAsMaster() {_isMaster = true;}
+        void setAsMaster();
 
         /**
          * Give a special behavior to the scene, making it the main window of the World
@@ -128,7 +137,7 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessage(const std::string message, const Values value = {});
+        void sendMessageToWorld(const std::string message, const Values value = {});
 
         /**
          * Wait for synchronization with texture upload
@@ -142,6 +151,14 @@ class Scene : public RootObject
 
         std::map<std::string, BaseObjectPtr> _ghostObjects;
 
+        // Gui exists in master scene whatever the configuration
+        GuiPtr _gui;
+        bool _guiLinkedToWindow {false};
+        // Objects in charge of calibration
+#if HAVE_GPHOTO
+        ColorCalibratorPtr _colorCalibrator;
+#endif
+
         /**
          * Creates the blending map from the current calibration of the cameras
          */
@@ -149,10 +166,9 @@ class Scene : public RootObject
 
     private:
         ScenePtr _self;
-        std::shared_ptr<Link> _link;
         bool _started {false};
         std::thread _sceneLoop;
-        std::mutex _configureMutex;
+        std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};
@@ -164,7 +180,7 @@ class Scene : public RootObject
         std::thread _textureUploadLoop;
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
-        std::mutex _textureUploadSetupMutex;
+        std::mutex _textureUploadMutex;
         GLsync _textureUploadFence;
 
         // NV Swap group specific
@@ -177,10 +193,6 @@ class Scene : public RootObject
         unsigned int _blendingResolution {2048};
         TexturePtr _blendingTexture;
         ImagePtr _blendingMap;
-
-        // List of actions to do during the next render loop
-        bool _doComputeBlending {false};
-        bool _doSaveNow {false};
 
         /**
          * Set up the context and everything

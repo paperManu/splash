@@ -19,7 +19,11 @@ Table of Contents
 
 [Objects description](#objects)
 
-[Calibration](#calibration)
+[User interface](#gui)
+
+[Geometrical calibration](#geometry_calibration)
+
+[Color calibration](#color_calibration)
 
 [Blending](#blending)
 
@@ -29,17 +33,17 @@ Introduction
 ------------
 
 ### About
-Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.
+Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending and color), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.
 
-Splash has been primarily targeted toward fulldome mapping, and has been extensively tested in this context. Two fulldomes have been mapped: a small dome (3m wide) with 4 projectors, and a big one (20m wide) with 8 projectors. Also, the focus has been made on optimization. As of yet Splash can handle flawlessly a 3072x3072@30Hz video input, and 4096x4096@60Hz on eight outputs (two graphic cards) with a powerful enough cpu and the [HapQ](http://vdmx.vidvox.net/blog/hap) video codec (on a SSD as this codec needs a very high bandwidth). Due to its architecture, higher resolutions are more likely to run smoothly when a single graphic card is used, although nothing higher than 4096x4096@60Hz has been tested yet.
+Splash has been primarily targeted toward fulldome mapping, and has been extensively tested in this context. Two fulldomes have been mapped: a small dome (3m wide) with 4 projectors, and a big one (20m wide) with 8 projectors. It has also been tested sucessfully as a more regular video-mapping software to project on buildings. Focus has been made on optimization: as of yet Splash can handle flawlessly a 3072x3072@30Hz live video input, and 4096x4096@60Hz on eight outputs (two graphic cards) with a powerful enough cpu and the [HapQ](http://vdmx.vidvox.net/blog/hap) video codec (on a SSD as this codec needs a very high bandwidth). Due to its architecture, higher resolutions are more likely to run smoothly when a single graphic card is used, although nothing higher than 4096x4096@60Hz has been tested yet (well, we tested 6144x6144@60Hz but the drive throughput was not enough to sustain the video bitrate).
 
-Video flows are currently read through shared memory, using the libshmdata library. This makes it compatible with most of the softwares from the SAT Metalab, including Scenic2 which is the best choice to feed Splash film or realtime videos.
+Video flows are currently read through shared memory, using the libshmdata library. This makes it compatible with most of the softwares from the SAT Metalab, including Scenic2 which is the best choice to feed Splash film or realtime videos. 3D models can be either loaded from files, or sent to Splash through the same shared memory library. An addon for Blender is included, which allows sending any mesh to Splash from Blender.
 
 ### License
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
 
 ### Authors
-* Emmanuel Durand ([Github](https://github.com/paperManu))
+* Emmanuel Durand ([Github](https://github.com/paperManu))([Website](https://emmanueldurand.net))
 
 ### Projet URL
 This project can be found either on the [SAT Metalab repository](http://code.sat.qc.ca/redmine/projects/splash) or on [Github](https://github.com/paperManu/splash).
@@ -59,22 +63,23 @@ Splash relies on a few libraries to get the job done. These libraries are:
 - [OpenGL](http://opengl.org),
 - [GLFW](http://glfw.org) to handle the GL context creation,
 - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-- [OpenMesh](http://openmesh.org) to load and manipulate meshes,
 - [OpenImageIO](http://www.openimageio.org) to load and manipulate image buffers,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
 - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
-- [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression.
+- [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
+- [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
 
 A few more libraries are used as submodules in the git repository:
 
-- [GLV](http://mat.ucsb.edu/glv) to draw a (rather simple) GUI,
+- [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
 - [libsimdpp](https://github.com/p12tic/libsimdpp) to use SIMD instructions (currently in YUV to RGB conversion),
-- [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing.
+- [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
+- [Piccante](https://github.com/banterle/piccante) to create HDR images.
 
 ### Dependencies installation
-Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenMesh, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
 Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
@@ -92,16 +97,16 @@ Your first option to install Splash is to use the packaged version:
 
 And you should be ready to go!
 
-If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations. Also, OpenMesh is not in the default Ubuntu repository, so it has been packaged by the Metalab and is only available for Ubuntu 13.10 yet. If you want to install Splash on another revision you have to compile OpenMesh by yourself.
+If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
     sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
-    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev
-    sudo apt-get install libglfw3-dev libopenmesh-dev
+    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
+    sudo apt-get install libglfw3-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
     git checkout develop
-    git submodule init && git submodule update
+    git submodule update --init
     ./autogen.sh && ./configure
     make && sudo make install
 
@@ -119,10 +124,10 @@ As said earlier, Splash was made very modular to handle situations outside the s
 - *image*: a static image.
 - *image_shmdata*: a video flow read from a shared memory.
 - *mesh*: a mesh (and its UV mapping) corresponding to the projection surface, described as vertices and uv coordinates.
+- *mesh_shmdata*: a mesh (and its UV mapping) read from a shared memory.
 - *object*: utility class to specify which image will be mapped on which mesh.
-- *gui*: a GUI, meaning that it is possible to launch Splash with no GUI if it is already configured.
 
-The other, less useful but who knows objects, are usually created automatically when needed. It is still possible to create them by hand if you have some very specific needs (or if you are a control freak):
+The other, less useful (but who knows) objects, are usually created automatically when needed. It is still possible to create them by hand if you have some very specific needs (or if you are a control freak):
 
 - *geometry*: intermediary class holding vertex, uv and normal coordinates of a projection surface, to send them to the GPU.
 - *shader*: a shader, describing how an object will be drawn.
@@ -166,23 +171,19 @@ Please not that *surface.obj* would be a 3D mesh representation of the projectio
                 "size" : [1920, 1200],
                 "eye" : [-2.0, 2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
-                "blendWidth" : 0.05,
-                "shared" : 0
+                "blendWidth" : 0.05
             },
             "win" : {"type" : "window", "fullscreen" : 1},
     
             "mesh" : {"type" : "mesh", "file" : "surface.obj"},
             "object" : {"type" : "object", "sideness" : 2},
             "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0},
-            "gui" : {"type" : "gui"},
     
             "links" : [
                 ["mesh", "object"],
                 ["image", "object"],
                 ["object", "cam"],
-                ["object", "gui"],
-                ["cam", "win"],
-                ["gui", "win"]
+                ["cam", "win"]
             ]
         }
     }
@@ -219,29 +220,25 @@ Description of the sole *Scene* in this configuration file, with its name, its a
                 "size" : [1920, 1200],
                 "eye" : [-2.0, 2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
-                "blendWidth" : 0.05,
-                "shared" : 0
+                "blendWidth" : 0.05
             },
             "win" : {"type" : "window", "fullscreen" : 1},
     
             "mesh" : {"type" : "mesh", "file" : "surface.obj"},
             "object" : {"type" : "object", "sideness" : 2},
             "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0},
-            "gui" : {"type" : "gui"},
     
             "links" : [
                 ["mesh", "object"],
                 ["image", "object"],
                 ["object", "cam"],
-                ["object", "gui"],
-                ["cam", "win"],
-                ["gui", "win"]
+                ["cam", "win"]
             ]
         }
 
 This section describes the objects present in the *Scene* named "local". This *Scene* contains a single *camera*, linked to a *window*. An *object* consisting of a *mesh* on which an *image* is mapped is drawn through the *camera*. Also, a *gui* is set.
 
-At the end of this section is a list of all the links between the objects. Note that the *object* is connected both to the *camera* and the *gui*: if it were only connected to the *camera*, it would not be visible in the *gui*.
+At the end of this section is a list of all the links between the objects. Note that any *object* is automatically connected to the *gui* of the master *Scene* (i.e. the first one).
 
 
 ### Four outputs, a single *Scene*
@@ -271,8 +268,7 @@ At the end of this section is a list of all the links between the objects. Note 
                 "eye" : [-2.0, 2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
                 "blendWidth" : 0.05,
-                "blackLevel" : 0.0,
-                "shared" : 0
+                "blackLevel" : 0.0
             },
             "cam2" : {
                 "type" : "camera",
@@ -280,8 +276,7 @@ At the end of this section is a list of all the links between the objects. Note 
                 "eye" : [2.0, -2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
                 "blendWidth" : 0.05,
-                "blackLevel" : 0.0,
-                "shared" : 0
+                "blackLevel" : 0.0
             },
             "cam3" : {
                 "type" : "camera",
@@ -289,8 +284,7 @@ At the end of this section is a list of all the links between the objects. Note 
                 "eye" : [-2.0, -2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
                 "blendWidth" : 0.05,
-                "blackLevel" : 0.0,
-                "shared" : 0
+                "blackLevel" : 0.0
             },
             "cam4" : {
                 "type" : "camera",
@@ -298,8 +292,7 @@ At the end of this section is a list of all the links between the objects. Note 
                 "eye" : [2.0, 2.0, -0.5],
                 "target" : [0.0, 0.0, 0.5],
                 "blendWidth" : 0.05,
-                "blackLevel" : 0.0,
-                "shared" : 0
+                "blackLevel" : 0.0
             },
             "win1" : {"type" : "window", "fullscreen" : 0},
             "win2" : {"type" : "window", "fullscreen" : 1},
@@ -309,7 +302,6 @@ At the end of this section is a list of all the links between the objects. Note 
             "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
             "object" : {"type" : "object", "sideness" : 2},
             "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-            "gui" : {"type" : "gui"},
     
             "links" : [
                 ["mesh", "object"],
@@ -317,13 +309,11 @@ At the end of this section is a list of all the links between the objects. Note 
                 ["object", "cam2"],
                 ["object", "cam3"],
                 ["object", "cam4"],
-                ["object", "gui"],
                 ["shmimage", "object"],
                 ["cam1", "win1"],
                 ["cam2", "win2"],
                 ["cam3", "win3"],
-                ["cam4", "win4"],
-                ["gui", "win1"]
+                ["cam4", "win4"]
             ]
         }
     }
@@ -365,16 +355,14 @@ Apart from the number of *cameras* and *windows*, this configuration is very sim
                 "size" : [1920, 1200],
                 "eye" : [-2.0, 2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
-                "blendWidth" : 0.05,
-                "shared" : 0
+                "blendWidth" : 0.05
             },
             "cam2" : {
                 "type" : "camera",
                 "size" : [1920, 1200],
                 "eye" : [2.0, -2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
-                "blendWidth" : 0.05,
-                "shared" : 0
+                "blendWidth" : 0.05
             },
             "win1" : {"type" : "window", "fullscreen" : 0},
             "win2" : {"type" : "window", "fullscreen" : 1},
@@ -382,17 +370,14 @@ Apart from the number of *cameras* and *windows*, this configuration is very sim
             "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
             "object" : {"type" : "object", "sideness" : 2},
             "shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-            "gui" : {"type" : "gui"},
     
             "links" : [
                 ["mesh", "object"],
                 ["object", "cam1"],
                 ["object", "cam2"],
-                ["object", "gui"],
                 ["shmimage", "object"],
                 ["cam1", "win1"],
-                ["cam2", "win2"],
-                ["gui", "win1"]
+                ["cam2", "win2"]
             ]
         },
     
@@ -402,16 +387,14 @@ Apart from the number of *cameras* and *windows*, this configuration is very sim
                 "size" : [1920, 1200],
                 "eye" : [-2.0, -2.0, 0.3],
                 "target" : [0.0, 0.0, 0.5],
-                "blendWidth" : 0.05,
-                "shared" : 0
+                "blendWidth" : 0.05
             },
             "cam4" : {
                 "type" : "camera",
                 "size" : [1920, 1200],
                 "eye" : [2.0, 2.0, -0.5],
                 "target" : [0.0, 0.0, 0.5],
-                "blendWidth" : 0.05,
-                "shared" : 0
+                "blendWidth" : 0.05
             },
             "win3" : {"type" : "window", "fullscreen" : 2},
             "win4" : {"type" : "window", "fullscreen" : 3},
@@ -424,7 +407,6 @@ Apart from the number of *cameras* and *windows*, this configuration is very sim
                 ["mesh", "object"],
                 ["object", "cam3"],
                 ["object", "cam4"],
-                ["object", "gui"],
                 ["shmimage", "object"],
                 ["cam3", "win3"],
                 ["cam4", "win4"]
@@ -455,16 +437,23 @@ Links to:
 
 Attributes:
 
-- eye [float, float, float]: position of the camera in the 3D space
-- target [float, float, float]: vector indicating the direction of the camera view
-- up [float, float, float]: vector of the up direction (used to tilt the view)
-- fov [float]: field of view of the camera, in degrees
-- size [int, int]: rendering size of the offscreen buffer. Will be updated when connected to a window
-- principalPoint [float, float]: optical center of the camera, in image coordinates
+- activateColorLUT [int]: if set to true, the color look up table will used if present
 - blendWidth [float]: width of the blending zone, along the camera borders
 - blackLevel [float]: minimum value outputted by the camera
 - brightness [float]: modify the global brightness of the rendering
-- shared [int]: (deprecated) if set to 1, send the output through a shmdata
+- colorTemperature [float]: white point for this camera, in Kelvin (default to 6500.0)
+- eye [float, float, float]: position of the camera in the 3D space
+- fov [float]: field of view of the camera, in degrees
+- principalPoint [float, float]: optical center of the camera, in image coordinates
+- size [int, int]: rendering size of the offscreen buffer. Will be updated when connected to a window
+- target [float, float, float]: vector indicating the direction of the camera view
+- up [float, float, float]: vector of the up direction (used to tilt the view)
+
+The following attributes should not be edited manually:
+
+- calibrationPoints [float array]: list of the calibration points
+- colorLUT [float array]: look up table created by the color calibration
+- colorMixMatrix [float array]: color mixing matrix created by the color calibration
 
 ### geometry
 Links from:
@@ -474,18 +463,6 @@ Links from:
 Links to:
 
 - object
-
-Attributes: None
-
-### gui
-Links from:
-
-- camera
-- object
-
-Links to:
-
-- window
 
 Attributes: None
 
@@ -500,6 +477,9 @@ Links to:
 Attributes:
 
 - benchmark [int]: if set to anything but 0, the *World* will send the image at every iteration even if the image has not been updated
+- file [string]: path to the image file to open
+- flip [int]: if set to 1, the image will be mirrored vertically
+- flop [int]: if set to 1, the image will be mirrored horizontally
 - srgb [int]: if set to anything but 0, the image will be considered to be represented in the sRGB color space
 
 ### image_shmdata
@@ -511,6 +491,33 @@ Links to:
 
 - texture
 - window
+
+Attributes:
+
+- file [string]: path to the shared memory to read from
+
+### mesh
+Links from: None
+
+Links to:
+
+- geometry
+- object
+
+Attributes:
+
+- benchmark [int]: if set to anything but 0, the *World* will send the mesh at every iteration even if the mesh has not been updated
+- file [string]: path to the mesh file to read from
+
+### mesh_shmdata
+As this class derives from the class mesh, it shares all its attributes and behaviors
+
+Links from: None
+
+Links to:
+
+- geometry
+- object
 
 Attributes:
 
@@ -560,6 +567,7 @@ Attributes:
 - swapInterval [int]: if set to:
     - 0: disables any vSync
     - any positive integer: will wait for as many frames between each window update.
+    - any negative integer: tries to use vSync except if render is too slow.
 
 ### texture
 A texture handles an image buffer, be it static or dynamic.
@@ -573,7 +581,9 @@ Links to:
 - object
 - window
 
-Attributes: None
+Attributes:
+
+- resizable [int]: if set to anything but 0, the texture will be resizable
 
 ### window
 A window is an output to a screen.
@@ -589,10 +599,15 @@ Links to: None
 
 Attributes:
 
+- decorated [int]: if set to anything but 0, the window will be decorated.
 - fullscreen [int]: if set to:
     - -1: disables fullscreen for this window
     - any positive or null integer: tries to set the window to fullscreen on the given screen number
+- gamma [float]: exponent to use for the gamma curve.
 - layout [int, int, int, int]: specifies how the input textures are ordered. This field is only needed if multiple cameras are connected to a single window, e.g. in the case of a window spanning through multiple projectors.
+- position [int, int]: window position in the current display
+- size [int, int]: window size
+- srgb [int]: if set to anything but 0, sRGB support will be enabled for the window.
 - swapInterval [int]: By default, the window swap interval is the same as the scene. If set to:
     - 0: disables any vSync
     - any positive integer: will wait for as many frames between each window update.
@@ -606,12 +621,30 @@ Links to: None
 
 Attributes:
 
+- computeBlending [int]: if set to anything but 0, blending will be computed at launch.
 - framerate [int]: refresh rate of the *World* main loop. Setting a value higher than the display refresh rate may help reduce latency between video input and output.
 
 
-<a name="calibration"/></a>
-Calibration
------------
+<a name="gui"/></a>
+User interface
+--------------
+
+The user interface is currently separated in two parts: the first one is the json configuration file, where the Cameras, Windows and various Images and Meshes are set. There is currently no way to add any of these objects during runtime, although it is planned.
+
+The second part is a GUI which appears in the very first Window created (this means that if you prefer having the GUI in its own window, you can specify the first window as empty, i.e. no link to anything, this can be very handy). Once Splash is launched, the GUI appears by pressing the tabulation key. The Splash Control Panel is divided in subpanels, as follows:
+
+- Base commands: contains very generic commands, like saving and computing the blending map,
+- Shortcuts: shows a list of the shortcuts,
+- Timings: shows a few timings regarding the performance of Splash, like the framerate,
+- Logs: shows the last log messages, replicated from the ones sent to the console,
+- Controls: gives control over the parameters of the various objects,
+- Views: shows a global view of the projection surface, which can be switched to any of the configured Cameras. This panel is also used to set geometric calibration up,
+- Performance Graph: a more detailed view of the performance of Splash, displaying all the timers implemented in the loop to detect bottlenecks.
+
+
+<a name="geometry_calibration"/></a>
+Geometrical calibration
+-----------------------
 
 This is a (very) preliminary guide to projector calibration in Splash, feel free to report any error or useful addition.
 
@@ -620,17 +653,50 @@ The way calibration works in Splash is to reproduce as closely as possible the p
 Once the configuration file is set and each videoprojector has an output, do the following on the screen which has the GUI :
 
 - Press 'tab' to make the GUI appear,
-- click on the dome view which is in the upper right corner,
-- press space to navigate through all the cameras, until you find the one you want to calibrage,
+- open the camera views, in the Views panel of the GUI,
+- while hovering the View panelpress space to navigate through all the cameras, until you find the one you want to calibrage,
 - press 'W' to switch the view to wireframe,
 - left click on a vertex to select it,
-- shift + left click to specify the position where this vertex should be projected. You can move this projection with the arrow keys.
-- continue until you have six pairs of point - projection. You can orientate the view with the mouse (left click + drag) and zoom in / out with the wheel.
+- shift + left click to specify the position where this vertex should be projected. You can move this projection with the arrow keys,
+- to delete an erroneous point, ctrl + left click on it,
+- continue until you have seven pairs of point - projection. You can orientate the view with the mouse (right click + drag) and zoom in / out with the wheel,
 - press 'C' to ask for calibration.
 
 At this point, you should have a first calibration. Pressing 'C' multiple times can help getting a better one, as is adding more pairs of point - projection. You can go back to previous calibration by pressing 'R'.
 
-Once you are happy with the result, you can go back to textured rendering by pressing 'T' and save the configuration by pressing 'Ctrl' + 'S'. It is advised to save after each calibrated camera (you never know...). Also, be aware that the calibration points are not saved, and will be lost after reloading the configuration.
+Once you are happy with the result, you can go back to textured rendering by pressing 'T' and save the configuration by pressing 'Ctrl' + 'S'. It is advised to save after each calibrated camera (you never know...). Also, be aware that the calibration points are saved, so you will be able to update them after reloading the project.
+
+
+<a name="color_calibration"/></a>
+Color calibration
+-----------------
+
+Color calibration is done by capturing (automatically) a bunch of photographs of the projected surface, so as to compute a common color and luminance space for all the videoprojectors. Note that Splash must have been compiled with GPhoto support for color calibration to be available. Also, color calibration does not need any geometric calibration to be done yet, although it would not make much sense to have color calibration without geometric calibration.
+
+- Connect a PTP-compatible camera to the computer. The list of compatible cameras can be found [there](http://gphoto.org/proj/libgphoto2/support.php).
+- Set the camera in manual mode, chose sensitivity (the lower the better regarding noise) and the aperture (between 1/5.6 and 1/8 to reduce vignetting).
+- Open the GUI by pressing 'tab'.
+- Go to the Control panel, find the "colorCalibrator" object in the list.
+- Set the various options, default values are a good start:
+    - colorSamples is the number of samples taken for each channel of each projector,
+    - detectionThresholdFactor has an effect on the detection of the position of each projector,
+    - equalizeMethod gives the choice between various color balance equalization methods:
+        - 0: select a mean color balance of all projectors base balance,
+        - 1: select the color balance of the weakest projector,
+        - 2: select the color balance which would give the highest global luminance,
+    - imagePerHDR sets the number of shots to create the HDR images on which color values will be measured,
+    - hdrStep sets the stops between two shots to create an HDR image.
+- Press 'O' or click on "Calibrate camera response" in the Base commands panel, to calibrate the camera color response,
+- Press 'P' or click on "Calibrate displays / projectors" to launch the projector calibration.
+
+Once done, calibration is automatically activated. It can be turned off by pressing 'L' or by clicking on "Activate correction". If the process went well, the luminance and color balance of the projectors should match more closely. If not, there are a few things to play with:
+
+- Projector detection could have gone wrong. Check in the logs (in the console) that the detected positions make sense. If not, increase or decrease the detectionThresholdFactor and retry.
+- The dynamic range of the projectors could be too wide. If so you would notice in the logs that there seem to be a maximum clamping value in the HDR measurements. If so, increase the imagePerHDR value.
+
+While playing with the values, do not hesitate to lower the colorSamples to reduce the calibration time. Once everything seems to run, increase it again to do the final calibration.
+
+Also, do not forget to save the calibration once you are happy with the results!
 
 
 <a name="blending"/></a>
@@ -639,4 +705,4 @@ Blending
 
 This is an easy part, as long as calibration is done: with the GUI open, press 'B' and wait for it to be computed!
 
-Although it is automatic, it is known to have some issues in specific cases which were not solved yet, but seem to be mostly related to the mesh. In particular, try replacing the mesh with a more / less refined one to check if it solves the issue. Note that the blending state is not saved yet.
+Although it is automatic, it is known to have some issues in specific cases which were not solved yet, but seem to be mostly related to the mesh. In particular, try replacing the mesh with a more / less refined one to check if it solves the issue. Note that the blending map is not saved but computed each time a file is loaded (if set so in the configuration file).

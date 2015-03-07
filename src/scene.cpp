@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include <utility>
+
 #include "camera.h"
 #include "geometry.h"
 #include "gui.h"
@@ -13,6 +15,10 @@
 #include "threadpool.h"
 #include "timer.h"
 #include "window.h"
+
+#if HAVE_GPHOTO
+#include "colorcalibrator.h"
+#endif
 
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
@@ -66,12 +72,12 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     SLog::log << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
-    if (type == string("gui"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(getNewSharedWindow(name, true), _self));
-    else
+    //if (type == string("gui"))
+    //    obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
+    //else
     {
         // Then, the objects not containing a context
         if(!_mainWindow->setAsCurrentContext())
@@ -86,7 +92,7 @@ BaseObjectPtr Scene::add(string type, string name)
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
         else if (type == string("geometry"))
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
-        else if (type == string("image") || type == string("image_shmdata"))
+        else if (type.find("image") == 0)
         {
             obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
             obj->setRemoteType(type);
@@ -111,6 +117,18 @@ BaseObjectPtr Scene::add(string type, string name)
             _objects[to_string(obj->getId())] = obj;
         else
             _objects[name] = obj;
+
+        // Some objects have to be connected to the gui (if the Scene is master)
+        if (_gui != nullptr)
+        {
+            if (obj->getType() == "object")
+                link(obj, dynamic_pointer_cast<BaseObject>(_gui));
+            else if (obj->getType() == "window" && !_guiLinkedToWindow)
+            {
+                link(dynamic_pointer_cast<BaseObject>(_gui), obj);
+                _guiLinkedToWindow = true;
+            }
+        }
     }
 
     return obj;
@@ -130,7 +148,7 @@ void Scene::addGhost(string type, string name)
     BaseObjectPtr obj = add(type, name);
 
     // And move it to _ghostObjects
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -138,7 +156,7 @@ void Scene::addGhost(string type, string name)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     Json::Value root;
 
@@ -170,7 +188,7 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
@@ -199,7 +217,7 @@ bool Scene::unlink(string first, string second)
 /*************/
 bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
-    unique_lock<mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = first->unlinkFrom(second);
@@ -278,20 +296,32 @@ void Scene::render()
     STimer::timer << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
-    unique_lock<mutex> lock(_textureUploadSetupMutex);
+    unique_lock<mutex> lock(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+    glDeleteSync(_textureUploadFence);
+
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    lock.unlock();
     STimer::timer >> "cameras";
 
-    // Update the guis
-    STimer::timer << "guis";
+    _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    lock.unlock();
+
+    // Update the gui
+    STimer::timer << "gui";
+    if (_gui != nullptr)
+        isError |= _gui->render();
+    STimer::timer >> "gui";
+
+    glFinish();
+
+    // Update the windows
+    STimer::timer << "windows";
     for (auto& obj : _objects)
-        if (obj.second->getType() == "gui")
-            isError |= dynamic_pointer_cast<Gui>(obj.second)->render();
-    STimer::timer >> "guis";
+        if (obj.second->getType() == "window")
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    STimer::timer >> "windows";
 
     // Swap all buffers at once
     STimer::timer << "swap";
@@ -306,13 +336,6 @@ void Scene::render()
     SThread::pool.waitThreads(threadIds);
     STimer::timer >> "swap";
 
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    STimer::timer >> "windows";
-
     // Update the user events
     glfwPollEvents();
     // Mouse position
@@ -320,9 +343,8 @@ void Scene::render()
         GLFWwindow* win;
         int xpos, ypos;
         Window::getMousePos(win, xpos, ypos);
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mousePosition(xpos, ypos);
+        if (_gui != nullptr)
+            _gui->mousePosition(xpos, ypos);
     }
 
     // Mouse events
@@ -333,9 +355,8 @@ void Scene::render()
         if (!Window::getMouseBtn(win, btn, action, mods))
             break;
         
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mouseButton(btn, action, mods);
+        if (_gui != nullptr)
+            _gui->mouseButton(btn, action, mods);
     }
 
     // Scrolling events
@@ -346,9 +367,8 @@ void Scene::render()
         if (!Window::getScroll(win, xoffset, yoffset))
             break;
 
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->mouseScroll(xoffset, yoffset);
+        if (_gui != nullptr)
+            _gui->mouseScroll(xoffset, yoffset);
     }
 
     // Keyboard events
@@ -380,9 +400,31 @@ void Scene::render()
         }
 
         // Send the action to the GUI
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "gui")
-                dynamic_pointer_cast<Gui>(obj.second)->key(key, action, mods);
+        if (_gui != nullptr)
+            _gui->key(key, action, mods);
+    }
+
+    // Unicode characters events
+    while (true)
+    {
+        GLFWwindow* win;
+        unsigned int unicodeChar;
+        if (!Window::getChars(win, unicodeChar))
+            break;
+
+        // Find where this action happened
+        WindowPtr eventWindow;
+        for (auto& w : _objects)
+            if (w.second->getType() == "window")
+            {
+                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                if (window->isWindow(win))
+                    eventWindow = window;
+            }
+
+        // Send the action to the GUI
+        if (_gui != nullptr)
+            _gui->unicodeChar(unicodeChar);
     }
 }
 
@@ -396,34 +438,16 @@ void Scene::run()
             this_thread::sleep_for(chrono::milliseconds(50));
             continue;
         }
+
         
         STimer::timer << "sceneLoop";
+
+        this_thread::yield(); // Allows other threads to catch this mutex
+        lock_guard<recursive_mutex> lock(_configureMutex);
         _mainWindow->setAsCurrentContext();
-
-        {
-            unique_lock<mutex> lock(_configureMutex);
-            render();
-        }
-
-        // Saving event
-        if (_doSaveNow)
-        {
-            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-            Json::Value config = getConfigurationAsJson();
-            string configStr = config.toStyledString();
-            sendMessage("sceneConfig", {_name, configStr});
-            _doSaveNow = false;
-        }
-        
-        // Compute blending event
-        if (_doComputeBlending)
-        {
-            unique_lock<mutex> lock(_configureMutex);
-            computeBlendingMap();
-            _doComputeBlending = false;
-        }
-
+        render();
         _mainWindow->releaseContext();
+
         STimer::timer >> "sceneLoop";
     }
 }
@@ -439,14 +463,16 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        STimer::timer << "textureUpload";
-        _textureUploadWindow->setAsCurrentContext();
+        unique_lock<mutex> lock(_textureUploadMutex);
 
-        unique_lock<mutex> lock(_textureUploadSetupMutex);
+        _textureUploadWindow->setAsCurrentContext();
+        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+        glDeleteSync(_textureUploadFence);
+
+        STimer::timer << "textureUpload";
         for (auto& obj : _objects)
             if (obj.second->getType() == "texture")
                 dynamic_pointer_cast<Texture>(obj.second)->update();
-        glDeleteSync(_textureUploadFence);
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lock.unlock();
 
@@ -456,10 +482,23 @@ void Scene::textureUploadRun()
 
         _textureUploadWindow->releaseContext();
         STimer::timer >> "textureUpload";
-
-        int elapsed = STimer::timer.getDuration("textureUpload");
-        this_thread::sleep_for(chrono::microseconds(2000 - elapsed));
     }
+}
+
+/*************/
+void Scene::setAsMaster()
+{
+    _isMaster = true;
+
+    _gui = make_shared<Gui>(_mainWindow, _self);
+    _gui->setName("gui");
+
+#if HAVE_GPHOTO
+    // Initialize the color calibration object
+    _colorCalibrator = make_shared<ColorCalibrator>(_self);
+    _colorCalibrator->setName("colorCalibrator");
+    _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
+#endif
 }
 
 /*************/
@@ -476,21 +515,24 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessage(const string message, const Values value)
+void Scene::sendMessageToWorld(const string message, const Values value)
 {
-    _link->sendMessage("world", message, value);
+    RootObject::sendMessage("world", message, value);
 }
 
 /*************/
 void Scene::waitTextureUpload()
 {
-    unique_lock<mutex> lock(_textureUploadSetupMutex);
+    unique_lock<mutex> lock(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/
 void Scene::computeBlendingMap()
 {
+    lock_guard<recursive_mutex> lock(_configureMutex);
+    _mainWindow->setAsCurrentContext();
+
     if (_isBlendComputed)
     {
         for (auto& obj : _objects)
@@ -561,6 +603,8 @@ void Scene::computeBlendingMap()
 
         SLog::log << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
     }
+
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -593,8 +637,12 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
 #endif
     }
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
-    //glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
+    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
     GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
@@ -606,13 +654,12 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
-#if not HAVE_OSX
-    if (SPLASH_GL_DEBUG)
-    {
-        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-    }
+#if nof HAVE_OSX
+#ifdef DEBUGGL
+    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+#endif
 #endif
 
 #ifdef GLX_NV_swap_group
@@ -636,6 +683,19 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 }
 
 /*************/
+Values Scene::getObjectsNameByType(string type)
+{
+    Values list;
+    for (auto& obj : _objects)
+        if (obj.second->getType() == type)
+            list.push_back(obj.second->getName());
+    for (auto& obj : _ghostObjects)
+        if (obj.second->getType() == type)
+            list.push_back(obj.second->getName());
+    return list;
+}
+
+/*************/
 void Scene::init(std::string name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
@@ -651,8 +711,12 @@ void Scene::init(std::string name)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
-    //glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
+    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
@@ -688,12 +752,11 @@ void Scene::init(std::string name)
 
     // Activate GL debug messages
 #if not HAVE_OSX
-    if (SPLASH_GL_DEBUG)
-    {
-        glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
-    }
+#ifdef DEBUGGL
+    glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
+    glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
+#endif
 #endif
 
     // Check for swap groups
@@ -714,7 +777,7 @@ void Scene::init(std::string name)
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
-    _link->sendMessage("world", "childProcessLaunched", {});
+    sendMessageToWorld("childProcessLaunched", {});
 }
 
 /*************/
@@ -794,15 +857,21 @@ void Scene::registerAttributes()
         if (resolution >= 64)
             _blendingResolution = resolution;
         return true;
+    }, [&]() -> Values {
+        return {(int)_blendingResolution};
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
-        _doComputeBlending = true;
+        computeBlendingMap();
         return true;
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](Values args) {
-        _doSaveNow = true;
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+        Json::Value config = getConfigurationAsJson();
+        string configStr = config.toStyledString();
+        sendMessageToWorld("answerMessage", {"config", _name, configStr});
         return true;
     });
 
@@ -819,6 +888,15 @@ void Scene::registerAttributes()
         for (auto& obj : _objects)
             if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+        return true;
+    });
+
+    _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](Values args) {
+        if (args.size() < 1)
+            return false;
+        string type = args[0].asString();
+        Values list = getObjectsNameByType(type);
+        sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
         return true;
     });
    
@@ -924,6 +1002,31 @@ void Scene::registerAttributes()
                 dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
         return true;
     });
+
+#if HAVE_GPHOTO
+    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            return false;
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->update();
+        });
+        return true;
+    });
+
+    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+        if (_colorCalibrator == nullptr)
+            return false;
+        // This needs to be launched in another thread, as the set mutex is already locked
+        // (and we will need it later)
+        SThread::pool.enqueue([&]() {
+            _colorCalibrator->updateCRF();
+        });
+        return true;
+    });
+#endif
+
 }
 
 } // end of namespace

@@ -32,11 +32,8 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
 #include <shmdata/any-data-reader.h>
 
-#include "coretypes.h"
 #include "mesh.h"
 
 namespace Splash {

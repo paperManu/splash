@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <deque>
 #include <memory>
@@ -85,6 +86,11 @@ class Window : public BaseObject
             }
             return *this;
         }
+
+        /**
+         * Get grabbed character (not necesseraly a specific key)
+         */
+        static int getChars(GLFWwindow*& win, unsigned int& codepoint);
 
         /**
          * Get the grabbed key
@@ -164,11 +170,14 @@ class Window : public BaseObject
         GLsync _renderFence;
 
         ObjectPtr _screen;
+        ObjectPtr _screenGui;
         glm::dmat4 _viewProjectionMatrix;
         std::vector<TexturePtr> _inTextures;
+        TexturePtr _guiTexture {nullptr}; // The gui has its own texture
 
         static std::mutex _callbackMutex;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys; // Input keys queue
+        static std::deque<std::pair<GLFWwindow*, unsigned int>> _chars; // Input keys queue
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn; // Input mouse buttons queue
         static std::pair<GLFWwindow*, std::vector<double>> _mousePos; // Input mouse position
         static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
@@ -177,6 +186,7 @@ class Window : public BaseObject
          * Input callbacks
          */
         static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
+        static void charCallback(GLFWwindow* win, unsigned int codepoint);
         static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
         static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);

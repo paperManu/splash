@@ -1,5 +1,6 @@
 #include "geometry.h"
 
+#include "log.h"
 #include "mesh.h"
 
 using namespace std;

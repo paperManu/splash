@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <map>
 #include <mutex>
@@ -76,7 +77,6 @@ class World : public RootObject
         // World parameters
         unsigned int _worldFramerate {60};
 
-        std::shared_ptr<Link> _link; // link between this World and the Scenes
         std::map<std::string, ScenePtr> _scenes;
         std::map<std::string, std::thread> _scenesThread;
         std::string _masterSceneName {""};
@@ -86,7 +86,6 @@ class World : public RootObject
 
         std::string _configFilename;
         Json::Value _config;
-        std::string _lastConfigReceived {"none"};
         bool _childProcessLaunched {false};
 
         // List of actions to do during the next loop
@@ -112,6 +111,11 @@ class World : public RootObject
          * Get the next available id
          */
         unsigned long getId() {return ++_nextId;}
+
+        /**
+         * Get the list of objects by their type
+         */
+        Values getObjectsNameByType(std::string type);
 
         /**
          * Redefinition of a method from RootObject

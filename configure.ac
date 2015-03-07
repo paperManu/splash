@@ -2,21 +2,21 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.1.9, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.2.3, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([1.9 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:1:9])
-AC_SUBST([LIBSPLASH_API_VERSION], [0.1])
-AC_DEFINE(LIBSPLASH_API_VERSION, ["0.1"], [API version])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:2:3])
+AC_SUBST([LIBSPLASH_API_VERSION], [0.2])
+AC_DEFINE(LIBSPLASH_API_VERSION, ["0.2"], [API version])
 
 # Check for C and C++ compilers
 AC_PROG_CXX
 AC_PROG_CC_C_O
 
-CXXFLAGS="$CXXFLAGS -std=c++11"
+CXXFLAGS="$CXXFLAGS -std=c++11 -fopenmp"
 
 export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 
@@ -89,11 +89,11 @@ if test "$HAVE_GLM" = "false" ; then
 	AC_MSG_ERROR([Missing glm])
 fi
 
-# Glew, needed by the embedded GLV library
-PKG_CHECK_MODULES([GLEW], [glew])
-if test "x${have_glew}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing GLEW])
-fi
+# GPhoto
+PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
+    AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected]),
+    AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
+AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
 
 # OpenImageIO
 AC_LANG_PUSH([C++])
@@ -113,12 +113,6 @@ AC_CHECK_HEADER([snappy-c.h],
 AC_LANG_POP
 if test "$HAVE_SNAPPY" = "false" ; then
 	AC_MSG_ERROR([Missing Snappy])
-fi
-
-# OpenMesh
-PKG_CHECK_MODULES([OPENMESH], [openmesh >= 3.0.0])
-if test "x${have_openmesh}" = "xfalse" ; then
-	AC_MSG_ERROR([Missing openmesh])
 fi
 
 # JSoncpp
@@ -171,5 +165,6 @@ AC_CONFIG_FILES([
 	src/Makefile
 	data/Makefile
 	tests/Makefile
+    tools/Makefile
 	])
 AC_OUTPUT

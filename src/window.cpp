@@ -22,6 +22,7 @@ namespace Splash {
 /*************/
 mutex Window::_callbackMutex;
 deque<pair<GLFWwindow*, vector<int>>> Window::_keys;
+deque<pair<GLFWwindow*, unsigned int>> Window::_chars;
 deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
@@ -80,6 +81,21 @@ Window::~Window()
 
     glDeleteFramebuffers(1, &_renderFbo);
     glDeleteFramebuffers(1, &_readFbo);
+}
+
+/*************/
+int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    if (_chars.size() == 0)
+        return 0;
+
+    win = _chars.front().first;
+    codepoint = _chars.front().second;
+
+    _chars.pop_front();
+
+    return _chars.size() + 1;
 }
 
 /*************/
@@ -189,8 +205,11 @@ bool Window::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
+        if (_guiTexture != nullptr)
+            _screenGui->removeTexture(_guiTexture);
         GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
-        setTexture(gui->getTexture());
+        _guiTexture = gui->getTexture();
+        _screenGui->addTexture(_guiTexture);
         return true;
     }
 
@@ -228,7 +247,11 @@ bool Window::unlinkFrom(BaseObjectPtr obj)
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
         GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
-        unsetTexture(gui->getTexture());
+        if (gui->getTexture() == _guiTexture)
+        {
+            _screenGui->removeTexture(_guiTexture);
+            _guiTexture = nullptr;
+        }
     }
 
     return BaseObject::unlinkFrom(obj);
@@ -251,7 +274,10 @@ bool Window::render()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, fboBuffers);
-    glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     if (_srgb)
         glEnable(GL_FRAMEBUFFER_SRGB);
@@ -262,9 +288,15 @@ bool Window::render()
     _screen->getShader()->setAttribute("layout", _layout);
     _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
     _screen->activate();
-    //_screen->setViewProjectionMatrix(_viewProjectionMatrix, glm::dmat4(1.f));
     _screen->draw();
     _screen->deactivate();
+
+    if (_guiTexture != nullptr)
+    {
+        _screenGui->activate();
+        _screenGui->draw();
+        _screenGui->deactivate();
+    }
 
     glDeleteSync(_renderFence);
     _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -281,8 +313,12 @@ bool Window::render()
                 resize = false;
     }
     if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
+    {
         for (auto& t : _inTextures)
             t->resize(w, h);
+    }
+    if (_guiTexture != nullptr)
+        _guiTexture->resize(w, h);
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -290,6 +326,7 @@ bool Window::render()
         SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 #endif
 
+    glDisable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -368,9 +405,10 @@ void Window::swapBuffers()
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
+    glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
+
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
     glDrawBuffer(GL_BACK);
-    glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -401,7 +439,11 @@ bool Window::switchFullscreen(int screenId)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
@@ -450,7 +492,14 @@ void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int
 {
     lock_guard<mutex> lock(_callbackMutex);
     vector<int> keys {key, scancode, action, mods};
-    _keys.push_back(pair<GLFWwindow*, vector<int>>(win,keys));
+    _keys.push_back(pair<GLFWwindow*, vector<int>>(win, keys));
+}
+
+/*************/
+void Window::charCallback(GLFWwindow* win, unsigned int codepoint)
+{
+    lock_guard<mutex> lock(_callbackMutex);
+    _chars.push_back(pair<GLFWwindow*, unsigned int>(win, codepoint));
 }
 
 /*************/
@@ -482,6 +531,7 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 void Window::setEventsCallbacks()
 {
     glfwSetKeyCallback(_window->get(), Window::keyCallback);
+    glfwSetCharCallback(_window->get(), Window::charCallback);
     glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
     glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
     glfwSetScrollCallback(_window->get(), Window::scrollCallback);
@@ -504,6 +554,11 @@ bool Window::setProjectionSurface()
     _screen->setAttribute("fill", {"window"});
     GeometryPtr virtualScreen = make_shared<Geometry>();
     _screen->addGeometry(virtualScreen);
+
+    _screenGui = make_shared<Object>();
+    _screenGui->setAttribute("fill", {"window"});
+    virtualScreen = make_shared<Geometry>();
+    _screenGui->addGeometry(virtualScreen);
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -529,7 +584,11 @@ void Window::setWindowDecoration(bool hasDecoration)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, SPLASH_GL_DEBUG);
+#ifdef DEBUGGL
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+#else
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
+#endif
     glfwWindowHint(GLFW_VISIBLE, true);
     glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
     glfwWindowHint(GLFW_DECORATED, hasDecoration);

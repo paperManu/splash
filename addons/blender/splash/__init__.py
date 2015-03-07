@@ -54,10 +54,16 @@ def getImageList(scene, context):
         images.append((image.name, image.name, ""))
     return images
 
+def getSplashOutputList(scene, context):
+    targets = []
+    for name, obj in operators.Splash._targets.items():
+        targets.append((name, name, ""))
+    return targets
+
 class SplashSettings(PropertyGroup):
     outputActive = BoolProperty(
         name="Splash output active",
-        description="True if the data is being sent to Splash",
+        description="True if data is being sent to Splash",
         options={'SKIP_SAVE'},
         default=False
         )
@@ -70,6 +76,11 @@ class SplashSettings(PropertyGroup):
         name="Object name",
         description="Name of the object being sent",
         default="", maxlen=1024,
+        )
+    targetNames = EnumProperty(
+        name="Targets",
+        description="Current mesh outputs",
+        items=getSplashOutputList
         )
     outputPathPrefix = StringProperty(
         name="Splash output path prefix",
@@ -109,6 +120,7 @@ classes = (
 
     operators.SplashActivateSendMesh,
     operators.SplashSendTexture,
+    operators.SplashStopSelected,
 
     SplashSettings
     )

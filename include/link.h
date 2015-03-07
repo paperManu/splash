@@ -36,6 +36,7 @@
 
 namespace Splash {
 
+class RootObject;
 typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
 
 /*************/

@@ -1,5 +1,6 @@
 #include "link.h"
 
+#include "basetypes.h"
 #include "log.h"
 #include "timer.h"
 

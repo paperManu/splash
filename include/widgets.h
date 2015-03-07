@@ -31,12 +31,12 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <deque>
 #include <functional>
 #include <memory>
-#include <glv.h>
 
 #include "camera.h"
 #include "object.h"
@@ -49,94 +49,95 @@ class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 /*************/
-class GlvTextBox : public glv::View
+class GuiWidget
 {
     public:
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setTextFunc(std::function<std::string(GlvTextBox& that)> func) {getText = func;}
-
-        float fontSize {8};
-        float lineSpacing {1};
-        std::atomic_int _scrollOffset {0};
-
-    private:
-        std::function<std::string(GlvTextBox& that)> getText;
-};
-
-/*************/
-class GlvControl : public glv::View
-{
-    public:
-        GlvControl();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
-
-    private:
-        SceneWeakPtr _scene;
-        bool _ready {false};
-
-        int _objIndex {0};
-        bool _isDistant {false};
-        glv::Label _selectedObjectName;
-        glv::View _left, _right;
-        glv::Placer _titlePlacer;
-
-        std::vector<glv::Label*> _properties;
-        std::vector<glv::NumberDialer*> _numbers;
-
-        std::string getNameByIndex();
-        void changeTarget(std::string name);
-};
-
-/*************/
-class GlvGlobalView : public glv::View3D
-{
-    friend Gui;
-    public:
-        GlvGlobalView();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
-        void setCamera(CameraPtr cam);
-        void setObject(ObjectPtr obj) {_camera->linkTo(obj);}
+        GuiWidget(std::string name = "");
+        virtual ~GuiWidget() {}
+        virtual void render() {}
+        virtual int updateWindowFlags() {return 0;}
 
     protected:
-        int _baseWidth {800};
+        std::string _name {""};
+};
+
+/*************/
+class GuiTextBox : public GuiWidget
+{
+    public:
+        GuiTextBox(std::string name = "");
+        void render();
+        void setTextFunc(std::function<std::string()> func) {getText = func;}
+
+    private:
+        std::function<std::string()> getText;
+};
+
+/*************/
+class GuiGlobalView : public GuiWidget
+{
+    public:
+        GuiGlobalView(std::string name = "");
+        void render();
+        int updateWindowFlags();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setCamera(CameraPtr cam);
+        void SetObject(ObjectPtr obj) {_camera->linkTo(obj);}
+
+    protected:
         CameraPtr _camera, _guiCamera;
         SceneWeakPtr _scene;
-
         bool _camerasHidden {false};
         bool _beginDrag {true};
+        bool _noMove {false};
+
+        // Size of the view
+        int _camWidth, _camHeight;
 
         // Store the previous camera values
         Values _eye, _target, _up, _fov, _principalPoint;
+        Values _newTarget;
 
         // Previous point added
         Values _previousPointAdded;
 
-        glv::Label _camLabel;
+        void processKeyEvents();
+        void processMouseEvents();
+
+        // Actions
+        void doCalibration();
+        void switchHideOtherCameras();
+        void nextCamera();
+        void showAllCalibrationPoints();
 };
 
 /*************/
-class GlvGraph : public glv::View
+class GuiControl : public GuiWidget
 {
     public:
-        GlvGraph();
-        void onDraw(glv::GLV& g);
-        bool onEvent(glv::Event::t e, glv::GLV& g);
-        void onResize(glv::space_t dx, glv::space_t dy);
+        GuiControl(std::string name) : GuiWidget(name) {}
+        void render();
+        int updateWindowFlags() {return 0;}
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        glv::Plot _plot;
-        glv::PlotFunction1D _plotFunction;
-        glv::Label _graphLabel, _scaleLabel;
-        glv::Style _style;
+        SceneWeakPtr _scene;
+        int _targetIndex {-1};
+        std::string _targetObjectName {};
+        
+        std::vector<std::string> getObjectNames();
+};
 
-        std::atomic_uint _target {0};
+/*************/
+class GuiGraph : public GuiWidget
+{
+    public:
+        GuiGraph(std::string name) : GuiWidget(name) {}
+        void render();
 
-        unsigned int _maxHistoryLength {500};
+    private:
+        std::atomic_uint _target;
+        unsigned int _maxHistoryLength {300};
         std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 

@@ -26,13 +26,14 @@
 #define SPLASH_MESH_H
 
 #include "config.h"
+#include "coretypes.h"
+#include "basetypes.h"
 
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#include <OpenMesh/Core/Mesh/TriMesh_ArrayKernelT.hh>
+#include <glm/glm.hpp>
 
 #include "coretypes.h"
 
@@ -41,8 +42,6 @@ namespace Splash {
 class Mesh : public BufferObject
 {
     public:
-        typedef OpenMesh::TriMesh_ArrayKernelT<OpenMesh::DefaultTraits> MeshContainer;
-
         /**
          * Constructor
          */
@@ -109,6 +108,13 @@ class Mesh : public BufferObject
         virtual void update();
 
     protected:
+        struct MeshContainer
+        {
+            std::vector<glm::vec4> vertices;
+            std::vector<glm::vec2> uvs;
+            std::vector<glm::vec3> normals;
+        };
+
         MeshContainer _mesh;
         MeshContainer _bufferMesh;
         bool _meshUpdated {false};

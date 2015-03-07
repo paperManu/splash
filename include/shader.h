@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 #include <atomic>
 #include <memory>
@@ -153,7 +154,16 @@ class Shader : public BaseObject
         std::map<ShaderType, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
-        std::map<std::string, std::pair<Values, GLint>> _uniforms;
+
+        struct Uniform
+        {
+            std::string type {""};
+            Values values {};
+            GLint glIndex {-1};
+            GLuint glBuffer {0};
+            bool glBufferReady {false};
+        };
+        std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 

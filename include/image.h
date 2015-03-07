@@ -31,6 +31,7 @@
 
 #include "config.h"
 #include "coretypes.h"
+#include "basetypes.h"
 
 namespace oiio = OIIO_NAMESPACE;
 
@@ -141,6 +142,11 @@ class Image : public BufferObject
          */
         virtual void update();
 
+        /**
+         * Write the current buffer to the specified file
+         */
+        bool write(const std::string& filename);
+
     protected:
         oiio::ImageBuf _image;
         oiio::ImageBuf _bufferImage;
@@ -151,6 +157,11 @@ class Image : public BufferObject
         bool _benchmark {false};
 
         void createDefaultImage(); //< Create a default pattern
+
+        /**
+         * Read the specified image file
+         */
+        bool readFile(const std::string& filename);
         
     private:
         // Serialization is done in a double-buffer way,

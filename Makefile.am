@@ -2,7 +2,8 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = addons \
           src \
           data \
-		  tests
+		  tests \
+		  tools
 
 if HAVE_MARKDOWN
 dist_man_MANS = README.md

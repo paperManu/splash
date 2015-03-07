@@ -74,6 +74,11 @@ struct ShaderSources
         uniform int _texBlendingMap = 0;
         uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _isColorLUT = 0;
+        uniform vec3 _colorLUT[256];
+        uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
+                                            0.0, 1.0, 0.0,
+                                            0.0, 0.0, 1.0);
 
         in VertexData
         {
@@ -103,11 +108,6 @@ struct ShaderSources
             vec3 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
 
             vec4 color;
             if (_tex0_flip == 1 && _tex0_flop == 0)
@@ -118,11 +118,6 @@ struct ShaderSources
                 color = texture(_tex0, vec2(1.0 - texCoord.x, 1.0 - texCoord.y));
             else
                 color = texture(_tex0, texCoord);
-
-            float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
-            color.r *= _fovAndColorBalance.z / maxBalanceRatio;
-            color.g *= 1.0 / maxBalanceRatio;
-            color.b *= _fovAndColorBalance.w / maxBalanceRatio;
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
@@ -135,6 +130,11 @@ struct ShaderSources
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
 
+            float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
+            color.r *= _fovAndColorBalance.z / maxBalanceRatio;
+            color.g *= 1.0 / maxBalanceRatio;
+            color.b *= _fovAndColorBalance.w / maxBalanceRatio;
+
             // Black level
             float blackCorrection = max(min(blackLevel, 1.0), 0.0);
             color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
@@ -142,13 +142,10 @@ struct ShaderSources
             // If no blending map has been computed
             if (_texBlendingMap == 0)
             {
-                if (_textureNbr > 0)
-                    fragColor = color;
                 if (_textureNbr > 1)
                 {
                     vec4 color2 = texture(_tex1, texCoord);
-                    fragColor.rgb = fragColor.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
-                    fragColor.a = 1.0;
+                    color.rgb = color.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
                 }
             }
             // If there is a blending map
@@ -180,17 +177,22 @@ struct ShaderSources
                 {
                     blendFactorFloat = 1.0 / float(camNbr);
                 }
-                fragColor.rgb = color.rgb * min(1.0, blendFactorFloat);
-                fragColor.a = 1.0;
+                color.rgb = color.rgb * min(1.0, blendFactorFloat);
             }
 
             // Brightness correction
-            fragColor.rgb = fragColor.rgb * brightness;
+            color.rgb = color.rgb * brightness;
 
-            // Finally, correct for the incidence
-            // cosNormalAngle can't be 0.0, it would have been discarded
-            // TODO: this has to also use shift values to be meaningful
-            fragColor.rgb /= abs(cosNormalAngle);
+            // Color correction through a LUT
+            if (_isColorLUT != 0)
+            {
+                ivec3 icolor = ivec3(round(color.rgb * 255.f));
+                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
+                //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
+            }
+            
+            fragColor.rgb = color.rgb;
+            fragColor.a = 1.0;
         }
     )"};
 
@@ -220,13 +222,6 @@ struct ShaderSources
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
-
-            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
 
             fragColor = _color;
         }
@@ -258,13 +253,6 @@ struct ShaderSources
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
             vec3 normal = vertexIn.normal;
-
-            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
 
             float U = texCoord.x * 65536.0;
             float V = texCoord.y * 65536.0;
@@ -376,13 +364,6 @@ struct ShaderSources
             vec4 position = vertexIn.position;
             vec3 normal = vertexIn.normal;
 
-            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-            vec2 screenSize = vec2(tan(_fovAndColorBalance.x / 2.0), tan(_fovAndColorBalance.y / 2.0));
-            float cosNormalAngle = dot(normal, normalize(vec3(-screenSize.x * screenPos.x, -screenSize.y * screenPos.y, 1.0)));
-
-            if ((cosNormalAngle <= 0.0 && _sideness == 1) || (cosNormalAngle >= 0.0 && _sideness == 2))
-                discard;
-
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
             vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
@@ -454,18 +435,20 @@ struct ShaderSources
             {
                 vec4 color = texture(_tex1, vec2((texCoord.x - float(_layout[1]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
+                fragColor.a = max(fragColor.a, color.a);
             }
             if (_textureNbr > 2 && texCoord.x > float(_layout[2]) / frames && texCoord.x < (float(_layout[2]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex2, vec2((texCoord.x - float(_layout[2]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
+                fragColor.a = max(fragColor.a, color.a);
             }
             if (_textureNbr > 3 && texCoord.x > float(_layout[3]) / frames && texCoord.x < (float(_layout[3]) + 1.0) / frames)
             {
                 vec4 color = texture(_tex3, vec2((texCoord.x - float(_layout[3]) / frames) * frames, texCoord.y));
                 fragColor.rgb = mix(fragColor.rgb, color.rgb, color.a);
+                fragColor.a = max(fragColor.a, color.a);
             }
-            fragColor.a = 1.0;
 
             if (_gamma.x != 1.0)
                 fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / _gamma.y));
