@@ -16,30 +16,19 @@ AC_DEFINE(LIBSPLASH_API_VERSION, ["0.2"], [API version])
 AC_PROG_CXX
 AC_PROG_CC_C_O
 
-CXXFLAGS="$CXXFLAGS -std=c++11 -fopenmp"
+CC="gcc"
+CXX="g++"
+CXXFLAGS="$CXXFLAGS -std=c++11"
 
 export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
 
 # Check for header files
 AC_HEADER_STDC
 
-# Check for SSE
-AX_EXT
-if test "$ax_cv_have_sse41_ext" = yes; then
-	CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE4_1"
-else
-	if test "$ax_cv_have_sse3_ext" = yes; then
-		CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE3"
-	else
-		CXXFLAGS="$CXXFLAGS -DSIMDPP_NO_SSE"
-	fi
-fi
-
 # Check if we are trying to compile on OSX
 case "$host" in *-darwin* | *-macos10*)
   LIBTOOL="glibtool"
   CXXFLAGS+=" -D__Darwin"
-  CXX="g++"
   LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
   if test -d /opt/local ; then
 	CPPFLAGS+=" -I/usr/local/include -I/opt/local/include"
@@ -60,12 +49,34 @@ case "$host" in *-darwin* | *-macos10*)
   export PKG_CONFIG_PATH
   
   LDFLAGS+=" -fPIC -L/usr/local/lib -L/usr/local/lib64"
+
+  # Also, GLEW is currently needed under OSX
+  PKG_CHECK_MODULES([GLEW], [glew])
+  if test "x${have_glew}" = "xfalse" ; then
+    AC_MSG_ERROR([Missing glew])
+  fi
   ;;
 *)
   AM_CONDITIONAL([HAVE_OSX], false)
   AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected])
   ;;
 esac
+
+# Check for SSE
+AX_EXT
+if test "$have_osx" = true ; then
+    if test "$ax_cv_have_sse41_ext" = yes; then
+    	CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE4_1"
+    else
+    	if test "$ax_cv_have_sse3_ext" = yes; then
+    		CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE3"
+    	else
+    		CXXFLAGS="$CXXFLAGS -DSIMDPP_NO_SSE"
+    	fi
+    fi
+else
+    CXXFLAGS="$CXXFLAGS -DSIMDPP_NO_SSE"
+fi
 
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])

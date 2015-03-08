@@ -42,7 +42,9 @@ typedef std::shared_ptr<Scene> ScenePtr;
 /*************/
 class Scene : public RootObject
 {
+#if HAVE_GPHOTO
     friend ColorCalibrator;
+#endif
     friend GuiColorCalibration;
     friend GuiControl;
     friend GuiGlobalView;

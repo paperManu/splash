@@ -20,10 +20,12 @@
 #include "colorcalibrator.h"
 #endif
 
+#if not HAVE_OSX
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3native.h>
 #include <GL/glxext.h>
+#endif
 
 using namespace std;
 using namespace OIIO_NAMESPACE;
@@ -654,7 +656,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
-#if nof HAVE_OSX
+#if not HAVE_OSX
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
@@ -662,6 +664,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
 #endif
 #endif
 
+#if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
     {
@@ -676,6 +679,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         else
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
     }
+#endif
 #endif
     glWindow->releaseContext();
 
@@ -760,6 +764,7 @@ void Scene::init(std::string name)
 #endif
 
     // Check for swap groups
+#if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (glfwExtensionSupported("GLX_NV_swap_group"))
     {
@@ -769,6 +774,7 @@ void Scene::init(std::string name)
         else
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
     }
+#endif
 #endif
     _mainWindow->releaseContext();
 

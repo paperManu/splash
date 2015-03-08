@@ -50,7 +50,9 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#if HAVE_OSX
 #include <GL/glew.h>
+#endif
 #include <GLFW/glfw3.h>
 
 #include "threadpool.h"
