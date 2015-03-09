@@ -40,6 +40,7 @@ case "$host" in *-darwin* | *-macos10*)
 	LDFLAGS+=" -L/sw/lib"
   fi
   
+  have_osx=true
   AM_CONDITIONAL([HAVE_OSX], true)
   AC_DEFINE(HAVE_OSX,[1],[Apple Mac OS X operating system detected])
   
@@ -49,33 +50,35 @@ case "$host" in *-darwin* | *-macos10*)
   export PKG_CONFIG_PATH
   
   LDFLAGS+=" -fPIC -L/usr/local/lib -L/usr/local/lib64"
-
-  # Also, GLEW is currently needed under OSX
-  PKG_CHECK_MODULES([GLEW], [glew])
-  if test "x${have_glew}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing glew])
-  fi
   ;;
 *)
+  have_osx=false
   AM_CONDITIONAL([HAVE_OSX], false)
-  AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected])
+  AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected, considering a Linux system])
+  CXXFLAGS+=" -I/usr/include/jsoncpp -I/usr/local/include/jsoncpp"
   ;;
 esac
 
 # Check for SSE
 AX_EXT
-if test "$have_osx" = true ; then
-    if test "$ax_cv_have_sse41_ext" = yes; then
-    	CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE4_1"
-    else
-    	if test "$ax_cv_have_sse3_ext" = yes; then
-    		CXXFLAGS="$CXXFLAGS -DSIMDPP_ARCH_X86_SSE3"
-    	else
-    		CXXFLAGS="$CXXFLAGS -DSIMDPP_NO_SSE"
-    	fi
-    fi
+if test "x$have_osx" != "xtrue" ; then
+  if test "$ax_cv_have_sse41_ext" = yes; then
+  	CXXFLAGS+=" -DSIMDPP_ARCH_X86_SSE4_1"
+  else
+  	if test "$ax_cv_have_sse3_ext" = yes; then
+  		CXXFLAGS+=" -DSIMDPP_ARCH_X86_SSE3"
+  	else
+  		CXXFLAGS+=" -DSIMDPP_NO_SSE"
+  	fi
+  fi
 else
-    CXXFLAGS="$CXXFLAGS -DSIMDPP_NO_SSE"
+  CXXFLAGS+=" -DSIMDPP_NO_SSE"
+fi
+
+# Also, GLEW is currently needed under OSX
+PKG_CHECK_MODULES([GLEW], [glew], have_glew=true, have_glew=false)
+if test "x${have_glew}" = "xfalse" && test "$HAVE_OSX" = "true" ; then
+  AC_MSG_ERROR([Missing glew, which is needed for building on OSX])
 fi
 
 # GLFW
