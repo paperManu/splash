@@ -451,7 +451,14 @@ bool Window::switchFullscreen(int screenId)
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
+    {
+        glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
+        glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
+        glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
+        glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
+
         window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), monitors[_screenId], _window->getMainWindow());
+    }
     else
         window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
 
