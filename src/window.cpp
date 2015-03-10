@@ -53,7 +53,7 @@ Window::Window(RootObjectWeakPtr root)
 
     // Get the default window size and position
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
-    glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+    glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 
     // Create the render FBO
     glGetError();
@@ -264,7 +264,7 @@ bool Window::render()
     setupRenderFBO();
 
     int w, h;
-    glfwGetWindowSize(_window->get(), &w, &h);
+    glfwGetFramebufferSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
 
 #ifdef DEBUG
@@ -342,7 +342,7 @@ bool Window::render()
 void Window::setupRenderFBO()
 {
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
-    glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+    glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 
     glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
 
@@ -408,7 +408,11 @@ void Window::swapBuffers()
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
+#if HAVE_OSX
+    glDrawBuffer(GL_FRONT);
+#else
     glDrawBuffer(GL_BACK);
+#endif
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);

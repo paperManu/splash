@@ -219,7 +219,11 @@ class Scene : public RootObject
         /**
          * Callback for GL errors and warnings
          */
+#ifdef HAVE_OSX
+        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+#else
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
+#endif
 
         /**
          * Main loop for the scene

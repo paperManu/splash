@@ -805,7 +805,11 @@ void Scene::glfwErrorCallback(int code, const char* msg)
 }
 
 /*************/
+#ifdef HAVE_OSX
+void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+#else
 void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, void* userParam)
+#endif
 {
     string typeString {""};
     switch (type)
