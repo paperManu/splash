@@ -8,4 +8,6 @@ From Macport:
 - install openimageio 1.3.13:
     - install libtiff, ilmbase, openexr, libpng, boost
 
+- install gsl, zmq, cppzmq
+- install glfw, glm
 - install glew (for now)
