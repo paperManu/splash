@@ -37,7 +37,7 @@
 #endif
 
 #define SPLASH_GL_DEBUG true
-#define SPLASH_SAMPLES 4
+#define SPLASH_SAMPLES 0
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
