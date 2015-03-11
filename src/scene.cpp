@@ -74,40 +74,36 @@ BaseObjectPtr Scene::add(string type, string name)
     lock_guard<recursive_mutex> lock(_configureMutex);
 
     BaseObjectPtr obj;
-    //if (type == string("gui"))
-    //    obj = dynamic_pointer_cast<BaseObject>(make_shared<Gui>(_mainWindow, _self));
-    //else
+    // Create the wanted object
+    if(!_mainWindow->setAsCurrentContext())
+        SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+
+    if (type == string("window"))
     {
-        // Then, the objects not containing a context
-        if(!_mainWindow->setAsCurrentContext())
-    	    SLog::log << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-
-        if (type == string("window"))
-        {
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
-            obj->setAttribute("swapInterval", {_swapInterval});
-        }
-        else if (type == string("camera"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
-        else if (type == string("geometry"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
-        else if (type.find("image") == 0)
-        {
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
-            obj->setRemoteType(type);
-        }
-        else if (type == string("mesh") || type == string("mesh_shmdata"))
-        {
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
-            obj->setRemoteType(type);
-        }
-        else if (type == string("object"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
-        else if (type == string("texture"))
-            obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture>());
-        _mainWindow->releaseContext();
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
+        obj->setAttribute("swapInterval", {_swapInterval});
     }
+    else if (type == string("camera"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
+    else if (type == string("geometry"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
+    else if (type.find("image") == 0)
+    {
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
+        obj->setRemoteType(type);
+    }
+    else if (type == string("mesh") || type == string("mesh_shmdata"))
+    {
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        obj->setRemoteType(type);
+    }
+    else if (type == string("object"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
+    else if (type == string("texture"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture>());
+    _mainWindow->releaseContext();
 
+    // Add the object to the objects list
     if (obj.get() != nullptr)
     {
         obj->setId(getId());
