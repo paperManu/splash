@@ -59,7 +59,6 @@ Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
     _textureUploadLoop.join();
-    _sceneLoop.join();
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();

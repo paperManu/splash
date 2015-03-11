@@ -169,7 +169,6 @@ class Scene : public RootObject
     private:
         ScenePtr _self;
         bool _started {false};
-        std::thread _sceneLoop;
         std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config

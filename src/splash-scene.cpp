@@ -49,15 +49,6 @@ int main(int argc, char** argv)
     SLog::log << "splashScene::main - Creating Scene with name " << name << Log::endl;
 
     ScenePtr scene = make_shared<Scene>(name);
-    scene->setName(name);
-
-    timespec nap;
-    nap.tv_sec = 0;
-    nap.tv_nsec = 5e8;
-    while (scene->isRunning())
-    {
-        nanosleep(&nap, NULL);
-    }
 
     return 0;
 }
