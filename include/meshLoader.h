@@ -18,12 +18,12 @@
  */
 
 /*
- * @loader_obj.h
+ * @meshLoader.h
  * A simple and Splash-oriented Wavefront OBJ loader
  */
 
-#ifndef SPLASH_LOADER_OBJ_H
-#define SPLASH_LOADER_OBJ_H
+#ifndef SPLASH_MESHLOADER_H
+#define SPLASH_MESHLOADER_H
 
 #include <iostream>
 #include <fstream>
