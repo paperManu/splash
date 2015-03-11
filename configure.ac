@@ -16,8 +16,8 @@ AC_DEFINE(LIBSPLASH_API_VERSION, ["0.2"], [API version])
 AC_PROG_CXX
 AC_PROG_CC_C_O
 
-CC="clang"
-CXX="clang++"
+CC="cc"
+CXX="c++"
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
 export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
