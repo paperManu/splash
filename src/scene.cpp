@@ -20,10 +20,12 @@
 #include "colorcalibrator.h"
 #endif
 
+#if not HAVE_OSX
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3native.h>
 #include <GL/glxext.h>
+#endif
 
 using namespace std;
 using namespace OIIO_NAMESPACE;
@@ -40,15 +42,16 @@ Scene::Scene(std::string name)
     _type = "scene";
     _isRunning = true;
     _name = name;
-    _sceneLoop = thread([&]() {
-        init(_name);
-        registerAttributes();
-        run();
-    });
+
+    registerAttributes();
+
+    init(_name);
 
     _textureUploadLoop = thread([&]() {
         textureUploadRun();
     });
+
+    run();
 }
 
 /*************/
@@ -56,7 +59,6 @@ Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
     _textureUploadLoop.join();
-    _sceneLoop.join();
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
@@ -619,12 +621,18 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#if HAVE_OSX
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
     }
     else
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
+#if HAVE_OSX
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
+#endif
     }
 #ifdef DEBUGGL
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -643,12 +651,15 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
     GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
+#if not HAVE_OSX
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
+#endif
 
+#if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (_maxSwapGroups)
     {
@@ -663,6 +674,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         else
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
     }
+#endif
 #endif
     glWindow->releaseContext();
 
@@ -707,6 +719,9 @@ void Scene::init(std::string name)
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
+#if HAVE_OSX
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
     GLFWwindow* window = glfwCreateWindow(512, 512, name.c_str(), NULL, NULL);
 
@@ -721,14 +736,30 @@ void Scene::init(std::string name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
+#if HAVE_OSX
+    glewExperimental = GL_TRUE;
+    GLenum glewError = glewInit();
+    if (GLEW_OK != glewError)
+    {
+        string glewStringError = string((const char*)glewGetErrorString(glewError));
+        SLog::log << Log::ERROR << "Scene::" << __FUNCTION__ << " - Error while initializing GLEW: " << glewStringError << Log::endl;
+        _isInitialized = false;
+        return;
+    }
+    else
+#endif
+
     // Activate GL debug messages
+#if not HAVE_OSX
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_TRUE);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_HIGH, 0, nullptr, GL_TRUE);
 #endif
+#endif
 
     // Check for swap groups
+#if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (glfwExtensionSupported("GLX_NV_swap_group"))
     {
@@ -738,6 +769,7 @@ void Scene::init(std::string name)
         else
             SLog::log << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
     }
+#endif
 #endif
     _mainWindow->releaseContext();
 
@@ -768,7 +800,11 @@ void Scene::glfwErrorCallback(int code, const char* msg)
 }
 
 /*************/
+#ifdef HAVE_OSX
 void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+#else
+void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, void* userParam)
+#endif
 {
     string typeString {""};
     switch (type)

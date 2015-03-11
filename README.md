@@ -78,7 +78,10 @@ A few more libraries are used as submodules in the git repository:
 - [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images.
 
-### Dependencies installation
+### Compilation and installation
+
+#### Linux
+
 Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
 Here are some step by step commands to add these repositories on Ubuntu 13.10:
@@ -90,8 +93,7 @@ Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
 And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being...
 
-### Compilation and installation
-Your first option to install Splash is to use the packaged version:
+Your can now install Splash using the packaged version:
 
     sudo apt-get install splash
 
@@ -113,6 +115,55 @@ If you want to get a more up to date version, you can try compiling and installi
 You can now try launching Splash:
 
     splash --help
+
+#### Mac OSX
+
+OSX installation is still a work in progress and has not been extensively tested (far from it!). Also, our current tests have shown that it is far easier to install on OSX version 10.9 or newer, as they switched from libstdc++ (GCC standard library) to libc++ (Clang standard library) as default which seems to solve tedious linking issues.
+
+So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
+
+You can now install the command line tools we will need to download and compile the sources:
+
+    sudo port install automake autoconf libtool cmake git
+
+Grab and install OpenImageIO, the only library needed by Splash which is not packaged in MacPorts:
+
+    sudo port install tiff openexr libpng boost
+    git clone https://github.com/OpenImageIO/oiio
+    cd oiio
+    git checkout Release-1.3.14
+    mkdir build && cd build
+    cmake ..
+    make && sudo make install
+    cd ..
+
+We now need to install GStreamer to compile Shmdata, the shared memory library. Download and install the [GStreamer SDK](http://docs.gstreamer.com/display/GstSDK/Installing+on+Mac+OS+X), be sure to install both the runtime and the development files. Then install Shmdata:
+
+    git clone https://github.com/nicobou/shmdata
+    cd shmdata
+    ./autogen.sh && ./configure
+    make && sudo make install
+    cd ..
+
+Install all the other dependencies:
+
+    sudo port install jsoncpp snappy
+    sudo port install gsl zmq cppzmq
+    sudo port install glfw glm glew
+
+And then grab and install Splash:
+
+    git clone https://github.com/paperManu/splash
+    cd splash
+    git submodule update --init
+    ./autogen.sh && ./configure
+    make && sudo make install
+
+You should now be able to launch Splash:
+
+    splash --help
+
+Remember that it is a very early port to OSX. Please report any issue you encounter!
 
 <a name="architecture"/></a>
 Software architecture

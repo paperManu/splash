@@ -53,7 +53,7 @@ Window::Window(RootObjectWeakPtr root)
 
     // Get the default window size and position
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
-    glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+    glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 
     // Create the render FBO
     glGetError();
@@ -264,7 +264,7 @@ bool Window::render()
     setupRenderFBO();
 
     int w, h;
-    glfwGetWindowSize(_window->get(), &w, &h);
+    glfwGetFramebufferSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
 
 #ifdef DEBUG
@@ -342,7 +342,7 @@ bool Window::render()
 void Window::setupRenderFBO()
 {
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
-    glfwGetWindowSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+    glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 
     glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
 
@@ -447,7 +447,14 @@ bool Window::switchFullscreen(int screenId)
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
+    {
+        glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
+        glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
+        glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
+        glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
+
         window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), monitors[_screenId], _window->getMainWindow());
+    }
     else
         window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
 

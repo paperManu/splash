@@ -25,10 +25,19 @@
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
 
+#include "config.h"
+
 #define SPLASH
+
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
-#define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#define SPLASH_SAMPLES 4
+#if HAVE_OSX
+    #define SPLASH_GL_CONTEXT_VERSION_MINOR 2
+#else
+    #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
+#endif
+
+#define SPLASH_GL_DEBUG true
+#define SPLASH_SAMPLES 0
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
@@ -41,9 +50,11 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#if HAVE_OSX
+#include <GL/glew.h>
+#endif
 #include <GLFW/glfw3.h>
 
-#include "config.h"
 #include "threadpool.h"
 
 #ifndef SPLASH_CORETYPES_H

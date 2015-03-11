@@ -42,7 +42,9 @@ typedef std::shared_ptr<Scene> ScenePtr;
 /*************/
 class Scene : public RootObject
 {
+#if HAVE_GPHOTO
     friend ColorCalibrator;
+#endif
     friend GuiColorCalibration;
     friend GuiControl;
     friend GuiGlobalView;
@@ -167,7 +169,6 @@ class Scene : public RootObject
     private:
         ScenePtr _self;
         bool _started {false};
-        std::thread _sceneLoop;
         std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
@@ -217,7 +218,11 @@ class Scene : public RootObject
         /**
          * Callback for GL errors and warnings
          */
+#ifdef HAVE_OSX
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+#else
+        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
+#endif
 
         /**
          * Main loop for the scene
