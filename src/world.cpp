@@ -15,6 +15,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <unistd.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <json/reader.h>
 #include <json/writer.h>
@@ -225,7 +226,11 @@ void World::applyConfig()
                 _childProcessLaunched = false;
                 int pid;
 
-                string cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                string cmd;
+                if (_executionPath == "")
+                    cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                else
+                    cmd = _executionPath + "splash-scene";
                 string debug = (SLog::log.getVerbosity() == Log::DEBUGGING) ? "-d" : "";
 
                 char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)name.c_str(), NULL};
@@ -530,7 +535,27 @@ void World::parseArguments(int argc, char** argv)
     cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
     cout << endl;
 
-    int idx = 0;
+    // Get the executable directory
+    string executable = argv[0];
+    size_t slashPos = executable.rfind("/");
+    bool isRelative = executable.find(".") == 0 ? true : false;
+    bool isAbsolute = executable.find("/") == 0 ? true : false;
+    string relativePath;
+    if (slashPos != string::npos)
+    {
+        if (isAbsolute)
+            _executionPath = executable.substr(0, slashPos) + "/";
+        else if (isRelative)
+        {
+            char workingPathChar[256];
+            getcwd(workingPathChar, 255);
+            string workingPath = workingPathChar;
+            _executionPath = workingPath + executable.substr(1, slashPos);
+        }
+    }
+
+    // Parse the other args
+    int idx = 1;
     string filename {""};
     while (idx < argc)
     {
