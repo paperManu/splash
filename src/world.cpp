@@ -548,8 +548,7 @@ void World::parseArguments(int argc, char** argv)
         else if (isRelative)
         {
             char workingPathChar[256];
-            getcwd(workingPathChar, 255);
-            string workingPath = workingPathChar;
+            string workingPath = getcwd(workingPathChar, 255);
             _executionPath = workingPath + executable.substr(1, slashPos);
         }
     }
