@@ -73,6 +73,7 @@ class World : public RootObject
         bool _quit {false};
         static World* _that;
         struct sigaction _signals;
+        std::string _executionPath {""};
 
         // World parameters
         unsigned int _worldFramerate {60};
