@@ -70,15 +70,25 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
         int size = *(intPtr++);
         // Quads and larger polys are converted to tris through a very simple method
         // This can lead to bad shapes especially for polys larger than quads
-        for (int tri = 0; tri < size - 2; ++tri)
+        if (size >= 3)
         {
             for (int vert = 0; vert < 3; ++vert)
             {
-                newMesh.vertices.push_back(vertices[*(intPtr + vert + tri)]);
-                newMesh.uvs.push_back(uvs[*(intPtr + vert + tri)]);
-                newMesh.normals.push_back(normals[*(intPtr + vert + tri)]);
+                newMesh.vertices.push_back(vertices[*(intPtr + vert)]);
+                newMesh.uvs.push_back(uvs[*(intPtr + vert)]);
+                newMesh.normals.push_back(normals[*(intPtr + vert)]);
             }
         }
+        if (size == 4)
+        {
+            for (int vert = 2; vert < 5; ++vert)
+            {
+                newMesh.vertices.push_back(vertices[*(intPtr + (vert % 4))]);
+                newMesh.uvs.push_back(uvs[*(intPtr + (vert % 4))]);
+                newMesh.normals.push_back(normals[*(intPtr + (vert % 4))]);
+            }
+        }
+
         intPtr += size;
     }
 
