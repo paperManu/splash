@@ -267,13 +267,13 @@ class BufferObject : public BaseObject
          * Update the Image from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(const SerializedObjectPtr obj) = 0;
+        virtual bool deserialize(std::unique_ptr<SerializedObject> obj) = 0;
         bool deserialize()
         {
             if (_newSerializedObject == false)
                 return true;
 
-            bool _returnValue = deserialize(_serializedObject);
+            bool _returnValue = deserialize(std::move(_serializedObject));
             _newSerializedObject = false;
 
             return _returnValue;
@@ -282,12 +282,12 @@ class BufferObject : public BaseObject
         /**
          * Serialize the image
          */
-        virtual SerializedObjectPtr serialize() const = 0;
+        virtual std::unique_ptr<SerializedObject> serialize() const = 0;
 
         /**
          * Set the next serialized object to deserialize to buffer
          */
-        void setSerializedObject(SerializedObjectPtr obj)
+        void setSerializedObject(std::unique_ptr<SerializedObject> obj)
         {
             {
                 std::lock_guard<std::mutex> lock(_writeMutex);
@@ -316,7 +316,7 @@ class BufferObject : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
         bool _updatedBuffer {false};
 
-        SerializedObjectPtr _serializedObject;
+        std::unique_ptr<SerializedObject> _serializedObject;
         bool _newSerializedObject {false};
 };
 
@@ -370,13 +370,13 @@ class RootObject : public BaseObject
          * Set an object from its serialized form
          * If non existant, it is handled by the handleSerializedObject method
          */
-        void setFromSerializedObject(const std::string name, const SerializedObjectPtr obj)
+        void setFromSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj)
         {
             std::lock_guard<std::mutex> lock(_setMutex);
             if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
-                std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
+                std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(std::move(obj));
             else
-                handleSerializedObject(name, obj);
+                handleSerializedObject(name, std::move(obj));
         }
 
     protected:
@@ -389,7 +389,7 @@ class RootObject : public BaseObject
         std::mutex _answerMutex;
         std::string _answerExpected {""};
 
-        virtual void handleSerializedObject(const std::string name, const SerializedObjectPtr obj) {}
+        virtual void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj) {}
 
         /**
          * Send a message to the target specified by its name

@@ -1,11 +1,12 @@
 #include "image.h"
 
+#include <memory>
+#include <OpenImageIO/imageio.h>
+#include <OpenImageIO/imagebufalgo.h>
+
 #include "log.h"
 #include "threadpool.h"
 #include "timer.h"
-
-#include <OpenImageIO/imageio.h>
-#include <OpenImageIO/imagebufalgo.h>
 
 #define SPLASH_IMAGE_COPY_THREADS 4
 
@@ -83,7 +84,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 }
 
 /*************/
-SerializedObjectPtr Image::serialize() const
+unique_ptr<SerializedObject> Image::serialize() const
 {
     lock_guard<mutex> lock(_readMutex);
 
@@ -95,17 +96,8 @@ SerializedObjectPtr Image::serialize() const
     int imgSize = _image.spec().pixel_bytes() * _image.spec().width * _image.spec().height;
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
-    if (_serializedBuffers[0].get() == nullptr || _serializedBuffers[0]->size() != totalSize)
-    {
-        _serializedBuffers[0] = make_shared<SerializedObject>(totalSize);
-        _serializedBuffers[1] = make_shared<SerializedObject>(totalSize);
-        _serializedBuffers[2] = make_shared<SerializedObject>(totalSize);
-    }
-    
-    SerializedObjectPtr obj = _serializedBuffers[_serializedBufferIndex];
+    auto obj = unique_ptr<SerializedObject>(new SerializedObject(totalSize));
     lock_guard<mutex> lockObject(obj->_mutex);
-    int bufferIndex = _serializedBufferIndex;
-    _serializedBufferIndex = (_serializedBufferIndex + 1) % 3;
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrChar);
@@ -119,7 +111,7 @@ SerializedObjectPtr Image::serialize() const
     // And then, the image
     const char* imgPtr = reinterpret_cast<const char*>(_image.localpixels());
     if (imgPtr == NULL)
-        return SerializedObjectPtr();
+        return {};
     
     vector<unsigned int> threadIds;
     int stride = SPLASH_IMAGE_COPY_THREADS;
@@ -134,13 +126,13 @@ SerializedObjectPtr Image::serialize() const
 
     STimer::timer >> "serialize " + _name;
 
-    return _serializedBuffers[bufferIndex];
+    return obj;
 }
 
 /*************/
-bool Image::deserialize(const SerializedObjectPtr obj)
+bool Image::deserialize(unique_ptr<SerializedObject> obj)
 {
-    if (obj->size() == 0)
+    if (obj.get() == nullptr || obj->size() == 0)
         return false;
 
     STimer::timer << "deserialize " + _name;

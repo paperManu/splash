@@ -31,6 +31,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <future>
 #include <vector>
 #include <json/reader.h>
 
@@ -178,7 +179,7 @@ class Scene : public RootObject
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
         // Texture upload context
-        std::thread _textureUploadLoop;
+        std::future<void> _textureUploadFuture;
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;

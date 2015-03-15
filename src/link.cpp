@@ -80,23 +80,25 @@ void Link::connectTo(const string name)
 }
 
 /*************/
-bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
+bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
 {
     try
     {
         unique_lock<mutex> lock(_bufferSendMutex);
+        auto bufferPtr = buffer.get();
+
         if (!buffer->_mutex.try_lock())
             return false;
 
         _otgMutex.lock();
-        _otgBuffers.push_back(buffer);
+        _otgBuffers.push_back(std::move(buffer));
         _otgMutex.unlock();
 
         zmq::message_t msg(name.size() + 1);
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
         _socketBufferOut->send(msg, ZMQ_SNDMORE);
 
-        msg.rebuild(buffer->data(), buffer->size(), Link::freeOlderBuffer, this);
+        msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
         _socketBufferOut->send(msg);
     }
     catch (const zmq::error_t& e)
@@ -288,10 +290,10 @@ void Link::handleInputBuffers()
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
-            SerializedObjectPtr buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
+            unique_ptr<SerializedObject> buffer = unique_ptr<SerializedObject>(new SerializedObject((char*)msg.data(), (char*)msg.data() + msg.size()));
             
             auto root = _rootObject.lock();
-            root->setFromSerializedObject(name, buffer);
+            root->setFromSerializedObject(name, std::move(buffer));
         }
     }
     catch (const zmq::error_t& e)

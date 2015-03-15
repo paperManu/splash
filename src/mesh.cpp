@@ -99,9 +99,9 @@ bool Mesh::read(const string& filename)
 }
 
 /*************/
-SerializedObjectPtr Mesh::serialize() const
+unique_ptr<SerializedObject> Mesh::serialize() const
 {
-    SerializedObjectPtr obj(new SerializedObject());
+    unique_ptr<SerializedObject> obj(new SerializedObject());
 
     STimer::timer << "serialize " + _name;
 
@@ -136,9 +136,9 @@ SerializedObjectPtr Mesh::serialize() const
 }
 
 /*************/
-bool Mesh::deserialize(const SerializedObjectPtr obj)
+bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
 {
-    if (obj->size() == 0)
+    if (obj.get() == nullptr || obj->size() == 0)
         return false;
 
     lock_guard<mutex> lock(_writeMutex);

@@ -73,9 +73,6 @@ class Image : public BufferObject
                 _flop = i._flop;
                 _srgb = i._srgb;
                 _benchmark = i._benchmark;
-                _serializedBuffers[0] = i._serializedBuffers[0];
-                _serializedBuffers[1] = i._serializedBuffers[1];
-                _serializedBufferIndex = i._serializedBufferIndex;
             }
             return *this;
         }
@@ -120,12 +117,12 @@ class Image : public BufferObject
         /**
          * Serialize the image
          */
-        SerializedObjectPtr serialize() const;
+        std::unique_ptr<SerializedObject> serialize() const;
 
         /**
          * Update the Image from a serialized representation
          */
-        bool deserialize(const SerializedObjectPtr obj);
+        bool deserialize(std::unique_ptr<SerializedObject> obj);
 
         /**
          * Set the path to read from
@@ -164,11 +161,6 @@ class Image : public BufferObject
         bool readFile(const std::string& filename);
         
     private:
-        // Serialization is done in a double-buffer way,
-        // to limit memory initialization
-        mutable SerializedObjectPtr _serializedBuffers[3];
-        mutable int _serializedBufferIndex {0};
-
         // Deserialization is done in this buffer, to avoid realloc
         oiio::ImageBuf _bufferDeserialize;
         

@@ -66,15 +66,14 @@ void World::run()
                 o.second->update();
 
                 // Send them the their destinations
-                SerializedObjectPtr obj;
                 BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 if (bufferObj.get() != nullptr)
                 {
                     if (bufferObj->wasUpdated()) // if the buffer has been updated
                     {
-                        obj = bufferObj->serialize();
+                        auto obj = bufferObj->serialize();
                         bufferObj->setNotUpdated();
-                        _link->sendBuffer(o.first, obj);
+                        _link->sendBuffer(o.first, std::move(obj));
                     }
                     else
                         return; // if not, exit this thread
@@ -460,9 +459,9 @@ Values World::getObjectsNameByType(string type)
 }
 
 /*************/
-void World::handleSerializedObject(const string name, const SerializedObjectPtr obj)
+void World::handleSerializedObject(const string name, unique_ptr<SerializedObject> obj)
 {
-    _link->sendBuffer(name, obj);
+    _link->sendBuffer(name, std::move(obj));
 }
 
 /*************/

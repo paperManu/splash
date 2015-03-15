@@ -47,9 +47,7 @@ Scene::Scene(std::string name)
 
     init(_name);
 
-    _textureUploadLoop = thread([&]() {
-        textureUploadRun();
-    });
+    _textureUploadFuture = async(std::launch::async, [&](){textureUploadRun();});
 
     run();
 }
@@ -58,7 +56,7 @@ Scene::Scene(std::string name)
 Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
-    _textureUploadLoop.join();
+    _textureUploadFuture.get();
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
