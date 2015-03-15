@@ -47,10 +47,10 @@ void Worker::operator() ()
 }
 
 /*************/
-ThreadPool::ThreadPool(size_t threads)
+ThreadPool::ThreadPool(int threads)
 {
     int nprocessors = threads;
-    if (threads == 0)
+    if (threads == -1)
         nprocessors = std::min(std::max(sysconf(_SC_NPROCESSORS_CONF), 2l), 16l);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));

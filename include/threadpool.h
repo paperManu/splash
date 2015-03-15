@@ -57,7 +57,7 @@ class Worker
 class ThreadPool
 {
     public:
-        ThreadPool(size_t threads = 0);
+        ThreadPool(int threads = -1);
         ~ThreadPool();
 
         template<class F> unsigned int enqueue(F f);
