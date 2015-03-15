@@ -51,7 +51,7 @@ ThreadPool::ThreadPool(size_t threads)
 {
     int nprocessors = threads;
     if (threads == 0)
-        nprocessors = std::min(std::max(sysconf(_SC_NPROCESSORS_CONF * 2), 8l), 32l);
+        nprocessors = std::min(std::max(sysconf(_SC_NPROCESSORS_CONF), 2l), 16l);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }
@@ -117,7 +117,7 @@ void ThreadPool::waitThreads(vector<unsigned int>& list)
 }
 
 /*************/
-unsigned int ThreadPool::getPoolLength()
+unsigned int ThreadPool::getTasksNumber()
 {
     int size;
     {
@@ -126,6 +126,13 @@ unsigned int ThreadPool::getPoolLength()
         queue_mutex.unlock();
     }
     return size;
+}
+
+/*************/
+void ThreadPool::addWorkers(unsigned int nbr)
+{
+    for (unsigned int i = 0; i < nbr; ++i)
+        workers.emplace_back(thread(Worker(*this)));
 }
 
 /*************/

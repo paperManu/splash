@@ -185,6 +185,8 @@ class Scene : public RootObject
         std::mutex _textureUploadMutex;
         GLsync _textureUploadFence;
 
+        // Window swapping thread pool
+        ThreadPool _swapPool {0};
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
         GLuint _maxSwapBarriers {0};

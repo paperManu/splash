@@ -82,6 +82,7 @@ BaseObjectPtr Scene::add(string type, string name)
     {
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
         obj->setAttribute("swapInterval", {_swapInterval});
+        _swapPool.addWorkers(1u);
     }
     else if (type == string("camera"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
@@ -322,13 +323,13 @@ void Scene::render()
     STimer::timer << "swap";
     for (auto& obj : _objects)
         if (obj.second->getType() == "window")
-            threadIds.push_back(SThread::pool.enqueue([&]() {
+            threadIds.push_back(_swapPool.enqueue([&]() {
                 dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
             }));
     _status = !isError;
 
     // Wait for buffer update and swap threads
-    SThread::pool.waitThreads(threadIds);
+    _swapPool.waitThreads(threadIds);
     STimer::timer >> "swap";
 
     // Update the user events

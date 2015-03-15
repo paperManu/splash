@@ -187,9 +187,6 @@ struct SerializedObject
     std::vector<char> _data;
 };
 
-//typedef std::vector<char> SerializedObject;
-//typedef std::unique_ptr<SerializedObject> SerializedObjectPtr;
-
 /*************/
 class GlWindow
 {
