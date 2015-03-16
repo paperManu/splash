@@ -178,6 +178,8 @@ AC_CONFIG_FILES([
     addons/blender/Makefile
 	src/Makefile
 	data/Makefile
+    osx/Info.plist:osx/Info.plist.in
+    osx/Makefile
 	tests/Makefile
     tools/Makefile
 	])
