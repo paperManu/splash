@@ -352,7 +352,14 @@ void GuiGlobalView::doCalibration()
 
     // Calibration
     _camera->doCalibration();
+    propagateCalibration();
 
+    return;
+}
+
+/*************/
+void GuiGlobalView::propagateCalibration()
+{
     bool isDistant {false};
     auto scene = _scene.lock();
     for (auto& obj : scene->_ghostObjects)
@@ -375,8 +382,6 @@ void GuiGlobalView::doCalibration()
             scene->sendMessageToWorld("sendAll", sendValues);
         }
     }
-
-    return;
 }
 
 /*************/
@@ -464,13 +469,30 @@ void GuiGlobalView::processKeyEvents()
             delta = 10.f;
             
         if (io.KeysDown[262])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", delta, 0});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
         if (io.KeysDown[263])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", -delta, 0});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
         if (io.KeysDown[264])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, -delta});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
         if (io.KeysDown[265])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
+
         return;
     }
 }

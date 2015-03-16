@@ -106,6 +106,7 @@ class GuiGlobalView : public GuiWidget
 
         // Actions
         void doCalibration();
+        void propagateCalibration(); // Propagates calibration to other Scenes if needed
         void switchHideOtherCameras();
         void nextCamera();
         void showAllCalibrationPoints();
