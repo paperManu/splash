@@ -20,7 +20,7 @@
 #include <json/reader.h>
 #include <json/writer.h>
 #include <spawn.h>
-#include <wait.h>
+#include <sys/wait.h>
 
 using namespace glm;
 using namespace std;
