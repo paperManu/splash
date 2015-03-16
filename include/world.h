@@ -89,10 +89,6 @@ class World : public RootObject
         Json::Value _config;
         bool _childProcessLaunched {false};
 
-        // List of actions to do during the next loop
-        bool _doComputeBlending {false};
-        bool _doSaveConfig {false};
-
         /**
          * Add an object to the world (used for Images and Meshes currently)
          */

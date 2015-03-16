@@ -93,18 +93,6 @@ void World::run()
         for (auto& log : logs)
             sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
 
-        if (_doComputeBlending)
-        {
-            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
-            _doComputeBlending = false;
-        }
-
-        if (_doSaveConfig)
-        {
-            saveConfig();
-            _doSaveConfig = false;
-        }
-
         if (_quit)
         {
             for (auto& s : _scenes)
@@ -610,7 +598,7 @@ void World::registerAttributes()
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
         if (args.size() == 0 || args[0].asInt() != 0)
-            _doComputeBlending = true;
+            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
         return true;
     });
 
@@ -635,7 +623,9 @@ void World::registerAttributes()
 
     _attribFunctions["save"] = AttributeFunctor([&](Values args) {
         SLog::log << "Saving configuration" << Log::endl;
-        _doSaveConfig = true;
+        SThread::pool.enqueueWithoutId([&]() {
+            saveConfig();
+        });
         return true;
     });
 
