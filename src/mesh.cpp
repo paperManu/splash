@@ -268,20 +268,20 @@ void Mesh::createDefaultMesh()
 /*************/
 void Mesh::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
     });
 
-    _attribFunctions["name"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["name"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _name = args[0].asString();
         return true;
     });
     
-    _attribFunctions["benchmark"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)

@@ -118,7 +118,7 @@ bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
 }
 
 /*************/
-bool Link::sendMessage(const string name, const string attribute, const Values message)
+bool Link::sendMessage(const string name, const string attribute, const Values& message)
 {
     try
     {
@@ -135,8 +135,8 @@ bool Link::sendMessage(const string name, const string attribute, const Values m
         _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
         // Helper function to send messages
-        std::function<void(const Values message)> sendMessage;
-        sendMessage = [&](const Values message) {
+        std::function<void(const Values& message)> sendMessage;
+        sendMessage = [&](const Values& message) {
             // Size of the message
             int size = message.size();
             msg.rebuild(sizeof(size));

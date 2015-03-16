@@ -512,7 +512,7 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessageToWorld(const string message, const Values value)
+void Scene::sendMessageToWorld(const string message, const Values& value)
 {
     RootObject::sendMessage("world", message, value);
 }
@@ -835,7 +835,7 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 /*************/
 void Scene::registerAttributes()
 {
-    _attribFunctions["add"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["add"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string type = args[0].asString();
@@ -845,7 +845,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["addGhost"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["addGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string type = args[0].asString();
@@ -855,7 +855,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["blendingResolution"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["blendingResolution"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         int resolution = args[0].asInt();
@@ -866,12 +866,12 @@ void Scene::registerAttributes()
         return {(int)_blendingResolution};
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         computeBlendingMap();
         return true;
     });
 
-    _attribFunctions["config"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
         lock_guard<recursive_mutex> lock(_configureMutex);
         setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
         Json::Value config = getConfigurationAsJson();
@@ -880,14 +880,14 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["duration"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         STimer::timer.setDuration(args[0].asString(), args[1].asInt());
         return true;
     });
  
-    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)
@@ -896,7 +896,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         string type = args[0].asString();
@@ -905,7 +905,7 @@ void Scene::registerAttributes()
         return true;
     });
    
-    _attribFunctions["link"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["link"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -913,7 +913,7 @@ void Scene::registerAttributes()
         return link(src, dst);
     });
 
-    _attribFunctions["linkGhost"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["linkGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -921,14 +921,14 @@ void Scene::registerAttributes()
         return linkGhost(src, dst);
     });
 
-    _attribFunctions["log"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["log"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         SLog::log.setLog(args[0].asString(), (Log::Priority)args[1].asInt());
         return true;
     });
 
-    _attribFunctions["remove"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["remove"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         string name = args[1].asString();
@@ -937,7 +937,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setGhost"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["setGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -952,7 +952,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setMaster"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["setMaster"] = AttributeFunctor([&](const Values& args) {
         if (args.size() == 0)
             setAsMaster();
         else
@@ -960,30 +960,30 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["start"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["start"] = AttributeFunctor([&](const Values& args) {
         _started = true;
         return true;
     });
 
-    _attribFunctions["stop"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["stop"] = AttributeFunctor([&](const Values& args) {
         _started = false;
         return true;
     });
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
         _started = false;
         _isRunning = false;
         return true;
     });
    
-    _attribFunctions["unlink"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["unlink"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -991,7 +991,7 @@ void Scene::registerAttributes()
         return unlink(src, dst);
     });
 
-    _attribFunctions["unlinkGhost"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["unlinkGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string src = args[0].asString();
@@ -999,7 +999,7 @@ void Scene::registerAttributes()
         return unlinkGhost(src, dst);
     });
  
-    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         for (auto& obj : _objects)
@@ -1012,7 +1012,7 @@ void Scene::registerAttributes()
     });
 
 #if HAVE_GPHOTO
-    _attribFunctions["calibrateColor"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["calibrateColor"] = AttributeFunctor([&](const Values& args) {
         if (_colorCalibrator == nullptr)
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
@@ -1023,7 +1023,7 @@ void Scene::registerAttributes()
         return true;
     });
 
-    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](const Values& args) {
         if (_colorCalibrator == nullptr)
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked

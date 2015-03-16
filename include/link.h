@@ -67,9 +67,9 @@ class Link
          * Send a message to connected pairs
          * The second one converts known base types to vector<Value> before sending
          */
-        bool sendMessage(const std::string name, const std::string attribute, const Values message);
+        bool sendMessage(const std::string name, const std::string attribute, const Values& message);
         template <typename T>
-        bool sendMessage(const std::string name, const std::string attribute, const std::vector<T> message);
+        bool sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message);
 
     private:
         RootObjectWeakPtr _rootObject;
@@ -109,7 +109,7 @@ class Link
 
 /*************/
 template <typename T>
-bool Link::sendMessage(const std::string name, const std::string attribute, const std::vector<T> message)
+bool Link::sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message)
 {
     Values convertedMsg;
 

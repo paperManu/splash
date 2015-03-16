@@ -108,7 +108,7 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
 /*************/
 void Mesh_Shmdata::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());

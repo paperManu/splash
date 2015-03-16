@@ -162,11 +162,11 @@ class Camera : public BaseObject
          * Set the given calibration point
          * Returns true if the point already existed
          */
-        bool addCalibrationPoint(Values worldPoint);
+        bool addCalibrationPoint(const Values& worldPoint);
         void deselectCalibrationPoint();
         void moveCalibrationPoint(float dx, float dy);
-        void removeCalibrationPoint(Values point, bool unlessSet = false);
-        bool setCalibrationPoint(Values screenPoint);
+        void removeCalibrationPoint(const Values& point, bool unlessSet = false);
+        bool setCalibrationPoint(const Values& screenPoint);
 
         /**
          * Set the number of output buffers for this camera

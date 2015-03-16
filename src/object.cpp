@@ -233,7 +233,7 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    _attribFunctions["position"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -242,7 +242,7 @@ void Object::registerAttributes()
         return {_position.x, _position.y, _position.z};
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -257,7 +257,7 @@ void Object::registerAttributes()
         return {_scale.x, _scale.y, _scale.z};
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         switch (args[0].asInt())
@@ -280,7 +280,7 @@ void Object::registerAttributes()
         return sideness;
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _fill = args[0].asString();
@@ -289,14 +289,14 @@ void Object::registerAttributes()
         return {_fill};
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 4)
             return false;
         _shader->setAttribute("color", args);
         return true;
     });
 
-    _attribFunctions["name"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["name"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _name = args[0].asString();

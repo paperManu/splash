@@ -841,7 +841,7 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());

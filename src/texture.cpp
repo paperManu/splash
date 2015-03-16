@@ -494,7 +494,7 @@ void Texture::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture::registerAttributes()
 {
-    _attribFunctions["resizable"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["resizable"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _resizable = args[0].asInt() > 0 ? true : false;

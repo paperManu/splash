@@ -541,7 +541,7 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["blending"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["blending"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         
@@ -551,7 +551,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asString() == "texture" && _fill != texture)
@@ -610,7 +610,7 @@ void Shader::registerAttributes()
         return {fill};
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 4)
             return false;
         _uniforms["_color"].values = args;
@@ -618,7 +618,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         else if (args.size() < 3)
@@ -638,7 +638,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -649,7 +649,7 @@ void Shader::registerAttributes()
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1 || args.size() > 4)
             return false;
 
@@ -669,7 +669,7 @@ void Shader::registerAttributes()
         return out;
     });
 
-    _attribFunctions["uniform"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
 

@@ -39,17 +39,17 @@ struct AttributeFunctor
 {
     public:
         AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(Values)> setFunc) {_setFunc = setFunc;}
-        AttributeFunctor(std::function<bool(Values)> setFunc,
-                            std::function<Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+        AttributeFunctor(std::function<bool(const Values&)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor(std::function<bool(const Values&)> setFunc,
+                            std::function<const Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
 
-        bool operator()(Values args)
+        bool operator()(const Values& args)
         {
             if (!_setFunc)
                 return false;
             return _setFunc(args);
         }
-        Values operator()()
+        Values operator()() const
         {
             if (!_getFunc)
                 return Values();
@@ -57,8 +57,8 @@ struct AttributeFunctor
         }
 
     private:
-        std::function<bool(Values)> _setFunc;
-        std::function<Values()> _getFunc;
+        std::function<bool(const Values&)> _setFunc;
+        std::function<const Values()> _getFunc;
 };
 
 class BaseObject;
@@ -121,29 +121,31 @@ class BaseObject
         /**
          * Set the specified attribute
          */
-        bool setAttribute(std::string attrib, Values args)
+        bool setAttribute(const std::string& attrib, const Values& args)
         {
-            if (_attribFunctions.find(attrib) == _attribFunctions.end())
+            auto attribFunction = _attribFunctions.find(attrib);
+            if (attribFunction == _attribFunctions.end())
                 return false;
             _updatedParams = true;
-            return _attribFunctions[attrib](args);
+            return (*attribFunction).second(args);
         }
 
         /**
          * Get the specified attribute
          */
-        bool getAttribute(std::string attrib, Values& args)
+        bool getAttribute(const std::string& attrib, Values& args) const
         {
-            if (_attribFunctions.find(attrib) == _attribFunctions.end())
+            auto attribFunction = _attribFunctions.find(attrib);
+            if (attribFunction == _attribFunctions.end())
                 return false;
-            args = _attribFunctions[attrib]();
+            args = (*attribFunction).second();
             return true;
         }
 
         /**
          * Get all the attributes as a map
          */
-        std::map<std::string, Values> getAttributes()
+        std::map<std::string, Values> getAttributes() const
         {
             std::map<std::string, Values> attribs;
             for (auto& attr : _attribFunctions)
@@ -160,7 +162,7 @@ class BaseObject
         /**
          * Check whether the objects needs to be updated
          */
-        virtual bool wasUpdated() {return _updatedParams;}
+        virtual bool wasUpdated() const {return _updatedParams;}
 
         /**
          * Reset the "was updated" status, if needed
@@ -175,7 +177,7 @@ class BaseObject
         /**
          * Get the configuration as a json object
          */
-        Json::Value getValuesAsJson(Values values)
+        Json::Value getValuesAsJson(const Values& values) const
         {
             Json::Value jsValue;
             for (auto& v : values)
@@ -201,7 +203,7 @@ class BaseObject
             return jsValue;
         }
 
-        Json::Value getConfigurationAsJson()
+        Json::Value getConfigurationAsJson() const
         {
             Json::Value root;
             if (_remoteType == "")
@@ -256,7 +258,7 @@ class BufferObject : public BaseObject
         /**
          * Returns true if the object has been updated
          */
-        bool wasUpdated() {return _updatedBuffer | BaseObject::wasUpdated();}
+        bool wasUpdated() const {return _updatedBuffer | BaseObject::wasUpdated();}
 
         /**
          * Set the updated buffer flag to false.
@@ -328,7 +330,7 @@ class RootObject : public BaseObject
     public:
         RootObject()
         {
-            _attribFunctions["answerMessage"] = AttributeFunctor([&](Values args) {
+            _attribFunctions["answerMessage"] = AttributeFunctor([&](const Values& args) {
                 if (args.size() == 0 || args[0].asString() != _answerExpected)
                     return false;
                 _lastAnswerReceived = args;
@@ -355,7 +357,7 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(std::string name, std::string attrib, Values args)
+        bool set(std::string name, std::string attrib, const Values& args)
         {
             std::lock_guard<std::mutex> lock(_setMutex);
             if (name == _name || name == SPLASH_ALL_PAIRS)
@@ -394,7 +396,7 @@ class RootObject : public BaseObject
         /**
          * Send a message to the target specified by its name
          */
-        void sendMessage(std::string name, std::string attribute, const Values message = {})
+        void sendMessage(std::string name, std::string attribute, const Values& message = {})
         {
             _link->sendMessage(name, attribute, message);
         }
@@ -402,7 +404,7 @@ class RootObject : public BaseObject
         /**
          * Send a message to the target specified by its name, and wait for an answer
          */
-        Values sendMessageWithAnswer(std::string name, std::string attribute, const Values message = {})
+        Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {})
         {
             if (_link == nullptr)
                 return {};

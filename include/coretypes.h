@@ -317,14 +317,14 @@ struct Value
             {
                 _i = v._i;
                 _f = v._f;
-                _s = v._s;
-                _v = v._v;
+                _s = std::move(v._s);
+                _v = std::move(v._v);
                 _type = v._type;
             }
             return *this;
         }
 
-        bool operator==(Value v)
+        bool operator==(Value v) const
         {
             if (_type != v._type)
                 return false;
@@ -347,7 +347,7 @@ struct Value
                 return false;
         }
 
-        int asInt()
+        int asInt() const
         {
             if (_type == Type::i)
                 return _i;
@@ -360,7 +360,7 @@ struct Value
                 return 0;
         }
 
-        float asFloat()
+        float asFloat() const
         {
             if (_type == Type::i)
                 return (float)_i;
@@ -373,7 +373,7 @@ struct Value
                 return 0.f;
         }
 
-        std::string asString()
+        std::string asString() const
         {
             if (_type == Type::i)
                 try {return std::to_string(_i);}
@@ -387,7 +387,7 @@ struct Value
                 return "";
         }
 
-        Values asValues()
+        Values asValues() const
         {
             if (_type == Type::i)
                 return {_i};
@@ -413,7 +413,7 @@ struct Value
                 return nullptr;
         }
 
-        Type getType() {return _type;}
+        Type getType() const {return _type;}
         
         int size()
         {

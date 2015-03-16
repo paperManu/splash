@@ -643,7 +643,7 @@ void Window::updateWindowShape()
 /*************/
 void Window::registerAttributes()
 {
-    _attribFunctions["fullscreen"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["fullscreen"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         switchFullscreen(args[0].asInt());
@@ -652,7 +652,7 @@ void Window::registerAttributes()
         return {_screenId};
     });
 
-    _attribFunctions["decorated"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["decorated"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         _withDecoration = args[0].asInt() == 0 ? false : true;
@@ -666,7 +666,7 @@ void Window::registerAttributes()
             return {(int)_withDecoration};
     });
 
-    _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         if (args[0].asInt() != 0)
@@ -678,7 +678,7 @@ void Window::registerAttributes()
         return {_srgb};
     });
 
-    _attribFunctions["gamma"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["gamma"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         _gammaCorrection = args[0].asFloat();
@@ -688,7 +688,7 @@ void Window::registerAttributes()
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _layout = args;
@@ -697,7 +697,7 @@ void Window::registerAttributes()
         return _layout;
     });
 
-    _attribFunctions["position"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 2)
             return false;
         _windowRect[0] = args[0].asInt();
@@ -711,7 +711,7 @@ void Window::registerAttributes()
             return {_windowRect[0], _windowRect[1]};
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 2)
             return false;
         _windowRect[2] = args[0].asInt();
@@ -725,7 +725,7 @@ void Window::registerAttributes()
             return {_windowRect[2], _windowRect[3]};
     });
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["swapInterval"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());

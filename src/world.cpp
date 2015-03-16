@@ -595,7 +595,7 @@ void World::parseArguments(int argc, char** argv)
 }
 
 /*************/
-void World::setAttribute(string name, string attrib, Values args)
+void World::setAttribute(string name, string attrib, const Values& args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
@@ -604,37 +604,37 @@ void World::setAttribute(string name, string attrib, Values args)
 /*************/
 void World::registerAttributes()
 {
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
         _childProcessLaunched = true;
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         if (args.size() == 0 || args[0].asInt() != 0)
             sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
         return true;
     });
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["framerate"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
         _quit = true;
         return true;
     });
 
-    _attribFunctions["loadConfig"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["loadConfig"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         string filename = args[0].asString();
@@ -655,7 +655,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["save"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
         SLog::log << "Saving configuration" << Log::endl;
         SThread::pool.enqueueWithoutId([&]() {
             saveConfig();
@@ -663,7 +663,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sendAll"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["sendAll"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -680,7 +680,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});

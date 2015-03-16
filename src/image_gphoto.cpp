@@ -365,7 +365,7 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 /*************/
 void Image_GPhoto::registerAttributes()
 {
-    _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _srgb = (args[0].asInt() > 0) ? true : false;
@@ -374,7 +374,7 @@ void Image_GPhoto::registerAttributes()
         return {_srgb};
     });
 
-    _attribFunctions["aperture"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["aperture"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         return doSetProperty("aperture", args[0].asString());
@@ -386,7 +386,7 @@ void Image_GPhoto::registerAttributes()
             return {};
     });
 
-    _attribFunctions["isospeed"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["isospeed"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         return doSetProperty("iso", args[0].asString());
@@ -397,7 +397,7 @@ void Image_GPhoto::registerAttributes()
         else
             return {};
     });
-    _attribFunctions["shutterspeed"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["shutterspeed"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
@@ -410,14 +410,14 @@ void Image_GPhoto::registerAttributes()
     });
 
     // Actions
-    _attribFunctions["capture"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["capture"] = AttributeFunctor([&](const Values& args) {
         SThread::pool.enqueue([&]() {
             capture();
         });
         return true;
     });
 
-    _attribFunctions["detect"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["detect"] = AttributeFunctor([&](const Values& args) {
         SThread::pool.enqueue([&]() {
             detectCameras();
         });
@@ -425,7 +425,7 @@ void Image_GPhoto::registerAttributes()
     });
 
     // Status
-    _attribFunctions["ready"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["ready"] = AttributeFunctor([&](const Values& args) {
         return false;
     }, [&]() -> Values {
         lock_guard<recursive_mutex> lock(_gpMutex);
