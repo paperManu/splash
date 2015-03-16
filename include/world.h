@@ -74,12 +74,12 @@ class World : public RootObject
         static World* _that;
         struct sigaction _signals;
         std::string _executionPath {""};
+        std::mutex _configurationMutex;
 
         // World parameters
         unsigned int _worldFramerate {60};
 
-        std::map<std::string, ScenePtr> _scenes;
-        std::map<std::string, std::thread> _scenesThread;
+        std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
 
         unsigned long _nextId {0};
@@ -133,7 +133,7 @@ class World : public RootObject
         /**
          * Load the specified configuration file
          */
-        bool loadConfig(std::string filename);
+        bool loadConfig(std::string filename, Json::Value& configuration);
 
         /**
          * Parse the given arguments

@@ -1,5 +1,7 @@
 #include "link.h"
 
+#include <algorithm>
+
 #include "basetypes.h"
 #include "log.h"
 #include "timer.h"
@@ -55,6 +57,11 @@ Link::~Link()
 /*************/
 void Link::connectTo(const string name)
 {
+    if (find(_connectedTargets.begin(), _connectedTargets.end(), name) == _connectedTargets.end())
+        _connectedTargets.push_back(name);
+    else
+        return;
+
     try
     {
         // Set the high water mark to a low value for the buffer output

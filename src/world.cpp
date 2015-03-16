@@ -20,6 +20,7 @@
 #include <json/reader.h>
 #include <json/writer.h>
 #include <spawn.h>
+#include <wait.h>
 
 using namespace glm;
 using namespace std;
@@ -57,31 +58,35 @@ void World::run()
     {
         STimer::timer << "worldLoop";
 
-        STimer::timer << "upload";
-        vector<unsigned int> threadIds;
-        for (auto& o : _objects)
         {
-            threadIds.push_back(SThread::pool.enqueue([=, &o]() {
-                // Update the local objects
-                o.second->update();
+            unique_lock<mutex> lock(_configurationMutex);
 
-                // Send them the their destinations
-                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
-                if (bufferObj.get() != nullptr)
-                {
-                    if (bufferObj->wasUpdated()) // if the buffer has been updated
+            STimer::timer << "upload";
+            vector<unsigned int> threadIds;
+            for (auto& o : _objects)
+            {
+                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                    // Update the local objects
+                    o.second->update();
+
+                    // Send them the their destinations
+                    BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                    if (bufferObj.get() != nullptr)
                     {
-                        auto obj = bufferObj->serialize();
-                        bufferObj->setNotUpdated();
-                        _link->sendBuffer(o.first, std::move(obj));
+                        if (bufferObj->wasUpdated()) // if the buffer has been updated
+                        {
+                            auto obj = bufferObj->serialize();
+                            bufferObj->setNotUpdated();
+                            _link->sendBuffer(o.first, std::move(obj));
+                        }
+                        else
+                            return; // if not, exit this thread
                     }
-                    else
-                        return; // if not, exit this thread
-                }
-            }));
+                }));
+            }
+            SThread::pool.waitThreads(threadIds);
+            STimer::timer >> "upload";
         }
-        SThread::pool.waitThreads(threadIds);
-        STimer::timer >> "upload";
 
         // Send current timings to all Scenes, for display purpose
         auto durationMap = STimer::timer.getDurationMap();
@@ -159,9 +164,13 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-    // We first destroy all scenes
-    if (_scenes.size() > 0)
-        _scenes.clear();
+    unique_lock<mutex> lock(_configurationMutex);
+
+    // We first destroy all scene and objects
+    _scenes.clear();
+    _objects.clear();
+    _objectDest.clear();
+    _masterSceneName = "";
 
     // Configure this very World
     if (_config.isMember("world"))
@@ -206,12 +215,11 @@ void World::applyConfig()
                 display += to_string(0);
 
             string name = jsScenes[i]["name"].asString();
-            ScenePtr scene;
+            int pid;
             if (spawn > 0)
             {
                 // Spawn a new process containing this Scene
                 _childProcessLaunched = false;
-                int pid;
 
                 string cmd;
                 if (_executionPath == "")
@@ -227,13 +235,10 @@ void World::applyConfig()
                     SLog::log << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
 
                 // We wait for the child process to be launched
-                timespec nap;
-                nap.tv_sec = 1;
-                nap.tv_nsec = 0;
                 while (!_childProcessLaunched)
-                    nanosleep(&nap, NULL);
+                    this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e8));
             }
-            _scenes[name] = scene;
+            _scenes[name] = pid;
             if (_masterSceneName == "")
                 _masterSceneName = name;
             
@@ -275,7 +280,7 @@ void World::applyConfig()
 
         // Set if master
         if (s.first == _masterSceneName)
-            sendMessage(_masterSceneName, "setMaster", {});
+            sendMessage(_masterSceneName, "setMaster", {_configFilename});
 
         // Create the objects
         auto sceneMembers = jsScene.getMemberNames();
@@ -479,7 +484,7 @@ void World::leave(int signal_value)
 }
 
 /*************/
-bool World::loadConfig(string filename)
+bool World::loadConfig(string filename, Json::Value& configuration)
 {
     ifstream in(filename, ios::in | ios::binary);
     string contents;
@@ -509,7 +514,7 @@ bool World::loadConfig(string filename)
         return false;
     }
 
-    _config = config;
+    configuration = config;
     return true;
 }
 
@@ -576,7 +581,15 @@ void World::parseArguments(int argc, char** argv)
     }
 
     if (filename != "")
-        _status &= loadConfig(filename);
+    {
+        Json::Value config;
+        _status &= loadConfig(filename, config);
+
+        if (_status)
+            _config = config;
+        else
+            exit(0);
+    }
     else
         exit(0);
 }
@@ -618,6 +631,27 @@ void World::registerAttributes()
 
     _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
         _quit = true;
+        return true;
+    });
+
+    _attribFunctions["loadConfig"] = AttributeFunctor([&](Values args) {
+        if (args.size() != 1)
+            return false;
+        string filename = args[0].asString();
+        SThread::pool.enqueueWithoutId([=]() {
+            Json::Value config;
+            if (loadConfig(filename, config))
+            {
+                for (auto& s : _scenes)
+                {
+                    sendMessage(s.first, "quit", {});
+                    waitpid(s.second, nullptr, 0);
+                }
+
+                _config = config;
+                applyConfig();
+            }
+        });
         return true;
     });
 

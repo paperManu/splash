@@ -130,7 +130,7 @@ class Scene : public RootObject
         /**
          * Set the Scene as the master one
          */
-        void setAsMaster();
+        void setAsMaster(std::string configFilePath = "");
 
         /**
          * Give a special behavior to the scene, making it the main window of the World

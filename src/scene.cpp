@@ -482,12 +482,13 @@ void Scene::textureUploadRun()
 }
 
 /*************/
-void Scene::setAsMaster()
+void Scene::setAsMaster(string configFilePath)
 {
     _isMaster = true;
 
     _gui = make_shared<Gui>(_mainWindow, _self);
     _gui->setName("gui");
+    _gui->setConfigFilePath(configFilePath);
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
@@ -952,7 +953,10 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["setMaster"] = AttributeFunctor([&](Values args) {
-        setAsMaster();
+        if (args.size() == 0)
+            setAsMaster();
+        else
+            setAsMaster(args[0].asString());
         return true;
     });
 

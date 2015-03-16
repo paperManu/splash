@@ -132,6 +132,11 @@ class Gui : public BaseObject
         bool render();
 
         /**
+         * Specify the configuration path (as loaded by World)
+         */
+        void setConfigFilePath(const std::string& path) {_configurationPath = path.data();}
+
+        /**
          * Set the resolution of the GUI
          */
         void setOutputSize(int width, int height);
@@ -166,6 +171,7 @@ class Gui : public BaseObject
         std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
 
         // Gui related attributes
+        std::string _configurationPath;
         bool _isVisible {false};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
         bool _wireframe {false};
@@ -189,6 +195,7 @@ class Gui : public BaseObject
         void calibrateColors();
         void computeBlending();
         void flashBackground();
+        void loadConfiguration();
         void saveConfiguration();
 
         /**

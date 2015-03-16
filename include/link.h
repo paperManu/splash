@@ -78,6 +78,8 @@ class Link
         std::mutex _msgSendMutex;
         std::mutex _bufferSendMutex;
 
+        std::vector<std::string> _connectedTargets;
+
         std::shared_ptr<zmq::socket_t> _socketBufferIn;
         std::shared_ptr<zmq::socket_t> _socketBufferOut;
         std::shared_ptr<zmq::socket_t> _socketMessageIn;

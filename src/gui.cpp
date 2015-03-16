@@ -148,6 +148,13 @@ void Gui::calibrateColors()
 }
 
 /*************/
+void Gui::loadConfiguration()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("loadConfig", {_configurationPath});
+}
+
+/*************/
 void Gui::saveConfiguration()
 {
     auto scene = _scene.lock();
@@ -186,73 +193,76 @@ void Gui::key(int key, int action, int mods)
     case GLFW_KEY_TAB:
     {
         if (action == GLFW_PRESS)
-        {
             _isVisible = !_isVisible;
-        }
         break;
     }
     case GLFW_KEY_ESCAPE:
     {
-        auto scene = _scene.lock();
-        scene->sendMessageToWorld("quit");
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("quit");
+        }
         break;
     }
     case GLFW_KEY_B:
     {
-        if (action == GLFW_PRESS)
-        {
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             computeBlending();
-        }
         break;
     }
 #if HAVE_GPHOTO
     case GLFW_KEY_L:
     {
-        if (action == GLFW_PRESS)
-        {
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             activateLUT();
-        }
         break;
     }
     case GLFW_KEY_O:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColorResponseFunction();
         break;
     }
     case GLFW_KEY_P:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColors();
         break;
     }
 #endif
     case GLFW_KEY_S:
     {
-        if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             saveConfiguration();
         break;
     }
     case GLFW_KEY_F:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             flashBackground();
         break;
     }
     // Switch the rendering to textured
     case GLFW_KEY_T: 
     {
-        auto scene = _scene.lock();
-        _wireframe = false;
-        scene->sendMessageToWorld("wireframe", {0});
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+        {
+            auto scene = _scene.lock();
+            _wireframe = false;
+            scene->sendMessageToWorld("wireframe", {0});
+        }
         break;
     }
     // Switch the rendering to wireframe
     case GLFW_KEY_W:
     {
-        auto scene = _scene.lock();
-        _wireframe = true;
-        scene->sendMessageToWorld("wireframe", {1});
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+        {
+            auto scene = _scene.lock();
+            _wireframe = true;
+            scene->sendMessageToWorld("wireframe", {1});
+        }
         break;
     }
     }
@@ -359,8 +369,6 @@ bool Gui::render()
             ImGui::NextColumn();
             ImGui::Separator();
 #endif
-            if (ImGui::Button("Save configuration"))
-                saveConfiguration();
             if (ImGui::Button("Compute blending map"))
                 computeBlending();
             if (ImGui::Button("Flash background"))
@@ -381,6 +389,17 @@ bool Gui::render()
                 activateLUT();
             ImGui::Columns(1);
 #endif
+            ImGui::Separator();
+            ImGui::Text("Configuration file");
+            char configurationPath[512];
+            strcpy(configurationPath, _configurationPath.data());
+            ImGui::InputText("Path", configurationPath, 512);
+            _configurationPath = string(configurationPath);
+            if (ImGui::Button("Save configuration"))
+                saveConfiguration();
+            ImGui::SameLine();
+            if (ImGui::Button("Load configuration"))
+                loadConfiguration();
         }
 
         // Specific widgets
@@ -645,20 +664,22 @@ void Gui::initImWidgets()
         string text;
         text += "Tab: show / hide this GUI\n";
         text += "Shortcuts for the calibration view:\n";
-        text += " Space: switche between cameras (when hovering the Views panel)\n";
-        text += " A: show / hide the target calibration point\n";
-        text += " F: white background instead of black\n";
+        text += " Ctrl+F: white background instead of black\n";
+        text += " Ctrl+B: compute the blending between all cameras\n";
+        text += " Ctrl+T: textured draw mode\n";
+        text += " Ctrl+W: wireframe draw mode\n";
+#if HAVE_GPHOTO
+        text += "\n";
+        text += " Ctrl+O: launch camera calibration\n";
+        text += " Ctrl+P: launch projectors calibration\n";
+        text += " Ctrl+L: activate color LUT (if calibrated)\n";
+#endif
+        text += "\n";
+        text += " Space: switch between cameras (when hovering the Views panel)\n";
+        text += " A: show / hide the target calibration point (when hovering the Views panel)\n";
         text += " C: calibrate the selected camera (when hovering the Views panel)\n";
         text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
-        text += " B: compute the blending between all cameras\n";
         text += " H: hide all but the selected camera (when hovering the Views panel)\n";
-        text += " T: textured draw mode\n";
-        text += " W: wireframe draw mode\n";
-#if HAVE_GPHOTO
-        text += " O: launch camera calibration\n";
-        text += " P: launch projectors calibration\n";
-        text += " L: activate color LUT (if calibrated)\n";
-#endif
 
         return text;
     });
