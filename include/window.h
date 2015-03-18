@@ -148,6 +148,7 @@ class Window : public BaseObject
         /**
          * Swap the back and front buffers
          */
+        static void swapLoopNotify();
         void swapBuffers();
 
     private:
@@ -161,6 +162,14 @@ class Window : public BaseObject
         float _gammaCorrection {2.2f};
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
+
+        // Swapping thread
+        std::thread _swapThread;
+        static std::mutex _swapLoopMutex;
+        static std::mutex _swapLoopNotifyMutex;
+        std::atomic_bool _swapLoopContinue {false};
+        static std::condition_variable _swapCondition;
+        static std::condition_variable _swapConditionNotify;
 
         // Offscreen rendering related objects
         GLuint _renderFbo {0};
@@ -181,6 +190,9 @@ class Window : public BaseObject
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn; // Input mouse buttons queue
         static std::pair<GLFWwindow*, std::vector<double>> _mousePos; // Input mouse position
         static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
+
+        // Swapping loop
+        void swapLoop();
 
         /**
          * Input callbacks

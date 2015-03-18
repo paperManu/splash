@@ -27,6 +27,11 @@ deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 
+mutex Window::_swapLoopMutex;
+mutex Window::_swapLoopNotifyMutex;
+condition_variable Window::_swapCondition;
+condition_variable Window::_swapConditionNotify;
+
 /*************/
 Window::Window(RootObjectWeakPtr root)
        : BaseObject(root)
@@ -70,6 +75,11 @@ Window::Window(RootObjectWeakPtr root)
 
     // And the read framebuffer
     setupReadFBO();
+
+    _swapThread = thread([&]() {
+        _swapLoopContinue = true;
+        swapLoop();
+    });
 }
 
 /*************/
@@ -78,6 +88,10 @@ Window::~Window()
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif
+
+    _swapLoopContinue = false;
+    _swapCondition.notify_all();
+    _swapThread.join();
 
     glDeleteFramebuffers(1, &_renderFbo);
     glDeleteFramebuffers(1, &_readFbo);
@@ -397,6 +411,28 @@ void Window::setupReadFBO()
         SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     _window->releaseContext();
+}
+
+/*************/
+void Window::swapLoop()
+{
+    bool doContinue = _swapLoopContinue;
+    while (doContinue)
+    {
+        unique_lock<mutex> lock(_swapLoopMutex);
+        _swapCondition.wait(lock);
+        swapBuffers();
+        _swapConditionNotify.notify_all();
+        doContinue = _swapLoopContinue;
+    }
+}
+
+/*************/
+void Window::swapLoopNotify()
+{
+    _swapCondition.notify_all();
+    unique_lock<mutex> lock(_swapLoopNotifyMutex);
+    _swapConditionNotify.wait_for(lock, chrono::milliseconds(100));
 }
 
 /*************/
