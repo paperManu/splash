@@ -7,10 +7,12 @@
 *.deps
 *.html
 *.zip
+*.DS_Store
 aclocal.m4
 Makefile
 Makefile.in
 autom4te.cache/
+compile
 config.guess
 config.log
 config.status
@@ -20,8 +22,9 @@ depcomp
 install-sh
 libtool
 ltmain.sh
-m4/
 missing
+test-driver
+m4/
 src/splash
 src/splash-scene
 src/.deps/
@@ -38,3 +41,8 @@ tests/check_gui
 tests/*.log
 tests/*.trs
 tools/splash-check-calibration
+osx/Info.plist
+osx/splash.app/Contents/Info.plist
+osx/splash.app/Contents/MacOS/splash
+osx/splash.app/Contents/MacOS/splash-scene
+osx/splash.app/Contents/libs
