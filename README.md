@@ -74,7 +74,6 @@ Splash relies on a few libraries to get the job done. These libraries are:
 A few more libraries are used as submodules in the git repository:
 
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-- [libsimdpp](https://github.com/p12tic/libsimdpp) to use SIMD instructions (currently in YUV to RGB conversion),
 - [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images.
 

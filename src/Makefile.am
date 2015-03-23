@@ -2,7 +2,6 @@ AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/imgui \
-	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \
 	-DGLM_FORCE_RADIANS \
@@ -42,7 +41,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/hap/source/hap.c
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
-	-I$(top_srcdir)/external/libsimdpp/simdpp \
 	-I$(top_srcdir)/external/bandit/bandit \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
@@ -160,113 +158,6 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/imgui/stb_rect_pack.h \
 	$(top_srcdir)/external/imgui/stb_textedit.h \
 	$(top_srcdir)/external/imgui/stb_truetype.h \
-	\
-	$(top_srcdir)/external/libsimdpp/simdpp/null/bitwise.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/math.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/mask.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/foreach.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/transpose.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/memory.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/set.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/compare.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/get_arch_linux_cpuinfo.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/get_arch_gcc_builtin_cpu_supports.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/dispatcher.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/macros.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/arch.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/altivec/load1.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/memory_load.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/shuffle_generic.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/bitwise.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_fp_adv.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/make_shuffle_bytes_mask.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_fp_basic.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x2.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/cast.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_int_adv.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/cache.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/word_size.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/mem_unpack.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/shuffle_emul.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/shuffle128.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/mem_pack.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/align.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/transpose.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/mem_block.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/not_implemented.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/width.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/move_signed.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int128.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/transpose.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/insert.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/extract.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int256.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/convert.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/shuffle_bytes.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_int_basic.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/types.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x2.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x16.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/fwd.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/memory_store.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_shift.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/traits.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/compare.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x16.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/this_compile_arch.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/math_int.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle_int16x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle_int64x2.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/math_shift.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle_int32x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/memory_store.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/math_fp.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/memory_load.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/math_int.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/extract_half.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/cache.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/convert.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/memory_store.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/compare.h \
-	$(top_srcdir)/external/libsimdpp/test/tests.h \
-	$(top_srcdir)/external/libsimdpp/test/tests/dispatcher.h \
-	$(top_srcdir)/external/libsimdpp/test/test_helpers.h \
-	$(top_srcdir)/external/libsimdpp/test/test_case.h \
-	$(top_srcdir)/external/libsimdpp/test/common/masks.h \
-	$(top_srcdir)/external/libsimdpp/test/common/vectors.h \
-	$(top_srcdir)/external/libsimdpp/test/common/aligned_allocator.h \
-	$(top_srcdir)/external/libsimdpp/test/test_results.h \
-	$(top_srcdir)/external/libsimdpp/test/arch_registration.h \
-	$(top_srcdir)/external/libsimdpp/perf/perf.h \
-	\
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x2.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x8.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x16.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x8.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x16.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x2.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int256.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x8.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int128.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.inl \
 	\
 	$(top_srcdir)/external/hap/source/hap.h \
 	\

@@ -16,8 +16,8 @@ AC_DEFINE(LIBSPLASH_API_VERSION, ["0.2"], [API version])
 AC_PROG_CXX
 AC_PROG_CC_C_O
 
-CC="cc"
-CXX="c++"
+CC="clang"
+CXX="clang++"
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
 export PKG_CONFIG_PATH=$srcdir/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig
@@ -61,19 +61,6 @@ esac
 
 # Check for SSE
 AX_EXT
-if test "x$have_osx" != "xtrue" ; then
-  if test "$ax_cv_have_sse41_ext" = yes; then
-  	CXXFLAGS+=" -DSIMDPP_ARCH_X86_SSE4_1"
-  else
-  	if test "$ax_cv_have_sse3_ext" = yes; then
-  		CXXFLAGS+=" -DSIMDPP_ARCH_X86_SSE3"
-  	else
-  		CXXFLAGS+=" -DSIMDPP_NO_SSE"
-  	fi
-  fi
-else
-  CXXFLAGS+=" -DSIMDPP_NO_SSE"
-fi
 
 # Also, GLEW is currently needed under OSX
 PKG_CHECK_MODULES([GLEW], [glew], have_glew=true, have_glew=false)

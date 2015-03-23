@@ -13,7 +13,6 @@
 #include <fstream>
 #include <limits>
 
-#define GLM_FORCE_SSE2
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
