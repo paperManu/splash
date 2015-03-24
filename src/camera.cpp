@@ -1033,6 +1033,10 @@ void Camera::loadDefaultModels()
         {
             if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
                 file.second = string(DATADIR) + file.second;
+#if HAVE_OSX
+            else if (ifstream("../Resources/" + file.second, ios::in | ios::binary))
+                file.second = "../Resources/" + file.second;
+#endif
             else
             {
                 SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
