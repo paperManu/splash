@@ -71,13 +71,9 @@ ThreadPool::~ThreadPool()
 /*************/
 void ThreadPool::waitAllThreads()
 {
-    timespec nap;
-    nap.tv_sec = 0;
-    nap.tv_nsec = 1e5;
-
     while (true)
     {
-        nanosleep(&nap, NULL);
+        this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e5));
         if (workingThreads == 0 && tasks.size() == 0)
         {
             queue_mutex.lock();

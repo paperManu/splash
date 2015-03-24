@@ -1,6 +1,7 @@
 #include "mesh_shmdata.h"
 
 #include "log.h"
+#include "osUtils.h"
 #include "timer.h"
 
 using namespace std;
@@ -25,13 +26,17 @@ Mesh_Shmdata::~Mesh_Shmdata()
 /*************/
 bool Mesh_Shmdata::read(const string& filename)
 {
+    auto filepath = string(filename);
+    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
+        filepath = _configFilePath + filepath;
+
     if (_reader != nullptr)
         shmdata_any_reader_close(_reader);
 
     _reader = shmdata_any_reader_init();
     shmdata_any_reader_run_gmainloop(_reader, SHMDATA_TRUE);
     shmdata_any_reader_set_on_data_handler(_reader, Mesh_Shmdata::onData, this);
-    shmdata_any_reader_start(_reader, filename.c_str());
+    shmdata_any_reader_start(_reader, filepath.c_str());
     _filename = filename;
 
     return true;

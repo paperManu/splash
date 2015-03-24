@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "meshLoader.h"
+#include "osUtils.h"
 #include "timer.h"
 
 using namespace std;
@@ -79,8 +80,12 @@ vector<float> Mesh::getNormals() const
 /*************/
 bool Mesh::read(const string& filename)
 {
+    auto filepath = string(filename);
+    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
+        filepath = _configFilePath + filepath;
+
     Loader::Obj objLoader;
-    if (!objLoader.load(filename))
+    if (!objLoader.load(filepath))
     {
         SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file" << Log::endl;
         return false;

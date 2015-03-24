@@ -1,9 +1,5 @@
 #include "image_shmdata.h"
 
-#include "log.h"
-#include "timer.h"
-#include "threadpool.h"
-
 #include <regex>
 #include <hap.h>
 
@@ -16,6 +12,11 @@
     #define GLM_FORCE_INLINE
     #include <glm/glm.hpp>
 #endif
+
+#include "log.h"
+#include "osUtils.h"
+#include "timer.h"
+#include "threadpool.h"
 
 #define SPLASH_SHMDATA_THREADS 16
 
@@ -48,13 +49,17 @@ Image_Shmdata::~Image_Shmdata()
 /*************/
 bool Image_Shmdata::read(const string& filename)
 {
+    auto filepath = string(filename);
+    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
+        filepath = _configFilePath + filepath;
+
     if (_reader != nullptr)
         shmdata_any_reader_close(_reader);
 
     _reader = shmdata_any_reader_init();
     shmdata_any_reader_run_gmainloop(_reader, SHMDATA_TRUE);
     shmdata_any_reader_set_on_data_handler(_reader, Image_Shmdata::onData, this);
-    shmdata_any_reader_start(_reader, filename.c_str());
+    shmdata_any_reader_start(_reader, filepath.c_str());
     _filename = filename;
 
     return true;

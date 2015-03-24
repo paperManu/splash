@@ -5,6 +5,7 @@
 #include <OpenImageIO/imagebufalgo.h>
 
 #include "log.h"
+#include "osUtils.h"
 #include "threadpool.h"
 #include "timer.h"
 
@@ -201,7 +202,11 @@ bool Image::read(const string& filename)
 /*************/
 bool Image::readFile(const string& filename)
 {
-    oiio::ImageInput* in = oiio::ImageInput::open(filename);
+    auto filepath = string(filename);
+    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
+        filepath = _configFilePath + filepath;
+    auto in = oiio::ImageInput::open(filepath);
+
     if (!in)
     {
         SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;

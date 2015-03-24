@@ -70,8 +70,15 @@ typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
 class BaseObject
 {
     public:
-        BaseObject() {}
-        BaseObject(RootObjectWeakPtr root) {_root = root;}
+        BaseObject()
+        {
+            init();
+        }
+        BaseObject(RootObjectWeakPtr root)
+        {
+            init();
+            _root = root;
+        }
         virtual ~BaseObject() {}
 
         std::string getType() const {return _type;}
@@ -234,11 +241,24 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
 
+        std::string _configFilePath {""}; // All objects know about their location
+
         RootObjectWeakPtr _root;
         std::vector<BaseObjectPtr> _linkedObjects;
 
         std::map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
+
+        // Initialize generic attributes
+        void init()
+        {
+            _attribFunctions["configFilePath"] = AttributeFunctor([&](const Values& args) {
+                if (args.size() == 0)
+                    return false;
+                _configFilePath = args[0].asString();
+                return true;
+            });
+        }
 
         /**
          * Register new functors to modify attributes

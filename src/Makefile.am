@@ -142,6 +142,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/mesh_shmdata.h \
 	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \
+	$(top_srcdir)/include/osUtils.h \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \
 	$(top_srcdir)/include/shaderSources.h \

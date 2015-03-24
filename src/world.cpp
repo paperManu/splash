@@ -10,6 +10,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "mesh_shmdata.h"
+#include "osUtils.h"
 #include "scene.h"
 #include "threadpool.h"
 
@@ -305,6 +306,16 @@ void World::applyConfig()
                 addLocally(type, name, s.first);
             }
 
+            // Before anything, all objects have the right to know what the current path is
+            if (type != "scene")
+            {
+                auto path = Utils::getPathFromFilePath(_configFilename);
+                sendMessage(name, "configFilePath", {path});
+                if (s.first != _masterSceneName)
+                    sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
+                set(name, "configFilePath", {path});
+            }
+
             // Set their attributes
             auto objMembers = obj.getMemberNames();
             int idxAttr {0};
@@ -344,9 +355,11 @@ void World::applyConfig()
                 else if (attr.isString())
                     values.emplace_back(attr.asString());
 
+                // Send the attribute
                 sendMessage(name, objMembers[idxAttr], values);
                 if (type != "scene")
                 {
+                    // The attribute is also sent to the master scene
                     if (s.first != _masterSceneName)
                     {
                         Values ghostValues {name, objMembers[idxAttr]};
@@ -360,6 +373,7 @@ void World::applyConfig()
 
                 idxAttr++;
             }
+
             idx++;
         }
 
@@ -529,21 +543,7 @@ void World::parseArguments(int argc, char** argv)
 
     // Get the executable directory
     string executable = argv[0];
-    size_t slashPos = executable.rfind("/");
-    bool isRelative = executable.find(".") == 0 ? true : false;
-    bool isAbsolute = executable.find("/") == 0 ? true : false;
-    string relativePath;
-    if (slashPos != string::npos)
-    {
-        if (isAbsolute)
-            _executionPath = executable.substr(0, slashPos) + "/";
-        else if (isRelative)
-        {
-            char workingPathChar[256];
-            string workingPath = getcwd(workingPathChar, 255);
-            _executionPath = workingPath + executable.substr(1, slashPos);
-        }
-    }
+    _executionPath = Utils::getPathFromFilePath(executable);
 
     // Parse the other args
     int idx = 1;
