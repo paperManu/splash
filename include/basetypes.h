@@ -26,6 +26,7 @@
 #define SPLASH_BASETYPES_H
 
 #include <condition_variable>
+#include <map>
 #include <unordered_map>
 #include <json/reader.h>
 
@@ -396,8 +397,9 @@ class RootObject : public BaseObject
         void setFromSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj)
         {
             std::lock_guard<std::mutex> lock(_setMutex);
-            if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
-                std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(std::move(obj));
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end() && std::dynamic_pointer_cast<BufferObject>(objectIt->second).get() != nullptr)
+                std::dynamic_pointer_cast<BufferObject>(objectIt->second)->setSerializedObject(std::move(obj));
             else
                 handleSerializedObject(name, std::move(obj));
         }
@@ -405,7 +407,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::mutex _setMutex;
-        std::unordered_map<std::string, BaseObjectPtr> _objects;
+        std::map<std::string, BaseObjectPtr> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;

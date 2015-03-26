@@ -136,7 +136,7 @@ void Geometry::update()
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-        for (auto v : _vertexArray)
+        for (auto& v : _vertexArray)
             glDeleteVertexArrays(1, &(v.second));
         _vertexArray.clear();
 
@@ -144,12 +144,14 @@ void Geometry::update()
     }
 
     GLFWwindow* context = glfwGetCurrentContext();
-    if (_vertexArray.find(context) == _vertexArray.end())
+    auto vertexArrayIt = _vertexArray.find(context);
+    if (vertexArrayIt == _vertexArray.end())
     {
-        _vertexArray[context] = 0;
+        vertexArrayIt = (_vertexArray.emplace(make_pair(context, 0))).first;
+        vertexArrayIt->second = 0;
         
-        glGenVertexArrays(1, &(_vertexArray[context]));
-        glBindVertexArray(_vertexArray[context]);
+        glGenVertexArrays(1, &(vertexArrayIt->second));
+        glBindVertexArray(vertexArrayIt->second);
 
         glBindBuffer(GL_ARRAY_BUFFER, _vertexCoords);
         glVertexAttribPointer((GLuint)0, 4, GL_FLOAT, GL_FALSE, 0, 0);
