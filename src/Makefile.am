@@ -8,7 +8,9 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
+if HAVE_OSX
 LIBTOOL = glibtool --tag=CXX
+endif
 
 #*************#
 if HAVE_OSX

@@ -149,8 +149,6 @@ class Scene : public RootObject
         void waitTextureUpload();
 
     protected:
-        // TODO: temporary object to test texture_syphon
-        Texture_SyphonPtr _textureSyphon;
         GlWindowPtr _mainWindow;
         bool _isRunning {false};
 
