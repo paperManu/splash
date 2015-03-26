@@ -9,7 +9,10 @@ namespace Splash
 {
 
 /**************/
-SyphonReceiver::SyphonReceiver()
+SyphonReceiver::SyphonReceiver() :
+    _syphonClient(nullptr),
+    _syphonImage(nullptr),
+    _sharedDirectory(nullptr)
 {
 }
 
@@ -17,6 +20,8 @@ SyphonReceiver::SyphonReceiver()
 SyphonReceiver::~SyphonReceiver()
 {
     disconnect();
+    if (_sharedDirectory)
+        [_sharedDirectory release];
 }
 
 /**************/
@@ -30,17 +35,16 @@ bool SyphonReceiver::connect(const char* serverName, const char* appName)
     SyphonClient* newClient = nullptr;
     SyphonClient* client = (SyphonClient*)_syphonClient;
 
-    NSArray* serverMatches = [sharedDirectory servers];
-    //if (strlen(serverName) != 0 && strlen(appName) == 0)
-    //    serverMatches = [sharedDirectory serversMatchingName:[NSString stringWithCString:serverName] appName:nil]; 
-    //else if (strlen(serverName) == 0 && strlen(appName) != 0)
-    //    serverMatches = [sharedDirectory serversMatchingName:nil appName:[NSString stringWithCString:appName]]; 
-    //else if (strlen(serverName) != 0 && strlen(appName) != 0)
-    //    serverMatches = [sharedDirectory serversMatchingName:[NSString stringWithCString:serverName] appName:[NSString stringWithCString:appName]]; 
-    //else
-    //    serverMatches = [sharedDirectory serversMatchingName:nil appName:nil]; 
+    NSArray* serverMatches;
+    if (strlen(serverName) != 0 && strlen(appName) == 0)
+        serverMatches = [sharedDirectory serversMatchingName:[NSString stringWithCString:serverName] appName:nil]; 
+    else if (strlen(serverName) == 0 && strlen(appName) != 0)
+        serverMatches = [sharedDirectory serversMatchingName:nil appName:[NSString stringWithCString:appName]]; 
+    else if (strlen(serverName) != 0 && strlen(appName) != 0)
+        serverMatches = [sharedDirectory serversMatchingName:[NSString stringWithCString:serverName] appName:[NSString stringWithCString:appName]]; 
+    else
+        serverMatches = [sharedDirectory serversMatchingName:nil appName:nil]; 
 
-    printf("-----> server matches: %i\n", [serverMatches count]);
     if ([serverMatches count] != 0)
     {
         NSString *currentServer, *foundServer;
@@ -54,9 +58,9 @@ bool SyphonReceiver::connect(const char* serverName, const char* appName)
     }
     else
         result = false;
-    printf("-----> %i\n", __LINE__);
 
-    [client release];
+    if (client)
+        [client release];
     _syphonClient = newClient;
 
     return result;
@@ -78,7 +82,7 @@ int SyphonReceiver::getFrame()
     _syphonImage = (void*)[(SyphonClient*)_syphonClient newFrameImageForContext:CGLGetCurrentContext()];
 
     if (_syphonImage)
-        return (int)((SyphonImage*)_syphonImage).textureName;
+        return (int)[(SyphonImage*)_syphonImage textureName];
     else
         return -1;
 }

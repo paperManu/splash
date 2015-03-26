@@ -38,7 +38,7 @@ class SyphonReceiver
 
         bool connect(const char* serverName = "", const char* appName = "");
         void disconnect();
-        bool isConnected() {return _syphonImage != nullptr;}
+        bool isConnected() {return _syphonClient != nullptr;}
 
         int getFrame();
         void releaseFrame();

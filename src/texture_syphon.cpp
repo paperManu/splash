@@ -26,7 +26,8 @@ void Texture_Syphon::bind()
     if (_syphonReceiver.isConnected())
     {
         glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
-        glBindTexture(GL_TEXTURE_2D, _syphonReceiver.getFrame());
+        auto frameId = _syphonReceiver.getFrame();
+        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, frameId);
     }
 }
 
@@ -67,8 +68,6 @@ void Texture_Syphon::registerAttributes()
             _serverName = args[0].asValues()[1].asString();
             _appName = args[1].asValues()[1].asString();
         }
-
-        cout << "~~~~~~~> " << _serverName << " // " << _appName << endl;
 
         if (!_syphonReceiver.connect(_serverName.c_str(), _appName.c_str()))
         {

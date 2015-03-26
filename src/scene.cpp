@@ -419,11 +419,6 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
-    //_textureSyphon = make_shared<Texture_Syphon>();
-    //Values params;
-    ////params.push_back(Values({"servername", "SimpleServer"}));
-    //_textureSyphon->setAttribute("connect", params);
-
     while (_isRunning)
     {
         if (!_started)
