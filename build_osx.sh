@@ -1,3 +1,3 @@
 #!/bin/bash
 ./autogen.sh && ./configure --prefix=/tmp/
-make && make install
+make -j4 && make install

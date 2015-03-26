@@ -15,6 +15,7 @@ AC_DEFINE(LIBSPLASH_API_VERSION, ["0.2"], [API version])
 # Check for C and C++ compilers
 AC_PROG_CXX
 AC_PROG_CC_C_O
+AC_PROG_OBJCXX
 
 CC="clang"
 CXX="clang++"

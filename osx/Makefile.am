@@ -9,7 +9,7 @@ install:
 		-d ./splash.app/Contents/libs/
 
 clean:
-	rm -r splash.app/Contents/MacOS/splash \
+	rm -rf splash.app/Contents/MacOS/splash \
 		splash.app/Contents/MacOS/splash-scene \
 		splash.app/Contents/Info.plist \
 		splash.app/Contents/libs

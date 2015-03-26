@@ -8,6 +8,26 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
+LIBTOOL = glibtool --tag=CXX
+
+#*************#
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h
+
+clean: clean-am
+	rm -rf $(top_srcdir)/external/syphon/build
+
+#install: install-am
+#	sh $(top_srcdir)/external/build_syphon.sh install
+#	sh $(top_srcdir)/external/build_syphon.sh clean
+
+BUILT_SOURCES = $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h
+
+$(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: Makefile
+	sh $(top_srcdir)/external/build_syphon.sh
+endif
+
 #*************#
 lib_LTLIBRARIES = \
 	libsplash-@LIBSPLASH_API_VERSION@.la
@@ -71,8 +91,23 @@ endif
 
 # OSX
 if HAVE_OSX
-libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GLEW_CFLAGS)
-libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GLEW_LIBS)
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	texture_syphon.cpp \
+	texture_syphon_client.mm
+
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += \
+	$(GLEW_CFLAGS) \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += \
+	$(GLEW_LIBS) \
+	-F$(top_srcdir)/external/syphon/build/Release\
+	-framework Syphon
+
+libsplash_@LIBSPLASH_API_VERSION@_la_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
 endif
 
 #*************#
@@ -98,7 +133,13 @@ splash_LDFLAGS = \
 
 if HAVE_OSX
 splash_LDFLAGS += \
-	/usr/lib/libstdc++.6.dylib
+	/usr/lib/libstdc++.6.dylib \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+splash_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
 endif
 
 #*************#
@@ -121,7 +162,12 @@ splash_scene_LDFLAGS = \
 
 if HAVE_OSX
 splash_scene_LDFLAGS += \
-	/usr/lib/libstdc++.6.dylib
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+splash_scene_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
 endif
 
 #*************#
@@ -148,6 +194,8 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/shaderSources.h \
 	$(top_srcdir)/include/splash.h \
 	$(top_srcdir)/include/texture.h \
+	$(top_srcdir)/include/texture_syphon.h \
+	$(top_srcdir)/include/texture_syphon_client.h \
 	$(top_srcdir)/include/threadpool.h \
 	$(top_srcdir)/include/timer.h \
 	$(top_srcdir)/include/widgets.h \
