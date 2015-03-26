@@ -37,6 +37,7 @@
 #include <deque>
 #include <functional>
 #include <memory>
+#include <unordered_map>
 
 #include "camera.h"
 #include "object.h"
@@ -139,7 +140,7 @@ class GuiGraph : public GuiWidget
     private:
         std::atomic_uint _target;
         unsigned int _maxHistoryLength {300};
-        std::map<std::string, std::deque<unsigned long long>> _durationGraph;
+        std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
 } // end of namespace

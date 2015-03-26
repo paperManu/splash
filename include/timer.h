@@ -25,10 +25,11 @@
 #ifndef SPLASH_TIMER_H
 #define SPLASH_TIMER_H
 
+#include <atomic>
 #include <chrono>
 #include <ctime>
 #include <iostream>
-#include <map>
+#include <unordered_map>
 #include <mutex>
 #include <string>
 
@@ -39,8 +40,6 @@ namespace Splash
 
 class Timer
 {
-    using Timestamp = std::pair<std::string, unsigned long long>;
-
     public:
         Timer() {}
         ~Timer() {}
@@ -52,23 +51,22 @@ class Timer
         {
             if (!_enabled)
                 return;
-            _mutex.lock();
 
             auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
             auto timeIt = _timeMap.find(name);
             if (timeIt == _timeMap.end())
-                _timeMap.insert(Timestamp(name, currentTime));
+            {
+                std::unique_lock<std::mutex> lock(_mutex);
+                _timeMap[name] = currentTime;
+            }
             else
                 timeIt->second = currentTime;
-
-            _mutex.unlock();
         }
 
         void stop(std::string name)
         {
             if (!_enabled)
                 return;
-            _mutex.lock();
 
             auto timeIt = _timeMap.find(name);
             if (timeIt != _timeMap.end())
@@ -76,11 +74,13 @@ class Timer
                 auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
                 auto durationIt = _durationMap.find(name);
                 if (durationIt == _durationMap.end())
-                    _durationMap.insert(Timestamp(name, currentTime));
+                {
+                    std::unique_lock<std::mutex> lock(_mutex);
+                    _durationMap[name] = currentTime;
+                }
                 else
                     durationIt->second = currentTime - timeIt->second;
             }
-            _mutex.unlock();
         }
 
         /**
@@ -99,10 +99,9 @@ class Timer
             auto durationIt = _durationMap.find(name);
             unsigned long long elapsed;
             {
-                _mutex.lock();
+                std::unique_lock<std::mutex> lock(_mutex);
                 elapsed = currentTime - timeIt->second;
                 _timeMap.erase(timeIt);
-                _mutex.unlock();
             }
 
             timespec nap;
@@ -116,14 +115,14 @@ class Timer
                 overtime = true;
             }
 
+            if (durationIt == _durationMap.end())
             {
-                _mutex.lock();
-                if (durationIt == _durationMap.end())
-                    _durationMap.insert(Timestamp(name, std::max(duration, elapsed)));
-                else
-                    durationIt->second = std::max(duration, elapsed);
-                _mutex.unlock();
+                std::unique_lock<std::mutex> lock(_mutex);
+                _durationMap[name] = std::max(duration, elapsed);
             }
+            else
+                durationIt->second = std::max(duration, elapsed);
+
             nanosleep(&nap, NULL);
 
             return overtime;
@@ -132,29 +131,20 @@ class Timer
          /**
           * Get the last occurence of the specified duration
           */
-         unsigned long long getDuration(std::string name)
+         unsigned long long getDuration(std::string name) const
          {
             auto durationIt = _durationMap.find(name);
             if (durationIt == _durationMap.end())
                 return 0;
-            unsigned long long duration;
-            {
-                _mutex.lock();
-                duration = durationIt->second;
-                _mutex.unlock();
-            }
-            return duration;
+            return durationIt->second;
          }
 
          /**
           * Get the whole time map
           */
-         std::map<std::string, unsigned long long> getDurationMap()
+         const std::unordered_map<std::string, std::atomic_ullong>& getDurationMap() const
          {
-            _mutex.lock();
-            auto durationMap = _durationMap;
-            _mutex.unlock();
-            return durationMap;
+            return _durationMap;
          }
 
          /**
@@ -162,13 +152,14 @@ class Timer
           */
          void setDuration(std::string name, unsigned long long value)
          {
-            _mutex.lock();
             auto durationIt = _durationMap.find(name);
             if (durationIt == _durationMap.end())
-                _durationMap.insert(Timestamp(name, value));
+            {
+                std::unique_lock<std::mutex> lock(_mutex);
+                _durationMap[name] = value;
+            }
             else
                 durationIt->second = value;
-            _mutex.unlock();
          }
 
          /**
@@ -195,9 +186,7 @@ class Timer
          Timer& operator<<(std::string name)
          {
             start(name);
-            _mutex.lock();
             _currentDuration = 0;
-            _mutex.unlock();
             return *this;
          }
 
@@ -236,11 +225,11 @@ class Timer
          void setStatus(bool enabled) {_enabled = enabled;}
 
     private:
-        std::map<std::string, unsigned long long> _timeMap; 
-        std::map<std::string, unsigned long long> _durationMap;
-        unsigned long long _currentDuration {0};
+        std::unordered_map<std::string, std::atomic_ullong> _timeMap; 
+        std::unordered_map<std::string, std::atomic_ullong> _durationMap;
+        std::atomic_ullong _currentDuration {0};
         bool _isDurationSet {false};
-        std::mutex _mutex;
+        mutable std::mutex _mutex;
         bool _enabled {true};
 };
 

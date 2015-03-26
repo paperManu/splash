@@ -30,7 +30,7 @@
 #include "basetypes.h"
 
 #include <chrono>
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -133,7 +133,7 @@ class Geometry : public BaseObject
         MeshPtr _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
-        std::map<GLFWwindow*, GLuint> _vertexArray;
+        std::unordered_map<GLFWwindow*, GLuint> _vertexArray;
         GLuint _vertexCoords {0};
         GLuint _texCoords {0};
         GLuint _normals {0};

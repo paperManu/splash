@@ -26,6 +26,7 @@
 #define SPLASH_BASETYPES_H
 
 #include <condition_variable>
+#include <unordered_map>
 #include <json/reader.h>
 
 #include "coretypes.h"
@@ -152,9 +153,9 @@ class BaseObject
         /**
          * Get all the attributes as a map
          */
-        std::map<std::string, Values> getAttributes() const
+        std::unordered_map<std::string, Values> getAttributes() const
         {
-            std::map<std::string, Values> attribs;
+            std::unordered_map<std::string, Values> attribs;
             for (auto& attr : _attribFunctions)
             {
                 Values values;
@@ -246,7 +247,7 @@ class BaseObject
         RootObjectWeakPtr _root;
         std::vector<BaseObjectPtr> _linkedObjects;
 
-        std::map<std::string, AttributeFunctor> _attribFunctions;
+        std::unordered_map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
 
         // Initialize generic attributes
@@ -404,7 +405,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::mutex _setMutex;
-        std::map<std::string, BaseObjectPtr> _objects;
+        std::unordered_map<std::string, BaseObjectPtr> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;

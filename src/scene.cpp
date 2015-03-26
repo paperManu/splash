@@ -468,7 +468,7 @@ void Scene::textureUploadRun()
                 dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
 
         _textureUploadWindow->releaseContext();
-        STimer::timer >> "textureUpload";
+        STimer::timer >> 1000 >> "textureUpload";
     }
 }
 

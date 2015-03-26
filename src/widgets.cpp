@@ -69,7 +69,7 @@ void GuiControl::render()
         if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
             isDistant = true;
 
-        map<string, Values> attributes;
+        unordered_map<string, Values> attributes;
         if (!isDistant)
             attributes = scene->_objects[_targetObjectName]->getAttributes();
         else
@@ -605,7 +605,7 @@ void GuiGlobalView::processMouseEvents()
 /*************/
 void GuiGraph::render()
 {
-    map<string, unsigned long long> durationMap = STimer::timer.getDurationMap();
+    auto& durationMap = STimer::timer.getDurationMap();
 
     for (auto& t : durationMap)
     {

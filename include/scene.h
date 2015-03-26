@@ -152,7 +152,7 @@ class Scene : public RootObject
         GlWindowPtr _mainWindow;
         bool _isRunning {false};
 
-        std::map<std::string, BaseObjectPtr> _ghostObjects;
+        std::unordered_map<std::string, BaseObjectPtr> _ghostObjects;
 
         // Gui exists in master scene whatever the configuration
         GuiPtr _gui;

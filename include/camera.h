@@ -30,7 +30,7 @@
 #include "basetypes.h"
 
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -201,7 +201,7 @@ class Camera : public BaseObject
         glm::mat3 _colorMixMatrix;
 
         // Some default models use in various situations
-        std::map<std::string, ObjectPtr> _models;
+        std::unordered_map<std::string, ObjectPtr> _models;
 
         // Camera parameters
         float _fov {35}; // This is the vertical FOV

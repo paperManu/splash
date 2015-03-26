@@ -129,7 +129,7 @@ class Texture : public BaseObject
          * Get the shader parameters related to this texture
          * Texture should be locked first
          */
-        std::map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
+        std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
 
         /**
          * Get spec of the texture
@@ -195,7 +195,7 @@ class Texture : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         // Parameters to send to the shader
-        std::map<std::string, Values> _shaderUniforms;
+        std::unordered_map<std::string, Values> _shaderUniforms;
 
         /**
          * As says its name

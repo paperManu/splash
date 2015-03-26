@@ -33,7 +33,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
 #include "texture.h"
 
@@ -150,8 +150,8 @@ class Shader : public BaseObject
         mutable std::mutex _mutex;
         std::atomic_bool _activated {false};
 
-        std::map<ShaderType, GLuint> _shaders;
-        std::map<ShaderType, std::string> _shadersSource;
+        std::unordered_map<int, GLuint> _shaders;
+        std::unordered_map<int, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
 
@@ -163,7 +163,7 @@ class Shader : public BaseObject
             GLuint glBuffer {0};
             bool glBufferReady {false};
         };
-        std::map<std::string, Uniform> _uniforms;
+        std::unordered_map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 

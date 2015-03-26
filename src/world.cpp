@@ -90,7 +90,7 @@ void World::run()
         }
 
         // Send current timings to all Scenes, for display purpose
-        auto durationMap = STimer::timer.getDurationMap();
+        auto& durationMap = STimer::timer.getDurationMap();
         for (auto& d : durationMap)
             sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
