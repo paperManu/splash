@@ -47,7 +47,10 @@ namespace Splash
                 {
                     char workingPathChar[256];
                     auto workingPath = std::string(getcwd(workingPathChar, 255));
-                    filePath = workingPath + filepath.substr(0, slashPos);
+                    if (filepath.find("/") == 1)
+                        filePath = workingPath + filepath.substr(1, slashPos) + "/";
+                    else if (filepath.find("/") == 2)
+                        filePath = workingPath + "/" + filepath.substr(0, slashPos) + "/";
                 }
             }
             return filePath;

@@ -133,7 +133,6 @@ splash_LDFLAGS = \
 
 if HAVE_OSX
 splash_LDFLAGS += \
-	/usr/lib/libstdc++.6.dylib \
 	-F$(top_srcdir)/external/syphon/build/Release \
 	-framework Syphon
 
