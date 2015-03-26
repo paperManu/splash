@@ -39,6 +39,8 @@ namespace Splash
 
 class Timer
 {
+    using Timestamp = std::pair<std::string, unsigned long long>;
+
     public:
         Timer() {}
         ~Timer() {}
@@ -51,7 +53,14 @@ class Timer
             if (!_enabled)
                 return;
             _mutex.lock();
-            _timeMap[name] = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+
+            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            auto timeIt = _timeMap.find(name);
+            if (timeIt == _timeMap.end())
+                _timeMap.insert(Timestamp(name, currentTime));
+            else
+                timeIt->second = currentTime;
+
             _mutex.unlock();
         }
 
@@ -60,10 +69,16 @@ class Timer
             if (!_enabled)
                 return;
             _mutex.lock();
-            if (_timeMap.find(name) != _timeMap.end())
+
+            auto timeIt = _timeMap.find(name);
+            if (timeIt != _timeMap.end())
             {
-                auto now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-                _durationMap[name] = now - _timeMap[name];
+                auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+                auto durationIt = _durationMap.find(name);
+                if (durationIt == _durationMap.end())
+                    _durationMap.insert(Timestamp(name, currentTime));
+                else
+                    durationIt->second = currentTime - timeIt->second;
             }
             _mutex.unlock();
         }
@@ -79,12 +94,14 @@ class Timer
             if (_timeMap.find(name) == _timeMap.end())
                 return false;
 
-            unsigned long long now = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            auto timeIt = _timeMap.find(name);
+            auto durationIt = _durationMap.find(name);
             unsigned long long elapsed;
             {
                 _mutex.lock();
-                elapsed = now - _timeMap[name];
-                _timeMap.erase(name);
+                elapsed = currentTime - timeIt->second;
+                _timeMap.erase(timeIt);
                 _mutex.unlock();
             }
 
@@ -101,7 +118,10 @@ class Timer
 
             {
                 _mutex.lock();
-                _durationMap[name] = std::max(duration, elapsed);
+                if (durationIt == _durationMap.end())
+                    _durationMap.insert(Timestamp(name, std::max(duration, elapsed)));
+                else
+                    durationIt->second = std::max(duration, elapsed);
                 _mutex.unlock();
             }
             nanosleep(&nap, NULL);
@@ -114,12 +134,13 @@ class Timer
           */
          unsigned long long getDuration(std::string name)
          {
-            if (_durationMap.find(name) == _durationMap.end())
+            auto durationIt = _durationMap.find(name);
+            if (durationIt == _durationMap.end())
                 return 0;
             unsigned long long duration;
             {
                 _mutex.lock();
-                duration = _durationMap[name];
+                duration = durationIt->second;
                 _mutex.unlock();
             }
             return duration;
@@ -142,7 +163,11 @@ class Timer
          void setDuration(std::string name, unsigned long long value)
          {
             _mutex.lock();
-            _durationMap[name] = value;
+            auto durationIt = _durationMap.find(name);
+            if (durationIt == _durationMap.end())
+                _durationMap.insert(Timestamp(name, value));
+            else
+                durationIt->second = value;
             _mutex.unlock();
          }
 
