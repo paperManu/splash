@@ -259,7 +259,8 @@ void Link::handleInputMessages()
             Values values = recvMessage();
 
             auto root = _rootObject.lock();
-            root->set(name, attribute, values);
+            if (root)
+                root->set(name, attribute, values);
             // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PAIRS)
@@ -300,7 +301,8 @@ void Link::handleInputBuffers()
             unique_ptr<SerializedObject> buffer = unique_ptr<SerializedObject>(new SerializedObject((char*)msg.data(), (char*)msg.data() + msg.size()));
             
             auto root = _rootObject.lock();
-            root->setFromSerializedObject(name, std::move(buffer));
+            if (root)
+                root->setFromSerializedObject(name, std::move(buffer));
         }
     }
     catch (const zmq::error_t& e)
