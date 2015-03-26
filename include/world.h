@@ -33,7 +33,6 @@
 #include <signal.h>
 #include <string>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -79,11 +78,11 @@ class World : public RootObject
         // World parameters
         unsigned int _worldFramerate {60};
 
-        std::unordered_map<std::string, int> _scenes;
+        std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
 
         unsigned long _nextId {0};
-        std::unordered_map<std::string, std::vector<std::string>> _objectDest;
+        std::map<std::string, std::vector<std::string>> _objectDest;
 
         std::string _configFilename;
         Json::Value _config;

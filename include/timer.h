@@ -76,7 +76,7 @@ class Timer
                 if (durationIt == _durationMap.end())
                 {
                     std::unique_lock<std::mutex> lock(_mutex);
-                    _durationMap[name] = currentTime;
+                    _durationMap[name] = currentTime - timeIt->second;
                 }
                 else
                     durationIt->second = currentTime - timeIt->second;

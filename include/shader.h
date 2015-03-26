@@ -30,6 +30,7 @@
 #include "basetypes.h"
 
 #include <atomic>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -163,7 +164,7 @@ class Shader : public BaseObject
             GLuint glBuffer {0};
             bool glBufferReady {false};
         };
-        std::unordered_map<std::string, Uniform> _uniforms;
+        std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 
