@@ -106,6 +106,12 @@ typedef std::shared_ptr<ColorCalibrator> ColorCalibratorPtr;
 typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
 #endif
 
+#if HAVE_OSX
+class Texture_Syphon;
+
+typedef std::shared_ptr<Texture_Syphon> Texture_SyphonPtr;
+#endif
+
 /*************/
 struct SerializedObject
 {

@@ -12,6 +12,7 @@
 #include "mesh_shmdata.h"
 #include "object.h"
 #include "texture.h"
+#include "texture_syphon.h"
 #include "threadpool.h"
 #include "timer.h"
 #include "window.h"
@@ -468,7 +469,7 @@ void Scene::textureUploadRun()
                 dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
 
         _textureUploadWindow->releaseContext();
-        STimer::timer >> 1000 >> "textureUpload";
+        STimer::timer >> "textureUpload";
     }
 }
 
