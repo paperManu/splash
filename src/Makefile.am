@@ -8,10 +8,6 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
-if HAVE_OSX
-LIBTOOL = glibtool --tag=CXX
-endif
-
 #*************#
 if HAVE_OSX
 AM_CPPFLAGS += \
@@ -28,6 +24,8 @@ BUILT_SOURCES = $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Hea
 
 $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: Makefile
 	sh $(top_srcdir)/external/build_syphon.sh
+
+export LIBTOOL = glibtool --tag=CXX
 endif
 
 #*************#

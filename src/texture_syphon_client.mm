@@ -21,7 +21,7 @@ SyphonReceiver::~SyphonReceiver()
 {
     disconnect();
     if (_sharedDirectory)
-        [_sharedDirectory release];
+        [(SyphonServerDirectory*)_sharedDirectory release];
 }
 
 /**************/

@@ -79,31 +79,10 @@ class Texture : public BaseObject
         }
 
         /**
-         * Sets the specified buffer as the texture on the device
-         */
-        //Texture& operator=(ImagePtr& img);
-
-        /**
          * Bind / unbind this texture
          */
         virtual void bind() = 0;
         virtual void unbind() = 0;
-
-        /**
-         * Flush the PBO copy which may still be happening. Do this before
-         * closing the current context!
-         */
-        //void flushPbo();
-
-        /**
-         * Generate the mipmaps for the texture
-         */
-        //void generateMipmap() const;
-
-        /**
-         * Get the id of the gl texture
-         */
-        //virtual GLuint getTexId() const {}
 
         /**
          * Get the shader parameters related to this texture
@@ -125,23 +104,6 @@ class Texture : public BaseObject
          * Lock the texture for read / write operations
          */
         void lock() const {_mutex.lock();}
-
-        /**
-         * Read the texture and returns an Image
-         */
-        //ImagePtr read();
-
-        /**
-         * Set the buffer size / type / internal format
-         * See glTexImage2D for information about parameters
-         */
-        //void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-        //           GLint border, GLenum format, GLenum type, const GLvoid* data);
-
-        /**
-         * Modify the size of the texture
-         */
-        //void resize(int width, int height);
 
         /**
          * Unlock the texture for read / write operations

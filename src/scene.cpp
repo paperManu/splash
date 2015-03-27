@@ -104,6 +104,10 @@ BaseObjectPtr Scene::add(string type, string name)
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
     else if (type == string("texture_image"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>());
+#if HAVE_OSX
+    else if (type == string("texture_syphon"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>());
+#endif
     _mainWindow->releaseContext();
 
     // Add the object to the objects list

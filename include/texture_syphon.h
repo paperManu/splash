@@ -31,13 +31,14 @@
 #include "config.h"
 #include "coretypes.h"
 #include "basetypes.h"
+#include "texture.h"
 #include "texture_syphon_client.h"
 
 namespace Splash
 {
 
 /**************/
-class Texture_Syphon : public BaseObject
+class Texture_Syphon : public Texture
 {
     public:
         /**
@@ -55,6 +56,27 @@ class Texture_Syphon : public BaseObject
          */
         void bind();
         void unbind();
+
+        /**
+         * Get the shader parameters related to this texture
+         * Texture should be locked first
+         */
+        std::unordered_map<std::string, Values> getShaderUniforms() const {return {};}
+
+        /**
+         * Get spec of the texture
+         */
+        oiio::ImageSpec getSpec() const {return oiio::ImageSpec();}
+
+        /**
+         * Try to link the given BaseObject to this
+         */
+        bool linkTo(BaseObjectPtr obj);
+
+        /**
+         * Update the texture according to the owned Image
+         */
+        void update() {};
 
     private:
         SyphonReceiver _syphonReceiver;

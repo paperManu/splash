@@ -21,13 +21,24 @@ Texture_Syphon::~Texture_Syphon()
 }
 
 /**************/
+bool Texture_Syphon::linkTo(BaseObjectPtr obj)
+{
+    // Mandatory before trying to link
+    Texture::linkTo(obj);
+
+    return true;
+}
+
+/**************/
 void Texture_Syphon::bind()
 {
     if (_syphonReceiver.isConnected())
     {
+        glGetError();
         glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
         auto frameId = _syphonReceiver.getFrame();
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB, frameId);
+        if (frameId != -1)
+            glBindTexture(GL_TEXTURE_RECTANGLE, frameId);
     }
 }
 
