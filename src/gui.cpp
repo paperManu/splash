@@ -5,6 +5,7 @@
 #include "object.h"
 #include "scene.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 #include "threadpool.h"
 
@@ -43,19 +44,19 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     {
-        TexturePtr texture = make_shared<Texture>();
+        Texture_ImagePtr texture = make_shared<Texture_Image>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+        texture->setAttribute("resizable", {1});
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
         _depthTexture = move(texture);
-        _depthTexture->setAttribute("resizable", {1});
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
     {
-        TexturePtr texture = make_shared<Texture>();
+        Texture_ImagePtr texture = make_shared<Texture_Image>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+        texture->setAttribute("resizable", {1});
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
         _outTexture = move(texture);
-        _outTexture->setAttribute("resizable", {1});
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -441,7 +442,9 @@ bool Gui::render()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     glActiveTexture(GL_TEXTURE0);
-    _outTexture->generateMipmap();
+    auto outTexture_asImage = dynamic_pointer_cast<Texture_Image>(_outTexture);
+    if (outTexture_asImage)
+        outTexture_asImage->generateMipmap();
 
 #ifdef DEBUG
     error = glGetError();
@@ -462,8 +465,8 @@ void Gui::setOutputSize(int width, int height)
 
     if (!_window->setAsCurrentContext()) 
     	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    _depthTexture->resize(width, height);
-    _outTexture->resize(width, height);
+    _depthTexture->setAttribute("size", {width, height});
+    _outTexture->setAttribute("size", {width, height});
 
     _width = width;
     _height = height;

@@ -82,6 +82,7 @@ class Object;
 class Scene;
 class Shader;
 class Texture;
+class Texture_Image;
 class Window;
 
 typedef std::shared_ptr<Camera> CameraPtr;
@@ -96,6 +97,7 @@ typedef std::shared_ptr<Object> ObjectPtr;
 typedef std::shared_ptr<Scene> ScenePtr;
 typedef std::shared_ptr<Shader> ShaderPtr;
 typedef std::shared_ptr<Texture> TexturePtr;
+typedef std::shared_ptr<Texture_Image> Texture_ImagePtr;
 typedef std::shared_ptr<Window> WindowPtr;
 
 #if HAVE_GPHOTO

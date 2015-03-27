@@ -198,7 +198,7 @@ class Shader : public BaseObject
         /**
          * Get a string expression of the shader type, used for logging
          */
-        std::string stringFromShaderType(ShaderType type);
+        std::string stringFromShaderType(int type);
 
         /**
          * Replace a shader with an empty one

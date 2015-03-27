@@ -7,6 +7,7 @@
 #include "scene.h"
 #include "shader.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 #include "threadpool.h"
 
@@ -818,7 +819,7 @@ void Camera::setOutputNbr(int nbr)
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -833,11 +834,11 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            TexturePtr texture = make_shared<Texture>();
-            texture->disableFiltering();
+            Texture_ImagePtr texture = make_shared<Texture_Image>();
+            texture->setAttribute("filtering", {0});
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
             _outTextures.push_back(texture);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures.back()->getTexId(), 0);
         }
     }
 
@@ -854,13 +855,13 @@ void Camera::setOutputSize(int width, int height)
         return;
 
     _depthTexture->setAttribute("resizable", {1});
-    _depthTexture->resize(width, height);
+    _depthTexture->setAttribute("size", {width, height});
     _depthTexture->setAttribute("resizable", {_automaticResize});
 
     for (auto tex : _outTextures)
     {
         tex->setAttribute("resizable", {1});
-        tex->resize(width, height);
+        tex->setAttribute("size", {width, height});
         tex->setAttribute("resizable", {_automaticResize});
     }
 

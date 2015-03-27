@@ -135,7 +135,7 @@ class Object : public BaseObject
         /**
          * Set the blending map for the object
          */
-        void setBlendingMap(TexturePtr& map);
+        void setBlendingMap(TexturePtr map);
 
         /**
          * Set the shader

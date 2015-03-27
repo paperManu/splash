@@ -147,7 +147,7 @@ class Gui : public BaseObject
         SceneWeakPtr _scene;
 
         GLuint _fbo;
-        TexturePtr _depthTexture;
+        Texture_ImagePtr _depthTexture;
         TexturePtr _outTexture;
         std::vector<ObjectPtr> _objects;
         float _width {512}, _height {512};

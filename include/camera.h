@@ -120,7 +120,7 @@ class Camera : public BaseObject
         /**
          * Get pointers to this camera textures
          */
-        std::vector<TexturePtr> getTextures() const {return _outTextures;}
+        std::vector<Texture_ImagePtr> getTextures() const {return _outTextures;}
 
         /**
          * Check wether it is initialized
@@ -183,8 +183,8 @@ class Camera : public BaseObject
         GlWindowPtr _window;
 
         GLuint _fbo {0};
-        TexturePtr _depthTexture;
-        std::vector<TexturePtr> _outTextures;
+        Texture_ImagePtr _depthTexture;
+        std::vector<Texture_ImagePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 
         // Rendering parameters

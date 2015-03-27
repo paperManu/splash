@@ -39,10 +39,6 @@
 #include <memory>
 #include <unordered_map>
 
-#include "camera.h"
-#include "object.h"
-#include "texture.h"
-
 namespace Splash
 {
 class Gui;
@@ -83,7 +79,7 @@ class GuiGlobalView : public GuiWidget
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
-        void SetObject(ObjectPtr obj) {_camera->linkTo(obj);}
+        void setObject(ObjectPtr obj);
 
     protected:
         CameraPtr _camera, _guiCamera;

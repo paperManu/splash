@@ -9,6 +9,7 @@
 #include "scene.h"
 #include "shader.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 
 #include <functional>
@@ -200,8 +201,9 @@ bool Window::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex = make_shared<Texture>();
+        Texture_ImagePtr tex = make_shared<Texture_Image>();
         tex->setName(getName() + "_" + obj->getName() + "_tex");
+        tex->setAttribute("resizable", {0});
         if (tex->linkTo(obj))
         {
             _root.lock()->registerObject(tex);
@@ -329,10 +331,10 @@ bool Window::render()
     if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
     {
         for (auto& t : _inTextures)
-            t->resize(w, h);
+            t->setAttribute("size", {w, h});
     }
     if (_guiTexture != nullptr)
-        _guiTexture->resize(w, h);
+        _guiTexture->setAttribute("size", {w, h});
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -362,27 +364,27 @@ void Window::setupRenderFBO()
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
     else
     {
         _depthTexture->setAttribute("resizable", {1});
-        _depthTexture->resize(_windowRect[2], _windowRect[3]);
+        _depthTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
         _depthTexture->setAttribute("resizable", {0});
     }
 
     if (!_colorTexture)
     {
-        _colorTexture = make_shared<Texture>();
-        _colorTexture->disableFiltering();
+        _colorTexture = make_shared<Texture_Image>();
+        _colorTexture->setAttribute("filtering", {0});
         _colorTexture->reset(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, _windowRect[2], _windowRect[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
     }
     else
     {
         _colorTexture->setAttribute("resizable", {1});
-        _colorTexture->resize(_windowRect[2], _windowRect[3]);
+        _colorTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
         _colorTexture->setAttribute("resizable", {0});
     }
 

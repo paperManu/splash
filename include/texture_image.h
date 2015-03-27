@@ -19,15 +19,11 @@
 
 /*
  * @texture.h
- * The Texture base class
+ * The Texture_Image base class
  */
 
-#ifndef SPLASH_TEXTURE_H
-#define SPLASH_TEXTURE_H
-
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
+#ifndef SPLASH_TEXTURE_IMAGE_H
+#define SPLASH_TEXTURE_IMAGE_H
 
 #include <chrono>
 #include <memory>
@@ -35,44 +31,63 @@
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
 
+#include "config.h"
+#include "coretypes.h"
+#include "basetypes.h"
+#include "texture.h"
+
 namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {
 
-class Texture : public BaseObject
+class Texture_Image : public Texture
 {
     public:
         /**
          * Constructor
          */
-        Texture();
-        Texture(RootObjectWeakPtr root);
-        Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+        Texture_Image();
+        Texture_Image(RootObjectWeakPtr root);
+        Texture_Image(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                 GLint border, GLenum format, GLenum type, const GLvoid* data);
-        Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+        Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                 GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
          * Destructor
          */
-        virtual ~Texture();
+        ~Texture_Image();
 
         /**
          * No copy constructor, but a move one
          */
-        Texture(const Texture&) = delete;
-        Texture& operator=(const Texture&) = delete;
+        Texture_Image(const Texture_Image&) = delete;
+        Texture_Image& operator=(const Texture_Image&) = delete;
 
-        Texture(Texture&& t)
+        Texture_Image(Texture_Image&& t)
         {
             *this = std::move(t);
         }
 
-        Texture& operator=(Texture&& t)
+        Texture_Image& operator=(Texture_Image&& t)
         {
             if (this != &t)
             {
+                _glTex = t._glTex;
                 _spec = t._spec;
+                _pbos[0] = t._pbos[0];
+                _pbos[1] = t._pbos[1];
+                _pboReadIndex = t._pboReadIndex;
+
+                _filtering = t._filtering;
+                _texTarget = t._texTarget;
+                _texLevel = t._texLevel;
+                _texInternalFormat = t._texInternalFormat;
+                _texBorder = t._texBorder;
+                _texFormat = t._texFormat;
+                _texType = t._texType;
+
+                _img = t._img;
                 _timestamp = t._timestamp;
             }
             return *this;
@@ -81,45 +96,45 @@ class Texture : public BaseObject
         /**
          * Sets the specified buffer as the texture on the device
          */
-        //Texture& operator=(ImagePtr& img);
+        Texture_Image& operator=(ImagePtr& img);
 
         /**
          * Bind / unbind this texture
          */
-        virtual void bind() = 0;
-        virtual void unbind() = 0;
+        void bind();
+        void unbind();
 
         /**
          * Flush the PBO copy which may still be happening. Do this before
          * closing the current context!
          */
-        //void flushPbo();
+        void flushPbo();
 
         /**
          * Generate the mipmaps for the texture
          */
-        //void generateMipmap() const;
+        void generateMipmap() const;
 
         /**
          * Get the id of the gl texture
          */
-        //virtual GLuint getTexId() const {}
+        GLuint getTexId() const {return _glTex;}
 
         /**
          * Get the shader parameters related to this texture
          * Texture should be locked first
          */
-        virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;
+        std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
 
         /**
          * Get spec of the texture
          */
-        virtual oiio::ImageSpec getSpec() const = 0;
+        oiio::ImageSpec getSpec() const {return _spec;}
 
         /**
          * Try to link the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj);
+        bool linkTo(BaseObjectPtr obj);
 
         /**
          * Lock the texture for read / write operations
@@ -129,19 +144,19 @@ class Texture : public BaseObject
         /**
          * Read the texture and returns an Image
          */
-        //ImagePtr read();
+        ImagePtr read();
 
         /**
          * Set the buffer size / type / internal format
          * See glTexImage2D for information about parameters
          */
-        //void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-        //           GLint border, GLenum format, GLenum type, const GLvoid* data);
+        void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+                   GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
          * Modify the size of the texture
          */
-        //void resize(int width, int height);
+        void resize(int width, int height);
 
         /**
          * Unlock the texture for read / write operations
@@ -151,23 +166,35 @@ class Texture : public BaseObject
         /**
          * Update the texture according to the owned Image
          */
-        virtual void update() = 0;
-
-    protected:
-        mutable std::mutex _mutex;
-        oiio::ImageSpec _spec;
-
-        // Store some texture parameters
-        bool _resizable {true};
-        bool _filtering {true};
-
-        std::chrono::high_resolution_clock::time_point _timestamp;
+        void update();
 
     private:
+        GLuint _glTex {0};
+        GLuint _pbos[2];
+        int _pboReadIndex {0};
+        std::vector<unsigned int> _pboCopyThreadIds;
+
+        // Store some texture parameters
+        GLenum _texTarget, _texFormat, _texType;
+        GLint _texLevel, _texInternalFormat, _texBorder;
+
+        // And some temporary attributes
+        GLint _activeTexture; // To which texture unit the texture is bound
+
+        ImagePtr _img;
+
+        // Parameters to send to the shader
+        std::unordered_map<std::string, Values> _shaderUniforms;
+
         /**
          * As says its name
          */
         void init();
+
+        /**
+         * Update the pbos according to the parameters
+         */
+        void updatePbos(int width, int height, int bytes);
 
         /**
          * Register new functors to modify attributes
@@ -175,7 +202,7 @@ class Texture : public BaseObject
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Texture> TexturePtr;
+typedef std::shared_ptr<Texture_Image> Texture_ImagePtr;
 
 } // end of namespace
 

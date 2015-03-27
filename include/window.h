@@ -174,8 +174,8 @@ class Window : public BaseObject
         // Offscreen rendering related objects
         GLuint _renderFbo {0};
         GLuint _readFbo {0};
-        TexturePtr _depthTexture {nullptr};
-        TexturePtr _colorTexture {nullptr};
+        Texture_ImagePtr _depthTexture {nullptr};
+        Texture_ImagePtr _colorTexture {nullptr};
         GLsync _renderFence;
 
         ObjectPtr _screen;

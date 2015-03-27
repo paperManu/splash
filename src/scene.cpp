@@ -12,20 +12,22 @@
 #include "mesh_shmdata.h"
 #include "object.h"
 #include "texture.h"
-#include "texture_syphon.h"
+#include "texture_image.h"
 #include "threadpool.h"
 #include "timer.h"
 #include "window.h"
 
 #if HAVE_GPHOTO
-#include "colorcalibrator.h"
+    #include "colorcalibrator.h"
 #endif
 
-#if not HAVE_OSX
-#define GLFW_EXPOSE_NATIVE_X11
-#define GLFW_EXPOSE_NATIVE_GLX
-#include <GLFW/glfw3native.h>
-#include <GL/glxext.h>
+#if HAVE_OSX
+    #include "texture_syphon.h"
+#else
+    #define GLFW_EXPOSE_NATIVE_X11
+    #define GLFW_EXPOSE_NATIVE_GLX
+    #include <GLFW/glfw3native.h>
+    #include <GL/glxext.h>
 #endif
 
 using namespace std;
@@ -100,8 +102,8 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("object"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
-    else if (type == string("texture"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture>());
+    else if (type == string("texture_image"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>());
     _mainWindow->releaseContext();
 
     // Add the object to the objects list
@@ -459,17 +461,21 @@ void Scene::textureUploadRun()
 
         STimer::timer << "textureUpload";
         for (auto& obj : _objects)
-            if (obj.second->getType() == "texture")
+            if (obj.second->getType().find("texture") != string::npos)
                 dynamic_pointer_cast<Texture>(obj.second)->update();
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lock.unlock();
 
         for (auto& obj : _objects)
-            if (obj.second->getType() == "texture")
-                dynamic_pointer_cast<Texture>(obj.second)->flushPbo();
+            if (obj.second->getType().find("texture") != string::npos)
+            {
+                auto texImage = dynamic_pointer_cast<Texture_Image>(obj.second);
+                if (texImage)
+                    texImage->flushPbo();
+            }
 
         _textureUploadWindow->releaseContext();
-        STimer::timer >> "textureUpload";
+        STimer::timer >> 1000 >> "textureUpload";
     }
 }
 
@@ -780,8 +786,8 @@ void Scene::initBlendingMap()
     _blendingMap->set(_blendingResolution, _blendingResolution, 1, TypeDesc::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
-    _blendingTexture = make_shared<Texture>(_self);
-    _blendingTexture->disableFiltering();
+    _blendingTexture = make_shared<Texture_Image>(_self);
+    _blendingTexture->setAttribute("filtering", {0});
     *_blendingTexture = _blendingMap;
 }
 

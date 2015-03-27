@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "shader.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 
 
@@ -101,7 +102,11 @@ dmat4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     for (auto& m : _blendMaps)
-        m->flushPbo();
+    {
+        auto m_asTexImage = dynamic_pointer_cast<Texture_Image>(m);
+        if (m_asTexImage)
+            m_asTexImage->flushPbo();
+    }
 
     for (auto& t : _textures)
     {
@@ -141,7 +146,7 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex = make_shared<Texture>(_root);
+        Texture_ImagePtr tex = make_shared<Texture_Image>(_root);
         tex->setName(getName() + "_" + obj->getName() + "_tex");
         if (tex->linkTo(obj))
         {
@@ -218,7 +223,7 @@ void Object::resetBlendingMap()
 }
 
 /*************/
-void Object::setBlendingMap(TexturePtr& map)
+void Object::setBlendingMap(TexturePtr map)
 {
     _blendMaps.push_back(map);
     _textures.push_back(map);

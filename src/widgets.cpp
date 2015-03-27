@@ -1,7 +1,11 @@
 #include "widgets.h"
 
+#include "camera.h"
 #include "log.h"
+#include "object.h"
 #include "scene.h"
+#include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 
 #if HAVE_GPHOTO
@@ -281,6 +285,12 @@ void GuiGlobalView::setCamera(CameraPtr cam)
         _guiCamera = cam;
         _camera->setAttribute("size", {800, 600});
     }
+}
+
+/*************/
+void GuiGlobalView::setObject(ObjectPtr obj)
+{
+    _camera->linkTo(obj);
 }
 
 /*************/

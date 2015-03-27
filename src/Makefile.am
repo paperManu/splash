@@ -48,6 +48,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	scene.cpp \
 	shader.cpp \
 	texture.cpp \
+	texture_image.cpp \
 	threadpool.cpp \
 	timer.cpp \
 	window.cpp \
@@ -195,6 +196,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/shaderSources.h \
 	$(top_srcdir)/include/splash.h \
 	$(top_srcdir)/include/texture.h \
+	$(top_srcdir)/include/texture_image.h \
 	$(top_srcdir)/include/texture_syphon.h \
 	$(top_srcdir)/include/texture_syphon_client.h \
 	$(top_srcdir)/include/threadpool.h \

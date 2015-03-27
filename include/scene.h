@@ -193,7 +193,7 @@ class Scene : public RootObject
 
         // Blending map, used by all cameras (except the GUI camera)
         unsigned int _blendingResolution {2048};
-        TexturePtr _blendingTexture;
+        Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;
 
         /**

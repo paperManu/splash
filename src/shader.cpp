@@ -384,7 +384,7 @@ void Shader::parseUniforms(const std::string& src)
 }
 
 /*************/
-string Shader::stringFromShaderType(ShaderType type)
+string Shader::stringFromShaderType(int type)
 {
     switch (type)
     {
