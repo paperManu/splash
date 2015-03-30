@@ -75,7 +75,7 @@ void Object::activate()
     {
         //t->update();
         t->lock();
-        _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
+        _shader->setTexture(t, texUnit, t->getPrefix() + to_string(texUnit));
 
         // Get texture specific uniforms and send them to the shader
         auto texUniforms = t->getShaderUniforms();

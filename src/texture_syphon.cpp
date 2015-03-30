@@ -10,6 +10,8 @@ namespace Splash
 /**************/
 Texture_Syphon::Texture_Syphon()
 {
+    _type = "texture_syphon";
+
     registerAttributes();
 }
 
@@ -18,6 +20,11 @@ Texture_Syphon::~Texture_Syphon()
 {
     if (_syphonReceiver.isConnected())
         _syphonReceiver.disconnect();
+}
+
+/**************/
+unordered_map<string, Values> getShaderUniforms() const
+{
 }
 
 /**************/
@@ -34,7 +41,9 @@ void Texture_Syphon::bind()
 {
     if (_syphonReceiver.isConnected())
     {
-        glGetError();
+        _shaderUniforms.clear();
+        _shaderUniforms["size"] = {(float)_syphonReceiver.getWidth(), (float)_syphonReceiver.getHeight()};
+        
         glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
         auto frameId = _syphonReceiver.getFrame();
         if (frameId != -1)

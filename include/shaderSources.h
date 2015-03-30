@@ -68,7 +68,10 @@ struct ShaderSources
         #define PI 3.14159265359
 
         uniform sampler2D _tex0;
+        uniform sampler2DRect _texRect0;
         uniform sampler2D _tex1;
+        uniform vec2 _tex0_size = ivec2(1.0);
+
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
         uniform int _texBlendingMap = 0;
@@ -109,15 +112,23 @@ struct ShaderSources
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
-            vec4 color;
+            // Compute the real texture coordinates, according to flip / flop
+            vec2 realCoords;
             if (_tex0_flip == 1 && _tex0_flop == 0)
-                color = texture(_tex0, vec2(texCoord.x, 1.0 - texCoord.y));
+                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
             else if (_tex0_flip == 0 && _tex0_flop == 1)
-                color = texture(_tex0, vec2(1.0 - texCoord.x, texCoord.y));
+                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
             else if (_tex0_flip == 1 && _tex0_flop == 1)
-                color = texture(_tex0, vec2(1.0 - texCoord.x, 1.0 - texCoord.y));
+                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
             else
-                color = texture(_tex0, texCoord);
+                realCoords = texCoord;
+
+            // Chose between _tex0 and _texRect0
+            vec4 color;
+            if (_tex0_size.x == 1.0)
+                color = texture(_tex0, realCoords);
+            else
+                color = texture(_texRect0, realCoords * _tex0_size);
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)

@@ -298,7 +298,7 @@ void Shader::parseUniforms(const std::string& src)
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             else if (type == "mat4")
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            else if (type == "sampler2D")
+            else if (type == "sampler2D" || type == "sampler2DRect")
                 _uniforms[name].values = {};
             else
             {

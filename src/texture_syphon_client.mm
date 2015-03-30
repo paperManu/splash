@@ -82,7 +82,13 @@ int SyphonReceiver::getFrame()
     _syphonImage = (void*)[(SyphonClient*)_syphonClient newFrameImageForContext:CGLGetCurrentContext()];
 
     if (_syphonImage)
+    {
+        NSSize imageSize = [(SyphonImage*)_syphonImage textureSize];
+        _width = imageSize.width;
+        _height = imageSize.height;
+
         return (int)[(SyphonImage*)_syphonImage textureName];
+    }
     else
         return -1;
 }

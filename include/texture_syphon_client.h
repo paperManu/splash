@@ -41,12 +41,15 @@ class SyphonReceiver
         bool isConnected() {return _syphonClient != nullptr;}
 
         int getFrame();
+        int getHeight() {return _height;}
+        int getWidth() {return _width;}
         void releaseFrame();
 
     private:
         void* _syphonClient;
         void* _syphonImage;
         void* _sharedDirectory;
+        int _width {1}, _height {1};
 };
 
 } // end of namespace

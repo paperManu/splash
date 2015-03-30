@@ -61,12 +61,17 @@ class Texture_Syphon : public Texture
          * Get the shader parameters related to this texture
          * Texture should be locked first
          */
-        std::unordered_map<std::string, Values> getShaderUniforms() const {return {};}
+        std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
 
         /**
          * Get spec of the texture
          */
         oiio::ImageSpec getSpec() const {return oiio::ImageSpec();}
+
+        /**
+         * Get the prefix for the glsl sampler name
+         */
+        virtual std::string getPrefix() const {return "_texRect";}
 
         /**
          * Try to link the given BaseObject to this
@@ -84,6 +89,9 @@ class Texture_Syphon : public Texture
         std::string _appName {""};
 
         GLint _activeTexture;
+
+        // Parameters to send to the shader
+        std::unordered_map<std::string, Values> _shaderUniforms;
 
         /**
          * Register new functors to modify attributes
