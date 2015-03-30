@@ -82,7 +82,7 @@ void Object::activate()
         for (auto u : texUniforms)
         {
             Values parameters;
-            parameters.push_back(Value(string("_tex") + to_string(texUnit) + "_" + u.first));
+            parameters.push_back(Value(t->getPrefix() + to_string(texUnit) + "_" + u.first));
             for (auto value : u.second)
                 parameters.push_back(value);
             _shader->setAttribute("uniform", parameters);

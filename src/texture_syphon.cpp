@@ -23,11 +23,6 @@ Texture_Syphon::~Texture_Syphon()
 }
 
 /**************/
-unordered_map<string, Values> getShaderUniforms() const
-{
-}
-
-/**************/
 bool Texture_Syphon::linkTo(BaseObjectPtr obj)
 {
     // Mandatory before trying to link

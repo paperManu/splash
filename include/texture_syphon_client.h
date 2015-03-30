@@ -49,7 +49,7 @@ class SyphonReceiver
         void* _syphonClient;
         void* _syphonImage;
         void* _sharedDirectory;
-        int _width {1}, _height {1};
+        int _width, _height;
 };
 
 } // end of namespace

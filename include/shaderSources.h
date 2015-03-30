@@ -70,7 +70,7 @@ struct ShaderSources
         uniform sampler2D _tex0;
         uniform sampler2DRect _texRect0;
         uniform sampler2D _tex1;
-        uniform vec2 _tex0_size = ivec2(1.0);
+        uniform vec2 _texRect0_size = vec2(0.0);
 
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
@@ -125,10 +125,10 @@ struct ShaderSources
 
             // Chose between _tex0 and _texRect0
             vec4 color;
-            if (_tex0_size.x == 1.0)
+            if (_texRect0_size.x <= 1.0)
                 color = texture(_tex0, realCoords);
             else
-                color = texture(_texRect0, realCoords * _tex0_size);
+                color = texture(_texRect0, realCoords * _texRect0_size);
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)

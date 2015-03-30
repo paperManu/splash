@@ -12,7 +12,8 @@ namespace Splash
 SyphonReceiver::SyphonReceiver() :
     _syphonClient(nullptr),
     _syphonImage(nullptr),
-    _sharedDirectory(nullptr)
+    _sharedDirectory(nullptr),
+    _width(1), _height(1)
 {
 }
 
