@@ -56,7 +56,17 @@ void Object::activate()
         return;
 
     _mutex.lock(); 
-    _shader->setAttribute("fill", {_fill});
+
+    // Workaround to make Syphon texture work with the "texture" shader
+    if (_fill == "texture")
+    {
+        if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
+            _shader->setAttribute("fill", {"texture_rect"});
+        else
+            _shader->setAttribute("fill", {"texture"});
+    }
+    else
+        _shader->setAttribute("fill", {_fill});
 
     for (auto& m : _blendMaps)
         m->update();
@@ -73,7 +83,6 @@ void Object::activate()
     GLuint texUnit = 0;
     for (auto& t : _textures)
     {
-        //t->update();
         t->lock();
         _shader->setTexture(t, texUnit, t->getPrefix() + to_string(texUnit));
 

@@ -69,11 +69,6 @@ class Texture_Syphon : public Texture
         oiio::ImageSpec getSpec() const {return oiio::ImageSpec();}
 
         /**
-         * Get the prefix for the glsl sampler name
-         */
-        virtual std::string getPrefix() const {return "_texRect";}
-
-        /**
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);

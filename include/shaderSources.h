@@ -68,9 +68,8 @@ struct ShaderSources
         #define PI 3.14159265359
 
         uniform sampler2D _tex0;
-        uniform sampler2DRect _texRect0;
         uniform sampler2D _tex1;
-        uniform vec2 _texRect0_size = vec2(0.0);
+        uniform vec2 _tex0_size = vec2(0.0);
 
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
@@ -123,12 +122,149 @@ struct ShaderSources
             else
                 realCoords = texCoord;
 
-            // Chose between _tex0 and _texRect0
-            vec4 color;
-            if (_texRect0_size.x <= 1.0)
-                color = texture(_tex0, realCoords);
+            vec4 color = texture(_tex0, realCoords);
+
+            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
+            if (_tex0_YCoCg == 1)
+            {
+                float scale = (color.z * (255.0 / 8.0)) + 1.0;
+                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
+                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
+                float Y = color.w;
+                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
+                color.rgb = pow(color.rgb, vec3(2.2));
+            }
+
+            float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
+            color.r *= _fovAndColorBalance.z / maxBalanceRatio;
+            color.g *= 1.0 / maxBalanceRatio;
+            color.b *= _fovAndColorBalance.w / maxBalanceRatio;
+
+            // Black level
+            float blackCorrection = max(min(blackLevel, 1.0), 0.0);
+            color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
+            
+            // If no blending map has been computed
+            if (_texBlendingMap == 0)
+            {
+                if (_textureNbr > 1)
+                {
+                    vec4 color2 = texture(_tex1, texCoord);
+                    color.rgb = color.rgb * (1.0 - color2.a) + color2.rgb * color2.a;
+                }
+            }
+            // If there is a blending map
             else
-                color = texture(_texRect0, realCoords * _texRect0_size);
+            {
+                int blendFactor = int(texture(_tex1, texCoord).r * 65536.0);
+                // Extract the number of cameras
+                int camNbr = blendFactor / 4096;
+                blendFactor = blendFactor - camNbr * 4096;
+                float blendFactorFloat = 0.0;
+
+                // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
+                bool smoothBlend = false;
+                if (color.r > blackLevel * 2.0 || color.g > blackLevel * 2.0 || color.b > blackLevel * 2.0)
+                    smoothBlend = true;
+
+                if (blendFactor == 0)
+                    blendFactorFloat = 0.05; // The non-visible part is kinda hidden
+                else if (blendWidth > 0.0 && smoothBlend == true)
+                {
+                    vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
+                    float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
+                    float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
+                    float dist = min(1.0, min(distX, distY) / blendWidth);
+                    dist = smoothstep(0.0, 1.0, dist);
+                    blendFactorFloat = 256.0 * dist / float(blendFactor);
+                }
+                else
+                {
+                    blendFactorFloat = 1.0 / float(camNbr);
+                }
+                color.rgb = color.rgb * min(1.0, blendFactorFloat);
+            }
+
+            // Brightness correction
+            color.rgb = color.rgb * brightness;
+
+            // Color correction through a LUT
+            if (_isColorLUT != 0)
+            {
+                ivec3 icolor = ivec3(round(color.rgb * 255.f));
+                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
+                //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
+            }
+            
+            fragColor.rgb = color.rgb;
+            fragColor.a = 1.0;
+        }
+    )"};
+
+    /**
+     * Textured fragment shader - Rectangle edition
+     */
+    const std::string FRAGMENT_SHADER_TEXTURE_RECT {R"(
+        #version 330 core
+
+        #define PI 3.14159265359
+
+        uniform sampler2DRect _tex0;
+        uniform sampler2D _tex1;
+        uniform vec2 _tex0_size = vec2(0.0);
+
+        uniform int _sideness = 0;
+        uniform int _textureNbr = 0;
+        uniform int _texBlendingMap = 0;
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _isColorLUT = 0;
+        uniform vec3 _colorLUT[256];
+        uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
+                                            0.0, 1.0, 0.0,
+                                            0.0, 0.0, 1.0);
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec3 normal;
+        } vertexIn;
+
+        out vec4 fragColor;
+        // Texture transformation
+        uniform int _tex0_flip = 0;
+        uniform int _tex0_flop = 0;
+        //uniform int _tex1_flip = 0;
+        //uniform int _tex1_flop = 0;
+        // HapQ specific parameters
+        uniform int _tex0_YCoCg = 0;
+        //uniform int _tex1_YCoCg = 0;
+
+        void main(void)
+        {
+            float blendWidth = _cameraAttributes.x;
+            float blackLevel = _cameraAttributes.y;
+            float brightness = _cameraAttributes.z;
+
+            vec4 position = vertexIn.position;
+            vec2 texCoord = vertexIn.texCoord;
+            vec3 normal = vertexIn.normal;
+
+            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+
+            // Compute the real texture coordinates, according to flip / flop
+            vec2 realCoords;
+            if (_tex0_flip == 1 && _tex0_flop == 0)
+                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
+            else if (_tex0_flip == 0 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
+            else if (_tex0_flip == 1 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
+            else
+                realCoords = texCoord;
+
+            vec4 color = texture(_tex0, realCoords * _tex0_size);
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)

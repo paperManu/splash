@@ -565,6 +565,14 @@ void Shader::registerAttributes()
             setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
         }
+        else if (args[0].asString() == "texture_rect" && _fill != texture_rect)
+        {
+            _fill = texture_rect;
+            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
+            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE_RECT, fragment);
+            compileProgram();
+        }
         else if (args[0].asString() == "color" && _fill != color)
         {
             _fill = color;
@@ -602,6 +610,8 @@ void Shader::registerAttributes()
         string fill;
         if (_fill == texture)
             fill = "texture";
+        else if (_fill == texture_rect)
+            fill = "texture_rect";
         else if (_fill == color)
             fill = "color";
         else if (_fill == uv)

@@ -60,6 +60,7 @@ class Shader : public BaseObject
         enum Fill
         {
             texture = 0,
+            texture_rect,
             color,
             uv,
             wireframe,
