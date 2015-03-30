@@ -14,5 +14,6 @@ clean:
 	rm -rf splash.app/Contents/MacOS/splash \
 		splash.app/Contents/MacOS/splash-scene \
 		splash.app/Contents/Info.plist \
-		splash.app/Contents/libs
+		splash.app/Contents/libs \
+		splash.app/Contents/Frameworks
 endif
