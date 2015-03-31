@@ -71,10 +71,7 @@ bool SyphonReceiver::connect(const char* serverName, const char* appName)
 void SyphonReceiver::disconnect()
 {
     if (_syphonClient)
-    {
         [(SyphonClient*)_syphonClient stop];
-        [(SyphonClient*)_syphonClient release];
-    }
 }
 
 /**************/

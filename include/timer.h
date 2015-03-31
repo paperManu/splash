@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <string>
+#include <thread>
 
 #include "config.h"
 
@@ -194,6 +195,7 @@ class Timer
          {
             _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
             _currentDuration = duration;
+			_durationThreadId = std::this_thread::get_id();
             _isDurationSet = true;
             return *this;
          }
@@ -201,7 +203,7 @@ class Timer
          bool operator>>(std::string name)
          {
             unsigned long long duration = 0;
-            if (_isDurationSet)
+            if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
             {
                 _isDurationSet = false;
                 duration = _currentDuration;
@@ -229,6 +231,7 @@ class Timer
         std::unordered_map<std::string, std::atomic_ullong> _durationMap;
         std::atomic_ullong _currentDuration {0};
         bool _isDurationSet {false};
+		std::thread::id _durationThreadId;
         mutable std::mutex _mutex;
         bool _enabled {true};
 };

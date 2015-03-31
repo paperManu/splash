@@ -708,7 +708,7 @@ void Gui::initImWidgets()
         upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
         cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
-        gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
+        gui = gui * 0.9 + STimer::timer["gui"] * 0.001 * 0.1;
         win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
         buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
