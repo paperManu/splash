@@ -123,7 +123,7 @@ So, let's start with the installation of the dependencies. Firstly download and 
 
 You can now install the command line tools we will need to download and compile the sources:
 
-    sudo port install automake autoconf libtool cmake git
+    sudo port install automake autoconf libtool cmake git pkgconfig
 
 Grab and install OpenImageIO, the only library needed by Splash which is not packaged in MacPorts:
 
@@ -136,8 +136,10 @@ Grab and install OpenImageIO, the only library needed by Splash which is not pac
     make && sudo make install
     cd ..
 
-We now need to install GStreamer to compile Shmdata, the shared memory library. Download and install the [GStreamer SDK](http://docs.gstreamer.com/display/GstSDK/Installing+on+Mac+OS+X), be sure to install both the runtime and the development files. Then install Shmdata:
+We then install Shmdata, which depends on GStreamer:
 
+    sudo port install gstreamer010 gstreamer010-gst-plugins-bad gstreamer010-gst-plugins-base
+    sudo port install gstreamer010-gst-plugins-good gstreamer010-gst-plugins-ugly
     git clone https://github.com/nicobou/shmdata
     cd shmdata
     ./autogen.sh && ./configure
