@@ -420,6 +420,12 @@ void Scene::render()
         if (_gui != nullptr)
             _gui->unicodeChar(unicodeChar);
     }
+
+    // Check if we should quit
+    if (Window::getQuitFlag())
+    {
+        sendMessageToWorld("quit");
+    }
 }
 
 /*************/

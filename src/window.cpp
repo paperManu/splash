@@ -27,6 +27,7 @@ deque<pair<GLFWwindow*, unsigned int>> Window::_chars;
 deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
+atomic_bool Window::_quitFlag;
 
 mutex Window::_swapLoopMutex;
 mutex Window::_swapLoopNotifyMutex;
@@ -535,7 +536,7 @@ void Window::unsetTexture(TexturePtr tex)
 /*************/
 void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     vector<int> keys {key, scancode, action, mods};
     _keys.push_back(pair<GLFWwindow*, vector<int>>(win, keys));
 }
@@ -543,14 +544,14 @@ void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int
 /*************/
 void Window::charCallback(GLFWwindow* win, unsigned int codepoint)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     _chars.push_back(pair<GLFWwindow*, unsigned int>(win, codepoint));
 }
 
 /*************/
 void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     vector<int> btn {button, action, mods};
     _mouseBtn.push_back(pair<GLFWwindow*, vector<int>>(win,btn));
 }
@@ -558,7 +559,7 @@ void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 /*************/
 void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     vector<double> pos {xpos, ypos};
     _mousePos.first = win;
     _mousePos.second = move(pos);
@@ -567,9 +568,16 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 /*************/
 void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     vector<double> scroll {xoffset, yoffset};
     _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
+}
+
+/*************/
+void Window::closeCallback(GLFWwindow* win)
+{
+    unique_lock<mutex> lock(_callbackMutex);
+    _quitFlag = true;
 }
 
 /*************/
@@ -580,6 +588,7 @@ void Window::setEventsCallbacks()
     glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
     glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
     glfwSetScrollCallback(_window->get(), Window::scrollCallback);
+    glfwSetWindowCloseCallback(_window->get(), Window::closeCallback);
 }
 
 /*************/
