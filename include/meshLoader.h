@@ -157,10 +157,15 @@ namespace Splash
                             if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                             {
                                 line = line.substr(nextSlash + 1);
-                                nextSpace = line.find(" ");
-                                faceVertex.uvId = std::stoi(line) - 1;
+                                nextSlash = line.find("/");
+                                if (nextSlash != 0)
+                                {
+                                    nextSpace = line.find(" ");
+                                    faceVertex.uvId = std::stoi(line) - 1;
+                                }
                             }
-                            nextSlash = line.find("/");
+                            else
+                                nextSlash = line.find("/");
                             if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                             {
                                 line = line.substr(nextSlash + 1);
@@ -194,6 +199,17 @@ namespace Splash
                             _faces.push_back(newFace);
                         }
                     }
+                }
+
+                // Check that we have faces, vertices and UVs
+                if (_vertices.size() == 0 || _faces.size() == 0 || _uvs.size() == 0)
+                {
+                    _vertices.clear();
+                    _faces.clear();
+                    _uvs.clear();
+                    _normals.clear();
+
+                    return false;
                 }
 
                 return true;
