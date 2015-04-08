@@ -100,7 +100,7 @@ And you should be ready to go!
 
 If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
-    sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
+    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-dev
     sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
     sudo apt-get install libglfw3-dev
 
@@ -535,7 +535,7 @@ Attributes:
 - srgb [int]: if set to anything but 0, the image will be considered to be represented in the sRGB color space
 
 ### image_shmdata
-As this class derives from the class image, it shares all its attributes and behaviors.
+As this class derives from the image class, it shares all its attributes and behaviors.
 
 Links from: None
 
@@ -636,6 +636,19 @@ Links to:
 Attributes:
 
 - resizable [int]: if set to anything but 0, the texture will be resizable
+
+
+### texture_syphon
+Only available on OSX. A texture_syphon connects to a [Syphon](http://syphon.v002.info/) shared GPU texture. It derives from the texture class.
+
+Links to:
+
+- object
+- window (currently buggy)
+
+Attributes:
+
+- connect [["servername" : "name"], ["appname" : name]]: sets the servename, appname or both names of the Syphon source to use. If set to an empty array, it will connect to the first source available. This has to be set otherwise it won't connect to anything.
 
 ### window
 A window is an output to a screen.
