@@ -72,7 +72,7 @@ namespace Splash
                 _faces.clear();
 
                 // All objects are converted to a single one.
-                // This flag keeps track of the objects
+                // This indices keeps track of the objects
                 int vertexShift = 0;
                 int uvShift = 0;
                 int normalShift = 0;
@@ -151,21 +151,21 @@ namespace Splash
                             nextSpace = line.find(" ");
 
                             FaceVertex faceVertex;
-                            faceVertex.vertexId = std::stoi(line) - 1 + vertexShift;
+                            faceVertex.vertexId = std::stoi(line) - 1;
 
                             nextSlash = line.find("/");
                             if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                             {
                                 line = line.substr(nextSlash + 1);
                                 nextSpace = line.find(" ");
-                                faceVertex.uvId = std::stoi(line) - 1 + uvShift;
+                                faceVertex.uvId = std::stoi(line) - 1;
                             }
                             nextSlash = line.find("/");
                             if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                             {
                                 line = line.substr(nextSlash + 1);
                                 nextSpace = line.find(" ");
-                                faceVertex.normalId = std::stoi(line) - 1 + normalShift;
+                                faceVertex.normalId = std::stoi(line) - 1;
                             }
 
                             face.push_back(faceVertex);
