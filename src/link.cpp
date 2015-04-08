@@ -64,12 +64,9 @@ void Link::connectTo(const string name)
 
     try
     {
-        // Set the high water mark to a low value for the buffer output
+        // High water mark set to zero for the outputs
         int hwm = 0;
         _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
-
-        // Set the high water mark to a low value for the buffer output
-        hwm = 10;
         _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // TODO: for now, all connections are through IPC.
@@ -215,7 +212,8 @@ void Link::handleInputMessages()
 {
     try
     {
-        int hwm = 100;
+        // We don't want to miss a message: set the high water mark to a high value
+        int hwm = 1000;
         _socketMessageIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());
@@ -283,8 +281,8 @@ void Link::handleInputBuffers()
 {
     try
     {
-        // Set the high water mark to a low value for the buffer output
-        int hwm = 10;
+        // We only keep one buffer in memory while processing
+        int hwm = 1;
         _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         _socketBufferIn->bind((string("ipc:///tmp/splash_buf_") + _name).c_str());
