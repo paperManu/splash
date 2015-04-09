@@ -86,6 +86,10 @@ void World::run()
                 }));
             }
             SThread::pool.waitThreads(threadIds);
+
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / (_worldFramerate * 2))));
+            sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
+
             STimer::timer >> "upload";
         }
 
@@ -104,6 +108,14 @@ void World::run()
             for (auto& s : _scenes)
                 sendMessage(s.first, "quit", {});
             break;
+        }
+
+        // Ping the clients
+        for (auto& scene : _scenes)
+        {
+            STimer::timer << "pingScene " + scene.first;
+            auto answer = sendMessageWithAnswer(scene.first, "ping", {}, 1000);
+            STimer::timer >> "pingScene " + scene.first;
         }
 
         // Get the current FPS

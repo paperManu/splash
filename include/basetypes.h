@@ -426,8 +426,9 @@ class RootObject : public BaseObject
 
         /**
          * Send a message to the target specified by its name, and wait for an answer
+         * Can specify a timeout for the answer, in microseconds
          */
-        Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {})
+        Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {}, const unsigned long long timeout = 0ull)
         {
             if (_link == nullptr)
                 return {};
@@ -438,7 +439,10 @@ class RootObject : public BaseObject
 
             std::mutex conditionMutex;
             std::unique_lock<std::mutex> conditionLock(conditionMutex);
-            _answerCondition.wait(conditionLock);
+            if (timeout == 0ull)
+                _answerCondition.wait(conditionLock);
+            else
+                _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
 
             _answerExpected = "";
             return _lastAnswerReceived;

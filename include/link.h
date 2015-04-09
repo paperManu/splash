@@ -25,6 +25,8 @@
 #ifndef SPLASH_LINK_H
 #define SPLASH_LINK_H
 
+#include <atomic>
+#include <chrono>
 #include <deque>
 #include <mutex>
 #include <string>
@@ -71,6 +73,11 @@ class Link
         template <typename T>
         bool sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message);
 
+        /**
+         * Check that all buffers were sent to the client
+         */
+        bool waitForBufferSending(std::chrono::milliseconds maximumWait);
+
     private:
         RootObjectWeakPtr _rootObject;
         std::string _name;
@@ -87,6 +94,7 @@ class Link
 
         std::deque<std::unique_ptr<SerializedObject>> _otgBuffers;
         std::mutex _otgMutex;
+        std::atomic_int _otgNumber {0};
 
         std::thread _bufferInThread;
         std::thread _messageInThread;

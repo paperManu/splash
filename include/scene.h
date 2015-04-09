@@ -180,6 +180,7 @@ class Scene : public RootObject
 
         // Texture upload context
         std::future<void> _textureUploadFuture;
+        std::condition_variable _textureUploadCondition;
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;

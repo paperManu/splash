@@ -59,6 +59,7 @@ Scene::Scene(std::string name)
 Scene::~Scene()
 {
     SLog::log << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+    _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
     // Cleanup every object
@@ -438,7 +439,6 @@ void Scene::run()
             this_thread::sleep_for(chrono::milliseconds(50));
             continue;
         }
-
         
         STimer::timer << "sceneLoop";
 
@@ -464,6 +464,7 @@ void Scene::textureUploadRun()
         }
 
         unique_lock<mutex> lock(_textureUploadMutex);
+        _textureUploadCondition.wait(lock);
 
         _textureUploadWindow->setAsCurrentContext();
         glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
@@ -485,7 +486,7 @@ void Scene::textureUploadRun()
             }
 
         _textureUploadWindow->releaseContext();
-        STimer::timer >> 1000 >> "textureUpload";
+        STimer::timer >> "textureUpload";
     }
 }
 
@@ -874,6 +875,11 @@ void Scene::registerAttributes()
         return {(int)_blendingResolution};
     });
 
+    _attribFunctions["bufferUploaded"] = AttributeFunctor([&](const Values& args) {
+        _textureUploadCondition.notify_all();
+        return true;
+    });
+
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         computeBlendingMap();
         return true;
@@ -933,6 +939,12 @@ void Scene::registerAttributes()
         if (args.size() < 2)
             return false;
         SLog::log.setLog(args[0].asString(), (Log::Priority)args[1].asInt());
+        return true;
+    });
+
+    _attribFunctions["ping"] = AttributeFunctor([&](const Values& args) {
+        _textureUploadCondition.notify_all();
+        sendMessageToWorld("answerMessage", {"ping"});
         return true;
     });
 

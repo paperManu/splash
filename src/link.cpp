@@ -84,6 +84,31 @@ void Link::connectTo(const string name)
 }
 
 /*************/
+bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
+{
+    bool returnValue;
+    chrono::milliseconds totalWait {0};
+
+    while (true)
+    {
+        if (_otgNumber == 0)
+        {
+            returnValue = true;
+            break;
+        }
+        if (totalWait > maximumWait)
+        {
+            returnValue = false;
+            break;
+        }
+        totalWait = totalWait + chrono::milliseconds(1);
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+
+    return returnValue;
+}
+
+/*************/
 bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
 {
     try
@@ -97,6 +122,8 @@ bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
         _otgMutex.lock();
         _otgBuffers.push_back(std::move(buffer));
         _otgMutex.unlock();
+
+        _otgNumber += 1;
 
         zmq::message_t msg(name.size() + 1);
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
@@ -205,6 +232,7 @@ void Link::freeOlderBuffer(void* data, void* hint)
     }
     ctx->_otgBuffers[index]->_mutex.unlock();
     ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
+    ctx->_otgNumber -= 1;
 }
 
 /*************/
