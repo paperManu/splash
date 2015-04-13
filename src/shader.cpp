@@ -573,6 +573,14 @@ void Shader::registerAttributes()
             setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE_RECT, fragment);
             compileProgram();
         }
+        else if (args[0].asString() == "texture_rect_blend" && _fill != texture_rect)
+        {
+            _fill = texture_rect;
+            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
+            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE_RECT_BLEND, fragment);
+            compileProgram();
+        }
         else if (args[0].asString() == "color" && _fill != color)
         {
             _fill = color;

@@ -202,9 +202,106 @@ struct ShaderSources
     )"};
 
     /**
-     * Textured fragment shader - Rectangle edition
+     * Textured fragment shader - Rectangle edition, no blending
      */
     const std::string FRAGMENT_SHADER_TEXTURE_RECT {R"(
+        #version 330 core
+
+        #define PI 3.14159265359
+
+        uniform sampler2DRect _tex0;
+        uniform vec2 _tex0_size = vec2(0.0);
+
+        uniform int _sideness = 0;
+        uniform int _textureNbr = 0;
+        uniform int _texBlendingMap = 0;
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        uniform int _isColorLUT = 0;
+        uniform vec3 _colorLUT[256];
+        uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
+                                            0.0, 1.0, 0.0,
+                                            0.0, 0.0, 1.0);
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec3 normal;
+        } vertexIn;
+
+        out vec4 fragColor;
+        // Texture transformation
+        uniform int _tex0_flip = 0;
+        uniform int _tex0_flop = 0;
+        // HapQ specific parameters
+        uniform int _tex0_YCoCg = 0;
+
+        void main(void)
+        {
+            float blendWidth = _cameraAttributes.x;
+            float blackLevel = _cameraAttributes.y;
+            float brightness = _cameraAttributes.z;
+
+            vec4 position = vertexIn.position;
+            vec2 texCoord = vertexIn.texCoord;
+            vec3 normal = vertexIn.normal;
+
+            vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+
+            // Compute the real texture coordinates, according to flip / flop
+            vec2 realCoords;
+            if (_tex0_flip == 1 && _tex0_flop == 0)
+                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
+            else if (_tex0_flip == 0 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
+            else if (_tex0_flip == 1 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
+            else
+                realCoords = texCoord;
+
+            vec4 color = texture(_tex0, realCoords * _tex0_size);
+
+            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
+            if (_tex0_YCoCg == 1)
+            {
+                float scale = (color.z * (255.0 / 8.0)) + 1.0;
+                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
+                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
+                float Y = color.w;
+                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
+                color.rgb = pow(color.rgb, vec3(2.2));
+            }
+
+            float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
+            color.r *= _fovAndColorBalance.z / maxBalanceRatio;
+            color.g *= 1.0 / maxBalanceRatio;
+            color.b *= _fovAndColorBalance.w / maxBalanceRatio;
+
+            // Black level
+            float blackCorrection = max(min(blackLevel, 1.0), 0.0);
+            color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
+
+            // Brightness correction
+            color.rgb = color.rgb * brightness;
+
+            // Color correction through a LUT
+            if (_isColorLUT != 0)
+            {
+                ivec3 icolor = ivec3(round(color.rgb * 255.f));
+                color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
+                //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
+            }
+            
+            fragColor.rgb = color.rgb;
+            fragColor.a = 1.0;
+        }
+    )"};
+
+    /**
+     * Textured fragment shader - Rectangle edition
+     */
+    const std::string FRAGMENT_SHADER_TEXTURE_RECT_BLEND {R"(
         #version 330 core
 
         #define PI 3.14159265359

@@ -57,24 +57,33 @@ void Object::activate()
 
     _mutex.lock(); 
 
+    for (auto& m : _blendMaps)
+        m->update();
+
+    bool withBlend = false;
+    if (_blendMaps.size() != 0)
+        for (int i = 0; i < _textures.size(); ++i)
+            if (_blendMaps[0] == _textures[i])
+            {
+                _shader->setAttribute("blending", {1});
+                withBlend = true;
+            }
+
     // Workaround to make Syphon texture work with the "texture" shader
     if (_fill == "texture")
     {
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
-            _shader->setAttribute("fill", {"texture_rect"});
+        {
+            if (withBlend)
+                _shader->setAttribute("fill", {"texture_rect_blend"});
+            else
+                _shader->setAttribute("fill", {"texture_rect"});
+        }
         else
             _shader->setAttribute("fill", {"texture"});
     }
     else
         _shader->setAttribute("fill", {_fill});
-
-    for (auto& m : _blendMaps)
-        m->update();
-
-    if (_blendMaps.size() != 0)
-        for (int i = 0; i < _textures.size(); ++i)
-            if (_blendMaps[0] == _textures[i])
-                _shader->setAttribute("blending", {1});
 
     _geometries[0]->update();
     _geometries[0]->activate();
