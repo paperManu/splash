@@ -634,6 +634,7 @@ void GuiGraph::render()
 
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        auto width = ImGui::GetWindowSize().x;
         for (auto& duration : _durationGraph)
         {
             float maxValue {0.f};
@@ -646,7 +647,7 @@ void GuiGraph::render()
 
             maxValue = ceil(maxValue * 0.1f) * 10.f;
 
-            ImGui::PlotLines(duration.first.c_str(), values.data(), values.size(), values.size(), (to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(0, 80));
+            ImGui::PlotLines("", values.data(), values.size(), values.size(), (duration.first + " - " + to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
         }
     }
 }
