@@ -164,6 +164,10 @@ You should now be able to launch Splash:
 
     splash --help
 
+It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory:
+
+    ./build_osx.sh
+
 Remember that it is a very early port to OSX. Please report any issue you encounter!
 
 <a name="architecture"/></a>
