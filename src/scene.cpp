@@ -422,6 +422,13 @@ void Scene::render()
             _gui->unicodeChar(unicodeChar);
     }
 
+    // Any file dropped onto the window? Then load it.
+    auto paths = Window::getPathDropped();
+    if (paths.size() != 0)
+    {
+        sendMessageToWorld("loadConfig", {paths[0]});
+    }
+
     // Check if we should quit
     if (Window::getQuitFlag())
     {

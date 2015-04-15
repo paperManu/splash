@@ -115,6 +115,11 @@ class Window : public BaseObject
         static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
 
         /**
+         * Get the list of paths dropped onto any window
+         */
+        static std::vector<std::string> getPathDropped();
+
+        /**
          * Get the quit flag status
          */
         static int getQuitFlag() {return _quitFlag;}
@@ -196,19 +201,21 @@ class Window : public BaseObject
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn; // Input mouse buttons queue
         static std::pair<GLFWwindow*, std::vector<double>> _mousePos; // Input mouse position
         static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
+        static std::vector<std::string> _pathDropped; // Filepath drag&dropped
         static std::atomic_bool _quitFlag; // Grabs close window events
 
         // Swapping loop
         void swapLoop();
 
         /**
-         * Input callbacks
+         * Input callbacksppa:andrewrk/rucksack
          */
         static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
         static void charCallback(GLFWwindow* win, unsigned int codepoint);
         static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
         static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
+        static void pathdropCallback(GLFWwindow* win, int count, const char** paths);
         static void closeCallback(GLFWwindow* win);
 
         /**

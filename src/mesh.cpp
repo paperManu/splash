@@ -87,7 +87,7 @@ bool Mesh::read(const string& filename)
     Loader::Obj objLoader;
     if (!objLoader.load(filepath))
     {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file" << Log::endl;
+        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
         return false;
     }
 

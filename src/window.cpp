@@ -27,6 +27,7 @@ deque<pair<GLFWwindow*, unsigned int>> Window::_chars;
 deque<pair<GLFWwindow*, vector<int>>> Window::_mouseBtn;
 pair<GLFWwindow*, vector<double>> Window::_mousePos;
 deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
+vector<string> Window::_pathDropped;
 atomic_bool Window::_quitFlag;
 
 mutex Window::_swapLoopMutex;
@@ -102,7 +103,7 @@ Window::~Window()
 /*************/
 int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     if (_chars.size() == 0)
         return 0;
 
@@ -125,7 +126,7 @@ bool Window::getKey(int key)
 /*************/
 int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     if (_keys.size() == 0)
         return 0;
 
@@ -144,7 +145,7 @@ int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 /*************/
 int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     if (_mouseBtn.size() == 0)
         return 0;
 
@@ -163,7 +164,7 @@ int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 /*************/
 void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     if (_mousePos.second.size() != 2)
         return;
 
@@ -175,7 +176,7 @@ void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 /*************/
 int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 {
-    lock_guard<mutex> lock(_callbackMutex);
+    unique_lock<mutex> lock(_callbackMutex);
     if (_scroll.size() == 0)
         return 0;
 
@@ -186,6 +187,15 @@ int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
     _scroll.pop_front();
 
     return _scroll.size() + 1;
+}
+
+/*************/
+vector<string> Window::getPathDropped()
+{
+    unique_lock<mutex> lock(_callbackMutex);
+    auto paths = _pathDropped;
+    _pathDropped.clear();
+    return paths;
 }
 
 /*************/
@@ -574,6 +584,14 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 }
 
 /*************/
+void Window::pathdropCallback(GLFWwindow* win, int count, const char** paths)
+{
+    unique_lock<mutex> lock(_callbackMutex);
+    for (int i = 0; i < count; ++i)
+        _pathDropped.push_back(string(paths[i]));
+}
+
+/*************/
 void Window::closeCallback(GLFWwindow* win)
 {
     unique_lock<mutex> lock(_callbackMutex);
@@ -588,6 +606,7 @@ void Window::setEventsCallbacks()
     glfwSetMouseButtonCallback(_window->get(), Window::mouseBtnCallback);
     glfwSetCursorPosCallback(_window->get(), Window::mousePosCallback);
     glfwSetScrollCallback(_window->get(), Window::scrollCallback);
+    glfwSetDropCallback(_window->get(), Window::pathdropCallback);
     glfwSetWindowCloseCallback(_window->get(), Window::closeCallback);
 }
 
