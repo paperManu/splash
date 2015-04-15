@@ -171,6 +171,7 @@ class Shader : public BaseObject
 
         // Rendering parameters
         Fill _fill {texture};
+        std::string _shaderOptions {""};
         Sideness _sideness {doubleSided};
         int _useBlendingMap {0};
         float _blendWidth {0.05f};

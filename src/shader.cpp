@@ -22,8 +22,8 @@ Shader::Shader()
     _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
     _program = glCreateProgram();
 
-    setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-    setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
     compileProgram();
 
     registerAttributes();
@@ -557,60 +557,55 @@ void Shader::registerAttributes()
     _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asString() == "texture" && _fill != texture)
+
+        // Get additionnal shading options
+        string options = ShaderSources.VERSION_DIRECTIVE;
+        for (int i = 1; i < args.size(); ++i)
+            options += "#define " + args[i].asString() + "\n";
+
+        if (args[0].asString() == "texture" && (_fill != texture || _shaderOptions != options))
         {
             _fill = texture;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "texture_rect" && _fill != texture_rect)
-        {
-            _fill = texture_rect;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-            resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE_RECT, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "texture_rect_blend" && _fill != texture_rect)
-        {
-            _fill = texture_rect;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-            resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE_RECT_BLEND, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "color" && _fill != color)
+        else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
         {
             _fill = color;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "uv" && _fill != uv)
+        else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
         {
             _fill = uv;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_UV, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "wireframe" && _fill != wireframe)
+        else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
         {
             _fill = wireframe;
-            setSource(ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
-            setSource(ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
+            setSource(options + ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "window" && _fill != window)
+        else if (args[0].asString() == "window" && (_fill != window || _shaderOptions != options))
         {
             _fill = window;
-            setSource(ShaderSources.VERTEX_SHADER_WINDOW, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
             compileProgram();
         }
         return true;

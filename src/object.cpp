@@ -69,18 +69,33 @@ void Object::activate()
                 withBlend = true;
             }
 
-    // Workaround to make Syphon texture work with the "texture" shader
     if (_fill == "texture")
     {
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
         {
             if (withBlend)
-                _shader->setAttribute("fill", {"texture_rect_blend"});
+                _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
             else
-                _shader->setAttribute("fill", {"texture_rect"});
+                _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
         }
         else
-            _shader->setAttribute("fill", {"texture"});
+        {
+            if (withBlend)
+                _shader->setAttribute("fill", {"texture", "BLENDING"});
+            else
+                _shader->setAttribute("fill", {"texture"});
+        }
+    }
+    else if (_fill == "window")
+    {
+        if (_textures.size() == 1)
+            _shader->setAttribute("fill", {"window", "TEX_1"});
+        else if (_textures.size() == 2)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
+        else if (_textures.size() == 3)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
+        else if (_textures.size() == 4)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
     }
     else
         _shader->setAttribute("fill", {_fill});
