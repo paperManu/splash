@@ -174,6 +174,10 @@ class Window : public BaseObject
         Values _layout {0, 0, 0, 0};
         int _swapInterval {2};
 
+        // Swap synchronization test
+        bool _swapSynchronizationTesting {false};
+        glm::vec4 _swapSynchronizationColor {0.0, 0.0, 0.0, 1.0};
+
         // Swapping thread
         std::thread _swapThread;
         static std::mutex _swapLoopMutex;

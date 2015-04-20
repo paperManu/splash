@@ -46,6 +46,27 @@ void GuiControl::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        // World control
+        ImGui::Text("World configuration (not saved!)");
+        static auto worldFramerate = 60;
+        if (ImGui::InputInt("World framerate", &worldFramerate))
+        {
+            worldFramerate = std::max(worldFramerate, 0);
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("framerate", {worldFramerate});
+        }
+        static auto syncTestFrameDelay = 0;
+        if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay))
+        {
+            syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("swapTest", {syncTestFrameDelay});
+        }
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        ImGui::Text("Objects configuration (saved!)");
         // Select the object the control
         {
             vector<string> objectNames = getObjectNames();

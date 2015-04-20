@@ -1004,6 +1004,20 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
+        return true;
+    });
+
+    _attribFunctions["swapTestColor"] = AttributeFunctor([&](const Values& args) {
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
+        return true;
+    });
+
     _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
         _started = false;
         _isRunning = false;

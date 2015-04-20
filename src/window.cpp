@@ -309,14 +309,24 @@ bool Window::render()
     if (_srgb)
         glEnable(GL_FRAMEBUFFER_SRGB);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
+    // If we are in synchronization testing mode
+    if (_swapSynchronizationTesting)
+    {
+        glClearColor(_swapSynchronizationColor[0], _swapSynchronizationColor[1], _swapSynchronizationColor[2], _swapSynchronizationColor[3]); 
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+    // else, we draw the window normally
+    else
+    {
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    _screen->getShader()->setAttribute("layout", _layout);
-    _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
-    _screen->activate();
-    _screen->draw();
-    _screen->deactivate();
+        _screen->getShader()->setAttribute("layout", _layout);
+        _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
+        _screen->activate();
+        _screen->draw();
+        _screen->deactivate();
+    }
 
     if (_guiTexture != nullptr)
     {
@@ -457,13 +467,13 @@ void Window::swapBuffers()
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
-    glDrawBuffer(GL_BACK);
+    glDrawBuffer(GL_FRONT);
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-    glfwSwapBuffers(_window->get());
+    //glfwSwapBuffers(_window->get());
     _window->releaseContext();
 }
 
@@ -796,6 +806,20 @@ void Window::registerAttributes()
             return false;
         _swapInterval = max(-1, args[0].asInt());
         updateSwapInterval();
+        return true;
+    });
+
+    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _swapSynchronizationTesting = args[0].asInt();
+        return true;
+    });
+
+    _attribFunctions["swapTestColor"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 4)
+            return false;
+        _swapSynchronizationColor = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
     });
 }

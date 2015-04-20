@@ -87,6 +87,9 @@ class World : public RootObject
         std::string _configFilename;
         Json::Value _config;
         bool _childProcessLaunched {false};
+        
+        // Synchronization testings
+        int _swapSynchronizationTesting {0}; // If not 0, number of frames to keep the same color
 
         /**
          * Add an object to the world (used for Images and Meshes currently)

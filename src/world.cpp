@@ -93,6 +93,36 @@ void World::run()
             STimer::timer >> "upload";
         }
 
+        // If swap synchronization test is enabled
+        if (_swapSynchronizationTesting)
+        {
+            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {1});
+
+            static auto frameNbr = 0;
+            static auto frameStatus = 0;
+            auto color = glm::vec4(0.0);
+
+            if (frameNbr == 0 && frameStatus == 0)
+            {
+                color = glm::vec4(0.0, 0.0, 0.0, 1.0);
+                frameStatus = 1;
+            }
+            else if (frameNbr == 0 && frameStatus == 1)
+            {
+                color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+                frameStatus = 0;
+            }
+
+            if (frameNbr == 0)
+                sendMessage(SPLASH_ALL_PAIRS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+
+            frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
+        }
+        else
+        {
+            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
+        }
+
         // Send current timings to all Scenes, for display purpose
         auto& durationMap = STimer::timer.getDurationMap();
         for (auto& d : durationMap)
@@ -689,6 +719,13 @@ void World::registerAttributes()
         values.erase(values.begin());
         values.erase(values.begin());
         sendMessage(name, attr, values);
+        return true;
+    });
+
+    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _swapSynchronizationTesting = args[0].asInt();
         return true;
     });
 
