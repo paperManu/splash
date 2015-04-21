@@ -326,7 +326,9 @@ void Scene::render()
 
     // Swap all buffers at once
     STimer::timer << "swap";
-    Window::swapLoopNotify();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
     STimer::timer >> "swap";
 
     // Update the user events

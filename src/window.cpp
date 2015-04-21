@@ -30,10 +30,7 @@ deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 vector<string> Window::_pathDropped;
 atomic_bool Window::_quitFlag;
 
-mutex Window::_swapLoopMutex;
-mutex Window::_swapLoopNotifyMutex;
-condition_variable Window::_swapCondition;
-condition_variable Window::_swapConditionNotify;
+atomic_int Window::_swappableWindowsCount {0};
 
 /*************/
 Window::Window(RootObjectWeakPtr root)
@@ -78,11 +75,6 @@ Window::Window(RootObjectWeakPtr root)
 
     // And the read framebuffer
     setupReadFBO();
-
-    _swapThread = thread([&]() {
-        _swapLoopContinue = true;
-        swapLoop();
-    });
 }
 
 /*************/
@@ -91,10 +83,6 @@ Window::~Window()
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif
-
-    _swapLoopContinue = false;
-    _swapCondition.notify_all();
-    _swapThread.join();
 
     glDeleteFramebuffers(1, &_renderFbo);
     glDeleteFramebuffers(1, &_readFbo);
@@ -337,6 +325,7 @@ bool Window::render()
 
     glDeleteSync(_renderFence);
     _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    _swappableWindowsCount = 0; // Reset the window number
 
     // Resize the input textures accordingly to the window size.
     // This goes upstream to the cameras and gui
@@ -437,28 +426,6 @@ void Window::setupReadFBO()
 }
 
 /*************/
-void Window::swapLoop()
-{
-    bool doContinue = _swapLoopContinue;
-    while (doContinue)
-    {
-        unique_lock<mutex> lock(_swapLoopMutex);
-        _swapCondition.wait(lock);
-        swapBuffers();
-        _swapConditionNotify.notify_all();
-        doContinue = _swapLoopContinue;
-    }
-}
-
-/*************/
-void Window::swapLoopNotify()
-{
-    _swapCondition.notify_all();
-    unique_lock<mutex> lock(_swapLoopNotifyMutex);
-    _swapConditionNotify.wait_for(lock, chrono::milliseconds(100));
-}
-
-/*************/
 void Window::swapBuffers()
 {
     if (!_window->setAsCurrentContext()) 
@@ -466,14 +433,24 @@ void Window::swapBuffers()
 
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
+    // Only one window will wait for vblank, the others draws directly into front buffer
+    auto windowIndex = _swappableWindowsCount.fetch_add(1);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
-    glDrawBuffer(GL_FRONT);
+
+    // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
+    if (windowIndex != 0)
+        glDrawBuffer(GL_FRONT);
+    else
+        glDrawBuffer(GL_BACK);
+
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
-    //glfwSwapBuffers(_window->get());
+    if (windowIndex == 0)
+        glfwSwapBuffers(_window->get());
+
     _window->releaseContext();
 }
 

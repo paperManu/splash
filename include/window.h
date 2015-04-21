@@ -159,7 +159,6 @@ class Window : public BaseObject
         /**
          * Swap the back and front buffers
          */
-        static void swapLoopNotify();
         void swapBuffers();
 
     private:
@@ -172,19 +171,13 @@ class Window : public BaseObject
         bool _srgb {true};
         float _gammaCorrection {2.2f};
         Values _layout {0, 0, 0, 0};
-        int _swapInterval {2};
+        int _swapInterval {1};
 
         // Swap synchronization test
         bool _swapSynchronizationTesting {false};
         glm::vec4 _swapSynchronizationColor {0.0, 0.0, 0.0, 1.0};
 
-        // Swapping thread
-        std::thread _swapThread;
-        static std::mutex _swapLoopMutex;
-        static std::mutex _swapLoopNotifyMutex;
-        std::atomic_bool _swapLoopContinue {false};
-        static std::condition_variable _swapCondition;
-        static std::condition_variable _swapConditionNotify;
+        static std::atomic_int _swappableWindowsCount;
 
         // Offscreen rendering related objects
         GLuint _renderFbo {0};
@@ -207,9 +200,6 @@ class Window : public BaseObject
         static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
         static std::vector<std::string> _pathDropped; // Filepath drag&dropped
         static std::atomic_bool _quitFlag; // Grabs close window events
-
-        // Swapping loop
-        void swapLoop();
 
         /**
          * Input callbacksppa:andrewrk/rucksack
