@@ -636,25 +636,25 @@ void GuiGlobalView::processMouseEvents()
 /*************/
 void GuiGraph::render()
 {
-    auto& durationMap = STimer::timer.getDurationMap();
-
-    for (auto& t : durationMap)
-    {
-        if (_durationGraph.find(t.first) == _durationGraph.end())
-            _durationGraph[t.first] = deque<unsigned long long>({t.second});
-        else
-        {
-            if (_durationGraph[t.first].size() == _maxHistoryLength)
-                _durationGraph[t.first].pop_front();
-            _durationGraph[t.first].push_back(t.second);
-        }
-    }
-
-    if (_durationGraph.size() == 0)
-        return;
-
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        auto& durationMap = STimer::timer.getDurationMap();
+
+        for (auto& t : durationMap)
+        {
+            if (_durationGraph.find(t.first) == _durationGraph.end())
+                _durationGraph[t.first] = deque<unsigned long long>({t.second});
+            else
+            {
+                if (_durationGraph[t.first].size() == _maxHistoryLength)
+                    _durationGraph[t.first].pop_front();
+                _durationGraph[t.first].push_back(t.second);
+            }
+        }
+
+        if (_durationGraph.size() == 0)
+            return;
+
         auto width = ImGui::GetWindowSize().x;
         for (auto& duration : _durationGraph)
         {
