@@ -317,8 +317,6 @@ void Scene::render()
         isError |= _gui->render();
     STimer::timer >> "gui";
 
-    glFinish();
-
     // Update the windows
     STimer::timer << "windows";
     for (auto& obj : _objects)
