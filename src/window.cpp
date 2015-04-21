@@ -408,7 +408,7 @@ void Window::setupRenderFBO()
 void Window::setupReadFBO()
 {
     _window->setAsCurrentContext();
-    glGetError();
+
     if (_readFbo != 0)
         glDeleteFramebuffers(1, &_readFbo);
 
