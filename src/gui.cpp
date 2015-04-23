@@ -446,8 +446,6 @@ bool Gui::render()
     if (outTexture_asImage)
         outTexture_asImage->generateMipmap();
 
-    glFinish();
-
 #ifdef DEBUG
     error = glGetError();
     if (error)

@@ -140,12 +140,18 @@ void World::run()
             break;
         }
 
-        // Ping the clients
-        for (auto& scene : _scenes)
+        // Ping the clients once in a while
         {
-            STimer::timer << "pingScene " + scene.first;
-            auto answer = sendMessageWithAnswer(scene.first, "ping", {}, 1000);
-            STimer::timer >> "pingScene " + scene.first;
+            static auto frameIndex = 0;
+            if (frameIndex == 0)
+            {
+                for (auto& scene : _scenes)
+                {
+                    STimer::timer << "pingScene " + scene.first;
+                    sendMessage(scene.first, "ping", {});
+                }
+            }
+            frameIndex = (frameIndex + 1) % 60;
         }
 
         // Get the current FPS
@@ -694,6 +700,13 @@ void World::registerAttributes()
                 applyConfig();
             }
         });
+        return true;
+    });
+
+    _attribFunctions["pong"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        STimer::timer >> "pingScene " + args[0].asString();
         return true;
     });
 
