@@ -39,6 +39,11 @@ int main(int argc, char** argv)
             SLog::log.setVerbosity(Log::DEBUGGING);
             idx++;
         }
+        else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
+        {
+            STimer::timer.setDebug(true);
+            idx++;
+        }
         else
         {
             name = argv[idx];

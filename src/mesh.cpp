@@ -108,7 +108,8 @@ unique_ptr<SerializedObject> Mesh::serialize() const
 {
     unique_ptr<SerializedObject> obj(new SerializedObject());
 
-    STimer::timer << "serialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer << "serialize " + _name;
 
     // For this, we will use the getVertex, getUV, etc. methods to create a serialized representation of the mesh
     vector<vector<float>> data;
@@ -135,7 +136,8 @@ unique_ptr<SerializedObject> Mesh::serialize() const
         currentObjPtr += d.size() * sizeof(float);
     }
     
-    STimer::timer >> "serialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer >> "serialize " + _name;
 
     return obj;
 }
@@ -148,7 +150,8 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
 
     lock_guard<mutex> lock(_writeMutex);
 
-    STimer::timer << "deserialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer << "deserialize " + _name;
 
     // First, we get the number of vertices
     int nbrVertices;
@@ -218,7 +221,8 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
         return false;
     }
 
-    STimer::timer >> "deserialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer >> "deserialize " + _name;
 
     return true;
 }

@@ -89,7 +89,8 @@ unique_ptr<SerializedObject> Image::serialize() const
 {
     lock_guard<mutex> lock(_readMutex);
 
-    STimer::timer << "serialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer << "serialize " + _name;
 
     // We first get the xml version of the specs, and pack them into the obj
     string xmlSpec = _image.spec().to_xml();
@@ -125,7 +126,8 @@ unique_ptr<SerializedObject> Image::serialize() const
     copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
     SThread::pool.waitThreads(threadIds);
 
-    STimer::timer >> "serialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer >> "serialize " + _name;
 
     return obj;
 }
@@ -136,7 +138,8 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
 
-    STimer::timer << "deserialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer << "deserialize " + _name;
 
     // First, we get the size of the metadata
     int nbrChar;
@@ -188,7 +191,8 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
         return false;
     }
 
-    STimer::timer >> "deserialize " + _name;
+    if (STimer::timer.isDebug())
+        STimer::timer >> "deserialize " + _name;
 
     return true;
 }

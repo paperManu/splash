@@ -46,6 +46,12 @@ class Timer
         ~Timer() {}
 
         /**
+         * Returns whether the timer is set to debug mode
+         */
+        bool isDebug() {return _isDebug;}
+        void setDebug(bool d) {_isDebug = d;}
+
+        /**
          * Start / end a timer
          */
         void start(std::string name)
@@ -234,6 +240,7 @@ class Timer
 		std::thread::id _durationThreadId;
         mutable std::mutex _mutex;
         bool _enabled {true};
+        bool _isDebug {false};
 };
 
 struct STimer

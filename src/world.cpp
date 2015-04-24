@@ -143,9 +143,11 @@ void World::run()
         // Ping the clients
         for (auto& scene : _scenes)
         {
-            STimer::timer << "pingScene " + scene.first;
+            if (STimer::timer.isDebug())
+                STimer::timer << "pingScene " + scene.first;
             auto answer = sendMessageWithAnswer(scene.first, "ping", {}, 1000);
-            STimer::timer >> "pingScene " + scene.first;
+            if (STimer::timer.isDebug())
+                STimer::timer >> "pingScene " + scene.first;
         }
 
         // Get the current FPS
@@ -270,8 +272,9 @@ void World::applyConfig()
                 else
                     cmd = _executionPath + "splash-scene";
                 string debug = (SLog::log.getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                string timer = STimer::timer.isDebug() ? "-t" : "";
 
-                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)name.c_str(), NULL};
+                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
                 char* env[] = {(char*)display.c_str(), NULL};
                 int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                 if (status != 0)
@@ -604,6 +607,11 @@ void World::parseArguments(int argc, char** argv)
 #endif
             idx++;
         }
+        else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
+        {
+            STimer::timer.setDebug(true);
+            idx++;
+        }
         else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")
         {
             SLog::log.setVerbosity(Log::NONE);
@@ -615,6 +623,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
+            cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
             exit(0);
         }

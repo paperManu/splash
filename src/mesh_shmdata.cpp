@@ -99,7 +99,8 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
 
     Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
     lock_guard<mutex> lock(ctx->_writeMutex);
-    STimer::timer << "mesh_shmdata " + ctx->_name;
+    if (STimer::timer.isDebug())
+        STimer::timer << "mesh_shmdata " + ctx->_name;
 
     ctx->_bufferMesh = std::move(newMesh);
     ctx->_meshUpdated = true;
@@ -107,7 +108,8 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
 
     shmdata_any_reader_free(shmbuf);
 
-    STimer::timer >> "mesh_shmdata " + ctx->_name;
+    if (STimer::timer.isDebug())
+        STimer::timer >> "mesh_shmdata " + ctx->_name;
 }
 
 /*************/
