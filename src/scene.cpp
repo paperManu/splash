@@ -317,20 +317,6 @@ void Scene::render()
         isError |= _gui->render();
     STimer::timer >> "gui";
 
-    // Update the windows
-    STimer::timer << "windows";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    STimer::timer >> "windows";
-
-    // Swap all buffers at once
-    STimer::timer << "swap";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-    STimer::timer >> "swap";
-
     // Update the user events
     glfwPollEvents();
     // Mouse position
@@ -434,6 +420,22 @@ void Scene::render()
     {
         sendMessageToWorld("quit");
     }
+
+    // Update the windows
+    // Events are placed before so that they are "hidden" by the gl stuff
+    STimer::timer << "windows";
+    glFinish();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    STimer::timer >> "windows";
+
+    // Swap all buffers at once
+    STimer::timer << "swap";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+    STimer::timer >> "swap";
 }
 
 /*************/
@@ -951,7 +953,7 @@ void Scene::registerAttributes()
 
     _attribFunctions["ping"] = AttributeFunctor([&](const Values& args) {
         _textureUploadCondition.notify_all();
-        sendMessageToWorld("answerMessage", {"ping"});
+        sendMessageToWorld("pong", {_name});
         return true;
     });
 
