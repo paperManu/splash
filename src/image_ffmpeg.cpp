@@ -1,6 +1,7 @@
 #include "image_ffmpeg.h"
 
 #include <chrono>
+#include <hap.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -103,17 +104,26 @@ void Image_FFmpeg::readLoop()
     auto stream = (*avContext)->streams[videoStream];
     auto codecContext = (*avContext)->streams[videoStream]->codec;
     auto codec = avcodec_find_decoder(codecContext->codec_id);
-    if (codec == nullptr)
+    auto isHap = false;
+
+    if (codec == nullptr && string(codecContext->codec_name).find("Hap") != string::npos)
+    {
+        isHap = true;
+    }
+    else if (codec == nullptr)
     {
         SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Codec not supported for file " << _filename << Log::endl;
         return;
     }
 
-    AVDictionary* optionsDict = nullptr;
-    if (avcodec_open2(codecContext, codec, &optionsDict) < 0)
+    if (codec)
     {
-        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open codec for file " << _filename << Log::endl;
-        return;
+        AVDictionary* optionsDict = nullptr;
+        if (avcodec_open2(codecContext, codec, &optionsDict) < 0)
+        {
+            SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open codec for file " << _filename << Log::endl;
+            return;
+        }
     }
 
     AVFrame* frame;
@@ -131,10 +141,14 @@ void Image_FFmpeg::readLoop()
     int numBytes = avpicture_get_size(PIX_FMT_RGB24, codecContext->width, codecContext->height);
     vector<unsigned char> buffer(numBytes);
 
-    struct SwsContext* swsContext = sws_getContext(codecContext->width, codecContext->height, codecContext->pix_fmt, codecContext->width, codecContext->height,
-                                                   PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+    struct SwsContext* swsContext;
+    if (!isHap)
+    {
+        swsContext = sws_getContext(codecContext->width, codecContext->height, codecContext->pix_fmt, codecContext->width, codecContext->height,
+                                    PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
     
-    avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, codecContext->width, codecContext->height);
+        avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, codecContext->width, codecContext->height);
+    }
 
     AVPacket packet;
     av_init_packet(&packet);
@@ -151,29 +165,92 @@ void Image_FFmpeg::readLoop()
         {
             if (packet.stream_index == videoStream)
             {
-                int frameFinished;
-                avcodec_decode_video2(codecContext, frame, &frameFinished, &packet);
-
-                if (frameFinished)
+                //
+                // If the codec is handled by FFmpeg
+                if (!isHap)
                 {
-                    sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, codecContext->height, rgbFrame->data, rgbFrame->linesize);
+                    int frameFinished;
+                    avcodec_decode_video2(codecContext, frame, &frameFinished, &packet);
 
-                    oiio::ImageSpec spec(codecContext->width, codecContext->height, 3, oiio::TypeDesc::UINT8);
-                    oiio::ImageBuf img(spec);
-                    unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
-                    copy(buffer.begin(), buffer.end(), pixels);
+                    if (frameFinished)
+                    {
+                        sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, codecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                    // We wait until we get the green light for displaying this frame
-                    unsigned long long waitTime = 0;
-                    if (packet.pts != AV_NOPTS_VALUE)
-                        waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
-                    this_thread::sleep_for(chrono::microseconds(waitTime));
-                    previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+                        oiio::ImageSpec spec(codecContext->width, codecContext->height, 3, oiio::TypeDesc::UINT8);
+                        oiio::ImageBuf img(spec);
+                        unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
+                        copy(buffer.begin(), buffer.end(), pixels);
 
-                    unique_lock<mutex> lock(_writeMutex);
-                    _bufferImage.swap(img);
-                    _imageUpdated = true;
-                    updateTimestamp();
+                        // We wait until we get the green light for displaying this frame
+                        unsigned long long waitTime = 0;
+                        if (packet.pts != AV_NOPTS_VALUE)
+                            waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
+                        this_thread::sleep_for(chrono::microseconds(waitTime));
+                        previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+
+                        unique_lock<mutex> lock(_writeMutex);
+                        _bufferImage.swap(img);
+                        _imageUpdated = true;
+                        updateTimestamp();
+                    }
+                }
+                //
+                // If the codec is marked as Hap / Hap alpha / Hap Q
+                else if (isHap)
+                {
+                    // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
+                    // First, we check the texture format type
+                    unsigned int textureFormat = 0;
+                    if (HapGetFrameTextureFormat(packet.data, packet.size, &textureFormat) != HapResult_No_Error)
+                    {
+                        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
+                    }
+                    else
+                    {
+                        // Check if we need to resize the reader buffer
+                        // We set the size so as to have just enough place for the given texture format
+                        oiio::ImageSpec spec;
+                        if (textureFormat == HapTextureFormat_RGB_DXT1)
+                        {
+                            spec = oiio::ImageSpec(codecContext->width, (int)(ceil((float)codecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
+                            spec.channelnames = {"RGB_DXT1"};
+                        }
+                        else if (textureFormat == HapTextureFormat_RGBA_DXT5)
+                        {
+                            spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
+                            spec.channelnames = {"RGBA_DXT5"};
+                        }
+                        else if (textureFormat == HapTextureFormat_YCoCg_DXT5)
+                        {
+                            spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
+                            spec.channelnames = {"YCoCg_DXT5"};
+                        }
+                        else
+                            return;
+
+                        oiio::ImageBuf img(spec);
+
+                        unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
+                        unsigned long bytesUsed = 0;
+                        if (HapDecode(packet.data, packet.size, NULL, NULL, img.localpixels(), outputBufferBytes, &bytesUsed, &textureFormat) != HapResult_No_Error)
+                        {
+                            SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
+                        }
+                        else
+                        {
+                            // We wait until we get the green light for displaying this frame
+                            unsigned long long waitTime = 0;
+                            if (packet.pts != AV_NOPTS_VALUE)
+                                waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
+                            this_thread::sleep_for(chrono::microseconds(waitTime));
+                            previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+
+                            unique_lock<mutex> lock(_writeMutex);
+                            _bufferImage.swap(img);
+                            _imageUpdated = true;
+                            updateTimestamp();
+                        }
+                    }
                 }
             }
 
@@ -189,7 +266,8 @@ void Image_FFmpeg::readLoop()
 
     av_free(rgbFrame);
     av_free(frame);
-    avcodec_close(codecContext);
+    if (!isHap)
+        avcodec_close(codecContext);
 }
 
 /*************/
