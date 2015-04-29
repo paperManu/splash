@@ -44,6 +44,7 @@ class Image : public BufferObject
          * Constructor
          */
         Image();
+        Image(bool linked);
         Image(oiio::ImageSpec spec);
 
         /**
@@ -152,6 +153,7 @@ class Image : public BufferObject
         bool _imageUpdated {false};
         bool _srgb {true};
         bool _benchmark {false};
+        bool _linkedToWorldObject {false};
 
         void createDefaultImage(); //< Create a default pattern
 
@@ -163,6 +165,11 @@ class Image : public BufferObject
     private:
         // Deserialization is done in this buffer, to avoid realloc
         oiio::ImageBuf _bufferDeserialize;
+
+        /**
+         * Base init for the class
+         */
+        void init();
         
         /**
          * Register new functors to modify attributes

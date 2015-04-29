@@ -90,6 +90,13 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GPHOTO_CFLAGS) $(GLIB_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GPHOTO_LIBS) $(GLIB_LIBS)
 endif
 
+## FFmpeg related
+if HAVE_FFMPEG
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_ffmpeg.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(FFMPEG_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
 # OSX
 if HAVE_OSX
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -132,6 +139,12 @@ splash_CXXFLAGS = \
 splash_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
 
+## FFmpeg related
+if HAVE_FFMPEG
+splash_CXXFLAGS += $(FFMPEG_CFLAGS)
+splash_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
 if HAVE_OSX
 splash_LDFLAGS += \
 	-F$(top_srcdir)/external/syphon/build/Release \
@@ -160,6 +173,12 @@ splash_scene_CXXFLAGS = \
 splash_scene_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
 
+## FFmpeg related
+if HAVE_FFMPEG
+splash_scene_CXXFLAGS += $(FFMPEG_CFLAGS)
+splash_scene_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
 if HAVE_OSX
 splash_scene_LDFLAGS += \
 	-F$(top_srcdir)/external/syphon/build/Release \
@@ -180,6 +199,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_shmdata.h \
 	$(top_srcdir)/include/link.h \

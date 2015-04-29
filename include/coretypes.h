@@ -100,6 +100,11 @@ typedef std::shared_ptr<Texture> TexturePtr;
 typedef std::shared_ptr<Texture_Image> Texture_ImagePtr;
 typedef std::shared_ptr<Window> WindowPtr;
 
+#if HAVE_FFMPEG
+class Image_FFmpeg;
+typedef std::shared_ptr<Image_FFmpeg> Image_FFmpegPtr;
+#endif
+
 #if HAVE_GPHOTO
 class ColorCalibrator;
 class Image_GPhoto;

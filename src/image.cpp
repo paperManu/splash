@@ -18,21 +18,30 @@ namespace Splash {
 /*************/
 Image::Image()
 {
-    _type = "image";
-
-    oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
+    init();
     createDefaultImage();
+}
 
-    registerAttributes();
+/*************/
+Image::Image(bool linked)
+{
+    init();
+    createDefaultImage();
+    _linkedToWorldObject = linked;
 }
 
 /*************/
 Image::Image(oiio::ImageSpec spec)
 {
-    _type = "image";
-    oiio::attribute("threads", 0);
+    init();
     set(spec.width, spec.height, spec.nchannels, spec.format);
+}
 
+/*************/
+void Image::init()
+{
+    _type = "image";
+    oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
     registerAttributes();
 }
 
@@ -200,7 +209,10 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    return readFile(filename);
+    if (!_linkedToWorldObject)
+        return readFile(filename);
+    else
+        return true;
 }
 
 /*************/

@@ -3,7 +3,10 @@
 
 #include "image.h"
 #if HAVE_GPHOTO
-#include "image_gphoto.h"
+    #include "image_gphoto.h"
+#endif
+#if HAVE_FFMPEG
+    #include "image_ffmpeg.h"
 #endif
 #include "image_shmdata.h"
 #include "link.h"
@@ -174,6 +177,10 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+#if HAVE_FFMPEG
+        else if (type == string("image_ffmpeg"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
+#endif
 #if HAVE_GPHOTO
         else if (type == string("image_gphoto"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());

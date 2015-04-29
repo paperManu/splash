@@ -146,6 +146,12 @@ if test "x${have_zmq}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing libzmq])
 fi
 
+# FFMPEG, for very simple internal file reading
+PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
+    AC_DEFINE([HAVE_FFMPEG], [1], [Defined to 1 if ffmpeg is detected]),
+    AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected]))
+AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
+
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
 if test "x$MARKDOWN" = "xtrue" ; then
