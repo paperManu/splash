@@ -1,5 +1,9 @@
 #include "widgets.h"
 
+#include <array>
+#include <fstream>
+#include <imgui.h>
+
 #include "camera.h"
 #include "log.h"
 #include "object.h"
@@ -11,8 +15,6 @@
 #if HAVE_GPHOTO
 #include "colorcalibrator.h"
 #endif
-
-#include <imgui.h>
 
 using namespace std;
 
@@ -670,6 +672,119 @@ void GuiGraph::render()
 
             ImGui::PlotLines("", values.data(), values.size(), values.size(), (duration.first + " - " + to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
         }
+    }
+}
+
+/*************/
+void GuiTemplate::render()
+{
+    if (!_templatesLoaded)
+    {
+        loadTemplates();
+        _templatesLoaded = true;
+    }
+
+    if (_textures.size() == 0)
+        return;
+
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        bool firstTemplate = true;
+        for (auto& name : _names)
+        {
+            if (!firstTemplate)
+                ImGui::SameLine(0, 2);
+            firstTemplate = false;
+
+            if (ImGui::ImageButton((void*)(intptr_t)_textures[name]->getTexId(), ImVec2(128, 128)))
+            {
+                string configPath = string(DATADIR) + "templates/" + name + ".json";
+                auto scene = _scene.lock();
+                scene->sendMessageToWorld("loadConfig", {configPath});
+            }
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(_descriptions[name].data());
+        }
+    }
+}
+
+/*************/
+void GuiTemplate::loadTemplates()
+{
+    auto examples = vector<string>();
+    auto descriptions = vector<string>();
+    
+    // Try to read the template file
+    ifstream in(string(DATADIR) + "templates.txt", ios::in | ios::binary);
+    if (in)
+    {
+        auto newTemplate = false;
+        auto templateName = string();
+        auto templateDescription = string();
+        auto endTemplate = false;
+
+        for (array<char, 256> line; in.getline(&line[0], 256);)
+        {
+            auto strLine = string(line.data());
+            if (!newTemplate)
+            {
+                if (strLine == "{")
+                {
+                    newTemplate = true;
+                    endTemplate = false;
+                    templateName = "";
+                    templateDescription = "";
+                }
+            }
+            else
+            {
+                if (strLine == "}")
+                    endTemplate = true;
+                else if (templateName == "")
+                    templateName = strLine;
+                else
+                    templateDescription = strLine;
+            }
+
+            if (endTemplate)
+            {
+                examples.push_back(templateName);
+                descriptions.push_back(templateDescription);
+                templateName = "";
+                templateDescription = "";
+                newTemplate = false;
+            }
+        }
+    }
+    else
+    {
+        SLog::log << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
+        return;
+    }
+
+    _textures.clear();
+    _descriptions.clear();
+
+    for (unsigned int i = 0; i < examples.size(); ++i)
+    {
+        auto& example = examples[i];
+        auto& description = descriptions[i];
+
+        glGetError();
+        auto image = make_shared<Image>();
+        image->setName("template_" + example);
+        if (!image->read(string(DATADIR) + "templates/" + example + ".png"))
+            continue;
+
+        auto texture = make_shared<Texture_Image>();
+        texture->linkTo(image);
+        texture->update();
+        texture->flushPbo();
+
+        _names.push_back(example);
+        _textures[example] = texture;
+        _descriptions[example] = description;
     }
 }
 

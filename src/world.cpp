@@ -726,6 +726,9 @@ void World::registerAttributes()
     });
 
     _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 0)
+            _configFilename = args[0].asString();
+
         SLog::log << "Saving configuration" << Log::endl;
         SThread::pool.enqueueWithoutId([&]() {
             saveConfig();

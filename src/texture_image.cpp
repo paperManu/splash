@@ -235,10 +235,7 @@ void Texture_Image::update()
     _img->getAttribute("flop", flop);
 
     if (!(bool)glIsTexture(_glTex))
-    {
         glGenTextures(1, &_glTex);
-        return;
-    }
 
     // Store the image data size
     int imageDataSize = spec.width * spec.height * spec.pixel_bytes();

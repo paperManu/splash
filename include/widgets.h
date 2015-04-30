@@ -29,15 +29,17 @@
 #define SPLASH_GLV_FONTSIZE 8.0
 #define SPLASH_GLV_FONTWIDTH 2.0
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <deque>
 #include <functional>
 #include <memory>
 #include <unordered_map>
+
+#include "config.h"
+#include "coretypes.h"
+#include "basetypes.h"
+#include "image.h"
+#include "texture.h"
 
 namespace Splash
 {
@@ -137,6 +139,24 @@ class GuiGraph : public GuiWidget
         std::atomic_uint _target;
         unsigned int _maxHistoryLength {300};
         std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
+};
+
+/*************/
+class GuiTemplate : public GuiWidget
+{
+    public:
+        GuiTemplate(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        SceneWeakPtr _scene;
+        bool _templatesLoaded {false};
+        std::vector<std::string> _names;
+        std::map<std::string, Texture_ImagePtr> _textures;
+        std::map<std::string, std::string> _descriptions;
+
+        void loadTemplates();
 };
 
 } // end of namespace

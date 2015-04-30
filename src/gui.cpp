@@ -159,7 +159,7 @@ void Gui::loadConfiguration()
 void Gui::saveConfiguration()
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("save");
+    scene->sendMessageToWorld("save", {_configurationPath});
 }
 
 /*************/
@@ -660,6 +660,11 @@ void Gui::initImGui(int width, int height)
 /*************/
 void Gui::initImWidgets()
 {
+    // Template configurations
+    auto templateBox = make_shared<GuiTemplate>("Templates");
+    templateBox->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
+
     // Some help regarding keyboard shortcuts
     shared_ptr<GuiTextBox> helpBox = make_shared<GuiTextBox>("Shortcuts");
     helpBox->setTextFunc([]()
