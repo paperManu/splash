@@ -699,6 +699,10 @@ void GuiTemplate::render()
             if (ImGui::ImageButton((void*)(intptr_t)_textures[name]->getTexId(), ImVec2(128, 128)))
             {
                 string configPath = string(DATADIR) + "templates/" + name + ".json";
+#if HAVE_OSX
+                if (!ifstream(configPath, ios::in | ios::binary))
+                    configPath = "../Resources/templates/" + name + ".json";
+#endif
                 auto scene = _scene.lock();
                 scene->sendMessageToWorld("loadConfig", {configPath});
             }
@@ -775,7 +779,12 @@ void GuiTemplate::loadTemplates()
         auto image = make_shared<Image>();
         image->setName("template_" + example);
         if (!image->read(string(DATADIR) + "templates/" + example + ".png"))
+        {
+#if HAVE_OSX
+            if (!image->read("../Resources/templates/" + example + ".png"))
+#endif
             continue;
+        }
 
         auto texture = make_shared<Texture_Image>();
         texture->linkTo(image);
