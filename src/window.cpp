@@ -438,18 +438,26 @@ void Window::swapBuffers()
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
 
     // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
+#if HAVE_OSX
+    glDrawBuffer(GL_BACK);
+#else
     if (windowIndex != 0)
         glDrawBuffer(GL_FRONT);
     else
         glDrawBuffer(GL_BACK);
+#endif
 
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
                       0, 0, _windowRect[2], _windowRect[3],
                       GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
+#if HAVE_OSX
+    glfwSwapBuffers(_window->get());
+#else
     if (windowIndex == 0)
         glfwSwapBuffers(_window->get());
+#endif
 
     _window->releaseContext();
 }
