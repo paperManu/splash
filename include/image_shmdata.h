@@ -123,7 +123,7 @@ class Image_Shmdata : public Image
         bool _is422 {false};
 
         // Hap specific attributes
-        unsigned int _textureFormat {0};
+        std::string _textureFormat {""};
 
         /**
          * Compute some LUT (currently only the YCbCr to RGB one)

@@ -13,6 +13,7 @@
     #include <glm/glm.hpp>
 #endif
 
+#include "cgUtils.h"
 #include "log.h"
 #include "osUtils.h"
 #include "timer.h"
@@ -300,12 +301,9 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
 
     // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
     // First, we check the texture format type
-    unsigned int textureFormat = 0;
-    if (HapGetFrameTextureFormat(data, data_size, &textureFormat) != HapResult_No_Error)
-    {
-        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
+    auto textureFormat = string("");
+    if (!hapDecodeFrame(data, data_size, nullptr, 0, textureFormat))
         return;
-    }
 
     // Check if we need to resize the reader buffer
     // We set the size so as to have just enough place for the given texture format
@@ -315,34 +313,22 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
         ctx->_textureFormat = textureFormat;
 
         oiio::ImageSpec spec;
-        if (textureFormat == HapTextureFormat_RGB_DXT1)
-        {
+        if (textureFormat == "RGB_DXT1")
             spec = oiio::ImageSpec(ctx->_width, (int)(ceil((float)ctx->_height / 2.f)), 1, oiio::TypeDesc::UINT8);
-            spec.channelnames = {"RGB_DXT1"};
-        }
-        else if (textureFormat == HapTextureFormat_RGBA_DXT5)
-        {
+        else if (textureFormat == "RGBA_DXT5")
             spec = oiio::ImageSpec(ctx->_width, ctx->_height, 1, oiio::TypeDesc::UINT8);
-            spec.channelnames = {"RGBA_DXT5"};
-        }
-        else if (textureFormat == HapTextureFormat_YCoCg_DXT5)
-        {
+        else if (textureFormat == "YCoCg_DXT5")
             spec = oiio::ImageSpec(ctx->_width, ctx->_height, 1, oiio::TypeDesc::UINT8);
-            spec.channelnames = {"YCoCg_DXT5"};
-        }
         else
             return;
 
+        spec.channelnames = {textureFormat};
         ctx->_readerBuffer.reset(spec);
     }
 
     unsigned long outputBufferBytes = bufSpec.width * bufSpec.height * bufSpec.nchannels;
-    unsigned long bytesUsed = 0;
-    if (HapDecode(data, data_size, NULL, NULL, ctx->_readerBuffer.localpixels(), outputBufferBytes, &bytesUsed, &textureFormat) != HapResult_No_Error)
-    {
-        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
+    if (!hapDecodeFrame(data, data_size, ctx->_readerBuffer.localpixels(), outputBufferBytes, textureFormat))
         return;
-    }
     
     ctx->_bufferImage.swap(ctx->_readerBuffer);
     ctx->_imageUpdated = true;
