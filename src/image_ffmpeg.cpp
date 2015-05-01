@@ -10,6 +10,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
+#include "cgUtils.h"
 #include "log.h"
 #include "timer.h"
 #include "threadpool.h"
@@ -200,43 +201,27 @@ void Image_FFmpeg::readLoop()
                 {
                     // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
                     // First, we check the texture format type
-                    unsigned int textureFormat = 0;
-                    if (HapGetFrameTextureFormat(packet.data, packet.size, &textureFormat) != HapResult_No_Error)
-                    {
-                        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
-                    }
-                    else
+                    std::string textureFormat;
+                    if (hapDecodeFrame(packet.data, packet.size, nullptr, 0, textureFormat))
                     {
                         // Check if we need to resize the reader buffer
                         // We set the size so as to have just enough place for the given texture format
                         oiio::ImageSpec spec;
-                        if (textureFormat == HapTextureFormat_RGB_DXT1)
-                        {
+                        if (textureFormat == "RGB_DXT1")
                             spec = oiio::ImageSpec(codecContext->width, (int)(ceil((float)codecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
-                            spec.channelnames = {"RGB_DXT1"};
-                        }
-                        else if (textureFormat == HapTextureFormat_RGBA_DXT5)
-                        {
+                        if (textureFormat == "RGB_DXT5")
                             spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
-                            spec.channelnames = {"RGBA_DXT5"};
-                        }
-                        else if (textureFormat == HapTextureFormat_YCoCg_DXT5)
-                        {
+                        if (textureFormat == "YCoCg_DXT5")
                             spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
-                            spec.channelnames = {"YCoCg_DXT5"};
-                        }
                         else
                             return;
 
+                        spec.channelnames = {textureFormat};
                         oiio::ImageBuf img(spec);
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
-                        unsigned long bytesUsed = 0;
-                        if (HapDecode(packet.data, packet.size, NULL, NULL, img.localpixels(), outputBufferBytes, &bytesUsed, &textureFormat) != HapResult_No_Error)
-                        {
-                            SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
-                        }
-                        else
+
+                        if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
                         {
                             // We wait until we get the green light for displaying this frame
                             unsigned long long waitTime = 0;
