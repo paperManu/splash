@@ -34,6 +34,7 @@ lib_LTLIBRARIES = \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
+	cgUtils.cpp \
 	geometry.cpp \
 	gui.cpp \
 	image.cpp \

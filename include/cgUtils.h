@@ -149,40 +149,11 @@ struct RgbValue
 };
 
 /*************/
+// Hap chunk callback
+void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* info);
 // Decode a Hap frame
 // If out is null, only sets the format
-inline bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSize, std::string& format)
-{
-    // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
-    // First, we check the texture format type
-    unsigned int textureFormat = 0;
-    if (HapGetFrameTextureFormat(in, inSize, &textureFormat) != HapResult_No_Error)
-    {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
-        return false;
-    }
-
-    if (textureFormat == HapTextureFormat_RGB_DXT1)
-        format = "RGB_DXT1";
-    else if (textureFormat == HapTextureFormat_RGBA_DXT5)
-        format = "RGB_DXT5";
-    else if (textureFormat == HapTextureFormat_YCoCg_DXT5)
-        format = "YCoCg_DXT5";
-    else
-        return false;
-
-    if (out == nullptr)
-        return true;
-
-    unsigned long bytesUsed = 0;
-    if (HapDecode(in, inSize, NULL, NULL, out, outSize, &bytesUsed, &textureFormat) != HapResult_No_Error)
-    {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
-        return false;
-    }
-
-    return true;
-}
+bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSize, std::string& format);
 
 } // end of namespace
 
