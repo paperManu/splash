@@ -4,6 +4,8 @@
 #include "osUtils.h"
 #include "timer.h"
 
+#define SHMDATA_DEFAULT_SIZE 16000000
+
 using namespace std;
 
 namespace Splash {
@@ -19,8 +21,6 @@ Mesh_Shmdata::Mesh_Shmdata()
 /*************/
 Mesh_Shmdata::~Mesh_Shmdata()
 {
-    if (_reader != nullptr)
-        shmdata_any_reader_close(_reader);
 }
 
 /*************/
@@ -30,21 +30,23 @@ bool Mesh_Shmdata::read(const string& filename)
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
 
-    if (_reader != nullptr)
-        shmdata_any_reader_close(_reader);
+    _reader.reset(new shmdata::Follower(filepath,
+                                        [&](void* data, size_t size) {
+                                            onData(data, size, this);
+                                        },
+                                        [&](const string& caps) {
+                                            _caps = caps;
+                                        },
+                                        [&](){},
+                                        &_logger));
 
-    _reader = shmdata_any_reader_init();
-    shmdata_any_reader_run_gmainloop(_reader, SHMDATA_TRUE);
-    shmdata_any_reader_set_on_data_handler(_reader, Mesh_Shmdata::onData, this);
-    shmdata_any_reader_start(_reader, filepath.c_str());
     _filename = filename;
 
     return true;
 }
 
 /*************/
-void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
-    const char* type_description, void* user_data)
+void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
 {
     // Read the number of vertices and polys
     int* intPtr = (int*)data;
@@ -105,8 +107,6 @@ void Mesh_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data
     ctx->_bufferMesh = std::move(newMesh);
     ctx->_meshUpdated = true;
     ctx->updateTimestamp();
-
-    shmdata_any_reader_free(shmbuf);
 
     if (STimer::timer.isDebug())
         STimer::timer >> "mesh_shmdata " + ctx->_name;

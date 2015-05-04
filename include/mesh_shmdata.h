@@ -32,7 +32,8 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include <shmdata/any-data-reader.h>
+#include <shmdata/console-logger.hpp>
+#include <shmdata/follower.hpp>
 
 #include "mesh.h"
 
@@ -67,7 +68,8 @@ class Mesh_Shmdata : public Mesh
             if (this != &g)
             {
                 _filename = g._filename;
-                _reader = g._reader;
+                _logger = std::move(g._logger);
+                _reader = std::move(g._reader);
             }
             return *this;
         }
@@ -78,14 +80,15 @@ class Mesh_Shmdata : public Mesh
         bool read(const std::string& filename);
 
     protected:
-        std::string _filename;
-        shmdata_any_reader_t* _reader {nullptr};
+        std::string _filename {""};
+        std::string _caps {""};
+        shmdata::ConsoleLogger _logger;
+        std::unique_ptr<shmdata::Follower> _reader {nullptr};
 
         /**
          * Shmdata callback
          */
-        static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
-            const char* type_description, void* user_data);
+        static void onData(void* data, int data_size, void* user_data);
 
         /**
          * Register new functors to modify attributes

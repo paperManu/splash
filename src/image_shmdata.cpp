@@ -37,11 +37,6 @@ Image_Shmdata::Image_Shmdata()
 /*************/
 Image_Shmdata::~Image_Shmdata()
 {
-    if (_reader != nullptr)
-        shmdata_any_reader_close(_reader);
-    if (_writer != nullptr)
-        shmdata_any_writer_close(_writer);
-
 #ifdef DEBUG
     SLog::log << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 #endif
@@ -54,97 +49,25 @@ bool Image_Shmdata::read(const string& filename)
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
 
-    if (_reader != nullptr)
-        shmdata_any_reader_close(_reader);
-
-    _reader = shmdata_any_reader_init();
-    shmdata_any_reader_run_gmainloop(_reader, SHMDATA_TRUE);
-    shmdata_any_reader_set_on_data_handler(_reader, Image_Shmdata::onData, this);
-    shmdata_any_reader_start(_reader, filepath.c_str());
+    _reader.reset(new shmdata::Follower(filepath,
+                                        [&](void* data, size_t size) {
+                                            onData(data, size, this);
+                                        },
+                                        [&](const string& caps) {
+                                            onCaps(caps, this);
+                                        },
+                                        [&](){},
+                                        &_logger));
     _filename = filename;
 
     return true;
 }
 
 /*************/
-bool Image_Shmdata::write(const oiio::ImageBuf& img, const string& filename)
-{
-    if (img.localpixels() == NULL)
-        return false;
-
-    lock_guard<mutex> lock(_readMutex);
-    oiio::ImageSpec spec = img.spec();
-    if (spec.width != _writerSpec.width || spec.height != _writerSpec.height || spec.nchannels != _writerSpec.nchannels || _writer == NULL || _filename != filename)
-        if (!initShmWriter(spec, filename))
-            return false;
-
-    memcpy(_writerBuffer.localpixels(), img.localpixels(), _writerInputSize);
-    unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-    shmdata_any_writer_push_data(_writer, (void*)_writerBuffer.localpixels(), _writerInputSize, (currentTime - _writerStartTime) * 1e6, NULL, NULL);
-    return true;
-}
-
-/*************/
-bool Image_Shmdata::initShmWriter(const oiio::ImageSpec& spec, const string& filename)
-{
-    if (_writer != NULL)
-        shmdata_any_writer_close(_writer);
-
-    _writer = shmdata_any_writer_init();
-    
-    string dataType;
-    if (spec.format == "uint8" && spec.nchannels == 4)
-    {
-        dataType += "video/x-raw-rgb,bpp=32,endianness=4321,depth=32,red_mask=-16777216,green_mask=16711680,blue_mask=65280,";
-        _writerInputSize = 4;
-    }
-    else if (spec.format == "uint16" && spec.nchannels == 1)
-    {
-        dataType += "video/x-raw-gray,bpp=16,endianness=4321,depth=16,";
-        _writerInputSize = 2;
-    }
-    else
-    {
-        _writerInputSize = 0;
-        return false;
-    }
-
-    dataType += "width=" + to_string(spec.width) + ",";
-    dataType += "height=" + to_string(spec.height) + ",";
-    dataType += "framerate=60/1";
-    _writerInputSize *= spec.width * spec.height;
-
-    shmdata_any_writer_set_data_type(_writer, dataType.c_str());
-    if (!shmdata_any_writer_set_path(_writer, filename.c_str()))
-    {
-        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Unable to write to shared memory " << filename << Log::endl;
-        _filename = "";
-        return false;
-    }
-
-    _filename = filename;
-    _writerSpec = spec;
-    shmdata_any_writer_start(_writer);
-    _writerStartTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-
-    _writerBuffer.reset(_writerSpec);
-
-    return true;
-}
-
-/*************/
-void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
-    const char* type_description, void* user_data)
+void Image_Shmdata::onCaps(const string& dataType, void* user_data)
 {
     Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
 
-    if (STimer::timer.isDebug())
-    {
-        STimer::timer.sinceLastSeen("image_shmdata_period " + ctx->_name);
-        STimer::timer << "image_shmdata " + ctx->_name;
-    }
-
-    string dataType(type_description);
     if (dataType != ctx->_inputDataType)
     {
         ctx->_inputDataType = dataType;
@@ -162,140 +85,188 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ctx->_is422 = false;
         
         regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regGreen, regBlue, regFormatYUV;
+        regex regVideo, regFormat;
         try
         {
-            // TODO: replace these regex with some GCC 4.7 compatible ones
-            // GCC 4.6 does not support the full regular expression. Some work around is needed,
-            // this is why this may seem complicated for nothing ...
-            regRgb = regex("(video/x-raw-rgb)(.*)", regex_constants::extended);
-            regYUV = regex("(video/x-raw-yuv)(.*)", regex_constants::extended);
-            regHap = regex("(video/x-gst-fourcc-Hap)(.*)", regex_constants::extended);
-            regFormatYUV = regex("(.*format=\\(fourcc\\))(.*)", regex_constants::extended);
-            regBpp = regex("(.*bpp=\\(int\\))(.*)", regex_constants::extended);
+            regVideo = regex("(.*video/x-raw)(.*)", regex_constants::extended);
+            regHap = regex("(.*video/x-gst-fourcc-HapY)(.*)", regex_constants::extended);
+            regFormat = regex("(.*format=\\(string\\))(.*)", regex_constants::extended);
             regWidth = regex("(.*width=\\(int\\))(.*)", regex_constants::extended);
             regHeight = regex("(.*height=\\(int\\))(.*)", regex_constants::extended);
-            regRed = regex("(.*red_mask=\\(int\\))(.*)", regex_constants::extended);
-            regGreen = regex("(.*green_mask=\\(int\\))(.*)", regex_constants::extended);
-            regBlue = regex("(.*blue_mask=\\(int\\))(.*)", regex_constants::extended);
         }
         catch (const regex_error& e)
         {
-            SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error code: " << e.code() << Log::endl;
-            shmdata_any_reader_free(shmbuf);
+            auto errorString = string();
+            switch (e.code())
+            {
+                default:
+                    errorString = "unknown error";
+                    break;
+                case regex_constants::error_collate:
+                    errorString = "the expression contains an invalid collating element name";
+                    break;
+                case regex_constants::error_ctype:
+                    errorString = "the expression contains an invalid character class name";
+                    break;
+                case regex_constants::error_escape:
+                    errorString = "the expression contains an invalid escaped character or a trailing escape";
+                    break;
+                case regex_constants::error_backref:
+                    errorString = "the expression contains an invalid back reference";
+                    break;
+                case regex_constants::error_brack:
+                    errorString = "the expression contains mismatched square brackets ('[' and ']')";
+                    break;
+                case regex_constants::error_paren:
+                    errorString = "the expression contains mismatched parentheses ('(' and ')')";
+                    break;
+                case regex_constants::error_brace:
+                    errorString = "the expression contains mismatched curly braces ('{' and '}')";
+                    break;
+                case regex_constants::error_badbrace:
+                    errorString = "the expression contains an invalid range in a {} expression";
+                    break;
+                case regex_constants::error_range:
+                    errorString = "the expression contains an invalid character range (e.g. [b-a])";
+                    break;
+                case regex_constants::error_space:
+                    errorString = "there was not enough m2emory to convert the expression into a finite state machine";
+                    break;
+                case regex_constants::error_badrepeat:
+                    errorString = "one of *?+{ was not preceded by a valid regular expression";
+                    break;
+                case regex_constants::error_complexity:
+                    errorString = "the complexity of an attempted match exceeded a predefined level";
+                    break;
+                case regex_constants::error_stack:
+                    errorString = "there was not enough memory to perform a match";
+                    break;
+            }
+            SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
             return;
         }
 
-        if (regex_match(dataType, regRgb) || regex_match(dataType, regYUV))
+        smatch match;
+        string substr, format;
+
+        if (regex_match(dataType, regVideo))
         {
 
-            smatch match;
-            string substr, format;
+            if (regex_match(dataType, match, regFormat))
+            {
+                ssub_match subMatch = match[2];
+                substr = subMatch.str();
+                substr = substr.substr(substr.find(")") + 1, substr.find(",") - 1);
 
-            if (regex_match(dataType, match, regBpp))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_bpp);
-            }
-            if (regex_match(dataType, match, regWidth))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_width);
-            }
-            if (regex_match(dataType, match, regHeight))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_height);
-            }
-            if (regex_match(dataType, match, regRed))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_red);
-            }
-            else if (regex_match(dataType, regYUV))
-            {
-                ctx->_isYUV = true;
-            }
-            if (regex_match(dataType, match, regGreen))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_green);
-            }
-            if (regex_match(dataType, match, regBlue))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_blue);
-            }
-
-            if (ctx->_bpp == 24)
-                ctx->_channels = 3;
-            else if (ctx->_bpp == 32)
-                ctx->_channels = 4;
-            else if (ctx->_isYUV)
-            {
-                ctx->_bpp = 12;
-                ctx->_channels = 3;
-
-                if (regex_match(dataType, match, regFormatYUV))
+                if ("RGB" == substr)
                 {
-                    char format[16];
-                    ssub_match subMatch = match[2];
-                    substr = subMatch.str();
-                    sscanf(substr.c_str(), ")%s", format);
-                    if (strstr(format, (char*)"I420") != nullptr)
-                        ctx->_is420 = true;
-                    else if (strstr(format, (char*)"UYVY") != nullptr)
-                        ctx->_is422 = true;
+                    ctx->_bpp = 24;
+                    ctx->_channels = 3;
+                    ctx->_isHap = false;
+                    ctx->_isYUV = false;
+                    ctx->_is420 = false;
+                    ctx->_is422 = false;
+                    ctx->_red = 0;
+                    ctx->_green = 1;
+                    ctx->_blue = 2;
+                }
+                if ("BGR" == substr)
+                {
+                    ctx->_bpp = 24;
+                    ctx->_channels = 3;
+                    ctx->_isHap = false;
+                    ctx->_isYUV = false;
+                    ctx->_is420 = false;
+                    ctx->_is422 = false;
+                    ctx->_red = 2;
+                    ctx->_green = 1;
+                    ctx->_blue = 0;
+                }
+                else if ("I420" == substr)
+                {
+                    ctx->_bpp = 12;
+                    ctx->_channels = 3;
+                    ctx->_isHap = false;
+                    ctx->_isYUV = true;
+                    ctx->_is420 = true;
+                    ctx->_is422 = false;
+                    ctx->_red = 0;
+                    ctx->_green = 1;
+                    ctx->_blue = 2;
+                }
+                else if ("UYVY" == substr)
+                {
+                    ctx->_bpp = 12;
+                    ctx->_channels = 3;
+                    ctx->_isHap = false;
+                    ctx->_isYUV = true;
+                    ctx->_is420 = false;
+                    ctx->_is422 = true;
+                    ctx->_red = 0;
+                    ctx->_green = 1;
+                    ctx->_blue = 2;
                 }
             }
         }
         else if (regex_match(dataType, regHap))
         {
+            ctx->_bpp = 0;
+            ctx->_channels = 0;
             ctx->_isHap = true;
+            ctx->_isYUV = false;
+            ctx->_is420 = false;
+            ctx->_is422 = false;
+            ctx->_red = 0;
+            ctx->_green = 0;
+            ctx->_blue = 0;
+        }
 
-            smatch match;
-            string substr, format;
-            if (regex_match(dataType, match, regWidth))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_width);
-            }
-            if (regex_match(dataType, match, regHeight))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_height);
-            }
+        if (regex_match(dataType, match, regWidth))
+        {
+            ssub_match subMatch = match[2];
+            substr = subMatch.str();
+            substr = substr.substr(substr.find(")") + 1, substr.find(","));
+            ctx->_width = stoi(substr);
+        }
+
+        if (regex_match(dataType, match, regHeight))
+        {
+            ssub_match subMatch = match[2];
+            substr = subMatch.str();
+            substr = substr.substr(substr.find(")") + 1, substr.find(","));
+            ctx->_height = stoi(substr);
         }
     }
+}
 
-    /*********/
+/*************/
+void Image_Shmdata::onData(void* data, int data_size, void* user_data)
+{
+    Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
+
+    if (STimer::timer.isDebug())
+    {
+        STimer::timer.sinceLastSeen("image_shmdata_period " + ctx->_name);
+        STimer::timer << "image_shmdata " + ctx->_name;
+    }
+
     // Standard images, RGB or YUV
     if (ctx->_width != 0 && ctx->_height != 0 && ctx->_bpp != 0 && ctx->_channels != 0)
     {
-        readUncompressedFrame(ctx, shmbuf, data, data_size);
+        readUncompressedFrame(ctx, data, data_size);
     }
-    /*********/
     // Hap compressed images
     else if (ctx->_isHap == true)
     {
-        readHapFrame(ctx, shmbuf, data, data_size);
+        readHapFrame(ctx, data, data_size);
     }
-
-    shmdata_any_reader_free(shmbuf);
 
     if (STimer::timer.isDebug())
         STimer::timer >> "image_shmdata " + ctx->_name;
 }
 
 /*************/
-void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size)
+void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
     lock_guard<mutex> lock(ctx->_writeMutex);
 
@@ -336,7 +307,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
 }
 
 /*************/
-void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size)
+void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
     lock_guard<mutex> lock(ctx->_writeMutex);
 

@@ -25,8 +25,8 @@
 #ifndef SPLASH_IMAGE_SHMDATA_H
 #define SPLASH_IMAGE_SHMDATA_H
 
-#include <shmdata/any-data-reader.h>
-#include <shmdata/any-data-writer.h>
+#include <shmdata/console-logger.hpp>
+#include <shmdata/follower.hpp>
 
 #include "config.h"
 #include "image.h"
@@ -65,13 +65,8 @@ class Image_Shmdata : public Image
             if (this != &g)
             {
                 _filename = g._filename;
-                _reader = g._reader;
-                _writer = g._writer;
-    
-                _writerSpec = g._writerSpec;
-                _writerInputSize = g._writerInputSize;
-                _writerStartTime = g._writerStartTime;
-                _writerBuffer.swap(g._writerBuffer);
+                _logger = std::move(g._logger);
+                _reader = std::move(g._reader);
     
                 _readerBuffer.swap(g._readerBuffer);
                 _inputDataType = g._inputDataType;
@@ -93,20 +88,10 @@ class Image_Shmdata : public Image
          */
         bool read(const std::string& filename);
 
-        /**
-         * Write an image to the specified path
-         */
-        bool write(const oiio::ImageBuf& img, const std::string& filename);
-
     private:
         std::string _filename;
-        shmdata_any_reader_t* _reader {nullptr};
-        shmdata_any_writer_t* _writer {nullptr};
-
-        oiio::ImageSpec _writerSpec;
-        int _writerInputSize {0};
-        unsigned long long _writerStartTime {0};
-        oiio::ImageBuf _writerBuffer;
+        shmdata::ConsoleLogger _logger;
+        std::unique_ptr<shmdata::Follower> _reader {nullptr};
 
         oiio::ImageBuf _readerBuffer;
         std::string _inputDataType {""};
@@ -131,25 +116,20 @@ class Image_Shmdata : public Image
         void computeLUT();
 
         /**
-         * Initialize the shm writer according to the spec
-         */
-        bool initShmWriter(const oiio::ImageSpec& spec, const std::string& filename);
-
-        /**
          * Shmdata callback
          */
-        static void onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
-            const char* type_description, void* user_data);
+        static void onCaps(const std::string& dataType, void* user_data);
+        static void onData(void* data, int data_size, void* user_data);
         
         /**
          * Read Hap compressed images
          */
-        static void readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size);
+        static void readHapFrame(Image_Shmdata* ctx, void* data, int data_size);
 
         /**
          * Read uncompressed RGB or YUV images
          */
-        static void readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size);
+        static void readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size);
 
         /**
          * Register new functors to modify attributes
