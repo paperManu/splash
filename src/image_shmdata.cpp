@@ -64,6 +64,14 @@ bool Image_Shmdata::read(const string& filename)
 }
 
 /*************/
+// Small function to work around a bug in GCC's libstdc++
+void removeExtraParenthesis(string& str)
+{
+    if (str.find(")") == 0)
+        str = str.substr(1);
+}
+
+/*************/
 void Image_Shmdata::onCaps(const string& dataType, void* user_data)
 {
     Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
@@ -156,7 +164,8 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
             {
                 ssub_match subMatch = match[2];
                 substr = subMatch.str();
-                substr = substr.substr(substr.find(")") + 1, substr.find(",") - 1);
+                removeExtraParenthesis(substr);
+                substr = substr.substr(0, substr.find(","));
 
                 if ("RGB" == substr)
                 {
@@ -225,7 +234,8 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
         {
             ssub_match subMatch = match[2];
             substr = subMatch.str();
-            substr = substr.substr(substr.find(")") + 1, substr.find(","));
+            removeExtraParenthesis(substr);
+            substr = substr.substr(0, substr.find(","));
             ctx->_width = stoi(substr);
         }
 
@@ -233,7 +243,8 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
         {
             ssub_match subMatch = match[2];
             substr = subMatch.str();
-            substr = substr.substr(substr.find(")") + 1, substr.find(","));
+            removeExtraParenthesis(substr);
+            substr = substr.substr(0, substr.find(","));
             ctx->_height = stoi(substr);
         }
     }
