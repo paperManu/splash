@@ -171,63 +171,53 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
                 {
                     ctx->_bpp = 24;
                     ctx->_channels = 3;
-                    ctx->_isHap = false;
-                    ctx->_isYUV = false;
-                    ctx->_is420 = false;
-                    ctx->_is422 = false;
                     ctx->_red = 0;
                     ctx->_green = 1;
                     ctx->_blue = 2;
                 }
-                if ("BGR" == substr)
+                else if ("BGR" == substr)
                 {
                     ctx->_bpp = 24;
                     ctx->_channels = 3;
-                    ctx->_isHap = false;
-                    ctx->_isYUV = false;
-                    ctx->_is420 = false;
-                    ctx->_is422 = false;
                     ctx->_red = 2;
                     ctx->_green = 1;
                     ctx->_blue = 0;
+                }
+                else if ("RGBA" == substr)
+                {
+                    ctx->_bpp = 32;
+                    ctx->_channels = 4;
+                    ctx->_red = 2;
+                    ctx->_green = 1;
+                    ctx->_blue = 0;
+                }
+                else if ("BGRA" == substr)
+                {
+                    ctx->_bpp = 32;
+                    ctx->_channels = 4;
+                    ctx->_red = 0;
+                    ctx->_green = 1;
+                    ctx->_blue = 2;
                 }
                 else if ("I420" == substr)
                 {
                     ctx->_bpp = 12;
                     ctx->_channels = 3;
-                    ctx->_isHap = false;
                     ctx->_isYUV = true;
                     ctx->_is420 = true;
-                    ctx->_is422 = false;
-                    ctx->_red = 0;
-                    ctx->_green = 1;
-                    ctx->_blue = 2;
                 }
                 else if ("UYVY" == substr)
                 {
                     ctx->_bpp = 12;
                     ctx->_channels = 3;
-                    ctx->_isHap = false;
                     ctx->_isYUV = true;
-                    ctx->_is420 = false;
                     ctx->_is422 = true;
-                    ctx->_red = 0;
-                    ctx->_green = 1;
-                    ctx->_blue = 2;
                 }
             }
         }
         else if (regex_match(dataType, regHap))
         {
-            ctx->_bpp = 0;
-            ctx->_channels = 0;
             ctx->_isHap = true;
-            ctx->_isYUV = false;
-            ctx->_is420 = false;
-            ctx->_is422 = false;
-            ctx->_red = 0;
-            ctx->_green = 0;
-            ctx->_blue = 0;
         }
 
         if (regex_match(dataType, match, regWidth))
