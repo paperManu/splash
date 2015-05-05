@@ -30,6 +30,7 @@
 
 #include "config.h"
 #include "image.h"
+#include "osUtils.h"
 
 namespace oiio = OIIO_NAMESPACE;
 
@@ -90,7 +91,7 @@ class Image_Shmdata : public Image
 
     private:
         std::string _filename;
-        shmdata::ConsoleLogger _logger;
+        Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};
 
         oiio::ImageBuf _readerBuffer;

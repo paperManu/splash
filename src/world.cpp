@@ -614,9 +614,7 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-d" || string(argv[idx]) == "--debug")
         {
-#ifdef DEBUG
             SLog::log.setVerbosity(Log::DEBUGGING);
-#endif
             idx++;
         }
         else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")

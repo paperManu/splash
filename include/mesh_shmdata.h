@@ -32,10 +32,10 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include <shmdata/console-logger.hpp>
 #include <shmdata/follower.hpp>
 
 #include "mesh.h"
+#include "osUtils.h"
 
 namespace Splash {
 
@@ -82,7 +82,7 @@ class Mesh_Shmdata : public Mesh
     protected:
         std::string _filename {""};
         std::string _caps {""};
-        shmdata::ConsoleLogger _logger;
+        Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};
 
         /**
