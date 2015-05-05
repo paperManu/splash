@@ -92,7 +92,7 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
         ctx->_is420 = false;
         ctx->_is422 = false;
         
-        regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regGreen, regBlue, regFormatYUV;
+        regex regHap, regWidth, regHeight;
         regex regVideo, regFormat;
         try
         {

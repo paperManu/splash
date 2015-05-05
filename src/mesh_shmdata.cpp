@@ -4,8 +4,6 @@
 #include "osUtils.h"
 #include "timer.h"
 
-#define SHMDATA_DEFAULT_SIZE 16000000
-
 using namespace std;
 
 namespace Splash {
