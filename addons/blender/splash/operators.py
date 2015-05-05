@@ -148,6 +148,13 @@ class Splash:
             if target._texture is None or target._texWriterPath is None:
                 return
     
+            buffer = bytearray()
+            pixels = [pix for pix in target._texture.pixels]
+            pixels = numpy.array(pixels)
+            pixels = (pixels * 255.0).astype(numpy.ubyte)
+            buffer += pixels.tostring()
+            currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
+
             if target._texWriter is None or target._texture.size[0] != target._texSize[0] or target._texture.size[1] != target._texSize[1]:
                 try:
                     os.remove(target._texWriterPath)
@@ -159,14 +166,7 @@ class Splash:
     
                 target._texSize[0] = target._texture.size[0]
                 target._texSize[1] = target._texture.size[1]
-                target._texWriter = Writer(path=target._texWriterPath, datatype="video/x-raw-rgb, bpp=(int)32, endianness=(int)4321, depth=(int)32, red_mask=(int)-16777216, green_mask=(int)16711680, blue_mask=(int)65280, alpha_mask=(int)255, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(target._texSize[0], target._texSize[1]))
-    
-            buffer = bytearray()
-            pixels = [pix for pix in target._texture.pixels]
-            pixels = numpy.array(pixels)
-            pixels = (pixels * 255.0).astype(numpy.ubyte)
-            buffer += pixels.tostring()
-            currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
+                target._texWriter = Writer(path=target._texWriterPath, datatype="video/x-raw, format=(string)RGBA, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(target._texSize[0], target._texSize[1]), framesize=len(buffer))
             target._texWriter.push(buffer, floor(currentTime * 1e9))
 
             # We send twice to pass through the Splash input buffer

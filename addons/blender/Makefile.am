@@ -1,11 +1,11 @@
 blenderSplash.zip:
 	zip blenderSplash.zip -r splash
 
+clean:
+	rm blenderSplash.zip
+
 datasdir = $(datadir)/splash/
 datas_DATA = \
-	splash/__init__.py \
-	splash/operators.py \
-	splash/ui.py
 	blenderSplash.zip
 
 EXTRA_DIST = \
