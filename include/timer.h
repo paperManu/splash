@@ -255,12 +255,6 @@ class Timer
         bool _isDebug {false};
 };
 
-struct STimer
-{
-    public:
-        static Timer timer;
-};
-
 } // end of namespace
 
 #endif // SPLASH_TIMER_H
