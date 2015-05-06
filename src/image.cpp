@@ -49,7 +49,7 @@ void Image::init()
 Image::~Image()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif
 }
 
@@ -98,8 +98,8 @@ unique_ptr<SerializedObject> Image::serialize() const
 {
     lock_guard<mutex> lock(_readMutex);
 
-    if (STimer::timer.isDebug())
-        STimer::timer << "serialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() << "serialize " + _name;
 
     // We first get the xml version of the specs, and pack them into the obj
     string xmlSpec = _image.spec().to_xml();
@@ -135,8 +135,8 @@ unique_ptr<SerializedObject> Image::serialize() const
     copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
     SThread::pool.waitThreads(threadIds);
 
-    if (STimer::timer.isDebug())
-        STimer::timer >> "serialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "serialize " + _name;
 
     return obj;
 }
@@ -147,8 +147,8 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
 
-    if (STimer::timer.isDebug())
-        STimer::timer << "deserialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() << "deserialize " + _name;
 
     // First, we get the size of the metadata
     int nbrChar;
@@ -196,12 +196,12 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
     }
     catch (...)
     {
-        SLog::log << Log::ERROR << "Image::" << __FUNCTION__ << " - Unable to deserialize the given object" << Log::endl;
+        Log::get() << Log::ERROR << "Image::" << __FUNCTION__ << " - Unable to deserialize the given object" << Log::endl;
         return false;
     }
 
-    if (STimer::timer.isDebug())
-        STimer::timer >> "deserialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "deserialize " + _name;
 
     return true;
 }
@@ -225,14 +225,14 @@ bool Image::readFile(const string& filename)
 
     if (!in)
     {
-        SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
         return false;
     }
 
     const oiio::ImageSpec& spec = in->spec();
     if (spec.format != oiio::TypeDesc::UINT8)
     {
-        SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
         return false;
     }
 

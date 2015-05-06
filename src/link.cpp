@@ -27,7 +27,7 @@ Link::Link(RootObjectWeakPtr root, string name)
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     _bufferInThread = thread([&]() {
@@ -76,7 +76,7 @@ void Link::connectTo(const string name)
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
     // Wait a bit for the connection to be up
     timespec nap {0, (long int)1e8};
@@ -135,7 +135,7 @@ bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     return true;
@@ -203,13 +203,13 @@ bool Link::sendMessage(const string name, const string attribute, const Values& 
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     // We don't display broadcast messages, for visibility
 #ifdef DEBUG
     if (name != SPLASH_ALL_PAIRS)
-        SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
+        Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
 #endif
 
     return true;
@@ -227,7 +227,7 @@ void Link::freeOlderBuffer(void* data, void* hint)
 
     if (index >= ctx->_otgBuffers.size())
     {
-        SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
+        Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
         return;
     }
     ctx->_otgBuffers[index]->_mutex.unlock();
@@ -290,14 +290,14 @@ void Link::handleInputMessages()
             // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PAIRS)
-                SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
+                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
         }
     }
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
 
@@ -334,7 +334,7 @@ void Link::handleInputBuffers()
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     _socketBufferIn.reset();

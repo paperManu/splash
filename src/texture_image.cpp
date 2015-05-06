@@ -50,7 +50,7 @@ Texture_Image::Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level,
 Texture_Image::~Texture_Image()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
     glDeleteTextures(1, &_glTex);
 }
@@ -109,7 +109,7 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
 {
     if (width == 0 || height == 0)
     {
-        SLog::log << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
+        Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
         return;
     }
 
@@ -193,7 +193,7 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
     _texType = type;
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
+    Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
 #endif
 }
 
@@ -295,7 +295,7 @@ void Texture_Image::update()
         if (spec.nchannels == 4 && spec.format == "uint8" && !isCompressed)
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGBA)" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
@@ -307,7 +307,7 @@ void Texture_Image::update()
         else if (spec.nchannels == 3 && spec.format == "uint8" && !isCompressed)
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGB)" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGB)" << Log::endl;
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
@@ -319,7 +319,7 @@ void Texture_Image::update()
         else if (spec.nchannels == 1 && spec.format == "uint16" && !isCompressed)
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
 #endif
             _img->lock();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, _img->data());
@@ -328,7 +328,7 @@ void Texture_Image::update()
         else if (spec.channelnames == vector<string>({"RGB_DXT1"}))
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGB_S3TC_DXT1, format GL_RGBA (source RGBA)" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGB_S3TC_DXT1, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
@@ -340,7 +340,7 @@ void Texture_Image::update()
         else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
             _img->lock();
             if (srgb[0].asInt() > 0)
@@ -352,7 +352,7 @@ void Texture_Image::update()
         else if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
         {
 #ifdef DEBUG
-            SLog::log << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
             _img->lock();
              glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
@@ -360,7 +360,7 @@ void Texture_Image::update()
         }
         else
         {
-            SLog::log << Log::WARNING << "Texture_Image::" <<  __FUNCTION__ << " - Texture format not supported" << Log::endl;
+            Log::get() << Log::WARNING << "Texture_Image::" <<  __FUNCTION__ << " - Texture format not supported" << Log::endl;
             return;
         }
         updatePbos(spec.width, spec.height, spec.pixel_bytes());

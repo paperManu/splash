@@ -38,7 +38,7 @@ Image_Shmdata::Image_Shmdata()
 Image_Shmdata::~Image_Shmdata()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 #endif
 }
 
@@ -150,7 +150,7 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
                     errorString = "there was not enough memory to perform a match";
                     break;
             }
-            SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
+            Log::get() << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
             return;
         }
 
@@ -245,10 +245,10 @@ void Image_Shmdata::onData(void* data, int data_size, void* user_data)
 {
     Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
 
-    if (STimer::timer.isDebug())
+    if (Timer::get().isDebug())
     {
-        STimer::timer.sinceLastSeen("image_shmdata_period " + ctx->_name);
-        STimer::timer << "image_shmdata " + ctx->_name;
+        Timer::get().sinceLastSeen("image_shmdata_period " + ctx->_name);
+        Timer::get() << "image_shmdata " + ctx->_name;
     }
 
     // Standard images, RGB or YUV
@@ -262,8 +262,8 @@ void Image_Shmdata::onData(void* data, int data_size, void* user_data)
         readHapFrame(ctx, data, data_size);
     }
 
-    if (STimer::timer.isDebug())
-        STimer::timer >> "image_shmdata " + ctx->_name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "image_shmdata " + ctx->_name;
 }
 
 /*************/

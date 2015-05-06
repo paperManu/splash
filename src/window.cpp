@@ -46,9 +46,9 @@ Window::Window(RootObjectWeakPtr root)
     _window = w;
     _isInitialized = setProjectionSurface();
     if (!_isInitialized)
-        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;
     else
-        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
+        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Window created successfully" << Log::endl;
 
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
@@ -68,9 +68,9 @@ Window::Window(RootObjectWeakPtr root)
     glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
     else
-        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // And the read framebuffer
@@ -81,7 +81,7 @@ Window::Window(RootObjectWeakPtr root)
 Window::~Window()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif
 
     glDeleteFramebuffers(1, &_renderFbo);
@@ -349,7 +349,7 @@ bool Window::render()
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
+        Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the window: " << error << Log::endl;
 #endif
 
     glDisable(GL_BLEND);
@@ -418,9 +418,9 @@ void Window::setupReadFBO()
     glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
     else
-        SLog::log << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     _window->releaseContext();
 }
@@ -429,7 +429,7 @@ void Window::setupReadFBO()
 void Window::swapBuffers()
 {
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
@@ -504,7 +504,7 @@ bool Window::switchFullscreen(int screenId)
 
     if (!window)
     {
-        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to create new fullscreen shared window" << Log::endl;
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to create new fullscreen shared window" << Log::endl;
         return false;
     }
 
@@ -609,7 +609,7 @@ void Window::setEventsCallbacks()
 bool Window::setProjectionSurface()
 {
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glfwShowWindow(_window->get());
     glfwSwapInterval(_swapInterval);
 
@@ -631,7 +631,7 @@ bool Window::setProjectionSurface()
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
+        Log::get() << Log::WARNING << __FUNCTION__ << " - Error while creating the projection surface: " << error << Log::endl;
 #endif
 
     _window->releaseContext();
@@ -669,7 +669,7 @@ void Window::setWindowDecoration(bool hasDecoration)
 
     if (!window)
     {
-        SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to update window " << _name << Log::endl;
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to update window " << _name << Log::endl;
         return;
     }
 
@@ -687,7 +687,7 @@ void Window::setWindowDecoration(bool hasDecoration)
 void Window::updateSwapInterval()
 {
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
     glfwSwapInterval(_swapInterval);
 

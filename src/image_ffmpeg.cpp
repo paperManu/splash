@@ -56,18 +56,18 @@ bool Image_FFmpeg::read(const string& filename)
 
     if (avformat_open_input(avContext, filename.c_str(), nullptr, nullptr) != 0)
     {
-        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filename << Log::endl;
         return false;
     }
 
     if (avformat_find_stream_info(*avContext, NULL) < 0)
     {
-        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filename << Log::endl;
         avformat_close_input(avContext);
         return false;
     }
 
-    SLog::log << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
+    Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
     av_dump_format(*avContext, 0, filename.c_str(), 0);
     _filename = filename;
 
@@ -97,7 +97,7 @@ void Image_FFmpeg::readLoop()
 
     if (videoStream == -1)
     {
-        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - No video stream found in file " << _filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - No video stream found in file " << _filename << Log::endl;
         return;
     }
 
@@ -113,7 +113,7 @@ void Image_FFmpeg::readLoop()
     }
     else if (codec == nullptr)
     {
-        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Codec not supported for file " << _filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Codec not supported for file " << _filename << Log::endl;
         return;
     }
 
@@ -122,7 +122,7 @@ void Image_FFmpeg::readLoop()
         AVDictionary* optionsDict = nullptr;
         if (avcodec_open2(codecContext, codec, &optionsDict) < 0)
         {
-            SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open codec for file " << _filename << Log::endl;
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open codec for file " << _filename << Log::endl;
             return;
         }
     }
@@ -135,7 +135,7 @@ void Image_FFmpeg::readLoop()
 
     if (!frame || !rgbFrame)
     {
-        SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while allocating frame structures" << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while allocating frame structures" << Log::endl;
         return;
     }
 
@@ -244,7 +244,7 @@ void Image_FFmpeg::readLoop()
 
         if (av_seek_frame(*avContext, videoStream, 0, AVSEEK_FLAG_BACKWARD) < 0)
         {
-            SLog::log << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filename << Log::endl;
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filename << Log::endl;
             break;
         }
     }

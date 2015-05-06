@@ -26,7 +26,7 @@ bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSi
     unsigned int textureFormat = 0;
     if (HapGetFrameTextureFormat(in, inSize, &textureFormat) != HapResult_No_Error)
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
+        Log::get() << Log::WARNING << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
         return false;
     }
 
@@ -45,7 +45,7 @@ bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSi
     unsigned long bytesUsed = 0;
     if (HapDecode(in, inSize, hapDecodeCallback, nullptr, out, outSize, &bytesUsed, &textureFormat) != HapResult_No_Error)
     {
-        SLog::log << Log::WARNING << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
+        Log::get() << Log::WARNING << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
         return false;
     }
 

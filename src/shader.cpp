@@ -39,7 +39,7 @@ Shader::~Shader()
             glDeleteShader(shader.second);
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
 #endif
 }
 
@@ -107,17 +107,17 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     if (status)
     {
 #ifdef DEBUG
-        SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
 #endif
     }
     else
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetShaderInfoLog(shader, length, &length, log);
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
     }
 
@@ -140,7 +140,7 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
         setSource(contents, type);
     }
 
-    SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+    Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
 }
 
 /*************/
@@ -190,7 +190,7 @@ void Shader::compileProgram()
             {
                 glAttachShader(_program, shader.second);
 #ifdef DEBUG
-                SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
 #endif
             }
         }
@@ -206,7 +206,7 @@ bool Shader::linkProgram()
     if (status == GL_TRUE)
     {
 #ifdef DEBUG
-        SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
 #endif
 
         for (auto src : _shadersSource)
@@ -217,13 +217,13 @@ bool Shader::linkProgram()
     }
     else
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_program, length, &length, log);
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
 
         _isLinked = false;
@@ -303,7 +303,7 @@ void Shader::parseUniforms(const std::string& src)
             else
             {
                 _uniforms[name].glIndex = -1;
-                SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
             }
 
             if (values.size() != 0)

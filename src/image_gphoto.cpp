@@ -34,7 +34,7 @@ Image_GPhoto::~Image_GPhoto()
         releaseCamera(camera);
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Image_GPhoto::~Image_GPhoto - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Image_GPhoto::~Image_GPhoto - Destructor" << Log::endl;
 #endif
 }
 
@@ -46,7 +46,7 @@ bool Image_GPhoto::read(const string& cameraName)
 
     if (_cameras.size() == 0)
     {
-        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Cannot find any camera to read from" << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Cannot find any camera to read from" << Log::endl;
         return false;
     }
 
@@ -89,7 +89,7 @@ void Image_GPhoto::detectCameras()
     gp_list_new(&availableCameras);
     gp_abilities_list_detect(_gpCams, _gpPorts, availableCameras, _gpContext);
 
-    SLog::log << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - " << (gp_list_count(availableCameras) > 0 ? gp_list_count(availableCameras) : 0) << " cameras detected" << Log::endl;
+    Log::get() << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - " << (gp_list_count(availableCameras) > 0 ? gp_list_count(availableCameras) : 0) << " cameras detected" << Log::endl;
 
     // Create the list of tetherable cameras
     for (int i = 0; i < gp_list_count(availableCameras); ++i)
@@ -104,18 +104,18 @@ void Image_GPhoto::detectCameras()
         if (!initCamera(camera))
         {
             releaseCamera(camera);
-            SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to initialize camera " << camera.model << " on port " << camera.port << Log::endl;
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to initialize camera " << camera.model << " on port " << camera.port << Log::endl;
         }
         else if (!camera.canTether && !camera.canImport)
         {
             releaseCamera(camera);
-            SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " does not support import or tethering" << Log::endl;
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " does not support import or tethering" << Log::endl;
         }
         else
         {
             releaseCamera(camera);
             _cameras.push_back(camera);
-            SLog::log << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " initialized correctly" << Log::endl;
+            Log::get() << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " initialized correctly" << Log::endl;
         }
     }
 }
@@ -127,7 +127,7 @@ bool Image_GPhoto::capture()
 
     if (_selectedCameraIndex == -1)
     {
-        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
         return false;
     }
 
@@ -145,7 +145,7 @@ bool Image_GPhoto::capture()
             {
                 gp_file_new_from_fd(&destination, handle);
                 if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
-                    SLog::log << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name) << Log::endl;
+                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name) << Log::endl;
                 close(handle);
             }
  
@@ -154,7 +154,7 @@ bool Image_GPhoto::capture()
         }
         else
         {
-            SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Captured image filetype is not jpeg. Maybe the camera is set to RAW?" << Log::endl;
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Captured image filetype is not jpeg. Maybe the camera is set to RAW?" << Log::endl;
             res = GP_ERROR;
         }
 
@@ -177,7 +177,7 @@ bool Image_GPhoto::doSetProperty(string name, string value)
 
     if (_selectedCameraIndex == -1)
     {
-        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
         return false;
     }
 
@@ -201,7 +201,7 @@ bool Image_GPhoto::doGetProperty(string name, string& value)
 
     if (_selectedCameraIndex == -1)
     {
-        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - A camera must be selected before trying to capture" << Log::endl;
         return false;
     }
 
@@ -274,7 +274,7 @@ void Image_GPhoto::init()
     gp_abilities_list_new(&_gpCams);
     gp_abilities_list_load(_gpCams, _gpContext);
 
-    SLog::log << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Loaded " << gp_abilities_list_count(_gpCams) << " camera drivers" << Log::endl;
+    Log::get() << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Loaded " << gp_abilities_list_count(_gpCams) << " camera drivers" << Log::endl;
 
     detectCameras();
 }
@@ -321,7 +321,7 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
     }
     else
     {
-        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " already initialized" << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " already initialized" << Log::endl;
         return false;
     }
 }
@@ -343,7 +343,7 @@ void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, string property, vec
     }
     else
     {
-        SLog::log << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Property " << property << " is not available for camera " << camera.model << Log::endl;
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Property " << property << " is not available for camera " << camera.model << Log::endl;
     }
 }
 

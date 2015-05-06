@@ -86,12 +86,12 @@ void Texture_Syphon::registerAttributes()
 
         if (!_syphonReceiver.connect(_serverName.c_str(), _appName.c_str()))
         {
-            SLog::log << Log::WARNING << "Texture_Syphon::connect - Could not connect to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")" << Log::endl;
+            Log::get() << Log::WARNING << "Texture_Syphon::connect - Could not connect to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")" << Log::endl;
             return false;
         }
         else
         {
-            SLog::log << Log::MESSAGE << "Texture_Syphon::connect - Connected to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")" << Log::endl;
+            Log::get() << Log::MESSAGE << "Texture_Syphon::connect - Connected to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")" << Log::endl;
         }
         return true;
     }, [&]() -> Values {

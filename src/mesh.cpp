@@ -23,7 +23,7 @@ Mesh::Mesh()
 Mesh::~Mesh()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Mesh::~Mesh - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Mesh::~Mesh - Destructor" << Log::endl;
 #endif
 }
 
@@ -87,7 +87,7 @@ bool Mesh::read(const string& filename)
     Loader::Obj objLoader;
     if (!objLoader.load(filepath))
     {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
+        Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
         return false;
     }
 
@@ -108,8 +108,8 @@ unique_ptr<SerializedObject> Mesh::serialize() const
 {
     unique_ptr<SerializedObject> obj(new SerializedObject());
 
-    if (STimer::timer.isDebug())
-        STimer::timer << "serialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() << "serialize " + _name;
 
     // For this, we will use the getVertex, getUV, etc. methods to create a serialized representation of the mesh
     vector<vector<float>> data;
@@ -136,8 +136,8 @@ unique_ptr<SerializedObject> Mesh::serialize() const
         currentObjPtr += d.size() * sizeof(float);
     }
     
-    if (STimer::timer.isDebug())
-        STimer::timer >> "serialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "serialize " + _name;
 
     return obj;
 }
@@ -150,8 +150,8 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
 
     lock_guard<mutex> lock(_writeMutex);
 
-    if (STimer::timer.isDebug())
-        STimer::timer << "deserialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() << "deserialize " + _name;
 
     // First, we get the number of vertices
     int nbrVertices;
@@ -163,7 +163,7 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
 
     if (nbrVertices < 0 || nbrVertices > obj->size())
     {
-        SLog::log << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Bad buffer received, discarding" << Log::endl;
+        Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Bad buffer received, discarding" << Log::endl;
         return false;
     }
 
@@ -217,12 +217,12 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
     catch (...)
     {
         createDefaultMesh();
-        SLog::log(Log::ERROR, __FUNCTION__, " - Unable to deserialize the given object");
+        Log::get()(Log::ERROR, __FUNCTION__, " - Unable to deserialize the given object");
         return false;
     }
 
-    if (STimer::timer.isDebug())
-        STimer::timer >> "deserialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "deserialize " + _name;
 
     return true;
 }

@@ -61,17 +61,12 @@ class Log
         };
 
         /**
-         * Constructor
+         * Get the singleton
          */
-        Log()
+        static Log& get()
         {
-        }
-
-        /**
-         * Destructor
-         */
-        ~Log()
-        {
+            static auto instance = new Log;
+            return *instance;
         }
 
         /**
@@ -192,6 +187,23 @@ class Log
         }
 
     private:
+        /**
+         * Constructor
+         */
+        Log() {}
+
+        /**
+         * Destructor
+         */
+        ~Log() {}
+
+        /**
+         * Delete some constructors
+         */
+        Log(const Log&) = delete;
+        const Log& operator=(const Log&) = delete;
+
+    private:
         mutable std::mutex _mutex;
         std::vector<std::pair<std::string, Priority>> _logs;
         int _logLength {5000};
@@ -279,12 +291,6 @@ class Log
 
             std::cout << msg << std::endl;
         }
-};
-
-struct SLog
-{
-    public:
-        static Log log;
 };
 
 } // end of namespace

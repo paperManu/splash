@@ -42,8 +42,14 @@ namespace Splash
 class Timer
 {
     public:
-        Timer() {}
-        ~Timer() {}
+        /**
+         * Get the singleton
+         */
+        static Timer& get()
+        {
+            static auto instance = new Timer;
+            return *instance;
+        }
 
         /**
          * Returns whether the timer is set to debug mode
@@ -231,6 +237,12 @@ class Timer
           * Enable / disable the timers
           */
          void setStatus(bool enabled) {_enabled = enabled;}
+
+    private:
+        Timer() {}
+        ~Timer() {}
+        Timer(const Timer&) = delete;
+        const Timer& operator=(const Timer&) = delete;
 
     private:
         std::unordered_map<std::string, std::atomic_ullong> _timeMap; 

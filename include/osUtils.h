@@ -78,27 +78,27 @@ namespace Splash
             private:
                 void on_error(std::string &&str) final
                 {
-                    SLog::log << Log::ERROR << "Shmdata::ConsoleLogger - " << str << Log::endl;
+                    Log::get() << Log::ERROR << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
                 void on_critical(std::string &&str) final
                 {
-                    SLog::log << Log::ERROR << "Shmdata::ConsoleLogger - " << str << Log::endl;
+                    Log::get() << Log::ERROR << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
                 void on_warning(std::string &&str) final
                 {
-                    SLog::log << Log::WARNING << "Shmdata::ConsoleLogger - " << str << Log::endl;
+                    Log::get() << Log::WARNING << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
                 void on_message(std::string &&str) final
                 {
-                    SLog::log << Log::MESSAGE << "Shmdata::ConsoleLogger - " << str << Log::endl;
+                    Log::get() << Log::MESSAGE << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
                 void on_info(std::string &&str) final
                 {
-                    SLog::log << Log::MESSAGE << "Shmdata::ConsoleLogger - " << str << Log::endl;
+                    Log::get() << Log::MESSAGE << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
                 void on_debug(std::string &&str) final
                 {
-                    SLog::log << Log::DEBUGGING << "Shmdata::ConsoleLogger - " << str << Log::endl;
+                    Log::get() << Log::DEBUGGING << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
         };
     } // end of namespace

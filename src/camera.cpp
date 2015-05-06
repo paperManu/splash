@@ -58,23 +58,23 @@ void Camera::init()
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
 	{
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
 		return;
 	}
     else
-        SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
         _isInitialized = false;
     }
     else
     {
-        SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Camera correctly initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Camera correctly initialized" << Log::endl;
         _isInitialized = true;
     }
 
@@ -88,7 +88,7 @@ void Camera::init()
 Camera::~Camera()
 {
 #ifdef DEBUG
-    SLog::log<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
+    Log::get()<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
 
     glDeleteFramebuffers(1, &_fbo);
@@ -99,7 +99,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
 {
     if (map->getSpec().format != oiio::TypeDesc::UINT16)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
         return;
     }
 
@@ -155,7 +155,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
 #ifdef DEBUG
     error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 #endif
 
     setOutputSize(width, height);
@@ -265,7 +265,7 @@ bool Camera::doCalibration()
     // We need at least 7 points to get a meaningful calibration
     if (pointsSet < 7)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 7 points" << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 7 points" << Log::endl;
         return false;
     }
 
@@ -276,7 +276,7 @@ bool Camera::doCalibration()
     calibrationFunc.f = &Camera::cameraCalibration_f;
     calibrationFunc.params = (void*)this;
 
-    SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
+    Log::get() << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
     const gsl_multimin_fminimizer_type* minimizerType;
     minimizerType = gsl_multimin_fminimizer_nmsimplex2rand;
@@ -325,7 +325,7 @@ bool Camera::doCalibration()
                     status = gsl_multimin_fminimizer_iterate(minimizer);
                     if (status)
                     {
-                        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
                         break;
                     }
 
@@ -377,7 +377,7 @@ bool Camera::doCalibration()
             status = gsl_multimin_fminimizer_iterate(minimizer);
             if (status)
             {
-                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
                 break;
             }
 
@@ -420,8 +420,8 @@ bool Camera::doCalibration()
     _target = normalize(_target);
     _up = normalize(_up);
 
-    SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
-    SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
+    Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
+    Log::get() << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
 
     // Force camera update with the new parameters
     _updatedParams = true;
@@ -700,7 +700,7 @@ bool Camera::render()
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+        Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
     return error != 0 ? true : false;
 #else
     return false;
@@ -909,7 +909,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cy): " << fov << " " << camera->_height - cy << Log::endl;
+    Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cy): " << fov << " " << camera->_height - cy << Log::endl;
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
@@ -930,7 +930,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     summedDistance /= imagePoints.size();
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
+    Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
 #endif
 
     return summedDistance;
@@ -1040,7 +1040,7 @@ void Camera::loadDefaultModels()
 #endif
             else
             {
-                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
+                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
                 continue;
             }
         }
@@ -1354,9 +1354,9 @@ void Camera::registerAttributes()
             _isColorLUTActivated = args[0].asInt();
 
         if (_isColorLUTActivated)
-            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
+            Log::get() << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
         else
-            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table deactivated for camera " << getName() << Log::endl;
+            Log::get() << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table deactivated for camera " << getName() << Log::endl;
 
         return true;
     }, [&]() -> Values {

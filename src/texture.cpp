@@ -46,7 +46,7 @@ Texture::Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint inter
 Texture::~Texture()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Texture::~Texture - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Texture::~Texture - Destructor" << Log::endl;
 #endif
 }
 

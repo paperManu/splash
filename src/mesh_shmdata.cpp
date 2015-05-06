@@ -99,15 +99,15 @@ void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
 
     Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
     lock_guard<mutex> lock(ctx->_writeMutex);
-    if (STimer::timer.isDebug())
-        STimer::timer << "mesh_shmdata " + ctx->_name;
+    if (Timer::get().isDebug())
+        Timer::get() << "mesh_shmdata " + ctx->_name;
 
     ctx->_bufferMesh = std::move(newMesh);
     ctx->_meshUpdated = true;
     ctx->updateTimestamp();
 
-    if (STimer::timer.isDebug())
-        STimer::timer >> "mesh_shmdata " + ctx->_name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "mesh_shmdata " + ctx->_name;
 }
 
 /*************/

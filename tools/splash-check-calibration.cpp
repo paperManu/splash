@@ -101,7 +101,7 @@ Parameters parseArgs(int argc, char** argv)
             if (filename.find("tga") == string::npos)
             {
                 params.valid = false;
-                SLog::log << Log::WARNING << "Please specify a TGA (non-RLE encoded) file for the mask." << Log::endl;
+                Log::get() << Log::WARNING << "Please specify a TGA (non-RLE encoded) file for the mask." << Log::endl;
             }
             else
             {
@@ -112,7 +112,7 @@ Parameters parseArgs(int argc, char** argv)
         else if (string(argv[i]) == "-b" || string(argv[i]) == "--batch")
         {
             params.silent = true;
-            SLog::log.setVerbosity(Log::NONE);
+            Log::get().setVerbosity(Log::NONE);
         }
         else if (string(argv[i]) == "-i" || string(argv[i]) == "--image")
         {
@@ -129,19 +129,19 @@ Parameters parseArgs(int argc, char** argv)
     if (params.filename.find("hdr") == string::npos)
     {
         params.valid = false;
-        SLog::log << Log::WARNING << "Please specify a HDR file to process." << Log::endl;
+        Log::get() << Log::WARNING << "Please specify a HDR file to process." << Log::endl;
     }
     if (params.image == nullptr || !params.image->isValid())
     {
         params.valid = false;
-        SLog::log << Log::WARNING << "Could not open file " << params.filename << ". Exiting." << Log::endl;
+        Log::get() << Log::WARNING << "Could not open file " << params.filename << ". Exiting." << Log::endl;
     }
     if (params.mask != nullptr)
     {
         if (params.mask->width != params.image->width || params.mask->height != params.image->height)
         {
             params.valid = false;
-            SLog::log << Log::WARNING << "Could not open file " << params.filename << ". Exiting." << Log::endl;
+            Log::get() << Log::WARNING << "Could not open file " << params.filename << ". Exiting." << Log::endl;
         }
     }
 
@@ -276,18 +276,18 @@ int main(int argc, char** argv)
 
     if (!params.valid)
     {
-        SLog::log << Log::WARNING << "An error was found in the parameters, exiting." << Log::endl;
+        Log::get() << Log::WARNING << "An error was found in the parameters, exiting." << Log::endl;
         exit(1);
     }
 
-    SLog::log << Log::MESSAGE << "Processing file " << params.filename << Log::endl;
-    SLog::log << Log::MESSAGE << "Subdivision level: " << params.subdivisions << Log::endl;
+    Log::get() << Log::MESSAGE << "Processing file " << params.filename << Log::endl;
+    Log::get() << Log::MESSAGE << "Subdivision level: " << params.subdivisions << Log::endl;
 
     std::vector<std::vector<double>> stdDevMultilevel = applyMultilevel([&](Parameters& params, int x, int y, int w, int h) {
         return getStdDev(params, x, y, w, h);
     }, params);
 
-    SLog::log << Log::MESSAGE << "Standard deviations along all specified levels: " << Log::endl;
+    Log::get() << Log::MESSAGE << "Standard deviations along all specified levels: " << Log::endl;
     for (auto& subdivResult : stdDevMultilevel)
     {
         for (auto& result : subdivResult)

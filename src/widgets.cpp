@@ -640,7 +640,7 @@ void GuiGraph::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto& durationMap = STimer::timer.getDurationMap();
+        auto& durationMap = Timer::get().getDurationMap();
 
         for (auto& t : durationMap)
         {
@@ -763,7 +763,7 @@ void GuiTemplate::loadTemplates()
     }
     else
     {
-        SLog::log << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
+        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
         return;
     }
 

@@ -38,7 +38,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _scene = s;
     _window = w;
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -61,9 +61,9 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
     else
-        SLog::log << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -91,7 +91,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 Gui::~Gui()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
 
     glDeleteTextures(1, &_imFontTextureId);
@@ -449,7 +449,7 @@ bool Gui::render()
 #ifdef DEBUG
     error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 
     return error != 0 ? true : false;
 #else
@@ -464,7 +464,7 @@ void Gui::setOutputSize(int width, int height)
         return;
 
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     _depthTexture->setAttribute("size", {width, height});
     _outTexture->setAttribute("size", {width, height});
 
@@ -535,13 +535,13 @@ void Gui::initImGui(int width, int height)
     glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
     if (status == GL_FALSE)
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log);
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
 
         // TODO: handle this case...
@@ -708,15 +708,15 @@ void Gui::initImWidgets()
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
-        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
-        upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
-        tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
-        cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
-        gui = gui * 0.9 + STimer::timer["gui"] * 0.001 * 0.1;
-        win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
-        buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
-        evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
+        fps = fps * 0.95 + 1e6 / std::max(1ull, Timer::get()["sceneLoop"]) * 0.05;
+        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, Timer::get()["worldLoop"]) * 0.1;
+        upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
+        tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
+        cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
+        gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
+        win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
+        buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
+        evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
         // Create the text message
         ostringstream stream;
@@ -739,7 +739,7 @@ void Gui::initImWidgets()
     {
         int nbrLines = 10;
         // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+        vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
         string text;
         int start = std::max(0, (int)logs.size() - nbrLines);
         for (int i = start; i < logs.size(); ++i)

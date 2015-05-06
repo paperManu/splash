@@ -45,7 +45,7 @@ void Object::init()
 Object::~Object()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Object::~Object - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Object::~Object - Destructor" << Log::endl;
 #endif
 }
 

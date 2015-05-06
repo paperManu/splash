@@ -29,7 +29,7 @@ Geometry::~Geometry()
         glDeleteVertexArrays(1, &(v.second));
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Geometry::~Geometry - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Geometry::~Geometry - Destructor" << Log::endl;
 #endif
 }
 

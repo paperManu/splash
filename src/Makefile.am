@@ -40,7 +40,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	image.cpp \
 	image_shmdata.cpp \
 	link.cpp \
-	log.cpp \
 	mesh.cpp \
 	mesh_shmdata.cpp \
 	object.cpp \
@@ -49,7 +48,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	texture.cpp \
 	texture_image.cpp \
 	threadpool.cpp \
-	timer.cpp \
 	window.cpp \
 	widgets.cpp \
 	world.cpp

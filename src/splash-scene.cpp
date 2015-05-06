@@ -36,12 +36,12 @@ int main(int argc, char** argv)
     {
         if (string(argv[idx]) == "-d")
         {
-            SLog::log.setVerbosity(Log::DEBUGGING);
+            Log::get().setVerbosity(Log::DEBUGGING);
             idx++;
         }
         else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
         {
-            STimer::timer.setDebug(true);
+            Timer::get().setDebug(true);
             idx++;
         }
         else
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
         }
     }
 
-    SLog::log << "splashScene::main - Creating Scene with name " << name << Log::endl;
+    Log::get() << "splashScene::main - Creating Scene with name " << name << Log::endl;
 
     ScenePtr scene = make_shared<Scene>(name);
 

@@ -45,7 +45,7 @@ World::World(int argc, char** argv)
 World::~World()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
 #endif
     SThread::pool.waitAllThreads();
 }
@@ -60,12 +60,12 @@ void World::run()
 
     while (true)
     {
-        STimer::timer << "worldLoop";
+        Timer::get() << "worldLoop";
 
         {
             unique_lock<mutex> lock(_configurationMutex);
 
-            STimer::timer << "upload";
+            Timer::get() << "upload";
             vector<unsigned int> threadIds;
             for (auto& o : _objects)
             {
@@ -93,7 +93,7 @@ void World::run()
             _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / (_worldFramerate * 2))));
             sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
 
-            STimer::timer >> "upload";
+            Timer::get() >> "upload";
         }
 
         // If swap synchronization test is enabled
@@ -127,12 +127,12 @@ void World::run()
         }
 
         // Send current timings to all Scenes, for display purpose
-        auto& durationMap = STimer::timer.getDurationMap();
+        auto& durationMap = Timer::get().getDurationMap();
         for (auto& d : durationMap)
             sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
         // Send newer logs to all Scenes
-        auto logs = SLog::log.getLogs();
+        auto logs = Log::get().getLogs();
         for (auto& log : logs)
             sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
 
@@ -144,14 +144,14 @@ void World::run()
         }
 
         // Ping the clients once in a while
-        if (STimer::timer.isDebug())
+        if (Timer::get().isDebug())
         {
             static auto frameIndex = 0;
             if (frameIndex == 0)
             {
                 for (auto& scene : _scenes)
                 {
-                    STimer::timer << "pingScene " + scene.first;
+                    Timer::get() << "pingScene " + scene.first;
                     sendMessage(scene.first, "ping", {});
                 }
             }
@@ -159,7 +159,7 @@ void World::run()
         }
 
         // Get the current FPS
-        STimer::timer >> 1e6 / (float)_worldFramerate >> "worldLoop";
+        Timer::get() >> 1e6 / (float)_worldFramerate >> "worldLoop";
     }
 }
 
@@ -258,7 +258,7 @@ void World::applyConfig()
         {
             if (!jsScenes[i].isMember("name"))
             {
-                SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
                 return;
             }
             int spawn = 0;
@@ -283,14 +283,14 @@ void World::applyConfig()
                     cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
                 else
                     cmd = _executionPath + "splash-scene";
-                string debug = (SLog::log.getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                string timer = STimer::timer.isDebug() ? "-t" : "";
+                string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                string timer = Timer::get().isDebug() ? "-t" : "";
 
                 char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
                 char* env[] = {(char*)display.c_str(), NULL};
                 int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                 if (status != 0)
-                    SLog::log << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
 
                 // We wait for the child process to be launched
                 while (!_childProcessLaunched)
@@ -322,7 +322,7 @@ void World::applyConfig()
         }
         else
         {
-            SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Non-local scenes are not implemented yet" << Log::endl;
+            Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Non-local scenes are not implemented yet" << Log::endl;
         }
     }
 
@@ -550,7 +550,7 @@ void World::init()
 /*************/
 void World::leave(int signal_value)
 {
-    SLog::log << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
+    Log::get() << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
     _that->_quit = true;
 }
 
@@ -569,7 +569,7 @@ bool World::loadConfig(string filename, Json::Value& configuration)
     }
     else
     {
-        SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
         return false;
     }
 
@@ -580,8 +580,8 @@ bool World::loadConfig(string filename, Json::Value& configuration)
     bool success = reader.parse(contents, config);
     if (!success)
     {
-        SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
-        SLog::log << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
+        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
         return false;
     }
 
@@ -614,17 +614,17 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-d" || string(argv[idx]) == "--debug")
         {
-            SLog::log.setVerbosity(Log::DEBUGGING);
+            Log::get().setVerbosity(Log::DEBUGGING);
             idx++;
         }
         else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
         {
-            STimer::timer.setDebug(true);
+            Timer::get().setDebug(true);
             idx++;
         }
         else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")
         {
-            SLog::log.setVerbosity(Log::NONE);
+            Log::get().setVerbosity(Log::NONE);
             idx++;
         }
         else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
@@ -719,7 +719,7 @@ void World::registerAttributes()
     _attribFunctions["pong"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
-        STimer::timer >> "pingScene " + args[0].asString();
+        Timer::get() >> "pingScene " + args[0].asString();
         return true;
     });
 
@@ -727,7 +727,7 @@ void World::registerAttributes()
         if (args.size() != 0)
             _configFilename = args[0].asString();
 
-        SLog::log << "Saving configuration" << Log::endl;
+        Log::get() << "Saving configuration" << Log::endl;
         SThread::pool.enqueueWithoutId([&]() {
             saveConfig();
         });
