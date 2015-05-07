@@ -30,6 +30,7 @@
 #include <thread>
 
 #include "config.h"
+
 #include "coretypes.h"
 #include "basetypes.h"
 #include "image.h"

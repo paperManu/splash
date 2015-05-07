@@ -32,10 +32,6 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <deque>
 #include <functional>
@@ -44,6 +40,13 @@
 //#define ImVector std::vector
 #include <imgui.h>
 
+#include "config.h"
+
+#if HAVE_GPHOTO
+    #include "colorcalibrator.h"
+#endif
+#include "coretypes.h"
+#include "basetypes.h"
 #include "widgets.h"
 
 namespace Splash {

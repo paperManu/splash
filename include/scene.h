@@ -25,15 +25,21 @@
 #ifndef SPLASH_SCENE_H
 #define SPLASH_SCENE_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <cstddef>
 #include <future>
 #include <vector>
 #include <json/reader.h>
+
+#include "config.h"
+
+#if HAVE_GPHOTO
+    #include "colorcalibrator.h"
+#endif
+#include "coretypes.h"
+#include "basetypes.h"
+#include "gui.h"
+#include "widgets.h"
 
 namespace Splash {
 
@@ -46,7 +52,6 @@ class Scene : public RootObject
 #if HAVE_GPHOTO
     friend ColorCalibrator;
 #endif
-    friend GuiColorCalibration;
     friend GuiControl;
     friend GuiGlobalView;
     friend GuiWidget;

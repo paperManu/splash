@@ -25,15 +25,16 @@
 #ifndef SPLASH_TEXTURE_H
 #define SPLASH_TEXTURE_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <chrono>
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 
 namespace oiio = OIIO_NAMESPACE;
 

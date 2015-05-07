@@ -1,5 +1,13 @@
 #include "world.h"
-#include "timer.h"
+
+#include <chrono>
+#include <fstream>
+#include <unistd.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <json/reader.h>
+#include <json/writer.h>
+#include <spawn.h>
+#include <sys/wait.h>
 
 #include "image.h"
 #if HAVE_GPHOTO
@@ -15,16 +23,8 @@
 #include "mesh_shmdata.h"
 #include "osUtils.h"
 #include "scene.h"
+#include "timer.h"
 #include "threadpool.h"
-
-#include <chrono>
-#include <fstream>
-#include <unistd.h>
-#include <glm/gtc/matrix_transform.hpp>
-#include <json/reader.h>
-#include <json/writer.h>
-#include <spawn.h>
-#include <sys/wait.h>
 
 using namespace glm;
 using namespace std;

@@ -116,9 +116,6 @@ bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
         unique_lock<mutex> lock(_bufferSendMutex);
         auto bufferPtr = buffer.get();
 
-        if (!buffer->_mutex.try_lock())
-            return false;
-
         _otgMutex.lock();
         _otgBuffers.push_back(std::move(buffer));
         _otgMutex.unlock();
@@ -230,7 +227,6 @@ void Link::freeOlderBuffer(void* data, void* hint)
         Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
         return;
     }
-    ctx->_otgBuffers[index]->_mutex.unlock();
     ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
     ctx->_otgNumber -= 1;
 }

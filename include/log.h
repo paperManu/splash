@@ -25,8 +25,6 @@
 #ifndef SPLASH_LOG_H
 #define SPLASH_LOG_H
 
-#include "config.h"
-
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -36,6 +34,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+
+#include "config.h"
 
 #include "coretypes.h"
 

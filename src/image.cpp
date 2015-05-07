@@ -108,7 +108,7 @@ unique_ptr<SerializedObject> Image::serialize() const
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
     auto obj = unique_ptr<SerializedObject>(new SerializedObject(totalSize));
-    lock_guard<mutex> lockObject(obj->_mutex);
+    //lock_guard<mutex> lockObject(obj->_mutex);
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrChar);

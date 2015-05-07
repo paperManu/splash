@@ -25,10 +25,6 @@
 #ifndef SPLASH_CAMERA_H
 #define SPLASH_CAMERA_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <functional>
 #include <unordered_map>
 #include <memory>
@@ -38,6 +34,15 @@
 #include <glm/glm.hpp>
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "image.h"
+#include "geometry.h"
+#include "object.h"
+#include "texture_image.h"
 
 namespace Splash {
 

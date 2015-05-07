@@ -25,16 +25,16 @@
 #ifndef SPLASH_MESH_H
 #define SPLASH_MESH_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <vector>
 #include <glm/glm.hpp>
 
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 #include "coretypes.h"
 
 namespace Splash {

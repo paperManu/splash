@@ -36,6 +36,8 @@
 #include <unordered_map>
 
 #include "config.h"
+
+#include "camera.h"
 #include "coretypes.h"
 #include "basetypes.h"
 #include "image.h"

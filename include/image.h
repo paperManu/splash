@@ -30,6 +30,7 @@
 #include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
+
 #include "coretypes.h"
 #include "basetypes.h"
 

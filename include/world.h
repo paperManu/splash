@@ -25,16 +25,17 @@
 #ifndef SPLASH_WORLD_H
 #define SPLASH_WORLD_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <mutex>
 #include <signal.h>
 #include <string>
 #include <thread>
 #include <vector>
 #include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 
 namespace Splash {
 

@@ -25,13 +25,15 @@
 #ifndef SPLASH_COLORCALIBRATOR_H
 #define SPLASH_COLORCALIBRATOR_H
 
+#include <utility>
+#include <glm/glm.hpp>
+
 #include "config.h"
+
 #include "coretypes.h"
 #include "basetypes.h"
 #include "cgUtils.h"
-
-#include <utility>
-#include <glm/glm.hpp>
+#include "image_gphoto.h"
 
 namespace pic {
 class Image;
@@ -41,6 +43,7 @@ class CameraResponseFunction;
 namespace Splash {
 
 class World;
+class Scene;
 
 /*************/
 class ColorCalibrator : public BaseObject

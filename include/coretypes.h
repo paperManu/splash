@@ -63,63 +63,6 @@ namespace Splash
 {
 
 /*************/
-// All object types are specified here,
-// so that we don't have to do it everywhere
-
-class Camera;
-class Geometry;
-class Gui;
-class GuiColorCalibration;
-class GuiControl;
-class GuiGlobalView;
-class GuiWidget;
-class Image;
-class Image_Shmdata;
-class Link;
-class Mesh;
-class Mesh_Shmdata;
-class Object;
-class Scene;
-class Shader;
-class Texture;
-class Texture_Image;
-class Window;
-
-typedef std::shared_ptr<Camera> CameraPtr;
-typedef std::shared_ptr<Geometry> GeometryPtr;
-typedef std::shared_ptr<Gui> GuiPtr;
-typedef std::shared_ptr<Image> ImagePtr;
-typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
-typedef std::shared_ptr<Link> LinkPtr;
-typedef std::shared_ptr<Mesh> MeshPtr;
-typedef std::shared_ptr<Mesh_Shmdata> Mesh_ShmdataPtr;
-typedef std::shared_ptr<Object> ObjectPtr;
-typedef std::shared_ptr<Scene> ScenePtr;
-typedef std::shared_ptr<Shader> ShaderPtr;
-typedef std::shared_ptr<Texture> TexturePtr;
-typedef std::shared_ptr<Texture_Image> Texture_ImagePtr;
-typedef std::shared_ptr<Window> WindowPtr;
-
-#if HAVE_FFMPEG
-class Image_FFmpeg;
-typedef std::shared_ptr<Image_FFmpeg> Image_FFmpegPtr;
-#endif
-
-#if HAVE_GPHOTO
-class ColorCalibrator;
-class Image_GPhoto;
-
-typedef std::shared_ptr<ColorCalibrator> ColorCalibratorPtr;
-typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
-#endif
-
-#if HAVE_OSX
-class Texture_Syphon;
-
-typedef std::shared_ptr<Texture_Syphon> Texture_SyphonPtr;
-#endif
-
-/*************/
 struct SerializedObject
 {
     /**
@@ -195,6 +138,7 @@ struct SerializedObject
     /**
      * Attributes
      */
+    std::atomic_bool _inUse {false};
     std::mutex _mutex;
     std::vector<char> _data;
 };

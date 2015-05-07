@@ -25,10 +25,6 @@
 #ifndef SPLASH_SHADER_H
 #define SPLASH_SHADER_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <map>
 #include <memory>
@@ -36,6 +32,10 @@
 #include <vector>
 #include <unordered_map>
 
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 #include "texture.h"
 
 namespace Splash {

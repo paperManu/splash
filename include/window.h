@@ -25,10 +25,6 @@
 #ifndef SPLASH_WINDOW_H
 #define SPLASH_WINDOW_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <deque>
 #include <memory>
@@ -37,6 +33,14 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "object.h"
+#include "texture.h"
+#include "texture_image.h"
 
 namespace Splash {
 

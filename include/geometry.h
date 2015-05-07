@@ -25,14 +25,16 @@
 #ifndef SPLASH_GEOMETRY_H
 #define SPLASH_GEOMETRY_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <chrono>
 #include <map>
 #include <vector>
 #include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "mesh.h"
 
 namespace Splash {
 

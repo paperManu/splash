@@ -25,14 +25,14 @@
 #ifndef SPLASH_MESH_SHMDATA_H
 #define SPLASH_MESH_SHMDATA_H
 
-#include "config.h"
-
 #include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
 #include <shmdata/follower.hpp>
+
+#include "config.h"
 
 #include "mesh.h"
 #include "osUtils.h"

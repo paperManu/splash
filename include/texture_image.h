@@ -32,8 +32,10 @@
 #include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
+
 #include "coretypes.h"
 #include "basetypes.h"
+#include "image.h"
 #include "texture.h"
 
 namespace oiio = OIIO_NAMESPACE;

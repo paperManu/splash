@@ -29,6 +29,7 @@
 #include <shmdata/follower.hpp>
 
 #include "config.h"
+
 #include "image.h"
 #include "osUtils.h"
 
