@@ -314,7 +314,7 @@ class BufferObject : public BaseObject
         void setSerializedObject(std::unique_ptr<SerializedObject> obj)
         {
             {
-                std::lock_guard<std::mutex> lock(_writeMutex);
+                std::unique_lock<std::mutex> lock(_writeMutex);
                 _serializedObject = move(obj);
                 _newSerializedObject = true;
             }
@@ -381,7 +381,7 @@ class RootObject : public BaseObject
          */
         bool set(std::string name, std::string attrib, const Values& args)
         {
-            std::lock_guard<std::mutex> lock(_setMutex);
+            std::unique_lock<std::mutex> lock(_setMutex);
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 return setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
@@ -396,7 +396,7 @@ class RootObject : public BaseObject
          */
         void setFromSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj)
         {
-            std::lock_guard<std::mutex> lock(_setMutex);
+            std::unique_lock<std::mutex> lock(_setMutex);
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end() && std::dynamic_pointer_cast<BufferObject>(objectIt->second).get() != nullptr)
                 std::dynamic_pointer_cast<BufferObject>(objectIt->second)->setSerializedObject(std::move(obj));
@@ -433,7 +433,7 @@ class RootObject : public BaseObject
             if (_link == nullptr)
                 return {};
 
-            std::lock_guard<std::mutex> lock(_answerMutex);
+            std::unique_lock<std::mutex> lock(_answerMutex);
             _answerExpected = attribute;
             _link->sendMessage(name, attribute, message);
 

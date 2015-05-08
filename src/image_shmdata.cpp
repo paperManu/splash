@@ -269,7 +269,7 @@ void Image_Shmdata::onData(void* data, int data_size, void* user_data)
 /*************/
 void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    unique_lock<mutex> lock(ctx->_writeMutex);
 
     // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
     // First, we check the texture format type
@@ -310,7 +310,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 /*************/
 void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    unique_lock<mutex> lock(ctx->_writeMutex);
 
     // Check if we need to resize the reader buffer
     oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();

@@ -138,8 +138,6 @@ struct SerializedObject
     /**
      * Attributes
      */
-    std::atomic_bool _inUse {false};
-    std::mutex _mutex;
     std::vector<char> _data;
 };
 

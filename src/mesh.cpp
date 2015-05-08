@@ -38,7 +38,7 @@ bool Mesh::operator==(Mesh& otherMesh) const
 /*************/
 vector<float> Mesh::getVertCoords() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     vector<float> coords;
     for (auto& v : _mesh.vertices)
     {
@@ -53,7 +53,7 @@ vector<float> Mesh::getVertCoords() const
 /*************/
 vector<float> Mesh::getUVCoords() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     vector<float> coords;
     for (auto& u : _mesh.uvs)
     {
@@ -66,7 +66,7 @@ vector<float> Mesh::getUVCoords() const
 /*************/
 vector<float> Mesh::getNormals() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     vector<float> normals;
     for (auto& n : _mesh.normals)
     {
@@ -96,7 +96,7 @@ bool Mesh::read(const string& filename)
     mesh.uvs = objLoader.getUVs();
     mesh.normals = objLoader.getNormals();
 
-    lock_guard<mutex> lock(_writeMutex);
+    unique_lock<mutex> lock(_writeMutex);
     _mesh = mesh;
     updateTimestamp();
 
@@ -117,7 +117,7 @@ unique_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(move(getUVCoords()));
     data.push_back(move(getNormals()));
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
@@ -148,7 +148,7 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
 
-    lock_guard<mutex> lock(_writeMutex);
+    unique_lock<mutex> lock(_writeMutex);
 
     if (Timer::get().isDebug())
         Timer::get() << "deserialize " + _name;
@@ -230,8 +230,8 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
 /*************/
 void Mesh::update()
 {
-    lock_guard<mutex> lockRead(_readMutex);
-    lock_guard<mutex> lockWrite(_writeMutex);
+    unique_lock<mutex> lockRead(_readMutex);
+    unique_lock<mutex> lockWrite(_writeMutex);
     if (_meshUpdated)
     {
         _mesh = _bufferMesh;
@@ -268,7 +268,7 @@ void Mesh::createDefaultMesh()
     mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
     mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
 
-    lock_guard<mutex> lock(_writeMutex);
+    unique_lock<mutex> lock(_writeMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();

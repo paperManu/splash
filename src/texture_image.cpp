@@ -218,7 +218,7 @@ void Texture_Image::unbind()
 /*************/
 void Texture_Image::update()
 {
-    lock_guard<mutex> lock(_mutex);
+    unique_lock<mutex> lock(_mutex);
 
     // If _img is nullptr, this texture is not set from an Image
     if (_img.get() == nullptr)

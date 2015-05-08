@@ -64,7 +64,7 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    lock_guard<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
+    unique_lock<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();

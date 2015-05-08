@@ -63,7 +63,7 @@ const void* Image::data() const
 oiio::ImageBuf Image::get() const
 {
     oiio::ImageBuf img;
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     img.copy(_image);
     return img;
 }
@@ -71,14 +71,14 @@ oiio::ImageBuf Image::get() const
 /*************/
 oiio::ImageSpec Image::getSpec() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     return _image.spec();
 }
 
 /*************/
 void Image::set(const oiio::ImageBuf& img)
 {
-    lock_guard<mutex> lockRead(_readMutex);
+    unique_lock<mutex> lockRead(_readMutex);
     _image.copy(img);
 }
 
@@ -88,7 +88,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
     oiio::ImageSpec spec(w, h, channels, type);
     oiio::ImageBuf img(spec);
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     _image.swap(img);
     updateTimestamp();
 }
@@ -96,7 +96,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 /*************/
 unique_ptr<SerializedObject> Image::serialize() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
@@ -108,7 +108,6 @@ unique_ptr<SerializedObject> Image::serialize() const
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
     auto obj = unique_ptr<SerializedObject>(new SerializedObject(totalSize));
-    //lock_guard<mutex> lockObject(obj->_mutex);
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrChar);
@@ -160,7 +159,7 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
 
     try
     {
-        lock_guard<mutex> lockWrite(_writeMutex);
+        unique_lock<mutex> lockWrite(_writeMutex);
 
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
@@ -248,7 +247,7 @@ bool Image::readFile(const string& filename)
     if (channels != 3 && channels != 4)
         return false;
 
-    lock_guard<mutex> lock(_writeMutex);
+    unique_lock<mutex> lock(_writeMutex);
     _bufferImage.swap(img);
     _imageUpdated = true;
 
@@ -260,7 +259,7 @@ bool Image::readFile(const string& filename)
 /*************/
 void Image::setTo(float value)
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     float v[_image.nchannels()];
     for (int i = 0; i < _image.nchannels(); ++i)
         v[i] = (float)value;
@@ -270,8 +269,8 @@ void Image::setTo(float value)
 /*************/
 void Image::update()
 {
-    lock_guard<mutex> lockRead(_readMutex);
-    lock_guard<mutex> lockWrite(_writeMutex);
+    unique_lock<mutex> lockRead(_readMutex);
+    unique_lock<mutex> lockWrite(_writeMutex);
     if (_imageUpdated)
     {
         _image.swap(_bufferImage);
@@ -288,7 +287,7 @@ bool Image::write(const std::string& filename)
     if (!out)
         return false;
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     out->open(filename, _image.spec());
     out->write_image(_image.spec().format, _image.localpixels());
     out->close();
@@ -316,7 +315,7 @@ void Image::createDefaultImage()
                 p[c] = 0;
     }
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     _image.swap(img);
     updateTimestamp();
 }

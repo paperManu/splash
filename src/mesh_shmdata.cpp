@@ -98,7 +98,7 @@ void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
     }
 
     Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    unique_lock<mutex> lock(ctx->_writeMutex);
     if (Timer::get().isDebug())
         Timer::get() << "mesh_shmdata " + ctx->_name;
 
