@@ -127,6 +127,11 @@ class BaseObject
             return false;
         }
 
+        const std::vector<BaseObjectPtr>& getLinkedObjects()
+        {
+            return _linkedObjects;
+        }
+
         /**
          * Set the specified attribute
          */

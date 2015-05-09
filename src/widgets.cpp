@@ -797,4 +797,198 @@ void GuiTemplate::loadTemplates()
     }
 }
 
+/*************/
+map<string, vector<string>> GuiNodeView::getObjectLinks()
+{
+    auto scene = _scene.lock();
+
+    auto links = map<string, vector<string>>();
+
+    for (auto& o : scene->_objects)
+    {
+        links[o.first] = vector<string>();
+        auto linkedObjects = o.second->getLinkedObjects();
+        for (auto& link : linkedObjects)
+            links[o.first].push_back(link->getName());
+    }
+    for (auto& o : scene->_ghostObjects)
+    {
+        links[o.first] = vector<string>();
+        auto linkedObjects = o.second->getLinkedObjects();
+        for (auto& link : linkedObjects)
+            links[o.first].push_back(link->getName());
+    }
+
+    return links;
+}
+
+/*************/
+map<string, string> GuiNodeView::getObjectTypes()
+{
+    auto scene = _scene.lock();
+
+    auto types = map<string, string>();
+
+    for (auto& o : scene->_objects)
+        types[o.first] = o.second->getType();
+    for (auto& o : scene->_ghostObjects)
+        types[o.first] = o.second->getType();
+
+    return types;
+}
+
+/*************/
+void GuiNodeView::render()
+{
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        // This defines the default positions for various node types
+        static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
+                                                                 {"window", {8, 64}},
+                                                                 {"camera", {64, 128}},
+                                                                 {"object", {8, 192}},
+                                                                 {"texture", {64, 256}},
+                                                                 {"image", {8, 320}},
+                                                                 {"mesh", {64, 384}}
+                                                                });
+
+        // Begin a subwindow to enclose nodes
+        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true);
+
+        // Get objects and their relations
+        auto objectLinks = getObjectLinks();
+        auto objectTypes = getObjectTypes();
+
+        // Objects useful for drawing
+        auto drawList = ImGui::GetWindowDrawList();
+        auto canvasPos = ImGui::GetCursorScreenPos();
+
+        // Draw objects
+        for (auto& object : objectTypes)
+        {
+            auto& name = object.first;
+            auto& type = object.second;
+            type = type.substr(0, type.find("_"));
+
+            // We keep count of the number of objects by type, more precisely their shifting
+            auto shiftIt = _shiftByType.find(type);
+            if (shiftIt == _shiftByType.end())
+                _shiftByType[type] = 0;
+            auto shift = _shiftByType[type];
+
+            // Get the default position for the given type
+            auto nodePosition = ImVec2(-1, -1);
+            auto defaultPosIt = defaultPositionByType.find(type);
+            if (defaultPosIt == defaultPositionByType.end())
+            {
+                type = "default";
+                nodePosition = defaultPositionByType["default"];
+            }
+            else
+            {
+                nodePosition = defaultPosIt->second;
+                nodePosition.x += shift;
+            }
+            
+            ImGui::SetCursorPos(nodePosition);
+            renderNode(name);
+
+            _shiftByType[type] += _nodeSize[0] + 8;
+        }
+
+        // Draw lines
+        for (auto& object : objectLinks)
+        {
+            auto& name = object.first;
+            auto& links = object.second;
+
+            auto& currentNodePos = _nodePositions[name];
+            auto firstPoint = ImVec2(currentNodePos[0] + canvasPos.x, currentNodePos[1] + canvasPos.y);
+
+            for (auto& target : links)
+            {
+                auto targetIt = _nodePositions.find(target);
+                if (targetIt == _nodePositions.end())
+                    continue;
+
+                auto& targetPos = targetIt->second;
+                auto secondPoint = ImVec2(targetPos[0] + canvasPos.x, targetPos[1] + canvasPos.y);
+
+                drawList->AddLine(firstPoint, secondPoint, 0xBB0088FF, 2.f);
+            }
+        }
+
+        // end of the subwindow
+        ImGui::EndChild();
+
+        // Interactions
+        if (ImGui::IsItemHovered())
+        {
+            _isHovered = true;
+
+            ImGuiIO& io = ImGui::GetIO();
+            if (io.MouseDownTime[0] > 0.0)
+            {
+                float dx = io.MouseDelta.x;
+                float dy = io.MouseDelta.y;
+                _viewShift[0] += dx;
+                _viewShift[1] += dy;
+            }
+        }
+        else
+            _isHovered = false;
+    }
+}
+
+/*************/
+void GuiNodeView::renderNode(string name)
+{
+    auto pos = _nodePositions.find(name);
+    if (pos == _nodePositions.end())
+    {
+        auto cursorPos = ImGui::GetCursorPos();
+        _nodePositions[name] = vector<float>({cursorPos.x, cursorPos.y});
+    }
+    else
+    {
+        auto& nodePos = (*pos).second;
+        ImGui::SetCursorPos(ImVec2(nodePos[0], nodePos[1]));
+    }
+
+    // Beginning of node rendering
+    ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
+
+    ImGui::SetCursorPos(ImVec2(0, 2));
+    if (ImGui::CollapsingHeader(name.c_str()))
+    {
+    }
+
+    if (ImGui::IsItemHovered())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.MouseDownTime[0] > 0.0)
+        {
+            float dx = io.MouseDelta.x;
+            float dy = io.MouseDelta.y;
+            auto& nodePos = (*pos).second;
+            nodePos[0] += dx;
+            nodePos[1] += dy;
+        }
+    }
+    
+    // End of node rendering
+    ImGui::EndChild();
+}
+
+/*************/
+int GuiNodeView::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    if (_isHovered)
+    {
+        flags |= ImGuiWindowFlags_NoMove;
+    }
+    return flags;
+}
+
 } // end of namespace

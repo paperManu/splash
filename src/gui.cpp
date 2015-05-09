@@ -602,6 +602,8 @@ void Gui::initImGui(int width, int height)
 
     // Set style
     ImGuiStyle& style = ImGui::GetStyle();
+    style.ChildWindowRounding = 2.f;
+    style.FrameRounding = 2.f;
     style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -666,7 +668,7 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
 
     // Some help regarding keyboard shortcuts
-    shared_ptr<GuiTextBox> helpBox = make_shared<GuiTextBox>("Shortcuts");
+    auto helpBox = make_shared<GuiTextBox>("Shortcuts");
     helpBox->setTextFunc([]()
     {
         string text;
@@ -694,7 +696,7 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
 
     // FPS and timings
-    shared_ptr<GuiTextBox> timingBox = make_shared<GuiTextBox>("Timings");
+    auto timingBox = make_shared<GuiTextBox>("Timings");
     timingBox->setTextFunc([]()
     {
         // Smooth the values
@@ -734,7 +736,7 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
 
     // Log display
-    shared_ptr<GuiTextBox> logBox = make_shared<GuiTextBox>("Logs");
+    auto logBox = make_shared<GuiTextBox>("Logs");
     logBox->setTextFunc([]()
     {
         int nbrLines = 10;
@@ -753,18 +755,23 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 
     // Control
-    shared_ptr<GuiControl> controlView = make_shared<GuiControl>("Controls");
+    auto controlView = make_shared<GuiControl>("Controls");
     controlView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
+    // Node view
+    auto nodeView = make_shared<GuiNodeView>("Nodes");
+    nodeView->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(nodeView));
+
     // GUI camera view
-    shared_ptr<GuiGlobalView> globalView = make_shared<GuiGlobalView>("Views");
+    auto globalView = make_shared<GuiGlobalView>("Views");
     globalView->setCamera(_guiCamera);
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Performance graph
-    shared_ptr<GuiGraph> perfGraph = make_shared<GuiGraph>("Performance Graph");
+    auto perfGraph = make_shared<GuiGraph>("Performance Graph");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 }
 
