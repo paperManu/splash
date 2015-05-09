@@ -806,6 +806,8 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
 
     for (auto& o : scene->_objects)
     {
+        if (!o.second->_savable)
+            continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
         for (auto& link : linkedObjects)
@@ -813,6 +815,8 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
     }
     for (auto& o : scene->_ghostObjects)
     {
+        if (!o.second->_savable)
+            continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
         for (auto& link : linkedObjects)
@@ -830,9 +834,17 @@ map<string, string> GuiNodeView::getObjectTypes()
     auto types = map<string, string>();
 
     for (auto& o : scene->_objects)
+    {
+        if (!o.second->_savable)
+            continue;
         types[o.first] = o.second->getType();
+    }
     for (auto& o : scene->_ghostObjects)
+    {
+        if (!o.second->_savable)
+            continue;
         types[o.first] = o.second->getType();
+    }
 
     return types;
 }
@@ -851,9 +863,10 @@ void GuiNodeView::render()
                                                                  {"image", {8, 320}},
                                                                  {"mesh", {64, 384}}
                                                                 });
+        std::map<std::string, int> shiftByType;
 
         // Begin a subwindow to enclose nodes
-        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true);
+        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar);
 
         // Get objects and their relations
         auto objectLinks = getObjectLinks();
@@ -862,6 +875,9 @@ void GuiNodeView::render()
         // Objects useful for drawing
         auto drawList = ImGui::GetWindowDrawList();
         auto canvasPos = ImGui::GetCursorScreenPos();
+        // Apply view shift
+        canvasPos.x += _viewShift[0];
+        canvasPos.y += _viewShift[1];
 
         // Draw objects
         for (auto& object : objectTypes)
@@ -871,10 +887,10 @@ void GuiNodeView::render()
             type = type.substr(0, type.find("_"));
 
             // We keep count of the number of objects by type, more precisely their shifting
-            auto shiftIt = _shiftByType.find(type);
-            if (shiftIt == _shiftByType.end())
-                _shiftByType[type] = 0;
-            auto shift = _shiftByType[type];
+            auto shiftIt = shiftByType.find(type);
+            if (shiftIt == shiftByType.end())
+                shiftByType[type] = 0;
+            auto shift = shiftByType[type];
 
             // Get the default position for the given type
             auto nodePosition = ImVec2(-1, -1);
@@ -893,7 +909,7 @@ void GuiNodeView::render()
             ImGui::SetCursorPos(nodePosition);
             renderNode(name);
 
-            _shiftByType[type] += _nodeSize[0] + 8;
+            shiftByType[type] += _nodeSize[0] + 8;
         }
 
         // Draw lines
@@ -947,12 +963,12 @@ void GuiNodeView::renderNode(string name)
     if (pos == _nodePositions.end())
     {
         auto cursorPos = ImGui::GetCursorPos();
-        _nodePositions[name] = vector<float>({cursorPos.x, cursorPos.y});
+        _nodePositions[name] = vector<float>({cursorPos.x + _viewShift[0], cursorPos.y + _viewShift[1]});
     }
     else
     {
         auto& nodePos = (*pos).second;
-        ImGui::SetCursorPos(ImVec2(nodePos[0], nodePos[1]));
+        ImGui::SetCursorPos(ImVec2(nodePos[0] + _viewShift[0], nodePos[1] + _viewShift[1]));
     }
 
     // Beginning of node rendering

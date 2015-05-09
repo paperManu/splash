@@ -180,7 +180,6 @@ class GuiNodeView : public GuiWidget
         std::vector<int> _viewSize {640, 480};
         std::vector<int> _viewShift {0, 0};
         std::map<std::string, std::vector<float>> _nodePositions;
-        std::map<std::string, int> _shiftByType;
         
         std::map<std::string, std::vector<std::string>> getObjectLinks();
         std::map<std::string, std::string> getObjectTypes();
