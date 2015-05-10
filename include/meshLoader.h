@@ -202,7 +202,7 @@ namespace Splash
                 }
 
                 // Check that we have faces, vertices and UVs
-                if (_vertices.size() == 0 || _faces.size() == 0 || _uvs.size() == 0)
+                if (_vertices.size() == 0 || _faces.size() == 0)
                 {
                     _vertices.clear();
                     _faces.clear();
