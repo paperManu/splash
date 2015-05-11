@@ -1019,6 +1019,14 @@ dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 /*************/
 dmat4 Camera::computeViewMatrix()
 {
+    // Eye and target can't be identical
+    if (_eye == _target)
+    {
+        _target[0] = _eye[0] + _up[1];
+        _target[1] = _eye[1] + _up[2];
+        _target[2] = _eye[2] + _up[0];
+    }
+
     dmat4 viewMatrix = lookAt(_eye, _target, _up);
     return viewMatrix;
 }

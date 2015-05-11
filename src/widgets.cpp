@@ -51,14 +51,14 @@ void GuiControl::render()
         // World control
         ImGui::Text("World configuration (not saved!)");
         static auto worldFramerate = 60;
-        if (ImGui::InputInt("World framerate", &worldFramerate))
+        if (ImGui::InputInt("World framerate", &worldFramerate, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             worldFramerate = std::max(worldFramerate, 0);
             auto scene = _scene.lock();
             scene->sendMessageToWorld("framerate", {worldFramerate});
         }
         static auto syncTestFrameDelay = 0;
-        if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay))
+        if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
             auto scene = _scene.lock();
@@ -118,7 +118,7 @@ void GuiControl::render()
                 {
                     float tmp = attr.second[0].asFloat();
                     float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
-                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision))
+                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
@@ -134,7 +134,7 @@ void GuiControl::render()
                     vector<float> tmp;
                     tmp.push_back(attr.second[0].asFloat());
                     tmp.push_back(attr.second[1].asFloat());
-                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
@@ -151,7 +151,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[0].asFloat());
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
-                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
@@ -169,7 +169,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
                     tmp.push_back(attr.second[3].asFloat());
-                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});

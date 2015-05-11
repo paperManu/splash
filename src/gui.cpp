@@ -180,7 +180,13 @@ void Gui::key(int key, int action, int mods)
     {
     default:
     {
+sendAsDefault:
         using namespace ImGui;
+
+        // Numpad enter is converted to regular enter
+        if (key == GLFW_KEY_KP_ENTER)
+            key = GLFW_KEY_ENTER;
+
         ImGuiIO& io = GetIO();
         if (action == GLFW_PRESS)
             io.KeysDown[key] = true;
@@ -193,8 +199,10 @@ void Gui::key(int key, int action, int mods)
     }
     case GLFW_KEY_TAB:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             _isVisible = !_isVisible;
+        else
+            goto sendAsDefault;
         break;
     }
     case GLFW_KEY_ESCAPE:
@@ -615,8 +623,8 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
     style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
     style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.20f, 0.20f, 0.20f, 0.99f);
-    style.Colors[ImGuiCol_CheckHovered]          = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
-    style.Colors[ImGuiCol_CheckActive]           = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
+    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
+    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
     style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
     style.Colors[ImGuiCol_SliderGrab]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
     style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
