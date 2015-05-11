@@ -120,11 +120,12 @@ class GuiControl : public GuiWidget
     public:
         GuiControl(std::string name) : GuiWidget(name) {}
         void render();
-        int updateWindowFlags() {return 0;}
+        int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
         SceneWeakPtr _scene;
+        std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
         

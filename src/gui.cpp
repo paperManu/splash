@@ -767,11 +767,6 @@ void Gui::initImWidgets()
     controlView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
-    // Node view
-    auto nodeView = make_shared<GuiNodeView>("Nodes");
-    nodeView->setScene(_scene);
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(nodeView));
-
     // GUI camera view
     auto globalView = make_shared<GuiGlobalView>("Views");
     globalView->setCamera(_guiCamera);

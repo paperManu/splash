@@ -68,6 +68,21 @@ void GuiControl::render()
         ImGui::Separator();
         ImGui::Spacing();
 
+        // Node view
+        if (!_nodeView)
+        {
+            auto nodeView = make_shared<GuiNodeView>("Nodes");
+            nodeView->setScene(_scene);
+            _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
+        }
+        ImGui::Text("Configuration global view");
+        _nodeView->render();
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Node configuration
         ImGui::Text("Objects configuration (saved!)");
         // Select the object the control
         {
@@ -224,11 +239,28 @@ vector<string> GuiControl::getObjectNames()
     vector<string> objNames;
 
     for (auto& o : scene->_objects)
+    {
+        if (!o.second->_savable)
+            continue;
         objNames.push_back(o.first);
+    }
     for (auto& o : scene->_ghostObjects)
+    {
+        if (!o.second->_savable)
+            continue;
         objNames.push_back(o.first);
+    }
 
     return objNames;
+}
+
+/*************/
+int GuiControl::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    if (_nodeView)
+        flags |= _nodeView->updateWindowFlags();
+    return flags;
 }
 
 /*************/
@@ -852,7 +884,8 @@ map<string, string> GuiNodeView::getObjectTypes()
 /*************/
 void GuiNodeView::render()
 {
-    if (ImGui::CollapsingHeader(_name.c_str()))
+    //if (ImGui::CollapsingHeader(_name.c_str()))
+    if (true)
     {
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
@@ -866,7 +899,7 @@ void GuiNodeView::render()
         std::map<std::string, int> shiftByType;
 
         // Begin a subwindow to enclose nodes
-        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar);
+        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
         // Get objects and their relations
         auto objectLinks = getObjectLinks();
