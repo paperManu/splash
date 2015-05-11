@@ -54,6 +54,7 @@ class Scene : public RootObject
 #endif
     friend GuiControl;
     friend GuiGlobalView;
+    friend GuiNodeView;
     friend GuiWidget;
     friend Gui;
 

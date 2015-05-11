@@ -32,6 +32,7 @@
 #include <atomic>
 #include <deque>
 #include <functional>
+#include <map>
 #include <memory>
 #include <unordered_map>
 
@@ -159,6 +160,30 @@ class GuiTemplate : public GuiWidget
         std::map<std::string, std::string> _descriptions;
 
         void loadTemplates();
+};
+
+/*************/
+class GuiNodeView : public GuiWidget
+{
+    public:
+        GuiNodeView(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        int updateWindowFlags();
+
+    private:
+        SceneWeakPtr _scene;
+        bool _isHovered {false};
+
+        // Node render settings
+        std::vector<int> _nodeSize {160, 60};
+        std::vector<int> _viewSize {640, 480};
+        std::vector<int> _viewShift {0, 0};
+        std::map<std::string, std::vector<float>> _nodePositions;
+        
+        std::map<std::string, std::vector<std::string>> getObjectLinks();
+        std::map<std::string, std::string> getObjectTypes();
+        void renderNode(std::string name);
 };
 
 } // end of namespace
