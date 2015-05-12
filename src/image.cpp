@@ -19,14 +19,12 @@ namespace Splash {
 Image::Image()
 {
     init();
-    createDefaultImage();
 }
 
 /*************/
 Image::Image(bool linked)
 {
     init();
-    createDefaultImage();
     _linkedToWorldObject = linked;
 }
 
@@ -42,6 +40,8 @@ void Image::init()
 {
     _type = "image";
     oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
+
+    createDefaultImage();
     registerAttributes();
 }
 

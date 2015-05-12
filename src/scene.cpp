@@ -991,6 +991,7 @@ void Scene::registerAttributes()
 
     _attribFunctions["start"] = AttributeFunctor([&](const Values& args) {
         _started = true;
+        sendMessageToWorld("answerMessage", {"start", _name});
         return true;
     });
 

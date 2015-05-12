@@ -457,7 +457,8 @@ void World::applyConfig()
     }
 
     // Send the start message for all scenes
-    sendMessage(SPLASH_ALL_PAIRS, "start", {});
+    for (auto& s : _scenes)
+        auto answer = sendMessageWithAnswer(s.first, "start");
 }
 
 /*************/
