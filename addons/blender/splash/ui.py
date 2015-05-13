@@ -18,6 +18,19 @@
 # 
 
 from bpy.types import Panel
+from bpy_extras.io_utils import ExportHelper
+from bpy.props import (StringProperty,
+                       IntProperty,
+                       PointerProperty
+                       )
+from bpy.types import (Operator,
+                       PropertyGroup,
+                       )
+from bpy import path
+
+import imp
+if "operators" in locals():
+    imp.reload(operators)
 
 class SplashToolbar:
     bl_label = "Splash"
@@ -69,3 +82,72 @@ class SplashToolbarMesh(Panel, SplashToolbar):
     bl_category = "Video Mapping"
     bl_idname = "MESH_PT_splash_mesh"
     bl_context = "mesh_edit"
+
+
+# Splash object panel
+class SplashObjectPanel(Panel):
+    """Displays a Splash panel in the Object properties window"""
+    bl_label = "Splash parameters"
+    bl_idname = "OBJECT_PT_Splash"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return (obj and (obj.type == 'CAMERA' or obj.type == 'MESH'))
+
+    def draw(self, context):
+        import bpy
+
+        layout = self.layout
+        if context.object.type == 'CAMERA':
+            object = bpy.data.cameras[context.object.name]
+            
+            row = layout.row()
+            row.label("Window size:")
+            row = layout.row()
+            row.prop(object, "splash_width", text="Width")
+            row.prop(object, "splash_height", text="Height")
+
+            row = layout.row()
+            row.prop(object, "splash_window_decoration", text="Window decoration")
+
+            row = layout.row()
+            row.label("Fullscreen:")
+            row = layout.row()
+            row.prop(object, "splash_window_fullscreen", text="Activated")
+            row.prop(object, "splash_fullscreen_index", text="Screen")
+
+        elif context.object.type == 'MESH':
+            object = bpy.data.meshes[context.object.name]
+
+            row = layout.row()
+            row.prop(object, "splash_texture_type", text="Type")
+            row = layout.row()
+            row.prop(object, "splash_texture_path", text="Path")
+
+
+# Splash export
+class SplashExport(Operator, ExportHelper):
+    """Exports cameras and meshes to a Splash config file"""
+    bl_idname = "splash.export"
+    bl_label = "Export to Splash"
+
+    filename_ext = ".json"
+    filter_glob = StringProperty(
+        default = "*.json",
+        options={'HIDDEN'},
+        )
+
+    def execute(self, context):
+        from . import operators
+
+        filepath = self.filepath
+        filepath = path.ensure_ext(filepath, self.filename_ext)
+
+        return operators.export_to_splash(self, context, filepath)
+
+def splash_menu_export(self, context):
+    self.layout.operator(SplashExport.bl_idname, SplashExport.bl_label)
