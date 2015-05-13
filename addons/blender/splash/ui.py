@@ -140,7 +140,7 @@ class SplashObjectPanel(Panel):
 class SplashExport(Operator, ExportHelper):
     """Exports cameras and meshes to a Splash config file"""
     bl_idname = "splash.export"
-    bl_label = "Export to Splash"
+    bl_label = "Export to Splash (.json)"
 
     filename_ext = ".json"
     filter_glob = StringProperty(
