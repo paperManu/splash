@@ -134,6 +134,11 @@ def getTextureTypes(scene, context):
              ('texture_syphon', 'Syphon', "")]
     return items
 
+def getMeshTypes(scene, context):
+    items = [('mesh', 'Mesh', ""),
+             ('mesh_shmdata', 'Shmdata', "")]
+    return items
+
 def registerProperties():
     bpy.types.Camera.splash_width = IntProperty("Width", default=1280, min=320)
     bpy.types.Camera.splash_height = IntProperty("Height", default=800, min=240)
@@ -145,8 +150,14 @@ def registerProperties():
                                                      description="Texture path Splash should use for this object",
                                                      default="", maxlen=1024, subtype="FILE_PATH")
     bpy.types.Mesh.splash_texture_type = EnumProperty(name="Texture type",
-                                                        description="Type of the texture to use",
-                                                        items=getTextureTypes)
+                                                      description="Type of the texture to use",
+                                                      items=getTextureTypes)
+    bpy.types.Mesh.splash_mesh_path = StringProperty(name="Path to the mesh to use",
+                                                     description="Mesh path Splash should use for this object (leave empty for auto export)",
+                                                     default="", maxlen=1024, subtype="FILE_PATH")
+    bpy.types.Mesh.splash_mesh_type = EnumProperty(name="Mesh type",
+                                                   description="Type of the mesh to use",
+                                                   items=getMeshTypes)
 
 
 def register():

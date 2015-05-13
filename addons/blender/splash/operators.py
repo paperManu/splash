@@ -370,24 +370,29 @@ def export_to_splash(self, context, filepath):
     for item in scene.objects.items():
         object = item[1]
         if object.type == 'MESH':
-            # Export the selected mesh
-            path = os.path.dirname(filepath) + "/" + object.name + ".obj"
-            bpy.ops.object.select_pattern(pattern=object.name, extend=False)
-            bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
-                                     use_uvs=True, axis_forward='Y', axis_up='Z')
 
             # Fill splash configuration
             objectData = bpy.data.meshes[object.name]
 
+            if objectData.splash_mesh_type == "mesh" and objectData.splash_mesh_path == "":
+                meshPath = "%s.obj" % object.name
+                # Export the selected mesh
+                path = os.path.dirname(filepath) + "/" + object.name + ".obj"
+                bpy.ops.object.select_pattern(pattern=object.name, extend=False)
+                bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
+                                         use_uvs=True, axis_forward='Y', axis_up='Z')
+            else:
+                meshPath = objectData.splash_mesh_path
+
             stringArgs = (object.name,
-                          "%s.obj" % object.name,
+                          objectData.splash_mesh_type, meshPath,
                           "image_%s" % object.name, objectData.splash_texture_type, objectData.splash_texture_path,
                           "object_%s" % object.name,
                           object.scale[0], object.scale[1], object.scale[2],
                           object.matrix_world[0][3], object.matrix_world[1][3], object.matrix_world[2][3])
 
             fw("        \"%s\" : {\n"
-               "            \"type\" : \"mesh\",\n"
+               "            \"type\" : \"%s\",\n"
                "            \"file\" : \"%s\"\n"
                "        },\n"
                "        \"%s\" : {\n"

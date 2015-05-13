@@ -124,9 +124,16 @@ class SplashObjectPanel(Panel):
             object = bpy.data.meshes[context.object.name]
 
             row = layout.row()
-            row.prop(object, "splash_texture_type", text="Type")
+            row.label("Mesh:")
             row = layout.row()
-            row.prop(object, "splash_texture_path", text="Path")
+            row.prop(object, "splash_mesh_type", text="")
+            row.prop(object, "splash_mesh_path", text="")
+
+            row = layout.row()
+            row.label("Texture:")
+            row = layout.row()
+            row.prop(object, "splash_texture_type", text="")
+            row.prop(object, "splash_texture_path", text="")
 
 
 # Splash export
