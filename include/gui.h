@@ -36,8 +36,6 @@
 #include <deque>
 #include <functional>
 #include <memory>
-#include <GLFW/glfw3.h>
-//#define ImVector std::vector
 #include <imgui.h>
 
 #include "config.h"
