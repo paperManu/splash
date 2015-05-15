@@ -77,6 +77,7 @@ class Image_OpenCV : public Image
 
         std::thread _readLoopThread;
         std::atomic_bool _continueReading {false};
+        oiio::ImageBuf _readBuffer;
 
         /**
          * Input read loop
