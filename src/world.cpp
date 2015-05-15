@@ -16,6 +16,9 @@
 #if HAVE_FFMPEG
     #include "image_ffmpeg.h"
 #endif
+#if HAVE_OPENCV
+    #include "image_opencv.h"
+#endif
 #include "image_shmdata.h"
 #include "link.h"
 #include "log.h"
@@ -180,6 +183,10 @@ void World::addLocally(string type, string name, string destination)
 #if HAVE_FFMPEG
         else if (type == string("image_ffmpeg"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
+#endif
+#if HAVE_OPENCV
+        else if (type == string("image_opencv"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>());
 #endif
 #if HAVE_GPHOTO
         else if (type == string("image_gphoto"))

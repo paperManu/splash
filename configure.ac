@@ -152,6 +152,12 @@ PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
     AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected]))
 AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
 
+# OpenCV, for their hardware support
+PKG_CHECK_MODULES([OPENCV], [opencv],
+    AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected]),
+    AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected]))
+AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
+
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
 if test "x$MARKDOWN" = "xtrue" ; then

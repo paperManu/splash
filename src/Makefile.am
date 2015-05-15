@@ -96,6 +96,13 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(FFMPEG_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(FFMPEG_LIBS)
 endif
 
+## OpenCV related
+if HAVE_OPENCV
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_opencv.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(OPENCV_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(OPENCV_LIBS)
+endif
+
 # OSX
 if HAVE_OSX
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -144,6 +151,12 @@ splash_CXXFLAGS += $(FFMPEG_CFLAGS)
 splash_LDFLAGS += $(FFMPEG_LIBS)
 endif
 
+## OpenCV related
+if HAVE_OPENCV
+splash_CXXFLAGS += $(OPENCV_CFLAGS)
+splash_LDFLAGS += $(OPENCV_LIBS)
+endif
+
 if HAVE_OSX
 splash_LDFLAGS += \
 	-F$(top_srcdir)/external/syphon/build/Release \
@@ -176,6 +189,12 @@ splash_scene_LDFLAGS = \
 if HAVE_FFMPEG
 splash_scene_CXXFLAGS += $(FFMPEG_CFLAGS)
 splash_scene_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
+## OpenCV related
+if HAVE_OPENCV
+splash_CXXFLAGS += $(OPENCV_CFLAGS)
+splash_LDFLAGS += $(OPENCV_LIBS)
 endif
 
 if HAVE_OSX

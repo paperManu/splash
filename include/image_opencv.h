@@ -18,12 +18,12 @@
  */
 
 /*
- * @image_ffmpeg.h
- * The Image_FFmpeg class
+ * @image_opencv.h
+ * The Image_OpenCV class
  */
 
-#ifndef SPLASH_IMAGE_FFMPEG_H
-#define SPLASH_IMAGE_FFMPEG_H
+#ifndef SPLASH_IMAGE_OPENCV_H
+#define SPLASH_IMAGE_OPENCV_H
 
 #include <atomic>
 #include <mutex>
@@ -37,26 +37,30 @@
 
 namespace oiio = OIIO_NAMESPACE;
 
+namespace cv {
+    class VideoCapture;
+}
+
 namespace Splash {
 
-class Image_FFmpeg : public Image
+class Image_OpenCV : public Image
 {
     public:
         /**
          * Constructor
          */
-        Image_FFmpeg();
+        Image_OpenCV();
 
         /**
          * Destructor
          */
-        ~Image_FFmpeg();
+        ~Image_OpenCV();
 
         /**
          * No copy, but some move constructors
          */
-        Image_FFmpeg(const Image_FFmpeg&) = delete;
-        Image_FFmpeg& operator=(const Image_FFmpeg&) = delete;
+        Image_OpenCV(const Image_OpenCV&) = delete;
+        Image_OpenCV& operator=(const Image_OpenCV&) = delete;
 
         /**
          * Set the path to read from
@@ -65,17 +69,18 @@ class Image_FFmpeg : public Image
 
     private:
         std::string _filename;
-        void* _avFormatContext {nullptr};
+        std::unique_ptr<cv::VideoCapture> _videoCapture;
+        unsigned int _inputIndex {0};
+        unsigned int _width {640};
+        unsigned int _height {480};
+        float _framerate {60.0};
+
         std::thread _readLoopThread;
-        std::atomic_bool _continueReadLoop;
+        std::atomic_bool _continueReading {false};
+        oiio::ImageBuf _readBuffer;
 
         /**
-         * Free everything related to FFmpeg
-         */
-        void freeFFmpegObjects();
-
-        /**
-         * File read loop
+         * Input read loop
          */
         void readLoop();
 
@@ -85,8 +90,8 @@ class Image_FFmpeg : public Image
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Image_FFmpeg> Image_FFmpegPtr;
+typedef std::shared_ptr<Image_OpenCV> Image_OpenCVPtr;
 
 } // end of namespace
 
-#endif // SPLASH_IMAGE_FFMPEG_H
+#endif // SPLASH_IMAGE_OPENCV_H
