@@ -70,7 +70,7 @@ class Image_OpenCV : public Image
         /**
          * Update the content of the image
          */
-        void update();
+        //void update();
 
     private:
         std::string _filename;
@@ -78,6 +78,15 @@ class Image_OpenCV : public Image
         unsigned int _inputIndex {0};
         unsigned int _width {640};
         unsigned int _height {480};
+        float _framerate {60.0};
+
+        std::thread _readLoopThread;
+        std::atomic_bool _continueReading {false};
+
+        /**
+         * Input read loop
+         */
+        void readLoop();
 
         /**
          * Register new functors to modify attributes

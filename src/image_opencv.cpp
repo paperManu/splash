@@ -27,6 +27,9 @@ Image_OpenCV::Image_OpenCV()
 /*************/
 Image_OpenCV::~Image_OpenCV()
 {
+    _continueReading = false;
+    if (_readLoopThread.joinable())
+        _readLoopThread.join();
 }
 
 /*************/
@@ -41,11 +44,16 @@ bool Image_OpenCV::read(const string& filename)
         _inputIndex = 0;
     }
 
+    _continueReading = true;
+    _readLoopThread = thread([&]() {
+        readLoop();
+    });
+
     return true;
 }
 
 /*************/
-void Image_OpenCV::update()
+void Image_OpenCV::readLoop()
 {
     if (!_videoCapture)
         return;
@@ -56,24 +64,35 @@ void Image_OpenCV::update()
             return;
         _videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
         _videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
+        _videoCapture->set(CV_CAP_PROP_FPS, _framerate);
     }
 
-    auto capture = cv::Mat();
-    if (!_videoCapture->read(capture))
-        return;
+    while (_continueReading)
+    {
+        auto tmpCapture = cv::Mat();
+        if (!_videoCapture->read(tmpCapture))
+            return;
+        auto capture = cv::Mat();
+        cv::cvtColor(tmpCapture, capture, CV_BGR2RGB);
 
-    oiio::ImageSpec spec(capture.cols, capture.rows, capture.channels(), oiio::TypeDesc::UINT8);
-    oiio::ImageBuf img(spec);
-    unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
+        oiio::ImageSpec spec(capture.cols, capture.rows, capture.channels(), oiio::TypeDesc::UINT8);
+        oiio::ImageBuf img(spec);
+        unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
 
-    unsigned int imageSize = capture.rows * capture.cols * capture.channels();
-    copy(capture.data, capture.data + imageSize, pixels);
+        unsigned int imageSize = capture.rows * capture.cols * capture.channels();
+        copy(capture.data, capture.data + imageSize, pixels);
 
-    unique_lock<mutex> lockRead(_readMutex);
-    unique_lock<mutex> lockWrite(_writeMutex);
-    _image.swap(img);
-    updateTimestamp();
+        unique_lock<mutex> lockWrite(_writeMutex);
+        _bufferImage.swap(img);
+        _imageUpdated = true;
+        updateTimestamp();
+    }
 }
+
+/*************/
+//void Image_OpenCV::update()
+//{
+//}
 
 /*************/
 void Image_OpenCV::registerAttributes()
@@ -88,6 +107,17 @@ void Image_OpenCV::registerAttributes()
         _height = (_height == 0) ? 640 : _height;
 
         return true;
+    }, [&]() -> Values {
+        return {(int)_width, (int)_height};
+    });
+
+    _attribFunctions["framerate"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _framerate = (args[0].asFloat() == 0) ? 60 : args[0].asFloat();
+        return true;
+    }, [&]() -> Values {
+        return {_framerate};
     });
 }
 
