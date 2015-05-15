@@ -57,19 +57,6 @@ class Image_FFmpeg : public Image
          */
         Image_FFmpeg(const Image_FFmpeg&) = delete;
         Image_FFmpeg& operator=(const Image_FFmpeg&) = delete;
-        
-        Image_FFmpeg(Image_FFmpeg&& i) noexcept
-        {
-            *this = std::move(i);
-        }
-
-        Image_FFmpeg& operator=(Image_FFmpeg&& i) noexcept
-        {
-            if (this != &i)
-            {
-            }
-            return *this;
-        }
 
         /**
          * Set the path to read from
