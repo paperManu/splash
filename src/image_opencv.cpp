@@ -56,26 +56,39 @@ bool Image_OpenCV::read(const string& filename)
 void Image_OpenCV::readLoop()
 {
     if (!_videoCapture)
+    {
+        Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to create the VideoCapture" << Log::endl;
         return;
+    }
 
     if (!_videoCapture->isOpened())
     {
         if (!_videoCapture->open(_inputIndex))
+        {
+            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << _inputIndex << Log::endl;
             return;
+        }
         _videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
         _videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
         _videoCapture->set(CV_CAP_PROP_FPS, _framerate);
+
+        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Sucessfully initialized VideoCapture " << _inputIndex << Log::endl;
     }
 
     while (_continueReading)
     {
-        auto tmpCapture = cv::Mat();
-        if (!_videoCapture->read(tmpCapture))
-            return;
+        if (Timer::get().isDebug())
+            Timer::get() << "read " + _name;
+
         auto capture = cv::Mat();
-        cv::cvtColor(tmpCapture, capture, CV_BGR2RGB);
+        if (!_videoCapture->read(capture))
+        {
+            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - An error occurred while reading the VideoCapture" << Log::endl;
+            return;
+        }
 
         oiio::ImageSpec spec(capture.cols, capture.rows, capture.channels(), oiio::TypeDesc::UINT8);
+        spec.channelnames = vector<string>({"B", "G", "R"});
         oiio::ImageBuf img(spec);
         unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
 
@@ -86,13 +99,11 @@ void Image_OpenCV::readLoop()
         _bufferImage.swap(img);
         _imageUpdated = true;
         updateTimestamp();
+
+        if (Timer::get().isDebug())
+            Timer::get() >> "read " + _name;
     }
 }
-
-/*************/
-//void Image_OpenCV::update()
-//{
-//}
 
 /*************/
 void Image_OpenCV::registerAttributes()

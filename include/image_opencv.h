@@ -67,11 +67,6 @@ class Image_OpenCV : public Image
          */
         bool read(const std::string& filename);
 
-        /**
-         * Update the content of the image
-         */
-        //void update();
-
     private:
         std::string _filename;
         std::unique_ptr<cv::VideoCapture> _videoCapture;
