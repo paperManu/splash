@@ -207,14 +207,6 @@ sendAsDefault:
 #endif
         {
             _isVisible = !_isVisible;
-            // Hide the cursor if not visible
-            //auto scene = _scene.lock();
-            //for (auto& o : scene->_objects)
-            //{
-            //    if (o.second->getType() != "window")
-            //        continue;
-            //    dynamic_pointer_cast<Window>(o.second)->showCursor(_isVisible);
-            //}
         }
         else
             goto sendAsDefault;
