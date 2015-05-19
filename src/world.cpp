@@ -93,7 +93,7 @@ void World::run()
             }
             SThread::pool.waitThreads(threadIds);
 
-            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / (_worldFramerate * 2))));
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 60))); // Maximum time to wait for frames to arrive
             sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
 
             Timer::get() >> "upload";
@@ -235,27 +235,6 @@ void World::applyConfig()
     _objects.clear();
     _objectDest.clear();
     _masterSceneName = "";
-
-    // Configure this very World
-    if (_config.isMember("world"))
-    {
-        const Json::Value jsWorld = _config["world"];
-        auto worldMember = jsWorld.getMemberNames();
-        int idx {0};
-        for (const auto& param : jsWorld)
-        {
-            string paramName = worldMember[idx];
-            Value v;
-            if (param.isInt())
-                v = param.asInt();
-            else if (param.isDouble())
-                v = param.asFloat();
-            else
-                v = param.asString();
-            setAttribute(paramName, {v});
-            idx++;
-        }
-    }
 
     // Get the list of all scenes, and create them
     const Json::Value jsScenes = _config["scenes"];
@@ -459,6 +438,28 @@ void World::applyConfig()
                 if (s.first != _masterSceneName)
                     sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
             }
+            idx++;
+        }
+    }
+
+    // Lastly, configure this very World
+    // This happens last as some parameters are sent to Scenes (like blending computation)
+    if (_config.isMember("world"))
+    {
+        const Json::Value jsWorld = _config["world"];
+        auto worldMember = jsWorld.getMemberNames();
+        int idx {0};
+        for (const auto& param : jsWorld)
+        {
+            string paramName = worldMember[idx];
+            Value v;
+            if (param.isInt())
+                v = param.asInt();
+            else if (param.isDouble())
+                v = param.asFloat();
+            else
+                v = param.asString();
+            setAttribute(paramName, {v});
             idx++;
         }
     }
