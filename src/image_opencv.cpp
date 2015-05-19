@@ -35,15 +35,22 @@ Image_OpenCV::~Image_OpenCV()
 /*************/
 bool Image_OpenCV::read(const string& filename)
 {
+    unsigned int inputIndex;
     try
     {
-        _inputIndex = stoi(filename);
+        inputIndex = stoi(filename);
     }
     catch (...)
     {
-        _inputIndex = 0;
+        inputIndex = 0;
     }
 
+    // This releases any previous input
+    _continueReading = false;
+    if (_readLoopThread.joinable())
+        _readLoopThread.join();
+
+    _inputIndex = inputIndex;
     _continueReading = true;
     _readLoopThread = thread([&]() {
         readLoop();
