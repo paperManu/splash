@@ -8,6 +8,7 @@
 #include "texture_image.h"
 #include "timer.h"
 #include "threadpool.h"
+#include "window.h"
 
 using namespace std;
 using namespace OIIO_NAMESPACE;
@@ -204,7 +205,17 @@ sendAsDefault:
 #else
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
 #endif
+        {
             _isVisible = !_isVisible;
+            // Hide the cursor if not visible
+            //auto scene = _scene.lock();
+            //for (auto& o : scene->_objects)
+            //{
+            //    if (o.second->getType() != "window")
+            //        continue;
+            //    dynamic_pointer_cast<Window>(o.second)->showCursor(_isVisible);
+            //}
+        }
         else
             goto sendAsDefault;
         break;
@@ -365,6 +376,8 @@ bool Gui::render()
         using namespace ImGui;
 
         ImGuiIO& io = GetIO();
+        io.MouseDrawCursor = true;
+
         ImGui::NewFrame();
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 800), 0.95f, _windowFlags);

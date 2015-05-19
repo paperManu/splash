@@ -150,6 +150,11 @@ class Window : public BaseObject
         bool render();
 
         /**
+         * Hide / show cursor
+         */
+        void showCursor(bool visibility);
+
+        /**
          * Set the window to fullscreen
          */
         bool switchFullscreen(int screenId = -1);

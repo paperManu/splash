@@ -53,8 +53,8 @@ Window::Window(RootObjectWeakPtr root)
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
     setEventsCallbacks();
-
     registerAttributes();
+    showCursor(false);
 
     // Get the default window size and position
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
@@ -463,6 +463,15 @@ void Window::swapBuffers()
 }
 
 /*************/
+void Window::showCursor(bool visibility)
+{
+    if (visibility)
+        glfwSetInputMode(_window->get(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    else
+        glfwSetInputMode(_window->get(), GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+}
+
+/*************/
 bool Window::switchFullscreen(int screenId)
 {
     int count;
@@ -513,6 +522,7 @@ bool Window::switchFullscreen(int screenId)
     setupReadFBO();
 
     setEventsCallbacks();
+    showCursor(false);
 
     return true;
 }
@@ -679,6 +689,7 @@ void Window::setWindowDecoration(bool hasDecoration)
     setupReadFBO();
 
     setEventsCallbacks();
+    showCursor(false);
 
     return;
 }
