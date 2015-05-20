@@ -317,6 +317,21 @@ void Scene::render()
         isError |= _gui->render();
     Timer::get() >> "gui";
 
+    // Update the windows
+    Timer::get() << "windows";
+    glFinish();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
+    Timer::get() >> "windows";
+
+    // Swap all buffers at once
+    Timer::get() << "swap";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "window")
+            dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+    Timer::get() >> "swap";
+
     // Update the user events
     glfwPollEvents();
     // Mouse position
@@ -420,22 +435,6 @@ void Scene::render()
     {
         sendMessageToWorld("quit");
     }
-
-    // Update the windows
-    // Events are placed before so that they are "hidden" by the gl stuff
-    Timer::get() << "windows";
-    glFinish();
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    Timer::get() >> "windows";
-
-    // Swap all buffers at once
-    Timer::get() << "swap";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-    Timer::get() >> "swap";
 }
 
 /*************/
