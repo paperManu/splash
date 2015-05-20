@@ -360,6 +360,9 @@ void GuiGlobalView::nextCamera()
         if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
+    // Empty previous camera parameters
+    _previousCameraParameters.clear();
+
     // Ensure that all cameras are shown
     _camerasHidden = false;
     for (auto& cam : cameras)
@@ -408,12 +411,14 @@ void GuiGlobalView::showAllCalibrationPoints()
 /*************/
 void GuiGlobalView::doCalibration()
 {
+    CameraParameters params;
      // We keep the current values
-    _camera->getAttribute("eye", _eye);
-    _camera->getAttribute("target", _target);
-    _camera->getAttribute("up", _up);
-    _camera->getAttribute("fov", _fov);
-    _camera->getAttribute("principalPoint", _principalPoint);
+    _camera->getAttribute("eye", params.eye);
+    _camera->getAttribute("target", params.target);
+    _camera->getAttribute("up", params.up);
+    _camera->getAttribute("fov", params.fov);
+    _camera->getAttribute("principalPoint", params.principalPoint);
+    _previousCameraParameters.push_back(params);
 
     // Calibration
     _camera->doCalibration();
@@ -505,21 +510,29 @@ void GuiGlobalView::processKeyEvents()
     // Reset to the previous camera calibration
     else if (io.KeysDown['R'] && io.KeysDownTime['R'] == 0.0)
     {
-        _camera->setAttribute("eye", _eye);
-        _camera->setAttribute("target", _target);
-        _camera->setAttribute("up", _up);
-        _camera->setAttribute("fov", _fov);
-        _camera->setAttribute("principalPoint", _principalPoint);
+        if (_previousCameraParameters.size() == 0)
+            return;
+
+        Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
+
+        auto params = _previousCameraParameters.back();
+        _previousCameraParameters.pop_back();
+
+        _camera->setAttribute("eye", params.eye);
+        _camera->setAttribute("target", params.target);
+        _camera->setAttribute("up", params.up);
+        _camera->setAttribute("fov", params.fov);
+        _camera->setAttribute("principalPoint", params.principalPoint);
 
         auto scene = _scene.lock();
         for (auto& obj : scene->_ghostObjects)
             if (_camera->getName() == obj.second->getName())
             {
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", _eye[0], _eye[1], _eye[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", _target[0], _target[1], _target[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", _up[0], _up[1], _up[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", _fov[0]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", _principalPoint[0], _principalPoint[1]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", params.eye[0], params.eye[1], params.eye[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", params.target[0], params.target[1], params.target[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", params.up[0], params.up[1], params.up[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", params.fov[0]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", params.principalPoint[0], params.principalPoint[1]});
             }
     }
     // Arrow keys

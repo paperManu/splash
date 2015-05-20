@@ -97,7 +97,11 @@ class GuiGlobalView : public GuiWidget
         int _camWidth, _camHeight;
 
         // Store the previous camera values
-        Values _eye, _target, _up, _fov, _principalPoint;
+        struct CameraParameters
+        {
+            Values eye, target, up, fov, principalPoint;
+        };
+        std::vector<CameraParameters> _previousCameraParameters;
         Values _newTarget;
 
         // Previous point added
