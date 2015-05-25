@@ -22,8 +22,8 @@ Shader::Shader()
     _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
     _program = glCreateProgram();
 
-    setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-    setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
     compileProgram();
 
     registerAttributes();
@@ -39,7 +39,7 @@ Shader::~Shader()
             glDeleteShader(shader.second);
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
 #endif
 }
 
@@ -107,17 +107,17 @@ void Shader::setSource(const std::string& src, const ShaderType type)
     if (status)
     {
 #ifdef DEBUG
-        SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(type) << " compiled successfully" << Log::endl;
 #endif
     }
     else
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while compiling a shader of type " << stringFromShaderType(type) << Log::endl;
         GLint length;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetShaderInfoLog(shader, length, &length, log);
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
     }
 
@@ -140,7 +140,7 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
         setSource(contents, type);
     }
 
-    SLog::log << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+    Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
 }
 
 /*************/
@@ -190,7 +190,7 @@ void Shader::compileProgram()
             {
                 glAttachShader(_program, shader.second);
 #ifdef DEBUG
-                SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
 #endif
             }
         }
@@ -206,7 +206,7 @@ bool Shader::linkProgram()
     if (status == GL_TRUE)
     {
 #ifdef DEBUG
-        SLog::log << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
 #endif
 
         for (auto src : _shadersSource)
@@ -217,13 +217,13 @@ bool Shader::linkProgram()
     }
     else
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_program, length, &length, log);
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
 
         _isLinked = false;
@@ -298,12 +298,12 @@ void Shader::parseUniforms(const std::string& src)
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             else if (type == "mat4")
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            else if (type == "sampler2D")
+            else if (type == "sampler2D" || type == "sampler2DRect")
                 _uniforms[name].values = {};
             else
             {
                 _uniforms[name].glIndex = -1;
-                SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while parsing uniforms: " << name << " is of unhandled type " << type << Log::endl;
             }
 
             if (values.size() != 0)
@@ -384,7 +384,7 @@ void Shader::parseUniforms(const std::string& src)
 }
 
 /*************/
-string Shader::stringFromShaderType(ShaderType type)
+string Shader::stringFromShaderType(int type)
 {
     switch (type)
     {
@@ -407,114 +407,117 @@ void Shader::updateUniforms()
         for (int i = 0; i < _uniformsToUpdate.size(); ++i)
         {
             string u = _uniformsToUpdate[i];
-            if (_uniforms.find(u) == _uniforms.end())
+
+            auto uniformIt = _uniforms.find(u);
+            if (uniformIt == _uniforms.end())
                 continue;
 
-            if (_uniforms[u].glIndex == -1)
+            auto& uniform = uniformIt->second;
+            if (uniform.glIndex == -1)
             {
-                _uniforms[u].values.clear(); // To make sure it is sent next time if the index is correctly set
+                uniform.values.clear(); // To make sure it is sent next time if the index is correctly set
                 continue;
             }
 
-            int size = _uniforms[u].values.size();
-            int type = _uniforms[u].values[0].getType();
+            int size = uniform.values.size();
+            int type = uniform.values[0].getType();
 
             if (type == Value::Type::i)
             {
                 if (size == 1)
-                    glUniform1i(_uniforms[u].glIndex, _uniforms[u].values[0].asInt());
+                    glUniform1i(uniform.glIndex, uniform.values[0].asInt());
                 else if (size == 2)
-                    glUniform2i(_uniforms[u].glIndex, _uniforms[u].values[0].asInt(), _uniforms[u].values[1].asInt());
+                    glUniform2i(uniform.glIndex, uniform.values[0].asInt(), uniform.values[1].asInt());
                 else if (size == 3)
-                    glUniform3i(_uniforms[u].glIndex, _uniforms[u].values[0].asInt(), _uniforms[u].values[1].asInt(), _uniforms[u].values[2].asInt());
+                    glUniform3i(uniform.glIndex, uniform.values[0].asInt(), uniform.values[1].asInt(), uniform.values[2].asInt());
                 else if (size == 4)
-                    glUniform4i(_uniforms[u].glIndex, _uniforms[u].values[0].asInt(), _uniforms[u].values[1].asInt(), _uniforms[u].values[2].asInt(), _uniforms[u].values[3].asInt());
+                    glUniform4i(uniform.glIndex, uniform.values[0].asInt(), uniform.values[1].asInt(), uniform.values[2].asInt(), uniform.values[3].asInt());
             }
             else if (type == Value::Type::f)
             {
                 if (size == 1)
-                    glUniform1f(_uniforms[u].glIndex, _uniforms[u].values[0].asFloat());
+                    glUniform1f(uniform.glIndex, uniform.values[0].asFloat());
                 else if (size == 2)
-                    glUniform2f(_uniforms[u].glIndex, _uniforms[u].values[0].asFloat(), _uniforms[u].values[1].asFloat());
+                    glUniform2f(uniform.glIndex, uniform.values[0].asFloat(), uniform.values[1].asFloat());
                 else if (size == 3)
-                    glUniform3f(_uniforms[u].glIndex, _uniforms[u].values[0].asFloat(), _uniforms[u].values[1].asFloat(), _uniforms[u].values[2].asFloat());
+                    glUniform3f(uniform.glIndex, uniform.values[0].asFloat(), uniform.values[1].asFloat(), uniform.values[2].asFloat());
                 else if (size == 4)
-                    glUniform4f(_uniforms[u].glIndex, _uniforms[u].values[0].asFloat(), _uniforms[u].values[1].asFloat(), _uniforms[u].values[2].asFloat(), _uniforms[u].values[3].asFloat());
+                    glUniform4f(uniform.glIndex, uniform.values[0].asFloat(), uniform.values[1].asFloat(), uniform.values[2].asFloat(), uniform.values[3].asFloat());
                 else if (size == 9)
                 {
                     vector<float> m(9);
                     for (unsigned int i = 0; i < 9; ++i)
-                        m[i] = _uniforms[u].values[i].asFloat();
-                    glUniformMatrix3fv(_uniforms[u].glIndex, 1, GL_FALSE, m.data());
+                        m[i] = uniform.values[i].asFloat();
+                    glUniformMatrix3fv(uniform.glIndex, 1, GL_FALSE, m.data());
                 }
             }
-            else if (type == Value::Type::v && _uniforms[u].values[0].asValues().size() > 0)
+            else if (type == Value::Type::v && uniform.values[0].asValues().size() > 0)
             {
-                type = _uniforms[u].values[0].asValues()[0].getType();
+                type = uniform.values[0].asValues()[0].getType();
                 if (type == Value::Type::i)
                 {
                     vector<int> data;
-                    if (_uniforms[u].type == "buffer")
+                    if (uniform.type == "buffer")
                     {
-                        for (auto& v : _uniforms[u].values[0].asValues())
+                        for (auto& v : uniform.values[0].asValues())
                             data.push_back(v.asInt());
 
-                        glBindBuffer(GL_UNIFORM_BUFFER, _uniforms[u].glBuffer);
-                        if (!_uniforms[u].glBufferReady)
+                        glBindBuffer(GL_UNIFORM_BUFFER, uniform.glBuffer);
+                        if (!uniform.glBufferReady)
                         {
                             glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(int), NULL, GL_STATIC_DRAW);
-                            _uniforms[u].glBufferReady = true;
+                            uniform.glBufferReady = true;
                         }
                         glBufferSubData(GL_UNIFORM_BUFFER, 0, data.size() * sizeof(int), data.data());
                         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, _uniforms[u].glBuffer, 0, data.size() * sizeof(int));
+                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, uniform.glBuffer, 0, data.size() * sizeof(int));
                     }
                     else
                     {
-                        for (auto& v : _uniforms[u].values[0].asValues())
+                        for (auto& v : uniform.values[0].asValues())
                             data.push_back(v.asInt());
 
-                        if (_uniforms[u].type == "int")
-                            glUniform1iv(_uniforms[u].glIndex, data.size(), data.data());
-                        else if (_uniforms[u].type == "ivec2")
-                            glUniform2iv(_uniforms[u].glIndex, data.size() / 2, data.data());
-                        else if (_uniforms[u].type == "ivec3")
-                            glUniform3iv(_uniforms[u].glIndex, data.size() / 3, data.data());
-                        else if (_uniforms[u].type == "ivec4")
-                            glUniform4iv(_uniforms[u].glIndex, data.size() / 4, data.data());
+                        if (uniform.type == "int")
+                            glUniform1iv(uniform.glIndex, data.size(), data.data());
+                        else if (uniform.type == "ivec2")
+                            glUniform2iv(uniform.glIndex, data.size() / 2, data.data());
+                        else if (uniform.type == "ivec3")
+                            glUniform3iv(uniform.glIndex, data.size() / 3, data.data());
+                        else if (uniform.type == "ivec4")
+                            glUniform4iv(uniform.glIndex, data.size() / 4, data.data());
                     }
                 }
                 else if (type == Value::Type::f)
                 {
                     vector<float> data;
-                    if (_uniforms[u].type == "buffer")
+                    if (uniform.type == "buffer")
                     {
-                        for (auto& v : _uniforms[u].values[0].asValues())
+                        for (auto& v : uniform.values[0].asValues())
                             data.push_back(v.asFloat());
 
-                        glBindBuffer(GL_UNIFORM_BUFFER, _uniforms[u].glBuffer);
-                        if (!_uniforms[u].glBufferReady)
+                        glBindBuffer(GL_UNIFORM_BUFFER, uniform.glBuffer);
+                        if (!uniform.glBufferReady)
                         {
                             glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(float), NULL, GL_STATIC_DRAW);
-                            _uniforms[u].glBufferReady = true;
+                            uniform.glBufferReady = true;
                         }
                         glBufferSubData(GL_UNIFORM_BUFFER, 0, data.size() * sizeof(float), data.data());
                         glBindBuffer(GL_UNIFORM_BUFFER, 0);
-                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, _uniforms[u].glBuffer, 0, data.size() * sizeof(float));
+                        glBindBufferRange(GL_UNIFORM_BUFFER, 1, uniform.glBuffer, 0, data.size() * sizeof(float));
                     }
                     else
                     {
-                        for (auto& v : _uniforms[u].values[0].asValues())
+                        for (auto& v : uniform.values[0].asValues())
                             data.push_back(v.asFloat());
 
-                        if (_uniforms[u].type == "float")
-                            glUniform1fv(_uniforms[u].glIndex, data.size(), data.data());
-                        else if (_uniforms[u].type == "vec2")
-                            glUniform2fv(_uniforms[u].glIndex, data.size() / 2, data.data());
-                        else if (_uniforms[u].type == "vec3")
-                            glUniform3fv(_uniforms[u].glIndex, data.size() / 3, data.data());
-                        else if (_uniforms[u].type == "vec4")
-                            glUniform4fv(_uniforms[u].glIndex, data.size() / 4, data.data());
+                        if (uniform.type == "float")
+                            glUniform1fv(uniform.glIndex, data.size(), data.data());
+                        else if (uniform.type == "vec2")
+                            glUniform2fv(uniform.glIndex, data.size() / 2, data.data());
+                        else if (uniform.type == "vec3")
+                            glUniform3fv(uniform.glIndex, data.size() / 3, data.data());
+                        else if (uniform.type == "vec4")
+                            glUniform4fv(uniform.glIndex, data.size() / 4, data.data());
                     }
                 }
             }
@@ -541,7 +544,7 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["blending"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["blending"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         
@@ -551,47 +554,58 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        if (args[0].asString() == "texture" && _fill != texture)
+
+        // Get additionnal shading options
+        string options = ShaderSources.VERSION_DIRECTIVE;
+        for (int i = 1; i < args.size(); ++i)
+            options += "#define " + args[i].asString() + "\n";
+
+        if (args[0].asString() == "texture" && (_fill != texture || _shaderOptions != options))
         {
             _fill = texture;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "color" && _fill != color)
+        else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
         {
             _fill = color;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "uv" && _fill != uv)
+        else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
         {
             _fill = uv;
-            setSource(ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_UV, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "wireframe" && _fill != wireframe)
+        else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
         {
             _fill = wireframe;
-            setSource(ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
-            setSource(ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
+            setSource(options + ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
             compileProgram();
         }
-        else if (args[0].asString() == "window" && _fill != window)
+        else if (args[0].asString() == "window" && (_fill != window || _shaderOptions != options))
         {
             _fill = window;
-            setSource(ShaderSources.VERTEX_SHADER_WINDOW, vertex);
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
             resetShader(geometry);
-            setSource(ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
             compileProgram();
         }
         return true;
@@ -599,6 +613,8 @@ void Shader::registerAttributes()
         string fill;
         if (_fill == texture)
             fill = "texture";
+        else if (_fill == texture_rect)
+            fill = "texture_rect";
         else if (_fill == color)
             fill = "color";
         else if (_fill == uv)
@@ -610,7 +626,7 @@ void Shader::registerAttributes()
         return {fill};
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 4)
             return false;
         _uniforms["_color"].values = args;
@@ -618,7 +634,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         else if (args.size() < 3)
@@ -638,7 +654,7 @@ void Shader::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -649,7 +665,7 @@ void Shader::registerAttributes()
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1 || args.size() > 4)
             return false;
 
@@ -669,7 +685,7 @@ void Shader::registerAttributes()
         return out;
     });
 
-    _attribFunctions["uniform"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -679,10 +695,13 @@ void Shader::registerAttributes()
             uniformArgs.push_back(args[i]);
 
         // Check if the values changed from previous use
-        if (_uniforms.find(uniformName) != _uniforms.end() && Value(uniformArgs) == Value(_uniforms[uniformName].values))
+        auto uniformIt = _uniforms.find(uniformName);
+        if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
             return true;
+        else if (uniformIt == _uniforms.end())
+            uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
 
-        _uniforms[uniformName].values = uniformArgs;
+        uniformIt->second.values = uniformArgs;
         _uniformsToUpdate.push_back(uniformName);
 
         return true;

@@ -1,5 +1,7 @@
 #include "link.h"
 
+#include <algorithm>
+
 #include "basetypes.h"
 #include "log.h"
 #include "timer.h"
@@ -25,7 +27,7 @@ Link::Link(RootObjectWeakPtr root, string name)
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     _bufferInThread = thread([&]() {
@@ -55,14 +57,16 @@ Link::~Link()
 /*************/
 void Link::connectTo(const string name)
 {
+    if (find(_connectedTargets.begin(), _connectedTargets.end(), name) == _connectedTargets.end())
+        _connectedTargets.push_back(name);
+    else
+        return;
+
     try
     {
-        // Set the high water mark to a low value for the buffer output
+        // High water mark set to zero for the outputs
         int hwm = 0;
         _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
-
-        // Set the high water mark to a low value for the buffer output
-        hwm = 10;
         _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // TODO: for now, all connections are through IPC.
@@ -72,7 +76,7 @@ void Link::connectTo(const string name)
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
     // Wait a bit for the connection to be up
     timespec nap {0, (long int)1e8};
@@ -80,36 +84,62 @@ void Link::connectTo(const string name)
 }
 
 /*************/
-bool Link::sendBuffer(const string name, const SerializedObjectPtr buffer)
+bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
+{
+    bool returnValue;
+    chrono::milliseconds totalWait {0};
+
+    while (true)
+    {
+        if (_otgNumber == 0)
+        {
+            returnValue = true;
+            break;
+        }
+        if (totalWait > maximumWait)
+        {
+            returnValue = false;
+            break;
+        }
+        totalWait = totalWait + chrono::milliseconds(1);
+        this_thread::sleep_for(chrono::milliseconds(1));
+    }
+
+    return returnValue;
+}
+
+/*************/
+bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
 {
     try
     {
         unique_lock<mutex> lock(_bufferSendMutex);
-        if (!buffer->_mutex.try_lock())
-            return false;
+        auto bufferPtr = buffer.get();
 
         _otgMutex.lock();
-        _otgBuffers.push_back(buffer);
+        _otgBuffers.push_back(std::move(buffer));
         _otgMutex.unlock();
+
+        _otgNumber += 1;
 
         zmq::message_t msg(name.size() + 1);
         memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
         _socketBufferOut->send(msg, ZMQ_SNDMORE);
 
-        msg.rebuild(buffer->data(), buffer->size(), Link::freeOlderBuffer, this);
+        msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
         _socketBufferOut->send(msg);
     }
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     return true;
 }
 
 /*************/
-bool Link::sendMessage(const string name, const string attribute, const Values message)
+bool Link::sendMessage(const string name, const string attribute, const Values& message)
 {
     try
     {
@@ -126,8 +156,8 @@ bool Link::sendMessage(const string name, const string attribute, const Values m
         _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
         // Helper function to send messages
-        std::function<void(const Values message)> sendMessage;
-        sendMessage = [&](const Values message) {
+        std::function<void(const Values& message)> sendMessage;
+        sendMessage = [&](const Values& message) {
             // Size of the message
             int size = message.size();
             msg.rebuild(sizeof(size));
@@ -170,13 +200,13 @@ bool Link::sendMessage(const string name, const string attribute, const Values m
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     // We don't display broadcast messages, for visibility
 #ifdef DEBUG
     if (name != SPLASH_ALL_PAIRS)
-        SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
+        Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
 #endif
 
     return true;
@@ -194,11 +224,11 @@ void Link::freeOlderBuffer(void* data, void* hint)
 
     if (index >= ctx->_otgBuffers.size())
     {
-        SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
+        Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Buffer to free not found in currently sent buffers list" << Log::endl;
         return;
     }
-    ctx->_otgBuffers[index]->_mutex.unlock();
     ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
+    ctx->_otgNumber -= 1;
 }
 
 /*************/
@@ -206,7 +236,8 @@ void Link::handleInputMessages()
 {
     try
     {
-        int hwm = 100;
+        // We don't want to miss a message: set the high water mark to a high value
+        int hwm = 1000;
         _socketMessageIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());
@@ -250,18 +281,19 @@ void Link::handleInputMessages()
             Values values = recvMessage();
 
             auto root = _rootObject.lock();
-            root->set(name, attribute, values);
+            if (root)
+                root->set(name, attribute, values);
             // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PAIRS)
-                SLog::log << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
+                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
         }
     }
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
 
@@ -273,8 +305,8 @@ void Link::handleInputBuffers()
 {
     try
     {
-        // Set the high water mark to a low value for the buffer output
-        int hwm = 10;
+        // We only keep one buffer in memory while processing
+        int hwm = 1;
         _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
         _socketBufferIn->bind((string("ipc:///tmp/splash_buf_") + _name).c_str());
@@ -288,16 +320,17 @@ void Link::handleInputBuffers()
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
-            SerializedObjectPtr buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
+            unique_ptr<SerializedObject> buffer = unique_ptr<SerializedObject>(new SerializedObject((char*)msg.data(), (char*)msg.data() + msg.size()));
             
             auto root = _rootObject.lock();
-            root->setFromSerializedObject(name, buffer);
+            if (root)
+                root->setFromSerializedObject(name, std::move(buffer));
         }
     }
     catch (const zmq::error_t& e)
     {
         if (errno != ETERM)
-            SLog::log << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
     _socketBufferIn.reset();

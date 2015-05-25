@@ -2,7 +2,6 @@ AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/imgui \
-	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \
 	-DGLM_FORCE_RADIANS \
@@ -10,25 +9,45 @@ AM_CPPFLAGS = \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
 #*************#
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h
+
+clean: clean-am
+	rm -rf $(top_srcdir)/external/syphon/build
+
+#install: install-am
+#	sh $(top_srcdir)/external/build_syphon.sh install
+#	sh $(top_srcdir)/external/build_syphon.sh clean
+
+BUILT_SOURCES = $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h
+
+$(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: Makefile
+	sh $(top_srcdir)/external/build_syphon.sh
+
+export LIBTOOL = glibtool --tag=CXX
+endif
+
+#*************#
 lib_LTLIBRARIES = \
 	libsplash-@LIBSPLASH_API_VERSION@.la
 
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
+	cgUtils.cpp \
 	geometry.cpp \
 	gui.cpp \
 	image.cpp \
 	image_shmdata.cpp \
 	link.cpp \
-	log.cpp \
 	mesh.cpp \
 	mesh_shmdata.cpp \
 	object.cpp \
 	scene.cpp \
 	shader.cpp \
 	texture.cpp \
+	texture_image.cpp \
 	threadpool.cpp \
-	timer.cpp \
 	window.cpp \
 	widgets.cpp \
 	world.cpp
@@ -42,27 +61,24 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/hap/source/hap.c
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
-	-I$(top_srcdir)/external/libsimdpp/simdpp \
 	-I$(top_srcdir)/external/bandit/bandit \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
-	$(OPENMESH_CFLAGS) \
+	$(SIMD_FLAGS) \
 	$(SHMDATA_CFLAGS) \
-    $(SIMD_FLAGS) \
-	$(SIMDPP_FLAGS) \
 	$(ZMQ_CFLAGS)
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lOpenImageIO \
+	-ljsoncpp \
 	-lsnappy \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GSL_LIBS) \
 	$(JSONCPP_LIBS) \
-	$(OPENMESH_LIBS) \
 	$(SHMDATA_LIBS) \
 	$(ZMQ_LIBS)
 
@@ -71,6 +87,41 @@ if HAVE_GPHOTO
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += colorcalibrator.cpp image_gphoto.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(GPHOTO_CFLAGS) $(GLIB_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(GPHOTO_LIBS) $(GLIB_LIBS)
+endif
+
+## FFmpeg related
+if HAVE_FFMPEG
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_ffmpeg.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(FFMPEG_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
+## OpenCV related
+if HAVE_OPENCV
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_opencv.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(OPENCV_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+# OSX
+if HAVE_OSX
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	texture_syphon.cpp \
+	texture_syphon_client.mm
+
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += \
+	$(GLEW_CFLAGS) \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += \
+	$(GLEW_LIBS) \
+	-F$(top_srcdir)/external/syphon/build/Release\
+	-framework Syphon
+
+libsplash_@LIBSPLASH_API_VERSION@_la_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
 endif
 
 #*************#
@@ -89,11 +140,32 @@ splash_CXXFLAGS = \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
-	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+
+## FFmpeg related
+if HAVE_FFMPEG
+splash_CXXFLAGS += $(FFMPEG_CFLAGS)
+splash_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
+## OpenCV related
+if HAVE_OPENCV
+splash_CXXFLAGS += $(OPENCV_CFLAGS)
+splash_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+if HAVE_OSX
+splash_LDFLAGS += \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+splash_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+endif
 
 #*************#
 splash_scene_DEPENDENCIES = libsplash-@LIBSPLASH_API_VERSION@.la
@@ -108,11 +180,32 @@ splash_scene_CXXFLAGS = \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
-	$(OPENMESH_CFLAGS) \
 	$(SHMDATA_CFLAGS)
 
 splash_scene_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+
+## FFmpeg related
+if HAVE_FFMPEG
+splash_scene_CXXFLAGS += $(FFMPEG_CFLAGS)
+splash_scene_LDFLAGS += $(FFMPEG_LIBS)
+endif
+
+## OpenCV related
+if HAVE_OPENCV
+splash_CXXFLAGS += $(OPENCV_CFLAGS)
+splash_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+if HAVE_OSX
+splash_scene_LDFLAGS += \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+splash_scene_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+endif
 
 #*************#
 noinst_HEADERS = \
@@ -124,18 +217,25 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
+	$(top_srcdir)/include/image_opencv.h \
 	$(top_srcdir)/include/image_shmdata.h \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
+	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \
+	$(top_srcdir)/include/osUtils.h \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \
 	$(top_srcdir)/include/shaderSources.h \
 	$(top_srcdir)/include/splash.h \
 	$(top_srcdir)/include/texture.h \
+	$(top_srcdir)/include/texture_image.h \
+	$(top_srcdir)/include/texture_syphon.h \
+	$(top_srcdir)/include/texture_syphon_client.h \
 	$(top_srcdir)/include/threadpool.h \
 	$(top_srcdir)/include/timer.h \
 	$(top_srcdir)/include/widgets.h \
@@ -147,113 +247,6 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/imgui/stb_rect_pack.h \
 	$(top_srcdir)/external/imgui/stb_textedit.h \
 	$(top_srcdir)/external/imgui/stb_truetype.h \
-	\
-	$(top_srcdir)/external/libsimdpp/simdpp/null/bitwise.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/math.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/mask.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/foreach.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/transpose.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/memory.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/set.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/null/compare.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/get_arch_linux_cpuinfo.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/get_arch_gcc_builtin_cpu_supports.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/dispatcher.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/macros.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/dispatch/arch.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/altivec/load1.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/memory_load.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/shuffle_generic.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/bitwise.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_fp_adv.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/make_shuffle_bytes_mask.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_fp_basic.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x2.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/cast.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_int_adv.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/cache.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/word_size.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/mem_unpack.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/shuffle_emul.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/shuffle128.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/mem_pack.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/align.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/transpose.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/mem_block.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/not_implemented.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/width.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/detail/move_signed.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int128.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/transpose.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/insert.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/extract.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int256.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/convert.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/shuffle_bytes.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_int_basic.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/types.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x2.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x16.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/fwd.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/memory_store.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/math_shift.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/traits.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/compare.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x16.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/this_compile_arch.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/math_int.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle_int16x8.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle_int64x2.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/math_shift.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/detail/shuffle_int32x4.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/neon/memory_store.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/math_fp.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/memory_load.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/math_int.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/extract_half.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/cache.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/shuffle.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/convert.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/memory_store.h \
-	$(top_srcdir)/external/libsimdpp/simdpp/sse/compare.h \
-	$(top_srcdir)/external/libsimdpp/test/tests.h \
-	$(top_srcdir)/external/libsimdpp/test/tests/dispatcher.h \
-	$(top_srcdir)/external/libsimdpp/test/test_helpers.h \
-	$(top_srcdir)/external/libsimdpp/test/test_case.h \
-	$(top_srcdir)/external/libsimdpp/test/common/masks.h \
-	$(top_srcdir)/external/libsimdpp/test/common/vectors.h \
-	$(top_srcdir)/external/libsimdpp/test/common/aligned_allocator.h \
-	$(top_srcdir)/external/libsimdpp/test/test_results.h \
-	$(top_srcdir)/external/libsimdpp/test/arch_registration.h \
-	$(top_srcdir)/external/libsimdpp/perf/perf.h \
-	\
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x2.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int32x8.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x16.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int16x8.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x16.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x2.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int64x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int256.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float64x4.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/float32x8.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int128.inl \
-	$(top_srcdir)/external/libsimdpp/simdpp/simd/int8x32.inl \
 	\
 	$(top_srcdir)/external/hap/source/hap.h \
 	\
@@ -564,258 +557,258 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/piccante/include/externals/Eigen/SuperLUSupport \
 	$(top_srcdir)/external/piccante/include/externals/Eigen/SVD \
 	$(top_srcdir)/external/piccante/include/externals/Eigen/UmfPackSupport \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/MathFunctions.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Transpositions.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/NoAlias.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Fuzzy.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/VectorwiseOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/EigenBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/GenericPacketMath.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Ref.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Dot.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseUnaryView.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/XprHelper.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/DisableStupidWarnings.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/MKL_support.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/NonMPL2.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/ForwardDeclarations.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/ReenableStupidWarnings.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Constants.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Memory.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/StaticAssert.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/BlasUtil.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Meta.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Macros.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DiagonalProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CoreIterators.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/NestByValue.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/StableNorm.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Redux.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Block.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/PlainObjectBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseNullaryOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Matrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Random.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseBinaryOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/MatrixBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/MapBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Replicate.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/PermutationMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Transpose.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DenseStorage.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DenseBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixVector_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularSolverVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixVector_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixMatrix_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixVector_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixMatrix_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrix_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/Parallelizer.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularSolverMatrix_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/CoeffBasedProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularSolverMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointRank2Update.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/SelfCwiseBinaryOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Visitor.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/Default/Settings.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/SSE/MathFunctions.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/SSE/Complex.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/SSE/PacketMath.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/AltiVec/Complex.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/AltiVec/PacketMath.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/NEON/Complex.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/NEON/PacketMath.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/BandMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Select.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/GlobalFunctions.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Array.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseUnaryOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Stride.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Assign.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/SelfAdjointView.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/NumTraits.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/TriangularMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DenseCoeffsBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Flagged.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CommaInitializer.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/IO.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/BooleanRedux.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/SolveTriangular.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ArrayWrapper.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ReturnByValue.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/GeneralProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Diagonal.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Reverse.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Assign_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/VectorBlock.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ArrayBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ForceAlignedAccess.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ProductBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Map.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DiagonalMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Functors.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Swap.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/CholmodSupport/CholmodSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/RealSchur.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/RealQZ.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/Tridiagonalization.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/RealSchur_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/ComplexSchur.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/ComplexSchur_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/EigenSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/BasicPreconditioners.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/IterativeSolverBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/ConjugateGradient.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/IncompleteLUT.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/MetisSupport/MetisSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Householder/HouseholderSequence.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Householder/Householder.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Householder/BlockHouseholder.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseQR/SparseQR.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SuperLUSupport/SuperLUSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_panel_dfs.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_column_bmod.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_Structs.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_pruneL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_panel_bmod.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_Memory.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_Utils.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_column_dfs.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLUImpl.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_gemm_kernel.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_pivotL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_relax_snode.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_kernel_bmod.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseTranspose.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseCwiseUnaryOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseSelfAdjointView.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseSparseProductWithPruning.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseDot.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/AmbiVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/CompressedStorage.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/TriangularSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseColEtree.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseMatrixBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseBlock.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseView.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseFuzzy.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseCwiseBinaryOp.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparsePermutation.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseRedux.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseTriangularView.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseUtil.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/MappedSparseMatrix.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseDiagonalProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseDenseProduct.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/OrderingMethods/Amd.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/OrderingMethods/Ordering.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/OrderingMethods/Eigen_Colamd.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Jacobi/Jacobi.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCholesky/SimplicialCholesky.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/MathFunctions.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Lazy.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/CwiseOperators.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Block.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/LU.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Memory.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/TriangularSolver.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Minor.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/SVD.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/QR.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Meta.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Macros.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/LeastSquares.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Cwise.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/All.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Quaternion.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Transform.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Hyperplane.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/ParametrizedLine.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/AngleAxis.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Scaling.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/RotationBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Translation.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/AlignedBox.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Rotation2D.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/VectorBlock.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/CommonCwiseUnaryOps.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/CommonCwiseBinaryOps.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/BlockMethods.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/ColPivHouseholderQR_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/FullPivHouseholderQR.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/ColPivHouseholderQR.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/HouseholderQR.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/HouseholderQR_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SVD/JacobiSVD_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SVD/UpperBidiagonalization.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SVD/JacobiSVD.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/UmfPackSupport/UmfPackSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/SPQRSupport/SuiteSparseQRSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Cholesky/LLT.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Cholesky/LLT_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Cholesky/LDLT.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/StdList.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/details.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/StdVector.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/StdDeque.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/PardisoSupport/PardisoSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Quaternion.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Umeyama.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Transform.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Hyperplane.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/ParametrizedLine.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/AngleAxis.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Scaling.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/RotationBase.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Translation.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Homogeneous.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/arch/Geometry_SSE.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/EulerAngles.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/AlignedBox.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Rotation2D.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/OrthoMethods.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/blas.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/Kernel.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/SparseSolve.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/Solve.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/Image.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/arch/Inverse_SSE.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/FullPivLU.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/Determinant.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/Inverse.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/PartialPivLU.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/PartialPivLU_MKL.h \
-    $(top_srcdir)/external/piccante/include/externals/Eigen/src/PaStiXSupport/PaStiXSupport.h \
-    $(top_srcdir)/external/piccante/include/externals/gl_core_4_0.h
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/MathFunctions.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Transpositions.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/NoAlias.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Fuzzy.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/VectorwiseOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/EigenBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/GenericPacketMath.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Ref.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Dot.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseUnaryView.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/XprHelper.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/DisableStupidWarnings.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/MKL_support.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/NonMPL2.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/ForwardDeclarations.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/ReenableStupidWarnings.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Constants.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Memory.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/StaticAssert.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/BlasUtil.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Meta.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/util/Macros.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DiagonalProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CoreIterators.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/NestByValue.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/StableNorm.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Redux.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Block.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/PlainObjectBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseNullaryOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Matrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Random.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseBinaryOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/MatrixBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/MapBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Replicate.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/PermutationMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Transpose.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DenseStorage.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DenseBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralBlockPanelKernel.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixVector_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularSolverVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixVector_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixMatrix_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixVector_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularMatrixMatrix_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixMatrix_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/Parallelizer.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularSolverMatrix_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/CoeffBasedProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointMatrixVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/GeneralMatrixVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/TriangularSolverMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/products/SelfadjointRank2Update.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/SelfCwiseBinaryOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Visitor.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/Default/Settings.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/SSE/MathFunctions.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/SSE/Complex.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/SSE/PacketMath.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/AltiVec/Complex.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/AltiVec/PacketMath.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/NEON/Complex.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/arch/NEON/PacketMath.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/BandMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Select.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/GlobalFunctions.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Array.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CwiseUnaryOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Stride.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Assign.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/SelfAdjointView.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/NumTraits.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/TriangularMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DenseCoeffsBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Flagged.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/CommaInitializer.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/IO.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/BooleanRedux.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/SolveTriangular.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ArrayWrapper.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ReturnByValue.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/GeneralProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Diagonal.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Reverse.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Assign_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/VectorBlock.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ArrayBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ForceAlignedAccess.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/ProductBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Map.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/DiagonalMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Functors.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Core/Swap.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/CholmodSupport/CholmodSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/RealSchur.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/SelfAdjointEigenSolver_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/SelfAdjointEigenSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/RealQZ.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/Tridiagonalization.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/RealSchur_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/ComplexSchur.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/ComplexSchur_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/EigenSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/ComplexEigenSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/GeneralizedSelfAdjointEigenSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigenvalues/HessenbergDecomposition.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/BasicPreconditioners.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/IterativeSolverBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/ConjugateGradient.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/IterativeLinearSolvers/IncompleteLUT.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/MetisSupport/MetisSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Householder/HouseholderSequence.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Householder/Householder.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Householder/BlockHouseholder.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseQR/SparseQR.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SuperLUSupport/SuperLUSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_panel_dfs.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_column_bmod.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_Structs.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_pruneL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_panel_bmod.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_Memory.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_Utils.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_column_dfs.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLUImpl.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_gemm_kernel.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_pivotL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_relax_snode.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseLU/SparseLU_kernel_bmod.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseTranspose.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseCwiseUnaryOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseSelfAdjointView.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseSparseProductWithPruning.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseDot.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/AmbiVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/CompressedStorage.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/TriangularSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseColEtree.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseMatrixBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseBlock.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseView.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseFuzzy.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseCwiseBinaryOp.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparsePermutation.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseRedux.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseTriangularView.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseUtil.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/MappedSparseMatrix.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseDiagonalProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCore/SparseDenseProduct.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/OrderingMethods/Amd.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/OrderingMethods/Ordering.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/OrderingMethods/Eigen_Colamd.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Jacobi/Jacobi.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCholesky/SimplicialCholesky.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/MathFunctions.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Lazy.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/CwiseOperators.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Block.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/LU.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Memory.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/TriangularSolver.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Minor.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/SVD.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/QR.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Meta.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Macros.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/LeastSquares.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Cwise.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/All.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Quaternion.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Transform.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Hyperplane.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/ParametrizedLine.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/AngleAxis.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Scaling.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/RotationBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Translation.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/AlignedBox.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/Geometry/Rotation2D.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Eigen2Support/VectorBlock.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/MatrixCwiseUnaryOps.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/ArrayCwiseUnaryOps.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/CommonCwiseUnaryOps.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/MatrixCwiseBinaryOps.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/CommonCwiseBinaryOps.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/BlockMethods.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/plugins/ArrayCwiseBinaryOps.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/ColPivHouseholderQR_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/FullPivHouseholderQR.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/ColPivHouseholderQR.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/HouseholderQR.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/QR/HouseholderQR_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SVD/JacobiSVD_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SVD/UpperBidiagonalization.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SVD/JacobiSVD.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/UmfPackSupport/UmfPackSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/SPQRSupport/SuiteSparseQRSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Cholesky/LLT.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Cholesky/LLT_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Cholesky/LDLT.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/StdList.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/details.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/StdVector.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/StlSupport/StdDeque.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/PardisoSupport/PardisoSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Quaternion.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Umeyama.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Transform.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Hyperplane.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/ParametrizedLine.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/AngleAxis.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Scaling.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/RotationBase.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Translation.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Homogeneous.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/arch/Geometry_SSE.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/EulerAngles.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/AlignedBox.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/Rotation2D.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/Geometry/OrthoMethods.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/blas.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/Kernel.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/SparseSolve.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/Solve.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/misc/Image.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/arch/Inverse_SSE.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/FullPivLU.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/Determinant.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/Inverse.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/PartialPivLU.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/LU/PartialPivLU_MKL.h \
+	$(top_srcdir)/external/piccante/include/externals/Eigen/src/PaStiXSupport/PaStiXSupport.h \
+	$(top_srcdir)/external/piccante/include/externals/gl_core_4_0.h

@@ -1,9 +1,6 @@
 [submodule "external/bandit"]
 	path = external/bandit
 	url = https://github.com/joakimkarlsson/bandit.git
-[submodule "external/libsimdpp"]
-	path = external/libsimdpp
-	url = https://github.com/p12tic/libsimdpp.git
 [submodule "external/hap"]
 	path = external/hap
 	url = https://github.com/Vidvox/hap.git
@@ -14,3 +11,6 @@
 [submodule "external/imgui"]
 	path = external/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "external/syphon"]
+	path = external/syphon
+	url = https://github.com/Syphon/Syphon-Framework.git

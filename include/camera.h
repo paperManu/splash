@@ -25,12 +25,8 @@
 #ifndef SPLASH_CAMERA_H
 #define SPLASH_CAMERA_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <functional>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -38,6 +34,15 @@
 #include <glm/glm.hpp>
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "image.h"
+#include "geometry.h"
+#include "object.h"
+#include "texture_image.h"
 
 namespace Splash {
 
@@ -120,7 +125,7 @@ class Camera : public BaseObject
         /**
          * Get pointers to this camera textures
          */
-        std::vector<TexturePtr> getTextures() const {return _outTextures;}
+        std::vector<Texture_ImagePtr> getTextures() const {return _outTextures;}
 
         /**
          * Check wether it is initialized
@@ -149,6 +154,11 @@ class Camera : public BaseObject
         Values pickCalibrationPoint(float x, float y);
 
         /**
+         * Pick the closest calibration point or vertex
+         */
+        Values pickVertexOrCalibrationPoint(float x, float y);
+
+        /**
          * Render this camera into its textures
          */
         bool render();
@@ -157,11 +167,11 @@ class Camera : public BaseObject
          * Set the given calibration point
          * Returns true if the point already existed
          */
-        bool addCalibrationPoint(Values worldPoint);
+        bool addCalibrationPoint(const Values& worldPoint);
         void deselectCalibrationPoint();
         void moveCalibrationPoint(float dx, float dy);
-        void removeCalibrationPoint(Values worldPoint, bool unlessSet = false);
-        bool setCalibrationPoint(Values screenPoint);
+        void removeCalibrationPoint(const Values& point, bool unlessSet = false);
+        bool setCalibrationPoint(const Values& screenPoint);
 
         /**
          * Set the number of output buffers for this camera
@@ -178,8 +188,8 @@ class Camera : public BaseObject
         GlWindowPtr _window;
 
         GLuint _fbo {0};
-        TexturePtr _depthTexture;
-        std::vector<TexturePtr> _outTextures;
+        Texture_ImagePtr _depthTexture;
+        std::vector<Texture_ImagePtr> _outTextures;
         std::vector<ObjectPtr> _objects;
 
         // Rendering parameters
@@ -196,7 +206,7 @@ class Camera : public BaseObject
         glm::mat3 _colorMixMatrix;
 
         // Some default models use in various situations
-        std::map<std::string, ObjectPtr> _models;
+        std::unordered_map<std::string, ObjectPtr> _models;
 
         // Camera parameters
         float _fov {35}; // This is the vertical FOV

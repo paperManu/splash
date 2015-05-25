@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "shader.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 
 
@@ -44,7 +45,7 @@ void Object::init()
 Object::~Object()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Object::~Object - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Object::~Object - Destructor" << Log::endl;
 #endif
 }
 
@@ -55,15 +56,49 @@ void Object::activate()
         return;
 
     _mutex.lock(); 
-    _shader->setAttribute("fill", {_fill});
 
     for (auto& m : _blendMaps)
         m->update();
 
+    bool withBlend = false;
     if (_blendMaps.size() != 0)
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
+            {
                 _shader->setAttribute("blending", {1});
+                withBlend = true;
+            }
+
+    if (_fill == "texture")
+    {
+        if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
+        {
+            if (withBlend)
+                _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
+            else
+                _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
+        }
+        else
+        {
+            if (withBlend)
+                _shader->setAttribute("fill", {"texture", "BLENDING"});
+            else
+                _shader->setAttribute("fill", {"texture"});
+        }
+    }
+    else if (_fill == "window")
+    {
+        if (_textures.size() == 1)
+            _shader->setAttribute("fill", {"window", "TEX_1"});
+        else if (_textures.size() == 2)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
+        else if (_textures.size() == 3)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
+        else if (_textures.size() == 4)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
+    }
+    else
+        _shader->setAttribute("fill", {_fill});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -72,16 +107,15 @@ void Object::activate()
     GLuint texUnit = 0;
     for (auto& t : _textures)
     {
-        //t->update();
         t->lock();
-        _shader->setTexture(t, texUnit, string("_tex") + to_string(texUnit));
+        _shader->setTexture(t, texUnit, t->getPrefix() + to_string(texUnit));
 
         // Get texture specific uniforms and send them to the shader
-        map<string, Values> texUniforms = t->getShaderUniforms();
+        auto texUniforms = t->getShaderUniforms();
         for (auto u : texUniforms)
         {
             Values parameters;
-            parameters.push_back(Value(string("_tex") + to_string(texUnit) + "_" + u.first));
+            parameters.push_back(Value(t->getPrefix() + to_string(texUnit) + "_" + u.first));
             for (auto value : u.second)
                 parameters.push_back(value);
             _shader->setAttribute("uniform", parameters);
@@ -101,7 +135,11 @@ dmat4 Object::computeModelMatrix() const
 void Object::deactivate()
 {
     for (auto& m : _blendMaps)
-        m->flushPbo();
+    {
+        auto m_asTexImage = dynamic_pointer_cast<Texture_Image>(m);
+        if (m_asTexImage)
+            m_asTexImage->flushPbo();
+    }
 
     for (auto& t : _textures)
     {
@@ -141,7 +179,7 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        TexturePtr tex = make_shared<Texture>(_root);
+        Texture_ImagePtr tex = make_shared<Texture_Image>(_root);
         tex->setName(getName() + "_" + obj->getName() + "_tex");
         if (tex->linkTo(obj))
         {
@@ -218,7 +256,7 @@ void Object::resetBlendingMap()
 }
 
 /*************/
-void Object::setBlendingMap(TexturePtr& map)
+void Object::setBlendingMap(TexturePtr map)
 {
     _blendMaps.push_back(map);
     _textures.push_back(map);
@@ -233,7 +271,7 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    _attribFunctions["position"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -242,7 +280,7 @@ void Object::registerAttributes()
         return {_position.x, _position.y, _position.z};
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -257,7 +295,7 @@ void Object::registerAttributes()
         return {_scale.x, _scale.y, _scale.z};
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         switch (args[0].asInt())
@@ -280,7 +318,7 @@ void Object::registerAttributes()
         return sideness;
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _fill = args[0].asString();
@@ -289,14 +327,14 @@ void Object::registerAttributes()
         return {_fill};
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 4)
             return false;
         _shader->setAttribute("color", args);
         return true;
     });
 
-    _attribFunctions["name"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["name"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _name = args[0].asString();

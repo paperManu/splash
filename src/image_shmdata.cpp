@@ -1,17 +1,27 @@
 #include "image_shmdata.h"
 
+#include <regex>
+#include <hap.h>
+
+#ifdef HAVE_SSE2
+    #define GLM_FORCE_SSE2
+    #define GLM_FORCE_INLINE
+    #include <glm/glm.hpp>
+    #include <glm/gtx/simd_vec4.hpp>
+#else
+    #define GLM_FORCE_INLINE
+    #include <glm/glm.hpp>
+#endif
+
+#include "cgUtils.h"
 #include "log.h"
+#include "osUtils.h"
 #include "timer.h"
 #include "threadpool.h"
-
-#include <regex>
-#include <simdpp/simd.h>
-#include <hap.h>
 
 #define SPLASH_SHMDATA_THREADS 16
 
 using namespace std;
-using namespace simdpp;
 
 namespace Splash
 {
@@ -27,107 +37,45 @@ Image_Shmdata::Image_Shmdata()
 /*************/
 Image_Shmdata::~Image_Shmdata()
 {
-    if (_reader != nullptr)
-        shmdata_any_reader_close(_reader);
-    if (_writer != nullptr)
-        shmdata_any_writer_close(_writer);
-
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 #endif
 }
 
 /*************/
 bool Image_Shmdata::read(const string& filename)
 {
-    if (_reader != nullptr)
-        shmdata_any_reader_close(_reader);
+    auto filepath = string(filename);
+    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
+        filepath = _configFilePath + filepath;
 
-    _reader = shmdata_any_reader_init();
-    shmdata_any_reader_run_gmainloop(_reader, SHMDATA_TRUE);
-    shmdata_any_reader_set_on_data_handler(_reader, Image_Shmdata::onData, this);
-    shmdata_any_reader_start(_reader, filename.c_str());
+    _reader.reset(new shmdata::Follower(filepath,
+                                        [&](void* data, size_t size) {
+                                            onData(data, size, this);
+                                        },
+                                        [&](const string& caps) {
+                                            onCaps(caps, this);
+                                        },
+                                        [&](){},
+                                        &_logger));
     _filename = filename;
 
     return true;
 }
 
 /*************/
-bool Image_Shmdata::write(const oiio::ImageBuf& img, const string& filename)
+// Small function to work around a bug in GCC's libstdc++
+void removeExtraParenthesis(string& str)
 {
-    if (img.localpixels() == NULL)
-        return false;
-
-    lock_guard<mutex> lock(_readMutex);
-    oiio::ImageSpec spec = img.spec();
-    if (spec.width != _writerSpec.width || spec.height != _writerSpec.height || spec.nchannels != _writerSpec.nchannels || _writer == NULL || _filename != filename)
-        if (!initShmWriter(spec, filename))
-            return false;
-
-    memcpy(_writerBuffer.localpixels(), img.localpixels(), _writerInputSize);
-    unsigned long long currentTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-    shmdata_any_writer_push_data(_writer, (void*)_writerBuffer.localpixels(), _writerInputSize, (currentTime - _writerStartTime) * 1e6, NULL, NULL);
-    return true;
+    if (str.find(")") == 0)
+        str = str.substr(1);
 }
 
 /*************/
-bool Image_Shmdata::initShmWriter(const oiio::ImageSpec& spec, const string& filename)
-{
-    if (_writer != NULL)
-        shmdata_any_writer_close(_writer);
-
-    _writer = shmdata_any_writer_init();
-    
-    string dataType;
-    if (spec.format == "uint8" && spec.nchannels == 4)
-    {
-        dataType += "video/x-raw-rgb,bpp=32,endianness=4321,depth=32,red_mask=-16777216,green_mask=16711680,blue_mask=65280,";
-        _writerInputSize = 4;
-    }
-    else if (spec.format == "uint16" && spec.nchannels == 1)
-    {
-        dataType += "video/x-raw-gray,bpp=16,endianness=4321,depth=16,";
-        _writerInputSize = 2;
-    }
-    else
-    {
-        _writerInputSize = 0;
-        return false;
-    }
-
-    dataType += "width=" + to_string(spec.width) + ",";
-    dataType += "height=" + to_string(spec.height) + ",";
-    dataType += "framerate=60/1";
-    _writerInputSize *= spec.width * spec.height;
-
-    shmdata_any_writer_set_data_type(_writer, dataType.c_str());
-    if (!shmdata_any_writer_set_path(_writer, filename.c_str()))
-    {
-        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Unable to write to shared memory " << filename << Log::endl;
-        _filename = "";
-        return false;
-    }
-
-    _filename = filename;
-    _writerSpec = spec;
-    shmdata_any_writer_start(_writer);
-    _writerStartTime = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-
-    _writerBuffer.reset(_writerSpec);
-
-    return true;
-}
-
-/*************/
-void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* data, int data_size, unsigned long long timestamp,
-    const char* type_description, void* user_data)
+void Image_Shmdata::onCaps(const string& dataType, void* user_data)
 {
     Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
 
-    STimer::timer.sinceLastSeen("image_shmdata_period " + ctx->_name);
-    STimer::timer << "image_shmdata " + ctx->_name;
-
-    string dataType(type_description);
     if (dataType != ctx->_inputDataType)
     {
         ctx->_inputDataType = dataType;
@@ -144,151 +92,190 @@ void Image_Shmdata::onData(shmdata_any_reader_t* reader, void* shmbuf, void* dat
         ctx->_is420 = false;
         ctx->_is422 = false;
         
-        regex regRgb, regGray, regYUV, regHap, regBpp, regWidth, regHeight, regRed, regGreen, regBlue, regFormatYUV;
+        regex regHap, regWidth, regHeight;
+        regex regVideo, regFormat;
         try
         {
-            // TODO: replace these regex with some GCC 4.7 compatible ones
-            // GCC 4.6 does not support the full regular expression. Some work around is needed,
-            // this is why this may seem complicated for nothing ...
-            regRgb = regex("(video/x-raw-rgb)(.*)", regex_constants::extended);
-            regYUV = regex("(video/x-raw-yuv)(.*)", regex_constants::extended);
-            regHap = regex("(video/x-gst-fourcc-Hap)(.*)", regex_constants::extended);
-            regFormatYUV = regex("(.*format=\\(fourcc\\))(.*)", regex_constants::extended);
-            regBpp = regex("(.*bpp=\\(int\\))(.*)", regex_constants::extended);
+            regVideo = regex("(.*video/x-raw)(.*)", regex_constants::extended);
+            regHap = regex("(.*video/x-gst-fourcc-HapY)(.*)", regex_constants::extended);
+            regFormat = regex("(.*format=\\(string\\))(.*)", regex_constants::extended);
             regWidth = regex("(.*width=\\(int\\))(.*)", regex_constants::extended);
             regHeight = regex("(.*height=\\(int\\))(.*)", regex_constants::extended);
-            regRed = regex("(.*red_mask=\\(int\\))(.*)", regex_constants::extended);
-            regGreen = regex("(.*green_mask=\\(int\\))(.*)", regex_constants::extended);
-            regBlue = regex("(.*blue_mask=\\(int\\))(.*)", regex_constants::extended);
         }
         catch (const regex_error& e)
         {
-            SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error code: " << e.code() << Log::endl;
-            shmdata_any_reader_free(shmbuf);
+            auto errorString = string();
+            switch (e.code())
+            {
+                default:
+                    errorString = "unknown error";
+                    break;
+                case regex_constants::error_collate:
+                    errorString = "the expression contains an invalid collating element name";
+                    break;
+                case regex_constants::error_ctype:
+                    errorString = "the expression contains an invalid character class name";
+                    break;
+                case regex_constants::error_escape:
+                    errorString = "the expression contains an invalid escaped character or a trailing escape";
+                    break;
+                case regex_constants::error_backref:
+                    errorString = "the expression contains an invalid back reference";
+                    break;
+                case regex_constants::error_brack:
+                    errorString = "the expression contains mismatched square brackets ('[' and ']')";
+                    break;
+                case regex_constants::error_paren:
+                    errorString = "the expression contains mismatched parentheses ('(' and ')')";
+                    break;
+                case regex_constants::error_brace:
+                    errorString = "the expression contains mismatched curly braces ('{' and '}')";
+                    break;
+                case regex_constants::error_badbrace:
+                    errorString = "the expression contains an invalid range in a {} expression";
+                    break;
+                case regex_constants::error_range:
+                    errorString = "the expression contains an invalid character range (e.g. [b-a])";
+                    break;
+                case regex_constants::error_space:
+                    errorString = "there was not enough m2emory to convert the expression into a finite state machine";
+                    break;
+                case regex_constants::error_badrepeat:
+                    errorString = "one of *?+{ was not preceded by a valid regular expression";
+                    break;
+                case regex_constants::error_complexity:
+                    errorString = "the complexity of an attempted match exceeded a predefined level";
+                    break;
+                case regex_constants::error_stack:
+                    errorString = "there was not enough memory to perform a match";
+                    break;
+            }
+            Log::get() << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
             return;
         }
 
-        if (regex_match(dataType, regRgb) || regex_match(dataType, regYUV))
+        smatch match;
+        string substr, format;
+
+        if (regex_match(dataType, regVideo))
         {
 
-            smatch match;
-            string substr, format;
+            if (regex_match(dataType, match, regFormat))
+            {
+                ssub_match subMatch = match[2];
+                substr = subMatch.str();
+                removeExtraParenthesis(substr);
+                substr = substr.substr(0, substr.find(","));
 
-            if (regex_match(dataType, match, regBpp))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_bpp);
-            }
-            if (regex_match(dataType, match, regWidth))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_width);
-            }
-            if (regex_match(dataType, match, regHeight))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_height);
-            }
-            if (regex_match(dataType, match, regRed))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_red);
-            }
-            else if (regex_match(dataType, regYUV))
-            {
-                ctx->_isYUV = true;
-            }
-            if (regex_match(dataType, match, regGreen))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_green);
-            }
-            if (regex_match(dataType, match, regBlue))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_blue);
-            }
-
-            if (ctx->_bpp == 24)
-                ctx->_channels = 3;
-            else if (ctx->_bpp == 32)
-                ctx->_channels = 4;
-            else if (ctx->_isYUV)
-            {
-                ctx->_bpp = 12;
-                ctx->_channels = 3;
-
-                if (regex_match(dataType, match, regFormatYUV))
+                if ("RGB" == substr)
                 {
-                    char format[16];
-                    ssub_match subMatch = match[2];
-                    substr = subMatch.str();
-                    sscanf(substr.c_str(), ")%s", format);
-                    if (strstr(format, (char*)"I420") != nullptr)
-                        ctx->_is420 = true;
-                    else if (strstr(format, (char*)"UYVY") != nullptr)
-                        ctx->_is422 = true;
+                    ctx->_bpp = 24;
+                    ctx->_channels = 3;
+                    ctx->_red = 0;
+                    ctx->_green = 1;
+                    ctx->_blue = 2;
+                }
+                else if ("BGR" == substr)
+                {
+                    ctx->_bpp = 24;
+                    ctx->_channels = 3;
+                    ctx->_red = 2;
+                    ctx->_green = 1;
+                    ctx->_blue = 0;
+                }
+                else if ("RGBA" == substr)
+                {
+                    ctx->_bpp = 32;
+                    ctx->_channels = 4;
+                    ctx->_red = 2;
+                    ctx->_green = 1;
+                    ctx->_blue = 0;
+                }
+                else if ("BGRA" == substr)
+                {
+                    ctx->_bpp = 32;
+                    ctx->_channels = 4;
+                    ctx->_red = 0;
+                    ctx->_green = 1;
+                    ctx->_blue = 2;
+                }
+                else if ("I420" == substr)
+                {
+                    ctx->_bpp = 12;
+                    ctx->_channels = 3;
+                    ctx->_isYUV = true;
+                    ctx->_is420 = true;
+                }
+                else if ("UYVY" == substr)
+                {
+                    ctx->_bpp = 12;
+                    ctx->_channels = 3;
+                    ctx->_isYUV = true;
+                    ctx->_is422 = true;
                 }
             }
         }
         else if (regex_match(dataType, regHap))
         {
             ctx->_isHap = true;
+        }
 
-            smatch match;
-            string substr, format;
-            if (regex_match(dataType, match, regWidth))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_width);
-            }
-            if (regex_match(dataType, match, regHeight))
-            {
-                ssub_match subMatch = match[2];
-                substr = subMatch.str();
-                sscanf(substr.c_str(), ")%i", &ctx->_height);
-            }
+        if (regex_match(dataType, match, regWidth))
+        {
+            ssub_match subMatch = match[2];
+            substr = subMatch.str();
+            removeExtraParenthesis(substr);
+            substr = substr.substr(0, substr.find(","));
+            ctx->_width = stoi(substr);
+        }
+
+        if (regex_match(dataType, match, regHeight))
+        {
+            ssub_match subMatch = match[2];
+            substr = subMatch.str();
+            removeExtraParenthesis(substr);
+            substr = substr.substr(0, substr.find(","));
+            ctx->_height = stoi(substr);
         }
     }
-
-    /*********/
-    // Standard images, RGB or YUV
-    if (ctx->_width != 0 && ctx->_height != 0 && ctx->_bpp != 0 && ctx->_channels != 0)
-    {
-        readUncompressedFrame(ctx, shmbuf, data, data_size);
-    }
-    /*********/
-    // Hap compressed images
-    else if (ctx->_isHap == true)
-    {
-        readHapFrame(ctx, shmbuf, data, data_size);
-    }
-
-    shmdata_any_reader_free(shmbuf);
-
-    STimer::timer >> "image_shmdata " + ctx->_name;
 }
 
 /*************/
-void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size)
+void Image_Shmdata::onData(void* data, int data_size, void* user_data)
 {
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
+
+    if (Timer::get().isDebug())
+    {
+        Timer::get().sinceLastSeen("image_shmdata_period " + ctx->_name);
+        Timer::get() << "image_shmdata " + ctx->_name;
+    }
+
+    // Standard images, RGB or YUV
+    if (ctx->_width != 0 && ctx->_height != 0 && ctx->_bpp != 0 && ctx->_channels != 0)
+    {
+        readUncompressedFrame(ctx, data, data_size);
+    }
+    // Hap compressed images
+    else if (ctx->_isHap == true)
+    {
+        readHapFrame(ctx, data, data_size);
+    }
+
+    if (Timer::get().isDebug())
+        Timer::get() >> "image_shmdata " + ctx->_name;
+}
+
+/*************/
+void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
+{
+    unique_lock<mutex> lock(ctx->_writeMutex);
 
     // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
     // First, we check the texture format type
-    unsigned int textureFormat = 0;
-    if (HapGetFrameTextureFormat(data, data_size, &textureFormat) != HapResult_No_Error)
-    {
-        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Unknown texture format. Frame discarded" << Log::endl;
+    auto textureFormat = string("");
+    if (!hapDecodeFrame(data, data_size, nullptr, 0, textureFormat))
         return;
-    }
 
     // Check if we need to resize the reader buffer
     // We set the size so as to have just enough place for the given texture format
@@ -298,34 +285,22 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
         ctx->_textureFormat = textureFormat;
 
         oiio::ImageSpec spec;
-        if (textureFormat == HapTextureFormat_RGB_DXT1)
-        {
+        if (textureFormat == "RGB_DXT1")
             spec = oiio::ImageSpec(ctx->_width, (int)(ceil((float)ctx->_height / 2.f)), 1, oiio::TypeDesc::UINT8);
-            spec.channelnames = {"RGB_DXT1"};
-        }
-        else if (textureFormat == HapTextureFormat_RGBA_DXT5)
-        {
+        else if (textureFormat == "RGBA_DXT5")
             spec = oiio::ImageSpec(ctx->_width, ctx->_height, 1, oiio::TypeDesc::UINT8);
-            spec.channelnames = {"RGBA_DXT5"};
-        }
-        else if (textureFormat == HapTextureFormat_YCoCg_DXT5)
-        {
+        else if (textureFormat == "YCoCg_DXT5")
             spec = oiio::ImageSpec(ctx->_width, ctx->_height, 1, oiio::TypeDesc::UINT8);
-            spec.channelnames = {"YCoCg_DXT5"};
-        }
         else
             return;
 
+        spec.channelnames = {textureFormat};
         ctx->_readerBuffer.reset(spec);
     }
 
     unsigned long outputBufferBytes = bufSpec.width * bufSpec.height * bufSpec.nchannels;
-    unsigned long bytesUsed = 0;
-    if (HapDecode(data, data_size, NULL, NULL, ctx->_readerBuffer.localpixels(), outputBufferBytes, &bytesUsed, &textureFormat) != HapResult_No_Error)
-    {
-        SLog::log << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - An error occured while decoding frame" << Log::endl;
+    if (!hapDecodeFrame(data, data_size, ctx->_readerBuffer.localpixels(), outputBufferBytes, textureFormat))
         return;
-    }
     
     ctx->_bufferImage.swap(ctx->_readerBuffer);
     ctx->_imageUpdated = true;
@@ -333,9 +308,9 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* shmbuf, void* data, i
 }
 
 /*************/
-void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void* data, int data_size)
+void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    unique_lock<mutex> lock(ctx->_writeMutex);
 
     // Check if we need to resize the reader buffer
     oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();
@@ -379,7 +354,64 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 
         char* pixels = (char*)(ctx->_readerBuffer).localpixels();
         vector<unsigned int> threadIds;
-#if SIMDPP_NO_SSE
+#ifdef HAVE_SSE2
+        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        {
+            int width = ctx->_width;
+            int height = ctx->_height;
+
+            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
+                    lastLine = ctx->_height;
+                else
+                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                auto uLine = vector<unsigned char>(width / 2);
+                auto vLine = vector<unsigned char>(width / 2);
+                auto yLine = vector<unsigned char>(width);
+                auto localPixels = vector<unsigned char>(width * 3);
+                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; ++y)
+                {
+                    memcpy(uLine.data(), &U[(y / 2) * (width / 2)], width / 2 * sizeof(unsigned char));
+                    memcpy(vLine.data(), &V[(y / 2) * (width / 2)], width / 2 * sizeof(unsigned char));
+                    memcpy(yLine.data(), &Y[y * width], width * sizeof(unsigned char));
+
+                    for (int x = 0; x < width; x += 4)
+                    {
+                        const unsigned char* uPtr = &uLine[x / 2];
+                        const unsigned char* vPtr = &vLine[x / 2];
+                        const unsigned char* yPtr = &yLine[x];
+
+                        auto uValue = glm::detail::fvec4SIMD((float)uPtr[0], (float)uPtr[0], (float)uPtr[1], (float)uPtr[1]);
+                        auto vValue = glm::detail::fvec4SIMD((float)vPtr[0], (float)vPtr[0], (float)vPtr[1], (float)vPtr[1]);
+                        auto yValue = glm::detail::fvec4SIMD((float)yPtr[0], (float)yPtr[1], (float)yPtr[2], (float)yPtr[3]);
+
+                        uValue = uValue - 128.0;
+                        vValue = vValue - 128.0;
+
+                        yValue = (yValue - 16.0) * 38142.0;
+                        auto rPart = glm::clamp((yValue + vValue * 52289) / 32768.0, 0.0, 255.0);
+                        auto gPart = glm::clamp((yValue + uValue * -12846 - vValue * 36641) / 32768.0, 0.0, 255.0);
+                        auto bPart = glm::clamp((yValue + uValue * 66094) / 32768.0, 0.0, 255.0);
+
+                        auto rPixel = glm::vec4_cast(rPart);
+                        auto gPixel = glm::vec4_cast(gPart);
+                        auto bPixel = glm::vec4_cast(bPart);
+
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            localPixels[(x + i) * 3] = (unsigned char)rPixel[i];
+                            localPixels[(x + i) * 3 + 1] = (unsigned char)gPixel[i];
+                            localPixels[(x + i) * 3 + 2] = (unsigned char)bPixel[i];
+                        }
+                    }
+
+                    memcpy(&pixels[y * width * 3], localPixels.data(), width * 3 * sizeof(unsigned char));
+                }
+            }));
+        }
+#else
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
@@ -407,82 +439,10 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                         pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
 
                         col++;
-                        yValue = (int)(Y[row * ctx->_width + col]) * 38142;
+                        yValue = (int)(Y[row * ctx->_width + col] - 16) * 38142;
                         pixels[(row * ctx->_width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(row * ctx->_width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
                         pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
-                    }
-            }));
-        }
-#else
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
-        {
-            int width = ctx->_width;
-            int height = ctx->_height;
-
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
-                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (height - height / SPLASH_SHMDATA_THREADS * (block + 1) < height / SPLASH_SHMDATA_THREADS)
-                    lastLine = height;
-                else
-                    lastLine = height / SPLASH_SHMDATA_THREADS * (block + 1);
-
-                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y += 2)
-                    for (int x = 0; x + 7 < width; x += 8)
-                    {
-                        int16x8 yValue[2];
-                        int16x8 uValue;
-                        int16x8 vValue;
-                        uint8x16 loadBuf;
-
-                        load_u(loadBuf, &(U[(y / 2) * (width / 2) + x / 2]));
-                        uValue = to_int16x8(loadBuf);
-                        uValue = zip_lo(uValue, uValue);
-
-                        load_u(loadBuf, &(V[(y / 2) * (width / 2) + x / 2]));
-                        vValue = to_int16x8(loadBuf);
-                        vValue = zip_lo(vValue, vValue);
-
-                        uValue = sub(uValue, int16x8::make_const(128));
-                        vValue = sub(vValue, int16x8::make_const(128));
-
-                        int16x8 red, grn, blu;
-                        uint8x16 uRed, uGrn, uBlu;
-                        
-                        for (int l = 0; l < 2; ++l)
-                        {
-                            load_u(loadBuf, &(Y[(y + l) * width + x]));
-                            yValue[l] = to_int16x8(loadBuf);
-                            yValue[l] = sub(yValue[l], int16x8::make_const(16));
-
-                            red = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
-                            grn = add(mul_lo(yValue[l], int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
-                            blu = add(mul_lo(yValue[l], int16x8::make_const(74)), mul_lo(vValue, int16x8::make_const(129)));
-
-                            red = shift_r(red, 6);
-                            grn = shift_r(grn, 6);
-                            blu = shift_r(blu, 6);
-
-                            red = simdpp::min(red, int16x8::make_const(255));
-                            grn = simdpp::min(grn, int16x8::make_const(255));
-                            blu = simdpp::min(blu, int16x8::make_const(255));
-
-                            red = simdpp::max(red, int16x8::make_const(0));
-                            grn = simdpp::max(grn, int16x8::make_const(0));
-                            blu = simdpp::max(blu, int16x8::make_const(0));
-
-                            uRed = red;
-                            uRed = unzip_lo(uRed, uRed);
-                            uGrn = grn;
-                            uGrn = unzip_lo(uGrn, uGrn);
-                            uBlu = blu;
-                            uBlu = unzip_lo(uBlu, uBlu);
-
-                            alignas(32) char dst[48];
-                            store_packed3(dst, uBlu, uGrn, uRed);
-
-                            memcpy(&(pixels[((y + l) * width + x) * 3]), dst, 24*sizeof(char));
-                        }
                     }
             }));
         }
@@ -495,7 +455,59 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 
         char* pixels = (char*)(ctx->_readerBuffer).localpixels();
         vector<unsigned int> threadIds;
-#if SIMDPP_NO_SSE
+#ifdef HAVE_SSE2
+        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+        {
+            int width = ctx->_width;
+            int height = ctx->_height;
+
+            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
+                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
+                    lastLine = ctx->_height;
+                else
+                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+
+                auto line = vector<unsigned char>(width * 2);
+                auto localPixels = vector<unsigned char>(width * 3);
+
+                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; ++y)
+                {
+                    memcpy(line.data(), &YUV[y * width * 2], width * 2 * sizeof(unsigned char));
+
+                    for (int x = 0; x < width; x += 4)
+                    {
+                        const unsigned char* block = &line[x * 2];
+
+                        auto uValue = glm::detail::fvec4SIMD((float)block[0], (float)block[0], (float)block[4], (float)block[4]);
+                        auto vValue = glm::detail::fvec4SIMD((float)block[2], (float)block[2], (float)block[6], (float)block[6]);
+                        auto yValue = glm::detail::fvec4SIMD((float)block[1], (float)block[3], (float)block[5], (float)block[7]);
+
+                        uValue = uValue - 128.0;
+                        vValue = vValue - 128.0;
+
+                        yValue = (yValue - 16.0) * 38142.0;
+                        auto rPart = glm::clamp((yValue + vValue * 52289) / 32768.0, 0.0, 255.0);
+                        auto gPart = glm::clamp((yValue + uValue * -12846 - vValue * 36641) / 32768.0, 0.0, 255.0);
+                        auto bPart = glm::clamp((yValue + uValue * 66094) / 32768.0, 0.0, 255.0);
+
+                        auto rPixel = glm::vec4_cast(rPart);
+                        auto gPixel = glm::vec4_cast(gPart);
+                        auto bPixel = glm::vec4_cast(bPart);
+
+                        for (int i = 0; i < 4; ++i)
+                        {
+                            localPixels[(x + i) * 3] = (unsigned char)rPixel[i];
+                            localPixels[(x + i) * 3 + 1] = (unsigned char)gPixel[i];
+                            localPixels[(x + i) * 3 + 2] = (unsigned char)bPixel[i];
+                        }
+                    }
+
+                    memcpy(&pixels[y * width * 3], localPixels.data(), width * 3 * sizeof(unsigned char));
+                }
+            }));
+        }
+#else
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
@@ -530,76 +542,6 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
                     }
             }));
         }
-#else
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
-        {
-            int width = ctx->_width;
-            int height = ctx->_height;
-
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
-                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (height - height / SPLASH_SHMDATA_THREADS * (block + 1) < height / SPLASH_SHMDATA_THREADS)
-                    lastLine = height;
-                else
-                    lastLine = height / SPLASH_SHMDATA_THREADS * (block + 1);
-
-                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x + 7 < width; x += 8)
-                    {
-                        int16x8 yValue;
-                        int16x8 uValue;
-                        int16x8 vValue;
-                        uint8x16 loadBuf;
-
-                        load_u(loadBuf, &(YUV[y * width * 2 + x * 2]));
-                        loadBuf = unzip_hi(loadBuf, loadBuf);
-                        yValue = to_int16x8(loadBuf); // Get 8 Y values here
-                        load_u(loadBuf, &(YUV[y * width * 2 + x * 2]));
-                        loadBuf = unzip_lo(loadBuf, loadBuf);
-                        uValue = to_int16x8(loadBuf);
-                        vValue = unzip_hi(uValue, uValue); // Get 4 V values here
-                        uValue = unzip_lo(uValue, uValue); // Get 4 U values here
-
-                        vValue = zip_lo(vValue, vValue);
-                        uValue = zip_lo(uValue, uValue);
-
-                        uValue = sub(uValue, int16x8::make_const(128));
-                        vValue = sub(vValue, int16x8::make_const(128));
-                        yValue = sub(yValue, int16x8::make_const(16));
-
-                        int16x8 red, grn, blu;
-                        uint8x16 uRed, uGrn, uBlu;
-                        
-                        red = add(mul_lo(yValue, int16x8::make_const(74)), mul_lo(uValue, int16x8::make_const(102)));
-                        grn = add(mul_lo(yValue, int16x8::make_const(74)), add(mul_lo(uValue, int16x8::make_const(-25)), mul_lo(vValue, int16x8::make_const(-52))));
-                        blu = add(mul_lo(yValue, int16x8::make_const(74)), mul_lo(vValue, int16x8::make_const(129)));
-
-                        red = shift_r(red, 6);
-                        grn = shift_r(grn, 6);
-                        blu = shift_r(blu, 6);
-
-                        red = simdpp::min(red, int16x8::make_const(255));
-                        grn = simdpp::min(grn, int16x8::make_const(255));
-                        blu = simdpp::min(blu, int16x8::make_const(255));
-
-                        red = simdpp::max(red, int16x8::make_const(0));
-                        grn = simdpp::max(grn, int16x8::make_const(0));
-                        blu = simdpp::max(blu, int16x8::make_const(0));
-
-                        uRed = red;
-                        uRed = unzip_lo(uRed, uRed);
-                        uGrn = grn;
-                        uGrn = unzip_lo(uGrn, uGrn);
-                        uBlu = blu;
-                        uBlu = unzip_lo(uBlu, uBlu);
-
-                        alignas(32) char dst[48];
-                        store_packed3(dst, uBlu, uGrn, uRed);
-
-                        memcpy(&(pixels[(y * width + x) * 3]), dst, 24*sizeof(char));
-                    }
-            }));
-        }
 #endif
         SThread::pool.waitThreads(threadIds);
     }
@@ -615,7 +557,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* shmbuf, void
 /*************/
 void Image_Shmdata::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());

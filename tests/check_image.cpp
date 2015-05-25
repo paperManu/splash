@@ -17,7 +17,7 @@ go_bandit([]() {
 
         it("should get the same image specs", [&]() {
             ImageBuf srcImg = image.get();
-            SerializedObjectPtr obj = image.serialize();
+            unique_ptr<SerializedObject> obj = image.serialize();
             image.deserialize(obj);
             ImageBuf dstImg = image.get();
 
@@ -38,7 +38,7 @@ go_bandit([]() {
 
         it("should get the same image content", [&]() {
             ImageBuf srcImg = image.get();
-            SerializedObjectPtr obj = image.serialize();
+            unique_ptr<SerializedObject> obj = image.serialize();
 
             Image newImage;
             newImage.deserialize(obj);
@@ -69,6 +69,6 @@ go_bandit([]() {
 /*************/
 int main(int argc, char** argv)
 {
-    SLog::log.setVerbosity(Log::NONE);
+    Log::get().setVerbosity(Log::NONE);
     return bandit::run(argc, argv);
 }

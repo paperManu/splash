@@ -36,7 +36,12 @@ int main(int argc, char** argv)
     {
         if (string(argv[idx]) == "-d")
         {
-            SLog::log.setVerbosity(Log::DEBUGGING);
+            Log::get().setVerbosity(Log::DEBUGGING);
+            idx++;
+        }
+        else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
+        {
+            Timer::get().setDebug(true);
             idx++;
         }
         else
@@ -46,18 +51,9 @@ int main(int argc, char** argv)
         }
     }
 
-    SLog::log << "splashScene::main - Creating Scene with name " << name << Log::endl;
+    Log::get() << "splashScene::main - Creating Scene with name " << name << Log::endl;
 
     ScenePtr scene = make_shared<Scene>(name);
-    scene->setName(name);
-
-    timespec nap;
-    nap.tv_sec = 0;
-    nap.tv_nsec = 5e8;
-    while (scene->isRunning())
-    {
-        nanosleep(&nap, NULL);
-    }
 
     return 0;
 }

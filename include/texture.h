@@ -25,15 +25,16 @@
 #ifndef SPLASH_TEXTURE_H
 #define SPLASH_TEXTURE_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <chrono>
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
 #include <OpenImageIO/imagebuf.h>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 
 namespace oiio = OIIO_NAMESPACE;
 
@@ -55,7 +56,7 @@ class Texture : public BaseObject
         /**
          * Destructor
          */
-        ~Texture();
+        virtual ~Texture();
 
         /**
          * No copy constructor, but a move one
@@ -72,96 +73,43 @@ class Texture : public BaseObject
         {
             if (this != &t)
             {
-                _glTex = t._glTex;
                 _spec = t._spec;
-                _pbos[0] = t._pbos[0];
-                _pbos[1] = t._pbos[1];
-                _pboReadIndex = t._pboReadIndex;
-
-                _filtering = t._filtering;
-                _texTarget = t._texTarget;
-                _texLevel = t._texLevel;
-                _texInternalFormat = t._texInternalFormat;
-                _texBorder = t._texBorder;
-                _texFormat = t._texFormat;
-                _texType = t._texType;
-
-                _img = t._img;
                 _timestamp = t._timestamp;
             }
             return *this;
         }
 
         /**
-         * Sets the specified buffer as the texture on the device
-         */
-        Texture& operator=(ImagePtr& img);
-
-        /**
          * Bind / unbind this texture
          */
-        void bind();
-        void unbind();
-
-        /**
-         * Enable / disable filtering of the texture
-         */
-        void disableFiltering() {_filtering = false;}
-        void enableFiltering() {_filtering = true;}
-
-        /**
-         * Flush the PBO copy which may still be happening. Do this before
-         * closing the current context!
-         */
-        void flushPbo();
-
-        /**
-         * Generate the mipmaps for the texture
-         */
-        void generateMipmap() const;
-
-        /**
-         * Get the id of the gl texture
-         */
-        GLuint getTexId() const {return _glTex;}
+        virtual void bind() = 0;
+        virtual void unbind() = 0;
 
         /**
          * Get the shader parameters related to this texture
          * Texture should be locked first
          */
-        std::map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
+        virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;
 
         /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const {return _spec;}
+        virtual oiio::ImageSpec getSpec() const = 0;
+
+        /**
+         * Get the prefix for the glsl sampler name
+         */
+        virtual std::string getPrefix() const {return "_tex";}
 
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        virtual bool linkTo(BaseObjectPtr obj);
 
         /**
          * Lock the texture for read / write operations
          */
         void lock() const {_mutex.lock();}
-
-        /**
-         * Read the texture and returns an Image
-         */
-        ImagePtr read();
-
-        /**
-         * Set the buffer size / type / internal format
-         * See glTexImage2D for information about parameters
-         */
-        void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                   GLint border, GLenum format, GLenum type, const GLvoid* data);
-
-        /**
-         * Modify the size of the texture
-         */
-        void resize(int width, int height);
 
         /**
          * Unlock the texture for read / write operations
@@ -171,41 +119,23 @@ class Texture : public BaseObject
         /**
          * Update the texture according to the owned Image
          */
-        void update();
+        virtual void update() = 0;
 
-    private:
+    protected:
         mutable std::mutex _mutex;
-
-        GLuint _glTex = {0};
         oiio::ImageSpec _spec;
-        GLuint _pbos[2];
-        int _pboReadIndex {0};
-        std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
         bool _resizable {true};
         bool _filtering {true};
-        GLenum _texTarget, _texFormat, _texType;
-        GLint _texLevel, _texInternalFormat, _texBorder;
 
-        // And some temporary attributes
-        GLint _activeTexture; // To which texture unit the texture is bound
-
-        ImagePtr _img;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
-        // Parameters to send to the shader
-        std::map<std::string, Values> _shaderUniforms;
-
+    private:
         /**
          * As says its name
          */
         void init();
-
-        /**
-         * Update the pbos according to the parameters
-         */
-        void updatePbos(int width, int height, int bytes);
 
         /**
          * Register new functors to modify attributes

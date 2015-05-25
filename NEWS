@@ -1,6 +1,27 @@
 Slash release notes
 ===================
 
+Splash 0.3.0 (2015-05-25)
+-------------------------
+New features:
+* Packaged for OSX!
+* Added support for Syphon on OSX
+* Can read videos through ffmpeg
+* Can access video grabbers through OpenCV
+* Added an exporter for Blender to ease configuration
+* Supports multithreaded Hap
+
+Improvements:
+* Improved camera manipulation
+* Improved GUI
+* Removed dependency to OpenMesh
+* Now uses shmdata 1.0
+* Various optimizations and fixes
+
+Bug fixed:
+* Fixed shaders to work on ATI cards
+* Fixed some crashes
+
 Splash 0.2.2 (2015-02-27)
 -------------------------
 New features:

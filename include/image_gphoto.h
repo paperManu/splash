@@ -29,6 +29,7 @@
 #include <gphoto2/gphoto2.h>
 
 #include "config.h"
+
 #include "image.h"
 
 namespace oiio = OIIO_NAMESPACE;

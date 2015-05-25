@@ -2,7 +2,6 @@ AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/GLV/GLV \
-	-I$(top_srcdir)/external/libsimdpp \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \
 	-DGLV_GLFW \
@@ -17,3 +16,13 @@ splash_check_calibration_SOURCES = splash-check-calibration.cpp
 
 splash_check_calibration_LDFLAGS = \
 	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+
+if HAVE_OSX
+splash_check_calibration_LDFLAGS += \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+
+splash_check_calibration_OBJCXXFLAGS = \
+	-F$(top_srcdir)/external/syphon/build/Release \
+	-framework Syphon
+endif

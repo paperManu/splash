@@ -32,18 +32,19 @@
 #define GLFW_NO_GLU
 #define GL_GLEXT_PROTOTYPES
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <deque>
 #include <functional>
 #include <memory>
-#include <GLFW/glfw3.h>
-//#define ImVector std::vector
 #include <imgui.h>
 
+#include "config.h"
+
+#if HAVE_GPHOTO
+    #include "colorcalibrator.h"
+#endif
+#include "coretypes.h"
+#include "basetypes.h"
 #include "widgets.h"
 
 namespace Splash {
@@ -132,6 +133,11 @@ class Gui : public BaseObject
         bool render();
 
         /**
+         * Specify the configuration path (as loaded by World)
+         */
+        void setConfigFilePath(const std::string& path) {_configurationPath = path.data();}
+
+        /**
          * Set the resolution of the GUI
          */
         void setOutputSize(int width, int height);
@@ -142,7 +148,7 @@ class Gui : public BaseObject
         SceneWeakPtr _scene;
 
         GLuint _fbo;
-        TexturePtr _depthTexture;
+        Texture_ImagePtr _depthTexture;
         TexturePtr _outTexture;
         std::vector<ObjectPtr> _objects;
         float _width {512}, _height {512};
@@ -166,6 +172,7 @@ class Gui : public BaseObject
         std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
 
         // Gui related attributes
+        std::string _configurationPath;
         bool _isVisible {false};
         bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
         bool _wireframe {false};
@@ -189,6 +196,7 @@ class Gui : public BaseObject
         void calibrateColors();
         void computeBlending();
         void flashBackground();
+        void loadConfiguration();
         void saveConfiguration();
 
         /**

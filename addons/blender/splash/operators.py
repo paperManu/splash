@@ -31,8 +31,7 @@ from bpy.props import (StringProperty,
                        PointerProperty,
                        )
 from math import floor
-from mathutils import Vector
-from pyshmdata import Writer
+from mathutils import Vector, Matrix
 
 class Target:
     _object = None
@@ -148,6 +147,13 @@ class Splash:
             if target._texture is None or target._texWriterPath is None:
                 return
     
+            buffer = bytearray()
+            pixels = [pix for pix in target._texture.pixels]
+            pixels = numpy.array(pixels)
+            pixels = (pixels * 255.0).astype(numpy.ubyte)
+            buffer += pixels.tostring()
+            currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
+
             if target._texWriter is None or target._texture.size[0] != target._texSize[0] or target._texture.size[1] != target._texSize[1]:
                 try:
                     os.remove(target._texWriterPath)
@@ -159,14 +165,7 @@ class Splash:
     
                 target._texSize[0] = target._texture.size[0]
                 target._texSize[1] = target._texture.size[1]
-                target._texWriter = Writer(path=target._texWriterPath, datatype="video/x-raw-rgb, bpp=(int)32, endianness=(int)4321, depth=(int)32, red_mask=(int)-16777216, green_mask=(int)16711680, blue_mask=(int)65280, alpha_mask=(int)255, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(target._texSize[0], target._texSize[1]))
-    
-            buffer = bytearray()
-            pixels = [pix for pix in target._texture.pixels]
-            pixels = numpy.array(pixels)
-            pixels = (pixels * 255.0).astype(numpy.ubyte)
-            buffer += pixels.tostring()
-            currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
+                target._texWriter = Writer(path=target._texWriterPath, datatype="video/x-raw, format=(string)RGBA, width=(int){0}, height=(int){1}, framerate=(fraction)1/1".format(target._texSize[0], target._texSize[1]), framesize=len(buffer))
             target._texWriter.push(buffer, floor(currentTime * 1e9))
 
             # We send twice to pass through the Splash input buffer
@@ -181,6 +180,12 @@ class SplashActivateSendMesh(Operator):
     bl_label = "Activate mesh output to Splash"
 
     def execute(self, context):
+        try:
+            from pyshmdata import Writer
+        except:
+            print("Module pyshmdata was not found")
+            return {'FINISHED'}
+            
         scene = bpy.context.scene
         splash = scene.splash
 
@@ -219,12 +224,19 @@ class SplashActivateSendMesh(Operator):
 
         return {'FINISHED'}
 
+
 class SplashSendTexture(Operator):
     """Send the texture to Splash"""
     bl_idname = "splash.send_texture"
     bl_label = "Send the texture to Splash"
 
     def execute(self, context):
+        try:
+            from pyshmdata import Writer
+        except:
+            print("Module pyshmdata was not found")
+            return {'FINISHED'}
+
         scene = bpy.context.scene
         splash = scene.splash
 
@@ -246,6 +258,7 @@ class SplashSendTexture(Operator):
 
         return {'FINISHED'}
 
+
 class SplashStopSelected(Operator):
     """Stop output for mesh selected in dropdown"""
     bl_idname = "splash.stop_selected_mesh"
@@ -260,3 +273,163 @@ class SplashStopSelected(Operator):
             Splash._targets.pop(selection)
 
         return {'FINISHED'}
+
+
+def export_to_splash(self, context, filepath):
+    scene = context.scene
+
+    file = open(filepath, "w", encoding="utf8", newline="\n")
+    fw = file.write
+
+    # Header, not dependant of the objects in scene
+    fw("// Splash configuration file\n"
+       "// Exported with Blender Splash export\n"
+       "{\n"
+       "    \"encoding\" : \"UTF-8\",\n"
+       "\n"
+       "    \"world\" : {\n"
+       "        \"framerate\" : 60\n"
+       "    },\n"
+       "\n"
+       "    \"scenes\" : [\n"
+       "        {\n"
+       "            \"name\" : \"local\",\n"
+       "            \"address\" : \"localhost\",\n"
+       "            \"spawn\" : 1,\n"
+       "            \"display\" : 0,\n"
+       "            \"swapInterval\" : 1\n"
+       "        }\n"
+       "    ],\n"
+       "\n"
+       "    \"local\" : {\n")
+    
+    links = []
+    cameras = []
+    windowIndex = 1
+
+    # Export cameras
+    for item in scene.objects.items():
+        object = item[1]
+        if object.type == 'CAMERA':
+            # Get some parameters
+            rotMatrix = object.matrix_world.to_3x3()
+            targetVec = Vector((0.0, 0.0, -1.0))
+            targetVec = rotMatrix * targetVec + object.matrix_world.to_translation()
+            upVec = Vector((0.0, 1.0, 0.0))
+            upVec = rotMatrix * upVec
+
+            objectData = bpy.data.cameras[object.name]
+            if objectData.splash_window_fullscreen is True:
+                fullscreen = objectData.splash_fullscreen_index
+            else:
+                fullscreen = -1
+
+            if objectData.splash_window_decoration is True:
+                decoration = 1
+            else:
+                decoration = 0
+
+            width = objectData.splash_width
+            height = objectData.splash_height
+
+            stringArgs = (object.name,
+                          int(width), int(height),
+                          float(object.matrix_world[0][3]), float(object.matrix_world[1][3]), float(object.matrix_world[2][3]),
+                          float(targetVec[0]), float(targetVec[1]), float(targetVec[2]),
+                          float(upVec[0]), float(upVec[1]), float(upVec[2]),
+                          float(bpy.data.cameras[object.name].lens),
+                          int(windowIndex),
+                          int(fullscreen),
+                          int(decoration),
+                          int(width), int(height))
+
+            fw("        \"%s\" : {\n"
+               "            \"type\" : \"camera\",\n"
+               "            \"size\" : [%i, %i],\n"
+               "            \"eye\" : [%f, %f, %f],\n"
+               "            \"target\" : [%f, %f, %f],\n"
+               "            \"up\" : [%f, %f, %f],\n"
+               "            \"fov\" : [%f]\n"
+               "        },\n"
+               "        \"window_%i\" : {\n"
+               "            \"type\" : \"window\",\n"
+               "            \"fullscreen\" : %i,\n"
+               "            \"decorated\" : %i,\n"
+               "            \"position\" : [0, 0],\n"
+               "            \"size\" : [%i, %i],\n"
+               "            \"srgb\" : [ 1 ]\n"
+               "        },\n"
+               "\n"
+               % stringArgs)
+            
+            cameras.append(object.name)
+            links.append([object.name, "window_%i" % int(windowIndex)])
+            windowIndex += 1
+        
+    # Export meshes
+    for item in scene.objects.items():
+        object = item[1]
+        if object.type == 'MESH':
+
+            # Fill splash configuration
+            objectData = bpy.data.meshes[object.name]
+
+            if objectData.splash_mesh_type == "mesh" and objectData.splash_mesh_path == "":
+                meshPath = "%s.obj" % object.name
+                # Export the selected mesh
+                path = os.path.dirname(filepath) + "/" + object.name + ".obj"
+                bpy.ops.object.select_pattern(pattern=object.name, extend=False)
+                bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
+                                         use_uvs=True, axis_forward='Y', axis_up='Z')
+            else:
+                meshPath = objectData.splash_mesh_path
+
+            stringArgs = (object.name,
+                          objectData.splash_mesh_type, meshPath,
+                          "image_%s" % object.name, objectData.splash_texture_type, objectData.splash_texture_path,
+                          "object_%s" % object.name,
+                          object.scale[0], object.scale[1], object.scale[2],
+                          object.matrix_world[0][3], object.matrix_world[1][3], object.matrix_world[2][3])
+
+            fw("        \"%s\" : {\n"
+               "            \"type\" : \"%s\",\n"
+               "            \"file\" : \"%s\"\n"
+               "        },\n"
+               "        \"%s\" : {\n"
+               "            \"type\" : \"%s\",\n"
+               "            \"file\" : \"%s\",\n"
+               "            \"flip\" : [ 0 ],\n"
+               "            \"flop\" : [ 0 ],\n"
+               "            \"srgb\" : [ 1 ]\n"
+               "        },\n"
+               "        \"%s\" : {\n"
+               "            \"type\" : \"object\",\n"
+               "            \"sideness\" : 0,\n"
+               "            \"scale\" : [%f, %f, %f],\n"
+               "            \"position\" : [%f, %f, %f]\n"
+               "        },\n"
+               "\n"
+               % stringArgs)
+
+            links.append([object.name, "object_%s" % object.name])
+            links.append(["image_%s" % object.name, "object_%s" % object.name])
+            for cam in cameras:
+                links.append(["object_%s" % object.name, cam])
+
+
+    # Export links
+    fw("        \"links\" : [\n")
+    for i in range(len(links)):
+        link = links[i]
+        linkArgs = (link[0], link[1])
+        if i == len(links) - 1:
+            fw("            [\"%s\", \"%s\"]\n" % linkArgs)
+        else:
+            fw("            [\"%s\", \"%s\"],\n" % linkArgs)
+    fw("        ]\n")
+
+    fw("    }\n"
+       "}")
+    file.close()
+
+    return {'FINISHED'}

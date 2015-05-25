@@ -1,11 +1,13 @@
 #include "image.h"
 
-#include "log.h"
-#include "threadpool.h"
-#include "timer.h"
-
+#include <memory>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
+
+#include "log.h"
+#include "osUtils.h"
+#include "threadpool.h"
+#include "timer.h"
 
 #define SPLASH_IMAGE_COPY_THREADS 4
 
@@ -16,21 +18,30 @@ namespace Splash {
 /*************/
 Image::Image()
 {
-    _type = "image";
+    init();
+}
 
-    oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
-    createDefaultImage();
-
-    registerAttributes();
+/*************/
+Image::Image(bool linked)
+{
+    init();
+    _linkedToWorldObject = linked;
 }
 
 /*************/
 Image::Image(oiio::ImageSpec spec)
 {
-    _type = "image";
-    oiio::attribute("threads", 0);
+    init();
     set(spec.width, spec.height, spec.nchannels, spec.format);
+}
 
+/*************/
+void Image::init()
+{
+    _type = "image";
+    oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
+
+    createDefaultImage();
     registerAttributes();
 }
 
@@ -38,7 +49,7 @@ Image::Image(oiio::ImageSpec spec)
 Image::~Image()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif
 }
 
@@ -52,7 +63,7 @@ const void* Image::data() const
 oiio::ImageBuf Image::get() const
 {
     oiio::ImageBuf img;
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     img.copy(_image);
     return img;
 }
@@ -60,14 +71,14 @@ oiio::ImageBuf Image::get() const
 /*************/
 oiio::ImageSpec Image::getSpec() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     return _image.spec();
 }
 
 /*************/
 void Image::set(const oiio::ImageBuf& img)
 {
-    lock_guard<mutex> lockRead(_readMutex);
+    unique_lock<mutex> lockRead(_readMutex);
     _image.copy(img);
 }
 
@@ -77,17 +88,18 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
     oiio::ImageSpec spec(w, h, channels, type);
     oiio::ImageBuf img(spec);
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     _image.swap(img);
     updateTimestamp();
 }
 
 /*************/
-SerializedObjectPtr Image::serialize() const
+unique_ptr<SerializedObject> Image::serialize() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
 
-    STimer::timer << "serialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() << "serialize " + _name;
 
     // We first get the xml version of the specs, and pack them into the obj
     string xmlSpec = _image.spec().to_xml();
@@ -95,17 +107,7 @@ SerializedObjectPtr Image::serialize() const
     int imgSize = _image.spec().pixel_bytes() * _image.spec().width * _image.spec().height;
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
-    if (_serializedBuffers[0].get() == nullptr || _serializedBuffers[0]->size() != totalSize)
-    {
-        _serializedBuffers[0] = make_shared<SerializedObject>(totalSize);
-        _serializedBuffers[1] = make_shared<SerializedObject>(totalSize);
-        _serializedBuffers[2] = make_shared<SerializedObject>(totalSize);
-    }
-    
-    SerializedObjectPtr obj = _serializedBuffers[_serializedBufferIndex];
-    lock_guard<mutex> lockObject(obj->_mutex);
-    int bufferIndex = _serializedBufferIndex;
-    _serializedBufferIndex = (_serializedBufferIndex + 1) % 3;
+    auto obj = unique_ptr<SerializedObject>(new SerializedObject(totalSize));
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrChar);
@@ -119,7 +121,7 @@ SerializedObjectPtr Image::serialize() const
     // And then, the image
     const char* imgPtr = reinterpret_cast<const char*>(_image.localpixels());
     if (imgPtr == NULL)
-        return SerializedObjectPtr();
+        return {};
     
     vector<unsigned int> threadIds;
     int stride = SPLASH_IMAGE_COPY_THREADS;
@@ -132,18 +134,20 @@ SerializedObjectPtr Image::serialize() const
     copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
     SThread::pool.waitThreads(threadIds);
 
-    STimer::timer >> "serialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "serialize " + _name;
 
-    return _serializedBuffers[bufferIndex];
+    return obj;
 }
 
 /*************/
-bool Image::deserialize(const SerializedObjectPtr obj)
+bool Image::deserialize(unique_ptr<SerializedObject> obj)
 {
-    if (obj->size() == 0)
+    if (obj.get() == nullptr || obj->size() == 0)
         return false;
 
-    STimer::timer << "deserialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() << "deserialize " + _name;
 
     // First, we get the size of the metadata
     int nbrChar;
@@ -155,7 +159,7 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 
     try
     {
-        lock_guard<mutex> lockWrite(_writeMutex);
+        unique_lock<mutex> lockWrite(_writeMutex);
 
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
@@ -191,11 +195,12 @@ bool Image::deserialize(const SerializedObjectPtr obj)
     }
     catch (...)
     {
-        SLog::log << Log::ERROR << "Image::" << __FUNCTION__ << " - Unable to deserialize the given object" << Log::endl;
+        Log::get() << Log::ERROR << "Image::" << __FUNCTION__ << " - Unable to deserialize the given object" << Log::endl;
         return false;
     }
 
-    STimer::timer >> "deserialize " + _name;
+    if (Timer::get().isDebug())
+        Timer::get() >> "deserialize " + _name;
 
     return true;
 }
@@ -203,51 +208,67 @@ bool Image::deserialize(const SerializedObjectPtr obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    return readFile(filename);
+    if (!_linkedToWorldObject)
+        return readFile(filename);
+    else
+        return true;
 }
 
 /*************/
 bool Image::readFile(const string& filename)
 {
-    oiio::ImageInput* in = oiio::ImageInput::open(filename);
-    if (!in)
+    auto filepath = string(filename);
+    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
+        filepath = _configFilePath + filepath;
+
+    try
     {
-        SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        auto in = oiio::ImageInput::open(filepath);
+
+        if (!in)
+        {
+            Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+            return false;
+        }
+
+        const oiio::ImageSpec& spec = in->spec();
+        if (spec.format != oiio::TypeDesc::UINT8)
+        {
+            Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
+            return false;
+        }
+
+        int xres = spec.width;
+        int yres = spec.height;
+        int channels = spec.nchannels;
+        oiio::ImageBuf img(spec); 
+        in->read_image(oiio::TypeDesc::UINT8, img.localpixels());
+
+        in->close();
+        delete in;
+
+        if (channels != 3 && channels != 4)
+            return false;
+
+        unique_lock<mutex> lock(_writeMutex);
+        _bufferImage.swap(img);
+        _imageUpdated = true;
+
+        updateTimestamp();
+
+        return true;
+    }
+    catch (const exception& e)
+    {
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an exception while opening image file: " << e.what() << Log::endl;
         return false;
     }
-
-    const oiio::ImageSpec& spec = in->spec();
-    if (spec.format != oiio::TypeDesc::UINT8)
-    {
-        SLog::log << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
-        return false;
-    }
-
-    int xres = spec.width;
-    int yres = spec.height;
-    int channels = spec.nchannels;
-    oiio::ImageBuf img(spec); 
-    in->read_image(oiio::TypeDesc::UINT8, img.localpixels());
-
-    in->close();
-    delete in;
-
-    if (channels != 3 && channels != 4)
-        return false;
-
-    lock_guard<mutex> lock(_writeMutex);
-    _bufferImage.swap(img);
-    _imageUpdated = true;
-
-    updateTimestamp();
-
-    return true;
 }
 
 /*************/
 void Image::setTo(float value)
 {
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     float v[_image.nchannels()];
     for (int i = 0; i < _image.nchannels(); ++i)
         v[i] = (float)value;
@@ -257,8 +278,8 @@ void Image::setTo(float value)
 /*************/
 void Image::update()
 {
-    lock_guard<mutex> lockRead(_readMutex);
-    lock_guard<mutex> lockWrite(_writeMutex);
+    unique_lock<mutex> lockRead(_readMutex);
+    unique_lock<mutex> lockWrite(_writeMutex);
     if (_imageUpdated)
     {
         _image.swap(_bufferImage);
@@ -275,7 +296,7 @@ bool Image::write(const std::string& filename)
     if (!out)
         return false;
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     out->open(filename, _image.spec());
     out->write_image(_image.spec().format, _image.localpixels());
     out->close();
@@ -303,7 +324,7 @@ void Image::createDefaultImage()
                 p[c] = 0;
     }
 
-    lock_guard<mutex> lock(_readMutex);
+    unique_lock<mutex> lock(_readMutex);
     _image.swap(img);
     updateTimestamp();
 }
@@ -311,7 +332,7 @@ void Image::createDefaultImage()
 /*************/
 void Image::registerAttributes()
 {
-    _attribFunctions["flip"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["flip"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _flip = (args[0].asInt() > 0) ? true : false;
@@ -320,7 +341,7 @@ void Image::registerAttributes()
         return {_flip};
     });
 
-    _attribFunctions["flop"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["flop"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _flop = (args[0].asInt() > 0) ? true : false;
@@ -329,13 +350,13 @@ void Image::registerAttributes()
         return {_flop};
     });
 
-    _attribFunctions["file"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
     });
 
-    _attribFunctions["srgb"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _srgb = (args[0].asInt() > 0) ? true : false;     
@@ -344,7 +365,7 @@ void Image::registerAttributes()
         return {_srgb};
     });
 
-    _attribFunctions["benchmark"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)

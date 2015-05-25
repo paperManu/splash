@@ -57,14 +57,15 @@ class Worker
 class ThreadPool
 {
     public:
-        ThreadPool(size_t threads = 0);
+        ThreadPool(int threads = -1);
         ~ThreadPool();
 
         template<class F> unsigned int enqueue(F f);
         template<class F> void enqueueWithoutId(F f);
+        unsigned int getTasksNumber();
+        void addWorkers(unsigned int nbr);
         void waitAllThreads();
         void waitThreads(std::vector<unsigned int>&);
-        unsigned int getPoolLength();
 
     private:
         friend class Worker;

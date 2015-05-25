@@ -25,14 +25,17 @@
 #ifndef SPLASH_CGUTILS_H
 #define SPLASH_CGUTILS_H
 
+#include <vector>
+#include <hap.h>
+
 #include "config.h"
 #include "coretypes.h"
-
-#include <vector>
+#include "log.h"
 
 namespace Splash
 {
 
+/*************/
 struct RgbValue
 {
     RgbValue() {};
@@ -144,6 +147,13 @@ struct RgbValue
     float g {0.f};
     float b {0.f};
 };
+
+/*************/
+// Hap chunk callback
+void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* info);
+// Decode a Hap frame
+// If out is null, only sets the format
+bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSize, std::string& format);
 
 } // end of namespace
 

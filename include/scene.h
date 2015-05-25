@@ -25,14 +25,21 @@
 #ifndef SPLASH_SCENE_H
 #define SPLASH_SCENE_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <cstddef>
+#include <future>
 #include <vector>
 #include <json/reader.h>
+
+#include "config.h"
+
+#if HAVE_GPHOTO
+    #include "colorcalibrator.h"
+#endif
+#include "coretypes.h"
+#include "basetypes.h"
+#include "gui.h"
+#include "widgets.h"
 
 namespace Splash {
 
@@ -42,10 +49,12 @@ typedef std::shared_ptr<Scene> ScenePtr;
 /*************/
 class Scene : public RootObject
 {
+#if HAVE_GPHOTO
     friend ColorCalibrator;
-    friend GuiColorCalibration;
+#endif
     friend GuiControl;
     friend GuiGlobalView;
+    friend GuiNodeView;
     friend GuiWidget;
     friend Gui;
 
@@ -127,7 +136,7 @@ class Scene : public RootObject
         /**
          * Set the Scene as the master one
          */
-        void setAsMaster();
+        void setAsMaster(std::string configFilePath = "");
 
         /**
          * Give a special behavior to the scene, making it the main window of the World
@@ -137,7 +146,7 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessageToWorld(const std::string message, const Values value = {});
+        void sendMessageToWorld(const std::string message, const Values& value = {});
 
         /**
          * Wait for synchronization with texture upload
@@ -167,7 +176,6 @@ class Scene : public RootObject
     private:
         ScenePtr _self;
         bool _started {false};
-        std::thread _sceneLoop;
         std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
@@ -177,7 +185,8 @@ class Scene : public RootObject
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
         // Texture upload context
-        std::thread _textureUploadLoop;
+        std::future<void> _textureUploadFuture;
+        std::condition_variable _textureUploadCondition;
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
@@ -191,7 +200,7 @@ class Scene : public RootObject
 
         // Blending map, used by all cameras (except the GUI camera)
         unsigned int _blendingResolution {2048};
-        TexturePtr _blendingTexture;
+        Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;
 
         /**
@@ -217,7 +226,11 @@ class Scene : public RootObject
         /**
          * Callback for GL errors and warnings
          */
+#ifdef HAVE_OSX
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
+#else
+        static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
+#endif
 
         /**
          * Main loop for the scene

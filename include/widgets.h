@@ -29,17 +29,19 @@
 #define SPLASH_GLV_FONTSIZE 8.0
 #define SPLASH_GLV_FONTWIDTH 2.0
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
 #include <deque>
 #include <functional>
+#include <map>
 #include <memory>
+#include <unordered_map>
+
+#include "config.h"
 
 #include "camera.h"
-#include "object.h"
+#include "coretypes.h"
+#include "basetypes.h"
+#include "image.h"
 #include "texture.h"
 
 namespace Splash
@@ -82,7 +84,7 @@ class GuiGlobalView : public GuiWidget
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
-        void SetObject(ObjectPtr obj) {_camera->linkTo(obj);}
+        void setObject(ObjectPtr obj);
 
     protected:
         CameraPtr _camera, _guiCamera;
@@ -95,7 +97,11 @@ class GuiGlobalView : public GuiWidget
         int _camWidth, _camHeight;
 
         // Store the previous camera values
-        Values _eye, _target, _up, _fov, _principalPoint;
+        struct CameraParameters
+        {
+            Values eye, target, up, fov, principalPoint;
+        };
+        std::vector<CameraParameters> _previousCameraParameters;
         Values _newTarget;
 
         // Previous point added
@@ -106,6 +112,7 @@ class GuiGlobalView : public GuiWidget
 
         // Actions
         void doCalibration();
+        void propagateCalibration(); // Propagates calibration to other Scenes if needed
         void switchHideOtherCameras();
         void nextCamera();
         void showAllCalibrationPoints();
@@ -117,15 +124,17 @@ class GuiControl : public GuiWidget
     public:
         GuiControl(std::string name) : GuiWidget(name) {}
         void render();
-        int updateWindowFlags() {return 0;}
+        int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
         SceneWeakPtr _scene;
+        std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
         
         std::vector<std::string> getObjectNames();
+        void sendValuesToObjectsOfType(std::string type, std::string attr, Values values);
 };
 
 /*************/
@@ -138,7 +147,49 @@ class GuiGraph : public GuiWidget
     private:
         std::atomic_uint _target;
         unsigned int _maxHistoryLength {300};
-        std::map<std::string, std::deque<unsigned long long>> _durationGraph;
+        std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
+};
+
+/*************/
+class GuiTemplate : public GuiWidget
+{
+    public:
+        GuiTemplate(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        SceneWeakPtr _scene;
+        bool _templatesLoaded {false};
+        std::vector<std::string> _names;
+        std::map<std::string, Texture_ImagePtr> _textures;
+        std::map<std::string, std::string> _descriptions;
+
+        void loadTemplates();
+};
+
+/*************/
+class GuiNodeView : public GuiWidget
+{
+    public:
+        GuiNodeView(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        int updateWindowFlags();
+
+    private:
+        SceneWeakPtr _scene;
+        bool _isHovered {false};
+
+        // Node render settings
+        std::vector<int> _nodeSize {160, 60};
+        std::vector<int> _viewSize {640, 240};
+        std::vector<int> _viewShift {0, 0};
+        std::map<std::string, std::vector<float>> _nodePositions;
+        
+        std::map<std::string, std::vector<std::string>> getObjectLinks();
+        std::map<std::string, std::string> getObjectTypes();
+        void renderNode(std::string name);
 };
 
 } // end of namespace

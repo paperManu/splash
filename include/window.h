@@ -25,10 +25,7 @@
 #ifndef SPLASH_WINDOW_H
 #define SPLASH_WINDOW_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
+#include <atomic>
 #include <deque>
 #include <memory>
 #include <mutex>
@@ -36,6 +33,14 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "object.h"
+#include "texture.h"
+#include "texture_image.h"
 
 namespace Splash {
 
@@ -114,6 +119,16 @@ class Window : public BaseObject
         static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
 
         /**
+         * Get the list of paths dropped onto any window
+         */
+        static std::vector<std::string> getPathDropped();
+
+        /**
+         * Get the quit flag status
+         */
+        static int getQuitFlag() {return _quitFlag;}
+
+        /**
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
@@ -133,6 +148,11 @@ class Window : public BaseObject
          * Render this window to screen
          */
         bool render();
+
+        /**
+         * Hide / show cursor
+         */
+        void showCursor(bool visibility);
 
         /**
          * Set the window to fullscreen
@@ -160,13 +180,19 @@ class Window : public BaseObject
         bool _srgb {true};
         float _gammaCorrection {2.2f};
         Values _layout {0, 0, 0, 0};
-        int _swapInterval {2};
+        int _swapInterval {1};
+
+        // Swap synchronization test
+        bool _swapSynchronizationTesting {false};
+        glm::vec4 _swapSynchronizationColor {0.0, 0.0, 0.0, 1.0};
+
+        static std::atomic_int _swappableWindowsCount;
 
         // Offscreen rendering related objects
         GLuint _renderFbo {0};
         GLuint _readFbo {0};
-        TexturePtr _depthTexture {nullptr};
-        TexturePtr _colorTexture {nullptr};
+        Texture_ImagePtr _depthTexture {nullptr};
+        Texture_ImagePtr _colorTexture {nullptr};
         GLsync _renderFence;
 
         ObjectPtr _screen;
@@ -181,15 +207,19 @@ class Window : public BaseObject
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn; // Input mouse buttons queue
         static std::pair<GLFWwindow*, std::vector<double>> _mousePos; // Input mouse position
         static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
+        static std::vector<std::string> _pathDropped; // Filepath drag&dropped
+        static std::atomic_bool _quitFlag; // Grabs close window events
 
         /**
-         * Input callbacks
+         * Input callbacksppa:andrewrk/rucksack
          */
         static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
         static void charCallback(GLFWwindow* win, unsigned int codepoint);
         static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
         static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
         static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
+        static void pathdropCallback(GLFWwindow* win, int count, const char** paths);
+        static void closeCallback(GLFWwindow* win);
 
         /**
          * Set FBOs up

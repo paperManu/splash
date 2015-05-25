@@ -1,24 +1,33 @@
 #include "world.h"
-#include "timer.h"
+
+#include <chrono>
+#include <fstream>
+#include <unistd.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <json/reader.h>
+#include <json/writer.h>
+#include <spawn.h>
+#include <sys/wait.h>
 
 #include "image.h"
 #if HAVE_GPHOTO
-#include "image_gphoto.h"
+    #include "image_gphoto.h"
+#endif
+#if HAVE_FFMPEG
+    #include "image_ffmpeg.h"
+#endif
+#if HAVE_OPENCV
+    #include "image_opencv.h"
 #endif
 #include "image_shmdata.h"
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
 #include "mesh_shmdata.h"
+#include "osUtils.h"
 #include "scene.h"
+#include "timer.h"
 #include "threadpool.h"
-
-#include <chrono>
-#include <fstream>
-#include <glm/gtc/matrix_transform.hpp>
-#include <json/reader.h>
-#include <json/writer.h>
-#include <spawn.h>
 
 using namespace glm;
 using namespace std;
@@ -39,7 +48,7 @@ World::World(int argc, char** argv)
 World::~World()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
 #endif
     SThread::pool.waitAllThreads();
 }
@@ -54,56 +63,81 @@ void World::run()
 
     while (true)
     {
-        STimer::timer << "worldLoop";
+        Timer::get() << "worldLoop";
 
-        STimer::timer << "upload";
-        vector<unsigned int> threadIds;
-        for (auto& o : _objects)
         {
-            threadIds.push_back(SThread::pool.enqueue([=, &o]() {
-                // Update the local objects
-                o.second->update();
+            unique_lock<mutex> lock(_configurationMutex);
 
-                // Send them the their destinations
-                SerializedObjectPtr obj;
-                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
-                if (bufferObj.get() != nullptr)
-                {
-                    if (bufferObj->wasUpdated()) // if the buffer has been updated
+            Timer::get() << "upload";
+            vector<unsigned int> threadIds;
+            for (auto& o : _objects)
+            {
+                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                    // Update the local objects
+                    o.second->update();
+
+                    // Send them the their destinations
+                    BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                    if (bufferObj.get() != nullptr)
                     {
-                        obj = bufferObj->serialize();
-                        bufferObj->setNotUpdated();
-                        _link->sendBuffer(o.first, obj);
+                        if (bufferObj->wasUpdated()) // if the buffer has been updated
+                        {
+                            auto obj = bufferObj->serialize();
+                            bufferObj->setNotUpdated();
+                            _link->sendBuffer(o.first, std::move(obj));
+                        }
+                        else
+                            return; // if not, exit this thread
                     }
-                    else
-                        return; // if not, exit this thread
-                }
-            }));
+                }));
+            }
+            SThread::pool.waitThreads(threadIds);
+
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 60))); // Maximum time to wait for frames to arrive
+            sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
+
+            Timer::get() >> "upload";
         }
-        SThread::pool.waitThreads(threadIds);
-        STimer::timer >> "upload";
+
+        // If swap synchronization test is enabled
+        if (_swapSynchronizationTesting)
+        {
+            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {1});
+
+            static auto frameNbr = 0;
+            static auto frameStatus = 0;
+            auto color = glm::vec4(0.0);
+
+            if (frameNbr == 0 && frameStatus == 0)
+            {
+                color = glm::vec4(0.0, 0.0, 0.0, 1.0);
+                frameStatus = 1;
+            }
+            else if (frameNbr == 0 && frameStatus == 1)
+            {
+                color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+                frameStatus = 0;
+            }
+
+            if (frameNbr == 0)
+                sendMessage(SPLASH_ALL_PAIRS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+
+            frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
+        }
+        else
+        {
+            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
+        }
 
         // Send current timings to all Scenes, for display purpose
-        auto durationMap = STimer::timer.getDurationMap();
+        auto& durationMap = Timer::get().getDurationMap();
         for (auto& d : durationMap)
             sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
 
         // Send newer logs to all Scenes
-        auto logs = SLog::log.getLogs();
+        auto logs = Log::get().getLogs();
         for (auto& log : logs)
             sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
-
-        if (_doComputeBlending)
-        {
-            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
-            _doComputeBlending = false;
-        }
-
-        if (_doSaveConfig)
-        {
-            saveConfig();
-            _doSaveConfig = false;
-        }
 
         if (_quit)
         {
@@ -112,8 +146,23 @@ void World::run()
             break;
         }
 
+        // Ping the clients once in a while
+        if (Timer::get().isDebug())
+        {
+            static auto frameIndex = 0;
+            if (frameIndex == 0)
+            {
+                for (auto& scene : _scenes)
+                {
+                    Timer::get() << "pingScene " + scene.first;
+                    sendMessage(scene.first, "ping", {});
+                }
+            }
+            frameIndex = (frameIndex + 1) % 60;
+        }
+
         // Get the current FPS
-        STimer::timer >> 1e6 / (float)_worldFramerate >> "worldLoop";
+        Timer::get() >> 1e6 / (float)_worldFramerate >> "worldLoop";
     }
 }
 
@@ -131,6 +180,14 @@ void World::addLocally(string type, string name, string destination)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+#if HAVE_FFMPEG
+        else if (type == string("image_ffmpeg"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
+#endif
+#if HAVE_OPENCV
+        else if (type == string("image_opencv"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>());
+#endif
 #if HAVE_GPHOTO
         else if (type == string("image_gphoto"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());
@@ -171,30 +228,13 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-    // We first destroy all scenes
-    if (_scenes.size() > 0)
-        _scenes.clear();
+    unique_lock<mutex> lock(_configurationMutex);
 
-    // Configure this very World
-    if (_config.isMember("world"))
-    {
-        const Json::Value jsWorld = _config["world"];
-        auto worldMember = jsWorld.getMemberNames();
-        int idx {0};
-        for (const auto& param : jsWorld)
-        {
-            string paramName = worldMember[idx];
-            Value v;
-            if (param.isInt())
-                v = param.asInt();
-            else if (param.isDouble())
-                v = param.asFloat();
-            else
-                v = param.asString();
-            setAttribute(paramName, {v});
-            idx++;
-        }
-    }
+    // We first destroy all scene and objects
+    _scenes.clear();
+    _objects.clear();
+    _objectDest.clear();
+    _masterSceneName = "";
 
     // Get the list of all scenes, and create them
     const Json::Value jsScenes = _config["scenes"];
@@ -204,7 +244,7 @@ void World::applyConfig()
         {
             if (!jsScenes[i].isMember("name"))
             {
-                SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
                 return;
             }
             int spawn = 0;
@@ -218,30 +258,31 @@ void World::applyConfig()
                 display += to_string(0);
 
             string name = jsScenes[i]["name"].asString();
-            ScenePtr scene;
+            int pid;
             if (spawn > 0)
             {
                 // Spawn a new process containing this Scene
                 _childProcessLaunched = false;
-                int pid;
 
-                string cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
-                string debug = (SLog::log.getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                string cmd;
+                if (_executionPath == "")
+                    cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                else
+                    cmd = _executionPath + "splash-scene";
+                string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                string timer = Timer::get().isDebug() ? "-t" : "";
 
-                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)name.c_str(), NULL};
+                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
                 char* env[] = {(char*)display.c_str(), NULL};
                 int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                 if (status != 0)
-                    SLog::log << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
 
                 // We wait for the child process to be launched
-                timespec nap;
-                nap.tv_sec = 1;
-                nap.tv_nsec = 0;
                 while (!_childProcessLaunched)
-                    nanosleep(&nap, NULL);
+                    this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e8));
             }
-            _scenes[name] = scene;
+            _scenes[name] = pid;
             if (_masterSceneName == "")
                 _masterSceneName = name;
             
@@ -267,7 +308,7 @@ void World::applyConfig()
         }
         else
         {
-            SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Non-local scenes are not implemented yet" << Log::endl;
+            Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Non-local scenes are not implemented yet" << Log::endl;
         }
     }
 
@@ -283,7 +324,7 @@ void World::applyConfig()
 
         // Set if master
         if (s.first == _masterSceneName)
-            sendMessage(_masterSceneName, "setMaster", {});
+            sendMessage(_masterSceneName, "setMaster", {_configFilename});
 
         // Create the objects
         auto sceneMembers = jsScene.getMemberNames();
@@ -306,6 +347,16 @@ void World::applyConfig()
 
                 // Some objects are also created on this side, and linked with the distant one
                 addLocally(type, name, s.first);
+            }
+
+            // Before anything, all objects have the right to know what the current path is
+            if (type != "scene")
+            {
+                auto path = Utils::getPathFromFilePath(_configFilename);
+                sendMessage(name, "configFilePath", {path});
+                if (s.first != _masterSceneName)
+                    sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
+                set(name, "configFilePath", {path});
             }
 
             // Set their attributes
@@ -347,9 +398,11 @@ void World::applyConfig()
                 else if (attr.isString())
                     values.emplace_back(attr.asString());
 
+                // Send the attribute
                 sendMessage(name, objMembers[idxAttr], values);
                 if (type != "scene")
                 {
+                    // The attribute is also sent to the master scene
                     if (s.first != _masterSceneName)
                     {
                         Values ghostValues {name, objMembers[idxAttr]};
@@ -363,6 +416,7 @@ void World::applyConfig()
 
                 idxAttr++;
             }
+
             idx++;
         }
 
@@ -388,8 +442,31 @@ void World::applyConfig()
         }
     }
 
+    // Lastly, configure this very World
+    // This happens last as some parameters are sent to Scenes (like blending computation)
+    if (_config.isMember("world"))
+    {
+        const Json::Value jsWorld = _config["world"];
+        auto worldMember = jsWorld.getMemberNames();
+        int idx {0};
+        for (const auto& param : jsWorld)
+        {
+            string paramName = worldMember[idx];
+            Value v;
+            if (param.isInt())
+                v = param.asInt();
+            else if (param.isDouble())
+                v = param.asFloat();
+            else
+                v = param.asString();
+            setAttribute(paramName, {v});
+            idx++;
+        }
+    }
+
     // Send the start message for all scenes
-    sendMessage(SPLASH_ALL_PAIRS, "start", {});
+    for (auto& s : _scenes)
+        auto answer = sendMessageWithAnswer(s.first, "start");
 }
 
 /*************/
@@ -455,9 +532,9 @@ Values World::getObjectsNameByType(string type)
 }
 
 /*************/
-void World::handleSerializedObject(const string name, const SerializedObjectPtr obj)
+void World::handleSerializedObject(const string name, unique_ptr<SerializedObject> obj)
 {
-    _link->sendBuffer(name, obj);
+    _link->sendBuffer(name, std::move(obj));
 }
 
 /*************/
@@ -482,12 +559,12 @@ void World::init()
 /*************/
 void World::leave(int signal_value)
 {
-    SLog::log << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
+    Log::get() << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
     _that->_quit = true;
 }
 
 /*************/
-bool World::loadConfig(string filename)
+bool World::loadConfig(string filename, Json::Value& configuration)
 {
     ifstream in(filename, ios::in | ios::binary);
     string contents;
@@ -501,7 +578,7 @@ bool World::loadConfig(string filename)
     }
     else
     {
-        SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
         return false;
     }
 
@@ -512,12 +589,12 @@ bool World::loadConfig(string filename)
     bool success = reader.parse(contents, config);
     if (!success)
     {
-        SLog::log << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
-        SLog::log << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
+        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
         return false;
     }
 
-    _config = config;
+    configuration = config;
     return true;
 }
 
@@ -530,7 +607,12 @@ void World::parseArguments(int argc, char** argv)
     cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
     cout << endl;
 
-    int idx = 0;
+    // Get the executable directory
+    string executable = argv[0];
+    _executionPath = Utils::getPathFromFilePath(executable);
+
+    // Parse the other args
+    int idx = 1;
     string filename {""};
     while (idx < argc)
     {
@@ -541,14 +623,17 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-d" || string(argv[idx]) == "--debug")
         {
-#ifdef DEBUG
-            SLog::log.setVerbosity(Log::DEBUGGING);
-#endif
+            Log::get().setVerbosity(Log::DEBUGGING);
+            idx++;
+        }
+        else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
+        {
+            Timer::get().setDebug(true);
             idx++;
         }
         else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")
         {
-            SLog::log.setVerbosity(Log::NONE);
+            Log::get().setVerbosity(Log::NONE);
             idx++;
         }
         else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
@@ -557,6 +642,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
+            cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
             exit(0);
         }
@@ -565,13 +651,21 @@ void World::parseArguments(int argc, char** argv)
     }
 
     if (filename != "")
-        _status &= loadConfig(filename);
+    {
+        Json::Value config;
+        _status &= loadConfig(filename, config);
+
+        if (_status)
+            _config = config;
+        else
+            exit(0);
+    }
     else
         exit(0);
 }
 
 /*************/
-void World::setAttribute(string name, string attrib, Values args)
+void World::setAttribute(string name, string attrib, const Values& args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
@@ -580,43 +674,76 @@ void World::setAttribute(string name, string attrib, Values args)
 /*************/
 void World::registerAttributes()
 {
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
         _childProcessLaunched = true;
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         if (args.size() == 0 || args[0].asInt() != 0)
-            _doComputeBlending = true;
+            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
         return true;
     });
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["framerate"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
         _quit = true;
         return true;
     });
 
-    _attribFunctions["save"] = AttributeFunctor([&](Values args) {
-        SLog::log << "Saving configuration" << Log::endl;
-        _doSaveConfig = true;
+    _attribFunctions["loadConfig"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        string filename = args[0].asString();
+        SThread::pool.enqueueWithoutId([=]() {
+            Json::Value config;
+            if (loadConfig(filename, config))
+            {
+                for (auto& s : _scenes)
+                {
+                    sendMessage(s.first, "quit", {});
+                    waitpid(s.second, nullptr, 0);
+                }
+
+                _config = config;
+                applyConfig();
+            }
+        });
         return true;
     });
 
-    _attribFunctions["sendAll"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["pong"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        Timer::get() >> "pingScene " + args[0].asString();
+        return true;
+    });
+
+    _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 0)
+            _configFilename = args[0].asString();
+
+        Log::get() << "Saving configuration" << Log::endl;
+        SThread::pool.enqueueWithoutId([&]() {
+            saveConfig();
+        });
+        return true;
+    });
+
+    _attribFunctions["sendAll"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         string name = args[0].asString();
@@ -633,7 +760,14 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _swapSynchronizationTesting = args[0].asInt();
+        return true;
+    });
+
+    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});

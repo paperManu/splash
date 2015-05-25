@@ -3,7 +3,8 @@ SUBDIRS = addons \
           src \
           data \
 		  tests \
-		  tools
+		  tools \
+		  osx
 
 if HAVE_MARKDOWN
 dist_man_MANS = README.md
@@ -17,4 +18,5 @@ CLEANFILES = README.html
 doc: markdown.stamp
 clean-local:
 	rm -rf $(top_builddir)/README.html
+	rm -rf $(top_builddir)/osx/Info.plist
 endif

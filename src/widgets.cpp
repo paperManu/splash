@@ -1,14 +1,20 @@
 #include "widgets.h"
 
+#include <array>
+#include <fstream>
+#include <imgui.h>
+
+#include "camera.h"
 #include "log.h"
+#include "object.h"
 #include "scene.h"
+#include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 
 #if HAVE_GPHOTO
 #include "colorcalibrator.h"
 #endif
-
-#include <imgui.h>
 
 using namespace std;
 
@@ -42,6 +48,56 @@ void GuiControl::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        // World control
+        ImGui::Text("World configuration (not saved!)");
+        static auto worldFramerate = 60;
+        if (ImGui::InputInt("World framerate", &worldFramerate, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            worldFramerate = std::max(worldFramerate, 0);
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("framerate", {worldFramerate});
+        }
+        static auto syncTestFrameDelay = 0;
+        if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("swapTest", {syncTestFrameDelay});
+        }
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Node view
+        if (!_nodeView)
+        {
+            auto nodeView = make_shared<GuiNodeView>("Nodes");
+            nodeView->setScene(_scene);
+            _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
+        }
+        ImGui::Text("Configuration global view");
+        _nodeView->render();
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Configuration applied to multiple objects
+        ImGui::Text("Global configuration (saved!)");
+        static auto blendWidth = 0.05f;
+        if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+            sendValuesToObjectsOfType("camera", "blendWidth", {blendWidth});
+
+        static auto blackLevel = 0.0f;
+        if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+            sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Node configuration
+        ImGui::Text("Objects configuration (saved!)");
         // Select the object the control
         {
             vector<string> objectNames = getObjectNames();
@@ -69,7 +125,7 @@ void GuiControl::render()
         if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
             isDistant = true;
 
-        map<string, Values> attributes;
+        unordered_map<string, Values> attributes;
         if (!isDistant)
             attributes = scene->_objects[_targetObjectName]->getAttributes();
         else
@@ -91,7 +147,7 @@ void GuiControl::render()
                 {
                     float tmp = attr.second[0].asFloat();
                     float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
-                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision))
+                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
@@ -107,7 +163,7 @@ void GuiControl::render()
                     vector<float> tmp;
                     tmp.push_back(attr.second[0].asFloat());
                     tmp.push_back(attr.second[1].asFloat());
-                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
@@ -124,7 +180,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[0].asFloat());
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
-                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
@@ -142,7 +198,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
                     tmp.push_back(attr.second[3].asFloat());
-                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision))
+                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         if (!isDistant)
                             scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
@@ -197,11 +253,44 @@ vector<string> GuiControl::getObjectNames()
     vector<string> objNames;
 
     for (auto& o : scene->_objects)
+    {
+        if (!o.second->_savable)
+            continue;
         objNames.push_back(o.first);
+    }
     for (auto& o : scene->_ghostObjects)
+    {
+        if (!o.second->_savable)
+            continue;
         objNames.push_back(o.first);
+    }
 
     return objNames;
+}
+
+/*************/
+void GuiControl::sendValuesToObjectsOfType(string type, string attr, Values values)
+{
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == type)
+            obj.second->setAttribute(attr, values);
+    
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == type)
+        {
+            obj.second->setAttribute(attr, values);
+            scene->sendMessageToWorld("sendAll", {obj.first, attr, values});
+        }
+}
+
+/*************/
+int GuiControl::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    if (_nodeView)
+        flags |= _nodeView->updateWindowFlags();
+    return flags;
 }
 
 /*************/
@@ -217,6 +306,9 @@ void GuiGlobalView::render()
     {
         if (_camera != nullptr)
         {
+            if (_camera == _guiCamera)
+                _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
+
             _camera->render();
 
             Values size;
@@ -281,6 +373,12 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
+void GuiGlobalView::setObject(ObjectPtr obj)
+{
+    _camera->linkTo(obj);
+}
+
+/*************/
 void GuiGlobalView::nextCamera()
 {
     auto scene = _scene.lock();
@@ -291,6 +389,9 @@ void GuiGlobalView::nextCamera()
     for (auto& obj : scene->_ghostObjects)
         if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+    // Empty previous camera parameters
+    _previousCameraParameters.clear();
 
     // Ensure that all cameras are shown
     _camerasHidden = false;
@@ -340,16 +441,25 @@ void GuiGlobalView::showAllCalibrationPoints()
 /*************/
 void GuiGlobalView::doCalibration()
 {
+    CameraParameters params;
      // We keep the current values
-    _camera->getAttribute("eye", _eye);
-    _camera->getAttribute("target", _target);
-    _camera->getAttribute("up", _up);
-    _camera->getAttribute("fov", _fov);
-    _camera->getAttribute("principalPoint", _principalPoint);
+    _camera->getAttribute("eye", params.eye);
+    _camera->getAttribute("target", params.target);
+    _camera->getAttribute("up", params.up);
+    _camera->getAttribute("fov", params.fov);
+    _camera->getAttribute("principalPoint", params.principalPoint);
+    _previousCameraParameters.push_back(params);
 
     // Calibration
     _camera->doCalibration();
+    propagateCalibration();
 
+    return;
+}
+
+/*************/
+void GuiGlobalView::propagateCalibration()
+{
     bool isDistant {false};
     auto scene = _scene.lock();
     for (auto& obj : scene->_ghostObjects)
@@ -372,8 +482,6 @@ void GuiGlobalView::doCalibration()
             scene->sendMessageToWorld("sendAll", sendValues);
         }
     }
-
-    return;
 }
 
 /*************/
@@ -432,21 +540,29 @@ void GuiGlobalView::processKeyEvents()
     // Reset to the previous camera calibration
     else if (io.KeysDown['R'] && io.KeysDownTime['R'] == 0.0)
     {
-        _camera->setAttribute("eye", _eye);
-        _camera->setAttribute("target", _target);
-        _camera->setAttribute("up", _up);
-        _camera->setAttribute("fov", _fov);
-        _camera->setAttribute("principalPoint", _principalPoint);
+        if (_previousCameraParameters.size() == 0)
+            return;
+
+        Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
+
+        auto params = _previousCameraParameters.back();
+        _previousCameraParameters.pop_back();
+
+        _camera->setAttribute("eye", params.eye);
+        _camera->setAttribute("target", params.target);
+        _camera->setAttribute("up", params.up);
+        _camera->setAttribute("fov", params.fov);
+        _camera->setAttribute("principalPoint", params.principalPoint);
 
         auto scene = _scene.lock();
         for (auto& obj : scene->_ghostObjects)
             if (_camera->getName() == obj.second->getName())
             {
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", _eye[0], _eye[1], _eye[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", _target[0], _target[1], _target[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", _up[0], _up[1], _up[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", _fov[0]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", _principalPoint[0], _principalPoint[1]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", params.eye[0], params.eye[1], params.eye[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", params.target[0], params.target[1], params.target[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", params.up[0], params.up[1], params.up[2]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", params.fov[0]});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", params.principalPoint[0], params.principalPoint[1]});
             }
     }
     // Arrow keys
@@ -461,13 +577,30 @@ void GuiGlobalView::processKeyEvents()
             delta = 10.f;
             
         if (io.KeysDown[262])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", delta, 0});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
         if (io.KeysDown[263])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", -delta, 0});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
         if (io.KeysDown[264])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, -delta});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
         if (io.KeysDown[265])
+        {
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
+
         return;
     }
 }
@@ -500,7 +633,7 @@ void GuiGlobalView::processMouseEvents()
             scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
         else if (io.MouseClicked[0]) // Add a new calibration point
         {
-            Values position = _camera->pickVertex(mousePos.x, mousePos.y);
+            Values position = _camera->pickVertexOrCalibrationPoint(mousePos.x, mousePos.y);
             if (position.size() == 3)
             {
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
@@ -527,18 +660,16 @@ void GuiGlobalView::processMouseEvents()
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, 0, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
                 else
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, 0, 0});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveEye", 0, 0, dy / 100.f});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, dy / 100.f, 0});
             }
             else
             {
                 if (_newTarget.size() == 3)
-                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, 0, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
                 else
-                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, 0, 0});
-                _camera->setAttribute("moveEye", {0, 0, dy / 100.f});
+                    _camera->setAttribute("rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
         }
         // Move the target and the camera (in the camera plane)
@@ -548,9 +679,9 @@ void GuiGlobalView::processMouseEvents()
             float dy = io.MouseDelta.y;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", dx / 100.f, 0, dy / 100.f});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", -dx / 100.f, dy / 100.f, 0.f});
             else
-                _camera->setAttribute("pan", {dx / 100.f, 0, dy / 100.f});
+                _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0});
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
@@ -582,25 +713,26 @@ void GuiGlobalView::processMouseEvents()
 /*************/
 void GuiGraph::render()
 {
-    map<string, unsigned long long> durationMap = STimer::timer.getDurationMap();
-
-    for (auto& t : durationMap)
-    {
-        if (_durationGraph.find(t.first) == _durationGraph.end())
-            _durationGraph[t.first] = deque<unsigned long long>({t.second});
-        else
-        {
-            if (_durationGraph[t.first].size() == _maxHistoryLength)
-                _durationGraph[t.first].pop_front();
-            _durationGraph[t.first].push_back(t.second);
-        }
-    }
-
-    if (_durationGraph.size() == 0)
-        return;
-
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        auto& durationMap = Timer::get().getDurationMap();
+
+        for (auto& t : durationMap)
+        {
+            if (_durationGraph.find(t.first) == _durationGraph.end())
+                _durationGraph[t.first] = deque<unsigned long long>({t.second});
+            else
+            {
+                if (_durationGraph[t.first].size() == _maxHistoryLength)
+                    _durationGraph[t.first].pop_front();
+                _durationGraph[t.first].push_back(t.second);
+            }
+        }
+
+        if (_durationGraph.size() == 0)
+            return;
+
+        auto width = ImGui::GetWindowSize().x;
         for (auto& duration : _durationGraph)
         {
             float maxValue {0.f};
@@ -613,9 +745,342 @@ void GuiGraph::render()
 
             maxValue = ceil(maxValue * 0.1f) * 10.f;
 
-            ImGui::PlotLines(duration.first.c_str(), values.data(), values.size(), values.size(), (to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(0, 80));
+            ImGui::PlotLines("", values.data(), values.size(), values.size(), (duration.first + " - " + to_string((int)maxValue) + "ms").c_str(), 0.f, maxValue, ImVec2(width - 30, 80));
         }
     }
+}
+
+/*************/
+void GuiTemplate::render()
+{
+    if (!_templatesLoaded)
+    {
+        loadTemplates();
+        _templatesLoaded = true;
+    }
+
+    if (_textures.size() == 0)
+        return;
+
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        bool firstTemplate = true;
+        for (auto& name : _names)
+        {
+            if (!firstTemplate)
+                ImGui::SameLine(0, 2);
+            firstTemplate = false;
+
+            if (ImGui::ImageButton((void*)(intptr_t)_textures[name]->getTexId(), ImVec2(128, 128)))
+            {
+                string configPath = string(DATADIR) + "templates/" + name + ".json";
+#if HAVE_OSX
+                if (!ifstream(configPath, ios::in | ios::binary))
+                    configPath = "../Resources/templates/" + name + ".json";
+#endif
+                auto scene = _scene.lock();
+                scene->sendMessageToWorld("loadConfig", {configPath});
+            }
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(_descriptions[name].data());
+        }
+    }
+}
+
+/*************/
+void GuiTemplate::loadTemplates()
+{
+    auto examples = vector<string>();
+    auto descriptions = vector<string>();
+    
+    // Try to read the template file
+    ifstream in(string(DATADIR) + "templates.txt", ios::in | ios::binary);
+    if (in)
+    {
+        auto newTemplate = false;
+        auto templateName = string();
+        auto templateDescription = string();
+        auto endTemplate = false;
+
+        for (array<char, 256> line; in.getline(&line[0], 256);)
+        {
+            auto strLine = string(line.data());
+            if (!newTemplate)
+            {
+                if (strLine == "{")
+                {
+                    newTemplate = true;
+                    endTemplate = false;
+                    templateName = "";
+                    templateDescription = "";
+                }
+            }
+            else
+            {
+                if (strLine == "}")
+                    endTemplate = true;
+                else if (templateName == "")
+                    templateName = strLine;
+                else
+                    templateDescription = strLine;
+            }
+
+            if (endTemplate)
+            {
+                examples.push_back(templateName);
+                descriptions.push_back(templateDescription);
+                templateName = "";
+                templateDescription = "";
+                newTemplate = false;
+            }
+        }
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
+        return;
+    }
+
+    _textures.clear();
+    _descriptions.clear();
+
+    for (unsigned int i = 0; i < examples.size(); ++i)
+    {
+        auto& example = examples[i];
+        auto& description = descriptions[i];
+
+        glGetError();
+        auto image = make_shared<Image>();
+        image->setName("template_" + example);
+        if (!image->read(string(DATADIR) + "templates/" + example + ".png"))
+        {
+#if HAVE_OSX
+            if (!image->read("../Resources/templates/" + example + ".png"))
+#endif
+            continue;
+        }
+
+        auto texture = make_shared<Texture_Image>();
+        texture->linkTo(image);
+        texture->update();
+        texture->flushPbo();
+
+        _names.push_back(example);
+        _textures[example] = texture;
+        _descriptions[example] = description;
+    }
+}
+
+/*************/
+map<string, vector<string>> GuiNodeView::getObjectLinks()
+{
+    auto scene = _scene.lock();
+
+    auto links = map<string, vector<string>>();
+
+    for (auto& o : scene->_objects)
+    {
+        if (!o.second->_savable)
+            continue;
+        links[o.first] = vector<string>();
+        auto linkedObjects = o.second->getLinkedObjects();
+        for (auto& link : linkedObjects)
+            links[o.first].push_back(link->getName());
+    }
+    for (auto& o : scene->_ghostObjects)
+    {
+        if (!o.second->_savable)
+            continue;
+        links[o.first] = vector<string>();
+        auto linkedObjects = o.second->getLinkedObjects();
+        for (auto& link : linkedObjects)
+            links[o.first].push_back(link->getName());
+    }
+
+    return links;
+}
+
+/*************/
+map<string, string> GuiNodeView::getObjectTypes()
+{
+    auto scene = _scene.lock();
+
+    auto types = map<string, string>();
+
+    for (auto& o : scene->_objects)
+    {
+        if (!o.second->_savable)
+            continue;
+        types[o.first] = o.second->getType();
+    }
+    for (auto& o : scene->_ghostObjects)
+    {
+        if (!o.second->_savable)
+            continue;
+        types[o.first] = o.second->getType();
+    }
+
+    return types;
+}
+
+/*************/
+void GuiNodeView::render()
+{
+    //if (ImGui::CollapsingHeader(_name.c_str()))
+    if (true)
+    {
+        // This defines the default positions for various node types
+        static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
+                                                                 {"window", {8, 32}},
+                                                                 {"camera", {32, 64}},
+                                                                 {"object", {8, 96}},
+                                                                 {"texture", {32, 128}},
+                                                                 {"image", {8, 160}},
+                                                                 {"mesh", {32, 192}}
+                                                                });
+        std::map<std::string, int> shiftByType;
+
+        // Begin a subwindow to enclose nodes
+        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+        // Get objects and their relations
+        auto objectLinks = getObjectLinks();
+        auto objectTypes = getObjectTypes();
+
+        // Objects useful for drawing
+        auto drawList = ImGui::GetWindowDrawList();
+        auto canvasPos = ImGui::GetCursorScreenPos();
+        // Apply view shift
+        canvasPos.x += _viewShift[0];
+        canvasPos.y += _viewShift[1];
+
+        // Draw objects
+        for (auto& object : objectTypes)
+        {
+            auto& name = object.first;
+            auto& type = object.second;
+            type = type.substr(0, type.find("_"));
+
+            // We keep count of the number of objects by type, more precisely their shifting
+            auto shiftIt = shiftByType.find(type);
+            if (shiftIt == shiftByType.end())
+                shiftByType[type] = 0;
+            auto shift = shiftByType[type];
+
+            // Get the default position for the given type
+            auto nodePosition = ImVec2(-1, -1);
+            auto defaultPosIt = defaultPositionByType.find(type);
+            if (defaultPosIt == defaultPositionByType.end())
+            {
+                type = "default";
+                nodePosition = defaultPositionByType["default"];
+            }
+            else
+            {
+                nodePosition = defaultPosIt->second;
+                nodePosition.x += shift;
+            }
+            
+            ImGui::SetCursorPos(nodePosition);
+            renderNode(name);
+
+            shiftByType[type] += _nodeSize[0] + 8;
+        }
+
+        // Draw lines
+        for (auto& object : objectLinks)
+        {
+            auto& name = object.first;
+            auto& links = object.second;
+
+            auto& currentNodePos = _nodePositions[name];
+            auto firstPoint = ImVec2(currentNodePos[0] + canvasPos.x, currentNodePos[1] + canvasPos.y);
+
+            for (auto& target : links)
+            {
+                auto targetIt = _nodePositions.find(target);
+                if (targetIt == _nodePositions.end())
+                    continue;
+
+                auto& targetPos = targetIt->second;
+                auto secondPoint = ImVec2(targetPos[0] + canvasPos.x, targetPos[1] + canvasPos.y);
+
+                drawList->AddLine(firstPoint, secondPoint, 0xBB0088FF, 2.f);
+            }
+        }
+
+        // end of the subwindow
+        ImGui::EndChild();
+
+        // Interactions
+        if (ImGui::IsItemHovered())
+        {
+            _isHovered = true;
+
+            ImGuiIO& io = ImGui::GetIO();
+            if (io.MouseDownTime[0] > 0.0)
+            {
+                float dx = io.MouseDelta.x;
+                float dy = io.MouseDelta.y;
+                _viewShift[0] += dx;
+                _viewShift[1] += dy;
+            }
+        }
+        else
+            _isHovered = false;
+    }
+}
+
+/*************/
+void GuiNodeView::renderNode(string name)
+{
+    auto pos = _nodePositions.find(name);
+    if (pos == _nodePositions.end())
+    {
+        auto cursorPos = ImGui::GetCursorPos();
+        _nodePositions[name] = vector<float>({cursorPos.x + _viewShift[0], cursorPos.y + _viewShift[1]});
+    }
+    else
+    {
+        auto& nodePos = (*pos).second;
+        ImGui::SetCursorPos(ImVec2(nodePos[0] + _viewShift[0], nodePos[1] + _viewShift[1]));
+    }
+
+    // Beginning of node rendering
+    ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
+
+    ImGui::SetCursorPos(ImVec2(0, 2));
+    if (ImGui::CollapsingHeader(name.c_str()))
+    {
+    }
+
+    if (ImGui::IsItemHovered())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.MouseDownTime[0] > 0.0)
+        {
+            float dx = io.MouseDelta.x;
+            float dy = io.MouseDelta.y;
+            auto& nodePos = (*pos).second;
+            nodePos[0] += dx;
+            nodePos[1] += dy;
+        }
+    }
+    
+    // End of node rendering
+    ImGui::EndChild();
+}
+
+/*************/
+int GuiNodeView::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    if (_isHovered)
+    {
+        flags |= ImGuiWindowFlags_NoMove;
+    }
+    return flags;
 }
 
 } // end of namespace

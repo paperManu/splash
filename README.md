@@ -63,7 +63,6 @@ Splash relies on a few libraries to get the job done. These libraries are:
 - [OpenGL](http://opengl.org),
 - [GLFW](http://glfw.org) to handle the GL context creation,
 - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-- [OpenMesh](http://openmesh.org) to load and manipulate meshes,
 - [OpenImageIO](http://www.openimageio.org) to load and manipulate image buffers,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
@@ -75,34 +74,35 @@ Splash relies on a few libraries to get the job done. These libraries are:
 A few more libraries are used as submodules in the git repository:
 
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-- [libsimdpp](https://github.com/p12tic/libsimdpp) to use SIMD instructions (currently in YUV to RGB conversion),
 - [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images.
 
-### Dependencies installation
-Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenMesh, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+### Compilation and installation
+
+#### Linux
+
+Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
 Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
     sudo apt-add-repository ppa:irie/blender
     sudo apt-add-repository ppa:sat-metalab/metalab
-    sudo apt-add-repository ppa:pyglfw/pyglfw
+    sudo apt-add-repository ppa:andrewrk/rucksack
     sudo apt-get update
 
 And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being...
 
-### Compilation and installation
-Your first option to install Splash is to use the packaged version:
+Your can now install Splash using the packaged version:
 
     sudo apt-get install splash
 
 And you should be ready to go!
 
-If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations. Also, OpenMesh is not in the default Ubuntu repository, so it has been packaged by the Metalab and is only available for Ubuntu 13.10 yet. If you want to install Splash on another revision you have to compile OpenMesh by yourself.
+If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
-    sudo apt-get install build-essential git-core subversion cmake automake libtool libxrandr-dev libxi-dev libboost-dev
+    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-dev
     sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt-get install libglfw3-dev libopenmesh-dev
+    sudo apt-get install libglfw3-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
@@ -114,6 +114,61 @@ If you want to get a more up to date version, you can try compiling and installi
 You can now try launching Splash:
 
     splash --help
+
+#### Mac OSX
+
+OSX installation is still a work in progress and has not been extensively tested (far from it!). Also, our current tests have shown that it is far easier to install on OSX version 10.9 or newer, as they switched from libstdc++ (GCC standard library) to libc++ (Clang standard library) as default which seems to solve tedious linking issues.
+
+So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
+
+You can now install the command line tools we will need to download and compile the sources:
+
+    sudo port install automake autoconf libtool cmake git pkgconfig
+
+Grab and install OpenImageIO, the only library needed by Splash which is not packaged in MacPorts:
+
+    sudo port install tiff openexr libpng boost
+    git clone https://github.com/OpenImageIO/oiio
+    cd oiio
+    git checkout Release-1.3.14
+    mkdir build && cd build
+    cmake ..
+    make && sudo make install
+    cd ..
+
+We then install Shmdata, which depends on GStreamer:
+
+    sudo port install gstreamer010 gstreamer010-gst-plugins-bad gstreamer010-gst-plugins-base
+    sudo port install gstreamer010-gst-plugins-good gstreamer010-gst-plugins-ugly
+    git clone https://github.com/nicobou/shmdata
+    cd shmdata
+    ./autogen.sh && ./configure
+    make && sudo make install
+    cd ..
+
+Install all the other dependencies:
+
+    sudo port install jsoncpp snappy
+    sudo port install gsl zmq cppzmq
+    sudo port install glfw glm glew
+
+And then grab and install Splash:
+
+    git clone https://github.com/paperManu/splash
+    cd splash
+    git submodule update --init
+    ./autogen.sh && ./configure
+    make && sudo make install
+
+You should now be able to launch Splash:
+
+    splash --help
+
+It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory:
+
+    ./build_osx.sh
+
+Remember that it is a very early port to OSX. Please report any issue you encounter!
 
 <a name="architecture"/></a>
 Software architecture
@@ -484,7 +539,7 @@ Attributes:
 - srgb [int]: if set to anything but 0, the image will be considered to be represented in the sRGB color space
 
 ### image_shmdata
-As this class derives from the class image, it shares all its attributes and behaviors.
+As this class derives from the image class, it shares all its attributes and behaviors.
 
 Links from: None
 
@@ -585,6 +640,19 @@ Links to:
 Attributes:
 
 - resizable [int]: if set to anything but 0, the texture will be resizable
+
+
+### texture_syphon
+Only available on OSX. A texture_syphon connects to a [Syphon](http://syphon.v002.info/) shared GPU texture. It derives from the texture class.
+
+Links to:
+
+- object
+- window (currently buggy)
+
+Attributes:
+
+- connect [["servername" : "name"], ["appname" : name]]: sets the servename, appname or both names of the Syphon source to use. If set to an empty array, it will connect to the first source available. This has to be set otherwise it won't connect to anything.
 
 ### window
 A window is an output to a screen.

@@ -25,13 +25,17 @@
 #ifndef SPLASH_OBJECT_H
 #define SPLASH_OBJECT_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "geometry.h"
+#include "shader.h"
+#include "texture.h"
 
 namespace Splash {
 
@@ -135,7 +139,7 @@ class Object : public BaseObject
         /**
          * Set the blending map for the object
          */
-        void setBlendingMap(TexturePtr& map);
+        void setBlendingMap(TexturePtr map);
 
         /**
          * Set the shader

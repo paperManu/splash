@@ -20,10 +20,11 @@
 bl_info = {
     "name": "Splash output",
     "author": "Emmanuel Durand",
-    "version": (0, 1, 9),
+    "version": (0, 3, 0),
     "blender": (2, 72, 0),
-    "location": "3D View > Toolbox",
+    "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",
+    "wiki_url": "https://github.com/paperManu/splash",
     "category": "Object",
 }
 
@@ -117,6 +118,8 @@ class SplashSettings(PropertyGroup):
 classes = (
     ui.SplashToolbarObject,
     ui.SplashToolbarMesh,
+    ui.SplashObjectPanel,
+    ui.SplashExport,
 
     operators.SplashActivateSendMesh,
     operators.SplashSendTexture,
@@ -126,15 +129,52 @@ classes = (
     )
 
 
+def getTextureTypes(scene, context):
+    items = [('image', 'Image', ""),
+             ('image_shmdata', 'Shmdata', ""),
+             ('texture_syphon', 'Syphon', "")]
+    return items
+
+def getMeshTypes(scene, context):
+    items = [('mesh', 'Mesh', ""),
+             ('mesh_shmdata', 'Shmdata', "")]
+    return items
+
+def registerProperties():
+    bpy.types.Camera.splash_width = IntProperty("Width", default=1280, min=320)
+    bpy.types.Camera.splash_height = IntProperty("Height", default=800, min=240)
+    bpy.types.Camera.splash_window_decoration = BoolProperty("Window decoration", default=True)
+    bpy.types.Camera.splash_window_fullscreen = BoolProperty("Window fullscreen", default=False)
+    bpy.types.Camera.splash_fullscreen_index = IntProperty("Fullscreen", default=0, min=0)
+
+    bpy.types.Mesh.splash_texture_path = StringProperty(name="Path to the texture to use",
+                                                     description="Texture path Splash should use for this object",
+                                                     default="", maxlen=1024, subtype="FILE_PATH")
+    bpy.types.Mesh.splash_texture_type = EnumProperty(name="Texture type",
+                                                      description="Type of the texture to use",
+                                                      items=getTextureTypes)
+    bpy.types.Mesh.splash_mesh_path = StringProperty(name="Path to the mesh to use",
+                                                     description="Mesh path Splash should use for this object (leave empty for auto export)",
+                                                     default="", maxlen=1024, subtype="FILE_PATH")
+    bpy.types.Mesh.splash_mesh_type = EnumProperty(name="Mesh type",
+                                                   description="Type of the mesh to use",
+                                                   items=getMeshTypes)
+
+
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
+    bpy.types.INFO_MT_file_export.append(ui.splash_menu_export)
+
     bpy.types.Scene.splash = PointerProperty(type=SplashSettings)
+    registerProperties()
 
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
+
+    bpy.types.INFO_MT_file_export.remove(ui.splash_menu_export)
 
     del bpy.types.Scene.splash

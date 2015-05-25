@@ -25,17 +25,17 @@
 #ifndef SPLASH_WORLD_H
 #define SPLASH_WORLD_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
-#include <map>
 #include <mutex>
 #include <signal.h>
 #include <string>
 #include <thread>
 #include <vector>
 #include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 
 namespace Splash {
 
@@ -73,12 +73,13 @@ class World : public RootObject
         bool _quit {false};
         static World* _that;
         struct sigaction _signals;
+        std::string _executionPath {""};
+        std::mutex _configurationMutex;
 
         // World parameters
         unsigned int _worldFramerate {60};
 
-        std::map<std::string, ScenePtr> _scenes;
-        std::map<std::string, std::thread> _scenesThread;
+        std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
 
         unsigned long _nextId {0};
@@ -87,10 +88,9 @@ class World : public RootObject
         std::string _configFilename;
         Json::Value _config;
         bool _childProcessLaunched {false};
-
-        // List of actions to do during the next loop
-        bool _doComputeBlending {false};
-        bool _doSaveConfig {false};
+        
+        // Synchronization testings
+        int _swapSynchronizationTesting {0}; // If not 0, number of frames to keep the same color
 
         /**
          * Add an object to the world (used for Images and Meshes currently)
@@ -121,7 +121,7 @@ class World : public RootObject
          * Redefinition of a method from RootObject
          * Send the input buffers back to all pairs
          */
-        void handleSerializedObject(const std::string name, const SerializedObjectPtr obj);
+        void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj);
 
         /**
          * Initialize the GLFW window
@@ -136,7 +136,7 @@ class World : public RootObject
         /**
          * Load the specified configuration file
          */
-        bool loadConfig(std::string filename);
+        bool loadConfig(std::string filename, Json::Value& configuration);
 
         /**
          * Parse the given arguments
@@ -146,7 +146,7 @@ class World : public RootObject
         /**
          * Set a parameter for an object, given its id
          */
-        void setAttribute(std::string name, std::string attrib, Values args);
+        void setAttribute(std::string name, std::string attrib, const Values& args);
         using BaseObject::setAttribute;
 
         /**

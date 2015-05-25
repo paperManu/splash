@@ -25,16 +25,17 @@
 #ifndef SPLASH_SHADER_H
 #define SPLASH_SHADER_H
 
-#include "config.h"
-#include "coretypes.h"
-#include "basetypes.h"
-
 #include <atomic>
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <map>
+#include <unordered_map>
 
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
 #include "texture.h"
 
 namespace Splash {
@@ -59,6 +60,7 @@ class Shader : public BaseObject
         enum Fill
         {
             texture = 0,
+            texture_rect,
             color,
             uv,
             wireframe,
@@ -150,8 +152,8 @@ class Shader : public BaseObject
         mutable std::mutex _mutex;
         std::atomic_bool _activated {false};
 
-        std::map<ShaderType, GLuint> _shaders;
-        std::map<ShaderType, std::string> _shadersSource;
+        std::unordered_map<int, GLuint> _shaders;
+        std::unordered_map<int, std::string> _shadersSource;
         GLuint _program {0};
         bool _isLinked = {false};
 
@@ -169,6 +171,7 @@ class Shader : public BaseObject
 
         // Rendering parameters
         Fill _fill {texture};
+        std::string _shaderOptions {""};
         Sideness _sideness {doubleSided};
         int _useBlendingMap {0};
         float _blendWidth {0.05f};
@@ -197,7 +200,7 @@ class Shader : public BaseObject
         /**
          * Get a string expression of the shader type, used for logging
          */
-        std::string stringFromShaderType(ShaderType type);
+        std::string stringFromShaderType(int type);
 
         /**
          * Replace a shader with an empty one

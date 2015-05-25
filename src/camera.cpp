@@ -7,19 +7,20 @@
 #include "scene.h"
 #include "shader.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 #include "threadpool.h"
 
 #include <fstream>
 #include <limits>
 
-#define GLM_FORCE_SSE2
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtx/simd_vec4.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
 #define SPLASH_WORLDMARKER_SCALE 0.015
@@ -56,21 +57,24 @@ void Camera::init()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
+	{
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
+		return;
+	}
     else
-        SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
         _isInitialized = false;
     }
     else
     {
-        SLog::log << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Camera correctly initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Camera correctly initialized" << Log::endl;
         _isInitialized = true;
     }
 
@@ -84,7 +88,7 @@ void Camera::init()
 Camera::~Camera()
 {
 #ifdef DEBUG
-    SLog::log<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
+    Log::get()<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
 
     glDeleteFramebuffers(1, &_fbo);
@@ -95,7 +99,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
 {
     if (map->getSpec().format != oiio::TypeDesc::UINT16)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
         return;
     }
 
@@ -151,7 +155,7 @@ void Camera::computeBlendingMap(ImagePtr& map)
 #ifdef DEBUG
     error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while computing the blending map : " << error << Log::endl;
 #endif
 
     setOutputSize(width, height);
@@ -261,7 +265,7 @@ bool Camera::doCalibration()
     // We need at least 7 points to get a meaningful calibration
     if (pointsSet < 7)
     {
-        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 7 points" << Log::endl;
+        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Calibration needs at least 7 points" << Log::endl;
         return false;
     }
 
@@ -272,7 +276,7 @@ bool Camera::doCalibration()
     calibrationFunc.f = &Camera::cameraCalibration_f;
     calibrationFunc.params = (void*)this;
 
-    SLog::log << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
+    Log::get() << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
     const gsl_multimin_fminimizer_type* minimizerType;
     minimizerType = gsl_multimin_fminimizer_nmsimplex2rand;
@@ -321,7 +325,7 @@ bool Camera::doCalibration()
                     status = gsl_multimin_fminimizer_iterate(minimizer);
                     if (status)
                     {
-                        SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
                         break;
                     }
 
@@ -329,7 +333,7 @@ bool Camera::doCalibration()
                     localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
                 }
 
-                lock_guard<mutex> lock(gslMutex);
+                unique_lock<mutex> lock(gslMutex);
                 if (localMinimum < minValue)
                 {
                     minValue = localMinimum;
@@ -373,7 +377,7 @@ bool Camera::doCalibration()
             status = gsl_multimin_fminimizer_iterate(minimizer);
             if (status)
             {
-                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
                 break;
             }
 
@@ -381,7 +385,7 @@ bool Camera::doCalibration()
             localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
         }
 
-        lock_guard<mutex> lock(gslMutex);
+        unique_lock<mutex> lock(gslMutex);
         if (localMinimum < minValue)
         {
             minValue = localMinimum;
@@ -416,8 +420,8 @@ bool Camera::doCalibration()
     _target = normalize(_target);
     _up = normalize(_up);
 
-    SLog::log << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
-    SLog::log << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
+    Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
+    Log::get() << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
 
     // Force camera update with the new parameters
     _updatedParams = true;
@@ -514,38 +518,63 @@ Values Camera::pickFragment(float x, float y)
 /*************/
 Values Camera::pickCalibrationPoint(float x, float y)
 {
-    // Convert the normalized coordinates ([0, 1]) to pixel coordinates
-    float realX = x * _width;
-    float realY = y * _height;
+    dvec3 screenPoint(x * _width, y * _height, 0.0);
 
-    // Get the depth at the given point
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-    float depth;
-    glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    dmat4 lookM = lookAt(_eye, _target, _up);
+    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dvec4 viewport(0, 0, _width, _height);
 
-    if (depth == 1.f)
-        return Values();
+    double minDist = numeric_limits<double>::max();
+    int index = -1;
 
-    // Unproject the point
-    dvec3 screenPoint(realX, realY, depth);
-
-    float distance = numeric_limits<float>::max();
-    dvec3 vertex;
-    for (auto& cPoint : _calibrationPoints)
+    for (int i = 0; i < _calibrationPoints.size(); ++i)
     {
-        dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up),
-                               computeProjectionMatrix(), dvec4(0, 0, _width, _height));
-        glm::dvec3 closestVertex;
-        float tmpDist;
-        if ((tmpDist = length(point - cPoint.world)) < distance)
+        dvec3 projectedPoint = project(_calibrationPoints[i].world, lookM, projM, viewport);
+        projectedPoint.z = 0.0;
+        if (length(projectedPoint - screenPoint) < minDist)
         {
-            distance = tmpDist;
-            vertex = cPoint.world;
+            minDist = length(projectedPoint - screenPoint);
+            index = i;
         }
     }
 
-    return {vertex.x, vertex.y, vertex.z};
+    if (index != -1)
+    {
+        dvec3 vertex = _calibrationPoints[index].world;
+        return {vertex[0], vertex[1], vertex[2]};
+    }
+    else
+        return Values();
+}
+
+/*************/
+Values Camera::pickVertexOrCalibrationPoint(float x, float y)
+{
+    Values vertex = pickVertex(x, y);
+    Values point = pickCalibrationPoint(x, y);
+
+    dvec3 screenPoint(x * _width, y * _height, 0.0);
+
+    dmat4 lookM = lookAt(_eye, _target, _up);
+    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dvec4 viewport(0, 0, _width, _height);
+
+    if (vertex.size() == 0 && point.size() == 0)
+        return Values();
+    else if (vertex.size() == 0)
+        return point;
+    else if (point.size() == 0)
+        return vertex;
+    else
+    {
+        double vertexDist = length(screenPoint - project(dvec3(vertex[0].asFloat(), vertex[1].asFloat(), vertex[2].asFloat()), lookM, projM, viewport));
+        double pointDist = length(screenPoint - project(dvec3(point[0].asFloat(), point[1].asFloat(), point[2].asFloat()), lookM, projM, viewport));
+
+        if (pointDist <= vertexDist)
+            return point;
+        else
+            return vertex;
+    }
 }
 
 /*************/
@@ -671,7 +700,7 @@ bool Camera::render()
 #ifdef DEBUG
     GLenum error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
+        Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
     return error != 0 ? true : false;
 #else
     return false;
@@ -679,7 +708,7 @@ bool Camera::render()
 }
 
 /*************/
-bool Camera::addCalibrationPoint(Values worldPoint)
+bool Camera::addCalibrationPoint(const Values& worldPoint)
 {
     if (worldPoint.size() < 3)
         return false;
@@ -719,27 +748,55 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 }
 
 /*************/
-void Camera::removeCalibrationPoint(Values worldPoint, bool unlessSet)
+void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
 {
-    if (worldPoint.size() < 3)
-        return;
+    if (point.size() == 2)
+    {
+        dvec3 screenPoint(point[0].asFloat(), point[1].asFloat(), 0.0);
 
-    dvec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+        dmat4 lookM = lookAt(_eye, _target, _up);
+        dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+        dvec4 viewport(0, 0, _width, _height);
 
-    for (int i = 0; i < _calibrationPoints.size(); ++i)
-        if (_calibrationPoints[i].world == world)
+        double minDist = numeric_limits<double>::max();
+        int index = -1;
+
+        for (int i = 0; i < _calibrationPoints.size(); ++i)
         {
-            if (_calibrationPoints[i].isSet == true && unlessSet)
-                continue;
-            _calibrationPoints.erase(_calibrationPoints.begin() + i);
-            _selectedCalibrationPoint = -1;
+            dvec3 projectedPoint = project(_calibrationPoints[i].world, lookM, projM, viewport);
+            projectedPoint.z = 0.0;
+            if (length(projectedPoint - screenPoint) < minDist)
+            {
+                minDist = length(projectedPoint - screenPoint);
+                index = i;
+            }
         }
 
-    _calibrationCalledOnce = false;
+        if (index != -1)
+        {
+            _calibrationPoints.erase(_calibrationPoints.begin() + index);
+            _calibrationCalledOnce = false;
+        }
+    }
+    else if (point.size() == 3)
+    {
+        dvec3 world(point[0].asFloat(), point[1].asFloat(), point[2].asFloat());
+
+        for (int i = 0; i < _calibrationPoints.size(); ++i)
+            if (_calibrationPoints[i].world == world)
+            {
+                if (_calibrationPoints[i].isSet == true && unlessSet)
+                    continue;
+                _calibrationPoints.erase(_calibrationPoints.begin() + i);
+                _selectedCalibrationPoint = -1;
+            }
+
+        _calibrationCalledOnce = false;
+    }
 }
 
 /*************/
-bool Camera::setCalibrationPoint(Values screenPoint)
+bool Camera::setCalibrationPoint(const Values& screenPoint)
 {
     if (_selectedCalibrationPoint == -1)
         return false;
@@ -762,7 +819,7 @@ void Camera::setOutputNbr(int nbr)
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -777,11 +834,11 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            TexturePtr texture = make_shared<Texture>();
-            texture->disableFiltering();
+            Texture_ImagePtr texture = make_shared<Texture_Image>();
+            texture->setAttribute("filtering", {0});
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
             _outTextures.push_back(texture);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures.back()->getTexId(), 0);
         }
     }
 
@@ -798,13 +855,13 @@ void Camera::setOutputSize(int width, int height)
         return;
 
     _depthTexture->setAttribute("resizable", {1});
-    _depthTexture->resize(width, height);
+    _depthTexture->setAttribute("size", {width, height});
     _depthTexture->setAttribute("resizable", {_automaticResize});
 
     for (auto tex : _outTextures)
     {
         tex->setAttribute("resizable", {1});
-        tex->resize(width, height);
+        tex->setAttribute("size", {width, height});
         tex->setAttribute("resizable", {_automaticResize});
     }
 
@@ -852,7 +909,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cy): " << fov << " " << camera->_height - cy << Log::endl;
+    Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cy): " << fov << " " << camera->_height - cy << Log::endl;
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
@@ -873,7 +930,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     summedDistance /= imagePoints.size();
 
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
+    Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Actual summed distance: " << summedDistance << Log::endl;
 #endif
 
     return summedDistance;
@@ -962,6 +1019,14 @@ dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
 /*************/
 dmat4 Camera::computeViewMatrix()
 {
+    // Eye and target can't be identical
+    if (_eye == _target)
+    {
+        _target[0] = _eye[0] + _up[1];
+        _target[1] = _eye[1] + _up[2];
+        _target[2] = _eye[2] + _up[0];
+    }
+
     dmat4 viewMatrix = lookAt(_eye, _target, _up);
     return viewMatrix;
 }
@@ -977,9 +1042,13 @@ void Camera::loadDefaultModels()
         {
             if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
                 file.second = string(DATADIR) + file.second;
+#if HAVE_OSX
+            else if (ifstream("../Resources/" + file.second, ios::in | ios::binary))
+                file.second = "../Resources/" + file.second;
+#endif
             else
             {
-                SLog::log << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
+                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
                 continue;
             }
         }
@@ -1002,7 +1071,7 @@ void Camera::loadDefaultModels()
 /*************/
 void Camera::registerAttributes()
 {
-    _attribFunctions["eye"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["eye"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -1011,7 +1080,7 @@ void Camera::registerAttributes()
         return {_eye.x, _eye.y, _eye.z};
     });
 
-    _attribFunctions["target"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["target"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -1020,7 +1089,7 @@ void Camera::registerAttributes()
         return {_target.x, _target.y, _target.z};
     });
 
-    _attribFunctions["fov"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["fov"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _fov = args[0].asFloat();
@@ -1029,7 +1098,7 @@ void Camera::registerAttributes()
         return {_fov};
     });
 
-    _attribFunctions["up"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["up"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -1038,7 +1107,7 @@ void Camera::registerAttributes()
         return {_up.x, _up.y, _up.z};
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         _newWidth = args[0].asInt();
@@ -1049,7 +1118,7 @@ void Camera::registerAttributes()
         return {_width, _height};
     });
 
-    _attribFunctions["principalPoint"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["principalPoint"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         _cx = args[0].asFloat();
@@ -1060,7 +1129,7 @@ void Camera::registerAttributes()
     });
 
     // More advanced attributes
-    _attribFunctions["moveEye"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["moveEye"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _eye.x = _eye.x + args[0].asFloat();
@@ -1069,7 +1138,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["moveTarget"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["moveTarget"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         _target.x = _target.x + args[0].asFloat();
@@ -1078,22 +1147,30 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         dvec3 direction = _target - _eye;
         dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
         dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
+
+        direction = _eye - _target;
+        direction = rotate(direction, (double)args[1].asFloat(), dvec3(direction[1], -direction[0], 0.0));
+        dvec3 newEye = direction + _target;
+        if (angle(normalize(dvec3(newEye[0], newEye[1], std::abs(newEye[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
+            _eye = direction + _target;
+
         return true;
     });
 
-    _attribFunctions["rotateAroundPoint"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["rotateAroundPoint"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 6)
             return false;
         dvec3 point(args[3].asFloat(), args[4].asFloat(), args[5].asFloat());
         dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
-        // Rotate the target, then the eye
+
+        // Rotate the target around Z, then the eye
         dvec3 direction = point - _target;
         dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
         _target = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
@@ -1101,24 +1178,43 @@ void Camera::registerAttributes()
         direction = point - _eye;
         newDirection = dvec4(direction, 1.0) * rotZ;
         _eye = point - dvec3(newDirection.x, newDirection.y, newDirection.z);
+
+        // Rotate around the X axis
+        dvec3 axis = normalize(_eye - _target);
+        direction = point - _target;
+        dvec3 tmpTarget = rotate(direction, (double)args[1].asFloat(), dvec3(axis[1], -axis[0], 0.0));
+        tmpTarget = point - tmpTarget;
+
+        direction = point - _eye;
+        dvec3 tmpEye = rotate(direction, (double)args[1].asFloat(), dvec3(axis[1], -axis[0], 0.0));
+        tmpEye = point - tmpEye;
+        
+        direction = tmpEye - tmpTarget;
+        if (angle(normalize(dvec3(direction[0], direction[1], std::abs(direction[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
+        {
+            _eye = tmpEye;
+            _target = tmpTarget;
+        }
+
         return true;
     });
 
-    _attribFunctions["pan"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["pan"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         dvec4 panV(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), 0.f);
         dvec3 dirV = normalize(_eye - _target);
-        double alpha = dirV.y >= 0.0 ? acos(dirV.x) : 2 * M_PI - acos(dirV.x);
-        dmat4 rotZ = rotate(dmat4(1.f), (double)-alpha + M_PI/2.0, dvec3(0.0, 0.0, 1.0));
-        dvec4 moveV = panV * rotZ;
-        _target = _target + dvec3(moveV.x, moveV.y, moveV.z);
-        _eye = _eye + dvec3(moveV.x, moveV.y, moveV.z);
+
+        dmat4 rotMat = inverse(computeViewMatrix());
+        panV = rotMat * panV;
+        _target = _target + dvec3(panV[0], panV[1], panV[2]);
+        _eye = _eye + dvec3(panV[0], panV[1], panV[2]);
+        panV = normalize(panV);
 
         return true;
     });
 
-    _attribFunctions["forward"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["forward"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1130,27 +1226,27 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
         addCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
         return true;
     });
 
-    _attribFunctions["deselectedCalibrationPoint"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["deselectedCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
         deselectCalibrationPoint();
         return true;
     });
 
-    _attribFunctions["moveCalibrationPoint"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["moveCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         moveCalibrationPoint(args[0].asFloat(), args[1].asFloat());
         return true;
     });
 
-    _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](Values args) {
-        if (args.size() < 3)
+    _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
             return false;
         else if (args.size() == 3)
             removeCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
@@ -1159,14 +1255,14 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
     });
 
     // Store / restore calibration points
-    _attribFunctions["calibrationPoints"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["calibrationPoints"] = AttributeFunctor([&](const Values& args) {
         for (auto& arg : args)
         {
             if (arg.getType() != Value::Type::v)
@@ -1196,7 +1292,7 @@ void Camera::registerAttributes()
     });
 
     // Rendering options
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["blendWidth"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _blendWidth = args[0].asFloat();
@@ -1205,7 +1301,7 @@ void Camera::registerAttributes()
         return {_blendWidth};
     });
 
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _blackLevel = args[0].asFloat();
@@ -1214,7 +1310,7 @@ void Camera::registerAttributes()
         return {_blackLevel};
     });
 
-    _attribFunctions["clearColor"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["clearColor"] = AttributeFunctor([&](const Values& args) {
         if (args.size() == 0)
             _clearColor = SPLASH_CAMERA_FLASH_COLOR;
         else if (args.size() == 4)
@@ -1225,7 +1321,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["colorTemperature"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _colorTemperature = args[0].asFloat();
@@ -1235,7 +1331,7 @@ void Camera::registerAttributes()
         return {_colorTemperature};
     });
 
-    _attribFunctions["colorLUT"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["colorLUT"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1 || args[0].getType() != Value::Type::v )
             return false;
         if (args[0].asValues().size() != 768)
@@ -1254,7 +1350,7 @@ void Camera::registerAttributes()
             return {};
     });
 
-    _attribFunctions["activateColorLUT"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["activateColorLUT"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -1266,16 +1362,16 @@ void Camera::registerAttributes()
             _isColorLUTActivated = args[0].asInt();
 
         if (_isColorLUTActivated)
-            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
+            Log::get() << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
         else
-            SLog::log << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table deactivated for camera " << getName() << Log::endl;
+            Log::get() << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table deactivated for camera " << getName() << Log::endl;
 
         return true;
     }, [&]() -> Values {
         return {(int)_isColorLUTActivated};
     });
 
-    _attribFunctions["colorMixMatrix"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["colorMixMatrix"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1 || args[0].getType() != Value::Type::v)
             return false;
         if (args[0].asValues().size() != 9)
@@ -1293,7 +1389,7 @@ void Camera::registerAttributes()
         return {m};
     });
 
-    _attribFunctions["brightness"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["brightness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _brightness = args[0].asFloat();
@@ -1302,7 +1398,7 @@ void Camera::registerAttributes()
         return {_brightness};
     });
 
-    _attribFunctions["frame"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["frame"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1312,7 +1408,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["hide"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["hide"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1322,7 +1418,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -1338,7 +1434,7 @@ void Camera::registerAttributes()
     });
 
     // Various options
-    _attribFunctions["displayCalibration"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["displayCalibration"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1348,12 +1444,12 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](const Values& args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _flashBG = args[0].asInt();

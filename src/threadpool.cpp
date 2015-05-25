@@ -47,11 +47,11 @@ void Worker::operator() ()
 }
 
 /*************/
-ThreadPool::ThreadPool(size_t threads)
+ThreadPool::ThreadPool(int threads)
 {
     int nprocessors = threads;
-    if (threads == 0)
-        nprocessors = std::min(std::max(sysconf(_SC_NPROCESSORS_CONF * 2), 8l), 32l);
+    if (threads == -1)
+        nprocessors = std::min(std::max(sysconf(_SC_NPROCESSORS_CONF), 2l), 16l);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }
@@ -71,13 +71,9 @@ ThreadPool::~ThreadPool()
 /*************/
 void ThreadPool::waitAllThreads()
 {
-    timespec nap;
-    nap.tv_sec = 0;
-    nap.tv_nsec = 1e5;
-
     while (true)
     {
-        nanosleep(&nap, NULL);
+        this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e5));
         if (workingThreads == 0 && tasks.size() == 0)
         {
             queue_mutex.lock();
@@ -117,7 +113,7 @@ void ThreadPool::waitThreads(vector<unsigned int>& list)
 }
 
 /*************/
-unsigned int ThreadPool::getPoolLength()
+unsigned int ThreadPool::getTasksNumber()
 {
     int size;
     {
@@ -126,6 +122,13 @@ unsigned int ThreadPool::getPoolLength()
         queue_mutex.unlock();
     }
     return size;
+}
+
+/*************/
+void ThreadPool::addWorkers(unsigned int nbr)
+{
+    for (unsigned int i = 0; i < nbr; ++i)
+        workers.emplace_back(thread(Worker(*this)));
 }
 
 /*************/

@@ -25,10 +25,19 @@
 #define GL_GLEXT_PROTOTYPES
 #define GLX_GLXEXT_PROTOTYPES
 
+#include "config.h"
+
 #define SPLASH
+
 #define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
-#define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#define SPLASH_SAMPLES 4
+#if HAVE_OSX
+    #define SPLASH_GL_CONTEXT_VERSION_MINOR 2
+#else
+    #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
+#endif
+
+#define SPLASH_GL_DEBUG true
+#define SPLASH_SAMPLES 0
 
 #define SPLASH_ALL_PAIRS "__ALL__"
 
@@ -36,14 +45,15 @@
 #include <atomic>
 #include <chrono>
 #include <ostream>
-#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
+#if HAVE_OSX
+#include <GL/glew.h>
+#endif
 #include <GLFW/glfw3.h>
 
-#include "config.h"
 #include "threadpool.h"
 
 #ifndef SPLASH_CORETYPES_H
@@ -51,50 +61,6 @@
 
 namespace Splash
 {
-
-/*************/
-// All object types are specified here,
-// so that we don't have to do it everywhere
-
-class Camera;
-class Geometry;
-class Gui;
-class GuiColorCalibration;
-class GuiControl;
-class GuiGlobalView;
-class GuiWidget;
-class Image;
-class Image_Shmdata;
-class Link;
-class Mesh;
-class Mesh_Shmdata;
-class Object;
-class Scene;
-class Shader;
-class Texture;
-class Window;
-
-typedef std::shared_ptr<Camera> CameraPtr;
-typedef std::shared_ptr<Geometry> GeometryPtr;
-typedef std::shared_ptr<Gui> GuiPtr;
-typedef std::shared_ptr<Image> ImagePtr;
-typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
-typedef std::shared_ptr<Link> LinkPtr;
-typedef std::shared_ptr<Mesh> MeshPtr;
-typedef std::shared_ptr<Mesh_Shmdata> Mesh_ShmdataPtr;
-typedef std::shared_ptr<Object> ObjectPtr;
-typedef std::shared_ptr<Scene> ScenePtr;
-typedef std::shared_ptr<Shader> ShaderPtr;
-typedef std::shared_ptr<Texture> TexturePtr;
-typedef std::shared_ptr<Window> WindowPtr;
-
-#if HAVE_GPHOTO
-class ColorCalibrator;
-class Image_GPhoto;
-
-typedef std::shared_ptr<ColorCalibrator> ColorCalibratorPtr;
-typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
-#endif
 
 /*************/
 struct SerializedObject
@@ -172,12 +138,8 @@ struct SerializedObject
     /**
      * Attributes
      */
-    std::mutex _mutex;
     std::vector<char> _data;
 };
-
-//typedef std::vector<char> SerializedObject;
-typedef std::shared_ptr<SerializedObject> SerializedObjectPtr;
 
 /*************/
 class GlWindow
@@ -309,14 +271,14 @@ struct Value
             {
                 _i = v._i;
                 _f = v._f;
-                _s = v._s;
-                _v = v._v;
+                _s = std::move(v._s);
+                _v = std::move(v._v);
                 _type = v._type;
             }
             return *this;
         }
 
-        bool operator==(Value v)
+        bool operator==(Value v) const
         {
             if (_type != v._type)
                 return false;
@@ -339,7 +301,7 @@ struct Value
                 return false;
         }
 
-        int asInt()
+        int asInt() const
         {
             if (_type == Type::i)
                 return _i;
@@ -352,7 +314,7 @@ struct Value
                 return 0;
         }
 
-        float asFloat()
+        float asFloat() const
         {
             if (_type == Type::i)
                 return (float)_i;
@@ -365,7 +327,7 @@ struct Value
                 return 0.f;
         }
 
-        std::string asString()
+        std::string asString() const
         {
             if (_type == Type::i)
                 try {return std::to_string(_i);}
@@ -379,7 +341,7 @@ struct Value
                 return "";
         }
 
-        Values asValues()
+        Values asValues() const
         {
             if (_type == Type::i)
                 return {_i};
@@ -405,7 +367,7 @@ struct Value
                 return nullptr;
         }
 
-        Type getType() {return _type;}
+        Type getType() const {return _type;}
         
         int size()
         {

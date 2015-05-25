@@ -5,8 +5,10 @@
 #include "object.h"
 #include "scene.h"
 #include "texture.h"
+#include "texture_image.h"
 #include "timer.h"
 #include "threadpool.h"
+#include "window.h"
 
 using namespace std;
 using namespace OIIO_NAMESPACE;
@@ -37,32 +39,32 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     _scene = s;
     _window = w;
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    	 Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     {
-        TexturePtr texture = make_shared<Texture>();
+        Texture_ImagePtr texture = make_shared<Texture_Image>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+        texture->setAttribute("resizable", {1});
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
         _depthTexture = move(texture);
-        _depthTexture->setAttribute("resizable", {1});
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
     {
-        TexturePtr texture = make_shared<Texture>();
+        Texture_ImagePtr texture = make_shared<Texture_Image>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+        texture->setAttribute("resizable", {1});
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
         _outTexture = move(texture);
-        _outTexture->setAttribute("resizable", {1});
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     }
 
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
-        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
     else
-        SLog::log << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -90,7 +92,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
 Gui::~Gui()
 {
 #ifdef DEBUG
-    SLog::log << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
 
     glDeleteTextures(1, &_imFontTextureId);
@@ -148,10 +150,17 @@ void Gui::calibrateColors()
 }
 
 /*************/
+void Gui::loadConfiguration()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("loadConfig", {_configurationPath});
+}
+
+/*************/
 void Gui::saveConfiguration()
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("save");
+    scene->sendMessageToWorld("save", {_configurationPath});
 }
 
 /*************/
@@ -172,7 +181,13 @@ void Gui::key(int key, int action, int mods)
     {
     default:
     {
+sendAsDefault:
         using namespace ImGui;
+
+        // Numpad enter is converted to regular enter
+        if (key == GLFW_KEY_KP_ENTER)
+            key = GLFW_KEY_ENTER;
+
         ImGuiIO& io = GetIO();
         if (action == GLFW_PRESS)
             io.KeysDown[key] = true;
@@ -185,74 +200,85 @@ void Gui::key(int key, int action, int mods)
     }
     case GLFW_KEY_TAB:
     {
-        if (action == GLFW_PRESS)
+#if HAVE_OSX
+        if (action == GLFW_PRESS && mods == GLFW_MOD_ALT)
+#else
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+#endif
         {
             _isVisible = !_isVisible;
         }
+        else
+            goto sendAsDefault;
         break;
     }
     case GLFW_KEY_ESCAPE:
     {
-        auto scene = _scene.lock();
-        scene->sendMessageToWorld("quit");
+        if (action == GLFW_PRESS)
+        {
+            auto scene = _scene.lock();
+            scene->sendMessageToWorld("quit");
+        }
         break;
     }
     case GLFW_KEY_B:
     {
-        if (action == GLFW_PRESS)
-        {
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             computeBlending();
-        }
         break;
     }
 #if HAVE_GPHOTO
     case GLFW_KEY_L:
     {
-        if (action == GLFW_PRESS)
-        {
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             activateLUT();
-        }
         break;
     }
     case GLFW_KEY_O:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColorResponseFunction();
         break;
     }
     case GLFW_KEY_P:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColors();
         break;
     }
 #endif
     case GLFW_KEY_S:
     {
-        if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             saveConfiguration();
         break;
     }
     case GLFW_KEY_F:
     {
-        if (action == GLFW_PRESS)
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             flashBackground();
         break;
     }
     // Switch the rendering to textured
     case GLFW_KEY_T: 
     {
-        auto scene = _scene.lock();
-        _wireframe = false;
-        scene->sendMessageToWorld("wireframe", {0});
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+        {
+            auto scene = _scene.lock();
+            _wireframe = false;
+            scene->sendMessageToWorld("wireframe", {0});
+        }
         break;
     }
     // Switch the rendering to wireframe
     case GLFW_KEY_W:
     {
-        auto scene = _scene.lock();
-        _wireframe = true;
-        scene->sendMessageToWorld("wireframe", {1});
+        if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
+        {
+            auto scene = _scene.lock();
+            _wireframe = true;
+            scene->sendMessageToWorld("wireframe", {1});
+        }
         break;
     }
     }
@@ -342,9 +368,12 @@ bool Gui::render()
         using namespace ImGui;
 
         ImGuiIO& io = GetIO();
+        io.MouseDrawCursor = true;
+
         ImGui::NewFrame();
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 800), 0.95f, _windowFlags);
+        ImGui::SetWindowPos(ImVec2(16, 16), ImGuiSetCond_Once);
         _windowFlags = 0;
 
         // Some global buttons
@@ -358,8 +387,6 @@ bool Gui::render()
             ImGui::NextColumn();
             ImGui::Separator();
 #endif
-            if (ImGui::Button("Save configuration"))
-                saveConfiguration();
             if (ImGui::Button("Compute blending map"))
                 computeBlending();
             if (ImGui::Button("Flash background"))
@@ -380,6 +407,17 @@ bool Gui::render()
                 activateLUT();
             ImGui::Columns(1);
 #endif
+            ImGui::Separator();
+            ImGui::Text("Configuration file");
+            char configurationPath[512];
+            strcpy(configurationPath, _configurationPath.data());
+            ImGui::InputText("Path", configurationPath, 512);
+            _configurationPath = string(configurationPath);
+            if (ImGui::Button("Save configuration"))
+                saveConfiguration();
+            ImGui::SameLine();
+            if (ImGui::Button("Load configuration"))
+                loadConfiguration();
         }
 
         // Specific widgets
@@ -421,12 +459,14 @@ bool Gui::render()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     glActiveTexture(GL_TEXTURE0);
-    _outTexture->generateMipmap();
+    auto outTexture_asImage = dynamic_pointer_cast<Texture_Image>(_outTexture);
+    if (outTexture_asImage)
+        outTexture_asImage->generateMipmap();
 
 #ifdef DEBUG
     error = glGetError();
     if (error)
-        SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 
     return error != 0 ? true : false;
 #else
@@ -441,9 +481,9 @@ void Gui::setOutputSize(int width, int height)
         return;
 
     if (!_window->setAsCurrentContext()) 
-    	 SLog::log << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
-    _depthTexture->resize(width, height);
-    _outTexture->resize(width, height);
+    	 Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    _depthTexture->setAttribute("size", {width, height});
+    _outTexture->setAttribute("size", {width, height});
 
     _width = width;
     _height = height;
@@ -512,13 +552,13 @@ void Gui::initImGui(int width, int height)
     glGetProgramiv(_imGuiShaderHandle, GL_LINK_STATUS, &status);
     if (status == GL_FALSE)
     {
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
 
         GLint length;
         glGetProgramiv(_imGuiShaderHandle, GL_INFO_LOG_LENGTH, &length);
         char* log = (char*)malloc(length);
         glGetProgramInfoLog(_imGuiShaderHandle, length, &length, log);
-        SLog::log << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error log: \n" << (const char*)log << Log::endl;
         free(log);
 
         // TODO: handle this case...
@@ -579,6 +619,8 @@ void Gui::initImGui(int width, int height)
 
     // Set style
     ImGuiStyle& style = ImGui::GetStyle();
+    style.ChildWindowRounding = 2.f;
+    style.FrameRounding = 2.f;
     style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -592,8 +634,8 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
     style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
     style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.20f, 0.20f, 0.20f, 0.99f);
-    style.Colors[ImGuiCol_CheckHovered]          = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
-    style.Colors[ImGuiCol_CheckActive]           = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
+    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
+    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
     style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
     style.Colors[ImGuiCol_SliderGrab]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
     style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
@@ -637,34 +679,41 @@ void Gui::initImGui(int width, int height)
 /*************/
 void Gui::initImWidgets()
 {
+    // Template configurations
+    auto templateBox = make_shared<GuiTemplate>("Templates");
+    templateBox->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
+
     // Some help regarding keyboard shortcuts
-    shared_ptr<GuiTextBox> helpBox = make_shared<GuiTextBox>("Shortcuts");
+    auto helpBox = make_shared<GuiTextBox>("Shortcuts");
     helpBox->setTextFunc([]()
     {
         string text;
         text += "Tab: show / hide this GUI\n";
         text += "Shortcuts for the calibration view:\n";
-        text += " Space: switche between cameras (when hovering the Views panel)\n";
-        text += " A: show / hide the target calibration point\n";
-        text += " F: white background instead of black\n";
+        text += " Ctrl+F: white background instead of black\n";
+        text += " Ctrl+B: compute the blending between all cameras\n";
+        text += " Ctrl+T: textured draw mode\n";
+        text += " Ctrl+W: wireframe draw mode\n";
+#if HAVE_GPHOTO
+        text += "\n";
+        text += " Ctrl+O: launch camera calibration\n";
+        text += " Ctrl+P: launch projectors calibration\n";
+        text += " Ctrl+L: activate color LUT (if calibrated)\n";
+#endif
+        text += "\n";
+        text += " Space: switch between cameras (when hovering the Views panel)\n";
+        text += " A: show / hide the target calibration point (when hovering the Views panel)\n";
         text += " C: calibrate the selected camera (when hovering the Views panel)\n";
         text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
-        text += " B: compute the blending between all cameras\n";
         text += " H: hide all but the selected camera (when hovering the Views panel)\n";
-        text += " T: textured draw mode\n";
-        text += " W: wireframe draw mode\n";
-#if HAVE_GPHOTO
-        text += " O: launch camera calibration\n";
-        text += " P: launch projectors calibration\n";
-        text += " L: activate color LUT (if calibrated)\n";
-#endif
 
         return text;
     });
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
 
     // FPS and timings
-    shared_ptr<GuiTextBox> timingBox = make_shared<GuiTextBox>("Timings");
+    auto timingBox = make_shared<GuiTextBox>("Timings");
     timingBox->setTextFunc([]()
     {
         // Smooth the values
@@ -678,15 +727,15 @@ void Gui::initImWidgets()
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.95 + 1e6 / std::max(1ull, STimer::timer["sceneLoop"]) * 0.05;
-        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, STimer::timer["worldLoop"]) * 0.1;
-        upl = upl * 0.9 + STimer::timer["upload"] * 0.001 * 0.1;
-        tex = tex * 0.9 + STimer::timer["textureUpload"] * 0.001 * 0.1;
-        cam = cam * 0.9 + STimer::timer["cameras"] * 0.001 * 0.1;
-        gui = gui * 0.9 + STimer::timer["guis"] * 0.001 * 0.1;
-        win = win * 0.9 + STimer::timer["windows"] * 0.001 * 0.1;
-        buf = buf * 0.9 + STimer::timer["swap"] * 0.001 * 0.1;
-        evt = evt * 0.9 + STimer::timer["events"] * 0.001 * 0.1;
+        fps = fps * 0.95 + 1e6 / std::max(1ull, Timer::get()["sceneLoop"]) * 0.05;
+        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, Timer::get()["worldLoop"]) * 0.1;
+        upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
+        tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
+        cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
+        gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
+        win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
+        buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
+        evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
         // Create the text message
         ostringstream stream;
@@ -704,12 +753,12 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
 
     // Log display
-    shared_ptr<GuiTextBox> logBox = make_shared<GuiTextBox>("Logs");
+    auto logBox = make_shared<GuiTextBox>("Logs");
     logBox->setTextFunc([]()
     {
         int nbrLines = 10;
         // Convert the last lines of the text log
-        vector<string> logs = SLog::log.getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+        vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
         string text;
         int start = std::max(0, (int)logs.size() - nbrLines);
         for (int i = start; i < logs.size(); ++i)
@@ -723,18 +772,18 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
 
     // Control
-    shared_ptr<GuiControl> controlView = make_shared<GuiControl>("Controls");
+    auto controlView = make_shared<GuiControl>("Controls");
     controlView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
     // GUI camera view
-    shared_ptr<GuiGlobalView> globalView = make_shared<GuiGlobalView>("Views");
+    auto globalView = make_shared<GuiGlobalView>("Views");
     globalView->setCamera(_guiCamera);
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Performance graph
-    shared_ptr<GuiGraph> perfGraph = make_shared<GuiGraph>("Performance Graph");
+    auto perfGraph = make_shared<GuiGraph>("Performance Graph");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
 }
 
@@ -819,7 +868,7 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());

@@ -30,13 +30,14 @@ namespace Splash
 void gslErrorHandler(const char* reason, const char* file, int line, int gsl_errno)
 {
     string errorString = string(reason);
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - An error in a GSL function has be caught: " << errorString << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - An error in a GSL function has be caught: " << errorString << Log::endl;
 }
 
 /*************/
 ColorCalibrator::ColorCalibrator(std::weak_ptr<Scene> scene)
 {
     _type = "colorCalibrator";
+    _savable = false;
 
     _scene = scene;
     registerAttributes();
@@ -63,7 +64,7 @@ void ColorCalibrator::update()
     _gcamera->getAttribute("ready", status);
     if (status.size() == 0 || status[0].asInt() == 0)
     {
-        SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
+        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
         return;
     }
 
@@ -92,7 +93,7 @@ void ColorCalibrator::update()
     }
     mediumExposureTime = findCorrectExposure();
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
 
     for (auto& params : _calibrationParams)
         scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
@@ -176,7 +177,7 @@ void ColorCalibrator::update()
                 params.curves[c].push_back(Point(x, values));
 
                 scene->sendMessageToWorld("sendAll", {camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
-                SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
+                Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c] << " for input value: " << x << Log::endl;
             }
 
             // Update min and max values, added to the black level
@@ -227,7 +228,7 @@ void ColorCalibrator::update()
         RgbValue whiteBalance;
         whiteBalance = targetWhiteBalance / params.whiteBalance;
         whiteBalance.normalize();
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
         for (unsigned int c = 0; c < 3; ++c)
             for (auto& v : params.projectorCurves[c])
@@ -305,7 +306,7 @@ void ColorCalibrator::update()
         scene->sendMessageToWorld("sendAll", {params.camName, "clearColor"});
     }
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
 }
 
 /*************/
@@ -319,7 +320,7 @@ void ColorCalibrator::updateCRF()
     _gcamera->getAttribute("ready", status);
     if (status.size() == 0 || status[0].asInt() == 0)
     {
-        SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
+        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
         return;
     }
 
@@ -357,7 +358,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         nextSpeed = res[0].asFloat();
         actualShutterSpeeds[i] = nextSpeed;
 
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Capturing LDRI with a " << nextSpeed << "sec exposure time" << Log::endl;
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Capturing LDRI with a " << nextSpeed << "sec exposure time" << Log::endl;
 
         // Update exposure for next step
         nextSpeed *= pow(2.0, step);
@@ -366,7 +367,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         int status = _gcamera->capture();
         if (false == status)
         {
-            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Error while capturing LDRI" << Log::endl;
+            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Error while capturing LDRI" << Log::endl;
             return {};
         }
         _gcamera->update();
@@ -393,7 +394,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     // Estimate camera response function, if needed
     if (_crf == nullptr)
     {
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Generating camera response function" << Log::endl;
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Generating camera response function" << Log::endl;
         _crf = make_shared<pic::CameraResponseFunction>();
         _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_DEB97, 200);
     }
@@ -411,7 +412,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
 
     hdr->clamp(0.f, numeric_limits<float>::max());
     hdr->Write("/tmp/splash_hdr.hdr");
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - HDRI computed" << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - HDRI computed" << Log::endl;
 
     return hdr;
 }
@@ -436,7 +437,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
         double yRange = curve[curve.size() - 1].second[c] - curve[0].second[c];
         if (yRange <= 0.f)
         {
-            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Unable to compute projector inverse function curve on a channel" << Log::endl;
+            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Unable to compute projector inverse function curve on a channel" << Log::endl;
             projInvCurves.push_back(Curve());
             continue;
         }
@@ -451,7 +452,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
             double abscissa = (point.second[c] - yOffset) / yRange; 
             if (std::abs(abscissa - previousAbscissa) < epsilon)
             {
-                SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value " << abscissa << " from channel " << c << Log::endl;
+                Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Abscissa not strictly increasing: discarding value " << abscissa << " from channel " << c << Log::endl;
             }
             else
             {
@@ -500,7 +501,7 @@ vector<ColorCalibrator::Curve> ColorCalibrator::computeProjectorFunctionInverse(
 /*************/
 float ColorCalibrator::findCorrectExposure()
 {
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Finding correct exposure time" << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Finding correct exposure time" << Log::endl;
 
     Values res;
     while (true)
@@ -509,7 +510,7 @@ float ColorCalibrator::findCorrectExposure()
         int status = _gcamera->capture();
         if (false == status)
         {
-            SLog::log << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - There was an issue during capture." << Log::endl;
+            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - There was an issue during capture." << Log::endl;
             return 0.f;
         }
 
@@ -534,7 +535,7 @@ float ColorCalibrator::findCorrectExposure()
         }
 
         float meanValue = (float)sum / (float)total;
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
 
         if (meanValue < 100.f)
         {
@@ -614,7 +615,7 @@ vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
 
     coords = vector<int>({(int)(moments[1] / moments[0]), (int)(moments[2] / moments[0]), (int)(sqrt(moments[0]) / 2.0)});
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ") - Estimated side size: " << coords[2] << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Maximum found around point (" << coords[0] << ", " << coords[1] << ") - Estimated side size: " << coords[2] << Log::endl;
 
     return coords;
 }
@@ -673,7 +674,7 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
     meanX /= totalPixelMask;
     meanY /= totalPixelMask;
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Region of interest center: [" << meanX << ", " << meanY << "] - Size: " << (int)totalPixelMask << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Region of interest center: [" << meanX << ", " << meanY << "] - Size: " << (int)totalPixelMask << Log::endl;
 
     return mask;
 }
@@ -740,11 +741,11 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesOnly()
         whiteBalance = whiteBalance + params.whiteBalance;
         numCameras++;
 
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
     }
     whiteBalance = whiteBalance / numCameras;
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
     return whiteBalance;
 }
@@ -763,10 +764,10 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesFromWeakestLum()
             minWhiteBalance = params.whiteBalance;
         }
 
-        SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " initial white balance: " << params.whiteBalance[0] << " / " << params.whiteBalance[1] << " / " << params.whiteBalance[2] << Log::endl;
     }
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << minWhiteBalance[0] << " / " << minWhiteBalance[1] << " / " << minWhiteBalance[2] << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - White balance of the weakest projector: " << minWhiteBalance[0] << " / " << minWhiteBalance[1] << " / " << minWhiteBalance[2] << Log::endl;
 
     return minWhiteBalance;
 }
@@ -815,11 +816,11 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 
         delta = std::abs(newMinLum - previousMinLum);
 
-        SLog::log << Log::DEBUGGING << "ColorCalibrator::" << __FUNCTION__ << " - White balance at iteration " << iteration << ": " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << " with a delta of " << delta * 100.f / newMinLum << "%" << Log::endl;
+        Log::get() << Log::DEBUGGING << "ColorCalibrator::" << __FUNCTION__ << " - White balance at iteration " << iteration << ": " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << " with a delta of " << delta * 100.f / newMinLum << "%" << Log::endl;
         iteration++;
     }
 
-    SLog::log << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Optimized white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
+    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Optimized white balance: " << whiteBalance[0] << " / " << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
     return whiteBalance;
 }
@@ -827,7 +828,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 /*************/
 void ColorCalibrator::registerAttributes()
 {
-    _attribFunctions["colorSamples"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["colorSamples"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _colorCurveSamples = std::max(3, args[0].asInt());
@@ -836,7 +837,7 @@ void ColorCalibrator::registerAttributes()
         return {(int)_colorCurveSamples};
     });
 
-    _attribFunctions["detectionThresholdFactor"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["detectionThresholdFactor"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _displayDetectionThreshold = std::max(0.5f, args[0].asFloat());
@@ -845,7 +846,7 @@ void ColorCalibrator::registerAttributes()
         return {_displayDetectionThreshold};
     });
 
-    _attribFunctions["imagePerHDR"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["imagePerHDR"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _imagePerHDR = std::max(1, args[0].asInt());
@@ -854,7 +855,7 @@ void ColorCalibrator::registerAttributes()
         return {_imagePerHDR};
     });
 
-    _attribFunctions["hdrStep"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["hdrStep"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _hdrStep = std::max(0.3f, args[0].asFloat());
@@ -863,7 +864,7 @@ void ColorCalibrator::registerAttributes()
         return {_hdrStep};
     });
 
-    _attribFunctions["equalizeMethod"] = AttributeFunctor([&](Values args) {
+    _attribFunctions["equalizeMethod"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _equalizationMethod = std::max(0, std::min(2, args[0].asInt()));

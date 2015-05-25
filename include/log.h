@@ -25,8 +25,6 @@
 #ifndef SPLASH_LOG_H
 #define SPLASH_LOG_H
 
-#include "config.h"
-
 #include <chrono>
 #include <ctime>
 #include <iomanip>
@@ -36,6 +34,8 @@
 #include <string>
 #include <tuple>
 #include <vector>
+
+#include "config.h"
 
 #include "coretypes.h"
 
@@ -61,17 +61,12 @@ class Log
         };
 
         /**
-         * Constructor
+         * Get the singleton
          */
-        Log()
+        static Log& get()
         {
-        }
-
-        /**
-         * Destructor
-         */
-        ~Log()
-        {
+            static auto instance = new Log;
+            return *instance;
         }
 
         /**
@@ -80,7 +75,7 @@ class Log
         template<typename ... T>
         void operator()(Priority p, T ... args)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             rec(p, args...);
         }
 
@@ -90,21 +85,21 @@ class Log
         template <typename T>
         Log& operator<<(T msg)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             addToString(_tempString, msg);
             return *this;
         }
 
         Log& operator<<(Value v)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             addToString(_tempString, v.asString());
             return *this;
         }
 
         Log& operator<<(Log::Action action)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             if (action == endl)
             {
                 if (_tempPriority >= _verbosity)
@@ -117,7 +112,7 @@ class Log
 
         Log& operator<<(Log::Priority p)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             _tempPriority = p;
             return *this;
         }
@@ -136,7 +131,7 @@ class Log
         template<typename ... T>
         std::vector<std::string> getLogs(T ... args)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             std::vector<Log::Priority> priorities {args...};
             std::vector<std::string> logs;
             for (auto log : _logs)
@@ -152,7 +147,7 @@ class Log
          */
         std::vector<std::pair<std::string, Priority>> getLogs()
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             std::vector<std::pair<std::string, Priority>> logs;
             for (int i = _logPointer; i < _logs.size(); ++i)
                 logs.push_back(_logs[i]);
@@ -181,7 +176,7 @@ class Log
          */
         void setLog(std::string log, Priority priority)
         {
-            std::lock_guard<std::mutex> lock(_mutex);
+            std::unique_lock<std::mutex> lock(_mutex);
             _logs.push_back(std::pair<std::string, Priority>(log, priority));
 
             if (_logs.size() > _logLength)
@@ -190,6 +185,23 @@ class Log
                 _logs.erase(_logs.begin());
             }
         }
+
+    private:
+        /**
+         * Constructor
+         */
+        Log() {}
+
+        /**
+         * Destructor
+         */
+        ~Log() {}
+
+        /**
+         * Delete some constructors
+         */
+        Log(const Log&) = delete;
+        const Log& operator=(const Log&) = delete;
 
     private:
         mutable std::mutex _mutex;
@@ -279,12 +291,6 @@ class Log
 
             std::cout << msg << std::endl;
         }
-};
-
-struct SLog
-{
-    public:
-        static Log log;
 };
 
 } // end of namespace

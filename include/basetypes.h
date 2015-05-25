@@ -26,6 +26,8 @@
 #define SPLASH_BASETYPES_H
 
 #include <condition_variable>
+#include <map>
+#include <unordered_map>
 #include <json/reader.h>
 
 #include "coretypes.h"
@@ -39,17 +41,17 @@ struct AttributeFunctor
 {
     public:
         AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(Values)> setFunc) {_setFunc = setFunc;}
-        AttributeFunctor(std::function<bool(Values)> setFunc,
-                            std::function<Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+        AttributeFunctor(std::function<bool(const Values&)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor(std::function<bool(const Values&)> setFunc,
+                            std::function<const Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
 
-        bool operator()(Values args)
+        bool operator()(const Values& args)
         {
             if (!_setFunc)
                 return false;
             return _setFunc(args);
         }
-        Values operator()()
+        Values operator()() const
         {
             if (!_getFunc)
                 return Values();
@@ -57,8 +59,8 @@ struct AttributeFunctor
         }
 
     private:
-        std::function<bool(Values)> _setFunc;
-        std::function<Values()> _getFunc;
+        std::function<bool(const Values&)> _setFunc;
+        std::function<const Values()> _getFunc;
 };
 
 class BaseObject;
@@ -70,8 +72,15 @@ typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
 class BaseObject
 {
     public:
-        BaseObject() {}
-        BaseObject(RootObjectWeakPtr root) {_root = root;}
+        BaseObject()
+        {
+            init();
+        }
+        BaseObject(RootObjectWeakPtr root)
+        {
+            init();
+            _root = root;
+        }
         virtual ~BaseObject() {}
 
         std::string getType() const {return _type;}
@@ -118,34 +127,41 @@ class BaseObject
             return false;
         }
 
+        const std::vector<BaseObjectPtr>& getLinkedObjects()
+        {
+            return _linkedObjects;
+        }
+
         /**
          * Set the specified attribute
          */
-        bool setAttribute(std::string attrib, Values args)
+        bool setAttribute(const std::string& attrib, const Values& args)
         {
-            if (_attribFunctions.find(attrib) == _attribFunctions.end())
+            auto attribFunction = _attribFunctions.find(attrib);
+            if (attribFunction == _attribFunctions.end())
                 return false;
             _updatedParams = true;
-            return _attribFunctions[attrib](args);
+            return (*attribFunction).second(args);
         }
 
         /**
          * Get the specified attribute
          */
-        bool getAttribute(std::string attrib, Values& args)
+        bool getAttribute(const std::string& attrib, Values& args) const
         {
-            if (_attribFunctions.find(attrib) == _attribFunctions.end())
+            auto attribFunction = _attribFunctions.find(attrib);
+            if (attribFunction == _attribFunctions.end())
                 return false;
-            args = _attribFunctions[attrib]();
+            args = (*attribFunction).second();
             return true;
         }
 
         /**
          * Get all the attributes as a map
          */
-        std::map<std::string, Values> getAttributes()
+        std::unordered_map<std::string, Values> getAttributes() const
         {
-            std::map<std::string, Values> attribs;
+            std::unordered_map<std::string, Values> attribs;
             for (auto& attr : _attribFunctions)
             {
                 Values values;
@@ -160,7 +176,7 @@ class BaseObject
         /**
          * Check whether the objects needs to be updated
          */
-        virtual bool wasUpdated() {return _updatedParams;}
+        virtual bool wasUpdated() const {return _updatedParams;}
 
         /**
          * Reset the "was updated" status, if needed
@@ -175,7 +191,7 @@ class BaseObject
         /**
          * Get the configuration as a json object
          */
-        Json::Value getValuesAsJson(Values values)
+        Json::Value getValuesAsJson(const Values& values) const
         {
             Json::Value jsValue;
             for (auto& v : values)
@@ -201,7 +217,7 @@ class BaseObject
             return jsValue;
         }
 
-        Json::Value getConfigurationAsJson()
+        Json::Value getConfigurationAsJson() const
         {
             Json::Value root;
             if (_remoteType == "")
@@ -232,11 +248,24 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
 
+        std::string _configFilePath {""}; // All objects know about their location
+
         RootObjectWeakPtr _root;
         std::vector<BaseObjectPtr> _linkedObjects;
 
-        std::map<std::string, AttributeFunctor> _attribFunctions;
+        std::unordered_map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
+
+        // Initialize generic attributes
+        void init()
+        {
+            _attribFunctions["configFilePath"] = AttributeFunctor([&](const Values& args) {
+                if (args.size() == 0)
+                    return false;
+                _configFilePath = args[0].asString();
+                return true;
+            });
+        }
 
         /**
          * Register new functors to modify attributes
@@ -256,7 +285,7 @@ class BufferObject : public BaseObject
         /**
          * Returns true if the object has been updated
          */
-        bool wasUpdated() {return _updatedBuffer | BaseObject::wasUpdated();}
+        bool wasUpdated() const {return _updatedBuffer | BaseObject::wasUpdated();}
 
         /**
          * Set the updated buffer flag to false.
@@ -267,13 +296,13 @@ class BufferObject : public BaseObject
          * Update the Image from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(const SerializedObjectPtr obj) = 0;
+        virtual bool deserialize(std::unique_ptr<SerializedObject> obj) = 0;
         bool deserialize()
         {
             if (_newSerializedObject == false)
                 return true;
 
-            bool _returnValue = deserialize(_serializedObject);
+            bool _returnValue = deserialize(std::move(_serializedObject));
             _newSerializedObject = false;
 
             return _returnValue;
@@ -282,15 +311,15 @@ class BufferObject : public BaseObject
         /**
          * Serialize the image
          */
-        virtual SerializedObjectPtr serialize() const = 0;
+        virtual std::unique_ptr<SerializedObject> serialize() const = 0;
 
         /**
          * Set the next serialized object to deserialize to buffer
          */
-        void setSerializedObject(SerializedObjectPtr obj)
+        void setSerializedObject(std::unique_ptr<SerializedObject> obj)
         {
             {
-                std::lock_guard<std::mutex> lock(_writeMutex);
+                std::unique_lock<std::mutex> lock(_writeMutex);
                 _serializedObject = move(obj);
                 _newSerializedObject = true;
             }
@@ -316,7 +345,7 @@ class BufferObject : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
         bool _updatedBuffer {false};
 
-        SerializedObjectPtr _serializedObject;
+        std::unique_ptr<SerializedObject> _serializedObject;
         bool _newSerializedObject {false};
 };
 
@@ -328,7 +357,7 @@ class RootObject : public BaseObject
     public:
         RootObject()
         {
-            _attribFunctions["answerMessage"] = AttributeFunctor([&](Values args) {
+            _attribFunctions["answerMessage"] = AttributeFunctor([&](const Values& args) {
                 if (args.size() == 0 || args[0].asString() != _answerExpected)
                     return false;
                 _lastAnswerReceived = args;
@@ -355,9 +384,9 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(std::string name, std::string attrib, Values args)
+        bool set(std::string name, std::string attrib, const Values& args)
         {
-            std::lock_guard<std::mutex> lock(_setMutex);
+            std::unique_lock<std::mutex> lock(_setMutex);
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 return setAttribute(attrib, args);
             else if (_objects.find(name) != _objects.end())
@@ -370,13 +399,14 @@ class RootObject : public BaseObject
          * Set an object from its serialized form
          * If non existant, it is handled by the handleSerializedObject method
          */
-        void setFromSerializedObject(const std::string name, const SerializedObjectPtr obj)
+        void setFromSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj)
         {
-            std::lock_guard<std::mutex> lock(_setMutex);
-            if (_objects.find(name) != _objects.end() && std::dynamic_pointer_cast<BufferObject>(_objects[name]).get() != nullptr)
-                std::dynamic_pointer_cast<BufferObject>(_objects[name])->setSerializedObject(obj);
+            std::unique_lock<std::mutex> lock(_setMutex);
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end() && std::dynamic_pointer_cast<BufferObject>(objectIt->second).get() != nullptr)
+                std::dynamic_pointer_cast<BufferObject>(objectIt->second)->setSerializedObject(std::move(obj));
             else
-                handleSerializedObject(name, obj);
+                handleSerializedObject(name, std::move(obj));
         }
 
     protected:
@@ -389,31 +419,35 @@ class RootObject : public BaseObject
         std::mutex _answerMutex;
         std::string _answerExpected {""};
 
-        virtual void handleSerializedObject(const std::string name, const SerializedObjectPtr obj) {}
+        virtual void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj) {}
 
         /**
          * Send a message to the target specified by its name
          */
-        void sendMessage(std::string name, std::string attribute, const Values message = {})
+        void sendMessage(std::string name, std::string attribute, const Values& message = {})
         {
             _link->sendMessage(name, attribute, message);
         }
 
         /**
          * Send a message to the target specified by its name, and wait for an answer
+         * Can specify a timeout for the answer, in microseconds
          */
-        Values sendMessageWithAnswer(std::string name, std::string attribute, const Values message = {})
+        Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {}, const unsigned long long timeout = 0ull)
         {
             if (_link == nullptr)
                 return {};
 
-            std::lock_guard<std::mutex> lock(_answerMutex);
+            std::unique_lock<std::mutex> lock(_answerMutex);
             _answerExpected = attribute;
             _link->sendMessage(name, attribute, message);
 
             std::mutex conditionMutex;
             std::unique_lock<std::mutex> conditionLock(conditionMutex);
-            _answerCondition.wait(conditionLock);
+            if (timeout == 0ull)
+                _answerCondition.wait(conditionLock);
+            else
+                _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
 
             _answerExpected = "";
             return _lastAnswerReceived;
