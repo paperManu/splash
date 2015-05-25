@@ -219,6 +219,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/image.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
+	$(top_srcdir)/include/image_opencv.h \
 	$(top_srcdir)/include/image_shmdata.h \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
