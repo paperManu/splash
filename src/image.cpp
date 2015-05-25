@@ -220,40 +220,49 @@ bool Image::readFile(const string& filename)
     auto filepath = string(filename);
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
-    auto in = oiio::ImageInput::open(filepath);
 
-    if (!in)
+    try
     {
-        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        auto in = oiio::ImageInput::open(filepath);
+
+        if (!in)
+        {
+            Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+            return false;
+        }
+
+        const oiio::ImageSpec& spec = in->spec();
+        if (spec.format != oiio::TypeDesc::UINT8)
+        {
+            Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
+            return false;
+        }
+
+        int xres = spec.width;
+        int yres = spec.height;
+        int channels = spec.nchannels;
+        oiio::ImageBuf img(spec); 
+        in->read_image(oiio::TypeDesc::UINT8, img.localpixels());
+
+        in->close();
+        delete in;
+
+        if (channels != 3 && channels != 4)
+            return false;
+
+        unique_lock<mutex> lock(_writeMutex);
+        _bufferImage.swap(img);
+        _imageUpdated = true;
+
+        updateTimestamp();
+
+        return true;
+    }
+    catch (const exception& e)
+    {
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an exception while opening image file: " << e.what() << Log::endl;
         return false;
     }
-
-    const oiio::ImageSpec& spec = in->spec();
-    if (spec.format != oiio::TypeDesc::UINT8)
-    {
-        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
-        return false;
-    }
-
-    int xres = spec.width;
-    int yres = spec.height;
-    int channels = spec.nchannels;
-    oiio::ImageBuf img(spec); 
-    in->read_image(oiio::TypeDesc::UINT8, img.localpixels());
-
-    in->close();
-    delete in;
-
-    if (channels != 3 && channels != 4)
-        return false;
-
-    unique_lock<mutex> lock(_writeMutex);
-    _bufferImage.swap(img);
-    _imageUpdated = true;
-
-    updateTimestamp();
-
-    return true;
 }
 
 /*************/
