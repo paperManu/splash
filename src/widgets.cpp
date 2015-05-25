@@ -82,6 +82,20 @@ void GuiControl::render()
         ImGui::Separator();
         ImGui::Spacing();
 
+        // Configuration applied to multiple objects
+        ImGui::Text("Global configuration (saved!)");
+        static auto blendWidth = 0.05f;
+        if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+            sendValuesToObjectsOfType("camera", "blendWidth", {blendWidth});
+
+        static auto blackLevel = 0.0f;
+        if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+            sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
         // Node configuration
         ImGui::Text("Objects configuration (saved!)");
         // Select the object the control
@@ -252,6 +266,22 @@ vector<string> GuiControl::getObjectNames()
     }
 
     return objNames;
+}
+
+/*************/
+void GuiControl::sendValuesToObjectsOfType(string type, string attr, Values values)
+{
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == type)
+            obj.second->setAttribute(attr, values);
+    
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == type)
+        {
+            obj.second->setAttribute(attr, values);
+            scene->sendMessageToWorld("sendAll", {obj.first, attr, values});
+        }
 }
 
 /*************/

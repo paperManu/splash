@@ -134,6 +134,7 @@ class GuiControl : public GuiWidget
         std::string _targetObjectName {};
         
         std::vector<std::string> getObjectNames();
+        void sendValuesToObjectsOfType(std::string type, std::string attr, Values values);
 };
 
 /*************/
