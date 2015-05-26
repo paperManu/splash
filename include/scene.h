@@ -28,6 +28,7 @@
 #include <atomic>
 #include <cstddef>
 #include <future>
+#include <list>
 #include <vector>
 #include <json/reader.h>
 
@@ -197,6 +198,10 @@ class Scene : public RootObject
         GLuint _maxSwapBarriers {0};
 
         unsigned long _nextId {0};
+        
+        // Tasks queue
+        std::mutex _taskMutex;
+        std::list<std::function<void()>> _taskQueue;
 
         // Blending map, used by all cameras (except the GUI camera)
         unsigned int _blendingResolution {2048};

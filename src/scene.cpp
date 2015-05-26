@@ -442,6 +442,14 @@ void Scene::run()
 {
     while (_isRunning)
     {
+        {
+            // Execute waiting tasks
+            unique_lock<mutex> taskLock(_taskMutex);
+            for (auto& task : _taskQueue)
+                task();
+            _taskQueue.clear();
+        }
+
         if (!_started)
         {
             this_thread::sleep_for(chrono::milliseconds(50));
@@ -450,7 +458,6 @@ void Scene::run()
         
         Timer::get() << "sceneLoop";
 
-        this_thread::yield(); // Allows other threads to catch this mutex
         lock_guard<recursive_mutex> lock(_configureMutex);
         _mainWindow->setAsCurrentContext();
         render();
@@ -889,16 +896,21 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        computeBlendingMap();
+        unique_lock<mutex> lock(_taskMutex);
+        _taskQueue.push_back([&]() -> void {
+            computeBlendingMap();
+        });
         return true;
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-        Json::Value config = getConfigurationAsJson();
-        string configStr = config.toStyledString();
-        sendMessageToWorld("answerMessage", {"config", _name, configStr});
+        unique_lock<mutex> lock(_taskMutex);
+        _taskQueue.push_back([&]() -> void {
+            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+            Json::Value config = getConfigurationAsJson();
+            string configStr = config.toStyledString();
+            sendMessageToWorld("answerMessage", {"config", _name, configStr});
+        });
         return true;
     });
 
