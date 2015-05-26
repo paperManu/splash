@@ -179,15 +179,19 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
         isSet[y * mapSpec.width + x] = true;
 
-        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width;
-        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height;
+        // Blending is computed as by Lancelle et al. 2011, "Soft Edge and Soft Corner Blending"
+        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width / _blendWidth;
+        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height / _blendWidth;
+        distX = glm::clamp(distX, 0.0, 1.0);
+        distY = glm::clamp(distY, 0.0, 1.0);
         
         unsigned short blendAddition = 0;
         if (_blendWidth > 0.f)
         {
             // Add some smoothness to the transition
-            double smoothDist = smoothstep(0.0, 1.0, std::min(distX, distY) / _blendWidth) * 256.0;
-            int blendValue = (int)std::min(256.0, smoothDist);
+            double weight = 1.0 / (1.0 / distX + 1.0 / distY);
+            double smoothDist = pow(std::min(std::max(weight, 0.0), 1.0), 2.0) * 256.0;
+            int blendValue = smoothDist;
             blendAddition += blendValue; // One more camera displaying this pixel
         }
         else

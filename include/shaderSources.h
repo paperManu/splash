@@ -169,10 +169,10 @@ struct ShaderSources
             else if (blendWidth > 0.0 && smoothBlend == true)
             {
                 vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
-                float distX = min(normalizedPos.x, 1.0 - normalizedPos.x);
-                float distY = min(normalizedPos.y, 1.0 - normalizedPos.y);
-                float dist = min(1.0, min(distX, distY) / blendWidth);
-                dist = smoothstep(0.0, 1.0, dist);
+                vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
+                distDoubleInvert = clamp(distDoubleInvert / blendWidth, vec2(0.0), vec2(1.0));
+                float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
+                float dist = pow(max(0.0, min(1.0, weight)), 2.0);
                 blendFactorFloat = 256.0 * dist / float(blendFactor);
             }
             else
