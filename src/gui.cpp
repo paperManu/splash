@@ -827,7 +827,7 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
         glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
     }
 
-    unsigned char* bufferData = (unsigned char*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    unsigned char* bufferData = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, _imGuiVboMaxSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     if (!bufferData)
         return;
     for (int n = 0; n < cmd_lists_count; ++n)
