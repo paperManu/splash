@@ -64,21 +64,6 @@ class Texture : public BaseObject
         Texture(const Texture&) = delete;
         Texture& operator=(const Texture&) = delete;
 
-        Texture(Texture&& t)
-        {
-            *this = std::move(t);
-        }
-
-        Texture& operator=(Texture&& t)
-        {
-            if (this != &t)
-            {
-                _spec = t._spec;
-                _timestamp = t._timestamp;
-            }
-            return *this;
-        }
-
         /**
          * Bind / unbind this texture
          */

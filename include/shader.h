@@ -47,7 +47,8 @@ class Shader : public BaseObject
         {
             vertex = 0,
             geometry,
-            fragment
+            fragment,
+            compute
         };
 
         enum Sideness
@@ -82,30 +83,6 @@ class Shader : public BaseObject
          */
         Shader(const Shader&) = delete;
         Shader& operator=(const Shader&) = delete;
-
-        Shader& operator=(Shader&& s)
-        {
-            if (this != &s)
-            {
-                _shaders = s._shaders;
-                _program = s._program;
-                _isLinked = s._isLinked;
-                _uniforms = s._uniforms;
-                _uniformsToUpdate = s._uniformsToUpdate;
-
-                _fill = s._fill;
-                _sideness = s._sideness;
-                _useBlendingMap = s._useBlendingMap;
-                _blendWidth = s._blendWidth;
-                _blackLevel = s._blackLevel;
-                _brightness = s._brightness;
-                _color = s._color;
-                _scale = s._scale;
-                _textureOverlap = s._textureOverlap;
-                _layout = s._layout;
-            }
-            return *this;
-        }
 
         /**
          * Activate this shader

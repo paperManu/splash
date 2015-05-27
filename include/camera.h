@@ -66,52 +66,6 @@ class Camera : public BaseObject
         Camera(const Camera&) = delete;
         Camera& operator=(const Camera&) = delete;
 
-        Camera(Camera&& c)
-        {
-            *this = std::move(c);
-        }
-
-        Camera& operator=(Camera&& c)
-        {
-            if (this != &c)
-            {
-                _isInitialized = c._isInitialized;
-                _window = c._window;
-
-                _fbo = c._fbo;
-                _outTextures = c._outTextures;
-                _objects = c._objects;
-
-                _drawFrame = c._drawFrame;
-                _wireframe = c._wireframe;
-                _hidden = c._hidden;
-                _flashBG = c._flashBG;
-
-                _models = c._models;
-
-                _fov = c._fov;
-                _width = c._width;
-                _height = c._height;
-                _near = c._near;
-                _far = c._far;
-                _cx = c._cx;
-                _cy = c._cy;
-                _eye = c._eye;
-                _target = c._target;
-                _up = c._up;
-                _blendWidth = c._blendWidth;
-                _blackLevel = c._blackLevel;
-                _brightness = c._brightness;
-
-                _displayCalibration = c._displayCalibration;
-                _showAllCalibrationPoints = c._showAllCalibrationPoints;
-
-                _calibrationPoints = c._calibrationPoints;
-                _selectedCalibrationPoint = c._selectedCalibrationPoint;
-            }
-            return *this;
-        }
-
         /**
          * Computes the blending map for this camera
          */

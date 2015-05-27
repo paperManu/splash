@@ -58,26 +58,6 @@ class Image : public BufferObject
          */
         Image(const Image&) = delete;
         Image& operator=(const Image&) = delete;
-        
-        Image(Image&& i) noexcept
-        {
-            *this = std::move(i);
-        }
-
-        Image& operator=(Image&& i) noexcept
-        {
-            if (this != &i)
-            {
-                _image.swap(i._image);
-                _bufferImage.swap(i._bufferImage);
-                _imageUpdated = i._imageUpdated;
-                _flip = i._flip;
-                _flop = i._flop;
-                _srgb = i._srgb;
-                _benchmark = i._benchmark;
-            }
-            return *this;
-        }
 
         /**
          * Get a pointer to the data

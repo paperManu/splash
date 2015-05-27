@@ -80,37 +80,6 @@ struct SerializedObject
         _data = std::vector<char>(start, end);
     }
 
-    SerializedObject(const SerializedObject& obj)
-    {
-        _data = obj._data;
-    }
-
-    SerializedObject(SerializedObject&& obj)
-    {
-        *this = std::move(obj);
-    }
-
-    /**
-     * Operators
-     */
-    SerializedObject& operator=(const SerializedObject& obj)
-    {
-        if (this != &obj)
-        {
-            _data = obj._data;
-        }
-        return *this;
-    }
-
-    SerializedObject& operator=(SerializedObject&& obj)
-    {
-        if (this != &obj)
-        {
-            _data = std::move(obj._data);
-        }
-        return *this;
-    }
-
     /**
      * Get the pointer to the data
      */
@@ -237,46 +206,6 @@ struct Value
         Value(std::string v) {_s = v; _type = Type::s;}
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
         Value(Values v) {_v = v; _type = Type::v;}
-
-        Value(const Value& v) noexcept
-        {
-            _i = v._i;
-            _f = v._f;
-            _s = v._s;
-            _v = v._v;
-            _type = v._type;
-        }
-
-        Value& operator=(const Value& v) noexcept
-        {
-            if (this != &v)
-            {
-                _i = v._i;
-                _f = v._f;
-                _s = v._s;
-                _v = v._v;
-                _type = v._type;
-            }
-            return *this;
-        }
-
-        Value(Value&& v) noexcept
-        {
-            *this = std::move(v);
-        }
-
-        Value& operator=(Value&& v) noexcept
-        {
-            if (this != &v)
-            {
-                _i = v._i;
-                _f = v._f;
-                _s = std::move(v._s);
-                _v = std::move(v._v);
-                _type = v._type;
-            }
-            return *this;
-        }
 
         bool operator==(Value v) const
         {

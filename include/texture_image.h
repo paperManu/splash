@@ -66,35 +66,6 @@ class Texture_Image : public Texture
         Texture_Image(const Texture_Image&) = delete;
         Texture_Image& operator=(const Texture_Image&) = delete;
 
-        Texture_Image(Texture_Image&& t)
-        {
-            *this = std::move(t);
-        }
-
-        Texture_Image& operator=(Texture_Image&& t)
-        {
-            if (this != &t)
-            {
-                _glTex = t._glTex;
-                _spec = t._spec;
-                _pbos[0] = t._pbos[0];
-                _pbos[1] = t._pbos[1];
-                _pboReadIndex = t._pboReadIndex;
-
-                _filtering = t._filtering;
-                _texTarget = t._texTarget;
-                _texLevel = t._texLevel;
-                _texInternalFormat = t._texInternalFormat;
-                _texBorder = t._texBorder;
-                _texFormat = t._texFormat;
-                _texType = t._texType;
-
-                _img = t._img;
-                _timestamp = t._timestamp;
-            }
-            return *this;
-        }
-
         /**
          * Sets the specified buffer as the texture on the device
          */

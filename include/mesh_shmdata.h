@@ -58,22 +58,6 @@ class Mesh_Shmdata : public Mesh
         Mesh_Shmdata(const Mesh_Shmdata&) = delete;
         Mesh_Shmdata& operator=(const Mesh_Shmdata&) = delete;
 
-        Mesh_Shmdata(Mesh_Shmdata&& g) noexcept
-        {
-            *this = std::move(g);
-        }
-
-        Mesh_Shmdata& operator=(Mesh_Shmdata&& g) noexcept
-        {
-            if (this != &g)
-            {
-                _filename = g._filename;
-                _logger = std::move(g._logger);
-                _reader = std::move(g._reader);
-            }
-            return *this;
-        }
-
         /**
          * Set the path to read from
          */

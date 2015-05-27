@@ -63,35 +63,6 @@ class Window : public BaseObject
         Window(const Window&) = delete;
         Window& operator=(const Window&) = delete;
 
-        Window(Window&& w)
-        {
-            *this = std::move(w);
-        }
-
-        Window& operator=(Window&& w)
-        {
-            if (this != &w)
-            {
-                _isInitialized = w._isInitialized;
-                _window = w._window;
-                _screenId = w._screenId;
-                _fullscreen = std::move(w._fullscreen);
-                _layout = w._layout;
-                _swapInterval = w._swapInterval;
-
-                _screen = w._screen;
-                _viewProjectionMatrix = w._viewProjectionMatrix;
-                _inTextures = w._inTextures;
-
-                _renderFbo = w._renderFbo;
-                _readFbo = w._readFbo;
-                _renderFence = w._renderFence;
-                _depthTexture = w._depthTexture;
-                _colorTexture = w._colorTexture;
-            }
-            return *this;
-        }
-
         /**
          * Get grabbed character (not necesseraly a specific key)
          */

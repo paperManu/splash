@@ -602,7 +602,7 @@ void Scene::computeBlendingMap()
                 }
                 pixBuffer[y * w + x] = maxValue;
             }
-        swap(*_blendingMap, *buffer);
+        swap(_blendingMap, buffer);
         _blendingMap->_savable = false;
         _blendingMap->updateTimestamp();
 

@@ -65,19 +65,6 @@ class ColorCalibrator : public BaseObject
         ColorCalibrator(const ColorCalibrator&) = delete;
         ColorCalibrator& operator=(const ColorCalibrator&) = delete;
 
-        ColorCalibrator(ColorCalibrator&& c)
-        {
-            *this = std::move(c);
-        }
-
-        ColorCalibrator& operator=(ColorCalibrator&& c)
-        {
-            if (this != &c)
-            {
-            }
-            return *this;
-        }
-
         /**
          * Update the color calibration of all cameras
          */

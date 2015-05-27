@@ -57,34 +57,6 @@ class Image_Shmdata : public Image
         Image_Shmdata(const Image_Shmdata&) = delete;
         Image_Shmdata& operator=(const Image_Shmdata&) = delete;
 
-        Image_Shmdata(Image_Shmdata&& g) noexcept
-        {
-            *this = std::move(g);
-        }
-
-        Image_Shmdata& operator=(Image_Shmdata&& g) noexcept
-        {
-            if (this != &g)
-            {
-                _filename = g._filename;
-                _logger = std::move(g._logger);
-                _reader = std::move(g._reader);
-    
-                _readerBuffer.swap(g._readerBuffer);
-                _inputDataType = g._inputDataType;
-                _bpp = g._bpp;
-                _width = g._width;
-                _height = g._height;
-                _red = g._red;
-                _green = g._green;
-                _blue = g._blue;
-                _channels = g._channels;
-                _isYUV = g._isYUV;
-                _is420 = g._is420;
-            }
-            return *this;
-        }
-
         /**
          * Set the path to read from
          */

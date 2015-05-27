@@ -59,19 +59,6 @@ class Image_GPhoto : public Image
         Image_GPhoto(const Image_GPhoto&) = delete;
         Image_GPhoto& operator=(const Image_GPhoto&) = delete;
 
-        Image_GPhoto(Image_GPhoto&& g) noexcept
-        {
-            *this = std::move(g);
-        }
-
-        Image_GPhoto& operator=(Image_GPhoto&& g) noexcept
-        {
-            if (this != &g)
-            {
-            }
-            return *this;
-        }
-
         /**
          * Capture a new photo
          */

@@ -52,6 +52,12 @@ class Texture_Syphon : public Texture
         ~Texture_Syphon();
 
         /**
+         * No copy constructor, but a move one
+         */
+        Texture_Syphon(const Texture_Syphon&) = delete;
+        Texture_Syphon& operator=(const Texture_Syphon&) = delete;
+
+        /**
          * Bind / unbind this texture
          */
         void bind();
