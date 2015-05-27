@@ -174,12 +174,14 @@ class GuiNodeView : public GuiWidget
     public:
         GuiNodeView(std::string name) : GuiWidget(name) {}
         void render();
+        std::string getClickedNode() {return _clickedNode;}
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         int updateWindowFlags();
 
     private:
         SceneWeakPtr _scene;
         bool _isHovered {false};
+        std::string _clickedNode {""};
 
         // Node render settings
         std::vector<int> _nodeSize {160, 60};

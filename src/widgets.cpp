@@ -102,8 +102,17 @@ void GuiControl::render()
         {
             vector<string> objectNames = getObjectNames();
             vector<const char*> items;
+
+            int index = 0;
+            string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
             for (auto& name : objectNames)
+            {
                 items.push_back(name.c_str());
+                // If the object name is the same as the item selected in the node view, we change the targetIndex
+                if (name == clickedNode)
+                    _targetIndex = index;
+                index++;
+            }
             ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
         }
 
@@ -927,6 +936,8 @@ map<string, string> GuiNodeView::getObjectTypes()
 /*************/
 void GuiNodeView::render()
 {
+    _clickedNode = "";
+
     //if (ImGui::CollapsingHeader(_name.c_str()))
     if (true)
     {
@@ -1051,8 +1062,12 @@ void GuiNodeView::renderNode(string name)
     ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
 
     ImGui::SetCursorPos(ImVec2(0, 2));
+
+    // This tricks allows for detecting clicks on the node, while keeping it closed
+    ImGui::SetNextTreeNodeOpened(false);
     if (ImGui::CollapsingHeader(name.c_str()))
     {
+        _clickedNode = name;
     }
 
     if (ImGui::IsItemHovered())
