@@ -25,6 +25,7 @@ Geometry::~Geometry()
     glDeleteBuffers(1, &_vertexCoords);
     glDeleteBuffers(1, &_texCoords);
     glDeleteBuffers(1, &_normals);
+    glDeleteBuffers(1, &_annexe);
     for (auto v : _vertexArray)
         glDeleteVertexArrays(1, &(v.second));
 
@@ -38,6 +39,17 @@ void Geometry::activate()
 {
     _mutex.lock();
     glBindVertexArray(_vertexArray[glfwGetCurrentContext()]);
+}
+
+/*************/
+void Geometry::activateAsSharedBuffer()
+{
+    _mutex.lock();
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _vertexCoords);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _texCoords);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _normals);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _annexe);
 }
 
 /*************/
@@ -102,6 +114,7 @@ void Geometry::update()
         glDeleteBuffers(1, &_vertexCoords);
         glDeleteBuffers(1, &_texCoords);
         glDeleteBuffers(1, &_normals);
+        glDeleteBuffers(1, &_annexe);
 
         glGenBuffers(1, &_vertexCoords);
         glBindBuffer(GL_ARRAY_BUFFER, _vertexCoords);
@@ -134,6 +147,11 @@ void Geometry::update()
         }
         glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(float), normals.data(), GL_STATIC_DRAW);
 
+        // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
+        glGenBuffers(1, &_annexe);
+        glBindBuffer(GL_ARRAY_BUFFER, _annexe);
+        glBufferData(GL_ARRAY_BUFFER, _verticesNumber * 4 * sizeof(float), nullptr, GL_STATIC_DRAW);
+
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         for (auto& v : _vertexArray)
@@ -162,8 +180,12 @@ void Geometry::update()
         glEnableVertexAttribArray((GLuint)1);
 
         glBindBuffer(GL_ARRAY_BUFFER, _normals);
-        glVertexAttribPointer((GLuint)2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glVertexAttribPointer((GLuint)2, 4, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray((GLuint)2);
+
+        glBindBuffer(GL_ARRAY_BUFFER, _annexe);
+        glVertexAttribPointer((GLuint)3, 4, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)3);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);

@@ -71,7 +71,7 @@ class Shader : public BaseObject
         /**
          * Constructor
          */
-        Shader();
+        Shader(bool isComputeShader = false);
 
         /**
          * Destructor
@@ -93,6 +93,11 @@ class Shader : public BaseObject
          * Deactivate this shader
          */
         void deactivate();
+
+        /**
+         * Launch the compute shader, if present
+         */
+        void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
         /**
          * Set the sideness of the object
@@ -188,6 +193,8 @@ class Shader : public BaseObject
          * Register new functors to modify attributes
          */
         void registerAttributes();
+        void registerGraphicAttributes();
+        void registerComputeAttributes();
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;

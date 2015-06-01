@@ -295,6 +295,18 @@ void Scene::render()
 {
     bool isError {false};
     vector<unsigned int> threadIds;
+
+    // Compute the blending
+    Timer::get() << "blending";
+    glGetError();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+            dynamic_pointer_cast<Camera>(obj.second)->blendingResetVisibility();
+
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+            dynamic_pointer_cast<Camera>(obj.second)->blendingComputeVisibility();
+    Timer::get() >> "blending";
     
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering

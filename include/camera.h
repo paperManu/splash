@@ -72,6 +72,16 @@ class Camera : public BaseObject
         void computeBlendingMap(ImagePtr& map);
 
         /**
+         * Reset the projector visibility for all objects
+         */
+        void blendingResetVisibility();
+
+        /**
+         * Compute the visibility for all objects seen by this camera
+         */
+        void blendingComputeVisibility();
+
+        /**
          * Compute the calibration given the calibration points
          */
         bool doCalibration();

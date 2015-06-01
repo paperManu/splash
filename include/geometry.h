@@ -61,6 +61,7 @@ class Geometry : public BaseObject
          * Activate the geometry for rendering
          */
         void activate();
+        void activateAsSharedBuffer();
 
         /**
          * Deactivate the geometry for rendering
@@ -117,6 +118,7 @@ class Geometry : public BaseObject
         GLuint _vertexCoords {0};
         GLuint _texCoords {0};
         GLuint _normals {0};
+        GLuint _annexe {0};
 
         int _verticesNumber {0};
 

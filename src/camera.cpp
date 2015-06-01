@@ -258,6 +258,23 @@ void Camera::computeBlendingMap(ImagePtr& map)
             imageMap[y + mapSpec.width * x] += camMap[y + mapSpec.width * x];
 }
 
+/*************/
+void Camera::blendingResetVisibility()
+{
+    for (auto& obj : _objects)
+    {
+        obj->resetVisibility();
+    }
+}
+
+/*************/
+void Camera::blendingComputeVisibility()
+{
+    for (auto& obj : _objects)
+    {
+        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix());
+    }
+}
 
 /*************/
 bool Camera::doCalibration()

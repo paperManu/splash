@@ -73,6 +73,7 @@ vector<float> Mesh::getNormals() const
         normals.push_back(n[0]);
         normals.push_back(n[1]);
         normals.push_back(n[2]);
+        normals.push_back(0.f);
     }
     return normals;
 }

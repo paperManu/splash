@@ -11,10 +11,11 @@
 
 
 #include <limits>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 using namespace std;
-using namespace glm;
 
 namespace Splash {
 
@@ -62,12 +63,14 @@ void Object::activate()
 
     bool withBlend = false;
     if (_blendMaps.size() != 0)
+    {
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
             {
                 _shader->setAttribute("blending", {1});
                 withBlend = true;
             }
+    }
 
     if (_fill == "texture")
     {
@@ -126,9 +129,9 @@ void Object::activate()
 }
 
 /*************/
-dmat4 Object::computeModelMatrix() const
+glm::dmat4 Object::computeModelMatrix() const
 {
-    return translate(dmat4(1.f), _position);
+    return glm::translate(glm::dmat4(1.f), _position);
 }
 
 /*************/
@@ -208,14 +211,14 @@ bool Object::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-float Object::pickVertex(dvec3 p, dvec3& v)
+float Object::pickVertex(glm::dvec3 p, glm::dvec3& v)
 {
     float distance = numeric_limits<float>::max();
-    dvec3 closestVertex;
+    glm::dvec3 closestVertex;
     float tmpDist;
     for (auto& geom : _geometries)
     {
-        dvec3 vertex;
+        glm::dvec3 vertex;
         if ((tmpDist = geom->pickVertex(p, vertex)) < distance)
         {
             distance = tmpDist;
@@ -256,6 +259,70 @@ void Object::resetBlendingMap()
 }
 
 /*************/
+void Object::resetVisibility()
+{
+    unique_lock<mutex> lock(_mutex);
+
+    if (!_computeShaderResetBlending)
+    {
+        _computeShaderResetBlending = make_shared<Shader>(true);
+        _computeShaderResetBlending->setAttribute("computePhase", {"resetVisibility"});
+    }
+
+    if (_computeShaderResetBlending)
+    {
+        for (auto& geom : _geometries)
+        {
+            geom->update();
+            geom->activateAsSharedBuffer();
+            auto verticesNbr = geom->getVerticesNumber();
+            _computeShaderResetBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            unsigned int groupCountX = verticesNbr;
+            _computeShaderResetBlending->doCompute(groupCountX);
+            geom->deactivate();
+        }
+    }
+}
+
+/*************/
+void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
+{
+    unique_lock<mutex> lock(_mutex);
+
+    if (!_computeShaderComputeBlending)
+    {
+        _computeShaderComputeBlending = make_shared<Shader>(true);
+        _computeShaderComputeBlending->setAttribute("computePhase", {"computeVisibility"});
+    }
+
+    if (_computeShaderComputeBlending)
+    {
+        for (auto& geom : _geometries)
+        {
+            geom->update();
+            geom->activateAsSharedBuffer();
+
+            // Set uniforms
+            auto verticesNbr = geom->getVerticesNumber();
+            _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+
+            auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+            auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+            _computeShaderComputeBlending->setAttribute("uniform", {"_mvp", mvpAsValues});
+
+            auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+            auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+            _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+
+
+            unsigned int groupCountX = verticesNbr / 3;
+            _computeShaderComputeBlending->doCompute(groupCountX);
+            geom->deactivate();
+        }
+    }
+}
+
+/*************/
 void Object::setBlendingMap(TexturePtr map)
 {
     _blendMaps.push_back(map);
@@ -274,7 +341,7 @@ void Object::registerAttributes()
     _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
-        _position = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+        _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() -> Values {
         return {_position.x, _position.y, _position.z};
@@ -285,9 +352,9 @@ void Object::registerAttributes()
             return false;
 
         if (args.size() < 3)
-            _scale = dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+            _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
         else
-            _scale = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
         _shader->setAttribute("scale", args);
         return true;

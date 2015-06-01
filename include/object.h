@@ -65,6 +65,11 @@ class Object : public BaseObject
         void activate();
 
         /**
+         * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
+         */
+        void computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix);
+
+        /**
          * Deactivate this object for rendering
          */
         void deactivate();
@@ -115,6 +120,11 @@ class Object : public BaseObject
         void resetBlendingMap();
 
         /**
+         * Reset computed visibility from any camera
+         */
+        void resetVisibility();
+
+        /**
          * Set the blending map for the object
          */
         void setBlendingMap(TexturePtr map);
@@ -133,6 +143,8 @@ class Object : public BaseObject
         mutable std::mutex _mutex;
 
         ShaderPtr _shader;
+        ShaderPtr _computeShaderResetBlending;
+        ShaderPtr _computeShaderComputeBlending;
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
         std::vector<TexturePtr> _blendMaps;

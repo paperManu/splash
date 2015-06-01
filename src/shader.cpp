@@ -7,24 +7,37 @@
 #include <sstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 using namespace std;
 
 namespace Splash {
 
 /*************/
-Shader::Shader()
+Shader::Shader(bool isComputeShader)
 {
     _type = "shader";
 
-    _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
-    _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
-    _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
-    _program = glCreateProgram();
+    if (!isComputeShader)
+    {
+        _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
+        _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
+        _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
-    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
-    compileProgram();
+        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+        compileProgram();
+
+        registerGraphicAttributes();
+    }
+    else
+    {
+        _shaders[compute] = glCreateShader(GL_COMPUTE_SHADER);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.COMPUTE_SHADER_DEFAULT, compute);
+        compileProgram();
+
+        registerComputeAttributes();
+    }
 
     registerAttributes();
 }
@@ -92,6 +105,21 @@ void Shader::deactivate()
         _textures[i]->unbind();
     _textures.clear();
     _mutex.unlock();
+}
+
+/*************/
+void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
+{
+    if (!_isLinked)
+    {
+        if (!linkProgram())
+            return;
+    }
+
+    _activated = true;
+    glUseProgram(_program);
+    updateUniforms();
+    glDispatchCompute(numGroupsX, numGroupsY, 1);
 }
 
 /*************/
@@ -278,6 +306,7 @@ void Shader::parseUniforms(const std::string& src)
 
             // Get the location
             _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
+
             if (type == "int")
                 _uniforms[name].values = {0};
             else if (type == "float")
@@ -390,12 +419,14 @@ string Shader::stringFromShaderType(int type)
     {
     default:
         return string();
-    case 0:
-        return string("vertex");
-    case 1:
-        return string("geometry");
-    case 2:
-        return string("fragment");
+    case vertex:
+        return "vertex";
+    case geometry:
+        return "geometry";
+    case fragment:
+        return "fragment";
+    case compute:
+        return "compute";
     }
 }
 
@@ -411,6 +442,8 @@ void Shader::updateUniforms()
             auto uniformIt = _uniforms.find(u);
             if (uniformIt == _uniforms.end())
                 continue;
+
+            auto tmpName = uniformIt->first;
 
             auto& uniform = uniformIt->second;
             if (uniform.glIndex == -1)
@@ -449,6 +482,13 @@ void Shader::updateUniforms()
                     for (unsigned int i = 0; i < 9; ++i)
                         m[i] = uniform.values[i].asFloat();
                     glUniformMatrix3fv(uniform.glIndex, 1, GL_FALSE, m.data());
+                }
+                else if (size == 16)
+                {
+                    vector<float> m(16);
+                    for (unsigned int i = 0; i < 16; ++i)
+                        m[i] = uniform.values[i].asFloat();
+                    glUniformMatrix4fv(uniform.glIndex, 1, GL_FALSE, m.data());
                 }
             }
             else if (type == Value::Type::v && uniform.values[0].asValues().size() > 0)
@@ -544,6 +584,39 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
+    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+
+        string uniformName = args[0].asString();
+        Values uniformArgs;
+        if (args[1].getType() != Value::Type::v)
+        {
+            for (int i = 1; i < args.size(); ++i)
+                uniformArgs.push_back(args[i]);
+        }
+        else
+        {
+            uniformArgs = args[1].asValues();
+        }
+
+        // Check if the values changed from previous use
+        auto uniformIt = _uniforms.find(uniformName);
+        if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
+            return true;
+        else if (uniformIt == _uniforms.end())
+            uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
+
+        uniformIt->second.values = uniformArgs;
+        _uniformsToUpdate.push_back(uniformName);
+
+        return true;
+    });
+}
+
+/*************/
+void Shader::registerGraphicAttributes()
+{
     _attribFunctions["blending"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
@@ -559,7 +632,7 @@ void Shader::registerAttributes()
             return false;
 
         // Get additionnal shading options
-        string options = ShaderSources.VERSION_DIRECTIVE;
+        string options = ShaderSources.VERSION_DIRECTIVE_330;
         for (int i = 1; i < args.size(); ++i)
             options += "#define " + args[i].asString() + "\n";
 
@@ -684,25 +757,30 @@ void Shader::registerAttributes()
             out.push_back(v);
         return out;
     });
+}
 
-    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
+/*************/
+void Shader::registerComputeAttributes()
+{
+    _attribFunctions["computePhase"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
             return false;
 
-        string uniformName = args[0].asString();
-        Values uniformArgs;
+        // Get additionnal shading options
+        string options = ShaderSources.VERSION_DIRECTIVE_430;
         for (int i = 1; i < args.size(); ++i)
-            uniformArgs.push_back(args[i]);
+            options += "#define " + args[i].asString() + "\n";
 
-        // Check if the values changed from previous use
-        auto uniformIt = _uniforms.find(uniformName);
-        if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
-            return true;
-        else if (uniformIt == _uniforms.end())
-            uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
-
-        uniformIt->second.values = uniformArgs;
-        _uniformsToUpdate.push_back(uniformName);
+        if ("resetVisibility" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
+            compileProgram();
+        }
+        else if ("computeVisibility" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_VISIBILITY, compute);
+            compileProgram();
+        }
 
         return true;
     });
