@@ -36,6 +36,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
 	cgUtils.cpp \
 	geometry.cpp \
+	gpuBuffer.cpp \
 	gui.cpp \
 	image.cpp \
 	image_shmdata.cpp \
@@ -215,6 +216,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/colorcalibrator.h \
 	$(top_srcdir)/include/coretypes.h \
 	$(top_srcdir)/include/geometry.h \
+	$(top_srcdir)/include/gpuBuffer.h \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/image.h \
 	$(top_srcdir)/include/image_ffmpeg.h \

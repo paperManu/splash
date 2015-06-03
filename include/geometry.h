@@ -34,6 +34,7 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
+#include "gpuBuffer.h"
 #include "mesh.h"
 
 namespace Splash {
@@ -74,21 +75,6 @@ class Geometry : public BaseObject
         int getVerticesNumber() const {return _verticesNumber;}
 
         /**
-         * Get the normals
-         */
-        GLuint getNormals() const {return _normals;}
-
-        /**
-         * Get the texture coords
-         */
-        GLuint getTextureCoords() const {return _texCoords;}
-
-        /**
-         * Get the vertex coords
-         */
-        GLuint getVertexCoords() const {return _vertexCoords;}
-
-        /**
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
@@ -115,10 +101,10 @@ class Geometry : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
-        GLuint _vertexCoords {0};
-        GLuint _texCoords {0};
-        GLuint _normals {0};
-        GLuint _annexe {0};
+        std::unique_ptr<GpuBuffer> _vertexCoords {nullptr};
+        std::unique_ptr<GpuBuffer> _texCoords {nullptr};
+        std::unique_ptr<GpuBuffer> _normals {nullptr};
+        std::unique_ptr<GpuBuffer> _annexe {nullptr};
 
         int _verticesNumber {0};
 

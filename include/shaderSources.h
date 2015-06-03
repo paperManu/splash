@@ -161,14 +161,14 @@ struct ShaderSources
                     vec4 newSpaceNormal = _mNormal * vec4(normal[vertexId].xyz, 0.0);
                     newSpaceNormal /= newSpaceNormal.w;
 
-                    if (newSpaceNormal.z >= 0.0 && normalizedSpaceVertex.z > 0.0)
-                    {
+                    //if (newSpaceNormal.z >= 0.0 && normalizedSpaceVertex.z > 0.0)
+                    //{
                         normalizedSpaceVertex = abs(normalizedSpaceVertex);
 
                         bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.0));
                         if (isVisible.x && isVisible.y && isVisible.z)
                             oneVertexVisible = true;
-                    }
+                    //}
                 }
 
                 if (oneVertexVisible)
@@ -178,9 +178,10 @@ struct ShaderSources
                         int vertexId = globalID * 3 + idx;
                         vec2 normalizedPos = vec2(screenVertex[idx].x / 2.0 + 0.5, screenVertex[idx].y / 2.0 + 0.5);
                         vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
-                        distDoubleInvert = clamp(distDoubleInvert, vec2(0.0), vec2(1.0));
-                        float weight = max(0.0, min(1.0, 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y)));
-                        annexe[vertexId].x += weight;
+                        distDoubleInvert = clamp(distDoubleInvert / 0.1, vec2(0.0), vec2(1.0));
+                        float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
+                        float dist = pow(max(0.0, min(1.0, weight)), 2.0);
+                        annexe[vertexId].x += dist;
                     }
                 }
             }
@@ -281,10 +282,9 @@ struct ShaderSources
             //    fragColor = vec4(0.0, 0.0, 1.0, 1.0);
             //else
             //    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
-            fragColor.rgb = vec3(pow(vertexIn.annexe.x / blendWidth, 2.0));
+            fragColor.rgb = vec3(vertexIn.annexe.x);
             fragColor.a = 1.0;
             return;
-
             /******* END OF TEST ************/
 
             // Compute the real texture coordinates, according to flip / flop

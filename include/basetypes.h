@@ -83,6 +83,14 @@ class BaseObject
         }
         virtual ~BaseObject() {}
 
+        /**
+         * Safe bool idiom
+         */
+        virtual explicit operator bool() const
+        {
+            return true;
+        }
+
         std::string getType() const {return _type;}
 
         /**
