@@ -265,7 +265,7 @@ void Object::resetVisibility()
 
     if (!_computeShaderResetBlending)
     {
-        _computeShaderResetBlending = make_shared<Shader>(true);
+        _computeShaderResetBlending = make_shared<Shader>(Shader::prgCompute);
         _computeShaderResetBlending->setAttribute("computePhase", {"resetVisibility"});
     }
 
@@ -285,13 +285,53 @@ void Object::resetVisibility()
 }
 
 /*************/
+void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
+{
+    unique_lock<mutex> lock(_mutex);
+
+    if (!_feedbackShaderSubdivideCamera)
+    {
+        _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"outVertex"});
+    }
+
+    if (_feedbackShaderSubdivideCamera)
+    {
+        for (auto& geom : _geometries)
+        {
+            geom->resetAlternativebuffer(0);
+            geom->update();
+            geom->activate();
+
+            auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+            auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+
+            auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+            auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+
+            auto resultVertexBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4, nullptr);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, resultVertexBuffer->getId());
+
+            _feedbackShaderSubdivideCamera->activateFeedback();
+            glDrawArrays(GL_TRIANGLES, 0, geom->getVerticesNumber());
+            _feedbackShaderSubdivideCamera->deactivate();
+
+            geom->deactivate();
+            geom->setAlternativeBuffer(resultVertexBuffer, 0);
+        }
+    }
+}
+
+/*************/
 void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
 {
     unique_lock<mutex> lock(_mutex);
 
     if (!_computeShaderComputeBlending)
     {
-        _computeShaderComputeBlending = make_shared<Shader>(true);
+        _computeShaderComputeBlending = make_shared<Shader>(Shader::prgCompute);
         _computeShaderComputeBlending->setAttribute("computePhase", {"computeVisibility"});
     }
 
@@ -313,7 +353,6 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
-
 
             unsigned int groupCountX = verticesNbr / 3;
             _computeShaderComputeBlending->doCompute(groupCountX);

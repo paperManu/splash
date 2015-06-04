@@ -298,7 +298,10 @@ void Scene::render()
 
     // Compute the blending
     Timer::get() << "blending";
-    glGetError();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
+            dynamic_pointer_cast<Camera>(obj.second)->blendingTessellateForCurrentCamera();
+
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
             dynamic_pointer_cast<Camera>(obj.second)->blendingResetVisibility();

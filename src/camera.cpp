@@ -277,6 +277,15 @@ void Camera::blendingComputeVisibility()
 }
 
 /*************/
+void Camera::blendingTessellateForCurrentCamera()
+{
+    for (auto& obj : _objects)
+    {
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix());
+    }
+}
+
+/*************/
 bool Camera::doCalibration()
 {
     int pointsSet = 0;

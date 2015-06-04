@@ -34,6 +34,7 @@
 #include "coretypes.h"
 #include "basetypes.h"
 #include "geometry.h"
+#include "gpuBuffer.h"
 #include "shader.h"
 #include "texture.h"
 
@@ -139,12 +140,19 @@ class Object : public BaseObject
          */
         void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
+        /**
+         * Subdivide the objects wrt the given camera limits (for blending purposes)
+         */
+        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix);
+
     private:
         mutable std::mutex _mutex;
 
         ShaderPtr _shader;
         ShaderPtr _computeShaderResetBlending;
         ShaderPtr _computeShaderComputeBlending;
+        ShaderPtr _feedbackShaderSubdivideCamera;
+
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
         std::vector<TexturePtr> _blendMaps;

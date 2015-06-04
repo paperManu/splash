@@ -82,6 +82,11 @@ class Camera : public BaseObject
         void blendingComputeVisibility();
 
         /**
+         * Tessellate the objects for the given camera
+         */
+        void blendingTessellateForCurrentCamera();
+
+        /**
          * Compute the calibration given the calibration points
          */
         bool doCalibration();

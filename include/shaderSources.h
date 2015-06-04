@@ -189,6 +189,27 @@ struct ShaderSources
     )"};
 
     /**
+     * Default vertex shader with feedback
+     */
+    const std::string VERTEX_SHADER_FEEDBACK_DEFAULT {R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        layout(location = 2) in vec4 _normal;
+        layout(location = 3) in vec4 _annexe;
+
+        uniform mat4 _mvp;
+        uniform mat4 _mNormal;
+
+        out vec4 outVertex;
+
+        void main(void)
+        {
+            outVertex.xyz = _vertex.xyz * 0.5 + vec3(0.0, 0.0, 0.5);
+            outVertex.w = 1.0;
+        }
+    )"};
+
+    /**
      * Default vertex shader
      */
     const std::string VERTEX_SHADER_DEFAULT {R"(
@@ -282,9 +303,9 @@ struct ShaderSources
             //    fragColor = vec4(0.0, 0.0, 1.0, 1.0);
             //else
             //    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
-            fragColor.rgb = vec3(vertexIn.annexe.x);
-            fragColor.a = 1.0;
-            return;
+            //fragColor.rgb = vec3(vertexIn.annexe.x);
+            //fragColor.a = 1.0;
+            //return;
             /******* END OF TEST ************/
 
             // Compute the real texture coordinates, according to flip / flop

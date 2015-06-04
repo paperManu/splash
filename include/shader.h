@@ -43,9 +43,17 @@ namespace Splash {
 class Shader : public BaseObject
 {
     public:
+        enum ProgramType
+        {
+            prgGraphic = 0,
+            prgCompute,
+            prgFeedback
+        };
+
         enum ShaderType
         {
             vertex = 0,
+            tessellation,
             geometry,
             fragment,
             compute
@@ -71,7 +79,7 @@ class Shader : public BaseObject
         /**
          * Constructor
          */
-        Shader(bool isComputeShader = false);
+        Shader(ProgramType type = prgGraphic);
 
         /**
          * Destructor
@@ -88,6 +96,11 @@ class Shader : public BaseObject
          * Activate this shader
          */
         void activate();
+
+        /**
+         * Activate for feedback rendering
+         */
+        void activateFeedback();
 
         /**
          * Deactivate this shader
@@ -133,6 +146,7 @@ class Shader : public BaseObject
     private:
         mutable std::mutex _mutex;
         std::atomic_bool _activated {false};
+        ProgramType _programType {prgGraphic};
 
         std::unordered_map<int, GLuint> _shaders;
         std::unordered_map<int, std::string> _shadersSource;
@@ -195,6 +209,7 @@ class Shader : public BaseObject
         void registerAttributes();
         void registerGraphicAttributes();
         void registerComputeAttributes();
+        void registerFeedbackAttributes();
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;

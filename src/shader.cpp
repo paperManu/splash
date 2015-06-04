@@ -14,12 +14,13 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Shader::Shader(bool isComputeShader)
+Shader::Shader(ProgramType type)
 {
     _type = "shader";
 
-    if (!isComputeShader)
+    if (type == prgGraphic)
     {
+        _programType = prgGraphic;
         _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
         _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
@@ -30,13 +31,23 @@ Shader::Shader(bool isComputeShader)
 
         registerGraphicAttributes();
     }
-    else
+    else if (type == prgCompute)
     {
+        _programType = prgCompute;
         _shaders[compute] = glCreateShader(GL_COMPUTE_SHADER);
         setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.COMPUTE_SHADER_DEFAULT, compute);
         compileProgram();
 
         registerComputeAttributes();
+    }
+    else if (type == prgFeedback)
+    {
+        _programType = prgFeedback;
+        _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_DEFAULT, vertex);
+        compileProgram();
+
+        registerFeedbackAttributes();
     }
 
     registerAttributes();
@@ -93,23 +104,56 @@ void Shader::activate()
 }
 
 /*************/
+void Shader::activateFeedback()
+{
+    if (_programType != prgFeedback)
+        return;
+
+    _mutex.lock();
+    if (!_isLinked)
+    {
+        if (!linkProgram())
+            return;
+    }
+
+    _activated = true;
+    glUseProgram(_program);
+    updateUniforms();
+    glEnable(GL_RASTERIZER_DISCARD);
+    glBeginTransformFeedback(GL_TRIANGLES);
+}
+
+/*************/
 void Shader::deactivate()
 {
-    glDisable(GL_CULL_FACE);
+    if (_programType == prgGraphic)
+    {
+        glDisable(GL_CULL_FACE);
 
 #ifdef DEBUG
-    glUseProgram(0);
+        glUseProgram(0);
 #endif
-    _activated = false;
-    for (int i = 0; i < _textures.size(); ++i)
-        _textures[i]->unbind();
-    _textures.clear();
+        _activated = false;
+        for (int i = 0; i < _textures.size(); ++i)
+            _textures[i]->unbind();
+        _textures.clear();
+    }
+    else if (_programType == prgFeedback)
+    {
+        glEndTransformFeedback();
+        glDisable(GL_RASTERIZER_DISCARD);
+        _activated = false;
+    }
+
     _mutex.unlock();
 }
 
 /*************/
 void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
 {
+    if (_programType != prgCompute)
+        return;
+
     if (!_isLinked)
     {
         if (!linkProgram())
@@ -120,6 +164,7 @@ void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
     glUseProgram(_program);
     updateUniforms();
     glDispatchCompute(numGroupsX, numGroupsY, 1);
+    _activated = false;
 }
 
 /*************/
@@ -421,6 +466,8 @@ string Shader::stringFromShaderType(int type)
         return string();
     case vertex:
         return "vertex";
+    case tessellation:
+        return "tessellation";
     case geometry:
         return "geometry";
     case fragment:
@@ -781,6 +828,21 @@ void Shader::registerComputeAttributes()
             setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_VISIBILITY, compute);
             compileProgram();
         }
+
+        return true;
+    });
+}
+
+/*************/
+void Shader::registerFeedbackAttributes()
+{
+    _attribFunctions["feedbackVaryings"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+
+        char* varyingName = const_cast<char*>(args[0].asString().c_str());
+        const GLchar* feedbackVaryings[] = {varyingName};
+        glTransformFeedbackVaryings(_program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
 
         return true;
     });

@@ -42,10 +42,10 @@ void Geometry::activateAsSharedBuffer()
 {
     _mutex.lock();
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _vertexCoords->getId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _texCoords->getId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _normals->getId());
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _annexe->getId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _glBuffers[0]->getId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _glBuffers[1]->getId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, _glBuffers[2]->getId());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, _glBuffers[3]->getId());
 }
 
 /*************/
@@ -97,10 +97,35 @@ float Geometry::pickVertex(dvec3 p, dvec3& v)
 }
 
 /*************/
+void Geometry::setAlternativeBuffer(shared_ptr<GpuBuffer> buffer, int index)
+{
+    if (index >= 4)
+        return;
+
+    _glAlternativeBuffers[index] = buffer;
+    _buffersDirty = true;
+}
+
+/*************/
+void Geometry::resetAlternativebuffer(int index)
+{
+    if (index >= 4)
+        return;
+
+    _glAlternativeBuffers[index].reset();
+    _buffersDirty = true;
+}
+
+/*************/
 void Geometry::update()
 {
     if (!_mesh)
         return; // No mesh, no update
+
+    if (_glBuffers.size() != 4)
+        _glBuffers.resize(4);
+    if (_glAlternativeBuffers.size() != 4)
+        _glAlternativeBuffers.resize(4);
 
     // Update the vertex buffers if mesh was updated
     if (_timestamp != _mesh->getTimestamp())
@@ -111,27 +136,31 @@ void Geometry::update()
         if (vertices.size() == 0)
             return;
         _verticesNumber = vertices.size() / 4;
-        _vertexCoords = std::unique_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, vertices.size(), vertices.data()));
+        _glBuffers[0] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, vertices.size(), vertices.data()));
         
         vector<float> texcoords = _mesh->getUVCoords();
         if (texcoords.size() == 0)
             return;
-        _texCoords = std::unique_ptr<GpuBuffer>(new GpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, texcoords.size(), texcoords.data()));
+        _glBuffers[1] = std::shared_ptr<GpuBuffer>(new GpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, texcoords.size(), texcoords.data()));
 
         vector<float> normals = _mesh->getNormals();
         if (normals.size() == 0)
             return;
-        _normals = std::unique_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, normals.size(), normals.data()));
+        _glBuffers[2] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, normals.size(), normals.data()));
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
-        _annexe = std::unique_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber * 4, nullptr));
+        _glBuffers[3] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber * 4, nullptr));
 
-        if (!*_vertexCoords || !*_texCoords || !*_normals || !*_annexe)
+        // Check the buffers
+        bool buffersSet = true;
+        for (auto& buffer : _glBuffers)
+            if (!*buffer)
+                buffersSet = false;
+
+        if (!buffersSet)
         {
-            _vertexCoords.reset();
-            _texCoords.reset();
-            _normals.reset();
-            _annexe.reset();
+            _glBuffers.clear();
+            _glBuffers.resize(4);
             return;
         }
 
@@ -144,32 +173,36 @@ void Geometry::update()
 
     GLFWwindow* context = glfwGetCurrentContext();
     auto vertexArrayIt = _vertexArray.find(context);
-    if (vertexArrayIt == _vertexArray.end())
+    if (vertexArrayIt == _vertexArray.end() || _buffersDirty)
     {
-        vertexArrayIt = (_vertexArray.emplace(make_pair(context, 0))).first;
-        vertexArrayIt->second = 0;
-        
-        glGenVertexArrays(1, &(vertexArrayIt->second));
+        if (vertexArrayIt == _vertexArray.end())
+        {
+            vertexArrayIt = (_vertexArray.emplace(make_pair(context, 0))).first;
+            vertexArrayIt->second = 0;
+            glGenVertexArrays(1, &(vertexArrayIt->second));
+        }
+
         glBindVertexArray(vertexArrayIt->second);
 
-        glBindBuffer(GL_ARRAY_BUFFER, _vertexCoords->getId());
-        glVertexAttribPointer((GLuint)0, _vertexCoords->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray((GLuint)0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, _texCoords->getId());
-        glVertexAttribPointer((GLuint)1, _texCoords->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray((GLuint)1);
-
-        glBindBuffer(GL_ARRAY_BUFFER, _normals->getId());
-        glVertexAttribPointer((GLuint)2, _normals->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray((GLuint)2);
-
-        glBindBuffer(GL_ARRAY_BUFFER, _annexe->getId());
-        glVertexAttribPointer((GLuint)3, _annexe->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray((GLuint)3);
+        for (int idx = 0; idx < 4; ++idx)
+        {
+            if (_glAlternativeBuffers[idx])
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, _glAlternativeBuffers[idx]->getId());
+                glVertexAttribPointer((GLuint)idx, _glAlternativeBuffers[idx]->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
+            }
+            else
+            {
+                glBindBuffer(GL_ARRAY_BUFFER, _glBuffers[idx]->getId());
+                glVertexAttribPointer((GLuint)idx, _glBuffers[idx]->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
+            }
+            glEnableVertexAttribArray((GLuint)idx);
+        }
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
+
+        _buffersDirty = false;
     }
 }
 

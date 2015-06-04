@@ -85,6 +85,16 @@ class Geometry : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Replace one of the GL buffers with an alternative one
+         */
+        void setAlternativeBuffer(std::shared_ptr<GpuBuffer> buffer, int index);
+
+        /**
+         * Deactivate the specified alternative buffer (and re-use the default one
+         */
+        void resetAlternativebuffer(int index);
+
+        /**
          * Set the mesh for this object
          */
         void setMesh(MeshPtr mesh) {_mesh = mesh;}
@@ -101,10 +111,9 @@ class Geometry : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
-        std::unique_ptr<GpuBuffer> _vertexCoords {nullptr};
-        std::unique_ptr<GpuBuffer> _texCoords {nullptr};
-        std::unique_ptr<GpuBuffer> _normals {nullptr};
-        std::unique_ptr<GpuBuffer> _annexe {nullptr};
+        std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};
+        std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {};
+        bool _buffersDirty {false};
 
         int _verticesNumber {0};
 
