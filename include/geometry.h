@@ -92,7 +92,7 @@ class Geometry : public BaseObject
         /**
          * Deactivate the specified alternative buffer (and re-use the default one
          */
-        void resetAlternativebuffer(int index);
+        void resetAlternativebuffer(int index = -1);
 
         /**
          * Set the mesh for this object

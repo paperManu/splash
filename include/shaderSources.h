@@ -41,6 +41,10 @@ struct ShaderSources
         #version 430 core
     )"};
 
+    /**************************/
+    // COMPUTE
+    /**************************/
+
     /**
      * Default compute shader
      */
@@ -188,26 +192,160 @@ struct ShaderSources
         }
     )"};
 
+    /**************************/
+    // FEEDBACK
+    /**************************/
+
     /**
      * Default vertex shader with feedback
      */
     const std::string VERTEX_SHADER_FEEDBACK_DEFAULT {R"(
-        layout(location = 0) in vec4 _vertex;
-        layout(location = 1) in vec2 _texcoord;
-        layout(location = 2) in vec4 _normal;
-        layout(location = 3) in vec4 _annexe;
+        layout (location = 0) in vec4 _vertex;
+        layout (location = 1) in vec2 _texcoord;
+        layout (location = 2) in vec4 _normal;
+        layout (location = 3) in vec4 _annexe;
 
         uniform mat4 _mvp;
         uniform mat4 _mNormal;
 
-        out vec4 outVertex;
+        out VS_OUT
+        {
+            smooth vec4 vertex;
+            smooth vec2 texcoord;
+            smooth vec4 normal;
+            smooth vec4 annexe;
+        } vs_out;
 
         void main(void)
         {
-            outVertex.xyz = _vertex.xyz * 0.5 + vec3(0.0, 0.0, 0.5);
-            outVertex.w = 1.0;
+            vs_out.vertex = _vertex;
+            vs_out.texcoord = _texcoord;
+            vs_out.normal = _normal;
+            vs_out.annexe = _annexe;
         }
     )"};
+
+    /**
+     * Default feedback tessellation shader
+     */
+    const std::string TESS_CTRL_SHADER_FEEDBACK_DEFAULT {R"(
+        layout (vertices = 3) out;
+
+        in VS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tcs_in[];
+
+        out TCS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tcs_out[];
+
+        void main(void)
+        {
+            if (gl_InvocationID == 0)
+            {
+                gl_TessLevelInner[0] = 1.0;
+                gl_TessLevelOuter[0] = 1.0;
+                gl_TessLevelOuter[1] = 1.0;
+                gl_TessLevelOuter[2] = 1.0;
+            }
+
+            tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
+            tcs_out[gl_InvocationID].texcoord = tcs_in[gl_InvocationID].texcoord;
+            tcs_out[gl_InvocationID].normal = tcs_in[gl_InvocationID].normal;
+            tcs_out[gl_InvocationID].annexe = tcs_in[gl_InvocationID].annexe;
+
+            gl_out[gl_InvocationID].gl_Position = tcs_out[gl_InvocationID].vertex;
+        }
+    )"};
+
+    const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
+        layout (triangles, fractional_even_spacing, ccw) in;
+
+        in TCS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tes_in[];
+
+        out TES_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tes_out;
+
+        void main(void)
+        {
+            tes_out.vertex = (gl_TessCoord.x * tes_in[0].vertex) +
+                             (gl_TessCoord.y * tes_in[1].vertex) +
+                             (gl_TessCoord.z * tes_in[2].vertex);
+            tes_out.texcoord = (gl_TessCoord.x * tes_in[0].texcoord) +
+                               (gl_TessCoord.y * tes_in[1].texcoord) +
+                               (gl_TessCoord.z * tes_in[2].texcoord);
+            tes_out.normal = (gl_TessCoord.x * tes_in[0].normal) +
+                             (gl_TessCoord.y * tes_in[1].normal) +
+                             (gl_TessCoord.z * tes_in[2].normal);
+            tes_out.annexe = (gl_TessCoord.x * tes_in[0].annexe) +
+                             (gl_TessCoord.y * tes_in[1].annexe) +
+                             (gl_TessCoord.z * tes_in[2].annexe);
+
+            gl_Position.vertex = tes_out.vertex;
+        }
+    )"};
+
+    /**
+     * Default feedback geometry shader
+     */
+    const std::string GEOMETRY_SHADER_FEEDBACK_DEFAULT {R"(
+        in VS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } geom_in[];
+
+        out GEOM_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } geom_out;
+
+        layout (triangles) in;
+        layout (triangle_strip, max_vertices = 3) out;
+
+        void main(void)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                gl_Position = geom_in[i].vertex;
+                geom_out.vertex = geom_in[i].vertex;
+                geom_out.texcoord = geom_in[i].texcoord;
+                geom_out.normal = geom_in[i].normal;
+                geom_out.annexe = geom_in[i].annexe;
+                EmitVertex();
+            }
+
+            EndPrimitive();
+        }
+    )"};
+
+    /**************************/
+    // GRAPHICS
+    /**************************/
 
     /**
      * Default vertex shader

@@ -44,7 +44,14 @@ Shader::Shader(ProgramType type)
     {
         _programType = prgFeedback;
         _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
+        //_shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
+        //_shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
+        _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
+
         setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_DEFAULT, vertex);
+        //setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_DEFAULT, tess_ctrl);
+        //setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_DEFAULT, tess_eval);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_DEFAULT, geometry);
         compileProgram();
 
         registerFeedbackAttributes();
@@ -466,8 +473,10 @@ string Shader::stringFromShaderType(int type)
         return string();
     case vertex:
         return "vertex";
-    case tessellation:
-        return "tessellation";
+    case tess_ctrl:
+        return "tess_ctrl";
+    case tess_eval:
+        return "tess_eval";
     case geometry:
         return "geometry";
     case fragment:
@@ -840,9 +849,14 @@ void Shader::registerFeedbackAttributes()
         if (args.size() < 1)
             return false;
 
-        char* varyingName = const_cast<char*>(args[0].asString().c_str());
-        const GLchar* feedbackVaryings[] = {varyingName};
-        glTransformFeedbackVaryings(_program, 1, feedbackVaryings, GL_INTERLEAVED_ATTRIBS);
+        const GLchar* feedbackVaryings[args.size()];
+        vector<string> varyingNames;
+        for (int i = 0; i < args.size(); ++i)
+        {
+            varyingNames.push_back(args[i].asString());
+            feedbackVaryings[i] = varyingNames[i].c_str();
+        }
+        glTransformFeedbackVaryings(_program, args.size(), feedbackVaryings, GL_SEPARATE_ATTRIBS);
 
         return true;
     });

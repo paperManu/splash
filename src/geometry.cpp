@@ -110,9 +110,19 @@ void Geometry::setAlternativeBuffer(shared_ptr<GpuBuffer> buffer, int index)
 void Geometry::resetAlternativebuffer(int index)
 {
     if (index >= 4)
+    {
         return;
+    }
+    else if (index >= 0)
+    {
+        _glAlternativeBuffers[index].reset();
+    }
+    else
+    {
+        for (int i = 0; i < _glAlternativeBuffers.size(); ++i)
+            _glAlternativeBuffers[i].reset();
+    }
 
-    _glAlternativeBuffers[index].reset();
     _buffersDirty = true;
 }
 

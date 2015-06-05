@@ -53,7 +53,8 @@ class Shader : public BaseObject
         enum ShaderType
         {
             vertex = 0,
-            tessellation,
+            tess_ctrl,
+            tess_eval,
             geometry,
             fragment,
             compute

@@ -292,14 +292,17 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     if (!_feedbackShaderSubdivideCamera)
     {
         _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
-        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"outVertex"});
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex",
+                                                                          "GEOM_OUT.texcoord",
+                                                                          "GEOM_OUT.normal",
+                                                                          "GEOM_OUT.annexe"});
     }
 
     if (_feedbackShaderSubdivideCamera)
     {
         for (auto& geom : _geometries)
         {
-            geom->resetAlternativebuffer(0);
+            geom->resetAlternativebuffer();
             geom->update();
             geom->activate();
 
@@ -311,8 +314,14 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            auto resultVertexBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4, nullptr);
+            auto resultVertexBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4 * 4, nullptr);
             glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, resultVertexBuffer->getId());
+            auto resultTexcoordBuffer = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 2 * 4, nullptr);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, resultTexcoordBuffer->getId());
+            auto resultNormalBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4 * 4, nullptr);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, resultNormalBuffer->getId());
+            auto resultAnnexeBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4 * 4, nullptr);
+            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 3, resultAnnexeBuffer->getId());
 
             _feedbackShaderSubdivideCamera->activateFeedback();
             glDrawArrays(GL_TRIANGLES, 0, geom->getVerticesNumber());
@@ -320,6 +329,9 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
             geom->deactivate();
             geom->setAlternativeBuffer(resultVertexBuffer, 0);
+            geom->setAlternativeBuffer(resultTexcoordBuffer, 1);
+            geom->setAlternativeBuffer(resultNormalBuffer, 2);
+            geom->setAlternativeBuffer(resultAnnexeBuffer, 3);
         }
     }
 }
