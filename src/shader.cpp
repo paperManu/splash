@@ -54,8 +54,6 @@ Shader::Shader(ProgramType type)
         setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_DEFAULT, geometry);
         compileProgram();
 
-        glGenQueries(1, &_feedbackQuery);
-
         registerFeedbackAttributes();
     }
 
@@ -70,11 +68,6 @@ Shader::~Shader()
     for (auto& shader : _shaders)
         if (glIsShader(shader.second))
             glDeleteShader(shader.second);
-
-    if (_programType == prgFeedback)
-    {
-        glDeleteQueries(1, &_feedbackQuery);
-    }
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
@@ -134,8 +127,6 @@ void Shader::activateFeedback()
     glUseProgram(_program);
     updateUniforms();
     glEnable(GL_RASTERIZER_DISCARD);
-
-    glBeginQuery(GL_PRIMITIVES_GENERATED, _feedbackQuery);
     glBeginTransformFeedback(GL_TRIANGLES);
 }
 
@@ -156,11 +147,8 @@ void Shader::deactivate()
     }
     else if (_programType == prgFeedback)
     {
-        glEndQuery(GL_PRIMITIVES_GENERATED);
         glEndTransformFeedback();
         glDisable(GL_RASTERIZER_DISCARD);
-
-        glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &_feedbackNbrPrimitives);
 
         _activated = false;
     }

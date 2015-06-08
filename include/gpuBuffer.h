@@ -68,7 +68,7 @@ class GpuBuffer
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
         GpuBuffer& operator=(const GpuBuffer&) = delete;
-        GpuBuffer(GpuBuffer&&) = default;
+        GpuBuffer(GpuBuffer&&) = delete;
         GpuBuffer& operator=(GpuBuffer&&) = default;
 
         explicit operator bool() const

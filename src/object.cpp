@@ -302,7 +302,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         for (auto& geom : _geometries)
         {
-            geom->resetAlternativebuffer();
+            geom->useAlternativeBuffers(false);
             geom->update();
             geom->activate();
 
@@ -314,25 +314,14 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            auto resultVertexBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4 * 8, nullptr);
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, resultVertexBuffer->getId());
-            auto resultTexcoordBuffer = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 2 * 8, nullptr);
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, resultTexcoordBuffer->getId());
-            auto resultNormalBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4 * 8, nullptr);
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, resultNormalBuffer->getId());
-            auto resultAnnexeBuffer = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, geom->getVerticesNumber() * 4 * 8, nullptr);
-            glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 3, resultAnnexeBuffer->getId());
-
+            geom->activateForFeedback();
             _feedbackShaderSubdivideCamera->activateFeedback();
             glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
             _feedbackShaderSubdivideCamera->deactivate();
 
+            geom->deactivateFeedback();
             geom->deactivate();
-            geom->setAlternativeBuffer(resultVertexBuffer, 0);
-            geom->setAlternativeBuffer(resultTexcoordBuffer, 1);
-            geom->setAlternativeBuffer(resultNormalBuffer, 2);
-            geom->setAlternativeBuffer(resultAnnexeBuffer, 3);
-            geom->setAlternativeVerticesNumber(_feedbackShaderSubdivideCamera->getFeedbackPrimitivesNbr() * 3);
+            geom->useAlternativeBuffers(true);
         }
     }
 }

@@ -82,7 +82,7 @@ class Geometry : public BaseObject
         /**
          * Get the number of vertices for this geometry
          */
-        int getVerticesNumber() const {return _alternativeVerticesNumber == 0 ? _verticesNumber : _alternativeVerticesNumber;}
+        int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
          * Try to link the given BaseObject to this
@@ -122,7 +122,7 @@ class Geometry : public BaseObject
         /**
          * Activate alternative buffers for draw
          */
-        void useAlternativeBuffers(bool active) {_useAlternativeBuffers = active;}
+        void useAlternativeBuffers(bool isActive);
 
     private:
         mutable std::mutex _mutex;
@@ -138,6 +138,11 @@ class Geometry : public BaseObject
 
         int _verticesNumber {0};
         int _alternativeVerticesNumber {0};
+        int _alternativeBufferSize {0};
+
+        // Transform feedback
+        GLuint _feedbackQuery;
+        int _feedbackNbrPrimitives {0};
 
         /**
          * Register new functors to modify attributes

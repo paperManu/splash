@@ -14,6 +14,8 @@ Geometry::Geometry()
     _type = "geometry";
     registerAttributes();
 
+    glGenQueries(1, &_feedbackQuery);
+
     _mesh = make_shared<Mesh>();
     update();
     _timestamp = _mesh->getTimestamp();
@@ -24,6 +26,8 @@ Geometry::~Geometry()
 {
     for (auto v : _vertexArray)
         glDeleteVertexArrays(1, &(v.second));
+
+    glDeleteQueries(1, &_feedbackQuery);
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Geometry::~Geometry - Destructor" << Log::endl;
@@ -51,22 +55,45 @@ void Geometry::activateAsSharedBuffer()
 /*************/
 void Geometry::activateForFeedback()
 {
-    if (_glAlternativeBuffers.size() < _glBuffers.size())
+    glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT_NO_WAIT, &_feedbackNbrPrimitives);
+    if (_glAlternativeBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackNbrPrimitives * 3 * 6 > _alternativeBufferSize)
     {
         _glAlternativeBuffers.clear();
-        for (unsigned int i = 0; i < _glBuffers.size(); ++i)
+        _alternativeBufferSize = _feedbackNbrPrimitives * 3 * 6; // 3 vertices per primitive, 4 components for each buffer
+        for (auto& buffer : _glBuffers)
         {
+            // This creates a copy of the buffer
+            auto altBuffer = std::make_shared<GpuBuffer>(*buffer);
+            altBuffer->resize(_alternativeBufferSize);
+            _glAlternativeBuffers.push_back(altBuffer);
         }
     }
+    _alternativeVerticesNumber = _feedbackNbrPrimitives * 3;
+
+    for (unsigned int i = 0; i < _glAlternativeBuffers.size(); ++i)
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, _glAlternativeBuffers[i]->getId());
+
+    glBeginQuery(GL_PRIMITIVES_GENERATED, _feedbackQuery);
 }
 
 /*************/
 void Geometry::deactivate() const
 {
-#ifdef DEBUG
+#if DEBUG
     glBindVertexArray(0);
 #endif
     _mutex.unlock();
+}
+
+/*************/
+void Geometry::deactivateFeedback()
+{
+#if DEBUG
+    for (unsigned int i = 0; i < _glAlternativeBuffers.size(); ++i)
+        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, 0);
+#endif
+
+    glEndQuery(GL_PRIMITIVES_GENERATED);
 }
 
 /*************/
@@ -109,16 +136,6 @@ float Geometry::pickVertex(dvec3 p, dvec3& v)
 }
 
 /*************/
-void Geometry::setAlternativeBuffer(shared_ptr<GpuBuffer> buffer, int index)
-{
-    if (index >= 4)
-        return;
-
-    _glAlternativeBuffers[index] = buffer;
-    _buffersDirty = true;
-}
-
-/*************/
 void Geometry::resetAlternativebuffer(int index)
 {
     if (index >= 4)
@@ -148,8 +165,8 @@ void Geometry::update()
 
     if (_glBuffers.size() != 4)
         _glBuffers.resize(4);
-    if (_glAlternativeBuffers.size() != 4)
-        _glAlternativeBuffers.resize(4);
+    //if (_glAlternativeBuffers.size() != 4)
+    //    _glAlternativeBuffers.resize(4);
 
     // Update the vertex buffers if mesh was updated
     if (_timestamp != _mesh->getTimestamp())
@@ -193,6 +210,8 @@ void Geometry::update()
         _vertexArray.clear();
 
         _timestamp = _mesh->getTimestamp();
+
+        _buffersDirty = true;
     }
 
     GLFWwindow* context = glfwGetCurrentContext();
@@ -208,9 +227,9 @@ void Geometry::update()
 
         glBindVertexArray(vertexArrayIt->second);
 
-        for (int idx = 0; idx < 4; ++idx)
+        for (int idx = 0; idx < _glBuffers.size(); ++idx)
         {
-            if (_glAlternativeBuffers[idx])
+            if (_useAlternativeBuffers)
             {
                 glBindBuffer(GL_ARRAY_BUFFER, _glAlternativeBuffers[idx]->getId());
                 glVertexAttribPointer((GLuint)idx, _glAlternativeBuffers[idx]->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);
@@ -228,6 +247,13 @@ void Geometry::update()
 
         _buffersDirty = false;
     }
+}
+
+/*************/
+void Geometry::useAlternativeBuffers(bool isActive)
+{
+    _useAlternativeBuffers = isActive;
+    _buffersDirty = true;
 }
 
 /*************/
