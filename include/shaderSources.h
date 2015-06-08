@@ -252,9 +252,9 @@ struct ShaderSources
             if (gl_InvocationID == 0)
             {
                 gl_TessLevelInner[0] = 1.0;
-                gl_TessLevelOuter[0] = 1.0;
-                gl_TessLevelOuter[1] = 1.0;
-                gl_TessLevelOuter[2] = 1.0;
+                gl_TessLevelOuter[0] = 2.0;
+                gl_TessLevelOuter[1] = 2.0;
+                gl_TessLevelOuter[2] = 2.0;
             }
 
             tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
@@ -267,7 +267,7 @@ struct ShaderSources
     )"};
 
     const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
-        layout (triangles, fractional_even_spacing, ccw) in;
+        layout (triangles) in;
 
         in TCS_OUT
         {
@@ -300,7 +300,7 @@ struct ShaderSources
                              (gl_TessCoord.y * tes_in[1].annexe) +
                              (gl_TessCoord.z * tes_in[2].annexe);
 
-            gl_Position.vertex = tes_out.vertex;
+            gl_Position = tes_out.vertex;
         }
     )"};
 
@@ -308,7 +308,7 @@ struct ShaderSources
      * Default feedback geometry shader
      */
     const std::string GEOMETRY_SHADER_FEEDBACK_DEFAULT {R"(
-        in VS_OUT
+        in TES_OUT
         {
             vec4 vertex;
             vec2 texcoord;

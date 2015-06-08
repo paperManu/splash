@@ -65,14 +65,24 @@ class Geometry : public BaseObject
         void activateAsSharedBuffer();
 
         /**
+         * Activate the geomtry for feedback into the alternative buffers
+         */
+        void activateForFeedback();
+
+        /**
          * Deactivate the geometry for rendering
          */
         void deactivate() const;
 
         /**
+         * Deactivate for feedback
+         */
+        void deactivateFeedback();
+
+        /**
          * Get the number of vertices for this geometry
          */
-        int getVerticesNumber() const {return _verticesNumber;}
+        int getVerticesNumber() const {return _alternativeVerticesNumber == 0 ? _verticesNumber : _alternativeVerticesNumber;}
 
         /**
          * Try to link the given BaseObject to this
@@ -90,6 +100,11 @@ class Geometry : public BaseObject
         void setAlternativeBuffer(std::shared_ptr<GpuBuffer> buffer, int index);
 
         /**
+         * Specify the number of vertices to draw
+         */
+        void setAlternativeVerticesNumber(unsigned int nbr) {_alternativeVerticesNumber = nbr;}
+
+        /**
          * Deactivate the specified alternative buffer (and re-use the default one
          */
         void resetAlternativebuffer(int index = -1);
@@ -104,6 +119,11 @@ class Geometry : public BaseObject
          */
         void update();
 
+        /**
+         * Activate alternative buffers for draw
+         */
+        void useAlternativeBuffers(bool active) {_useAlternativeBuffers = active;}
+
     private:
         mutable std::mutex _mutex;
 
@@ -114,8 +134,10 @@ class Geometry : public BaseObject
         std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};
         std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {};
         bool _buffersDirty {false};
+        bool _useAlternativeBuffers {false};
 
         int _verticesNumber {0};
+        int _alternativeVerticesNumber {0};
 
         /**
          * Register new functors to modify attributes

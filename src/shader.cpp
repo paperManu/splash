@@ -44,15 +44,17 @@ Shader::Shader(ProgramType type)
     {
         _programType = prgFeedback;
         _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
-        //_shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
-        //_shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
+        _shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
+        _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
 
         setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_DEFAULT, vertex);
-        //setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_DEFAULT, tess_ctrl);
-        //setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_DEFAULT, tess_eval);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_DEFAULT, tess_ctrl);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_DEFAULT, tess_eval);
         setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_DEFAULT, geometry);
         compileProgram();
+
+        glGenQueries(1, &_feedbackQuery);
 
         registerFeedbackAttributes();
     }
@@ -68,6 +70,11 @@ Shader::~Shader()
     for (auto& shader : _shaders)
         if (glIsShader(shader.second))
             glDeleteShader(shader.second);
+
+    if (_programType == prgFeedback)
+    {
+        glDeleteQueries(1, &_feedbackQuery);
+    }
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Shader::~Shader - Destructor" << Log::endl;
@@ -127,6 +134,8 @@ void Shader::activateFeedback()
     glUseProgram(_program);
     updateUniforms();
     glEnable(GL_RASTERIZER_DISCARD);
+
+    glBeginQuery(GL_PRIMITIVES_GENERATED, _feedbackQuery);
     glBeginTransformFeedback(GL_TRIANGLES);
 }
 
@@ -147,8 +156,12 @@ void Shader::deactivate()
     }
     else if (_programType == prgFeedback)
     {
+        glEndQuery(GL_PRIMITIVES_GENERATED);
         glEndTransformFeedback();
         glDisable(GL_RASTERIZER_DISCARD);
+
+        glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &_feedbackNbrPrimitives);
+
         _activated = false;
     }
 

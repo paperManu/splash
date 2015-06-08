@@ -49,6 +49,18 @@ void Geometry::activateAsSharedBuffer()
 }
 
 /*************/
+void Geometry::activateForFeedback()
+{
+    if (_glAlternativeBuffers.size() < _glBuffers.size())
+    {
+        _glAlternativeBuffers.clear();
+        for (unsigned int i = 0; i < _glBuffers.size(); ++i)
+        {
+        }
+    }
+}
+
+/*************/
 void Geometry::deactivate() const
 {
 #ifdef DEBUG
@@ -116,11 +128,13 @@ void Geometry::resetAlternativebuffer(int index)
     else if (index >= 0)
     {
         _glAlternativeBuffers[index].reset();
+        _alternativeVerticesNumber = 0;
     }
     else
     {
         for (int i = 0; i < _glAlternativeBuffers.size(); ++i)
             _glAlternativeBuffers[i].reset();
+        _alternativeVerticesNumber = 0;
     }
 
     _buffersDirty = true;

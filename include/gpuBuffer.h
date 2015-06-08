@@ -52,9 +52,21 @@ class GpuBuffer
         ~GpuBuffer();
 
         /**
-         * No copy constructor, but a move one
+         * Copy and move constructors
          */
-        GpuBuffer(const GpuBuffer&) = delete;
+        GpuBuffer(const GpuBuffer& o)
+        {
+            _size = o._size;
+            _baseSize = o._baseSize;
+            _elementSize = o._elementSize;
+            _type = o._type;
+            _usage = o._usage;
+
+            glGenBuffers(1, &_glId);
+            glBindBuffer(GL_ARRAY_BUFFER, _glId);
+            glBufferData(GL_ARRAY_BUFFER, _size * _baseSize, nullptr, _usage);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
         GpuBuffer& operator=(const GpuBuffer&) = delete;
         GpuBuffer(GpuBuffer&&) = default;
         GpuBuffer& operator=(GpuBuffer&&) = default;
