@@ -277,10 +277,21 @@ void Object::resetVisibility()
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderResetBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
-            unsigned int groupCountX = verticesNbr;
+            unsigned int groupCountX = verticesNbr / 3;
             _computeShaderResetBlending->doCompute(groupCountX);
             geom->deactivate();
         }
+    }
+}
+
+/*************/
+void Object::resetTessellation()
+{
+    unique_lock<mutex> lock(_mutex);
+
+    for (auto& geom : _geometries)
+    {
+        geom->useAlternativeBuffers(false);
     }
 }
 
@@ -302,7 +313,6 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         for (auto& geom : _geometries)
         {
-            geom->useAlternativeBuffers(false);
             geom->update();
             geom->activate();
 
@@ -321,6 +331,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
             geom->deactivateFeedback();
             geom->deactivate();
+            geom->swapBuffers();
             geom->useAlternativeBuffers(true);
         }
     }

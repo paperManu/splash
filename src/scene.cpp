@@ -300,6 +300,10 @@ void Scene::render()
     Timer::get() << "blending";
     for (auto& obj : _objects)
         if (obj.second->getType() == "camera")
+            dynamic_pointer_cast<Camera>(obj.second)->blendingResetTessellation();
+
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "camera")
             dynamic_pointer_cast<Camera>(obj.second)->blendingTessellateForCurrentCamera();
 
     for (auto& obj : _objects)

@@ -107,12 +107,17 @@ class Geometry : public BaseObject
         /**
          * Deactivate the specified alternative buffer (and re-use the default one
          */
-        void resetAlternativebuffer(int index = -1);
+        void resetAlternativeBuffer(int index = -1);
 
         /**
          * Set the mesh for this object
          */
         void setMesh(MeshPtr mesh) {_mesh = mesh;}
+
+        /**
+         * Swap between temporary and alternative buffers
+         */
+        void swapBuffers();
 
         /**
          * Updates the object
@@ -132,13 +137,16 @@ class Geometry : public BaseObject
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
         std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};
-        std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {};
+        std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {}; // Alternative buffers used for rendering
+        std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers {}; // Temporary buffers used for feedback
         bool _buffersDirty {false};
         bool _useAlternativeBuffers {false};
 
         int _verticesNumber {0};
         int _alternativeVerticesNumber {0};
         int _alternativeBufferSize {0};
+        int _temporaryVerticesNumber {0};
+        int _temporaryBufferSize {0};
 
         // Transform feedback
         GLuint _feedbackQuery;

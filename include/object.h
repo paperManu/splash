@@ -121,6 +121,11 @@ class Object : public BaseObject
         void resetBlendingMap();
 
         /**
+         * Reset tessellation of all linked objects
+         */
+        void resetTessellation();
+
+        /**
          * Reset computed visibility from any camera
          */
         void resetVisibility();

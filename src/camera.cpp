@@ -277,6 +277,15 @@ void Camera::blendingComputeVisibility()
 }
 
 /*************/
+void Camera::blendingResetTessellation()
+{
+    for (auto& obj : _objects)
+    {
+        obj->resetTessellation();
+    }
+}
+
+/*************/
 void Camera::blendingTessellateForCurrentCamera()
 {
     for (auto& obj : _objects)
