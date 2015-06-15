@@ -39,10 +39,8 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	gpuBuffer.cpp \
 	gui.cpp \
 	image.cpp \
-	image_shmdata.cpp \
 	link.cpp \
 	mesh.cpp \
-	mesh_shmdata.cpp \
 	object.cpp \
 	scene.cpp \
 	shader.cpp \
@@ -104,6 +102,13 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(OPENCV_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(OPENCV_LIBS)
 endif
 
+## Shmdata related
+if HAVE_SHMDATA
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_shmdata.cpp mesh_shmdata.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(SHMDATA_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(SHMDATA_LIBS)
+endif
+
 # OSX
 if HAVE_OSX
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -158,6 +163,12 @@ splash_CXXFLAGS += $(OPENCV_CFLAGS)
 splash_LDFLAGS += $(OPENCV_LIBS)
 endif
 
+## Shmdata related
+if HAVE_SHMDATA
+splash_CXXFLAGS += $(SHMDATA_CFLAGS)
+splash_LDFLAGS += $(SHMDATA_LIBS)
+endif
+
 if HAVE_OSX
 splash_LDFLAGS += \
 	-F$(top_srcdir)/external/syphon/build/Release \
@@ -196,6 +207,12 @@ endif
 if HAVE_OPENCV
 splash_CXXFLAGS += $(OPENCV_CFLAGS)
 splash_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+## Shmdata related
+if HAVE_SHMDATA
+splash_CXXFLAGS += $(SHMDATA_CFLAGS)
+splash_LDFLAGS += $(SHMDATA_LIBS)
 endif
 
 if HAVE_OSX

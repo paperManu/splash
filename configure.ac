@@ -129,10 +129,10 @@ if test "$HAVE_JSONCPP" = "false" ; then
 fi
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0])
-if test "x${have_shmdata}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing shmdata])
-fi
+PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],
+    AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected]),
+    AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect]))
+AM_CONDITIONAL(HAVE_SHMDATA, test -n "$SHMDATA_LIBS")
 
 # GNU Scientific Library, also used for calibration
 PKG_CHECK_MODULES([GSL], [gsl])
