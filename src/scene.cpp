@@ -298,21 +298,26 @@ void Scene::render()
 
     // Compute the blending
     Timer::get() << "blending";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            dynamic_pointer_cast<Camera>(obj.second)->blendingResetTessellation();
+#ifdef VBLEND
+    {
+        list<CameraPtr> cameras;
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "camera")
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            dynamic_pointer_cast<Camera>(obj.second)->blendingTessellateForCurrentCamera();
+        for (auto& camera : cameras)
+            camera->blendingResetTessellation();
 
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            dynamic_pointer_cast<Camera>(obj.second)->blendingResetVisibility();
+        for (auto& camera : cameras)
+            camera->blendingTessellateForCurrentCamera();
 
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            dynamic_pointer_cast<Camera>(obj.second)->blendingComputeVisibility();
+        for (auto& camera : cameras)
+            camera->blendingResetVisibility();
+
+        for (auto& camera : cameras)
+            camera->blendingComputeVisibility();
+    }
+#endif
     Timer::get() >> "blending";
     
     Timer::get() << "cameras";
