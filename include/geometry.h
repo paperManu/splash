@@ -34,6 +34,7 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
+#include "gpuBuffer.h"
 #include "mesh.h"
 
 namespace Splash {
@@ -61,6 +62,12 @@ class Geometry : public BaseObject
          * Activate the geometry for rendering
          */
         void activate();
+        void activateAsSharedBuffer();
+
+        /**
+         * Activate the geomtry for feedback into the alternative buffers
+         */
+        void activateForFeedback();
 
         /**
          * Deactivate the geometry for rendering
@@ -68,24 +75,14 @@ class Geometry : public BaseObject
         void deactivate() const;
 
         /**
+         * Deactivate for feedback
+         */
+        void deactivateFeedback();
+
+        /**
          * Get the number of vertices for this geometry
          */
-        int getVerticesNumber() const {return _verticesNumber;}
-
-        /**
-         * Get the normals
-         */
-        GLuint getNormals() const {return _normals;}
-
-        /**
-         * Get the texture coords
-         */
-        GLuint getTextureCoords() const {return _texCoords;}
-
-        /**
-         * Get the vertex coords
-         */
-        GLuint getVertexCoords() const {return _vertexCoords;}
+        int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
          * Try to link the given BaseObject to this
@@ -98,14 +95,39 @@ class Geometry : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Replace one of the GL buffers with an alternative one
+         */
+        void setAlternativeBuffer(std::shared_ptr<GpuBuffer> buffer, int index);
+
+        /**
+         * Specify the number of vertices to draw
+         */
+        void setAlternativeVerticesNumber(unsigned int nbr) {_alternativeVerticesNumber = nbr;}
+
+        /**
+         * Deactivate the specified alternative buffer (and re-use the default one
+         */
+        void resetAlternativeBuffer(int index = -1);
+
+        /**
          * Set the mesh for this object
          */
         void setMesh(MeshPtr mesh) {_mesh = mesh;}
 
         /**
+         * Swap between temporary and alternative buffers
+         */
+        void swapBuffers();
+
+        /**
          * Updates the object
          */
         void update();
+
+        /**
+         * Activate alternative buffers for draw
+         */
+        void useAlternativeBuffers(bool isActive);
 
     private:
         mutable std::mutex _mutex;
@@ -114,11 +136,21 @@ class Geometry : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
-        GLuint _vertexCoords {0};
-        GLuint _texCoords {0};
-        GLuint _normals {0};
+        std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};
+        std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {}; // Alternative buffers used for rendering
+        std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers {}; // Temporary buffers used for feedback
+        bool _buffersDirty {false};
+        bool _useAlternativeBuffers {false};
 
         int _verticesNumber {0};
+        int _alternativeVerticesNumber {0};
+        int _alternativeBufferSize {0};
+        int _temporaryVerticesNumber {0};
+        int _temporaryBufferSize {0};
+
+        // Transform feedback
+        GLuint _feedbackQuery;
+        int _feedbackNbrPrimitives {0};
 
         /**
          * Register new functors to modify attributes

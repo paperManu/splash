@@ -295,6 +295,30 @@ void Scene::render()
 {
     bool isError {false};
     vector<unsigned int> threadIds;
+
+    // Compute the blending
+    Timer::get() << "blending";
+#ifdef VBLEND
+    {
+        list<CameraPtr> cameras;
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "camera")
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+        for (auto& camera : cameras)
+            camera->blendingResetTessellation();
+
+        for (auto& camera : cameras)
+            camera->blendingTessellateForCurrentCamera();
+
+        for (auto& camera : cameras)
+            camera->blendingResetVisibility();
+
+        for (auto& camera : cameras)
+            camera->blendingComputeVisibility();
+    }
+#endif
+    Timer::get() >> "blending";
     
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering

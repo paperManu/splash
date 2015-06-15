@@ -29,7 +29,7 @@
 
 #define SPLASH
 
-#define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
+#define SPLASH_GL_CONTEXT_VERSION_MAJOR 4
 #if HAVE_OSX
     #define SPLASH_GL_CONTEXT_VERSION_MINOR 2
 #else
@@ -206,6 +206,20 @@ struct Value
         Value(std::string v) {_s = v; _type = Type::s;}
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
         Value(Values v) {_v = v; _type = Type::v;}
+
+        template<class InputIt>
+        Value(InputIt first, InputIt last)
+        {
+            _type = Type::v;
+            _v.clear();
+
+            auto it = first;
+            while (it != last)
+            {
+                _v.push_back(Value(*it));
+                ++it;
+            }
+        }
 
         bool operator==(Value v) const
         {

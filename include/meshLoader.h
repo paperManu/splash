@@ -259,8 +259,15 @@ namespace Splash
                 for (auto& face : _faces)
                 {
                     if (face[0].normalId == -1)
-                        for (auto& v : face)
-                            normals.push_back(glm::vec3(0.f, 0.f, 0.f));
+                    {
+                        auto edge1 = glm::vec3(_vertices[face[1].vertexId] - _vertices[face[0].vertexId]);
+                        auto edge2 = glm::vec3(_vertices[face[2].vertexId] - _vertices[face[0].vertexId]);
+                        auto normal = glm::normalize(glm::cross(edge1, edge2));
+
+                        normals.push_back(normal);
+                        normals.push_back(normal);
+                        normals.push_back(normal);
+                    }
                     else
                     {
                         normals.push_back(_normals[face[0].normalId]);

@@ -258,6 +258,41 @@ void Camera::computeBlendingMap(ImagePtr& map)
             imageMap[y + mapSpec.width * x] += camMap[y + mapSpec.width * x];
 }
 
+/*************/
+void Camera::blendingResetVisibility()
+{
+    for (auto& obj : _objects)
+    {
+        obj->resetVisibility();
+    }
+}
+
+/*************/
+void Camera::blendingComputeVisibility()
+{
+    for (auto& obj : _objects)
+    {
+        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix());
+    }
+}
+
+/*************/
+void Camera::blendingResetTessellation()
+{
+    for (auto& obj : _objects)
+    {
+        obj->resetTessellation();
+    }
+}
+
+/*************/
+void Camera::blendingTessellateForCurrentCamera()
+{
+    for (auto& obj : _objects)
+    {
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix());
+    }
+}
 
 /*************/
 bool Camera::doCalibration()

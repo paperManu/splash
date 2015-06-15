@@ -33,9 +33,319 @@ struct ShaderSources
     /**
      * Version directive, included at the start of all shaders
      */
-    const std::string VERSION_DIRECTIVE {R"(
+    const std::string VERSION_DIRECTIVE_330 {R"(
         #version 330 core
     )"};
+
+    const std::string VERSION_DIRECTIVE_430 {R"(
+        #version 430 core
+    )"};
+
+    /**************************/
+    // COMPUTE
+    /**************************/
+
+    /**
+     * Default compute shader
+     */
+    const std::string COMPUTE_SHADER_DEFAULT {R"(
+        #extension GL_ARB_compute_shader : enable
+        #extension GL_ARB_shader_storage_buffer_object : enable
+
+        layout(local_size_x = 32, local_size_y = 32) in;
+
+        layout (std430, binding = 0) buffer vertexBuffer
+        {
+            vec4 vertex[];
+        };
+
+        layout (std430, binding = 1) buffer texcoordsBuffer
+        {
+            vec2 texcoords[];
+        };
+
+        layout (std430, binding = 2) buffer normalBuffer
+        {
+            vec4 normal[];
+        };
+
+        layout (std430, binding = 3) buffer annexeBuffer
+        {
+            vec4 annexe[];
+        };
+
+        uniform int _vertexNbr;
+
+        void main(void)
+        {
+            uvec3 pos = gl_GlobalInvocationID;
+            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+
+            if (globalID < _vertexNbr)
+            {
+                vertex[globalID].x += 0.001;
+                vertex[globalID].y += 0.001;
+                vertex[globalID].z += 0.001;
+            }
+        }
+    )"};
+
+    /**
+     * Compute shader to reset all camera contribution to zero
+     */
+    const std::string COMPUTE_SHADER_RESET_VISIBILITY {R"(
+        #extension GL_ARB_compute_shader : enable
+        #extension GL_ARB_shader_storage_buffer_object : enable
+
+        layout(local_size_x = 32, local_size_y = 32) in;
+
+        layout (std430, binding = 3) buffer annexeBuffer
+        {
+            vec4 annexe[];
+        };
+
+        uniform int _vertexNbr;
+
+        void main(void)
+        {
+            uvec3 pos = gl_GlobalInvocationID;
+            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+
+            if (globalID < _vertexNbr)
+            {
+                annexe[globalID] = vec4(0.0);
+            }
+        }
+    )"};
+
+    /**
+     * Compute shader to compute the contribution of a specific camera
+     */
+    const std::string COMPUTE_SHADER_COMPUTE_VISIBILITY {R"(
+        #extension GL_ARB_compute_shader : enable
+        #extension GL_ARB_shader_storage_buffer_object : enable
+
+        layout(local_size_x = 32, local_size_y = 32) in;
+
+        layout (std430, binding = 0) buffer vertexBuffer
+        {
+            vec4 vertex[];
+        };
+
+        layout (std430, binding = 2) buffer normalBuffer
+        {
+            vec4 normal[];
+        };
+
+        layout (std430, binding = 3) buffer annexeBuffer
+        {
+            vec4 annexe[];
+        };
+
+        uniform int _vertexNbr;
+        uniform mat4 _mvp;
+        uniform mat4 _mNormal;
+
+        void main(void)
+        {
+            uvec3 pos = gl_GlobalInvocationID;
+            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+            vec4 screenVertex[3];
+
+            if (globalID < _vertexNbr / 3)
+            {
+                bool oneVertexVisible = false;
+                for (int idx = 0; idx < 3; ++idx)
+                {
+                    int vertexId = globalID * 3 + idx;
+                    vec4 normalizedSpaceVertex = _mvp * vec4(vertex[vertexId].xyz, 1.0);
+                    normalizedSpaceVertex /= normalizedSpaceVertex.w;
+                    screenVertex[idx] = normalizedSpaceVertex;
+
+                    vec4 newSpaceNormal = _mNormal * vec4(normal[vertexId].xyz, 0.0);
+                    newSpaceNormal /= newSpaceNormal.w;
+
+                    //if (newSpaceNormal.z >= 0.0 && normalizedSpaceVertex.z > 0.0)
+                    //{
+                        normalizedSpaceVertex = abs(normalizedSpaceVertex);
+
+                        bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.0));
+                        if (isVisible.x && isVisible.y && isVisible.z)
+                            oneVertexVisible = true;
+                    //}
+                }
+
+                if (oneVertexVisible)
+                {
+                    for (int idx = 0; idx < 3; ++idx)
+                    {
+                        int vertexId = globalID * 3 + idx;
+                        vec2 normalizedPos = vec2(screenVertex[idx].x / 2.0 + 0.5, screenVertex[idx].y / 2.0 + 0.5);
+                        vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
+                        distDoubleInvert = clamp(distDoubleInvert / 0.1, vec2(0.0), vec2(1.0));
+                        float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
+                        float dist = pow(max(0.0, min(1.0, weight)), 2.0);
+                        annexe[vertexId].x += dist;
+                    }
+                }
+            }
+        }
+    )"};
+
+    /**************************/
+    // FEEDBACK
+    /**************************/
+
+    /**
+     * Default vertex shader with feedback
+     */
+    const std::string VERTEX_SHADER_FEEDBACK_DEFAULT {R"(
+        layout (location = 0) in vec4 _vertex;
+        layout (location = 1) in vec2 _texcoord;
+        layout (location = 2) in vec4 _normal;
+        layout (location = 3) in vec4 _annexe;
+
+        uniform mat4 _mvp;
+        uniform mat4 _mNormal;
+
+        out VS_OUT
+        {
+            smooth vec4 vertex;
+            smooth vec2 texcoord;
+            smooth vec4 normal;
+            smooth vec4 annexe;
+        } vs_out;
+
+        void main(void)
+        {
+            vs_out.vertex = _vertex;
+            vs_out.texcoord = _texcoord;
+            vs_out.normal = _normal;
+            vs_out.annexe = _annexe;
+        }
+    )"};
+
+    /**
+     * Default feedback tessellation shader
+     */
+    const std::string TESS_CTRL_SHADER_FEEDBACK_DEFAULT {R"(
+        layout (vertices = 3) out;
+
+        in VS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tcs_in[];
+
+        out TCS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tcs_out[];
+
+        void main(void)
+        {
+            if (gl_InvocationID == 0)
+            {
+                gl_TessLevelInner[0] = 2.0;
+                gl_TessLevelOuter[0] = 2.0;
+                gl_TessLevelOuter[1] = 2.0;
+                gl_TessLevelOuter[2] = 2.0;
+            }
+
+            tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
+            tcs_out[gl_InvocationID].texcoord = tcs_in[gl_InvocationID].texcoord;
+            tcs_out[gl_InvocationID].normal = tcs_in[gl_InvocationID].normal;
+            tcs_out[gl_InvocationID].annexe = tcs_in[gl_InvocationID].annexe;
+
+            gl_out[gl_InvocationID].gl_Position = tcs_out[gl_InvocationID].vertex;
+        }
+    )"};
+
+    const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
+        layout (triangles) in;
+
+        in TCS_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tes_in[];
+
+        out TES_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } tes_out;
+
+        void main(void)
+        {
+            tes_out.vertex = (gl_TessCoord.x * tes_in[0].vertex) +
+                             (gl_TessCoord.y * tes_in[1].vertex) +
+                             (gl_TessCoord.z * tes_in[2].vertex);
+            tes_out.texcoord = (gl_TessCoord.x * tes_in[0].texcoord) +
+                               (gl_TessCoord.y * tes_in[1].texcoord) +
+                               (gl_TessCoord.z * tes_in[2].texcoord);
+            tes_out.normal = (gl_TessCoord.x * tes_in[0].normal) +
+                             (gl_TessCoord.y * tes_in[1].normal) +
+                             (gl_TessCoord.z * tes_in[2].normal);
+            tes_out.annexe = (gl_TessCoord.x * tes_in[0].annexe) +
+                             (gl_TessCoord.y * tes_in[1].annexe) +
+                             (gl_TessCoord.z * tes_in[2].annexe);
+
+            gl_Position = tes_out.vertex;
+        }
+    )"};
+
+    /**
+     * Default feedback geometry shader
+     */
+    const std::string GEOMETRY_SHADER_FEEDBACK_DEFAULT {R"(
+        in TES_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } geom_in[];
+
+        out GEOM_OUT
+        {
+            vec4 vertex;
+            vec2 texcoord;
+            vec4 normal;
+            vec4 annexe;
+        } geom_out;
+
+        layout (triangles) in;
+        layout (triangle_strip, max_vertices = 3) out;
+
+        void main(void)
+        {
+            for (int i = 0; i < 3; ++i)
+            {
+                gl_Position = geom_in[i].vertex;
+                geom_out.vertex = geom_in[i].vertex;
+                geom_out.texcoord = geom_in[i].texcoord;
+                geom_out.normal = geom_in[i].normal;
+                geom_out.annexe = geom_in[i].annexe;
+                EmitVertex();
+            }
+
+            EndPrimitive();
+        }
+    )"};
+
+    /**************************/
+    // GRAPHICS
+    /**************************/
 
     /**
      * Default vertex shader
@@ -43,7 +353,8 @@ struct ShaderSources
     const std::string VERTEX_SHADER_DEFAULT {R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
-        layout(location = 2) in vec3 _normal;
+        layout(location = 2) in vec4 _normal;
+        layout(location = 3) in vec4 _annexe;
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
@@ -52,15 +363,17 @@ struct ShaderSources
         {
             vec4 position;
             vec2 texCoord;
-            vec3 normal;
+            vec4 normal;
+            vec4 annexe;
         } vertexOut;
 
         void main(void)
         {
             vertexOut.position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             gl_Position = vertexOut.position;
-            vertexOut.normal = normalize((_normalMatrix * vec4(_normal, 0.0)).xyz);
+            vertexOut.normal.xyz = normalize((_normalMatrix * vec4(_normal.xyz, 0.0)).xyz);
             vertexOut.texCoord = _texcoord;
+            vertexOut.annexe = _annexe;
         }
     )"};
 
@@ -96,7 +409,8 @@ struct ShaderSources
         {
             vec4 position;
             vec2 texCoord;
-            vec3 normal;
+            vec4 normal;
+            vec4 annexe;
         } vertexIn;
 
         out vec4 fragColor;
@@ -114,9 +428,23 @@ struct ShaderSources
 
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
-            vec3 normal = vertexIn.normal;
+            vec4 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
+
+            /************ TEST ***************/
+            //if (vertexIn.annexe.x < 0.5)
+            //    fragColor = vec4(0.0);
+            //else if (vertexIn.annexe.x < 1.5)
+            //    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
+            //else if (vertexIn.annexe.x < 2.5)
+            //    fragColor = vec4(0.0, 0.0, 1.0, 1.0);
+            //else
+            //    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+            //fragColor.rgb = vec3(vertexIn.annexe.x);
+            //fragColor.a = 1.0;
+            //return;
+            /******* END OF TEST ************/
 
             // Compute the real texture coordinates, according to flip / flop
             vec2 realCoords;
@@ -212,7 +540,7 @@ struct ShaderSources
         {
             vec4 position;
             vec2 texCoord;
-            vec3 normal;
+            vec4 normal;
         } vertexIn;
 
         out vec4 fragColor;
@@ -221,7 +549,7 @@ struct ShaderSources
         {
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
-            vec3 normal = vertexIn.normal;
+            vec4 normal = vertexIn.normal;
 
             fragColor = _color;
         }
@@ -241,7 +569,7 @@ struct ShaderSources
         {
             vec4 position;
             vec2 texCoord;
-            vec3 normal;
+            vec4 normal;
         } vertexIn;
 
         out vec4 fragColor;
@@ -250,7 +578,7 @@ struct ShaderSources
         {
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
-            vec3 normal = vertexIn.normal;
+            vec4 normal = vertexIn.normal;
 
             float U = texCoord.x * 65536.0;
             float V = texCoord.y * 65536.0;
@@ -266,13 +594,13 @@ struct ShaderSources
     const std::string VERTEX_SHADER_WIREFRAME {R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
-        layout(location = 2) in vec3 _normal;
+        layout(location = 2) in vec4 _normal;
         uniform mat4 _modelViewProjectionMatrix;
 
         out VertexData
         {
             vec4 vertex;
-            vec3 normal;
+            vec4 normal;
             vec2 texcoord;
         } vertexOut;
 
@@ -294,14 +622,14 @@ struct ShaderSources
         in VertexData
         {
             vec4 vertex;
-            vec3 normal;
+            vec4 normal;
             vec2 texcoord;
         } vertexIn[];
 
         out VertexData
         {
             vec2 texcoord;
-            vec3 normal;
+            vec4 normal;
             vec3 bcoord;
             vec4 position;
         } vertexOut;
@@ -311,7 +639,6 @@ struct ShaderSources
             vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz * _scale.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[0].texcoord;
-            vertexOut.normal = (_normalMatrix * vec4(vertexIn[0].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
@@ -319,7 +646,6 @@ struct ShaderSources
             v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[1].texcoord;
-            vertexOut.normal = (_normalMatrix * vec4(vertexIn[1].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
@@ -327,7 +653,6 @@ struct ShaderSources
             v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[2].texcoord;
-            vertexOut.normal = (_normalMatrix * vec4(vertexIn[2].normal, 0.0)).xyz;
             vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
             vertexOut.position = v;
             EmitVertex();
@@ -342,7 +667,7 @@ struct ShaderSources
         in VertexData
         {
             vec2 texcoord;
-            vec3 normal;
+            vec4 normal;
             vec3 bcoord;
             vec4 position;
         } vertexIn;
@@ -354,7 +679,7 @@ struct ShaderSources
         void main(void)
         {
             vec4 position = vertexIn.position;
-            vec3 normal = vertexIn.normal;
+            vec4 normal = vertexIn.normal;
 
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);

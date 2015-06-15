@@ -73,6 +73,7 @@ vector<float> Mesh::getNormals() const
         normals.push_back(n[0]);
         normals.push_back(n[1]);
         normals.push_back(n[2]);
+        normals.push_back(0.f);
     }
     return normals;
 }
@@ -113,9 +114,9 @@ unique_ptr<SerializedObject> Mesh::serialize() const
 
     // For this, we will use the getVertex, getUV, etc. methods to create a serialized representation of the mesh
     vector<vector<float>> data;
-    data.push_back(move(getVertCoords()));
-    data.push_back(move(getUVCoords()));
-    data.push_back(move(getNormals()));
+    data.push_back(getVertCoords());
+    data.push_back(getUVCoords());
+    data.push_back(getNormals());
 
     unique_lock<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
@@ -170,7 +171,7 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
     vector<vector<float>> data;
     data.push_back(vector<float>(nbrVertices * 4));
     data.push_back(vector<float>(nbrVertices * 2));
-    data.push_back(vector<float>(nbrVertices * 3));
+    data.push_back(vector<float>(nbrVertices * 4));
 
     // Let's read the values
     try
@@ -204,9 +205,9 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
         mesh.normals.resize(data[2].size() / 3);
         for (unsigned int i = 0; i < data[2].size() / 3; ++i)
         {
-            mesh.normals[i][0] = data[0][i*3 + 0];
-            mesh.normals[i][1] = data[0][i*3 + 1];
-            mesh.normals[i][2] = data[0][i*3 + 2];
+            mesh.normals[i][0] = data[2][i*4 + 0];
+            mesh.normals[i][1] = data[2][i*4 + 1];
+            mesh.normals[i][2] = data[2][i*4 + 2];
         }
 
         _bufferMesh = mesh;
