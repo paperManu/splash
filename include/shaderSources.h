@@ -111,9 +111,13 @@ struct ShaderSources
             uvec3 pos = gl_GlobalInvocationID;
             int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
 
-            if (globalID < _vertexNbr)
+            if (globalID < _vertexNbr / 3)
             {
-                annexe[globalID] = vec4(0.0);
+                for (int idx = 0; idx < 3; ++idx)
+                {
+                    int vertexId = globalID * 3 + idx;
+                    annexe[vertexId] = vec4(0.0);
+                }
             }
         }
     )"};
@@ -151,10 +155,11 @@ struct ShaderSources
             uvec3 pos = gl_GlobalInvocationID;
             int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
             vec4 screenVertex[3];
+            bool vertexVisible[3];
 
             if (globalID < _vertexNbr / 3)
             {
-                bool oneVertexVisible = false;
+                bool oneVertexVisible = true;
                 for (int idx = 0; idx < 3; ++idx)
                 {
                     int vertexId = globalID * 3 + idx;
@@ -162,30 +167,41 @@ struct ShaderSources
                     normalizedSpaceVertex /= normalizedSpaceVertex.w;
                     screenVertex[idx] = normalizedSpaceVertex;
 
-                    vec4 newSpaceNormal = _mNormal * vec4(normal[vertexId].xyz, 0.0);
-                    newSpaceNormal /= newSpaceNormal.w;
-
-                    //if (newSpaceNormal.z >= 0.0 && normalizedSpaceVertex.z > 0.0)
-                    //{
-                        normalizedSpaceVertex = abs(normalizedSpaceVertex);
-
-                        bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.0));
-                        if (isVisible.x && isVisible.y && isVisible.z)
-                            oneVertexVisible = true;
-                    //}
+                    normalizedSpaceVertex = abs(normalizedSpaceVertex);
+                    bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.0));
+                    if (isVisible.x && isVisible.y && isVisible.z)
+                    {
+                        vertexVisible[idx] = true;
+                        //oneVertexVisible = true;
+                    }
+                    else
+                    {
+                        vertexVisible[idx] = false;
+                        oneVertexVisible = false;
+                    }
                 }
 
-                if (oneVertexVisible)
+                vec3 projectedNormal = cross((screenVertex[1] - screenVertex[0]).xyz, (screenVertex[2] - screenVertex[0]).xyz);
+                if (oneVertexVisible && projectedNormal.z <= 0.0)
                 {
                     for (int idx = 0; idx < 3; ++idx)
                     {
                         int vertexId = globalID * 3 + idx;
-                        vec2 normalizedPos = vec2(screenVertex[idx].x / 2.0 + 0.5, screenVertex[idx].y / 2.0 + 0.5);
-                        vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
-                        distDoubleInvert = clamp(distDoubleInvert / 0.1, vec2(0.0), vec2(1.0));
-                        float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                        float dist = pow(max(0.0, min(1.0, weight)), 2.0);
-                        annexe[vertexId].x += dist;
+                        annexe[vertexId].x += 1.0;
+
+                        if (vertexVisible[idx] == false)
+                        {
+                            annexe[vertexId].y += 1.0;
+                        }
+
+                        { // Smooth blending
+                        //vec2 normalizedPos = vec2(screenVertex[idx].x / 2.0 + 0.5, screenVertex[idx].y / 2.0 + 0.5);
+                        //vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
+                        //distDoubleInvert = clamp(distDoubleInvert / 0.1, vec2(0.0), vec2(1.0));
+                        //float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
+                        //float dist = pow(max(0.0, min(1.0, weight)), 2.0);
+                        //annexe[vertexId].x = dist;
+                        }
                     }
                 }
             }
@@ -247,14 +263,53 @@ struct ShaderSources
             vec4 annexe;
         } tcs_out[];
 
+        uniform mat4 _mvp;
+        uniform mat4 _mNormal;
+
         void main(void)
         {
             if (gl_InvocationID == 0)
             {
-                gl_TessLevelInner[0] = 2.0;
-                gl_TessLevelOuter[0] = 2.0;
-                gl_TessLevelOuter[1] = 2.0;
-                gl_TessLevelOuter[2] = 2.0;
+                bool isVisible = false;
+                vec4 projectedVertices[3];
+                float maxDist = 0.0;
+                for (int i = 0; i < 3; ++i)
+                {
+                    vec4 projectedVertex = _mvp * vec4(tcs_in[i].vertex.xyz, 1.0);
+                    projectedVertex /= projectedVertex.w;
+                    projectedVertices[i] = projectedVertex;
+
+                    if (projectedVertex.z >= 0.0)
+                    {
+                        projectedVertex = abs(projectedVertex);
+                        maxDist = max(maxDist, max(projectedVertex.x, projectedVertex.y));
+                        bvec4 vertexVisible = lessThanEqual(projectedVertex, vec4(1.1));
+
+                        if (vertexVisible.x && vertexVisible.y && vertexVisible.z)
+                            isVisible = true;
+                    }
+                }
+
+                gl_TessLevelInner[0] = 1.0;
+                gl_TessLevelOuter[0] = 1.0;
+                gl_TessLevelOuter[1] = 1.0;
+                gl_TessLevelOuter[2] = 1.0;
+
+                vec3 projectedNormal = cross((projectedVertices[1] - projectedVertices[0]).xyz, (projectedVertices[2] - projectedVertices[0]).xyz);
+                if (isVisible && projectedNormal.z <= 0.0)
+                {
+                    float maxLength = 0.0;
+                    maxLength = max(length(projectedVertices[1].xy - projectedVertices[0].xy),
+                                    length(projectedVertices[2].xy - projectedVertices[1].xy));
+                    maxLength = max(maxLength, length(projectedVertices[2].xy - projectedVertices[0].xy));
+                    float tessLevel = max(1.0, maxLength / 0.1);
+                    tessLevel = mix(1.0, tessLevel, smoothstep(0.9, 1.0, maxDist));
+                    gl_TessLevelInner[0] = tessLevel;
+                    gl_TessLevelOuter[0] = tessLevel;
+                    gl_TessLevelOuter[1] = tessLevel;
+                    gl_TessLevelOuter[2] = tessLevel;
+                }
+
             }
 
             tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
@@ -267,6 +322,7 @@ struct ShaderSources
     )"};
 
     const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
+        //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
         in TCS_OUT
@@ -367,13 +423,31 @@ struct ShaderSources
             vec4 annexe;
         } vertexOut;
 
+        out BlendingData
+        {
+            float totalBlend;
+        } blendOut;
+
         void main(void)
         {
-            vertexOut.position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
+            vertexOut.position.xyz = _vertex.xyz * _scale;
+            vertexOut.position = _modelViewProjectionMatrix * vec4(vertexOut.position.xyz, 1.0);
             gl_Position = vertexOut.position;
-            vertexOut.normal.xyz = normalize((_normalMatrix * vec4(_normal.xyz, 0.0)).xyz);
+            vertexOut.normal = normalize(_normalMatrix * _normal);
             vertexOut.texCoord = _texcoord;
             vertexOut.annexe = _annexe;
+
+            vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
+            if (projectedVertex.z >= 0.0)
+            {
+                projectedVertex = abs(projectedVertex);
+
+                bvec4 vertexVisible = lessThanEqual(projectedVertex, vec4(1.0));
+                if (vertexVisible.x && vertexVisible.y && vertexVisible.z)
+                    blendOut.totalBlend = _annexe.x - _annexe.y;
+                else
+                    blendOut.totalBlend = _annexe.x;
+            }
         }
     )"};
 
@@ -413,6 +487,11 @@ struct ShaderSources
             vec4 annexe;
         } vertexIn;
 
+        in BlendingData
+        {
+            float totalBlend;
+        } blendIn;
+
         out vec4 fragColor;
         // Texture transformation
         uniform int _tex0_flip = 0;
@@ -433,14 +512,8 @@ struct ShaderSources
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
             /************ TEST ***************/
-            //if (vertexIn.annexe.x < 0.5)
-            //    fragColor = vec4(0.0);
-            //else if (vertexIn.annexe.x < 1.5)
-            //    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            //else if (vertexIn.annexe.x < 2.5)
-            //    fragColor = vec4(0.0, 0.0, 1.0, 1.0);
-            //else
-            //    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
+            //fragColor.rgb = pow(vec3(vertexIn.annexe.x / 3.0), vec3(1.0 / 2.2));
+            //fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
             //fragColor.rgb = vec3(vertexIn.annexe.x);
             //fragColor.a = 1.0;
             //return;
