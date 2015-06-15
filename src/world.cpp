@@ -19,11 +19,13 @@
 #if HAVE_OPENCV
     #include "image_opencv.h"
 #endif
-#include "image_shmdata.h"
+#if HAVE_SHMDATA
+    #include "image_shmdata.h"
+    #include "mesh_shmdata.h"
+#endif
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
-#include "mesh_shmdata.h"
 #include "osUtils.h"
 #include "scene.h"
 #include "timer.h"
@@ -178,8 +180,12 @@ void World::addLocally(string type, string name, string destination)
     {
         if (type == string("image"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
+#if HAVE_SHMDATA
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+        else if (type == string("mesh_shmdata"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
+#endif
 #if HAVE_FFMPEG
         else if (type == string("image_ffmpeg"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
@@ -194,8 +200,6 @@ void World::addLocally(string type, string name, string destination)
 #endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
-        else if (type == string("mesh_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
     }
     if (object.get() != nullptr)
     {

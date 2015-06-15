@@ -27,7 +27,9 @@
 
 #include <string>
 #include <unistd.h>
-#include <shmdata/abstract-logger.hpp>
+#if HAVE_SHMDATA
+    #include <shmdata/abstract-logger.hpp>
+#endif
 
 #include "log.h"
 
@@ -71,6 +73,7 @@ namespace Splash
             return filename;
         }
     
+#if HAVE_SHMDATA
         /*****/
         // A shmdata logger dedicated to splash
         class ConsoleLogger: public shmdata::AbstractLogger
@@ -101,6 +104,7 @@ namespace Splash
                     Log::get() << Log::DEBUGGING << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
         };
+#endif
     } // end of namespace
 } // end of namespace
 

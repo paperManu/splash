@@ -9,7 +9,6 @@
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
-#include "mesh_shmdata.h"
 #include "object.h"
 #include "texture.h"
 #include "texture_image.h"
