@@ -4,7 +4,8 @@ EXTRA_DIST = \
 	splash/ui.py
 
 blenderSplash.zip:
-	zip blenderSplash.zip -r $(top_srcdir)/addons/blender/splash
+	cd $(top_srcdir)/addons/blender
+	zip blenderSplash.zip -r splash
 
 clean:
 	rm -f blenderSplash.zip Makefile
