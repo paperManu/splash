@@ -176,9 +176,11 @@ void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
 }
 
 /*************/
-void Shader::setSource(const std::string& src, const ShaderType type)
+void Shader::setSource(std::string src, const ShaderType type)
 {
     GLuint shader = _shaders[type];
+
+    parseIncludes(src);
     const char* shaderSrc = src.c_str();
     glShaderSource(shader, 1, (const GLchar**)&shaderSrc, 0);
     glCompileShader(shader);
@@ -310,6 +312,43 @@ bool Shader::linkProgram()
         _isLinked = false;
         return false;
     }
+}
+
+/*************/
+void Shader::parseIncludes(std::string& src)
+{
+    string finalSources = "";
+
+    istringstream input(src);
+    for (string line; getline(input, line);)
+    {
+        // Remove white spaces
+        while (line.substr(0, 1) == " ")
+            line = line.substr(1);
+        if (line.substr(0, 2) == "//")
+            continue;
+
+        string::size_type position;
+        if ((position = line.find("#include")) != string::npos)
+        {
+            string includeName = line.substr(position + 9, string::npos);
+            auto includeIt = ShaderSources.INCLUDES.find(includeName);
+            if (includeIt == ShaderSources.INCLUDES.end())
+            {
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Could not find included shader named " << includeName << Log::endl;
+            }
+            else
+            {
+                finalSources += (*includeIt).second + "\n";
+            }
+        }
+        else
+        {
+            finalSources += line + "\n";
+        }
+    }
+
+    src = finalSources;
 }
 
 /*************/

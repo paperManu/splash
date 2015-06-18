@@ -25,11 +25,17 @@
 #ifndef SPLASH_SHADERSOURCES_H
 #define SPLASH_SHADERSOURCES_H
 
+#include <string>
+#include <map>
+
 namespace Splash
 {
 
 struct ShaderSources
 {
+    const std::map<std::string, std::string> INCLUDES {
+    };
+
     /**
      * Version directive, included at the start of all shaders
      */
