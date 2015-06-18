@@ -88,7 +88,7 @@ class Scene : public RootObject
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
-        GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
+        GlWindowPtr getNewSharedWindow(std::string name = std::string());
 
         /**
          * Get the list of objects by their type
@@ -207,6 +207,12 @@ class Scene : public RootObject
         unsigned int _blendingResolution {2048};
         Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;
+
+        /**
+         * Find which OpenGL version is available
+         * Returns MAJOR and MINOR
+         */
+        std::vector<int> findGLVersion();
 
         /**
          * Set up the context and everything

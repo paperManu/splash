@@ -489,14 +489,6 @@ bool Window::switchFullscreen(int screenId)
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
@@ -659,14 +651,6 @@ void Window::setWindowDecoration(bool hasDecoration)
     if (_screenId != -1)
         return;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
     glfwWindowHint(GLFW_VISIBLE, true);
     glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
     glfwWindowHint(GLFW_DECORATED, hasDecoration);

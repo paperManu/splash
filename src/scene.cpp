@@ -652,7 +652,7 @@ void Scene::computeBlendingMap()
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
+GlWindowPtr Scene::getNewSharedWindow(string name)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
@@ -663,29 +663,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         return GlWindowPtr(nullptr);
     }
 
-    if (!gl2)
-    {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#if HAVE_OSX
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    }
-    else
-    {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
-#if HAVE_OSX
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
-#endif
-    }
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
+    // The GL version is the same as in the initialization, so we don't have to reset it here
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
@@ -742,6 +720,37 @@ Values Scene::getObjectsNameByType(string type)
 }
 
 /*************/
+vector<int> Scene::findGLVersion()
+{
+    vector<vector<int>> glVersionList {{4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {3, 3}, {3, 2}};
+    vector<int> detectedVersion {0, 0};
+
+    for (auto version : glVersionList)
+    {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version[0]);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version[1]);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        #if HAVE_OSX
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        #endif
+        glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+        glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
+        glfwWindowHint(GLFW_DEPTH_BITS, 24);
+        glfwWindowHint(GLFW_VISIBLE, false);
+        GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
+
+        if (window)
+        {
+            detectedVersion = version;
+            glfwDestroyWindow(window);
+            break;
+        }
+    }
+
+    return detectedVersion;
+}
+
+/*************/
 void Scene::init(std::string name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
@@ -749,13 +758,23 @@ void Scene::init(std::string name)
     // GLFW stuff
     if (!glfwInit())
     {
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
         _isInitialized = false;
         return;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
+    auto glVersion = findGLVersion();
+    if (glVersion[0] == 0)
+    {
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (higher than 3.2)" << Log::endl;
+        _isInitialized = false;
+        return;
+    }
+
+    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL version: " << glVersion[0] << "." << glVersion[1] << Log::endl;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersion[0]);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersion[1]);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef DEBUGGL
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);

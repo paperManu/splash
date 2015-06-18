@@ -28,14 +28,6 @@
 #include "config.h"
 
 #define SPLASH
-
-#define SPLASH_GL_CONTEXT_VERSION_MAJOR 4
-#if HAVE_OSX
-    #define SPLASH_GL_CONTEXT_VERSION_MINOR 2
-#else
-    #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#endif
-
 #define SPLASH_GL_DEBUG true
 #define SPLASH_SAMPLES 0
 

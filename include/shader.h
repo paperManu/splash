@@ -122,7 +122,7 @@ class Shader : public BaseObject
         /**
          * Set a shader source
          */
-        void setSource(const std::string& src, const ShaderType type);
+        void setSource(std::string src, const ShaderType type);
 
         /**
          * Set a shader source from file
@@ -188,6 +188,11 @@ class Shader : public BaseObject
          * Link the shader program
          */
         bool linkProgram();
+
+        /**
+         * Parses the shader to replace includes by the corresponding sources
+         */
+        void parseIncludes(std::string& src);
 
         /**
          * Parses the shader to find uniforms

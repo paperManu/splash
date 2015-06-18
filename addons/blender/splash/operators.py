@@ -156,6 +156,7 @@ class Splash:
 
             if target._texWriter is None or target._texture.size[0] != target._texSize[0] or target._texture.size[1] != target._texSize[1]:
                 try:
+                    from pyshmdata import Writer
                     os.remove(target._texWriterPath)
                 except:
                     pass
@@ -231,12 +232,6 @@ class SplashSendTexture(Operator):
     bl_label = "Send the texture to Splash"
 
     def execute(self, context):
-        try:
-            from pyshmdata import Writer
-        except:
-            print("Module pyshmdata was not found")
-            return {'FINISHED'}
-
         scene = bpy.context.scene
         splash = scene.splash
 
