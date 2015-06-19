@@ -34,6 +34,25 @@ namespace Splash
 struct ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES {
+        {"projectAndCheckVisibility", R"(
+            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out float dist)
+            {
+                vec4 projected = mvp * vec4(p.xyz, 1.0);
+                projected /= projected.w;
+                p = projected;
+
+                if (projected.z >= 0.0)
+                {
+                    projected = abs(projected);
+                    dist = max(projected.x, projected.y);
+                    bvec4 isVisible = lessThanEqual(projected, vec4(1.0 + margin));
+                    if (isVisible.x && isVisible.y && isVisible.z)
+                        return true;
+                }
+
+                return false;
+            }
+        )"}
     };
 
     /**
@@ -174,7 +193,7 @@ struct ShaderSources
                     screenVertex[idx] = normalizedSpaceVertex;
 
                     normalizedSpaceVertex = abs(normalizedSpaceVertex);
-                    bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.0));
+                    bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.1));
                     if (isVisible.x && isVisible.y && isVisible.z)
                     {
                         vertexVisible[idx] = true;
@@ -251,6 +270,8 @@ struct ShaderSources
      * Default feedback tessellation shader
      */
     const std::string TESS_CTRL_SHADER_FEEDBACK_DEFAULT {R"(
+        #include projectAndCheckVisibility
+
         layout (vertices = 3) out;
 
         in VS_OUT
@@ -281,19 +302,11 @@ struct ShaderSources
                 float maxDist = 0.0;
                 for (int i = 0; i < 3; ++i)
                 {
-                    vec4 projectedVertex = _mvp * vec4(tcs_in[i].vertex.xyz, 1.0);
-                    projectedVertex /= projectedVertex.w;
-                    projectedVertices[i] = projectedVertex;
-
-                    if (projectedVertex.z >= 0.0)
-                    {
-                        projectedVertex = abs(projectedVertex);
-                        maxDist = max(maxDist, max(projectedVertex.x, projectedVertex.y));
-                        bvec4 vertexVisible = lessThanEqual(projectedVertex, vec4(1.1));
-
-                        if (vertexVisible.x && vertexVisible.y && vertexVisible.z)
-                            isVisible = true;
-                    }
+                    float dist;
+                    projectedVertices[i] = tcs_in[i].vertex;
+                    if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.1, dist))
+                        isVisible = true;
+                    maxDist = max(maxDist, dist);
                 }
 
                 gl_TessLevelInner[0] = 1.0;
@@ -308,14 +321,13 @@ struct ShaderSources
                     maxLength = max(length(projectedVertices[1].xy - projectedVertices[0].xy),
                                     length(projectedVertices[2].xy - projectedVertices[1].xy));
                     maxLength = max(maxLength, length(projectedVertices[2].xy - projectedVertices[0].xy));
-                    float tessLevel = max(1.0, maxLength / 0.1);
+                    float tessLevel = max(1.0, maxLength / 0.2);
                     tessLevel = mix(1.0, tessLevel, smoothstep(0.9, 1.0, maxDist));
                     gl_TessLevelInner[0] = tessLevel;
                     gl_TessLevelOuter[0] = tessLevel;
                     gl_TessLevelOuter[1] = tessLevel;
                     gl_TessLevelOuter[2] = tessLevel;
                 }
-
             }
 
             tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
@@ -328,6 +340,8 @@ struct ShaderSources
     )"};
 
     const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
+        #include projectAndCheckVisibility
+
         //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
@@ -347,6 +361,8 @@ struct ShaderSources
             vec4 annexe;
         } tes_out;
 
+        uniform mat4 _mvp;
+
         void main(void)
         {
             tes_out.vertex = (gl_TessCoord.x * tes_in[0].vertex) +
@@ -361,6 +377,12 @@ struct ShaderSources
             tes_out.annexe = (gl_TessCoord.x * tes_in[0].annexe) +
                              (gl_TessCoord.y * tes_in[1].annexe) +
                              (gl_TessCoord.z * tes_in[2].annexe);
+
+            float dist;
+            vec4 vertex = tes_out.vertex;
+            bool isVisible = projectAndCheckVisibility(vertex, _mvp, 0.0, dist);
+            tes_out.annexe.x = isVisible ? 1.0 : 0.0;
+            tes_out.annexe.y = abs(dist - 1.0);
 
             gl_Position = tes_out.vertex;
         }
@@ -387,21 +409,95 @@ struct ShaderSources
         } geom_out;
 
         layout (triangles) in;
-        layout (triangle_strip, max_vertices = 3) out;
+        layout (triangle_strip, max_vertices = 9) out;
+
+        const int cutTable[6*9] = {
+            0, 3, 4, 3, 1, 4, 1, 2, 4,
+            0, 3, 4, 3, 1, 4, 4, 2, 0,
+            0, 1, 3, 3, 4, 0, 3, 2, 4,
+            0, 1, 3, 3, 4, 0, 3, 2, 4,
+            0, 3, 4, 3, 1, 4, 4, 2, 0,
+            0, 3, 4, 3, 1, 4, 1, 2, 4
+        };
 
         void main(void)
         {
+            bool side[3]; // true = inside, false = outside
+            float distToBoundary[3];
+            float verticesInside = 0;
+            int cutCase = 0;
             for (int i = 0; i < 3; ++i)
             {
-                gl_Position = geom_in[i].vertex;
-                geom_out.vertex = geom_in[i].vertex;
-                geom_out.texcoord = geom_in[i].texcoord;
-                geom_out.normal = geom_in[i].normal;
-                geom_out.annexe = geom_in[i].annexe;
-                EmitVertex();
+                side[i] = (geom_in[i].annexe.x == 1.0);
+                distToBoundary[i] = geom_in[i].annexe.y;
+                if (side[i])
+                {
+                    verticesInside++;
+                    cutCase += 1 << i;
+                }
             }
+            cutCase -= 1; // The table starts at 0...
 
-            EndPrimitive();
+            // If all vertices are on the same side
+            if (verticesInside == 0 || verticesInside == 3)
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    gl_Position = geom_in[i].vertex;
+                    geom_out.vertex = geom_in[i].vertex;
+                    geom_out.texcoord = geom_in[i].texcoord;
+                    geom_out.normal = geom_in[i].normal;
+                    geom_out.annexe = geom_in[i].annexe;
+                    EmitVertex();
+                }
+
+                EndPrimitive();
+            }
+            // ... if not
+            else
+            {
+                vec4 vertices[5];
+                vec2 texcoords[5];
+                vec4 normals[5];
+                for (int i = 0; i < 3; ++i)
+                {
+                    vertices[i] = geom_in[i].vertex;
+                    texcoords[i] = geom_in[i].texcoord;
+                    normals[i] = geom_in[i].normal;
+                }
+                    
+                // Create the additional points
+                int nextVertex = 3;
+                for (int i = 0; i < 3; ++i)
+                {
+                    int nextId = (i + 1) % 3;
+                    if (side[i] != side[nextId])
+                    {
+                        float ratio = distToBoundary[i] / (distToBoundary[i] + distToBoundary[nextId]);
+                        vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
+                        texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
+                        normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
+                        nextVertex++;
+                    }
+                }
+
+                // Create the triangles from the cut case
+                for (int t = 0; t < 3; ++t)
+                {
+                    for (int v = 0; v < 3; ++v)
+                    {
+                        int currentIndex = cutTable[cutCase * 9 + t * 3 + v];
+                        gl_Position = vertices[currentIndex];
+                        geom_out.vertex = vertices[currentIndex];
+                        geom_out.texcoord = texcoords[currentIndex];
+                        geom_out.normal = normals[currentIndex];
+                        geom_out.annexe = vec4(0.0);
+                        EmitVertex();
+                    }
+
+                    EndPrimitive();
+                }
+            }
         }
     )"};
 
@@ -519,8 +615,8 @@ struct ShaderSources
 
             /************ TEST ***************/
             //fragColor.rgb = pow(vec3(vertexIn.annexe.x / 3.0), vec3(1.0 / 2.2));
-            //fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
-            //fragColor.rgb = vec3(vertexIn.annexe.x);
+            ////fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
+            ////fragColor.rgb = vec3(vertexIn.annexe.x);
             //fragColor.a = 1.0;
             //return;
             /******* END OF TEST ************/
