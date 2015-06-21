@@ -69,15 +69,6 @@ bool Texture::linkTo(BaseObjectPtr obj)
 /*************/
 void Texture::registerAttributes()
 {
-    _attribFunctions["filtering"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _filtering = args[0].asInt() > 0 ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_filtering};
-    });
-
     _attribFunctions["resizable"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
