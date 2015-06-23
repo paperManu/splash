@@ -564,7 +564,7 @@ struct ShaderSources
 
                 bvec4 vertexVisible = lessThanEqual(projectedVertex, vec4(1.0));
                 if (vertexVisible.x && vertexVisible.y && vertexVisible.z)
-                    blendOut.totalBlend = _annexe.x - _annexe.y;
+                    blendOut.totalBlend = _annexe.x;// - _annexe.y;
                 else
                     blendOut.totalBlend = _annexe.x;
             }
@@ -590,7 +590,6 @@ struct ShaderSources
 
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
-        uniform int _texBlendingMap = 0;
         uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
@@ -634,7 +633,7 @@ struct ShaderSources
             /************ TEST ***************/
             //fragColor.rgb = pow(vec3(vertexIn.annexe.x / 3.0), vec3(1.0 / 2.2));
             //fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
-            //fragColor.rgb = vec3(vertexIn.annexe.x);
+            ////fragColor.rgb = vec3(vertexIn.annexe.x);
             //fragColor.a = 1.0;
             //return;
             /******* END OF TEST ************/
@@ -701,6 +700,11 @@ struct ShaderSources
                 blendFactorFloat = 1.0 / float(camNbr);
             }
             color.rgb = color.rgb * min(1.0, blendFactorFloat);
+        #endif
+
+        #ifdef VERTEXBLENDING
+            float blendFactor = blendIn.totalBlend == 0.0 ? 0.05 : 1.0 / blendIn.totalBlend;
+            color.rgb = color.rgb * blendFactor;
         #endif
 
             // Brightness correction

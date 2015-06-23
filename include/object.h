@@ -162,6 +162,8 @@ class Object : public BaseObject
         std::vector<GeometryPtr> _geometries;
         std::vector<TexturePtr> _blendMaps;
 
+        bool _vertexBlendingActive {false};
+
         glm::dvec3 _position {0.0, 0.0, 0.0};
         glm::dvec3 _scale {1.0, 1.0, 1.0};
 

@@ -61,29 +61,30 @@ void Object::activate()
     for (auto& m : _blendMaps)
         m->update();
 
-    bool withBlend = false;
+    bool withTextureBlend = false;
     if (_blendMaps.size() != 0)
     {
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
-            {
-                _shader->setAttribute("blending", {1});
-                withBlend = true;
-            }
+                withTextureBlend = true;
     }
 
     if (_fill == "texture")
     {
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
         {
-            if (withBlend)
+            if (_vertexBlendingActive)
+                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
+            else if (withTextureBlend)
                 _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
             else
                 _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
         }
         else
         {
-            if (withBlend)
+            if (_vertexBlendingActive)
+                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
+            else if (withTextureBlend)
                 _shader->setAttribute("fill", {"texture", "BLENDING"});
             else
                 _shader->setAttribute("fill", {"texture"});
@@ -149,9 +150,6 @@ void Object::deactivate()
         //t->flushPbo();
         t->unlock();
     }
-
-    if (_blendMaps.size() != 0)
-        _shader->setAttribute("blending", {0});
 
     _shader->deactivate();
     _geometries[0]->deactivate();
@@ -390,6 +388,13 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
+    _attribFunctions["activateVertexBlending"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _vertexBlendingActive = args[0].asInt();
+        return true;
+    });
+    
     _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;

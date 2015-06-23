@@ -297,26 +297,53 @@ void Scene::render()
 
     // Compute the blending
     Timer::get() << "blending";
-#ifdef VBLEND
+    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
-        list<CameraPtr> cameras;
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+        static bool blendComputedInPreviousFrame = false;
+        if (_computeBlending)
+        {
+            blendComputedInPreviousFrame = true;
+            
+            vector<CameraPtr> cameras;
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            
+            if (cameras.size() != 0)
+            {
+                cameras[0]->blendingResetTessellation();
+                for (auto& camera : cameras)
+                    camera->blendingTessellateForCurrentCamera();
 
-        for (auto& camera : cameras)
-            camera->blendingResetTessellation();
+                cameras[0]->blendingResetVisibility();
+                for (auto& camera : cameras)
+                    camera->blendingComputeVisibility();
+            }
 
-        for (auto& camera : cameras)
-            camera->blendingTessellateForCurrentCamera();
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    obj.second->setAttribute("activateVertexBlending", {1});
+        }
+        else if (blendComputedInPreviousFrame)
+        {
+            blendComputedInPreviousFrame = false;
 
-        for (auto& camera : cameras)
-            camera->blendingResetVisibility();
+            vector<CameraPtr> cameras;
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            
+            if (cameras.size() != 0)
+            {
+                cameras[0]->blendingResetTessellation();
+                cameras[0]->blendingResetVisibility();
+            }
 
-        for (auto& camera : cameras)
-            camera->blendingComputeVisibility();
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    obj.second->setAttribute("activateVertexBlending", {0});
+        }
     }
-#endif
     Timer::get() >> "blending";
     
     Timer::get() << "cameras";
@@ -574,81 +601,88 @@ void Scene::waitTextureUpload()
 /*************/
 void Scene::computeBlendingMap()
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
-    _mainWindow->setAsCurrentContext();
-
-    if (_isBlendComputed)
+    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
-
-        _isBlendComputed = false;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
+        _computeBlending = !_computeBlending;
     }
     else
     {
-        initBlendingMap();
-        // Set the blending map to zero
-        _blendingMap->setTo(0.f);
-        _blendingMap->setName("blendingMap");
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        _mainWindow->setAsCurrentContext();
 
-        // Compute the contribution of each camera
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-
-        // Filter the output to fill the blanks (dilate filter)
-        ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
-        unsigned short* pixBuffer = (unsigned short*)buffer->data();
-        unsigned short* pixels = (unsigned short*)_blendingMap->data();
-        int w = _blendingMap->getSpec().width;
-        int h = _blendingMap->getSpec().height;
-        for (int x = 0; x < w; ++x)
-            for (int y = 0; y < h; ++y)
-            {
-                unsigned short maxValue = 0;
-                for (int xx = -1; xx <= 1; ++xx)
-                {
-                    if (x + xx < 0 || x + xx >= w)
-                        continue;
-                    for (int yy = -1; yy <= 1; ++yy)
-                    {
-                        if (y + yy < 0 || y + yy >= h)
-                            continue;
-                        maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
-                    }
-                }
-                pixBuffer[y * w + x] = maxValue;
-            }
-        swap(_blendingMap, buffer);
-        _blendingMap->_savable = false;
-        _blendingMap->updateTimestamp();
-
-        // Small hack to handle the fact that texture transfer uses PBOs.
-        // If we send the buffer only once, the displayed PBOs wont be the correct one.
-        if (_isMaster)
+        if (_isBlendComputed)
         {
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
-            timespec nap {0, (long int)1e8};
-            nanosleep(&nap, NULL);
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
+
+            _isBlendComputed = false;
+
+            Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
+        }
+        else
+        {
+            initBlendingMap();
+            // Set the blending map to zero
+            _blendingMap->setTo(0.f);
+            _blendingMap->setName("blendingMap");
+
+            // Compute the contribution of each camera
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+            for (auto& obj : _ghostObjects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+
+            // Filter the output to fill the blanks (dilate filter)
+            ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
+            unsigned short* pixBuffer = (unsigned short*)buffer->data();
+            unsigned short* pixels = (unsigned short*)_blendingMap->data();
+            int w = _blendingMap->getSpec().width;
+            int h = _blendingMap->getSpec().height;
+            for (int x = 0; x < w; ++x)
+                for (int y = 0; y < h; ++y)
+                {
+                    unsigned short maxValue = 0;
+                    for (int xx = -1; xx <= 1; ++xx)
+                    {
+                        if (x + xx < 0 || x + xx >= w)
+                            continue;
+                        for (int yy = -1; yy <= 1; ++yy)
+                        {
+                            if (y + yy < 0 || y + yy >= h)
+                                continue;
+                            maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
+                        }
+                    }
+                    pixBuffer[y * w + x] = maxValue;
+                }
+            swap(_blendingMap, buffer);
+            _blendingMap->_savable = false;
+            _blendingMap->updateTimestamp();
+
+            // Small hack to handle the fact that texture transfer uses PBOs.
+            // If we send the buffer only once, the displayed PBOs wont be the correct one.
+            if (_isMaster)
+            {
+                _link->sendBuffer("blendingMap", _blendingMap->serialize());
+                timespec nap {0, (long int)1e8};
+                nanosleep(&nap, NULL);
+                _link->sendBuffer("blendingMap", _blendingMap->serialize());
+            }
+
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
+
+            _isBlendComputed = true;
+
+            Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
         }
 
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
-
-        _isBlendComputed = true;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
+        _mainWindow->releaseContext();
     }
-
-    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -771,6 +805,7 @@ void Scene::init(std::string name)
         return;
     }
 
+    _glVersion = glVersion;
     Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL version: " << glVersion[0] << "." << glVersion[1] << Log::endl;
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersion[0]);

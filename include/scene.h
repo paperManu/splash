@@ -184,6 +184,7 @@ class Scene : public RootObject
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
+        std::vector<int> _glVersion {0, 0};
 
         // Texture upload context
         std::future<void> _textureUploadFuture;
@@ -203,7 +204,8 @@ class Scene : public RootObject
         std::mutex _taskMutex;
         std::list<std::function<void()>> _taskQueue;
 
-        // Blending map, used by all cameras (except the GUI camera)
+        // Blending attributes
+        bool _computeBlending {false};
         unsigned int _blendingResolution {2048};
         Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;

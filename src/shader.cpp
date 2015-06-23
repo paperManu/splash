@@ -713,16 +713,6 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    _attribFunctions["blending"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-        
-        _uniforms["_texBlendingMap"].values = args;
-        _uniformsToUpdate.push_back("_texBlendingMap");
-
-        return true;
-    });
-
     _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
