@@ -283,7 +283,7 @@ void Texture_Image::update()
 
         if (_filtering)
         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         else
@@ -451,6 +451,8 @@ void Texture_Image::update()
 
     _timestamp = _img->getTimestamp();
 
+    if (_filtering)
+        generateMipmap();
 }
 
 /*************/
@@ -494,6 +496,15 @@ void Texture_Image::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture_Image::registerAttributes()
 {
+    _attribFunctions["filtering"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _filtering = args[0].asInt() > 0 ? true : false;
+        return true;
+    }, [&]() -> Values {
+        return {_filtering};
+    });
+
     _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
