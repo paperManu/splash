@@ -71,6 +71,19 @@ struct ShaderSources
 
                 return n;
             }
+        )"},
+        //
+        // Compute a smooth blending from a projected point
+        {"getSmoothBlendFromVertex", R"(
+            float getSmoothBlendFromVertex(vec4 v, float blendDist)
+            {
+                vec2 screenPos = v.xy / 2.0 + vec2(0.5);
+                vec2 distDoubleInvert = vec2(min(screenPos.x, 1.0 - screenPos.x), min(screenPos.y, 1.0 - screenPos.y));
+                distDoubleInvert = clamp(distDoubleInvert / blendDist, vec2(0.0), vec2(1.0));
+                float weight = 2.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
+                float dist = pow(max(0.0, min(1.0, weight)), 2.0);
+                return dist;
+            }
         )"}
     };
 
@@ -173,6 +186,7 @@ struct ShaderSources
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
+        #include getSmoothBlendFromVertex
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -233,20 +247,7 @@ struct ShaderSources
                     {
                         int vertexId = globalID * 3 + idx;
                         annexe[vertexId].x += 1.0;
-
-                        if (vertexVisible[idx] == false)
-                        {
-                            annexe[vertexId].y += 1.0;
-                        }
-
-                        { // Smooth blending
-                        //vec2 normalizedPos = vec2(screenVertex[idx].x / 2.0 + 0.5, screenVertex[idx].y / 2.0 + 0.5);
-                        //vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
-                        //distDoubleInvert = clamp(distDoubleInvert / 0.1, vec2(0.0), vec2(1.0));
-                        //float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                        //float dist = pow(max(0.0, min(1.0, weight)), 2.0);
-                        //annexe[vertexId].x = dist;
-                        }
+                        annexe[vertexId].y += getSmoothBlendFromVertex(screenVertex[idx], 0.1);
                     }
                 }
             }
@@ -447,7 +448,7 @@ struct ShaderSources
             {
                 vec2 dist;
                 projectedVertices[i] = geom_in[i].vertex;
-                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0 + 0.001, dist);
+                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
                 side[i] = isVisible;
                 distToBoundary[i] = dist - vec2(1.0);
                 if (side[i])
@@ -536,6 +537,8 @@ struct ShaderSources
      * Default vertex shader
      */
     const std::string VERTEX_SHADER_DEFAULT {R"(
+        #include getSmoothBlendFromVertex
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         layout(location = 2) in vec4 _normal;
@@ -554,7 +557,8 @@ struct ShaderSources
 
         out BlendingData
         {
-            smooth float totalBlend;
+            float total;
+            float local;
         } blendOut;
 
         void main(void)
@@ -569,13 +573,8 @@ struct ShaderSources
             vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
             if (projectedVertex.z >= 0.0)
             {
-                projectedVertex = abs(projectedVertex);
-
-                bvec4 vertexVisible = lessThanEqual(projectedVertex, vec4(1.0));
-                if (vertexVisible.x && vertexVisible.y && vertexVisible.z)
-                    blendOut.totalBlend = _annexe.x;// - _annexe.y;
-                else
-                    blendOut.totalBlend = _annexe.x;
+                blendOut.total = _annexe.y;
+                blendOut.local = getSmoothBlendFromVertex(projectedVertex, 0.1);
             }
         }
     )"};
@@ -617,7 +616,8 @@ struct ShaderSources
 
         in BlendingData
         {
-            float totalBlend;
+            float total;
+            float local;
         } blendIn;
 
         out vec4 fragColor;
@@ -641,8 +641,8 @@ struct ShaderSources
 
             /************ TEST ***************/
             //fragColor.rgb = pow(vec3(vertexIn.annexe.x / 3.0), vec3(1.0 / 2.2));
-            //fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
-            ////fragColor.rgb = vec3(vertexIn.annexe.x);
+            //fragColor.rgb = pow(vec3(1.0 / blendIn.total / 3.0), vec3(1.0 / 2.2));
+            //fragColor.rgb = vec3(blendIn.local);
             //fragColor.a = 1.0;
             //return;
             /******* END OF TEST ************/
@@ -712,7 +712,7 @@ struct ShaderSources
         #endif
 
         #ifdef VERTEXBLENDING
-            float blendFactor = blendIn.totalBlend == 0.0 ? 0.05 : 1.0 / blendIn.totalBlend;
+            float blendFactor = blendIn.total == 0.0 ? 0.05 : blendIn.local / blendIn.total;
             color.rgb = color.rgb * blendFactor;
         #endif
 
