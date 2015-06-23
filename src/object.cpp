@@ -301,6 +301,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     if (!_feedbackShaderSubdivideCamera)
     {
         _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
         _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex",
                                                                           "GEOM_OUT.texcoord",
                                                                           "GEOM_OUT.normal",
@@ -313,6 +314,8 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
         {
             geom->update();
             geom->activate();
+
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
 
             auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
             auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
@@ -356,6 +359,7 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             // Set uniforms
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderComputeBlending->setAttribute("uniform", {"_sideness", _sideness});
 
             auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
             auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
@@ -422,9 +426,12 @@ void Object::registerAttributes()
     _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
+
+        _sideness = args[0].asInt();
         switch (args[0].asInt())
         {
         default:
+            _sideness = 0;
             return false;
         case 0:
             _shader->setAttribute("sideness", {Shader::doubleSided});

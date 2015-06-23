@@ -58,9 +58,17 @@ struct ShaderSources
         //
         // Compute a normal vector from three vectors
         {"normalVector", R"(
+            uniform int _sideness;
+
             vec3 normalVector(vec3 u, vec3 v, vec3 w)
             {
                 vec3 n = normalize(cross(v - u, w - u));
+
+                if (_sideness == 0)
+                    n.z = 0.0;
+                else if (_sideness == 2)
+                    n.z = -n.z;
+
                 return n;
             }
         )"}
@@ -219,7 +227,7 @@ struct ShaderSources
                 }
 
                 vec3 projectedNormal = normalVector(screenVertex[0].xyz, screenVertex[1].xyz, screenVertex[2].xyz);
-                if (allVerticesVisible && projectedNormal.z <= 0.0)
+                if (allVerticesVisible && projectedNormal.z >= 0.0)
                 {
                     for (int idx = 0; idx < 3; ++idx)
                     {
@@ -252,7 +260,7 @@ struct ShaderSources
     /**
      * Default vertex shader with feedback
      */
-    const std::string VERTEX_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
         layout (location = 0) in vec4 _vertex;
         layout (location = 1) in vec2 _texcoord;
         layout (location = 2) in vec4 _normal;
@@ -281,7 +289,8 @@ struct ShaderSources
     /**
      * Default feedback tessellation shader
      */
-    const std::string TESS_CTRL_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+        #include normalVector
         #include projectAndCheckVisibility
 
         layout (vertices = 3) out;
@@ -326,8 +335,8 @@ struct ShaderSources
                 gl_TessLevelOuter[1] = 1.0;
                 gl_TessLevelOuter[2] = 1.0;
 
-                vec3 projectedNormal = cross((projectedVertices[1] - projectedVertices[0]).xyz, (projectedVertices[2] - projectedVertices[0]).xyz);
-                if (isVisible && projectedNormal.z <= 0.0)
+                vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
+                if (isVisible && projectedNormal.z >= 0.0)
                 {
                     float maxLength = 0.0;
                     maxLength = max(length(projectedVertices[1].xy - projectedVertices[0].xy),
@@ -351,7 +360,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
         //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
@@ -393,7 +402,7 @@ struct ShaderSources
     /**
      * Default feedback geometry shader
      */
-    const std::string GEOMETRY_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -451,7 +460,7 @@ struct ShaderSources
 
             vec3 normal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
             // If all vertices are on the same side, and if the face is correctly oriented
-            if (verticesInside == 0 || verticesInside == 3 || normal.z >= 0.0)
+            if (verticesInside == 0 || verticesInside == 3 || normal.z < 0.0)
             {
                 for (int i = 0; i < 3; ++i)
                 {

@@ -48,10 +48,10 @@ Shader::Shader(ProgramType type)
         _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
 
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_DEFAULT, vertex);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_DEFAULT, tess_ctrl);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_DEFAULT, tess_eval);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_DEFAULT, geometry);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
+        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
         compileProgram();
 
         registerFeedbackAttributes();
@@ -875,6 +875,27 @@ void Shader::registerComputeAttributes()
 /*************/
 void Shader::registerFeedbackAttributes()
 {
+    _attribFunctions["feedbackPhase"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+
+        // Get additionnal shader options
+        string options =ShaderSources.VERSION_DIRECTIVE_430;
+        for (int i = 1; i < args.size(); ++i)
+            options += "#define " + args[i].asString() + "\n";
+
+        if ("tessellateFromCamera" == args[0].asString())
+        {
+            setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
+            setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
+            setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
+            setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
+            compileProgram();
+        }
+
+        return true;
+    });
+
     _attribFunctions["feedbackVaryings"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;

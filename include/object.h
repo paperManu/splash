@@ -168,6 +168,7 @@ class Object : public BaseObject
         glm::dvec3 _scale {1.0, 1.0, 1.0};
 
         std::string _fill {"texture"};
+        int _sideness {0};
 
         /**
          * Init function called by constructor
