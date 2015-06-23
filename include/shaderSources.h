@@ -34,8 +34,10 @@ namespace Splash
 struct ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES {
+        //
+        // Project a point wrt a mvp matrix, and check if it is in the view frustum
         {"projectAndCheckVisibility", R"(
-            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out float dist)
+            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 dist)
             {
                 vec4 projected = mvp * vec4(p.xyz, 1.0);
                 projected /= projected.w;
@@ -44,13 +46,22 @@ struct ShaderSources
                 if (projected.z >= 0.0)
                 {
                     projected = abs(projected);
-                    dist = max(projected.x, projected.y);
+                    dist = projected.xy;
                     bvec4 isVisible = lessThanEqual(projected, vec4(1.0 + margin));
                     if (isVisible.x && isVisible.y && isVisible.z)
                         return true;
                 }
 
                 return false;
+            }
+        )"},
+        //
+        // Compute a normal vector from three vectors
+        {"normalVector", R"(
+            vec3 normalVector(vec3 u, vec3 v, vec3 w)
+            {
+                vec3 n = normalize(cross(v - u, w - u));
+                return n;
             }
         )"}
     };
@@ -154,6 +165,9 @@ struct ShaderSources
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
+        #include normalVector
+        #include projectAndCheckVisibility
+
         layout(local_size_x = 32, local_size_y = 32) in;
 
         layout (std430, binding = 0) buffer vertexBuffer
@@ -184,30 +198,28 @@ struct ShaderSources
 
             if (globalID < _vertexNbr / 3)
             {
-                bool oneVertexVisible = true;
+                bool allVerticesVisible = true;
                 for (int idx = 0; idx < 3; ++idx)
                 {
                     int vertexId = globalID * 3 + idx;
-                    vec4 normalizedSpaceVertex = _mvp * vec4(vertex[vertexId].xyz, 1.0);
-                    normalizedSpaceVertex /= normalizedSpaceVertex.w;
-                    screenVertex[idx] = normalizedSpaceVertex;
 
-                    normalizedSpaceVertex = abs(normalizedSpaceVertex);
-                    bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.1));
-                    if (isVisible.x && isVisible.y && isVisible.z)
+                    vec2 dist;
+                    vec4 normalizedSpaceVertex = vertex[vertexId];
+                    bool isVisible = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, dist);
+                    screenVertex[idx] = normalizedSpaceVertex;
+                    if (isVisible)
                     {
                         vertexVisible[idx] = true;
-                        //oneVertexVisible = true;
                     }
                     else
                     {
                         vertexVisible[idx] = false;
-                        oneVertexVisible = false;
+                        allVerticesVisible = false;
                     }
                 }
 
-                vec3 projectedNormal = cross((screenVertex[1] - screenVertex[0]).xyz, (screenVertex[2] - screenVertex[0]).xyz);
-                if (oneVertexVisible && projectedNormal.z <= 0.0)
+                vec3 projectedNormal = normalVector(screenVertex[0].xyz, screenVertex[1].xyz, screenVertex[2].xyz);
+                if (allVerticesVisible && projectedNormal.z <= 0.0)
                 {
                     for (int idx = 0; idx < 3; ++idx)
                     {
@@ -302,11 +314,11 @@ struct ShaderSources
                 float maxDist = 0.0;
                 for (int i = 0; i < 3; ++i)
                 {
-                    float dist;
+                    vec2 dist;
                     projectedVertices[i] = tcs_in[i].vertex;
                     if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.1, dist))
                         isVisible = true;
-                    maxDist = max(maxDist, dist);
+                    maxDist = max(maxDist, max(dist.x, dist.y));
                 }
 
                 gl_TessLevelInner[0] = 1.0;
@@ -340,8 +352,6 @@ struct ShaderSources
     )"};
 
     const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
-        #include projectAndCheckVisibility
-
         //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
@@ -361,8 +371,6 @@ struct ShaderSources
             vec4 annexe;
         } tes_out;
 
-        uniform mat4 _mvp;
-
         void main(void)
         {
             tes_out.vertex = (gl_TessCoord.x * tes_in[0].vertex) +
@@ -378,12 +386,6 @@ struct ShaderSources
                              (gl_TessCoord.y * tes_in[1].annexe) +
                              (gl_TessCoord.z * tes_in[2].annexe);
 
-            float dist;
-            vec4 vertex = tes_out.vertex;
-            bool isVisible = projectAndCheckVisibility(vertex, _mvp, 0.0, dist);
-            tes_out.annexe.x = isVisible ? 1.0 : 0.0;
-            tes_out.annexe.y = abs(dist - 1.0);
-
             gl_Position = tes_out.vertex;
         }
     )"};
@@ -392,6 +394,9 @@ struct ShaderSources
      * Default feedback geometry shader
      */
     const std::string GEOMETRY_SHADER_FEEDBACK_DEFAULT {R"(
+        #include normalVector
+        #include projectAndCheckVisibility
+
         in TES_OUT
         {
             vec4 vertex;
@@ -420,16 +425,22 @@ struct ShaderSources
             0, 3, 4, 3, 1, 4, 1, 2, 4
         };
 
+        uniform mat4 _mvp;
+
         void main(void)
         {
+            vec4 projectedVertices[3];
             bool side[3]; // true = inside, false = outside
-            float distToBoundary[3];
+            vec2 distToBoundary[3];
             float verticesInside = 0;
             int cutCase = 0;
             for (int i = 0; i < 3; ++i)
             {
-                side[i] = (geom_in[i].annexe.x == 1.0);
-                distToBoundary[i] = geom_in[i].annexe.y;
+                vec2 dist;
+                projectedVertices[i] = geom_in[i].vertex;
+                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0 + 0.001, dist);
+                side[i] = isVisible;
+                distToBoundary[i] = dist - vec2(1.0);
                 if (side[i])
                 {
                     verticesInside++;
@@ -438,8 +449,9 @@ struct ShaderSources
             }
             cutCase -= 1; // The table starts at 0...
 
-            // If all vertices are on the same side
-            if (verticesInside == 0 || verticesInside == 3)
+            vec3 normal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
+            // If all vertices are on the same side, and if the face is correctly oriented
+            if (verticesInside == 0 || verticesInside == 3 || normal.z >= 0.0)
             {
                 for (int i = 0; i < 3; ++i)
                 {
@@ -473,7 +485,13 @@ struct ShaderSources
                     int nextId = (i + 1) % 3;
                     if (side[i] != side[nextId])
                     {
-                        float ratio = distToBoundary[i] / (distToBoundary[i] + distToBoundary[nextId]);
+                        float ratio;
+                        // These cases can handle corners better
+                        if (sign(distToBoundary[i][0]) != sign(distToBoundary[nextId][0]))
+                            ratio = abs(distToBoundary[i][0]) / (abs(distToBoundary[i][0]) + abs(distToBoundary[nextId][0]));
+                        else
+                            ratio = abs(distToBoundary[i][1]) / (abs(distToBoundary[i][1]) + abs(distToBoundary[nextId][1]));
+
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
                         texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
@@ -527,7 +545,7 @@ struct ShaderSources
 
         out BlendingData
         {
-            float totalBlend;
+            smooth float totalBlend;
         } blendOut;
 
         void main(void)
@@ -615,8 +633,8 @@ struct ShaderSources
 
             /************ TEST ***************/
             //fragColor.rgb = pow(vec3(vertexIn.annexe.x / 3.0), vec3(1.0 / 2.2));
-            ////fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
-            ////fragColor.rgb = vec3(vertexIn.annexe.x);
+            //fragColor.rgb = pow(vec3(1.0 / blendIn.totalBlend / 3.0), vec3(1.0 / 2.2));
+            //fragColor.rgb = vec3(vertexIn.annexe.x);
             //fragColor.a = 1.0;
             //return;
             /******* END OF TEST ************/
