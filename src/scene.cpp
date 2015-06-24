@@ -908,29 +908,36 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 #endif
 {
     string typeString {""};
+    Log::Priority logType;
     switch (type)
     {
     case GL_DEBUG_TYPE_ERROR:
         typeString = "Error";
+        logType = Log::ERROR;
         break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
         typeString = "Deprecated behavior";
+        logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
         typeString = "Undefined behavior";
+        logType = Log::ERROR;
         break;
     case GL_DEBUG_TYPE_PORTABILITY:
         typeString = "Portability";
+        logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_PERFORMANCE:
         typeString = "Performance";
+        logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_OTHER:
         typeString = "Other";
+        logType = Log::MESSAGE;
         break;
     }
 
-    Log::get() << Log::WARNING << "GL::debug - [" << typeString << "] - " << message << Log::endl;
+    Log::get() << logType << "GL::debug - [" << typeString << "] - " << message << Log::endl;
 }
 
 /*************/
