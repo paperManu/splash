@@ -165,8 +165,9 @@ struct ShaderSources
 
         void main(void)
         {
-            uvec3 pos = gl_GlobalInvocationID;
-            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+            int globalID = int(gl_WorkGroupID.x * 32 * 32
+                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
+                               + gl_LocalInvocationIndex);
 
             if (globalID < _vertexNbr / 3)
             {
@@ -213,8 +214,9 @@ struct ShaderSources
 
         void main(void)
         {
-            uvec3 pos = gl_GlobalInvocationID;
-            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+            int globalID = int(gl_WorkGroupID.x * 32 * 32
+                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
+                               + gl_LocalInvocationIndex);
             vec4 screenVertex[3];
             bool vertexVisible[3];
 
