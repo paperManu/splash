@@ -65,11 +65,11 @@ void Geometry::activateAsSharedBuffer()
 /*************/
 void Geometry::activateForFeedback()
 {
-    _feedbackNbrPrimitives = std::max(_verticesNumber / 3, _feedbackNbrPrimitives);
-    if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackNbrPrimitives * 3 * 6 > _temporaryBufferSize)
+    _feedbackMaxNbrPrimitives = std::max(_verticesNumber / 3, _feedbackMaxNbrPrimitives);
+    if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 3 * 4 >= _temporaryBufferSize)
     {
         _glTemporaryBuffers.clear();
-        _temporaryBufferSize = _feedbackNbrPrimitives * 3 * 6; // 3 vertices per primitive, 4 components for each buffer
+        _temporaryBufferSize = _feedbackMaxNbrPrimitives * 3 * 5; // 3 vertices per primitive, 4 components for each buffer, plus a bonus
         for (auto& buffer : _glBuffers)
         {
             // This creates a copy of the buffer
@@ -103,8 +103,10 @@ void Geometry::deactivateFeedback()
 #endif
 
     glEndQuery(GL_PRIMITIVES_GENERATED);
-    glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &_feedbackNbrPrimitives);
-    _temporaryVerticesNumber = _feedbackNbrPrimitives * 3;
+    int drawnPrimitives;
+    glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
+    _feedbackMaxNbrPrimitives = std::max(_feedbackMaxNbrPrimitives, drawnPrimitives);
+    _temporaryVerticesNumber = drawnPrimitives * 3;
 }
 
 /*************/

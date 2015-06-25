@@ -345,7 +345,7 @@ struct ShaderSources
                     maxLength = max(length(projectedVertices[1].xy - projectedVertices[0].xy),
                                     length(projectedVertices[2].xy - projectedVertices[1].xy));
                     maxLength = max(maxLength, length(projectedVertices[2].xy - projectedVertices[0].xy));
-                    float tessLevel = max(1.0, maxLength / 0.2);
+                    float tessLevel = max(1.0, maxLength / 0.1);
                     tessLevel = mix(1.0, tessLevel, smoothstep(0.9, 1.0, maxDist));
                     gl_TessLevelInner[0] = tessLevel;
                     gl_TessLevelOuter[0] = tessLevel;

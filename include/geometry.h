@@ -150,7 +150,7 @@ class Geometry : public BaseObject
 
         // Transform feedback
         GLuint _feedbackQuery;
-        int _feedbackNbrPrimitives {0};
+        int _feedbackMaxNbrPrimitives {0};
 
         /**
          * Register new functors to modify attributes
