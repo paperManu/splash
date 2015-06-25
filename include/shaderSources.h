@@ -591,7 +591,10 @@ struct ShaderSources
             if (projectedVertex.z >= 0.0)
             {
                 blendOut.total = _annexe.y;
-                blendOut.local = getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x);
+                if (blendOut.total == 0.0)
+                    blendOut.local = 1.0;
+                else
+                    blendOut.local = min(1.0, getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x) / blendOut.total);
             }
         }
     )"};
@@ -721,8 +724,7 @@ struct ShaderSources
         #endif
 
         #ifdef VERTEXBLENDING
-            float blendFactor = blendIn.total == 0.0 ? 0.05 : blendIn.local / blendIn.total;
-            color.rgb = color.rgb * min(1.0, blendFactor);
+            color.rgb = color.rgb * blendIn.local;
         #endif
 
             // Brightness correction
