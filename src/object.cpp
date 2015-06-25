@@ -294,7 +294,7 @@ void Object::resetTessellation()
 }
 
 /*************/
-void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
+void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision)
 {
     unique_lock<mutex> lock(_mutex);
 
@@ -315,6 +315,8 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
             geom->update();
             geom->activate();
 
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
+            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
             _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
 
             auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
@@ -339,7 +341,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 }
 
 /*************/
-void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
+void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
     unique_lock<mutex> lock(_mutex);
 
@@ -360,6 +362,7 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
             _computeShaderComputeBlending->setAttribute("uniform", {"_sideness", _sideness});
+            _computeShaderComputeBlending->setAttribute("uniform", {"_blendWidth", blendWidth});
 
             auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
             auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);

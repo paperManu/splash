@@ -68,7 +68,7 @@ class Object : public BaseObject
         /**
          * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
          */
-        void computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix);
+        void computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
         /**
          * Deactivate this object for rendering
@@ -148,7 +148,7 @@ class Object : public BaseObject
         /**
          * Subdivide the objects wrt the given camera limits (for blending purposes)
          */
-        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix);
+        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision);
 
     private:
         mutable std::mutex _mutex;

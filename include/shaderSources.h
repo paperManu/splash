@@ -78,11 +78,21 @@ struct ShaderSources
             float getSmoothBlendFromVertex(vec4 v, float blendDist)
             {
                 vec2 screenPos = v.xy / 2.0 + vec2(0.5);
-                vec2 distDoubleInvert = vec2(min(screenPos.x, 1.0 - screenPos.x), min(screenPos.y, 1.0 - screenPos.y));
-                distDoubleInvert = clamp(distDoubleInvert / blendDist, vec2(0.0), vec2(1.0));
-                float weight = 2.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                float dist = pow(max(0.0, min(1.0, weight)), 2.0);
-                return dist;
+                vec2 dist = vec2(min(screenPos.x, 1.0 - screenPos.x), min(screenPos.y, 1.0 - screenPos.y));
+
+                // See Lancelle et al. 2011 for explanations about the various weighting functions
+                // d1
+                //float weight = min(dist.x / blendDist, dist.y / blendDist);
+
+                // d2
+                dist = clamp(dist / blendDist, vec2(0.0), vec2(1.0));
+                float weight = 2.0 / (1.0 / dist.x + 1.0 / dist.y);
+                weight = pow(max(0.0, min(1.0, weight)), 2.0);
+
+                // d4 (and d3 if pow(x, 1.0))
+                //float weight = pow(abs(dist.x / blendDist * dist.y / blendDist), 1.5);
+                
+                return weight;
             }
         )"}
     };
@@ -211,6 +221,7 @@ struct ShaderSources
         uniform int _vertexNbr;
         uniform mat4 _mvp;
         uniform mat4 _mNormal;
+        uniform float _blendWidth = 0.1;
 
         void main(void)
         {
@@ -249,7 +260,7 @@ struct ShaderSources
                     {
                         int vertexId = globalID * 3 + idx;
                         annexe[vertexId].x += 1.0;
-                        annexe[vertexId].y += getSmoothBlendFromVertex(screenVertex[idx], 0.1);
+                        annexe[vertexId].y += getSmoothBlendFromVertex(screenVertex[idx], _blendWidth);
                     }
                 }
             }
@@ -316,6 +327,8 @@ struct ShaderSources
 
         uniform mat4 _mvp;
         uniform mat4 _mNormal;
+        uniform float _blendWidth = 0.1;
+        uniform float _blendPrecision = 0.1;
 
         void main(void)
         {
@@ -328,7 +341,7 @@ struct ShaderSources
                 {
                     vec2 dist;
                     projectedVertices[i] = tcs_in[i].vertex;
-                    if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.1, dist))
+                    if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist))
                         isVisible = true;
                     maxDist = max(maxDist, max(dist.x, dist.y));
                 }
@@ -345,8 +358,8 @@ struct ShaderSources
                     maxLength = max(length(projectedVertices[1].xy - projectedVertices[0].xy),
                                     length(projectedVertices[2].xy - projectedVertices[1].xy));
                     maxLength = max(maxLength, length(projectedVertices[2].xy - projectedVertices[0].xy));
-                    float tessLevel = max(1.0, maxLength / 0.1);
-                    tessLevel = mix(1.0, tessLevel, smoothstep(0.9, 1.0, maxDist));
+                    float tessLevel = max(1.0, maxLength / _blendPrecision);
+                    tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, 2.0 * _blendWidth), 1.0, maxDist));
                     gl_TessLevelInner[0] = tessLevel;
                     gl_TessLevelOuter[0] = tessLevel;
                     gl_TessLevelOuter[1] = tessLevel;
@@ -545,9 +558,11 @@ struct ShaderSources
         layout(location = 1) in vec2 _texcoord;
         layout(location = 2) in vec4 _normal;
         layout(location = 3) in vec4 _annexe;
+
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
 
         out VertexData
         {
@@ -576,7 +591,7 @@ struct ShaderSources
             if (projectedVertex.z >= 0.0)
             {
                 blendOut.total = _annexe.y;
-                blendOut.local = getSmoothBlendFromVertex(projectedVertex, 0.1);
+                blendOut.local = getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x);
             }
         }
     )"};
@@ -640,14 +655,6 @@ struct ShaderSources
             vec4 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-
-            /************ TEST ***************/
-            //fragColor.rgb = pow(vec3(vertexIn.annexe.x / 3.0), vec3(1.0 / 2.2));
-            //fragColor.rgb = pow(vec3(1.0 / blendIn.total / 3.0), vec3(1.0 / 2.2));
-            //fragColor.rgb = vec3(blendIn.local);
-            //fragColor.a = 1.0;
-            //return;
-            /******* END OF TEST ************/
 
             // Compute the real texture coordinates, according to flip / flop
             vec2 realCoords;
@@ -715,7 +722,7 @@ struct ShaderSources
 
         #ifdef VERTEXBLENDING
             float blendFactor = blendIn.total == 0.0 ? 0.05 : blendIn.local / blendIn.total;
-            color.rgb = color.rgb * blendFactor;
+            color.rgb = color.rgb * min(1.0, blendFactor);
         #endif
 
             // Brightness correction

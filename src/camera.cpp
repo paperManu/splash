@@ -272,7 +272,7 @@ void Camera::blendingComputeVisibility()
 {
     for (auto& obj : _objects)
     {
-        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix());
+        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
 }
 
@@ -290,7 +290,7 @@ void Camera::blendingTessellateForCurrentCamera()
 {
     for (auto& obj : _objects)
     {
-        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix());
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
     }
 }
 
@@ -1338,6 +1338,15 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_blendWidth};
+    });
+
+    _attribFunctions["blendPrecision"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _blendPrecision = args[0].asFloat();
+        return true;
+    }, [&]() -> Values {
+        return {_blendPrecision};
     });
 
     _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
