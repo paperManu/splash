@@ -229,19 +229,26 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 /*************/
 void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
 {
-    if (_uniforms.find(name) != _uniforms.end())
+    auto uniformIt = _uniforms.find(name);
+
+    if (uniformIt != _uniforms.end())
     {
+        auto& uniform = uniformIt->second;
+        if (uniform.glIndex == -1)
+            return;
+
         glActiveTexture(GL_TEXTURE0 + textureUnit);
         texture->bind();
 
-        glUniform1i(_uniforms[name].glIndex, textureUnit);
+        glUniform1i(uniform.glIndex, textureUnit);
 
         _textures.push_back(texture);
-        if (_uniforms.find("_textureNbr") != _uniforms.end())
-        {
-            _uniforms["_textureNbr"].values = {(int)_textures.size()};
-            _uniformsToUpdate.push_back("_textureNbr");
-        }
+        if ((uniformIt = _uniforms.find("_textureNbr")) != _uniforms.end())
+            if (uniformIt->second.glIndex != -1)
+            {
+                uniformIt->second.values = {(int)_textures.size()};
+                _uniformsToUpdate.push_back("_textureNbr");
+            }
     }
 }
 
@@ -250,10 +257,14 @@ void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4
 {
     glm::mat4 floatMv = (glm::mat4)mv;
     glm::mat4 floatMvp = (glm::mat4)(mp * mv);
-    if (_uniforms.find("_modelViewProjectionMatrix") != _uniforms.end())
-        glUniformMatrix4fv(_uniforms["_modelViewProjectionMatrix"].glIndex, 1, GL_FALSE, glm::value_ptr(floatMvp));
-    if (_uniforms.find("_normalMatrix") != _uniforms.end())
-        glUniformMatrix4fv(_uniforms["_normalMatrix"].glIndex, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
+
+    auto uniformIt = _uniforms.find("_modelViewProjectionMatrix");
+    if (uniformIt != _uniforms.end())
+        if (uniformIt->second.glIndex != -1)
+            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMvp));
+    if ((uniformIt = _uniforms.find("_normalMatrix")) != _uniforms.end())
+        if (uniformIt->second.glIndex != -1)
+            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
 }
 
 /*************/
