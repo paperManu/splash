@@ -330,6 +330,8 @@ struct ShaderSources
         uniform float _blendWidth = 0.1;
         uniform float _blendPrecision = 0.1;
 
+        const float blendDistFactorToSubdiv = 2.0;
+
         void main(void)
         {
             if (gl_InvocationID == 0)
@@ -337,13 +339,19 @@ struct ShaderSources
                 bool isVisible = false;
                 vec4 projectedVertices[3];
                 float maxDist = 0.0;
+                int nearestBorder = 0;
                 for (int i = 0; i < 3; ++i)
                 {
                     vec2 dist;
                     projectedVertices[i] = tcs_in[i].vertex;
                     if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist))
                         isVisible = true;
-                    maxDist = max(maxDist, max(dist.x, dist.y));
+                    float localMax = max(dist.x, dist.y);
+                    if (localMax > maxDist)
+                    {
+                        maxDist = localMax;
+                        nearestBorder = dist.y > dist.x ? 1 : 0;
+                    }
                 }
 
                 gl_TessLevelInner[0] = 1.0;
@@ -354,16 +362,30 @@ struct ShaderSources
                 vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
                 if (isVisible && projectedNormal.z >= 0.0)
                 {
-                    float maxLength = 0.0;
-                    maxLength = max(length(projectedVertices[1].xy - projectedVertices[0].xy),
-                                    length(projectedVertices[2].xy - projectedVertices[1].xy));
-                    maxLength = max(maxLength, length(projectedVertices[2].xy - projectedVertices[0].xy));
-                    float tessLevel = max(1.0, maxLength / _blendPrecision);
-                    tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, 2.0 * _blendWidth), 1.0, maxDist));
-                    gl_TessLevelInner[0] = tessLevel;
-                    gl_TessLevelOuter[0] = tessLevel;
-                    gl_TessLevelOuter[1] = tessLevel;
-                    gl_TessLevelOuter[2] = tessLevel;
+                    if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
+                    {
+                        vec2 nearestBorderNormal = nearestBorder == 0 ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                        float maxTessLevel = 1.0;
+                        for (int idx = 0; idx < 3; idx++)
+                        {
+                            int nextIdx = (idx + 1) % 3;
+                            vec2 edge = projectedVertices[nextIdx].xy - projectedVertices[idx].xy;
+                            float edgeProjectedLength = abs(dot(edge, nearestBorderNormal));
+                            float tessLevel = max(1.0, (edgeProjectedLength * 0.5 + length(edge) * 0.5) / _blendPrecision);
+                            tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, blendDistFactorToSubdiv * _blendWidth), 1.0, maxDist));
+                            maxTessLevel = max(maxTessLevel, tessLevel);
+                            gl_TessLevelOuter[(idx + 2) % 3] = tessLevel;
+                        }
+
+                        gl_TessLevelInner[0] = maxTessLevel;
+                    }
+                    else
+                    {
+                        gl_TessLevelInner[0] = 1.0;
+                        gl_TessLevelOuter[0] = 1.0;
+                        gl_TessLevelOuter[1] = 1.0;
+                        gl_TessLevelOuter[2] = 1.0;
+                    }
                 }
             }
 
