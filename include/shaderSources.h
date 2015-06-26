@@ -532,13 +532,25 @@ struct ShaderSources
                     int nextId = (i + 1) % 3;
                     if (side[i] != side[nextId])
                     {
-                        float ratio;
-                        // These cases can handle corners better
-                        if (sign(distToBoundary[i][0]) != sign(distToBoundary[nextId][0]))
-                            ratio = abs(distToBoundary[i][0]) / (abs(distToBoundary[i][0]) + abs(distToBoundary[nextId][0]));
-                        else
-                            ratio = abs(distToBoundary[i][1]) / (abs(distToBoundary[i][1]) + abs(distToBoundary[nextId][1]));
+                        float ratios[2];
+                        ratios[0] = abs(distToBoundary[i].x) / (abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x));
+                        ratios[1] = abs(distToBoundary[i].y) / (abs(distToBoundary[i].y) + abs(distToBoundary[nextId].y));
+                        
+                        vec2 signs[2];
+                        signs[0] = sign(distToBoundary[i]);
+                        signs[1] = sign(distToBoundary[nextId]);
 
+                        float ratio;
+                        // Corner case: a point is above both edges
+                        if (signs[0].x != signs[1].x && signs[0].y != signs[1].y)
+                            ratio = side[i] ? min(ratios[0], ratios[1]) : max(ratios[0], ratios[1]);
+                        // First edge case: a point is above the vertical edges
+                        else if (signs[0].x != signs[1].x)
+                            ratio = ratios[0];
+                        // Second edge case: a point is above the horizontal edges
+                        else
+                            ratio = ratios[1];
+                        
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
                         texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
