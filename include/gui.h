@@ -171,7 +171,7 @@ class Gui : public BaseObject
         void activateLUT();
         void calibrateColorResponseFunction();
         void calibrateColors();
-        void computeBlending();
+        void computeBlending(bool once = false);
         void flashBackground();
         void loadConfiguration();
         void saveConfiguration();

@@ -312,28 +312,32 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         for (auto& geom : _geometries)
         {
-            geom->update();
-            geom->activate();
+            do
+            {
+                geom->update();
+                geom->activate();
 
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
 
-            auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
-            auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+                auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+                auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
 
-            auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
-            auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+                auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+                auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            geom->activateForFeedback();
-            _feedbackShaderSubdivideCamera->activateFeedback();
-            glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
-            _feedbackShaderSubdivideCamera->deactivate();
+                geom->activateForFeedback();
+                _feedbackShaderSubdivideCamera->activateFeedback();
+                glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
+                _feedbackShaderSubdivideCamera->deactivate();
 
-            geom->deactivateFeedback();
-            geom->deactivate();
+                geom->deactivateFeedback();
+                geom->deactivate();
+            } while (geom->hasBeenResized());
+
             geom->swapBuffers();
             geom->useAlternativeBuffers(true);
         }

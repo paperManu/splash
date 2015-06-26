@@ -157,6 +157,7 @@ class Scene : public RootObject
 
     protected:
         GlWindowPtr _mainWindow;
+        std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};
 
         std::map<std::string, BaseObjectPtr> _ghostObjects;
@@ -172,7 +173,7 @@ class Scene : public RootObject
         /**
          * Creates the blending map from the current calibration of the cameras
          */
-        void computeBlendingMap();
+        void computeBlendingMap(bool once = true);
 
     private:
         ScenePtr _self;
@@ -184,7 +185,6 @@ class Scene : public RootObject
         bool _status {false}; //< Set to true if an error occured during rendering
         bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
-        std::vector<int> _glVersion {0, 0};
 
         // Texture upload context
         std::future<void> _textureUploadFuture;
@@ -206,6 +206,7 @@ class Scene : public RootObject
 
         // Blending attributes
         bool _computeBlending {false};
+        bool _computeBlendingOnce {false};
         unsigned int _blendingResolution {2048};
         Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;

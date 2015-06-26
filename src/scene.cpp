@@ -300,9 +300,30 @@ void Scene::render()
     if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
         static bool blendComputedInPreviousFrame = false;
+        static bool blendComputedOnce = false;
+
+        if (blendComputedOnce && _computeBlendingOnce)
+        {
+            // This allows for blending reset if it was computed once
+            blendComputedOnce = false;
+            _computeBlending = false;
+            _computeBlendingOnce = false;
+            blendComputedInPreviousFrame = true;
+        }
+
         if (_computeBlending)
         {
-            blendComputedInPreviousFrame = true;
+            // Check for regular or single computation
+            if (_computeBlendingOnce)
+            {
+                _computeBlending = false;
+                _computeBlendingOnce = false;
+                blendComputedOnce = true;
+            }
+            else
+            {
+                blendComputedInPreviousFrame = true;
+            }
             
             vector<CameraPtr> cameras;
             for (auto& obj : _objects)
@@ -327,6 +348,7 @@ void Scene::render()
         else if (blendComputedInPreviousFrame)
         {
             blendComputedInPreviousFrame = false;
+            blendComputedOnce = false;
 
             vector<CameraPtr> cameras;
             for (auto& obj : _objects)
@@ -599,11 +621,12 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-void Scene::computeBlendingMap()
+void Scene::computeBlendingMap(bool once)
 {
     if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
         _computeBlending = !_computeBlending;
+        _computeBlendingOnce = once;
     }
     else
     {
@@ -981,8 +1004,13 @@ void Scene::registerAttributes()
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         unique_lock<mutex> lock(_taskMutex);
-        _taskQueue.push_back([&]() -> void {
-            computeBlendingMap();
+
+        bool once = false;
+        if (args.size() != 0)
+            once = args[0].asInt();
+
+        _taskQueue.push_back([=]() -> void {
+            computeBlendingMap(once);
         });
         return true;
     });

@@ -85,6 +85,11 @@ class Geometry : public BaseObject
         int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
+         * Get whether the alternative buffers have been resized during the last feedback call
+         */
+        bool hasBeenResized() {return _buffersResized;}
+
+        /**
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
@@ -140,6 +145,7 @@ class Geometry : public BaseObject
         std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {}; // Alternative buffers used for rendering
         std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers {}; // Temporary buffers used for feedback
         bool _buffersDirty {false};
+        bool _buffersResized {false}; // Holds whether the alternative buffers have been resized in the previous feedback
         bool _useAlternativeBuffers {false};
 
         int _verticesNumber {0};

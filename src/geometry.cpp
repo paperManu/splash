@@ -77,6 +77,11 @@ void Geometry::activateForFeedback()
             altBuffer->resize(_temporaryBufferSize);
             _glTemporaryBuffers.push_back(altBuffer);
         }
+        _buffersResized = true;
+    }
+    else
+    {
+        _buffersResized = false;
     }
 
     for (unsigned int i = 0; i < _glTemporaryBuffers.size(); ++i)
