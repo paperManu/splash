@@ -167,6 +167,33 @@ void Object::draw()
 }
 
 /*************/
+vector<vector<vector<char>>> Object::getRawGeometries(bool alternative)
+{
+    vector<vector<vector<char>>> rawGeometries;
+
+    for (auto& geom : _geometries)
+        rawGeometries.emplace_back(geom->getVerticesAndAttributes(alternative));
+
+    return rawGeometries;
+}
+
+/*************/
+void Object::setRawGeometries(const vector<vector<vector<char>>>& buffers)
+{
+    for (int i = 0; i < _geometries.size(); ++i)
+    {
+        if (i <= buffers.size())
+        {
+            if (_geometries[i]->setVerticesAndAttributes(buffers[i]))
+            {
+                _geometries[i]->swapBuffers();
+                _geometries[i]->useAlternativeBuffers(true);
+            }
+        }
+    }
+}
+
+/*************/
 bool Object::linkTo(BaseObjectPtr obj)
 {
     // Mandatory before trying to link

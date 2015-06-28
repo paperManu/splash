@@ -343,7 +343,19 @@ void Scene::render()
 
             for (auto& obj : _objects)
                 if (obj.second->getType() == "object")
+                {
                     obj.second->setAttribute("activateVertexBlending", {1});
+                    //auto rawObject = dynamic_pointer_cast<Object>(obj.second)->getRawGeometries(true);
+                    //cout << "----------------> " << rawObject.size() << endl;
+                    //for (auto& rawGeometry : rawObject)
+                    //{
+                    //    cout << "----------------> " << rawGeometry.size() << endl;
+                    //    for (auto& buffer : rawGeometry)
+                    //        cout << "    ------------> " << buffer.size() << endl;
+                    //}
+
+                    //dynamic_pointer_cast<Object>(obj.second)->setRawGeometries(rawObject);
+                }
         }
         else if (blendComputedInPreviousFrame)
         {

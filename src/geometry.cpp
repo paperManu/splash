@@ -66,10 +66,10 @@ void Geometry::activateAsSharedBuffer()
 void Geometry::activateForFeedback()
 {
     _feedbackMaxNbrPrimitives = std::max(_verticesNumber / 3, _feedbackMaxNbrPrimitives);
-    if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 3 * 4 >= _temporaryBufferSize)
+    if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 3 > _temporaryBufferSize)
     {
         _glTemporaryBuffers.clear();
-        _temporaryBufferSize = _feedbackMaxNbrPrimitives * 3 * 5; // 3 vertices per primitive, 4 components for each buffer, plus a bonus
+        _temporaryBufferSize = _feedbackMaxNbrPrimitives * 3; // 3 vertices per primitive
         for (auto& buffer : _glBuffers)
         {
             // This creates a copy of the buffer
@@ -112,6 +112,45 @@ void Geometry::deactivateFeedback()
     glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
     _feedbackMaxNbrPrimitives = std::max(_feedbackMaxNbrPrimitives, drawnPrimitives);
     _temporaryVerticesNumber = drawnPrimitives * 3;
+}
+
+/*************/
+vector<vector<char>> Geometry::getVerticesAndAttributes(bool alternative)
+{
+    vector<vector<char>> buffers;
+    if (alternative)
+        for (auto& buffer : _glAlternativeBuffers)
+            buffers.emplace_back(buffer->getBufferAsVector(_alternativeVerticesNumber));
+    else
+        for (auto& buffer : _glBuffers)
+            buffers.emplace_back(buffer->getBufferAsVector(_verticesNumber));
+
+    return buffers;
+}
+
+/*************/
+bool Geometry::setVerticesAndAttributes(const vector<vector<char>>& buffers)
+{
+    if (buffers.size() == _glBuffers.size())
+    {
+        _temporaryVerticesNumber = buffers[0].size() / (4 * 4); // 4 components, as floats (4 bytes)
+        _temporaryBufferSize = _temporaryVerticesNumber;
+
+        _glTemporaryBuffers.resize(buffers.size());
+        for (int i = 0; i < buffers.size(); ++i)
+        {
+            if (buffers[i].size() != _glTemporaryBuffers[i]->getMemorySize())
+                _glTemporaryBuffers[i]->resize(_temporaryVerticesNumber);
+
+            _glTemporaryBuffers[i]->setBufferFromVector(buffers[i]);
+        }
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 /*************/
