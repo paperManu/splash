@@ -51,6 +51,8 @@
 #ifndef SPLASH_CORETYPES_H
 #define SPLASH_CORETYPES_H
 
+#define PRINT_FUNCTION_LINE std::cout << "------> " << __FUNCTION__ << "::" << __LINE__ << std::endl;
+
 namespace Splash
 {
 

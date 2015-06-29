@@ -135,6 +135,11 @@ class Scene : public RootObject
         void render();
 
         /**
+         * Render the blending
+         */
+        void renderBlending();
+
+        /**
          * Set the Scene as the master one
          */
         void setAsMaster(std::string configFilePath = "");

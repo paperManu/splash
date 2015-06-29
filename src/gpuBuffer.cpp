@@ -39,7 +39,7 @@ GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, 
     _type = type;
     _usage = usage;
 
-    glBufferData(GL_ARRAY_BUFFER, size * _baseSize, data, usage);
+    glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, data, usage);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -74,6 +74,9 @@ void GpuBuffer::setBufferFromVector(const vector<char>& buffer)
 {
     if (!_glId || !_type || !_usage || !_elementSize)
         return;
+
+    if (buffer.size() > _baseSize * _elementSize * _size)
+        resize(buffer.size());
 
     glGetError();
     glBindBuffer(GL_ARRAY_BUFFER, _glId);

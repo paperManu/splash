@@ -115,74 +115,28 @@ void Geometry::deactivateFeedback()
 }
 
 /*************/
-vector<vector<char>> Geometry::getVerticesAndAttributes(bool alternative)
+unique_ptr<SerializedObject> Geometry::serialize() const
 {
-    vector<vector<char>> buffers;
-    if (alternative)
-        for (auto& buffer : _glAlternativeBuffers)
-            buffers.emplace_back(buffer->getBufferAsVector(_alternativeVerticesNumber));
-    else
-        for (auto& buffer : _glBuffers)
-            buffers.emplace_back(buffer->getBufferAsVector(_verticesNumber));
+    auto serializedObject = unique_ptr<SerializedObject>(new SerializedObject());
+    serializedObject->resize(sizeof(int));
+    *(int*)(serializedObject->data()) = _alternativeVerticesNumber;
+    for (auto& buffer : _glAlternativeBuffers)
+    {
+        auto newBuffer = buffer->getBufferAsVector(_alternativeVerticesNumber);
+        auto oldSize = serializedObject->size();
+        serializedObject->resize(serializedObject->size() + newBuffer.size());
+        std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObject->data() + oldSize);
+    }
 
-    return buffers;
+    return serializedObject;
 }
 
 /*************/
-pair<string, unique_ptr<SerializedObject>> Geometry::getGeometryAsSerializedMesh(bool alternative)
+bool Geometry::deserialize(unique_ptr<SerializedObject> obj)
 {
-    auto serializedObjet = pair<string, unique_ptr<SerializedObject>>(_mesh->getName(), unique_ptr<SerializedObject>(new SerializedObject()));
-    if (alternative)
-    {
-        serializedObjet.second->resize(sizeof(int));
-        *(int*)(serializedObjet.second->data()) = _alternativeVerticesNumber;
-        for (auto& buffer : _glAlternativeBuffers)
-        {
-            auto newBuffer = buffer->getBufferAsVector(_alternativeVerticesNumber);
-            auto oldSize = serializedObjet.second->size();
-            serializedObjet.second->resize(serializedObjet.second->size() + newBuffer.size());
-            std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObjet.second->data() + oldSize);
-        }
-    }
-    else
-    {
-        serializedObjet.second->resize(sizeof(int));
-        *(int*)(serializedObjet.second->data()) = _verticesNumber;
-        for (auto& buffer : _glAlternativeBuffers)
-        {
-            auto newBuffer = buffer->getBufferAsVector(_verticesNumber);
-            auto oldSize = serializedObjet.second->size();
-            serializedObjet.second->resize(serializedObjet.second->size() + newBuffer.size());
-            std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObjet.second->data() + oldSize);
-        }
-    }
-
-    return serializedObjet;
-}
-
-/*************/
-bool Geometry::setVerticesAndAttributes(const vector<vector<char>>& buffers)
-{
-    if (buffers.size() == _glBuffers.size())
-    {
-        _temporaryVerticesNumber = buffers[0].size() / (4 * 4); // 4 components, as floats (4 bytes)
-        _temporaryBufferSize = _temporaryVerticesNumber;
-
-        _glTemporaryBuffers.resize(buffers.size());
-        for (int i = 0; i < buffers.size(); ++i)
-        {
-            if (buffers[i].size() != _glTemporaryBuffers[i]->getMemorySize())
-                _glTemporaryBuffers[i]->resize(_temporaryVerticesNumber);
-
-            _glTemporaryBuffers[i]->setBufferFromVector(buffers[i]);
-        }
-
-        return true;
-    }
-    else
-    {
-        return false;
-    }
+    unique_lock<mutex> lock(_writeMutex);
+    _serializedObject = std::move(obj);
+    return true;
 }
 
 /*************/
@@ -278,24 +232,24 @@ void Geometry::update()
         if (vertices.size() == 0)
             return;
         _verticesNumber = vertices.size() / 4;
-        _glBuffers[0] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, vertices.size(), vertices.data()));
+        _glBuffers[0] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data());
         
         vector<float> texcoords = _mesh->getUVCoords();
         if (texcoords.size() == 0)
             return;
-        _glBuffers[1] = std::shared_ptr<GpuBuffer>(new GpuBuffer(2, GL_FLOAT, GL_STATIC_DRAW, texcoords.size(), texcoords.data()));
+        _glBuffers[1] = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data());
 
         vector<float> normals = _mesh->getNormals();
         if (normals.size() == 0)
             return;
-        _glBuffers[2] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, normals.size(), normals.data()));
+        _glBuffers[2] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data());
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
         vector<float> annexe = _mesh->getAnnexe();
         if (annexe.size() == 0)
-            _glBuffers[3] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber * 4, nullptr));
+            _glBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
         else
-            _glBuffers[3] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, annexe.size(), annexe.data()));
+            _glBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data());
 
         // Check the buffers
         bool buffersSet = true;
@@ -319,6 +273,48 @@ void Geometry::update()
         _buffersDirty = true;
     }
 
+    // If a serialized geometry is present, we use it as the alternative buffer
+    if (_serializedObject && _serializedObject->size() != 0)
+    {
+        if (_glTemporaryBuffers.size() != 4)
+            _glTemporaryBuffers.resize(4);
+
+        unique_lock<mutex> lock(_writeMutex);
+
+        _temporaryVerticesNumber = *(int*)(_serializedObject->data());
+        _temporaryBufferSize = _temporaryVerticesNumber;
+
+        if (!_glTemporaryBuffers[0])
+            _glTemporaryBuffers[0] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4);
+        else
+            _glTemporaryBuffers[0]->setBufferFromVector(vector<char>(_serializedObject->data() + 4,
+                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 4));
+
+        if (!_glTemporaryBuffers[1])
+            _glTemporaryBuffers[1] = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 4);
+        else
+            _glTemporaryBuffers[1]->setBufferFromVector(vector<char>(_serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 4,
+                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 6));
+
+        if (!_glTemporaryBuffers[2])
+            _glTemporaryBuffers[2] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 6);
+        else
+            _glTemporaryBuffers[2]->setBufferFromVector(vector<char>(_serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 6,
+                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 10));
+
+        if (!_glTemporaryBuffers[3])
+            _glTemporaryBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 10);
+        else
+            _glTemporaryBuffers[3]->setBufferFromVector(vector<char>(_serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 10,
+                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 14));
+
+
+        swapBuffers();
+        _buffersDirty = true;
+
+        _serializedObject.reset();
+    }
+
     GLFWwindow* context = glfwGetCurrentContext();
     auto vertexArrayIt = _vertexArray.find(context);
     if (vertexArrayIt == _vertexArray.end() || _buffersDirty)
@@ -334,7 +330,7 @@ void Geometry::update()
 
         for (int idx = 0; idx < _glBuffers.size(); ++idx)
         {
-            if (_useAlternativeBuffers)
+            if (_useAlternativeBuffers && _glAlternativeBuffers.size() != 0 && _glAlternativeBuffers[0])
             {
                 glBindBuffer(GL_ARRAY_BUFFER, _glAlternativeBuffers[idx]->getId());
                 glVertexAttribPointer((GLuint)idx, _glAlternativeBuffers[idx]->getElementSize(), GL_FLOAT, GL_FALSE, 0, 0);

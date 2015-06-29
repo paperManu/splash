@@ -43,6 +43,7 @@ class GpuBuffer
     public:
         /**
          * Constructor
+         * size is given as the number of elements
          */
         GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data = nullptr);
 

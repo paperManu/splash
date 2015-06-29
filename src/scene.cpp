@@ -290,13 +290,8 @@ void Scene::remove(string name)
 }
 
 /*************/
-void Scene::render()
+void Scene::renderBlending()
 {
-    bool isError {false};
-    vector<unsigned int> threadIds;
-
-    // Compute the blending
-    Timer::get() << "blending";
     if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
         static bool blendComputedInPreviousFrame = false;
@@ -349,17 +344,16 @@ void Scene::render()
 
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "object")
-                    {
                         obj.second->setAttribute("activateVertexBlending", {1});
-                        // If there are some other scenes, send them the blending
-                        // TODO: this has every chances to not work well with non-fixed objects!
-                        if (_ghostObjects.size() != 0)
+
+                // If there are some other scenes, send them the blending
+                if (_ghostObjects.size() != 0)
+                    for (auto& obj : _objects)
+                        if (obj.second->getType() == "geometry")
                         {
-                            auto serializedMeshes = dynamic_pointer_cast<Object>(obj.second)->getGeometriesAsSerializedMeshes(true);
-                            for (auto& mesh : serializedMeshes)
-                                _link->sendBuffer(mesh.first, std::move(mesh.second));
+                            auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
+                            _link->sendBuffer(obj.first, std::move(serializedGeometry));
                         }
-                    }
             }
             // The non-master scenes only need to activate blending
             else
@@ -367,6 +361,8 @@ void Scene::render()
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "object")
                         obj.second->setAttribute("activateVertexBlending", {1});
+                    else if (obj.second->getType() == "geometry")
+                        dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
             }
         }
         else if (blendComputedInPreviousFrame)
@@ -388,8 +384,21 @@ void Scene::render()
             for (auto& obj : _objects)
                 if (obj.second->getType() == "object")
                     obj.second->setAttribute("activateVertexBlending", {0});
+                else if (obj.second->getType() == "geometry")
+                    dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(false);
         }
     }
+}
+
+/*************/
+void Scene::render()
+{
+    bool isError {false};
+    vector<unsigned int> threadIds;
+
+    // Compute the blending
+    Timer::get() << "blending";
+    renderBlending();
     Timer::get() >> "blending";
     
     Timer::get() << "cameras";

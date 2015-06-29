@@ -101,13 +101,6 @@ class Object : public BaseObject
         ShaderPtr getShader() const {return _shader;}
 
         /**
-         * Read back the raw geometries
-         * (either the original or the alternative, tessellated version)
-         */
-        std::vector<std::vector<std::vector<char>>> getRawGeometries(bool alternative);
-        std::map<std::string, std::unique_ptr<SerializedObject>> getGeometriesAsSerializedMeshes(bool alternative);
-
-        /**
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
@@ -141,11 +134,6 @@ class Object : public BaseObject
          * Set the blending map for the object
          */
         void setBlendingMap(TexturePtr map);
-
-        /**
-         * Set the geometries from the given buffers
-         */
-        void setRawGeometries(const std::vector<std::vector<std::vector<char>>>& buffers);
 
         /**
          * Set the shader

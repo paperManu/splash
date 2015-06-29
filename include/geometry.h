@@ -40,7 +40,7 @@
 
 namespace Splash {
 
-class Geometry : public BaseObject
+class Geometry : public BufferObject
 {
     public:
         /**
@@ -86,19 +86,14 @@ class Geometry : public BaseObject
         int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
-         * Get the raw vertices and associated attributes alternative buffers
+         * Get the geometry as serialized
          */
-        std::vector<std::vector<char>> getVerticesAndAttributes(bool alternative);
+        std::unique_ptr<SerializedObject> serialize() const;
 
         /**
-         * Get the geometry as a serialized mesh
+         * Deserialize the geometry
          */
-        std::pair<std::string, std::unique_ptr<SerializedObject>> getGeometryAsSerializedMesh(bool alternative);
-
-        /**
-         * Set the raw vertices and associated attributes alternative buffers
-         */
-        bool setVerticesAndAttributes(const std::vector<std::vector<char>>& buffers);
+        bool deserialize(std::unique_ptr<SerializedObject> obj);
 
         /**
          * Get whether the alternative buffers have been resized during the last feedback call
@@ -168,6 +163,9 @@ class Geometry : public BaseObject
         // Transform feedback
         GLuint _feedbackQuery;
         int _feedbackMaxNbrPrimitives {0};
+
+        // Serialization
+        std::unique_ptr<SerializedObject> _serializedObject {};
 
         /**
          * Register new functors to modify attributes
