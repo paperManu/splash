@@ -229,15 +229,23 @@ bool Object::linkTo(BaseObjectPtr obj)
             return linkTo(tex);
         }
         else
+        {
             return false;
+        }
     }
     else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
         GeometryPtr geom = make_shared<Geometry>();
+        geom->setName(getName() + "_" + obj->getName() + "_geom");
         if (geom->linkTo(obj))
+        {
+            _root.lock()->registerObject(geom);
             return linkTo(geom);
+        }
         else
+        {
             return false;
+        }
     }
     else if (dynamic_pointer_cast<Geometry>(obj).get() != nullptr)
     {

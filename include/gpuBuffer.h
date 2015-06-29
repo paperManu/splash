@@ -127,11 +127,6 @@ class GpuBuffer
         GLint _elementSize {0}; // Number of components per vector
         GLenum _type {0};
         GLenum _usage {0};
-
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
 };
 
 } // end of namespace

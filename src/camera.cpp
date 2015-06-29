@@ -1096,12 +1096,16 @@ void Camera::loadDefaultModels()
         mesh->setAttribute("name", {file.first});
         mesh->setAttribute("file", {file.second});
 
+        GeometryPtr geom = make_shared<Geometry>();
+        geom->setAttribute("name", {file.first});
+        geom->linkTo(mesh);
+
         ObjectPtr obj = make_shared<Object>();
         obj->setAttribute("name", {file.first});
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", SPLASH_MARKER_SET);
-        obj->linkTo(mesh);
+        obj->linkTo(geom);
 
         _models[file.first] = obj;
     }

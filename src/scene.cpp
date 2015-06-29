@@ -324,39 +324,50 @@ void Scene::render()
             {
                 blendComputedInPreviousFrame = true;
             }
-            
-            vector<CameraPtr> cameras;
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "camera")
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            for (auto& obj : _ghostObjects)
-                if (obj.second->getType() == "camera")
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
-            if (cameras.size() != 0)
+            // Only the master scene computes the blending
+            if (_isMaster)
             {
-                cameras[0]->blendingResetTessellation();
-                for (auto& camera : cameras)
-                    camera->blendingTessellateForCurrentCamera();
+                vector<CameraPtr> cameras;
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "camera")
+                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                for (auto& obj : _ghostObjects)
+                    if (obj.second->getType() == "camera")
+                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
-                cameras[0]->blendingResetVisibility();
-                for (auto& camera : cameras)
-                    camera->blendingComputeVisibility();
-            }
-
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "object")
+                if (cameras.size() != 0)
                 {
-                    obj.second->setAttribute("activateVertexBlending", {1});
-                    // If there are some other scenes, send them the blending
-                    // TODO: this has every chances to not work well with non-fixed objects!
-                    if (_ghostObjects.size() != 0)
-                    {
-                        auto serializedMeshes = dynamic_pointer_cast<Object>(obj.second)->getGeometriesAsSerializedMeshes(true);
-                        for (auto& mesh : serializedMeshes)
-                            _link->sendBuffer(mesh.first, std::move(mesh.second));
-                    }
+                    cameras[0]->blendingResetTessellation();
+                    for (auto& camera : cameras)
+                        camera->blendingTessellateForCurrentCamera();
+
+                    cameras[0]->blendingResetVisibility();
+                    for (auto& camera : cameras)
+                        camera->blendingComputeVisibility();
                 }
+
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "object")
+                    {
+                        obj.second->setAttribute("activateVertexBlending", {1});
+                        // If there are some other scenes, send them the blending
+                        // TODO: this has every chances to not work well with non-fixed objects!
+                        if (_ghostObjects.size() != 0)
+                        {
+                            auto serializedMeshes = dynamic_pointer_cast<Object>(obj.second)->getGeometriesAsSerializedMeshes(true);
+                            for (auto& mesh : serializedMeshes)
+                                _link->sendBuffer(mesh.first, std::move(mesh.second));
+                        }
+                    }
+            }
+            // The non-master scenes only need to activate blending
+            else
+            {
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "object")
+                        obj.second->setAttribute("activateVertexBlending", {1});
+            }
         }
         else if (blendComputedInPreviousFrame)
         {
@@ -368,7 +379,7 @@ void Scene::render()
                 if (obj.second->getType() == "camera")
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
             
-            if (cameras.size() != 0)
+            if (_isMaster && cameras.size() != 0)
             {
                 cameras[0]->blendingResetTessellation();
                 cameras[0]->blendingResetVisibility();
