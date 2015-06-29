@@ -209,7 +209,7 @@ void Image_FFmpeg::readLoop()
                         oiio::ImageSpec spec;
                         if (textureFormat == "RGB_DXT1")
                             spec = oiio::ImageSpec(codecContext->width, (int)(ceil((float)codecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
-                        if (textureFormat == "RGB_DXT5")
+                        if (textureFormat == "RGBA_DXT5")
                             spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
                         if (textureFormat == "YCoCg_DXT5")
                             spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
