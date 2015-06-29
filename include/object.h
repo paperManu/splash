@@ -105,6 +105,7 @@ class Object : public BaseObject
          * (either the original or the alternative, tessellated version)
          */
         std::vector<std::vector<std::vector<char>>> getRawGeometries(bool alternative);
+        std::map<std::string, std::unique_ptr<SerializedObject>> getGeometriesAsSerializedMeshes(bool alternative);
 
         /**
          * Try to link the given BaseObject to this

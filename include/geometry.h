@@ -27,6 +27,7 @@
 
 #include <chrono>
 #include <map>
+#include <utility>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -85,6 +86,21 @@ class Geometry : public BaseObject
         int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
+         * Get the raw vertices and associated attributes alternative buffers
+         */
+        std::vector<std::vector<char>> getVerticesAndAttributes(bool alternative);
+
+        /**
+         * Get the geometry as a serialized mesh
+         */
+        std::pair<std::string, std::unique_ptr<SerializedObject>> getGeometryAsSerializedMesh(bool alternative);
+
+        /**
+         * Set the raw vertices and associated attributes alternative buffers
+         */
+        bool setVerticesAndAttributes(const std::vector<std::vector<char>>& buffers);
+
+        /**
          * Get whether the alternative buffers have been resized during the last feedback call
          */
         bool hasBeenResized() {return _buffersResized;}
@@ -98,11 +114,6 @@ class Geometry : public BaseObject
          * Get the coordinates of the closest vertex to the given point
          */
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
-
-        /**
-         * Replace one of the GL buffers with an alternative one
-         */
-        void setAlternativeBuffer(std::shared_ptr<GpuBuffer> buffer, int index);
 
         /**
          * Specify the number of vertices to draw

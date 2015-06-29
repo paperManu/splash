@@ -329,7 +329,10 @@ void Scene::render()
             for (auto& obj : _objects)
                 if (obj.second->getType() == "camera")
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            
+            for (auto& obj : _ghostObjects)
+                if (obj.second->getType() == "camera")
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
             if (cameras.size() != 0)
             {
                 cameras[0]->blendingResetTessellation();
@@ -345,16 +348,14 @@ void Scene::render()
                 if (obj.second->getType() == "object")
                 {
                     obj.second->setAttribute("activateVertexBlending", {1});
-                    //auto rawObject = dynamic_pointer_cast<Object>(obj.second)->getRawGeometries(true);
-                    //cout << "----------------> " << rawObject.size() << endl;
-                    //for (auto& rawGeometry : rawObject)
-                    //{
-                    //    cout << "----------------> " << rawGeometry.size() << endl;
-                    //    for (auto& buffer : rawGeometry)
-                    //        cout << "    ------------> " << buffer.size() << endl;
-                    //}
-
-                    //dynamic_pointer_cast<Object>(obj.second)->setRawGeometries(rawObject);
+                    // If there are some other scenes, send them the blending
+                    // TODO: this has every chances to not work well with non-fixed objects!
+                    if (_ghostObjects.size() != 0)
+                    {
+                        auto serializedMeshes = dynamic_pointer_cast<Object>(obj.second)->getGeometriesAsSerializedMeshes(true);
+                        for (auto& mesh : serializedMeshes)
+                            _link->sendBuffer(mesh.first, std::move(mesh.second));
+                    }
                 }
         }
         else if (blendComputedInPreviousFrame)

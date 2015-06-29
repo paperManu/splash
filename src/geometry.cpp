@@ -129,6 +129,38 @@ vector<vector<char>> Geometry::getVerticesAndAttributes(bool alternative)
 }
 
 /*************/
+pair<string, unique_ptr<SerializedObject>> Geometry::getGeometryAsSerializedMesh(bool alternative)
+{
+    auto serializedObjet = pair<string, unique_ptr<SerializedObject>>(_mesh->getName(), unique_ptr<SerializedObject>(new SerializedObject()));
+    if (alternative)
+    {
+        serializedObjet.second->resize(sizeof(int));
+        *(int*)(serializedObjet.second->data()) = _alternativeVerticesNumber;
+        for (auto& buffer : _glAlternativeBuffers)
+        {
+            auto newBuffer = buffer->getBufferAsVector(_alternativeVerticesNumber);
+            auto oldSize = serializedObjet.second->size();
+            serializedObjet.second->resize(serializedObjet.second->size() + newBuffer.size());
+            std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObjet.second->data() + oldSize);
+        }
+    }
+    else
+    {
+        serializedObjet.second->resize(sizeof(int));
+        *(int*)(serializedObjet.second->data()) = _verticesNumber;
+        for (auto& buffer : _glAlternativeBuffers)
+        {
+            auto newBuffer = buffer->getBufferAsVector(_verticesNumber);
+            auto oldSize = serializedObjet.second->size();
+            serializedObjet.second->resize(serializedObjet.second->size() + newBuffer.size());
+            std::copy(newBuffer.data(), newBuffer.data() + newBuffer.size(), serializedObjet.second->data() + oldSize);
+        }
+    }
+
+    return serializedObjet;
+}
+
+/*************/
 bool Geometry::setVerticesAndAttributes(const vector<vector<char>>& buffers)
 {
     if (buffers.size() == _glBuffers.size())
@@ -259,7 +291,11 @@ void Geometry::update()
         _glBuffers[2] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, normals.size(), normals.data()));
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
-        _glBuffers[3] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber * 4, nullptr));
+        vector<float> annexe = _mesh->getAnnexe();
+        if (annexe.size() == 0)
+            _glBuffers[3] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber * 4, nullptr));
+        else
+            _glBuffers[3] = std::shared_ptr<GpuBuffer>(new GpuBuffer(4, GL_FLOAT, GL_STATIC_DRAW, annexe.size(), annexe.data()));
 
         // Check the buffers
         bool buffersSet = true;

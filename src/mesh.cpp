@@ -79,6 +79,21 @@ vector<float> Mesh::getNormals() const
 }
 
 /*************/
+vector<float> Mesh::getAnnexe() const
+{
+    unique_lock<mutex> lock(_readMutex);
+    vector<float> annexe;
+    for (auto& a : _mesh.annexe)
+    {
+        annexe.push_back(a[0]);
+        annexe.push_back(a[1]);
+        annexe.push_back(a[2]);
+        annexe.push_back(a[3]);
+    }
+    return annexe;
+}
+
+/*************/
 bool Mesh::read(const string& filename)
 {
     auto filepath = string(filename);
@@ -117,6 +132,7 @@ unique_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(getVertCoords());
     data.push_back(getUVCoords());
     data.push_back(getNormals());
+    data.push_back(getAnnexe());    
 
     unique_lock<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
@@ -173,6 +189,13 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
     data.push_back(vector<float>(nbrVertices * 2));
     data.push_back(vector<float>(nbrVertices * 4));
 
+    bool hasAnnexe = false;
+    if (obj->size() > nbrVertices * 4 * 14) // Check whether there is an annexe buffer in all this
+    {
+        hasAnnexe = true;
+        data.push_back(vector<float>(nbrVertices * 4));
+    }
+
     // Let's read the values
     try
     {
@@ -186,8 +209,8 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
         // Next step: use these values to reset the vertices of _mesh
         MeshContainer mesh;
 
-        mesh.vertices.resize(data[0].size() / 4);
-        for (unsigned int i = 0; i < data[0].size() / 4; ++i)
+        mesh.vertices.resize(nbrVertices);
+        for (unsigned int i = 0; i < nbrVertices; ++i)
         {
             mesh.vertices[i][0] = data[0][i*4 + 0];
             mesh.vertices[i][1] = data[0][i*4 + 1];
@@ -195,19 +218,31 @@ bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
             mesh.vertices[i][3] = data[0][i*4 + 3];
         }
 
-        mesh.uvs.resize(data[1].size() / 2);
-        for (unsigned int i = 0; i < data[1].size() / 2; ++i)
+        mesh.uvs.resize(nbrVertices);
+        for (unsigned int i = 0; i < nbrVertices; ++i)
         {
             mesh.uvs[i][0] = data[1][i*2 + 0];
             mesh.uvs[i][1] = data[1][i*2 + 1];
         }
 
-        mesh.normals.resize(data[2].size() / 3);
-        for (unsigned int i = 0; i < data[2].size() / 3; ++i)
+        mesh.normals.resize(nbrVertices);
+        for (unsigned int i = 0; i < nbrVertices; ++i)
         {
             mesh.normals[i][0] = data[2][i*4 + 0];
             mesh.normals[i][1] = data[2][i*4 + 1];
             mesh.normals[i][2] = data[2][i*4 + 2];
+        }
+
+        if (hasAnnexe)
+        {
+            mesh.annexe.resize(nbrVertices);
+            for (unsigned int i = 0; i < nbrVertices; ++i)
+            {
+                mesh.annexe[i][0] = data[3][i*4 + 0];
+                mesh.annexe[i][1] = data[3][i*4 + 1];
+                mesh.annexe[i][2] = data[3][i*4 + 2];
+                mesh.annexe[i][3] = data[3][i*4 + 3];
+            }
         }
 
         _bufferMesh = mesh;

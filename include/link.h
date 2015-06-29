@@ -63,7 +63,7 @@ class Link
         /**
          * Send a buffer to the connected pairs
          */
-        bool sendBuffer(const std::string name, const std::unique_ptr<SerializedObject> buffer);
+        bool sendBuffer(const std::string name, std::unique_ptr<SerializedObject> buffer);
 
         /**
          * Send a message to connected pairs
