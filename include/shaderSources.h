@@ -77,7 +77,7 @@ struct ShaderSources
         {"getSmoothBlendFromVertex", R"(
             float getSmoothBlendFromVertex(vec4 v, float blendDist)
             {
-                vec2 screenPos = v.xy / 2.0 + vec2(0.5);
+                vec2 screenPos = v.xy * 0.5 + vec2(0.5);
                 vec2 dist = vec2(min(screenPos.x, 1.0 - screenPos.x), min(screenPos.y, 1.0 - screenPos.y));
 
                 // See Lancelle et al. 2011 for explanations about the various weighting functions
@@ -229,7 +229,7 @@ struct ShaderSources
                                + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
                                + gl_LocalInvocationIndex);
             vec4 screenVertex[3];
-            bool vertexVisible[3];
+            bvec3 vertexVisible;
 
             if (globalID < _vertexNbr / 3)
             {
@@ -240,27 +240,17 @@ struct ShaderSources
 
                     vec2 dist;
                     vec4 normalizedSpaceVertex = vertex[vertexId];
-                    bool isVisible = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, dist);
+                    vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, dist);
                     screenVertex[idx] = normalizedSpaceVertex;
-                    if (isVisible)
-                    {
-                        vertexVisible[idx] = true;
-                    }
-                    else
-                    {
-                        vertexVisible[idx] = false;
-                        allVerticesVisible = false;
-                    }
                 }
 
                 vec3 projectedNormal = normalVector(screenVertex[0].xyz, screenVertex[1].xyz, screenVertex[2].xyz);
-                if (allVerticesVisible && projectedNormal.z >= 0.0)
+                if (all(vertexVisible) && projectedNormal.z >= 0.0)
                 {
                     for (int idx = 0; idx < 3; ++idx)
                     {
                         int vertexId = globalID * 3 + idx;
-                        annexe[vertexId].x += 1.0;
-                        annexe[vertexId].y += getSmoothBlendFromVertex(screenVertex[idx], _blendWidth);
+                        annexe[vertexId].xy += vec2(1.0, getSmoothBlendFromVertex(screenVertex[idx], _blendWidth));
                     }
                 }
             }
@@ -336,21 +326,20 @@ struct ShaderSources
         {
             if (gl_InvocationID == 0)
             {
-                bool isVisible = false;
+                bvec3 vertexVisibility;
                 vec4 projectedVertices[3];
                 float maxDist = 0.0;
-                int nearestBorder = 0;
+                int nearestBorder = 0; // 0 is nearest border is horizontal, 1 otherwise
                 for (int i = 0; i < 3; ++i)
                 {
                     vec2 dist;
                     projectedVertices[i] = tcs_in[i].vertex;
-                    if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist))
-                        isVisible = true;
+                    vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
                     float localMax = max(dist.x, dist.y);
                     if (localMax > maxDist)
                     {
                         maxDist = localMax;
-                        nearestBorder = dist.y > dist.x ? 1 : 0;
+                        nearestBorder = int(dist.y > dist.x);
                     }
                 }
 
@@ -360,11 +349,11 @@ struct ShaderSources
                 gl_TessLevelOuter[2] = 1.0;
 
                 vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
-                if (isVisible && projectedNormal.z >= 0.0)
+                if (any(vertexVisibility) && projectedNormal.z >= 0.0)
                 {
                     if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
                     {
-                        vec2 nearestBorderNormal = nearestBorder == 0 ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                        vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1 - nearestBorder) * vec2(0.0, 1.0);
                         float maxTessLevel = 1.0;
                         for (int idx = 0; idx < 3; idx++)
                         {

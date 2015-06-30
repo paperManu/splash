@@ -116,11 +116,6 @@ class Geometry : public BufferObject
         void setAlternativeVerticesNumber(unsigned int nbr) {_alternativeVerticesNumber = nbr;}
 
         /**
-         * Deactivate the specified alternative buffer (and re-use the default one
-         */
-        void resetAlternativeBuffer(int index = -1);
-
-        /**
          * Set the mesh for this object
          */
         void setMesh(MeshPtr mesh) {_mesh = mesh;}

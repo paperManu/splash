@@ -179,28 +179,6 @@ float Geometry::pickVertex(dvec3 p, dvec3& v)
 }
 
 /*************/
-void Geometry::resetAlternativeBuffer(int index)
-{
-    if (index >= 4)
-    {
-        return;
-    }
-    else if (index >= 0)
-    {
-        _glAlternativeBuffers[index].reset();
-        _alternativeVerticesNumber = 0;
-    }
-    else
-    {
-        for (int i = 0; i < _glAlternativeBuffers.size(); ++i)
-            _glAlternativeBuffers[i].reset();
-        _alternativeVerticesNumber = 0;
-    }
-
-    _buffersDirty = true;
-}
-
-/*************/
 void Geometry::swapBuffers()
 {
     _glAlternativeBuffers.swap(_glTemporaryBuffers);
