@@ -259,29 +259,11 @@ void Camera::computeBlendingMap(ImagePtr& map)
 }
 
 /*************/
-void Camera::blendingResetVisibility()
-{
-    for (auto& obj : _objects)
-    {
-        obj->resetVisibility();
-    }
-}
-
-/*************/
 void Camera::blendingComputeVisibility()
 {
     for (auto& obj : _objects)
     {
         obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
-    }
-}
-
-/*************/
-void Camera::blendingResetTessellation()
-{
-    for (auto& obj : _objects)
-    {
-        obj->resetTessellation();
     }
 }
 

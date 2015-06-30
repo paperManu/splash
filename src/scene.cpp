@@ -324,20 +324,28 @@ void Scene::renderBlending()
             if (_isMaster)
             {
                 vector<CameraPtr> cameras;
+                vector<ObjectPtr> objects;
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
                         cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                    else if (obj.second->getType() == "object")
+                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
                 for (auto& obj : _ghostObjects)
                     if (obj.second->getType() == "camera")
                         cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                    else if (obj.second->getType() == "object")
+                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
 
                 if (cameras.size() != 0)
                 {
-                    cameras[0]->blendingResetTessellation();
+                    for (auto& object : objects)
+                    {
+                        object->resetTessellation();
+                        object->resetVisibility();
+                    }
+
                     for (auto& camera : cameras)
                         camera->blendingTessellateForCurrentCamera();
-
-                    cameras[0]->blendingResetVisibility();
                     for (auto& camera : cameras)
                         camera->blendingComputeVisibility();
                 }
@@ -371,14 +379,20 @@ void Scene::renderBlending()
             blendComputedOnce = false;
 
             vector<CameraPtr> cameras;
+            vector<ObjectPtr> objects;
             for (auto& obj : _objects)
                 if (obj.second->getType() == "camera")
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                else if (obj.second->getType() == "object")
+                    objects.push_back(dynamic_pointer_cast<Object>(obj.second));
             
             if (_isMaster && cameras.size() != 0)
             {
-                cameras[0]->blendingResetTessellation();
-                cameras[0]->blendingResetVisibility();
+                for (auto& object : objects)
+                {
+                    object->resetTessellation();
+                    object->resetVisibility();
+                }
             }
 
             for (auto& obj : _objects)
