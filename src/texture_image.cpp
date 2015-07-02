@@ -273,6 +273,10 @@ void Texture_Image::update()
         isCompressed = true;
         spec.nchannels = 4;
     }
+    else if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
+    {
+        isCompressed = true;
+    }
 
     // Update the textures if the format changed
     if (spec.width != _spec.width || spec.height != _spec.height || spec.nchannels != _spec.nchannels || spec.format != _spec.format)
@@ -283,7 +287,10 @@ void Texture_Image::update()
 
         if (_filtering)
         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            if (isCompressed)
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            else
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         else
@@ -451,7 +458,7 @@ void Texture_Image::update()
 
     _timestamp = _img->getTimestamp();
 
-    if (_filtering)
+    if (_filtering && !isCompressed)
         generateMipmap();
 }
 

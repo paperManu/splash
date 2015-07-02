@@ -135,6 +135,11 @@ class Scene : public RootObject
         void render();
 
         /**
+         * Render the blending
+         */
+        void renderBlending();
+
+        /**
          * Set the Scene as the master one
          */
         void setAsMaster(std::string configFilePath = "");
@@ -157,6 +162,7 @@ class Scene : public RootObject
 
     protected:
         GlWindowPtr _mainWindow;
+        std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};
 
         std::map<std::string, BaseObjectPtr> _ghostObjects;
@@ -172,7 +178,7 @@ class Scene : public RootObject
         /**
          * Creates the blending map from the current calibration of the cameras
          */
-        void computeBlendingMap();
+        void computeBlendingMap(bool once = true);
 
     private:
         ScenePtr _self;
@@ -203,7 +209,9 @@ class Scene : public RootObject
         std::mutex _taskMutex;
         std::list<std::function<void()>> _taskQueue;
 
-        // Blending map, used by all cameras (except the GUI camera)
+        // Blending attributes
+        bool _computeBlending {false};
+        bool _computeBlendingOnce {false};
         unsigned int _blendingResolution {2048};
         Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;

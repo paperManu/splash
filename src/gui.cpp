@@ -111,10 +111,10 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 }
 
 /*************/
-void Gui::computeBlending()
+void Gui::computeBlending(bool once)
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("computeBlending");
+    scene->sendMessageToWorld("computeBlending", {(int)once});
 }
 
 /*************/
@@ -224,7 +224,9 @@ sendAsDefault:
     case GLFW_KEY_B:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            computeBlending();
+            computeBlending(true);
+        else if (action == GLFW_PRESS && mods == (GLFW_MOD_CONTROL + GLFW_MOD_ALT))
+            computeBlending(false);
         break;
     }
 #if HAVE_GPHOTO
@@ -388,7 +390,7 @@ bool Gui::render()
             ImGui::Separator();
 #endif
             if (ImGui::Button("Compute blending map"))
-                computeBlending();
+                computeBlending(true);
             if (ImGui::Button("Flash background"))
                 flashBackground();
             if (ImGui::Button("Wireframe / Textured"))
@@ -693,6 +695,7 @@ void Gui::initImWidgets()
         text += "Shortcuts for the calibration view:\n";
         text += " Ctrl+F: white background instead of black\n";
         text += " Ctrl+B: compute the blending between all cameras\n";
+        text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
         text += " Ctrl+T: textured draw mode\n";
         text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO

@@ -259,29 +259,11 @@ void Camera::computeBlendingMap(ImagePtr& map)
 }
 
 /*************/
-void Camera::blendingResetVisibility()
-{
-    for (auto& obj : _objects)
-    {
-        obj->resetVisibility();
-    }
-}
-
-/*************/
 void Camera::blendingComputeVisibility()
 {
     for (auto& obj : _objects)
     {
-        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix());
-    }
-}
-
-/*************/
-void Camera::blendingResetTessellation()
-{
-    for (auto& obj : _objects)
-    {
-        obj->resetTessellation();
+        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
 }
 
@@ -290,7 +272,7 @@ void Camera::blendingTessellateForCurrentCamera()
 {
     for (auto& obj : _objects)
     {
-        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix());
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
     }
 }
 
@@ -1096,12 +1078,16 @@ void Camera::loadDefaultModels()
         mesh->setAttribute("name", {file.first});
         mesh->setAttribute("file", {file.second});
 
+        GeometryPtr geom = make_shared<Geometry>();
+        geom->setAttribute("name", {file.first});
+        geom->linkTo(mesh);
+
         ObjectPtr obj = make_shared<Object>();
         obj->setAttribute("name", {file.first});
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", SPLASH_MARKER_SET);
-        obj->linkTo(mesh);
+        obj->linkTo(geom);
 
         _models[file.first] = obj;
     }
@@ -1338,6 +1324,15 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_blendWidth};
+    });
+
+    _attribFunctions["blendPrecision"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _blendPrecision = args[0].asFloat();
+        return true;
+    }, [&]() -> Values {
+        return {_blendPrecision};
     });
 
     _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {

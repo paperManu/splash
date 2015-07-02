@@ -79,6 +79,11 @@ class Mesh : public BufferObject
         std::vector<float> getNormals() const;
 
         /**
+         * Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
+         */
+        std::vector<float> getAnnexe() const;
+
+        /**
          * Get the timestamp for the current mesh
          */
         std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
@@ -109,6 +114,7 @@ class Mesh : public BufferObject
             std::vector<glm::vec4> vertices;
             std::vector<glm::vec2> uvs;
             std::vector<glm::vec3> normals;
+            std::vector<glm::vec4> annexe;
         };
 
         MeshContainer _mesh;

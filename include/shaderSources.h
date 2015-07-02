@@ -34,6 +34,67 @@ namespace Splash
 struct ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES {
+        //
+        // Project a point wrt a mvp matrix, and check if it is in the view frustum
+        {"projectAndCheckVisibility", R"(
+            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 dist)
+            {
+                vec4 projected = mvp * vec4(p.xyz, 1.0);
+                projected /= projected.w;
+                p = projected;
+
+                if (projected.z >= 0.0)
+                {
+                    projected = abs(projected);
+                    dist = projected.xy;
+                    bvec4 isVisible = lessThanEqual(projected, vec4(1.0 + margin));
+                    if (isVisible.x && isVisible.y && isVisible.z)
+                        return true;
+                }
+
+                return false;
+            }
+        )"},
+        //
+        // Compute a normal vector from three vectors
+        {"normalVector", R"(
+            uniform int _sideness;
+
+            vec3 normalVector(vec3 u, vec3 v, vec3 w)
+            {
+                vec3 n = normalize(cross(v - u, w - u));
+
+                if (_sideness == 0)
+                    n.z = 0.0;
+                else if (_sideness == 2)
+                    n.z = -n.z;
+
+                return n;
+            }
+        )"},
+        //
+        // Compute a smooth blending from a projected point
+        {"getSmoothBlendFromVertex", R"(
+            float getSmoothBlendFromVertex(vec4 v, float blendDist)
+            {
+                vec2 screenPos = v.xy * 0.5 + vec2(0.5);
+                vec2 dist = vec2(min(screenPos.x, 1.0 - screenPos.x), min(screenPos.y, 1.0 - screenPos.y));
+
+                // See Lancelle et al. 2011 for explanations about the various weighting functions
+                // d1
+                //float weight = min(dist.x / blendDist, dist.y / blendDist);
+
+                // d2
+                dist = clamp(dist / blendDist, vec2(0.0), vec2(1.0));
+                float weight = 2.0 / (1.0 / dist.x + 1.0 / dist.y);
+                weight = pow(max(0.0, min(1.0, weight)), 2.0);
+
+                // d4 (and d3 if pow(x, 1.0))
+                //float weight = pow(abs(dist.x / blendDist * dist.y / blendDist), 1.5);
+                
+                return weight;
+            }
+        )"}
     };
 
     /**
@@ -114,12 +175,17 @@ struct ShaderSources
 
         void main(void)
         {
-            uvec3 pos = gl_GlobalInvocationID;
-            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+            int globalID = int(gl_WorkGroupID.x * 32 * 32
+                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
+                               + gl_LocalInvocationIndex);
 
-            if (globalID < _vertexNbr)
+            if (globalID < _vertexNbr / 3)
             {
-                annexe[globalID] = vec4(0.0);
+                for (int idx = 0; idx < 3; ++idx)
+                {
+                    int vertexId = globalID * 3 + idx;
+                    annexe[vertexId] = vec4(0.0);
+                }
             }
         }
     )"};
@@ -130,6 +196,10 @@ struct ShaderSources
     const std::string COMPUTE_SHADER_COMPUTE_VISIBILITY {R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
+
+        #include getSmoothBlendFromVertex
+        #include normalVector
+        #include projectAndCheckVisibility
 
         layout(local_size_x = 32, local_size_y = 32) in;
 
@@ -151,47 +221,36 @@ struct ShaderSources
         uniform int _vertexNbr;
         uniform mat4 _mvp;
         uniform mat4 _mNormal;
+        uniform float _blendWidth = 0.1;
 
         void main(void)
         {
-            uvec3 pos = gl_GlobalInvocationID;
-            int globalID = int(gl_WorkGroupID.x * 32 * 32 + gl_LocalInvocationIndex);
+            int globalID = int(gl_WorkGroupID.x * 32 * 32
+                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
+                               + gl_LocalInvocationIndex);
             vec4 screenVertex[3];
+            bvec3 vertexVisible;
 
             if (globalID < _vertexNbr / 3)
             {
-                bool oneVertexVisible = false;
+                bool allVerticesVisible = true;
                 for (int idx = 0; idx < 3; ++idx)
                 {
                     int vertexId = globalID * 3 + idx;
-                    vec4 normalizedSpaceVertex = _mvp * vec4(vertex[vertexId].xyz, 1.0);
-                    normalizedSpaceVertex /= normalizedSpaceVertex.w;
+
+                    vec2 dist;
+                    vec4 normalizedSpaceVertex = vertex[vertexId];
+                    vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, dist);
                     screenVertex[idx] = normalizedSpaceVertex;
-
-                    vec4 newSpaceNormal = _mNormal * vec4(normal[vertexId].xyz, 0.0);
-                    newSpaceNormal /= newSpaceNormal.w;
-
-                    //if (newSpaceNormal.z >= 0.0 && normalizedSpaceVertex.z > 0.0)
-                    //{
-                        normalizedSpaceVertex = abs(normalizedSpaceVertex);
-
-                        bvec4 isVisible = lessThanEqual(normalizedSpaceVertex, vec4(1.0));
-                        if (isVisible.x && isVisible.y && isVisible.z)
-                            oneVertexVisible = true;
-                    //}
                 }
 
-                if (oneVertexVisible)
+                vec3 projectedNormal = normalVector(screenVertex[0].xyz, screenVertex[1].xyz, screenVertex[2].xyz);
+                if (all(vertexVisible) && projectedNormal.z >= 0.0)
                 {
                     for (int idx = 0; idx < 3; ++idx)
                     {
                         int vertexId = globalID * 3 + idx;
-                        vec2 normalizedPos = vec2(screenVertex[idx].x / 2.0 + 0.5, screenVertex[idx].y / 2.0 + 0.5);
-                        vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
-                        distDoubleInvert = clamp(distDoubleInvert / 0.1, vec2(0.0), vec2(1.0));
-                        float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                        float dist = pow(max(0.0, min(1.0, weight)), 2.0);
-                        annexe[vertexId].x += dist;
+                        annexe[vertexId].xy += vec2(1.0, getSmoothBlendFromVertex(screenVertex[idx], _blendWidth));
                     }
                 }
             }
@@ -205,7 +264,7 @@ struct ShaderSources
     /**
      * Default vertex shader with feedback
      */
-    const std::string VERTEX_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
         layout (location = 0) in vec4 _vertex;
         layout (location = 1) in vec2 _texcoord;
         layout (location = 2) in vec4 _normal;
@@ -234,7 +293,10 @@ struct ShaderSources
     /**
      * Default feedback tessellation shader
      */
-    const std::string TESS_CTRL_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+        #include normalVector
+        #include projectAndCheckVisibility
+
         layout (vertices = 3) out;
 
         in VS_OUT
@@ -253,14 +315,67 @@ struct ShaderSources
             vec4 annexe;
         } tcs_out[];
 
+        uniform mat4 _mvp;
+        uniform mat4 _mNormal;
+        uniform float _blendWidth = 0.1;
+        uniform float _blendPrecision = 0.1;
+
+        const float blendDistFactorToSubdiv = 2.0;
+
         void main(void)
         {
             if (gl_InvocationID == 0)
             {
-                gl_TessLevelInner[0] = 2.0;
-                gl_TessLevelOuter[0] = 2.0;
-                gl_TessLevelOuter[1] = 2.0;
-                gl_TessLevelOuter[2] = 2.0;
+                bvec3 vertexVisibility;
+                vec4 projectedVertices[3];
+                float maxDist = 0.0;
+                int nearestBorder = 0; // 0 is nearest border is horizontal, 1 otherwise
+                for (int i = 0; i < 3; ++i)
+                {
+                    vec2 dist;
+                    projectedVertices[i] = tcs_in[i].vertex;
+                    vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
+                    float localMax = max(dist.x, dist.y);
+                    if (localMax > maxDist)
+                    {
+                        maxDist = localMax;
+                        nearestBorder = int(dist.y > dist.x);
+                    }
+                }
+
+                gl_TessLevelInner[0] = 1.0;
+                gl_TessLevelOuter[0] = 1.0;
+                gl_TessLevelOuter[1] = 1.0;
+                gl_TessLevelOuter[2] = 1.0;
+
+                vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
+                if (any(vertexVisibility) && projectedNormal.z >= 0.0)
+                {
+                    if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
+                    {
+                        vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1 - nearestBorder) * vec2(0.0, 1.0);
+                        float maxTessLevel = 1.0;
+                        for (int idx = 0; idx < 3; idx++)
+                        {
+                            int nextIdx = (idx + 1) % 3;
+                            vec2 edge = projectedVertices[nextIdx].xy - projectedVertices[idx].xy;
+                            float edgeProjectedLength = abs(dot(edge, nearestBorderNormal));
+                            float tessLevel = max(1.0, ((edgeProjectedLength + length(edge)) * 0.5) / _blendPrecision);
+                            tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, blendDistFactorToSubdiv * _blendWidth), 1.0, maxDist));
+                            maxTessLevel = max(maxTessLevel, tessLevel);
+                            gl_TessLevelOuter[(idx + 2) % 3] = tessLevel;
+                        }
+
+                        gl_TessLevelInner[0] = maxTessLevel;
+                    }
+                    else
+                    {
+                        gl_TessLevelInner[0] = 1.0;
+                        gl_TessLevelOuter[0] = 1.0;
+                        gl_TessLevelOuter[1] = 1.0;
+                        gl_TessLevelOuter[2] = 1.0;
+                    }
+                }
             }
 
             tcs_out[gl_InvocationID].vertex = tcs_in[gl_InvocationID].vertex;
@@ -272,7 +387,8 @@ struct ShaderSources
         }
     )"};
 
-    const std::string TESS_EVAL_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+        //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
         in TCS_OUT
@@ -313,7 +429,10 @@ struct ShaderSources
     /**
      * Default feedback geometry shader
      */
-    const std::string GEOMETRY_SHADER_FEEDBACK_DEFAULT {R"(
+    const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+        #include normalVector
+        #include projectAndCheckVisibility
+
         in TES_OUT
         {
             vec4 vertex;
@@ -331,21 +450,117 @@ struct ShaderSources
         } geom_out;
 
         layout (triangles) in;
-        layout (triangle_strip, max_vertices = 3) out;
+        layout (triangle_strip, max_vertices = 9) out;
+
+        const int cutTable[6*9] = {
+            0, 3, 4, 3, 1, 4, 1, 2, 4,
+            0, 3, 4, 3, 1, 4, 4, 2, 0,
+            0, 1, 3, 3, 4, 0, 3, 2, 4,
+            0, 1, 3, 3, 4, 0, 3, 2, 4,
+            0, 3, 4, 3, 1, 4, 4, 2, 0,
+            0, 3, 4, 3, 1, 4, 1, 2, 4
+        };
+
+        uniform mat4 _mvp;
 
         void main(void)
         {
+            vec4 projectedVertices[3];
+            bvec3 side; // true = inside, false = outside
+            vec2 distToBoundary[3];
+            int cutCase = 0;
             for (int i = 0; i < 3; ++i)
             {
-                gl_Position = geom_in[i].vertex;
-                geom_out.vertex = geom_in[i].vertex;
-                geom_out.texcoord = geom_in[i].texcoord;
-                geom_out.normal = geom_in[i].normal;
-                geom_out.annexe = geom_in[i].annexe;
-                EmitVertex();
+                vec2 dist;
+                projectedVertices[i] = geom_in[i].vertex;
+                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
+                side[i] = isVisible;
+                distToBoundary[i] = dist - vec2(1.0);
+                if (side[i])
+                    cutCase += 1 << i;
             }
+            cutCase -= 1; // The table starts at 0...
 
-            EndPrimitive();
+            vec3 normal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
+            // If all vertices are on the same side, and if the face is correctly oriented
+            if (all(side) || all(not(side)) || normal.z < 0.0)
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    gl_Position = geom_in[i].vertex;
+                    geom_out.vertex = geom_in[i].vertex;
+                    geom_out.texcoord = geom_in[i].texcoord;
+                    geom_out.normal = geom_in[i].normal;
+                    geom_out.annexe = geom_in[i].annexe;
+                    EmitVertex();
+                }
+
+                EndPrimitive();
+            }
+            // ... if not
+            else
+            {
+                vec4 vertices[5];
+                vec2 texcoords[5];
+                vec4 normals[5];
+                for (int i = 0; i < 3; ++i)
+                {
+                    vertices[i] = geom_in[i].vertex;
+                    texcoords[i] = geom_in[i].texcoord;
+                    normals[i] = geom_in[i].normal;
+                }
+                    
+                // Create the additional points
+                int nextVertex = 3;
+                for (int i = 0; i < 3; ++i)
+                {
+                    int nextId = (i + 1) % 3;
+                    if (side[i] != side[nextId])
+                    {
+                        float ratios[2];
+                        float denumerator = abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x);
+                        ratios[0] = abs(distToBoundary[i].x) / denumerator;
+                        ratios[1] = abs(distToBoundary[i].y) / denumerator;
+                        
+                        vec2 signs[2];
+                        signs[0] = sign(distToBoundary[i]);
+                        signs[1] = sign(distToBoundary[nextId]);
+
+                        float ratio;
+                        // Corner case: a point is above both edges
+                        if (signs[0].x != signs[1].x && signs[0].y != signs[1].y)
+                            ratio = side[i] ? min(ratios[0], ratios[1]) : max(ratios[0], ratios[1]);
+                        // First edge case: a point is above the vertical edges
+                        else if (signs[0].x != signs[1].x)
+                            ratio = ratios[0];
+                        // Second edge case: a point is above the horizontal edges
+                        else
+                            ratio = ratios[1];
+                        
+                        vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
+                        texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
+                        normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
+                        nextVertex++;
+                    }
+                }
+
+                // Create the triangles from the cut case
+                for (int t = 0; t < 3; ++t)
+                {
+                    for (int v = 0; v < 3; ++v)
+                    {
+                        int currentIndex = cutTable[cutCase * 9 + t * 3 + v];
+                        gl_Position = vertices[currentIndex];
+                        geom_out.vertex = vertices[currentIndex];
+                        geom_out.texcoord = texcoords[currentIndex];
+                        geom_out.normal = normals[currentIndex];
+                        geom_out.annexe = vec4(0.0);
+                        EmitVertex();
+                    }
+
+                    EndPrimitive();
+                }
+            }
         }
     )"};
 
@@ -357,13 +572,17 @@ struct ShaderSources
      * Default vertex shader
      */
     const std::string VERTEX_SHADER_DEFAULT {R"(
+        #include getSmoothBlendFromVertex
+
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         layout(location = 2) in vec4 _normal;
         layout(location = 3) in vec4 _annexe;
+
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
 
         out VertexData
         {
@@ -371,15 +590,26 @@ struct ShaderSources
             vec2 texCoord;
             vec4 normal;
             vec4 annexe;
+            float blendingValue;
         } vertexOut;
 
         void main(void)
         {
-            vertexOut.position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
+            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
-            vertexOut.normal.xyz = normalize((_normalMatrix * vec4(_normal.xyz, 0.0)).xyz);
+            vertexOut.normal = normalize(_normalMatrix * _normal);
             vertexOut.texCoord = _texcoord;
             vertexOut.annexe = _annexe;
+
+            vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
+            if (projectedVertex.z >= 0.0)
+            {
+                if (_annexe.y == 0.0)
+                    vertexOut.blendingValue = 1.0;
+                else
+                    vertexOut.blendingValue = min(1.0, getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x) / _annexe.y);
+            }
         }
     )"};
 
@@ -402,7 +632,6 @@ struct ShaderSources
 
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
-        uniform int _texBlendingMap = 0;
         uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
@@ -417,6 +646,7 @@ struct ShaderSources
             vec2 texCoord;
             vec4 normal;
             vec4 annexe;
+            float blendingValue;
         } vertexIn;
 
         out vec4 fragColor;
@@ -437,20 +667,6 @@ struct ShaderSources
             vec4 normal = vertexIn.normal;
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
-
-            /************ TEST ***************/
-            //if (vertexIn.annexe.x < 0.5)
-            //    fragColor = vec4(0.0);
-            //else if (vertexIn.annexe.x < 1.5)
-            //    fragColor = vec4(1.0, 0.0, 0.0, 1.0);
-            //else if (vertexIn.annexe.x < 2.5)
-            //    fragColor = vec4(0.0, 0.0, 1.0, 1.0);
-            //else
-            //    fragColor = vec4(0.0, 1.0, 0.0, 1.0);
-            //fragColor.rgb = vec3(vertexIn.annexe.x);
-            //fragColor.a = 1.0;
-            //return;
-            /******* END OF TEST ************/
 
             // Compute the real texture coordinates, according to flip / flop
             vec2 realCoords;
@@ -482,7 +698,7 @@ struct ShaderSources
             color.b *= _fovAndColorBalance.w / maxBalanceRatio;
 
             // Black level
-            float blackCorrection = max(min(blackLevel, 1.0), 0.0);
+            float blackCorrection = clamp(blackLevel, 0.0, 1.0);
             color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
             
             // If there is a blending map
@@ -506,7 +722,7 @@ struct ShaderSources
                 vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
                 distDoubleInvert = clamp(distDoubleInvert / blendWidth, vec2(0.0), vec2(1.0));
                 float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                float dist = pow(max(0.0, min(1.0, weight)), 2.0);
+                float dist = pow(clamp(weight, 0.0, 1.0), 2.0);
                 blendFactorFloat = 256.0 * dist / float(blendFactor);
             }
             else
@@ -514,6 +730,10 @@ struct ShaderSources
                 blendFactorFloat = 1.0 / float(camNbr);
             }
             color.rgb = color.rgb * min(1.0, blendFactorFloat);
+        #endif
+
+        #ifdef VERTEXBLENDING
+            color.rgb = color.rgb * vertexIn.blendingValue;
         #endif
 
             // Brightness correction

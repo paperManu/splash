@@ -61,29 +61,30 @@ void Object::activate()
     for (auto& m : _blendMaps)
         m->update();
 
-    bool withBlend = false;
+    bool withTextureBlend = false;
     if (_blendMaps.size() != 0)
     {
         for (int i = 0; i < _textures.size(); ++i)
             if (_blendMaps[0] == _textures[i])
-            {
-                _shader->setAttribute("blending", {1});
-                withBlend = true;
-            }
+                withTextureBlend = true;
     }
 
     if (_fill == "texture")
     {
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
         {
-            if (withBlend)
+            if (_vertexBlendingActive)
+                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
+            else if (withTextureBlend)
                 _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
             else
                 _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
         }
         else
         {
-            if (withBlend)
+            if (_vertexBlendingActive)
+                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
+            else if (withTextureBlend)
                 _shader->setAttribute("fill", {"texture", "BLENDING"});
             else
                 _shader->setAttribute("fill", {"texture"});
@@ -150,9 +151,6 @@ void Object::deactivate()
         t->unlock();
     }
 
-    if (_blendMaps.size() != 0)
-        _shader->setAttribute("blending", {0});
-
     _shader->deactivate();
     _geometries[0]->deactivate();
     _mutex.unlock();
@@ -190,15 +188,23 @@ bool Object::linkTo(BaseObjectPtr obj)
             return linkTo(tex);
         }
         else
+        {
             return false;
+        }
     }
     else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
         GeometryPtr geom = make_shared<Geometry>();
+        geom->setName(getName() + "_" + obj->getName() + "_geom");
         if (geom->linkTo(obj))
+        {
+            _root.lock()->registerObject(geom);
             return linkTo(geom);
+        }
         else
+        {
             return false;
+        }
     }
     else if (dynamic_pointer_cast<Geometry>(obj).get() != nullptr)
     {
@@ -277,8 +283,8 @@ void Object::resetVisibility()
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderResetBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
-            unsigned int groupCountX = verticesNbr / 3;
-            _computeShaderResetBlending->doCompute(groupCountX);
+            unsigned int groupCountX = verticesNbr / 3 / 128;
+            _computeShaderResetBlending->doCompute(groupCountX, 128);
             geom->deactivate();
         }
     }
@@ -296,13 +302,14 @@ void Object::resetTessellation()
 }
 
 /*************/
-void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
+void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision)
 {
     unique_lock<mutex> lock(_mutex);
 
     if (!_feedbackShaderSubdivideCamera)
     {
         _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
         _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex",
                                                                           "GEOM_OUT.texcoord",
                                                                           "GEOM_OUT.normal",
@@ -313,24 +320,32 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         for (auto& geom : _geometries)
         {
-            geom->update();
-            geom->activate();
+            do
+            {
+                geom->update();
+                geom->activate();
 
-            auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
-            auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
 
-            auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
-            auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
-            _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
+                auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
+                auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
 
-            geom->activateForFeedback();
-            _feedbackShaderSubdivideCamera->activateFeedback();
-            glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
-            _feedbackShaderSubdivideCamera->deactivate();
+                auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
+                auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            geom->deactivateFeedback();
-            geom->deactivate();
+                geom->activateForFeedback();
+                _feedbackShaderSubdivideCamera->activateFeedback();
+                glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
+                _feedbackShaderSubdivideCamera->deactivate();
+
+                geom->deactivateFeedback();
+                geom->deactivate();
+            } while (geom->hasBeenResized());
+
             geom->swapBuffers();
             geom->useAlternativeBuffers(true);
         }
@@ -338,7 +353,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 }
 
 /*************/
-void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix)
+void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
     unique_lock<mutex> lock(_mutex);
 
@@ -358,6 +373,8 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             // Set uniforms
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderComputeBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderComputeBlending->setAttribute("uniform", {"_sideness", _sideness});
+            _computeShaderComputeBlending->setAttribute("uniform", {"_blendWidth", blendWidth});
 
             auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
             auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
@@ -367,8 +384,8 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            unsigned int groupCountX = verticesNbr / 3;
-            _computeShaderComputeBlending->doCompute(groupCountX);
+            unsigned int groupCountX = verticesNbr / 3 / 128;
+            _computeShaderComputeBlending->doCompute(groupCountX, 128);
             geom->deactivate();
         }
     }
@@ -390,6 +407,13 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
+    _attribFunctions["activateVertexBlending"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _vertexBlendingActive = args[0].asInt();
+        return true;
+    });
+    
     _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 3)
             return false;
@@ -417,9 +441,12 @@ void Object::registerAttributes()
     _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
+
+        _sideness = args[0].asInt();
         switch (args[0].asInt())
         {
         default:
+            _sideness = 0;
             return false;
         case 0:
             _shader->setAttribute("sideness", {Shader::doubleSided});

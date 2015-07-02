@@ -301,7 +301,7 @@ class BufferObject : public BaseObject
         void setNotUpdated() {BaseObject::setNotUpdated(); _updatedBuffer = false;}
 
         /**
-         * Update the Image from a serialized representation
+         * Update the BufferObject from a serialized representation
          * The second definition updates from the inner serialized object
          */
         virtual bool deserialize(std::unique_ptr<SerializedObject> obj) = 0;

@@ -39,7 +39,7 @@ GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, 
     _type = type;
     _usage = usage;
 
-    glBufferData(GL_ARRAY_BUFFER, size * _baseSize, data, usage);
+    glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, data, usage);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -47,6 +47,41 @@ GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, 
 GpuBuffer::~GpuBuffer()
 {
     glDeleteBuffers(1, &_glId);
+}
+
+/*************/
+vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
+{
+    if (!_glId || !_type || !_usage || !_elementSize)
+        return {};
+
+    size_t vectorSize = 0;
+    if (vertexNbr)
+        vectorSize = _baseSize * _elementSize * vertexNbr;
+    else
+        vectorSize = _baseSize * _elementSize * _size;
+
+    auto buffer = vector<char>(vectorSize);
+    glGetError();
+    glBindBuffer(GL_ARRAY_BUFFER, _glId);
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, vectorSize, buffer.data());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    return buffer;
+}
+
+/*************/
+void GpuBuffer::setBufferFromVector(const vector<char>& buffer)
+{
+    if (!_glId || !_type || !_usage || !_elementSize)
+        return;
+
+    if (buffer.size() > _baseSize * _elementSize * _size)
+        resize(buffer.size());
+
+    glGetError();
+    glBindBuffer(GL_ARRAY_BUFFER, _glId);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, buffer.size(), buffer.data());
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 /*************/
@@ -58,8 +93,10 @@ void GpuBuffer::resize(size_t size)
     glDeleteBuffers(1, &_glId);
     glGenBuffers(1, &_glId);
     glBindBuffer(GL_ARRAY_BUFFER, _glId);
-    glBufferData(GL_ARRAY_BUFFER, size * _baseSize, nullptr, _usage);
+    glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, nullptr, _usage);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    _size = size;
 }
 
 } // end of namespace

@@ -27,6 +27,7 @@
 
 #include <chrono>
 #include <map>
+#include <utility>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -39,7 +40,7 @@
 
 namespace Splash {
 
-class Geometry : public BaseObject
+class Geometry : public BufferObject
 {
     public:
         /**
@@ -85,6 +86,21 @@ class Geometry : public BaseObject
         int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
+         * Get the geometry as serialized
+         */
+        std::unique_ptr<SerializedObject> serialize() const;
+
+        /**
+         * Deserialize the geometry
+         */
+        bool deserialize(std::unique_ptr<SerializedObject> obj);
+
+        /**
+         * Get whether the alternative buffers have been resized during the last feedback call
+         */
+        bool hasBeenResized() {return _buffersResized;}
+
+        /**
          * Try to link the given BaseObject to this
          */
         bool linkTo(BaseObjectPtr obj);
@@ -95,19 +111,9 @@ class Geometry : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
-         * Replace one of the GL buffers with an alternative one
-         */
-        void setAlternativeBuffer(std::shared_ptr<GpuBuffer> buffer, int index);
-
-        /**
          * Specify the number of vertices to draw
          */
         void setAlternativeVerticesNumber(unsigned int nbr) {_alternativeVerticesNumber = nbr;}
-
-        /**
-         * Deactivate the specified alternative buffer (and re-use the default one
-         */
-        void resetAlternativeBuffer(int index = -1);
 
         /**
          * Set the mesh for this object
@@ -140,6 +146,7 @@ class Geometry : public BaseObject
         std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {}; // Alternative buffers used for rendering
         std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers {}; // Temporary buffers used for feedback
         bool _buffersDirty {false};
+        bool _buffersResized {false}; // Holds whether the alternative buffers have been resized in the previous feedback
         bool _useAlternativeBuffers {false};
 
         int _verticesNumber {0};
@@ -150,7 +157,10 @@ class Geometry : public BaseObject
 
         // Transform feedback
         GLuint _feedbackQuery;
-        int _feedbackNbrPrimitives {0};
+        int _feedbackMaxNbrPrimitives {0};
+
+        // Serialization
+        std::unique_ptr<SerializedObject> _serializedObject {};
 
         /**
          * Register new functors to modify attributes

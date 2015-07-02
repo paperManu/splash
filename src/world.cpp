@@ -684,8 +684,7 @@ void World::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() == 0 || args[0].asInt() != 0)
-            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
+        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", args);
         return true;
     });
 

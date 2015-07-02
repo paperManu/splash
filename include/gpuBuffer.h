@@ -43,6 +43,7 @@ class GpuBuffer
     public:
         /**
          * Constructor
+         * size is given as the number of elements
          */
         GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data = nullptr);
 
@@ -90,6 +91,17 @@ class GpuBuffer
         inline size_t getSize() const {return _size;}
 
         /**
+         * Get the size in bytes of the buffer
+         */
+        inline size_t getMemorySize() const {return _size * _baseSize * _elementSize;}
+
+        /**
+         * Get the content of the buffer
+         * One can specify the vertex number to get, with care!
+         */
+        std::vector<char> getBufferAsVector(size_t vertexNbr = 0);
+
+        /**
          * Get the component size
          */
         inline size_t getComponentSize() const {return _baseSize;}
@@ -104,6 +116,11 @@ class GpuBuffer
          */
         void resize(size_t size);
 
+        /**
+         * Set the content from a vector of char
+         */
+        void setBufferFromVector(const std::vector<char>& buffer);
+
     private:
         GLuint _glId {0};
         size_t _size {0};
@@ -111,13 +128,6 @@ class GpuBuffer
         GLint _elementSize {0}; // Number of components per vector
         GLenum _type {0};
         GLenum _usage {0};
-
-        int _verticesNumber {0};
-
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
 };
 
 } // end of namespace
