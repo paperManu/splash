@@ -261,6 +261,19 @@ sendAsDefault:
             flashBackground();
         break;
     }
+    case GLFW_KEY_M:
+    {
+        if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
+        {
+            static bool cursorVisible = false;
+            cursorVisible = !cursorVisible;
+
+            auto scene = _scene.lock();
+            for (auto& obj : scene->_objects)
+                if (obj.second->getType() == "window")
+                    dynamic_pointer_cast<Window>(obj.second)->showCursor(cursorVisible);
+        }
+    }
     // Switch the rendering to textured
     case GLFW_KEY_T: 
     {
@@ -696,6 +709,7 @@ void Gui::initImWidgets()
         text += " Ctrl+F: white background instead of black\n";
         text += " Ctrl+B: compute the blending between all cameras\n";
         text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
+        text += " Ctrl+M: hide/show the OS cursor\n";
         text += " Ctrl+T: textured draw mode\n";
         text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO
