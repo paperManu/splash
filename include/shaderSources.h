@@ -360,7 +360,7 @@ struct ShaderSources
                             int nextIdx = (idx + 1) % 3;
                             vec2 edge = projectedVertices[nextIdx].xy - projectedVertices[idx].xy;
                             float edgeProjectedLength = abs(dot(edge, nearestBorderNormal));
-                            float tessLevel = max(1.0, (edgeProjectedLength * 0.5 + length(edge) * 0.5) / _blendPrecision);
+                            float tessLevel = max(1.0, ((edgeProjectedLength + length(edge)) * 0.5) / _blendPrecision);
                             tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, blendDistFactorToSubdiv * _blendWidth), 1.0, maxDist));
                             maxTessLevel = max(maxTessLevel, tessLevel);
                             gl_TessLevelOuter[(idx + 2) % 3] = tessLevel;
@@ -466,9 +466,8 @@ struct ShaderSources
         void main(void)
         {
             vec4 projectedVertices[3];
-            bool side[3]; // true = inside, false = outside
+            bvec3 side; // true = inside, false = outside
             vec2 distToBoundary[3];
-            float verticesInside = 0;
             int cutCase = 0;
             for (int i = 0; i < 3; ++i)
             {
@@ -478,16 +477,13 @@ struct ShaderSources
                 side[i] = isVisible;
                 distToBoundary[i] = dist - vec2(1.0);
                 if (side[i])
-                {
-                    verticesInside++;
                     cutCase += 1 << i;
-                }
             }
             cutCase -= 1; // The table starts at 0...
 
             vec3 normal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
             // If all vertices are on the same side, and if the face is correctly oriented
-            if (verticesInside == 0 || verticesInside == 3 || normal.z < 0.0)
+            if (all(side) || all(not(side)) || normal.z < 0.0)
             {
                 for (int i = 0; i < 3; ++i)
                 {
@@ -522,8 +518,9 @@ struct ShaderSources
                     if (side[i] != side[nextId])
                     {
                         float ratios[2];
-                        ratios[0] = abs(distToBoundary[i].x) / (abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x));
-                        ratios[1] = abs(distToBoundary[i].y) / (abs(distToBoundary[i].y) + abs(distToBoundary[nextId].y));
+                        float denumerator = abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x);
+                        ratios[0] = abs(distToBoundary[i].x) / denumerator;
+                        ratios[1] = abs(distToBoundary[i].y) / denumerator;
                         
                         vec2 signs[2];
                         signs[0] = sign(distToBoundary[i]);
@@ -593,18 +590,13 @@ struct ShaderSources
             vec2 texCoord;
             vec4 normal;
             vec4 annexe;
+            float blendingValue;
         } vertexOut;
-
-        out BlendingData
-        {
-            float total;
-            float local;
-        } blendOut;
 
         void main(void)
         {
-            vertexOut.position.xyz = _vertex.xyz * _scale;
-            vertexOut.position = _modelViewProjectionMatrix * vec4(vertexOut.position.xyz, 1.0);
+            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
             vertexOut.texCoord = _texcoord;
@@ -613,11 +605,10 @@ struct ShaderSources
             vec4 projectedVertex = vertexOut.position / vertexOut.position.w;
             if (projectedVertex.z >= 0.0)
             {
-                blendOut.total = _annexe.y;
-                if (blendOut.total == 0.0)
-                    blendOut.local = 1.0;
+                if (_annexe.y == 0.0)
+                    vertexOut.blendingValue = 1.0;
                 else
-                    blendOut.local = min(1.0, getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x) / blendOut.total);
+                    vertexOut.blendingValue = min(1.0, getSmoothBlendFromVertex(projectedVertex, _cameraAttributes.x) / _annexe.y);
             }
         }
     )"};
@@ -655,13 +646,8 @@ struct ShaderSources
             vec2 texCoord;
             vec4 normal;
             vec4 annexe;
+            float blendingValue;
         } vertexIn;
-
-        in BlendingData
-        {
-            float total;
-            float local;
-        } blendIn;
 
         out vec4 fragColor;
         // Texture transformation
@@ -712,7 +698,7 @@ struct ShaderSources
             color.b *= _fovAndColorBalance.w / maxBalanceRatio;
 
             // Black level
-            float blackCorrection = max(min(blackLevel, 1.0), 0.0);
+            float blackCorrection = clamp(blackLevel, 0.0, 1.0);
             color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
             
             // If there is a blending map
@@ -736,7 +722,7 @@ struct ShaderSources
                 vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
                 distDoubleInvert = clamp(distDoubleInvert / blendWidth, vec2(0.0), vec2(1.0));
                 float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                float dist = pow(max(0.0, min(1.0, weight)), 2.0);
+                float dist = pow(clamp(weight, 0.0, 1.0), 2.0);
                 blendFactorFloat = 256.0 * dist / float(blendFactor);
             }
             else
@@ -747,7 +733,7 @@ struct ShaderSources
         #endif
 
         #ifdef VERTEXBLENDING
-            color.rgb = color.rgb * blendIn.local;
+            color.rgb = color.rgb * vertexIn.blendingValue;
         #endif
 
             // Brightness correction
