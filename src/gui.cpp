@@ -273,6 +273,7 @@ sendAsDefault:
                 if (obj.second->getType() == "window")
                     dynamic_pointer_cast<Window>(obj.second)->showCursor(cursorVisible);
         }
+        break;
     }
     // Switch the rendering to textured
     case GLFW_KEY_T: 
