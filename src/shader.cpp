@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "shaderSources.h"
+#include "timer.h"
 
 #include <fstream>
 #include <sstream>
@@ -25,7 +26,7 @@ Shader::Shader(ProgramType type)
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
         _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
-        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
         setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
         compileProgram();
 
@@ -737,7 +738,7 @@ void Shader::registerGraphicAttributes()
         {
             _fill = texture;
             _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
@@ -749,6 +750,15 @@ void Shader::registerGraphicAttributes()
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
+        {
+            _fill = primitiveId;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
             compileProgram();
         }
         else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
@@ -876,6 +886,11 @@ void Shader::registerComputeAttributes()
         else if ("computeVisibility" == args[0].asString())
         {
             setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_VISIBILITY, compute);
+            compileProgram();
+        }
+        else if ("transferVisibilityToAttr" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
             compileProgram();
         }
 

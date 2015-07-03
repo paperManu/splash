@@ -339,15 +339,21 @@ void Scene::renderBlending()
                 if (cameras.size() != 0)
                 {
                     for (auto& object : objects)
-                    {
                         object->resetTessellation();
-                        object->resetVisibility();
-                    }
 
                     for (auto& camera : cameras)
+                    {
+                        for (auto& object : objects)
+                            object->resetVisibility();
+                        camera->computeVertexVisibility();
                         camera->blendingTessellateForCurrentCamera();
-                    for (auto& camera : cameras)
-                        camera->blendingComputeVisibility();
+                        camera->computeBlendingContribution();
+                    }
+
+                    //for (auto& camera : cameras)
+                    //    camera->blendingTessellateForCurrentCamera();
+                    //for (auto& camera : cameras)
+                    //    camera->computeBlendingContribution();
                 }
 
                 for (auto& obj : _objects)

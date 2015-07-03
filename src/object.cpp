@@ -353,6 +353,27 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 }
 
 /*************/
+void Object::transferVisibilityFromTexToAttr(int width, int height)
+{
+    unique_lock<mutex> lock(_mutex);
+
+    if (!_computeShaderTransferVisibilityToAttr)
+    {
+        _computeShaderTransferVisibilityToAttr = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
+    }
+
+    for (auto& geom : _geometries)
+    {
+        geom->update();
+        geom->activateAsSharedBuffer();
+        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", (float)width, (float)height});
+        _computeShaderTransferVisibilityToAttr->doCompute(width, height);
+        geom->deactivate();
+    }
+}
+
+/*************/
 void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
     unique_lock<mutex> lock(_mutex);

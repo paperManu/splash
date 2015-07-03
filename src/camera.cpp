@@ -259,12 +259,49 @@ void Camera::computeBlendingMap(ImagePtr& map)
 }
 
 /*************/
-void Camera::blendingComputeVisibility()
+void Camera::computeBlendingContribution()
 {
     for (auto& obj : _objects)
     {
         obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
+}
+
+/*************/
+void Camera::computeVertexVisibility()
+{
+    // We want to render the object with a specific texture, containing the primitive IDs
+    vector<Values> shaderFill;
+    for (auto& obj : _objects)
+    {
+        Values fill;
+        obj->getAttribute("fill", fill);
+        obj->setAttribute("fill", {"primitiveId"});
+        shaderFill.push_back(fill);
+    }
+
+    // Render with the current texture, with no marker or frame
+    bool drawFrame = _drawFrame;
+    bool displayCalibration = _displayCalibration;
+    _drawFrame = _displayCalibration = false;
+    render();
+    _drawFrame = drawFrame;
+    _displayCalibration = displayCalibration;
+
+    // Reset the objects to their initial shader
+    int fillIndex {0};
+    for (auto& obj : _objects)
+    {
+        obj->setAttribute("fill", shaderFill[fillIndex]);
+        fillIndex++;
+    }
+
+    // Update the vertices visibility based on the result
+    glActiveTexture(GL_TEXTURE0);
+    _outTextures[0]->bind();
+    for (auto& obj : _objects)
+        obj->transferVisibilityFromTexToAttr(_width, _height);
+    _outTextures[0]->unbind();
 }
 
 /*************/

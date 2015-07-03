@@ -72,6 +72,7 @@ class Shader : public BaseObject
             texture = 0,
             texture_rect,
             color,
+            primitiveId,
             uv,
             wireframe,
             window
