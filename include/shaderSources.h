@@ -503,11 +503,13 @@ struct ShaderSources
                 vec4 vertices[5];
                 vec2 texcoords[5];
                 vec4 normals[5];
+                vec4 annexes[5];
                 for (int i = 0; i < 3; ++i)
                 {
                     vertices[i] = geom_in[i].vertex;
                     texcoords[i] = geom_in[i].texcoord;
                     normals[i] = geom_in[i].normal;
+                    annexes[i] = geom_in[i].annexe;
                 }
                     
                 // Create the additional points
@@ -540,6 +542,7 @@ struct ShaderSources
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
                         texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
+                        annexes[nextVertex] = mix(annexes[i], annexes[nextId], ratio);
                         nextVertex++;
                     }
                 }
@@ -554,7 +557,7 @@ struct ShaderSources
                         geom_out.vertex = vertices[currentIndex];
                         geom_out.texcoord = texcoords[currentIndex];
                         geom_out.normal = normals[currentIndex];
-                        geom_out.annexe = vec4(0.0);
+                        geom_out.annexe = annexes[currentIndex];
                         EmitVertex();
                     }
 

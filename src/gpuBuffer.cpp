@@ -50,6 +50,14 @@ GpuBuffer::~GpuBuffer()
 }
 
 /*************/
+void GpuBuffer::clear()
+{
+    glBindBuffer(GL_ARRAY_BUFFER, _glId);
+    glClearBufferData(GL_ARRAY_BUFFER, GL_R8, GL_RED, _type, NULL);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+/*************/
 vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
 {
     if (!_glId || !_type || !_usage || !_elementSize)

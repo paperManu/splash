@@ -81,6 +81,11 @@ class GpuBuffer
         }
 
         /**
+         * Fill the buffer with 0
+         */
+        void clear();
+
+        /**
          * Get the GL id
          */
         inline GLuint getId() const {return _glId;}
