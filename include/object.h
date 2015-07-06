@@ -164,6 +164,9 @@ class Object : public BaseObject
         ShaderPtr _computeShaderTransferVisibilityToAttr {};
         ShaderPtr _feedbackShaderSubdivideCamera {};
 
+        // A map for previously used graphics shaders
+        std::map<std::string, ShaderPtr> _graphicsShaders;
+
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
         std::vector<TexturePtr> _blendMaps;
@@ -175,6 +178,7 @@ class Object : public BaseObject
 
         std::string _fill {"texture"};
         int _sideness {0};
+        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
 
         /**
          * Init function called by constructor

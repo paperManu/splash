@@ -26,20 +26,18 @@ Shader::Shader(ProgramType type)
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
         _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
-        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
-        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
-        compileProgram();
-
         registerGraphicAttributes();
+
+        setAttribute("fill", {"texture"});
     }
     else if (type == prgCompute)
     {
         _programType = prgCompute;
         _shaders[compute] = glCreateShader(GL_COMPUTE_SHADER);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.COMPUTE_SHADER_DEFAULT, compute);
-        compileProgram();
 
         registerComputeAttributes();
+
+        setAttribute("computePhase", {"resetVisibility"});
     }
     else if (type == prgFeedback)
     {
@@ -49,13 +47,9 @@ Shader::Shader(ProgramType type)
         _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
 
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
-        compileProgram();
-
         registerFeedbackAttributes();
+
+        setAttribute("feedbackPhase", {"tessellateFromCamera"});
     }
 
     registerAttributes();

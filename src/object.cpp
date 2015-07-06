@@ -69,40 +69,58 @@ void Object::activate()
                 withTextureBlend = true;
     }
 
-    if (_fill == "texture")
+    auto shaderIt = _graphicsShaders.find(_fill);
+    if (shaderIt == _graphicsShaders.end())
     {
-        if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
+        _shader = make_shared<Shader>();
+
+        // Set the shader depending on a few other parameters
+        if (_fill == "texture")
         {
-            if (_vertexBlendingActive)
-                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
-            else if (withTextureBlend)
-                _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
+            if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
+            {
+                if (_vertexBlendingActive)
+                    _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
+                else if (withTextureBlend)
+                    _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
+                else
+                    _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
+            }
             else
-                _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
+            {
+                if (_vertexBlendingActive)
+                    _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
+                else if (withTextureBlend)
+                    _shader->setAttribute("fill", {"texture", "BLENDING"});
+                else
+                    _shader->setAttribute("fill", {"texture"});
+            }
+        }
+        else if (_fill == "window")
+        {
+            if (_textures.size() == 1)
+                _shader->setAttribute("fill", {"window", "TEX_1"});
+            else if (_textures.size() == 2)
+                _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
+            else if (_textures.size() == 3)
+                _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
+            else if (_textures.size() == 4)
+                _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
         }
         else
-        {
-            if (_vertexBlendingActive)
-                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
-            else if (withTextureBlend)
-                _shader->setAttribute("fill", {"texture", "BLENDING"});
-            else
-                _shader->setAttribute("fill", {"texture"});
-        }
-    }
-    else if (_fill == "window")
-    {
-        if (_textures.size() == 1)
-            _shader->setAttribute("fill", {"window", "TEX_1"});
-        else if (_textures.size() == 2)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
-        else if (_textures.size() == 3)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
-        else if (_textures.size() == 4)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
+            _shader->setAttribute("fill", {_fill});
+
+        _graphicsShaders[_fill] = _shader;
     }
     else
-        _shader->setAttribute("fill", {_fill});
+    {
+        _shader = shaderIt->second;
+    }
+
+    // Set some uniforms
+    _shader->setAttribute("sideness", {_sideness});
+    _shader->setAttribute("scale", {_scale.x, _scale.y, _scale.z});
+    _shader->setAttribute("color", {_color.r, _color.g, _color.b, _color.a});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -453,7 +471,6 @@ void Object::registerAttributes()
         else
             _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
-        _shader->setAttribute("scale", args);
         return true;
     }, [&]() -> Values {
         return {_scale.x, _scale.y, _scale.z};
@@ -464,25 +481,9 @@ void Object::registerAttributes()
             return false;
 
         _sideness = args[0].asInt();
-        switch (args[0].asInt())
-        {
-        default:
-            _sideness = 0;
-            return false;
-        case 0:
-            _shader->setAttribute("sideness", {Shader::doubleSided});
-            break;
-        case 1:
-            _shader->setAttribute("sideness", {Shader::singleSided});
-            break;
-        case 2:
-            _shader->setAttribute("sideness", {Shader::inverted});
-        }
         return true;
-    }, [&]() {
-        Values sideness;
-        _shader->getAttribute("sideness", sideness);
-        return sideness;
+    }, [&]() -> Values {
+        return {_sideness};
     });
 
     _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
@@ -497,7 +498,7 @@ void Object::registerAttributes()
     _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 4)
             return false;
-        _shader->setAttribute("color", args);
+        _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
     });
 
