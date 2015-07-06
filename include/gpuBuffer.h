@@ -81,7 +81,7 @@ class GpuBuffer
         }
 
         /**
-         * Fill the buffer to 0
+         * Fill the buffer with 0
          */
         void clear();
 
