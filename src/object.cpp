@@ -69,52 +69,54 @@ void Object::activate()
                 withTextureBlend = true;
     }
 
+    // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
     if (shaderIt == _graphicsShaders.end())
     {
         _shader = make_shared<Shader>();
-
-        // Set the shader depending on a few other parameters
-        if (_fill == "texture")
-        {
-            if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
-            {
-                if (_vertexBlendingActive)
-                    _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
-                else if (withTextureBlend)
-                    _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
-                else
-                    _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
-            }
-            else
-            {
-                if (_vertexBlendingActive)
-                    _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
-                else if (withTextureBlend)
-                    _shader->setAttribute("fill", {"texture", "BLENDING"});
-                else
-                    _shader->setAttribute("fill", {"texture"});
-            }
-        }
-        else if (_fill == "window")
-        {
-            if (_textures.size() == 1)
-                _shader->setAttribute("fill", {"window", "TEX_1"});
-            else if (_textures.size() == 2)
-                _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
-            else if (_textures.size() == 3)
-                _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
-            else if (_textures.size() == 4)
-                _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
-        }
-        else
-            _shader->setAttribute("fill", {_fill});
-
         _graphicsShaders[_fill] = _shader;
     }
     else
     {
         _shader = shaderIt->second;
+    }
+
+    // Set the shader depending on a few other parameters
+    if (_fill == "texture")
+    {
+        if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
+        {
+            if (_vertexBlendingActive)
+                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
+            else if (withTextureBlend)
+                _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
+            else
+                _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
+        }
+        else
+        {
+            if (_vertexBlendingActive)
+                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
+            else if (withTextureBlend)
+                _shader->setAttribute("fill", {"texture", "BLENDING"});
+            else
+                _shader->setAttribute("fill", {"texture"});
+        }
+    }
+    else if (_fill == "window")
+    {
+        if (_textures.size() == 1)
+            _shader->setAttribute("fill", {"window", "TEX_1"});
+        else if (_textures.size() == 2)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
+        else if (_textures.size() == 3)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
+        else if (_textures.size() == 4)
+            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
+    }
+    else
+    {
+        _shader->setAttribute("fill", {_fill});
     }
 
     // Set some uniforms
