@@ -139,6 +139,8 @@ class Splash:
                     buffer += bufferVert
                     buffer += bufferPoly
                     target._meshWriter.push(buffer, floor(currentTime * 1e9))
+
+                    bpy.data.meshes.remove(mesh)
     
 
     @staticmethod
