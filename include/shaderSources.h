@@ -198,10 +198,10 @@ struct ShaderSources
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
-        layout(local_size_x = 1, local_size_y = 1) in;
+        layout(local_size_x = 32, local_size_y = 32) in;
 
-        layout (binding = 0) uniform sampler2D imgVisibility;
-        layout (std430, binding = 3) buffer annexeBuffer
+        layout(binding = 0) uniform sampler2D imgVisibility;
+        layout(std430, binding = 3) buffer annexeBuffer
         {
             vec4 annexe[];
         };
@@ -210,11 +210,11 @@ struct ShaderSources
 
         void main(void)
         {
-            int globalID = int(gl_WorkGroupID.x + gl_WorkGroupID.y * gl_NumWorkGroups.x);
-            vec2 texCoords = gl_WorkGroupID.xy / _texSize;
+            vec2 pixCoords = gl_WorkGroupID.xy * vec2(32.0) + gl_LocalInvocationID.xy;
+            vec2 texCoords = pixCoords / _texSize;
             vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
 
-            if (visibility.b > 0.0)
+            if (all(lessThan(pixCoords.xy, _texSize.xy)) && visibility.b > 0.0)
             {
                 int primitiveID = int(round(visibility.r * 256.0 + visibility.g));
                 // Mark the primitive found as visible

@@ -388,7 +388,7 @@ void Object::transferVisibilityFromTexToAttr(int width, int height)
         geom->update();
         geom->activateAsSharedBuffer();
         _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", (float)width, (float)height});
-        _computeShaderTransferVisibilityToAttr->doCompute(width, height);
+        _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
         geom->deactivate();
     }
 }
@@ -425,7 +425,7 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            unsigned int groupCountX = verticesNbr / 3 / 128;
+            unsigned int groupCountX = verticesNbr / 3 / 128 + 1;
             _computeShaderComputeBlending->doCompute(groupCountX, 128);
             geom->deactivate();
         }
