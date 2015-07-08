@@ -89,11 +89,7 @@ void Shader::activate()
 
     glUseProgram(_program);
 
-    if (_sideness == doubleSided)
-    {
-        glDisable(GL_CULL_FACE);
-    }
-    else if (_sideness == singleSided)
+    if (_sideness == singleSided)
     {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
@@ -130,7 +126,8 @@ void Shader::deactivate()
 {
     if (_programType == prgGraphic)
     {
-        glDisable(GL_CULL_FACE);
+        if (_sideness != doubleSided)
+            glDisable(GL_CULL_FACE);
 
 #ifdef DEBUG
         glUseProgram(0);
