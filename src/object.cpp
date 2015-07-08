@@ -425,8 +425,8 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            unsigned int groupCountX = verticesNbr / 3 / 128 + 1;
-            _computeShaderComputeBlending->doCompute(groupCountX, 128);
+            unsigned int groupCountX = verticesNbr / 3 / (32 * 32) + 1;
+            _computeShaderComputeBlending->doCompute(groupCountX, 32);
             geom->deactivate();
         }
     }
