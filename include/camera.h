@@ -72,9 +72,14 @@ class Camera : public BaseObject
         void computeBlendingMap(ImagePtr& map);
 
         /**
-         * Compute the visibility for all objects seen by this camera
+         * Compute the blending for all objects seen by this camera
          */
-        void blendingComputeVisibility();
+        void computeBlendingContribution();
+
+        /**
+         * Compute the vertex visibility for all objects in front of this camera
+         */
+        void computeVertexVisibility();
 
         /**
          * Tessellate the objects for the given camera

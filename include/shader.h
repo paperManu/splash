@@ -72,6 +72,7 @@ class Shader : public BaseObject
             texture = 0,
             texture_rect,
             color,
+            primitiveId,
             uv,
             wireframe,
             window
@@ -166,17 +167,16 @@ class Shader : public BaseObject
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 
+        // A map of previously compiled programs
+        std::string _currentProgramName {};
+        std::map<std::string, GLuint> _compiledPrograms;
+        std::map<std::string, std::string> _compiledProgramsOptions;
+        std::map<std::string, bool> _programsLinkStatus;
+
         // Rendering parameters
         Fill _fill {texture};
         std::string _shaderOptions {""};
         Sideness _sideness {doubleSided};
-        int _useBlendingMap {0};
-        float _blendWidth {0.05f};
-        float _blackLevel {0.f};
-        float _brightness {1.f};
-        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
-        glm::dvec3 _scale {1.0, 1.0, 1.0};
-        bool _textureOverlap {true};
         std::vector<int> _layout {0, 0, 0, 0};
 
         /**

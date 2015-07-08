@@ -69,6 +69,19 @@ void Object::activate()
                 withTextureBlend = true;
     }
 
+    // Create and store the shader depending on its type
+    auto shaderIt = _graphicsShaders.find(_fill);
+    if (shaderIt == _graphicsShaders.end())
+    {
+        _shader = make_shared<Shader>();
+        _graphicsShaders[_fill] = _shader;
+    }
+    else
+    {
+        _shader = shaderIt->second;
+    }
+
+    // Set the shader depending on a few other parameters
     if (_fill == "texture")
     {
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
@@ -102,7 +115,14 @@ void Object::activate()
             _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
     }
     else
+    {
         _shader->setAttribute("fill", {_fill});
+    }
+
+    // Set some uniforms
+    _shader->setAttribute("sideness", {_sideness});
+    _shader->setAttribute("scale", {_scale.x, _scale.y, _scale.z});
+    _shader->setAttribute("color", {_color.r, _color.g, _color.b, _color.a});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -353,6 +373,27 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 }
 
 /*************/
+void Object::transferVisibilityFromTexToAttr(int width, int height)
+{
+    unique_lock<mutex> lock(_mutex);
+
+    if (!_computeShaderTransferVisibilityToAttr)
+    {
+        _computeShaderTransferVisibilityToAttr = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderTransferVisibilityToAttr->setAttribute("computePhase", {"transferVisibilityToAttr"});
+    }
+
+    for (auto& geom : _geometries)
+    {
+        geom->update();
+        geom->activateAsSharedBuffer();
+        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", (float)width, (float)height});
+        _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
+        geom->deactivate();
+    }
+}
+
+/*************/
 void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
     unique_lock<mutex> lock(_mutex);
@@ -384,8 +425,8 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            unsigned int groupCountX = verticesNbr / 3 / 128;
-            _computeShaderComputeBlending->doCompute(groupCountX, 128);
+            unsigned int groupCountX = verticesNbr / 3 / (32 * 32) + 1;
+            _computeShaderComputeBlending->doCompute(groupCountX, 32);
             geom->deactivate();
         }
     }
@@ -432,7 +473,6 @@ void Object::registerAttributes()
         else
             _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
-        _shader->setAttribute("scale", args);
         return true;
     }, [&]() -> Values {
         return {_scale.x, _scale.y, _scale.z};
@@ -443,25 +483,9 @@ void Object::registerAttributes()
             return false;
 
         _sideness = args[0].asInt();
-        switch (args[0].asInt())
-        {
-        default:
-            _sideness = 0;
-            return false;
-        case 0:
-            _shader->setAttribute("sideness", {Shader::doubleSided});
-            break;
-        case 1:
-            _shader->setAttribute("sideness", {Shader::singleSided});
-            break;
-        case 2:
-            _shader->setAttribute("sideness", {Shader::inverted});
-        }
         return true;
-    }, [&]() {
-        Values sideness;
-        _shader->getAttribute("sideness", sideness);
-        return sideness;
+    }, [&]() -> Values {
+        return {_sideness};
     });
 
     _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
@@ -476,7 +500,7 @@ void Object::registerAttributes()
     _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 4)
             return false;
-        _shader->setAttribute("color", args);
+        _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
     });
 

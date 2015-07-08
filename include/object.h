@@ -150,13 +150,22 @@ class Object : public BaseObject
          */
         void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision);
 
+        /**
+         * This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
+         */
+        void transferVisibilityFromTexToAttr(int width, int height);
+
     private:
         mutable std::mutex _mutex;
 
-        ShaderPtr _shader;
-        ShaderPtr _computeShaderResetBlending;
-        ShaderPtr _computeShaderComputeBlending;
-        ShaderPtr _feedbackShaderSubdivideCamera;
+        ShaderPtr _shader {};
+        ShaderPtr _computeShaderResetBlending {};
+        ShaderPtr _computeShaderComputeBlending {};
+        ShaderPtr _computeShaderTransferVisibilityToAttr {};
+        ShaderPtr _feedbackShaderSubdivideCamera {};
+
+        // A map for previously used graphics shaders
+        std::map<std::string, ShaderPtr> _graphicsShaders;
 
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
@@ -169,6 +178,7 @@ class Object : public BaseObject
 
         std::string _fill {"texture"};
         int _sideness {0};
+        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
 
         /**
          * Init function called by constructor

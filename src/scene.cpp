@@ -343,8 +343,11 @@ void Scene::renderBlending()
 
                     for (auto& camera : cameras)
                     {
+                        for (auto& object : objects)
+                            object->resetVisibility();
+                        camera->computeVertexVisibility();
                         camera->blendingTessellateForCurrentCamera();
-                        camera->blendingComputeVisibility();
+                        camera->computeBlendingContribution();
                     }
                 }
 
@@ -417,6 +420,7 @@ void Scene::render()
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
     unique_lock<mutex> lock(_textureUploadMutex);
+    glFlush();
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(_textureUploadFence);
 
@@ -425,7 +429,7 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
     Timer::get() >> "cameras";
 
-    _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     lock.unlock();
 
     // Update the gui
@@ -599,8 +603,9 @@ void Scene::textureUploadRun()
         _textureUploadCondition.wait(lock);
 
         _textureUploadWindow->setAsCurrentContext();
-        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-        glDeleteSync(_textureUploadFence);
+        glFlush();
+        glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
+        glDeleteSync(_cameraDrawnFence);
 
         Timer::get() << "textureUpload";
         for (auto& obj : _objects)

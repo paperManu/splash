@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "shaderSources.h"
+#include "timer.h"
 
 #include <fstream>
 #include <sstream>
@@ -25,20 +26,18 @@ Shader::Shader(ProgramType type)
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
         _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
-        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-        setSource(ShaderSources.VERSION_DIRECTIVE_330 + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
-        compileProgram();
-
         registerGraphicAttributes();
+
+        setAttribute("fill", {"texture"});
     }
     else if (type == prgCompute)
     {
         _programType = prgCompute;
         _shaders[compute] = glCreateShader(GL_COMPUTE_SHADER);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.COMPUTE_SHADER_DEFAULT, compute);
-        compileProgram();
 
         registerComputeAttributes();
+
+        setAttribute("computePhase", {"resetVisibility"});
     }
     else if (type == prgFeedback)
     {
@@ -48,13 +47,9 @@ Shader::Shader(ProgramType type)
         _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
         _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
 
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
-        setSource(ShaderSources.VERSION_DIRECTIVE_430 + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
-        compileProgram();
-
         registerFeedbackAttributes();
+
+        setAttribute("feedbackPhase", {"tessellateFromCamera"});
     }
 
     registerAttributes();
@@ -94,11 +89,7 @@ void Shader::activate()
 
     glUseProgram(_program);
 
-    if (_sideness == doubleSided)
-    {
-        glDisable(GL_CULL_FACE);
-    }
-    else if (_sideness == singleSided)
+    if (_sideness == singleSided)
     {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
@@ -135,7 +126,8 @@ void Shader::deactivate()
 {
     if (_programType == prgGraphic)
     {
-        glDisable(GL_CULL_FACE);
+        if (_sideness != doubleSided)
+            glDisable(GL_CULL_FACE);
 
 #ifdef DEBUG
         glUseProgram(0);
@@ -737,7 +729,7 @@ void Shader::registerGraphicAttributes()
         {
             _fill = texture;
             _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
@@ -749,6 +741,15 @@ void Shader::registerGraphicAttributes()
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
+        {
+            _fill = primitiveId;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
             compileProgram();
         }
         else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
@@ -876,6 +877,11 @@ void Shader::registerComputeAttributes()
         else if ("computeVisibility" == args[0].asString())
         {
             setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_VISIBILITY, compute);
+            compileProgram();
+        }
+        else if ("transferVisibilityToAttr" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
             compileProgram();
         }
 

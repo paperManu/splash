@@ -431,6 +431,7 @@ void Window::swapBuffers()
     if (!_window->setAsCurrentContext()) 
     	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
+    glFlush();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer

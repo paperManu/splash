@@ -197,7 +197,7 @@ class Scene : public RootObject
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
-        GLsync _textureUploadFence;
+        GLsync _textureUploadFence, _cameraDrawnFence;
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};

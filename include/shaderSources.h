@@ -184,8 +184,42 @@ struct ShaderSources
                 for (int idx = 0; idx < 3; ++idx)
                 {
                     int vertexId = globalID * 3 + idx;
-                    annexe[vertexId] = vec4(0.0);
+                    // the W coordinates holds the primitive ID, for use in the first visibility test
+                    annexe[vertexId].zw = vec2(0.0, float(globalID));
                 }
+            }
+        }
+    )"};
+
+    /**
+     * Compute shader to transfer the visibility from the GL_TEXTURE0 to the vertices attributes
+     */
+    const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR {R"(
+        #extension GL_ARB_compute_shader : enable
+        #extension GL_ARB_shader_storage_buffer_object : enable
+
+        layout(local_size_x = 32, local_size_y = 32) in;
+
+        layout(binding = 0) uniform sampler2D imgVisibility;
+        layout(std430, binding = 3) buffer annexeBuffer
+        {
+            vec4 annexe[];
+        };
+
+        uniform vec2 _texSize;
+
+        void main(void)
+        {
+            vec2 pixCoords = gl_WorkGroupID.xy * vec2(32.0) + gl_LocalInvocationID.xy;
+            vec2 texCoords = pixCoords / _texSize;
+            vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
+
+            if (all(lessThan(pixCoords.xy, _texSize.xy)) && visibility.b > 0.0)
+            {
+                int primitiveID = int(round(visibility.r * 256.0 + visibility.g));
+                // Mark the primitive found as visible
+                for (int idx = primitiveID * 3; idx < primitiveID * 3 + 3; ++idx)
+                    annexe[idx].z = 1.0;
             }
         }
     )"};
@@ -233,10 +267,13 @@ struct ShaderSources
 
             if (globalID < _vertexNbr / 3)
             {
-                bool allVerticesVisible = true;
                 for (int idx = 0; idx < 3; ++idx)
                 {
                     int vertexId = globalID * 3 + idx;
+
+                    // If this vertex was marked as non visible, we can return
+                    if (annexe[vertexId].z == 0.0)
+                        return;
 
                     vec2 dist;
                     vec4 normalizedSpaceVertex = vertex[vertexId];
@@ -330,50 +367,47 @@ struct ShaderSources
                 vec4 projectedVertices[3];
                 float maxDist = 0.0;
                 int nearestBorder = 0; // 0 is nearest border is horizontal, 1 otherwise
-                for (int i = 0; i < 3; ++i)
-                {
-                    vec2 dist;
-                    projectedVertices[i] = tcs_in[i].vertex;
-                    vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
-                    float localMax = max(dist.x, dist.y);
-                    if (localMax > maxDist)
-                    {
-                        maxDist = localMax;
-                        nearestBorder = int(dist.y > dist.x);
-                    }
-                }
 
                 gl_TessLevelInner[0] = 1.0;
                 gl_TessLevelOuter[0] = 1.0;
                 gl_TessLevelOuter[1] = 1.0;
                 gl_TessLevelOuter[2] = 1.0;
 
-                vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
-                if (any(vertexVisibility) && projectedNormal.z >= 0.0)
+                if (tcs_in[0].annexe.z > 0.0)
                 {
-                    if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
+                    for (int i = 0; i < 3; ++i)
                     {
-                        vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1 - nearestBorder) * vec2(0.0, 1.0);
-                        float maxTessLevel = 1.0;
-                        for (int idx = 0; idx < 3; idx++)
+                        vec2 dist;
+                        projectedVertices[i] = tcs_in[i].vertex;
+                        vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
+                        float localMax = max(dist.x, dist.y);
+                        if (localMax > maxDist)
                         {
-                            int nextIdx = (idx + 1) % 3;
-                            vec2 edge = projectedVertices[nextIdx].xy - projectedVertices[idx].xy;
-                            float edgeProjectedLength = abs(dot(edge, nearestBorderNormal));
-                            float tessLevel = max(1.0, ((edgeProjectedLength + length(edge)) * 0.5) / _blendPrecision);
-                            tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, blendDistFactorToSubdiv * _blendWidth), 1.0, maxDist));
-                            maxTessLevel = max(maxTessLevel, tessLevel);
-                            gl_TessLevelOuter[(idx + 2) % 3] = tessLevel;
+                            maxDist = localMax;
+                            nearestBorder = int(dist.y > dist.x);
                         }
-
-                        gl_TessLevelInner[0] = maxTessLevel;
                     }
-                    else
+
+                    vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
+                    if (any(vertexVisibility) && projectedNormal.z >= 0.0)
                     {
-                        gl_TessLevelInner[0] = 1.0;
-                        gl_TessLevelOuter[0] = 1.0;
-                        gl_TessLevelOuter[1] = 1.0;
-                        gl_TessLevelOuter[2] = 1.0;
+                        if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
+                        {
+                            vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1 - nearestBorder) * vec2(0.0, 1.0);
+                            float maxTessLevel = 1.0;
+                            for (int idx = 0; idx < 3; idx++)
+                            {
+                                int nextIdx = (idx + 1) % 3;
+                                vec2 edge = projectedVertices[nextIdx].xy - projectedVertices[idx].xy;
+                                float edgeProjectedLength = abs(dot(edge, nearestBorderNormal));
+                                float tessLevel = max(1.0, ((edgeProjectedLength + length(edge)) * 0.5) / _blendPrecision);
+                                tessLevel = mix(1.0, tessLevel, smoothstep(1.0 - min(1.0, blendDistFactorToSubdiv * _blendWidth), 1.0, maxDist));
+                                maxTessLevel = max(maxTessLevel, tessLevel);
+                                gl_TessLevelOuter[(idx + 2) % 3] = tessLevel;
+                            }
+
+                            gl_TessLevelInner[0] = maxTessLevel;
+                        }
                     }
                 }
             }
@@ -593,6 +627,41 @@ struct ShaderSources
             vec2 texCoord;
             vec4 normal;
             vec4 annexe;
+        } vertexOut;
+
+        void main(void)
+        {
+            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
+            gl_Position = vertexOut.position;
+            vertexOut.normal = normalize(_normalMatrix * _normal);
+            vertexOut.texCoord = _texcoord;
+            vertexOut.annexe = _annexe;
+        }
+    )"};
+
+    /**
+     * Vertex shader for textured rendering
+     */
+    const std::string VERTEX_SHADER_TEXTURE {R"(
+        #include getSmoothBlendFromVertex
+
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        layout(location = 2) in vec4 _normal;
+        layout(location = 3) in vec4 _annexe;
+
+        uniform mat4 _modelViewProjectionMatrix;
+        uniform mat4 _normalMatrix;
+        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+
+        out VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec4 normal;
+            vec4 annexe;
             float blendingValue;
         } vertexOut;
 
@@ -770,6 +839,7 @@ struct ShaderSources
             vec4 position;
             vec2 texCoord;
             vec4 normal;
+            vec4 annexe;
         } vertexIn;
 
         out vec4 fragColor;
@@ -799,6 +869,7 @@ struct ShaderSources
             vec4 position;
             vec2 texCoord;
             vec4 normal;
+            vec4 annexe;
         } vertexIn;
 
         out vec4 fragColor;
@@ -814,6 +885,34 @@ struct ShaderSources
 
             fragColor.rg = vec2(floor(U / 256.0) / 256.0, (U - floor(U / 256.0) * 256.0) / 256.0);
             fragColor.ba = vec2(floor(V / 256.0) / 256.0, (V - floor(V / 256.0) * 256.0) / 256.0);
+        }
+    )"};
+
+    /**
+     * Draws the primitive ID
+     * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
+     */
+    const std::string FRAGMENT_SHADER_PRIMITIVEID {R"(
+        #define PI 3.14159265359
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+            vec4 normal;
+            vec4 annexe;
+        } vertexIn;
+
+        out vec4 fragColor;
+
+        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+
+        void main(void)
+        {
+            int index = int(round(vertexIn.annexe.w));
+            fragColor.rg = vec2(float(index / 256) / 255.0, float(index % 256) / 255.0);
+            fragColor.ba = vec2(1.0, 1.0);
         }
     )"};
 

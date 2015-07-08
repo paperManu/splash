@@ -225,10 +225,7 @@ void Geometry::update()
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
         vector<float> annexe = _mesh->getAnnexe();
         if (annexe.size() == 0)
-        {
             _glBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
-            _glBuffers[3]->clear();
-        }
         else
             _glBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, annexe.data());
 
