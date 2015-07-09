@@ -928,14 +928,12 @@ struct ShaderSources
         out VertexData
         {
             vec4 vertex;
-            vec4 normal;
             vec2 texcoord;
         } vertexOut;
 
         void main()
         {
             vertexOut.vertex = _vertex;
-            vertexOut.normal = _normal;
             vertexOut.texcoord = _texcoord;
         }
     )"};
@@ -944,20 +942,17 @@ struct ShaderSources
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
-        uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
 
         in VertexData
         {
             vec4 vertex;
-            vec4 normal;
             vec2 texcoord;
         } vertexIn[];
 
         out VertexData
         {
             vec2 texcoord;
-            vec4 normal;
             vec3 bcoord;
             vec4 position;
         } vertexOut;
@@ -995,7 +990,6 @@ struct ShaderSources
         in VertexData
         {
             vec2 texcoord;
-            vec4 normal;
             vec3 bcoord;
             vec4 position;
         } vertexIn;
@@ -1007,7 +1001,6 @@ struct ShaderSources
         void main(void)
         {
             vec4 position = vertexIn.position;
-            vec4 normal = vertexIn.normal;
 
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
