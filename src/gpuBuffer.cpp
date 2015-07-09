@@ -39,9 +39,16 @@ GpuBuffer::GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, 
     _type = type;
     _usage = usage;
 
-    glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, data, usage);
     if (data == nullptr)
-        glClearBufferData(GL_ARRAY_BUFFER, GL_R8, GL_RED, _type, NULL);
+    {
+        auto zeroBuffer = vector<char>(size * _elementSize * _baseSize, 0);
+        glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, zeroBuffer.data(), usage);
+    }
+    else
+    {
+        glBufferData(GL_ARRAY_BUFFER, size * _elementSize * _baseSize, data, usage);
+    }
+
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
