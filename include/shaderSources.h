@@ -554,9 +554,8 @@ struct ShaderSources
                     if (side[i] != side[nextId])
                     {
                         float ratios[2];
-                        float denumerator = abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x);
-                        ratios[0] = abs(distToBoundary[i].x) / denumerator;
-                        ratios[1] = abs(distToBoundary[i].y) / denumerator;
+                        ratios[0] = abs(distToBoundary[i].x) / (abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x));
+                        ratios[1] = abs(distToBoundary[i].y) / (abs(distToBoundary[i].y) + abs(distToBoundary[nextId].y));
                         
                         vec2 signs[2];
                         signs[0] = sign(distToBoundary[i]);
