@@ -83,14 +83,14 @@ class Log
          * Shortcut for setting MESSAGE log
          */
         template <typename T>
-        Log& operator<<(T msg)
+        Log& operator<<(const T& msg)
         {
             std::unique_lock<std::mutex> lock(_mutex);
             addToString(_tempString, msg);
             return *this;
         }
 
-        Log& operator<<(Value v)
+        Log& operator<<(const Value& v)
         {
             std::unique_lock<std::mutex> lock(_mutex);
             addToString(_tempString, v.asString());
