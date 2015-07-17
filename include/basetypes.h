@@ -452,13 +452,19 @@ class RootObject : public BaseObject
 
             std::mutex conditionMutex;
             std::unique_lock<std::mutex> conditionLock(conditionMutex);
+
+            auto cvStatus = std::cv_status::no_timeout;
             if (timeout == 0ull)
                 _answerCondition.wait(conditionLock);
             else
-                _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
+                cvStatus = _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
 
             _answerExpected = "";
-            return _lastAnswerReceived;
+
+            if (std::cv_status::no_timeout == cvStatus)
+                return _lastAnswerReceived;
+            else
+                return {};
         }
 };
 

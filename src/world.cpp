@@ -284,7 +284,14 @@ void World::applyConfig()
 
                 // We wait for the child process to be launched
                 while (!_childProcessLaunched)
-                    this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e8));
+                {
+                    unique_lock<mutex> lock(_childProcessMutex);
+                    if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
+                    {
+                        _quit = true;
+                        return;
+                    }
+                }
             }
             _scenes[name] = pid;
             if (_masterSceneName == "")
@@ -470,7 +477,15 @@ void World::applyConfig()
 
     // Send the start message for all scenes
     for (auto& s : _scenes)
-        auto answer = sendMessageWithAnswer(s.first, "start");
+    {
+        auto answer = sendMessageWithAnswer(s.first, "start", {}, 2e6);
+        if (0 == answer.size())
+        {
+            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to scene \"" << s.first << "\". Exiting." << Log::endl;
+            _quit = true;
+            break;
+        }
+    }
 }
 
 /*************/
@@ -680,6 +695,7 @@ void World::registerAttributes()
 {
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
         _childProcessLaunched = true;
+        _childProcessConditionVariable.notify_all();
         return true;
     });
 

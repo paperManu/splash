@@ -25,6 +25,7 @@
 #ifndef SPLASH_WORLD_H
 #define SPLASH_WORLD_H
 
+#include <condition_variable>
 #include <mutex>
 #include <signal.h>
 #include <string>
@@ -87,7 +88,10 @@ class World : public RootObject
 
         std::string _configFilename;
         Json::Value _config;
+
         bool _childProcessLaunched {false};
+        std::mutex _childProcessMutex;
+        std::condition_variable _childProcessConditionVariable;
         
         // Synchronization testings
         int _swapSynchronizationTesting {0}; // If not 0, number of frames to keep the same color
