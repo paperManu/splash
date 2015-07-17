@@ -214,7 +214,7 @@ bool Object::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
-        GeometryPtr geom = make_shared<Geometry>();
+        GeometryPtr geom = make_shared<Geometry>(_root);
         geom->setName(getName() + "_" + obj->getName() + "_geom");
         if (geom->linkTo(obj))
         {

@@ -47,6 +47,7 @@ class Geometry : public BufferObject
          * Constructor
          */
         Geometry();
+        Geometry(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -137,6 +138,7 @@ class Geometry : public BufferObject
 
     private:
         mutable std::mutex _mutex;
+        bool _onMasterScene {false};
 
         MeshPtr _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
@@ -162,6 +164,11 @@ class Geometry : public BufferObject
 
         // Serialization
         std::unique_ptr<SerializedObject> _serializedObject {};
+
+        /**
+         * Initialization
+         */
+        void init();
 
         /**
          * Register new functors to modify attributes

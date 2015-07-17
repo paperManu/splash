@@ -106,6 +106,11 @@ class Scene : public RootObject
         bool isInitialized() const {return _isInitialized;}
 
         /**
+         * Returns whether the scene is Master or not
+         */
+        bool isMaster() const {return _isMaster;}
+
+        /**
          * Check wether the scene is running
          */
         bool isRunning() const {return _isRunning;}

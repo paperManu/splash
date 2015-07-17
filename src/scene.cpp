@@ -341,6 +341,7 @@ void Scene::renderBlending()
                     for (auto& object : objects)
                         object->resetTessellation();
 
+                    glFinish();
                     for (auto& camera : cameras)
                     {
                         for (auto& object : objects)

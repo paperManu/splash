@@ -57,6 +57,8 @@ GpuBuffer::~GpuBuffer()
 {
     if (_glId)
         glDeleteBuffers(1, &_glId);
+    if (_copyBufferId)
+        glDeleteBuffers(1, &_copyBufferId);
 }
 
 /*************/

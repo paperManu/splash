@@ -65,7 +65,7 @@ class GpuBuffer
 
             glGenBuffers(1, &_glId);
             glBindBuffer(GL_ARRAY_BUFFER, _glId);
-            glBufferData(GL_ARRAY_BUFFER, _size * _baseSize, nullptr, _usage);
+            glBufferData(GL_ARRAY_BUFFER, _size * _elementSize * _baseSize, nullptr, _usage);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
         }
         GpuBuffer& operator=(const GpuBuffer&) = delete;

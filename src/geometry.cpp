@@ -2,6 +2,7 @@
 
 #include "log.h"
 #include "mesh.h"
+#include "scene.h"
 
 using namespace std;
 using namespace glm;
@@ -10,6 +11,23 @@ namespace Splash {
 
 /*************/
 Geometry::Geometry()
+{
+    init();
+}
+
+/*************/
+Geometry::Geometry(RootObjectWeakPtr root)
+    : BufferObject(root)
+{
+    init();
+
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (scene)
+        _onMasterScene = scene->isMaster();
+}
+
+/*************/
+void Geometry::init()
 {
     _type = "geometry";
     registerAttributes();
@@ -69,7 +87,7 @@ void Geometry::activateForFeedback()
     if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 3 > _temporaryBufferSize)
     {
         _glTemporaryBuffers.clear();
-        _temporaryBufferSize = _feedbackMaxNbrPrimitives * 3; // 3 vertices per primitive
+        _temporaryBufferSize = _feedbackMaxNbrPrimitives * 6; // 3 vertices per primitive, times two to keep some margin for future updates
         for (auto& buffer : _glBuffers)
         {
             // This creates a copy of the buffer
@@ -252,7 +270,7 @@ void Geometry::update()
     }
 
     // If a serialized geometry is present, we use it as the alternative buffer
-    if (_serializedObject && _serializedObject->size() != 0)
+    if (!_onMasterScene && _serializedObject && _serializedObject->size() != 0)
     {
         if (_glTemporaryBuffers.size() != 4)
             _glTemporaryBuffers.resize(4);
@@ -292,6 +310,8 @@ void Geometry::update()
 
         _serializedObject.reset();
     }
+    else if (_onMasterScene)
+        _serializedObject.reset();
 
     GLFWwindow* context = glfwGetCurrentContext();
     auto vertexArrayIt = _vertexArray.find(context);
