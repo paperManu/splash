@@ -318,13 +318,6 @@ void Mesh::registerAttributes()
             return false;
         return read(args[0].asString());
     });
-
-    _attribFunctions["name"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _name = args[0].asString();
-        return true;
-    });
     
     _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)

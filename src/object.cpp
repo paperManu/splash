@@ -503,13 +503,6 @@ void Object::registerAttributes()
         _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
     });
-
-    _attribFunctions["name"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _name = args[0].asString();
-        return true;
-    });
 }
 
 } // end of namespace
