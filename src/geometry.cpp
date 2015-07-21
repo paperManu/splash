@@ -84,7 +84,7 @@ void Geometry::activateAsSharedBuffer()
 void Geometry::activateForFeedback()
 {
     _feedbackMaxNbrPrimitives = std::max(_verticesNumber / 3, _feedbackMaxNbrPrimitives);
-    if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 3 > _temporaryBufferSize)
+    if (_glTemporaryBuffers.size() < _glBuffers.size() || _buffersDirty || _feedbackMaxNbrPrimitives * 6 > _temporaryBufferSize)
     {
         _glTemporaryBuffers.clear();
         _temporaryBufferSize = _feedbackMaxNbrPrimitives * 6; // 3 vertices per primitive, times two to keep some margin for future updates
