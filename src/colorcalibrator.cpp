@@ -37,7 +37,6 @@ void gslErrorHandler(const char* reason, const char* file, int line, int gsl_err
 ColorCalibrator::ColorCalibrator(std::weak_ptr<Scene> scene)
 {
     _type = "colorCalibrator";
-    _savable = false;
 
     _scene = scene;
     registerAttributes();
