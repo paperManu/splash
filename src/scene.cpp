@@ -830,7 +830,7 @@ Values Scene::getObjectsNameByType(string type)
 /*************/
 vector<int> Scene::findGLVersion()
 {
-    vector<vector<int>> glVersionList {{4, 5}, {4, 4}, {4, 3}, {4, 2}, {4, 1}, {3, 3}, {3, 2}};
+    vector<vector<int>> glVersionList {{4, 3}, {3, 3}, {3, 2}};
     vector<int> detectedVersion {0, 0};
 
     for (auto version : glVersionList)
