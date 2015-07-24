@@ -805,6 +805,10 @@ void GuiTemplate::loadTemplates()
     
     // Try to read the template file
     ifstream in(string(DATADIR) + "templates.txt", ios::in | ios::binary);
+#if HAVE_OSX
+    if (!in)
+        in = ifstream("../Resources/templates.txt", ios::in | ios::binary);
+#endif
     if (in)
     {
         auto newTemplate = false;
