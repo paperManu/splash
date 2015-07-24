@@ -526,28 +526,28 @@ void GuiGlobalView::processKeyEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    if (io.KeysDown[' '] && io.KeysDownTime[' '] == 0.0)
+    if (io.KeysDown[' '] && io.KeysDownDuration[' '] == 0.0)
     {
         nextCamera();
         return;
     }
-    else if (io.KeysDown['A'] && io.KeysDownTime['A'] == 0.0)
+    else if (io.KeysDown['A'] && io.KeysDownDuration['A'] == 0.0)
     {
         showAllCalibrationPoints();
         return;
     }
-    else if (io.KeysDown['C'] && io.KeysDownTime['C'] == 0.0)
+    else if (io.KeysDown['C'] && io.KeysDownDuration['C'] == 0.0)
     {
         doCalibration();
         return;
     }
-    else if (io.KeysDown['H'] && io.KeysDownTime['H'] == 0.0)
+    else if (io.KeysDown['H'] && io.KeysDownDuration['H'] == 0.0)
     {
         switchHideOtherCameras();
         return;
     }
     // Reset to the previous camera calibration
-    else if (io.KeysDown['R'] && io.KeysDownTime['R'] == 0.0)
+    else if (io.KeysDown['R'] && io.KeysDownDuration['R'] == 0.0)
     {
         if (_previousCameraParameters.size() == 0)
             return;
@@ -657,7 +657,7 @@ void GuiGlobalView::processMouseEvents()
     {
         _newTarget = _camera->pickFragment(mousePos.x, mousePos.y);
     }
-    if (io.MouseDownTime[1] > 0.0) 
+    if (io.MouseDownDuration[1] > 0.0) 
     {
         // Move the camera
         if (!io.KeyCtrl && !io.KeyShift)
@@ -777,7 +777,7 @@ void GuiTemplate::render()
         for (auto& name : _names)
         {
             if (!firstTemplate)
-                ImGui::SameLine(0, 2);
+                ImGui::SameLine(0.f, 2.f);
             firstTemplate = false;
 
             if (ImGui::ImageButton((void*)(intptr_t)_textures[name]->getTexId(), ImVec2(128, 128)))
@@ -1034,7 +1034,7 @@ void GuiNodeView::render()
             _isHovered = true;
 
             ImGuiIO& io = ImGui::GetIO();
-            if (io.MouseDownTime[0] > 0.0)
+            if (io.MouseDownDuration[0] > 0.0)
             {
                 float dx = io.MouseDelta.x;
                 float dy = io.MouseDelta.y;
@@ -1077,7 +1077,7 @@ void GuiNodeView::renderNode(string name)
     if (ImGui::IsItemHovered())
     {
         ImGuiIO& io = ImGui::GetIO();
-        if (io.MouseDownTime[0] > 0.0)
+        if (io.MouseDownDuration[0] > 0.0)
         {
             float dx = io.MouseDelta.x;
             float dy = io.MouseDelta.y;

@@ -184,7 +184,7 @@ class GuiNodeView : public GuiWidget
         std::string _clickedNode {""};
 
         // Node render settings
-        std::vector<int> _nodeSize {160, 60};
+        std::vector<int> _nodeSize {160, 30};
         std::vector<int> _viewSize {640, 240};
         std::vector<int> _viewShift {0, 0};
         std::map<std::string, std::vector<float>> _nodePositions;
