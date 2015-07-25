@@ -61,6 +61,9 @@ Scene::~Scene()
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
+    _httpServer->stop();
+    _httpServerFuture.get();
+
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     unique_lock<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
@@ -636,6 +639,11 @@ void Scene::setAsMaster(string configFilePath)
     _gui = make_shared<Gui>(_mainWindow, _self);
     _gui->setName("gui");
     _gui->setConfigFilePath(configFilePath);
+
+    _httpServer = make_shared<HttpServer>("127.0.0.1", "9090", _self);
+    _httpServerFuture = async(std::launch::async, [&](){
+        _httpServer->run();
+    });
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object

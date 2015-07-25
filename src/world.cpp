@@ -771,11 +771,18 @@ void World::registerAttributes()
         for (int i = 2; i < args.size(); ++i)
             values.push_back(args[i]);
 
+        // Ask for update of the ghost object if needed
         sendMessage(_masterSceneName, "setGhost", values);
         
+        // Send the updated values to all scenes
         values.erase(values.begin());
         values.erase(values.begin());
         sendMessage(name, attr, values);
+
+        // Also update local version
+        if (_objects.find(name) != _objects.end())
+            _objects[name]->setAttribute(attr, values);
+
         return true;
     });
 

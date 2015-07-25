@@ -40,6 +40,7 @@
 #include "coretypes.h"
 #include "basetypes.h"
 #include "gui.h"
+#include "httpServer.h"
 #include "widgets.h"
 
 namespace Splash {
@@ -58,6 +59,7 @@ class Scene : public RootObject
     friend GuiNodeView;
     friend GuiWidget;
     friend Gui;
+    friend HttpServer;
 
     public:
         /**
@@ -175,6 +177,11 @@ class Scene : public RootObject
         // Gui exists in master scene whatever the configuration
         GuiPtr _gui;
         bool _guiLinkedToWindow {false};
+        
+        // Http server, in master scene too
+        HttpServerPtr _httpServer;
+        std::future<void> _httpServerFuture;
+
         // Objects in charge of calibration
 #if HAVE_GPHOTO
         ColorCalibratorPtr _colorCalibrator;
