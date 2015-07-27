@@ -131,6 +131,7 @@ classes = (
 
 def getTextureTypes(scene, context):
     items = [('image', 'Image', ""),
+             ('image_ffmpeg', 'Video', ""),
              ('image_shmdata', 'Shmdata', ""),
              ('texture_syphon', 'Syphon', "")]
     return items
@@ -143,6 +144,8 @@ def getMeshTypes(scene, context):
 def registerProperties():
     bpy.types.Camera.splash_width = IntProperty("Width", default=1280, min=320)
     bpy.types.Camera.splash_height = IntProperty("Height", default=800, min=240)
+    bpy.types.Camera.splash_position_x = IntProperty("Position X", default=128, min=0)
+    bpy.types.Camera.splash_position_y = IntProperty("Position Y", default=128, min=0)
     bpy.types.Camera.splash_window_decoration = BoolProperty("Window decoration", default=True)
     bpy.types.Camera.splash_window_fullscreen = BoolProperty("Window fullscreen", default=False)
     bpy.types.Camera.splash_fullscreen_index = IntProperty("Fullscreen", default=0, min=0)

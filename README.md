@@ -140,8 +140,7 @@ Grab and install OpenImageIO, the only library needed by Splash which is not pac
 
 We then install Shmdata, which depends on GStreamer:
 
-    sudo port install gstreamer010 gstreamer010-gst-plugins-bad gstreamer010-gst-plugins-base
-    sudo port install gstreamer010-gst-plugins-good gstreamer010-gst-plugins-ugly
+    sudo port install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev python3-dev
     git clone https://github.com/nicobou/shmdata
     cd shmdata
     ./autogen.sh && ./configure

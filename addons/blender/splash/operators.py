@@ -328,6 +328,8 @@ def export_to_splash(self, context, filepath):
 
             width = objectData.splash_width
             height = objectData.splash_height
+            position_x = objectData.splash_position_x
+            position_y = objectData.splash_position_y
 
             stringArgs = (object.name,
                           int(width), int(height),
@@ -338,7 +340,8 @@ def export_to_splash(self, context, filepath):
                           int(windowIndex),
                           int(fullscreen),
                           int(decoration),
-                          int(width), int(height))
+                          int(width), int(height),
+                          int(position_x), int(position_y))
 
             fw("        \"%s\" : {\n"
                "            \"type\" : \"camera\",\n"
@@ -354,6 +357,7 @@ def export_to_splash(self, context, filepath):
                "            \"decorated\" : %i,\n"
                "            \"position\" : [0, 0],\n"
                "            \"size\" : [%i, %i],\n"
+               "            \"position\" : [%i, %i],\n"
                "            \"srgb\" : [ 1 ]\n"
                "        },\n"
                "\n"
