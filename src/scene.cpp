@@ -643,14 +643,6 @@ void Scene::setAsMaster(string configFilePath)
     _gui->setName("gui");
     _gui->setConfigFilePath(configFilePath);
 
-    _httpServer = make_shared<HttpServer>("127.0.0.1", "9090", _self);
-    if (_httpServer)
-    {
-        _httpServerFuture = async(std::launch::async, [&](){
-            _httpServer->run();
-        });
-    }
-
 #if HAVE_GPHOTO
     // Initialize the color calibration object
     _colorCalibrator = make_shared<ColorCalibrator>(_self);
@@ -1113,6 +1105,23 @@ void Scene::registerAttributes()
         string type = args[0].asString();
         Values list = getObjectsNameByType(type);
         sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        return true;
+    });
+
+    _attribFunctions["httpServer"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string address = args[0].asString();
+        string port = args[1].asString();
+
+        _httpServer = make_shared<HttpServer>(address, port, _self);
+        if (_httpServer)
+        {
+            _httpServerFuture = async(std::launch::async, [&](){
+                _httpServer->run();
+            });
+        }
+
         return true;
     });
    
