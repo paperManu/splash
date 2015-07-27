@@ -7,6 +7,7 @@
 #include <mutex>
 #include <signal.h>
 
+#include "log.h"
 #include "scene.h"
 
 using namespace std;
@@ -672,10 +673,12 @@ namespace Http {
             return;
     
         if (requestPath.find("/set") == 0)
+        {
             _commandQueue.push_back({CommandId::set, requestArgs});
+        }
         else
         {
-            cout << "No command associated to URI " << req.uri << endl;
+            Log::get() << Log::WARNING << "RequestHandler::" << __FUNCTION__ << " - No command associated to URI " << req.uri << Log::endl;
             rep = Reply::stockReply(Reply::bad_request);
             return;
         }
@@ -765,7 +768,6 @@ namespace Http {
 HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr scene) :
     BaseObject(scene),
     _ioService(),
-    _signals(_ioService),
     _acceptor(_ioService),
     _socket(_ioService),
     _connectionManager()
@@ -774,18 +776,25 @@ HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr s
 
     registerAttributes();
 
-    _signals.add(SIGINT);
-    _signals.add(SIGTERM);
-    _signals.add(SIGQUIT);
+    try
+    {
+        boost::asio::ip::tcp::resolver resolver(_ioService);
+        boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve({address, port});
+        _acceptor.open(endpoint.protocol());
 
-    doAwaitStop();
+        _acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+        _acceptor.bind(endpoint);
+        _acceptor.listen();
+    }
+    catch (boost::system::system_error ec)
+    {
+        Log::get() << Log::ERROR << "HttpServer::" << __FUNCTION__ << " - Unable to open http server at " << address << "::" << port << Log::endl;
+        _ready = false;
+        return;
+    }
 
-    boost::asio::ip::tcp::resolver resolver(_ioService);
-    boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve({address, port});
-    _acceptor.open(endpoint.protocol());
-    _acceptor.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
-    _acceptor.bind(endpoint);
-    _acceptor.listen();
+    Log::get() << Log::MESSAGE << "HttpServer::" << __FUNCTION__ << " - Http server opened at " << address << "::" << port << Log::endl;
+    _ready = true;
 
     doAccept();
 }
@@ -844,15 +853,6 @@ void HttpServer::doAccept()
         }
 
         doAccept();
-    });
-}
-
-/*************/
-void HttpServer::doAwaitStop()
-{
-    _signals.async_wait([this](boost::system::error_code /*unused*/, int /*unused*/) {
-        _acceptor.close();
-        _connectionManager.stopAll();
     });
 }
 

@@ -61,8 +61,11 @@ Scene::~Scene()
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
-    _httpServer->stop();
-    _httpServerFuture.get();
+    if (_httpServerFuture.valid())
+    {
+        _httpServer->stop();
+        _httpServerFuture.get();
+    }
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
@@ -641,9 +644,12 @@ void Scene::setAsMaster(string configFilePath)
     _gui->setConfigFilePath(configFilePath);
 
     _httpServer = make_shared<HttpServer>("127.0.0.1", "9090", _self);
-    _httpServerFuture = async(std::launch::async, [&](){
-        _httpServer->run();
-    });
+    if (_httpServer)
+    {
+        _httpServerFuture = async(std::launch::async, [&](){
+            _httpServer->run();
+        });
+    }
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object

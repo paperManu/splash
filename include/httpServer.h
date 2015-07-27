@@ -234,14 +234,20 @@ class HttpServer : public BaseObject
 {
     public:
         HttpServer(const std::string& address, const std::string& port, SceneWeakPtr scene);
+
+        explicit operator bool() const
+        {
+            return _ready;
+        }
+
         void run();
         void stop();
 
     private:
         SceneWeakPtr _scene;
+        bool _ready {false};
 
         boost::asio::io_service _ioService;
-        boost::asio::signal_set _signals;
         boost::asio::ip::tcp::acceptor _acceptor;
         boost::asio::ip::tcp::socket _socket;
         Http::RequestHandler _requestHandler;
@@ -249,7 +255,6 @@ class HttpServer : public BaseObject
         Http::ConnectionManager _connectionManager;
 
         void doAccept();
-        void doAwaitStop();
 
         void registerAttributes();
 };
