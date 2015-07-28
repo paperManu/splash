@@ -3,6 +3,7 @@ install:
 	cp $(prefix)/bin/splash $(prefix)/bin/splash-scene ./splash.app/Contents/MacOS/
 	cp $(top_srcdir)/data/2d_marker.obj $(top_srcdir)/data/3d_marker.obj ./splash.app/Contents/Resources/
 
+	cp $(top_srcdir)/data/templates.txt ./splash.app/Contents/Resources/
 	mkdir -p ./splash.app/Contents/Resources/templates
 	cp $(top_srcdir)/data/templates/*.json $(top_srcdir)/data/templates/*.png ./splash.app/Contents/Resources/templates/
 

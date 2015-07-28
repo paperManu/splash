@@ -800,14 +800,18 @@ void GuiTemplate::render()
 /*************/
 void GuiTemplate::loadTemplates()
 {
+    auto templatePath = string(DATADIR);
     auto examples = vector<string>();
     auto descriptions = vector<string>();
     
     // Try to read the template file
-    ifstream in(string(DATADIR) + "templates.txt", ios::in | ios::binary);
+    ifstream in(templatePath + "templates.txt", ios::in | ios::binary);
 #if HAVE_OSX
     if (!in)
-        in = ifstream("../Resources/templates.txt", ios::in | ios::binary);
+    {
+        templatePath = "../Resources/";
+        in = ifstream(templatePath + "templates.txt", ios::in | ios::binary);
+    }
 #endif
     if (in)
     {
@@ -851,7 +855,7 @@ void GuiTemplate::loadTemplates()
     }
     else
     {
-        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
+        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << templatePath << "templates.txt" << Log::endl;
         return;
     }
 
@@ -866,13 +870,8 @@ void GuiTemplate::loadTemplates()
         glGetError();
         auto image = make_shared<Image>();
         image->setName("template_" + example);
-        if (!image->read(string(DATADIR) + "templates/" + example + ".png"))
-        {
-#if HAVE_OSX
-            if (!image->read("../Resources/templates/" + example + ".png"))
-#endif
+        if (!image->read(templatePath + "templates/" + example + ".png"))
             continue;
-        }
 
         auto texture = make_shared<Texture_Image>();
         texture->linkTo(image);
