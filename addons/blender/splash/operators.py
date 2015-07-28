@@ -299,6 +299,17 @@ def export_to_splash(self, context, filepath):
        "    ],\n"
        "\n"
        "    \"local\" : {\n")
+
+    # Add a window for the GUI
+    fw("        // Default window for the GUI\n"
+       "        \"gui\" : {\n"
+       "            \"type\" : \"window\",\n"
+       "            \"fullscreen\" : -1,\n"
+       "            \"decorated\" : 1,\n"
+       "            \"position\" : [0, 0],\n"
+       "            \"size\" : [732, 932],\n"
+       "            \"srgb\" : [ 1 ]\n"
+       "        },\n")
     
     links = []
     cameras = []
@@ -355,7 +366,6 @@ def export_to_splash(self, context, filepath):
                "            \"type\" : \"window\",\n"
                "            \"fullscreen\" : %i,\n"
                "            \"decorated\" : %i,\n"
-               "            \"position\" : [0, 0],\n"
                "            \"size\" : [%i, %i],\n"
                "            \"position\" : [%i, %i],\n"
                "            \"srgb\" : [ 1 ]\n"

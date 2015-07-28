@@ -112,6 +112,8 @@ class SplashObjectPanel(Panel):
             row.prop(object, "splash_height", text="Height")
 
             row = layout.row()
+            row.label("Window position:")
+            row = layout.row()
             row.prop(object, "splash_position_x", text="X")
             row.prop(object, "splash_position_y", text="Y")
 
