@@ -117,12 +117,12 @@ void Object::activate()
     else
     {
         _shader->setAttribute("fill", {_fill});
+        _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
     }
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
     _shader->setAttribute("scale", {_scale.x, _scale.y, _scale.z});
-    _shader->setAttribute("color", {_color.r, _color.g, _color.b, _color.a});
 
     _geometries[0]->update();
     _geometries[0]->activate();

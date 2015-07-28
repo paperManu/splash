@@ -797,14 +797,6 @@ void Shader::registerGraphicAttributes()
         return {fill};
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 4)
-            return false;
-        _uniforms["_color"].values = args;
-        _uniformsToUpdate.push_back("_color");
-        return true;
-    });
-
     _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
