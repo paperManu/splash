@@ -5,7 +5,7 @@ EXTRA_DIST = \
 
 blenderSplash.zip:
 	cd $(top_srcdir)/addons/blender
-	zip blenderSplash.zip -r splash
+	zip blenderSplash.zip -r splash -x *.swp
 
 clean:
 	rm -f blenderSplash.zip Makefile

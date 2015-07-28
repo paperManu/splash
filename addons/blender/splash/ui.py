@@ -74,12 +74,12 @@ class SplashToolbar:
 
 # Panel is available in object and editmode
 class SplashToolbarObject(Panel, SplashToolbar):
-    bl_category = "Video Mapping"
+    bl_category = "Splash"
     bl_idname = "MESH_PT_splash_object"
     bl_context = "objectmode"
 
 class SplashToolbarMesh(Panel, SplashToolbar):
-    bl_category = "Video Mapping"
+    bl_category = "Splash"
     bl_idname = "MESH_PT_splash_mesh"
     bl_context = "mesh_edit"
 
