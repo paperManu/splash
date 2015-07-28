@@ -306,14 +306,20 @@ void World::applyConfig()
             for (const auto& param : jsScenes[i])
             {
                 string paramName = sceneMembers[idx];
-                Value v;
-                if (param.isInt())
-                    v = param.asInt();
-                else if (param.isDouble())
-                    v = param.asFloat();
-                else
-                    v = param.asString();
-                sendMessage(name, paramName, {v});
+
+                Values values;
+                for (auto& p : param)
+                {
+                    Value v;
+                    if (p.isInt())
+                        v = p.asInt();
+                    else if (p.isDouble())
+                        v = p.asFloat();
+                    else
+                        v = p.asString();
+                    values.push_back(v);
+                }
+                sendMessage(name, paramName, values);
                 idx++;
             }
         }
@@ -771,11 +777,18 @@ void World::registerAttributes()
         for (int i = 2; i < args.size(); ++i)
             values.push_back(args[i]);
 
+        // Ask for update of the ghost object if needed
         sendMessage(_masterSceneName, "setGhost", values);
         
+        // Send the updated values to all scenes
         values.erase(values.begin());
         values.erase(values.begin());
         sendMessage(name, attr, values);
+
+        // Also update local version
+        if (_objects.find(name) != _objects.end())
+            _objects[name]->setAttribute(attr, values);
+
         return true;
     });
 

@@ -158,6 +158,10 @@ PKG_CHECK_MODULES([OPENCV], [opencv],
     AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected]))
 AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
 
+# Boost, for the HTTP server
+BOOST_REQUIRE([1.50])
+BOOST_ASIO
+
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
 if test "x$MARKDOWN" = "xtrue" ; then

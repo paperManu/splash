@@ -38,6 +38,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	geometry.cpp \
 	gpuBuffer.cpp \
 	gui.cpp \
+	httpServer.cpp \
 	image.cpp \
 	link.cpp \
 	mesh.cpp \
@@ -61,6 +62,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	-I$(top_srcdir)/external/bandit/bandit \
+	$(BOOST_CPPFLAGS) \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
@@ -74,6 +76,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lOpenImageIO \
 	-ljsoncpp \
 	-lsnappy \
+	$(BOOST_SYSTEM_LIBS) \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GSL_LIBS) \
@@ -149,7 +152,8 @@ splash_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
-	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la \
+	$(BOOST_SYSTEM_LIBS)
 
 ## FFmpeg related
 if HAVE_FFMPEG
@@ -195,7 +199,8 @@ splash_scene_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_scene_LDFLAGS = \
-	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la \
+	$(BOOST_SYSTEM_LIBS)
 
 ## FFmpeg related
 if HAVE_FFMPEG
@@ -235,6 +240,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gpuBuffer.h \
 	$(top_srcdir)/include/gui.h \
+	$(top_srcdir)/include/httpServer.h \
 	$(top_srcdir)/include/image.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \

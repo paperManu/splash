@@ -61,6 +61,12 @@ Scene::~Scene()
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
+    if (_httpServerFuture.valid())
+    {
+        _httpServer->stop();
+        _httpServerFuture.get();
+    }
+
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     unique_lock<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
@@ -1099,6 +1105,23 @@ void Scene::registerAttributes()
         string type = args[0].asString();
         Values list = getObjectsNameByType(type);
         sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        return true;
+    });
+
+    _attribFunctions["httpServer"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string address = args[0].asString();
+        string port = args[1].asString();
+
+        _httpServer = make_shared<HttpServer>(address, port, _self);
+        if (_httpServer)
+        {
+            _httpServerFuture = async(std::launch::async, [&](){
+                _httpServer->run();
+            });
+        }
+
         return true;
     });
    
