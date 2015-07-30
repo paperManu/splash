@@ -117,6 +117,7 @@ class Mesh : public BufferObject
             std::vector<glm::vec4> annexe;
         };
 
+        std::string _filepath {};
         MeshContainer _mesh;
         MeshContainer _bufferMesh;
         bool _meshUpdated {false};

@@ -107,6 +107,7 @@ bool Mesh::read(const string& filename)
         return false;
     }
 
+    _filepath = filepath;
     MeshContainer mesh;
     mesh.vertices = objLoader.getVertices();
     mesh.uvs = objLoader.getUVs();
@@ -317,6 +318,8 @@ void Mesh::registerAttributes()
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
+    }, [&]() -> Values {
+        return {_filepath};
     });
     
     _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
