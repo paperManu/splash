@@ -64,7 +64,6 @@ class Image_FFmpeg : public Image
         bool read(const std::string& filename);
 
     private:
-        std::string _filename;
         void* _avFormatContext {nullptr};
         std::thread _readLoopThread;
         std::atomic_bool _continueReadLoop;

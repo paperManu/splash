@@ -58,7 +58,7 @@ bool Image_Shmdata::read(const string& filename)
                                         },
                                         [&](){},
                                         &_logger));
-    _filename = filename;
+    _filepath = filename;
 
     return true;
 }

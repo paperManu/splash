@@ -248,7 +248,11 @@ void GuiControl::render()
                 for (auto& v : attr.second)
                 {
                     string tmp = v.asString();
-                    ImGui::Text(tmp.c_str());
+                    tmp.resize(256);
+                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    }
                 }
             }
         }

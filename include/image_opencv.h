@@ -68,7 +68,6 @@ class Image_OpenCV : public Image
         bool read(const std::string& filename);
 
     private:
-        std::string _filename;
         std::unique_ptr<cv::VideoCapture> _videoCapture;
         unsigned int _inputIndex {0};
         unsigned int _width {640};

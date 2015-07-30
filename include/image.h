@@ -129,6 +129,7 @@ class Image : public BufferObject
     protected:
         oiio::ImageBuf _image;
         oiio::ImageBuf _bufferImage;
+        std::string _filepath;
         bool _flip {false};
         bool _flop {false};
         bool _imageUpdated {false};

@@ -45,6 +45,8 @@ bool Image_OpenCV::read(const string& filename)
         inputIndex = 0;
     }
 
+    _filepath = to_string(inputIndex);
+
     // This releases any previous input
     _continueReading = false;
     if (_readLoopThread.joinable())

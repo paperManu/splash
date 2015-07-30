@@ -208,6 +208,7 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
 /*************/
 bool Image::read(const string& filename)
 {
+    _filepath = filename;
     if (!_linkedToWorldObject)
         return readFile(filename);
     else
@@ -220,6 +221,8 @@ bool Image::readFile(const string& filename)
     auto filepath = string(filename);
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
+
+    _filepath = filepath;
 
     try
     {
@@ -354,6 +357,8 @@ void Image::registerAttributes()
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
+    }, [&]() -> Values {
+        return {_filepath};
     });
 
     _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
