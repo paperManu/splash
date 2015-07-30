@@ -3,8 +3,10 @@
     <link href="data/github.css" rel="stylesheet">
 </head>
 
-Splash
-======
+Splash, a multi-projector video-mapping software
+================================================
+
+For a more complete documentation, go visit the [wiki](https://github.com/paperManu/splash/wiki).
 
 Table of Contents
 -----------------
