@@ -256,6 +256,13 @@ void GuiControl::render()
                 }
             }
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Delete selected object"))
+            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
     }
 }
 

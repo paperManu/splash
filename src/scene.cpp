@@ -1083,6 +1083,24 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        auto objectName = args[0].asString();
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+            _objects.erase(objectIt);
+
+        objectIt = _ghostObjects.find(objectName);
+        if (objectIt != _ghostObjects.end())
+            _objects.erase(objectIt);
+
+        return true;
+    });
+
     _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;

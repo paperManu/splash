@@ -710,6 +710,30 @@ void World::registerAttributes()
         return true;
     });
 
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        unique_lock<mutex> lock(_configurationMutex);
+        auto objectName = args[0].asString();
+
+        // Delete the object here
+        auto objectDestIt = _objectDest.find(objectName);
+        if (objectDestIt != _objectDest.end())
+            _objectDest.erase(objectDestIt);
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+            _objects.erase(objectIt);
+
+        // Ask for Scenes to delete the object
+        SThread::pool.enqueueWithoutId([=]() {
+            sendMessage(SPLASH_ALL_PAIRS, "deleteObject", args);
+        });
+
+        return true;
+    });
+
     _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
