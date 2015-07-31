@@ -1,5 +1,6 @@
 #include "image.h"
 
+#include <fstream>
 #include <memory>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
@@ -223,6 +224,12 @@ bool Image::readFile(const string& filename)
         filepath = _configFilePath + filepath;
 
     _filepath = filepath;
+
+    if (!ifstream(_filepath).is_open())
+    {
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        return false;
+    }
 
     try
     {
