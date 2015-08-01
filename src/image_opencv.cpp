@@ -35,7 +35,19 @@ Image_OpenCV::~Image_OpenCV()
 /*************/
 bool Image_OpenCV::read(const string& filename)
 {
-    _filepath = filename;
+    try
+    {
+        _inputIndex = stoi(filename);
+    }
+    catch (...)
+    {
+        _inputIndex = -1;
+    }
+
+    if (_inputIndex == -1)
+        _filepath = filename;
+    else
+        _filepath = to_string(_inputIndex);
 
     // This releases any previous input
     _continueReading = false;
@@ -61,16 +73,23 @@ void Image_OpenCV::readLoop()
 
     if (!_videoCapture->isOpened())
     {
-        if (!_videoCapture->open(_filepath))
+        bool status;
+        if (_inputIndex >= 0)
+            status = _videoCapture->open(_inputIndex);
+        else
+            status = _videoCapture->open(_filepath);
+
+        if (!status)
         {
             Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << _filepath << Log::endl;
             return;
         }
+
         _videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
         _videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
         _videoCapture->set(CV_CAP_PROP_FPS, _framerate);
 
-        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Sucessfully initialized VideoCapture " << _filepath << Log::endl;
+        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Successfully initialized VideoCapture " << _filepath << Log::endl;
     }
 
     while (_continueReading)

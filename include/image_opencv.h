@@ -69,6 +69,7 @@ class Image_OpenCV : public Image
 
     private:
         std::unique_ptr<cv::VideoCapture> _videoCapture;
+        int _inputIndex {-1};
         unsigned int _width {640};
         unsigned int _height {480};
         float _framerate {60.0};
