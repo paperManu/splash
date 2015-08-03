@@ -38,7 +38,7 @@ bool Mesh_Shmdata::read(const string& filename)
                                         [&](){},
                                         &_logger));
 
-    _filepath = filename;
+    _filepath = filepath;
 
     return true;
 }

@@ -45,7 +45,7 @@ class Image : public BufferObject
          * Constructor
          */
         Image();
-        Image(bool linked);
+        Image(bool linked); //< This constructor is used if the object is linked to a World counterpart
         Image(oiio::ImageSpec spec);
 
         /**
