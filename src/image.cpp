@@ -49,6 +49,7 @@ void Image::init()
 /*************/
 Image::~Image()
 {
+    unique_lock<mutex> writeLock(_writeMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif

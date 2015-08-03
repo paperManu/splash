@@ -586,10 +586,12 @@ void Scene::run()
         
         Timer::get() << "sceneLoop";
 
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        _mainWindow->setAsCurrentContext();
-        render();
-        _mainWindow->releaseContext();
+        {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            _mainWindow->setAsCurrentContext();
+            render();
+            _mainWindow->releaseContext();
+        }
 
         Timer::get() >> "sceneLoop";
     }

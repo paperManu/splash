@@ -105,8 +105,12 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     // We want to render the object with a specific texture, containing texture coordinates
     vector<Values> shaderFill;
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         Values fill;
         obj->getAttribute("fill", fill);
         obj->setAttribute("fill", {"uv"});
@@ -147,8 +151,12 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     // Reset the objects to their initial shader
     int fillIndex {0};
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         obj->setAttribute("fill", shaderFill[fillIndex]);
         fillIndex++;
     }
@@ -261,8 +269,12 @@ void Camera::computeBlendingMap(ImagePtr& map)
 /*************/
 void Camera::computeBlendingContribution()
 {
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
 }
@@ -272,8 +284,12 @@ void Camera::computeVertexVisibility()
 {
     // We want to render the object with a specific texture, containing the primitive IDs
     vector<Values> shaderFill;
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         Values fill;
         obj->getAttribute("fill", fill);
         obj->setAttribute("fill", {"primitiveId"});
@@ -290,8 +306,12 @@ void Camera::computeVertexVisibility()
 
     // Reset the objects to their initial shader
     int fillIndex {0};
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         obj->setAttribute("fill", shaderFill[fillIndex]);
         fillIndex++;
     }
@@ -299,16 +319,26 @@ void Camera::computeVertexVisibility()
     // Update the vertices visibility based on the result
     glActiveTexture(GL_TEXTURE0);
     _outTextures[0]->bind();
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         obj->transferVisibilityFromTexToAttr(_width, _height);
+    }
     _outTextures[0]->unbind();
 }
 
 /*************/
 void Camera::blendingTessellateForCurrentCamera()
 {
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
     }
 }
@@ -488,7 +518,7 @@ bool Camera::doCalibration()
 }
 
 /*************/
-bool Camera::linkTo(BaseObjectPtr obj)
+bool Camera::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
     BaseObject::linkTo(obj);
@@ -504,9 +534,17 @@ bool Camera::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-bool Camera::unlinkFrom(BaseObjectPtr obj)
+bool Camera::unlinkFrom(shared_ptr<BaseObject> obj)
 {
-    auto objIterator = find(_objects.begin(), _objects.end(), obj);
+    auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
+        if (o.expired())
+            return false;
+        auto object = o.lock();
+        if (object == obj)
+            return true;
+        return false;
+    });
+
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
@@ -534,8 +572,12 @@ Values Camera::pickVertex(float x, float y)
 
     float distance = numeric_limits<float>::max();
     dvec4 vertex;
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
                                computeProjectionMatrix(), dvec4(0, 0, _width, _height));
         glm::dvec3 closestVertex;
@@ -681,8 +723,12 @@ bool Camera::render()
     if (!_hidden)
     {
         // Draw the objects
-        for (auto& obj : _objects)
+        for (auto& o : _objects)
         {
+            if (o.expired())
+                continue;
+            auto obj = o.lock();
+
             obj->activate();
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
@@ -717,7 +763,7 @@ bool Camera::render()
             for (int i = 0; i < _calibrationPoints.size(); ++i)
             {
                 auto& point = _calibrationPoints[i];
-                ObjectPtr worldMarker = _models["3d_marker"];
+                auto& worldMarker = _models["3d_marker"];
 
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                 if (_selectedCalibrationPoint == i)
@@ -734,7 +780,7 @@ bool Camera::render()
 
                 if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
-                    ObjectPtr screenMarker = _models["2d_marker"];
+                    auto& screenMarker = _models["2d_marker"];
 
                     screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                     screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
@@ -1116,12 +1162,14 @@ void Camera::loadDefaultModels()
         MeshPtr mesh = make_shared<Mesh>();
         mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
+        _modelMeshes.push_back(mesh);
 
         GeometryPtr geom = make_shared<Geometry>();
         geom->setName(file.first);
         geom->linkTo(mesh);
+        _modelGeometries.push_back(geom);
 
-        ObjectPtr obj = make_shared<Object>();
+        shared_ptr<Object> obj = make_shared<Object>();
         obj->setName(file.first);
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
@@ -1501,8 +1549,13 @@ void Camera::registerAttributes()
         else
             primitive = "wireframe";
 
-        for (auto& obj : _objects)
+        for (auto& o : _objects)
+        {
+            if (o.expired())
+                continue;
+            auto obj = o.lock();
             obj->setAttribute("fill", {primitive});
+        }
         return true;
     });
 

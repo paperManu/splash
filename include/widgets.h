@@ -84,7 +84,7 @@ class GuiGlobalView : public GuiWidget
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
-        void setObject(ObjectPtr obj);
+        void setObject(std::shared_ptr<BaseObject> obj);
 
     protected:
         CameraPtr _camera, _guiCamera;

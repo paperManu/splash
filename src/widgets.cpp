@@ -393,7 +393,7 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
-void GuiGlobalView::setObject(ObjectPtr obj)
+void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
 {
     _camera->linkTo(obj);
 }

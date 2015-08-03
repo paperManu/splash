@@ -187,7 +187,7 @@ void Object::draw()
 }
 
 /*************/
-bool Object::linkTo(BaseObjectPtr obj)
+bool Object::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
     BaseObject::linkTo(obj);

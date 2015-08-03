@@ -56,9 +56,9 @@ Texture_Image::~Texture_Image()
 }
 
 /*************/
-Texture_Image& Texture_Image::operator=(ImagePtr& img)
+Texture_Image& Texture_Image::operator=(const shared_ptr<Image>& img)
 {
-    _img = img;
+    _img = weak_ptr<Image>(img);
     return *this;
 }
 
@@ -78,7 +78,7 @@ void Texture_Image::generateMipmap() const
 }
 
 /*************/
-bool Texture_Image::linkTo(BaseObjectPtr obj)
+bool Texture_Image::linkTo(std::shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
     Texture::linkTo(obj);
@@ -86,7 +86,7 @@ bool Texture_Image::linkTo(BaseObjectPtr obj)
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         ImagePtr img = dynamic_pointer_cast<Image>(obj);
-        _img = img;
+        _img = weak_ptr<Image>(img);
         return true;
     }
 
@@ -221,18 +221,19 @@ void Texture_Image::update()
     unique_lock<mutex> lock(_mutex);
 
     // If _img is nullptr, this texture is not set from an Image
-    if (_img.get() == nullptr)
+    if (_img.expired())
         return;
+    auto img = _img.lock();
 
-    if (_img->getTimestamp() == _timestamp)
+    if (img->getTimestamp() == _timestamp)
         return;
-    _img->update();
+    img->update();
 
-    ImageSpec spec = _img->getSpec();
+    ImageSpec spec = img->getSpec();
     Values srgb, flip, flop;
-    _img->getAttribute("srgb", srgb);
-    _img->getAttribute("flip", flip);
-    _img->getAttribute("flop", flop);
+    img->getAttribute("srgb", srgb);
+    img->getAttribute("flip", flip);
+    img->getAttribute("flop", flop);
 
     if (!(bool)glIsTexture(_glTex))
         glGenTextures(1, &_glTex);
@@ -304,66 +305,66 @@ void Texture_Image::update()
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
-            _img->lock();
+            img->lock();
             if (srgb[0].asInt() > 0)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, img->data());
             else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, _img->data());
-            _img->unlock();
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_INT_8_8_8_8_REV, img->data());
+            img->unlock();
         }
         else if (spec.nchannels == 3 && spec.format == "uint8" && !isCompressed)
         {
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_BYTE, format GL_RGBA (source RGB)" << Log::endl;
 #endif
-            _img->lock();
+            img->lock();
             if (srgb[0].asInt() > 0)
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, _img->data());
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, img->data());
             else
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, _img->data());
-            _img->unlock();
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, glChannelOrder, GL_UNSIGNED_BYTE, img->data());
+            img->unlock();
         }
         else if (spec.nchannels == 1 && spec.format == "uint16" && !isCompressed)
         {
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
 #endif
-            _img->lock();
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, _img->data());
-            _img->unlock();
+            img->lock();
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, img->data());
+            img->unlock();
         }
         else if (spec.channelnames == vector<string>({"RGB_DXT1"}))
         {
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGB_S3TC_DXT1, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
-            _img->lock();
+            img->lock();
             if (srgb[0].asInt() > 0)
-                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
+                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, img->data());
             else
-                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
-            _img->unlock();
+                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, spec.width, spec.height, 0, imageDataSize, img->data());
+            img->unlock();
         }
         else if (spec.channelnames == vector<string>({"RGBA_DXT5"}))
         {
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
-            _img->lock();
+            img->lock();
             if (srgb[0].asInt() > 0)
-                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
+                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, img->data());
             else
-                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
-            _img->unlock();
+                glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, img->data());
+            img->unlock();
         }
         else if (spec.channelnames == vector<string>({"YCoCg_DXT5"}))
         {
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_COMPRESSED_RGBA_S3TC_DXT5, format GL_RGBA (source RGBA)" << Log::endl;
 #endif
-            _img->lock();
-             glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, _img->data());
-            _img->unlock();
+            img->lock();
+             glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, spec.width, spec.height, 0, imageDataSize, img->data());
+            img->unlock();
         }
         else
         {
@@ -377,10 +378,10 @@ void Texture_Image::update()
         GLubyte* pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (pixels != NULL)
         {
-            _img->lock();
-            memcpy((void*)pixels, _img->data(), imageDataSize);
+            img->lock();
+            memcpy((void*)pixels, img->data(), imageDataSize);
             glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-            _img->unlock();
+            img->unlock();
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
@@ -428,7 +429,7 @@ void Texture_Image::update()
         GLubyte* pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (pixels != NULL)
         {
-            _img->lock();
+            img->lock();
 
             _pboCopyThreadIds.clear();
             int stride = SPLASH_TEXTURE_COPY_THREADS;
@@ -436,11 +437,11 @@ void Texture_Image::update()
             for (int i = 0; i < stride - 1; ++i)
             {
                 _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
-                    copy((char*)_img->data() + size / stride * i, (char*)_img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i);
+                    copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i);
                 }));
             }
             _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
-                copy((char*)_img->data() + size / stride * (stride - 1), (char*)_img->data() + size, (char*)pixels + size / stride * (stride - 1));
+                copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1));
             }));
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
@@ -456,7 +457,7 @@ void Texture_Image::update()
     _shaderUniforms["flip"] = flip;
     _shaderUniforms["flop"] = flop;
 
-    _timestamp = _img->getTimestamp();
+    _timestamp = img->getTimestamp();
 
     if (_filtering && !isCompressed)
         generateMipmap();
@@ -472,7 +473,9 @@ void Texture_Image::flushPbo()
 
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-        _img->unlock();
+
+        if (!_img.expired())
+            _img.lock()->unlock();
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
 }

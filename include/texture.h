@@ -89,7 +89,7 @@ class Texture : public BaseObject
         /**
          * Try to link the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj);
+        virtual bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Lock the texture for read / write operations
