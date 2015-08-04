@@ -350,7 +350,7 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 }
 
 /*************/
-bool Gui::linkTo(BaseObjectPtr obj)
+bool Gui::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
     BaseObject::linkTo(obj);
@@ -363,6 +363,17 @@ bool Gui::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+bool Gui::unlinkFrom(shared_ptr<BaseObject> obj)
+{
+    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    {
+        _guiCamera->unlinkFrom(obj);
+    }
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/

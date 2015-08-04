@@ -1094,14 +1094,14 @@ void Scene::registerAttributes()
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);
-            for (auto& object : _objects)
-                object.second->unlinkFrom(objectIt->second);
+            for (auto& localObject : _objects)
+                unlink(localObject.second, objectIt->second);
             if (objectIt != _objects.end())
                 _objects.erase(objectIt);
 
             objectIt = _ghostObjects.find(objectName);
-            for (auto& object : _objects)
-                object.second->unlinkFrom(objectIt->second);
+            for (auto& ghostObject : _ghostObjects)
+                unlink(ghostObject.second, objectIt->second);
             if (objectIt != _ghostObjects.end())
                 _objects.erase(objectIt);
         });

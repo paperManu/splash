@@ -100,9 +100,10 @@ class Gui : public BaseObject
         void mouseScroll(double xoffset, double yoffset);
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Render this camera into its textures
