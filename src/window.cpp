@@ -190,7 +190,8 @@ vector<string> Window::getPathDropped()
 bool Window::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {

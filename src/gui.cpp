@@ -353,7 +353,8 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 bool Gui::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {

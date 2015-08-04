@@ -163,7 +163,8 @@ bool Geometry::deserialize(unique_ptr<SerializedObject> obj)
 bool Geometry::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {

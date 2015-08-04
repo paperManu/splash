@@ -81,7 +81,8 @@ void Texture_Image::generateMipmap() const
 bool Texture_Image::linkTo(std::shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    Texture::linkTo(obj);
+    if (!Texture::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
