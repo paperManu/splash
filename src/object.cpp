@@ -194,13 +194,13 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = dynamic_pointer_cast<Texture>(obj);
         addTexture(tex);
         return true;
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        Texture_ImagePtr tex = make_shared<Texture_Image>(_root);
+        auto tex = make_shared<Texture_Image>(_root);
         tex->setName(getName() + "_" + obj->getName() + "_tex");
         if (tex->linkTo(obj))
         {
@@ -214,7 +214,7 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
-        GeometryPtr geom = make_shared<Geometry>(_root);
+        auto geom = make_shared<Geometry>(_root);
         geom->setName(getName() + "_" + obj->getName() + "_geom");
         if (geom->linkTo(obj))
         {
@@ -228,12 +228,55 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Geometry>(obj).get() != nullptr)
     {
-        GeometryPtr geom = dynamic_pointer_cast<Geometry>(obj);
+        auto geom = dynamic_pointer_cast<Geometry>(obj);
         addGeometry(geom);
         return true;
     }
 
     return false;
+}
+
+/*************/
+bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
+{
+    auto type = obj->getType();
+    if (type.find("texture") != string::npos)
+    {
+        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
+    }
+    else if (type.find("image") != string::npos)
+    {
+        auto textureName = getName() + "_" + obj->getName() + "_tex";
+        auto tex = _root.lock()->unregisterObject(textureName);
+
+        if (!tex)
+            return false;
+        else if (tex->unlinkFrom(obj))
+            unlinkFrom(tex);
+        else
+            return false;
+    }
+    else if (type.find("mesh") != string::npos)
+    {
+        auto geomName = getName() + "_" + obj->getName() + "_geom";
+        auto geom = _root.lock()->unregisterObject(geomName);
+
+        if (!geom)
+            return false;
+        if (geom->unlinkFrom(obj))
+            unlinkFrom(geom);
+        else
+            return false;
+    }
+    else if (type.find("geometry") != string::npos)
+    {
+        auto geom = dynamic_pointer_cast<Geometry>(obj);
+        removeGeometry(geom);
+        return true;
+    }
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -257,7 +300,15 @@ float Object::pickVertex(glm::dvec3 p, glm::dvec3& v)
 }
 
 /*************/
-void Object::removeTexture(TexturePtr tex)
+void Object::removeGeometry(const shared_ptr<Geometry>& geometry)
+{
+    auto geomIt = find(_geometries.begin(), _geometries.end(), geometry);
+    if (geomIt != _geometries.end())
+        _geometries.erase(geomIt);
+}
+
+/*************/
+void Object::removeTexture(const shared_ptr<Texture>& tex)
 {
     auto texIterator = find(_textures.begin(), _textures.end(), tex);
     if (texIterator != _textures.end())

@@ -300,6 +300,13 @@ class BaseObject
                 _configFilePath = args[0].asString();
                 return true;
             });
+
+            _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
+                if (args.size() == 0)
+                    return false;
+                _name = args[0].asString();
+                return true;
+            });
         }
 
         /**
@@ -407,13 +414,30 @@ class RootObject : public BaseObject
          * Register an object which was created elsewhere
          * If an object was the same name exists, it is replaced
          */
-        void registerObject(BaseObjectPtr object)
+        void registerObject(std::shared_ptr<BaseObject> object)
         {
             if (object.get() != nullptr)
             {
                 object->_savable = false; // This object was created on the fly. Do not save it
                 _objects[object->getName()] = object;
             }
+        }
+
+        /**
+         * Unregister an object which was created elsewhere, from its name,
+         * sending back a shared_ptr for it
+         */
+        std::shared_ptr<BaseObject> unregisterObject(std::string name)
+        {
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end())
+            {
+                auto object = objectIt->second;
+                _objects.erase(objectIt);
+                return object;
+            }
+
+            return {};
         }
 
         /**
@@ -447,7 +471,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::mutex _setMutex;
-        std::map<std::string, BaseObjectPtr> _objects;
+        std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;

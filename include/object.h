@@ -104,6 +104,7 @@ class Object : public BaseObject
          * Try to link the given BaseObject to this
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -111,9 +112,14 @@ class Object : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Remove a geometry from this object
+         */
+        void removeGeometry(const std::shared_ptr<Geometry>& geometry);
+
+        /**
          * Remove a texture from this object
          */
-        void removeTexture(const TexturePtr texture);
+        void removeTexture(const std::shared_ptr<Texture>& texture);
 
         /**
          * Reset the blending to no blending at all

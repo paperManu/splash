@@ -193,8 +193,8 @@ sendAsDefault:
             io.KeysDown[key] = true;
         if (action == GLFW_RELEASE)
             io.KeysDown[key] = false;
-        io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
-        io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+        io.KeyCtrl = ((mods & GLFW_MOD_CONTROL) != 0) && (action == GLFW_PRESS);
+        io.KeyShift = ((mods & GLFW_MOD_SHIFT) != 0) && (action == GLFW_PRESS);
     
         break;
     }
@@ -717,7 +717,7 @@ void Gui::initImWidgets()
     {
         string text;
         text += "Tab: show / hide this GUI\n";
-        text += "Shortcuts for the calibration view:\n";
+        text += "General shortcuts:\n";
         text += " Ctrl+F: white background instead of black\n";
         text += " Ctrl+B: compute the blending between all cameras\n";
         text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
@@ -731,11 +731,17 @@ void Gui::initImWidgets()
         text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
         text += "\n";
-        text += " Space: switch between cameras (when hovering the Views panel)\n";
-        text += " A: show / hide the target calibration point (when hovering the Views panel)\n";
-        text += " C: calibrate the selected camera (when hovering the Views panel)\n";
-        text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
-        text += " H: hide all but the selected camera (when hovering the Views panel)\n";
+        text += "Views panel:\n";
+        text += " Space: switch between cameras\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " C: calibrate the selected camera\n";
+        text += " R: revert camera to previous calibration\n";
+        text += " H: hide all but the selected camera\n";
+
+        text += "\n";
+        text += "Node view (inside Control panel):\n";
+        text += " Shift + left click: link the clicked node to the selected one\n";
+        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
 
         return text;
     });

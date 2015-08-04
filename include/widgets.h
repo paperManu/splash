@@ -182,6 +182,7 @@ class GuiNodeView : public GuiWidget
         SceneWeakPtr _scene;
         bool _isHovered {false};
         std::string _clickedNode {""};
+        std::string _sourceNode {""};
 
         // Node render settings
         std::vector<int> _nodeSize {160, 60};

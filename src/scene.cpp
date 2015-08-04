@@ -228,7 +228,7 @@ bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
     lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
-    bool result = first->unlinkFrom(second);
+    bool result = second->unlinkFrom(first);
     glfwMakeContextCurrent(NULL);
 
     return result;
@@ -1095,13 +1095,13 @@ void Scene::registerAttributes()
 
             auto objectIt = _objects.find(objectName);
             for (auto& localObject : _objects)
-                unlink(localObject.second, objectIt->second);
+                unlink(objectIt->second, localObject.second);
             if (objectIt != _objects.end())
                 _objects.erase(objectIt);
 
             objectIt = _ghostObjects.find(objectName);
             for (auto& ghostObject : _ghostObjects)
-                unlink(ghostObject.second, objectIt->second);
+                unlink(objectIt->second, ghostObject.second);
             if (objectIt != _ghostObjects.end())
                 _objects.erase(objectIt);
         });

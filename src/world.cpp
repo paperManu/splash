@@ -699,6 +699,25 @@ void World::setAttribute(string name, string attrib, const Values& args)
 /*************/
 void World::registerAttributes()
 {
+    _attribFunctions["addObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        auto type = args[0].asString();
+        auto name = type + "_" + to_string(_nextId);
+        _nextId++;
+
+        unique_lock<mutex> lock(_configurationMutex);
+
+        for (auto& s : _scenes)
+        {
+            sendMessage(s.first, "add", {type, name});
+            addLocally(type, name, s.first);
+        }
+
+        return true;
+    });
+
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
         _childProcessLaunched = true;
         _childProcessConditionVariable.notify_all();
@@ -812,6 +831,19 @@ void World::registerAttributes()
         // Also update local version
         if (_objects.find(name) != _objects.end())
             _objects[name]->setAttribute(attr, values);
+
+        return true;
+    });
+
+    _attribFunctions["sendAllScenes"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string attr = args[0].asString();
+        Values values;
+        for (int i = 1; i < args.size(); ++i)
+            values.push_back(args[i]);
+        for (auto& scene : _scenes)
+            sendMessage(scene.first, attr, values);
 
         return true;
     });
