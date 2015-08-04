@@ -1089,16 +1089,22 @@ void Scene::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        auto objectName = args[0].asString();
+        _taskQueue.push_back([=]() -> void {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            auto objectName = args[0].asString();
 
-        auto objectIt = _objects.find(objectName);
-        if (objectIt != _objects.end())
-            _objects.erase(objectIt);
+            auto objectIt = _objects.find(objectName);
+            for (auto& object : _objects)
+                object.second->unlinkFrom(objectIt->second);
+            if (objectIt != _objects.end())
+                _objects.erase(objectIt);
 
-        objectIt = _ghostObjects.find(objectName);
-        if (objectIt != _ghostObjects.end())
-            _objects.erase(objectIt);
+            objectIt = _ghostObjects.find(objectName);
+            for (auto& object : _objects)
+                object.second->unlinkFrom(objectIt->second);
+            if (objectIt != _ghostObjects.end())
+                _objects.erase(objectIt);
+        });
 
         return true;
     });
