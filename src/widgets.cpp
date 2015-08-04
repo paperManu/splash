@@ -256,6 +256,13 @@ void GuiControl::render()
                 }
             }
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Delete selected object"))
+            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
     }
 }
 
@@ -386,7 +393,7 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
-void GuiGlobalView::setObject(ObjectPtr obj)
+void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
 {
     _camera->linkTo(obj);
 }

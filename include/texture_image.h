@@ -69,7 +69,7 @@ class Texture_Image : public Texture
         /**
          * Sets the specified buffer as the texture on the device
          */
-        Texture_Image& operator=(ImagePtr& img);
+        Texture_Image& operator=(const std::shared_ptr<Image>& img);
 
         /**
          * Bind / unbind this texture
@@ -107,7 +107,7 @@ class Texture_Image : public Texture
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Lock the texture for read / write operations
@@ -155,7 +155,7 @@ class Texture_Image : public Texture
         // And some temporary attributes
         GLint _activeTexture; // To which texture unit the texture is bound
 
-        ImagePtr _img;
+        std::weak_ptr<Image> _img;
 
         // Parameters to send to the shader
         std::unordered_map<std::string, Values> _shaderUniforms;

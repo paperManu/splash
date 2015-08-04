@@ -103,7 +103,7 @@ class Object : public BaseObject
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point

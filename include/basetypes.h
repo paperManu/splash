@@ -114,9 +114,18 @@ class BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj)
+        virtual bool linkTo(std::shared_ptr<BaseObject> obj)
         {
-            if (std::find(_linkedObjects.begin(), _linkedObjects.end(), obj) == _linkedObjects.end())
+            auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
+                auto object = o.lock();
+                if (!object)
+                    return false;
+                if (object == obj)
+                    return true;
+                return false;
+            });
+
+            if (objectIt == _linkedObjects.end())
             {
                 _linkedObjects.push_back(obj);
                 return true;
@@ -124,20 +133,38 @@ class BaseObject
             return false;
         }
 
-        virtual bool unlinkFrom(BaseObjectPtr obj)
+        virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
-            auto objIterator = std::find(_linkedObjects.begin(), _linkedObjects.end(), obj);
-            if (objIterator != _linkedObjects.end())
+            auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
+                auto object = o.lock();
+                if (!object)
+                    return false;
+                if (object == obj)
+                    return true;
+                return false;
+            });
+
+            if (objectIt != _linkedObjects.end())
             {
-                _linkedObjects.erase(objIterator);
+                _linkedObjects.erase(objectIt);
                 return true;
             }
             return false;
         }
 
-        const std::vector<BaseObjectPtr>& getLinkedObjects()
+        const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects()
         {
-            return _linkedObjects;
+            std::vector<std::shared_ptr<BaseObject>> objects;
+            for (auto& o : _linkedObjects)
+            {
+                auto obj = o .lock();
+                if (!obj)
+                    continue;
+
+                objects.push_back(obj);
+            }
+
+            return objects;
         }
 
         /**
@@ -259,7 +286,7 @@ class BaseObject
         std::string _configFilePath {""}; // All objects know about their location
 
         RootObjectWeakPtr _root;
-        std::vector<BaseObjectPtr> _linkedObjects;
+        std::vector<std::weak_ptr<BaseObject>> _linkedObjects;
 
         std::unordered_map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};

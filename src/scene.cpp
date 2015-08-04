@@ -586,10 +586,12 @@ void Scene::run()
         
         Timer::get() << "sceneLoop";
 
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        _mainWindow->setAsCurrentContext();
-        render();
-        _mainWindow->releaseContext();
+        {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            _mainWindow->setAsCurrentContext();
+            render();
+            _mainWindow->releaseContext();
+        }
 
         Timer::get() >> "sceneLoop";
     }
@@ -1080,6 +1082,30 @@ void Scene::registerAttributes()
             string configStr = config.toStyledString();
             sendMessageToWorld("answerMessage", {"config", _name, configStr});
         });
+        return true;
+    });
+
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _taskQueue.push_back([=]() -> void {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            auto objectName = args[0].asString();
+
+            auto objectIt = _objects.find(objectName);
+            for (auto& object : _objects)
+                object.second->unlinkFrom(objectIt->second);
+            if (objectIt != _objects.end())
+                _objects.erase(objectIt);
+
+            objectIt = _ghostObjects.find(objectName);
+            for (auto& object : _objects)
+                object.second->unlinkFrom(objectIt->second);
+            if (objectIt != _ghostObjects.end())
+                _objects.erase(objectIt);
+        });
+
         return true;
     });
 

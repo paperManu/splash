@@ -104,7 +104,7 @@ class Geometry : public BufferObject
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -119,7 +119,7 @@ class Geometry : public BufferObject
         /**
          * Set the mesh for this object
          */
-        void setMesh(MeshPtr mesh) {_mesh = mesh;}
+        void setMesh(MeshPtr mesh) {_mesh = std::weak_ptr<Mesh>(mesh);}
 
         /**
          * Swap between temporary and alternative buffers
@@ -140,7 +140,8 @@ class Geometry : public BufferObject
         mutable std::mutex _mutex;
         bool _onMasterScene {false};
 
-        MeshPtr _mesh;
+        std::shared_ptr<Mesh> _defaultMesh;
+        std::weak_ptr<Mesh> _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
