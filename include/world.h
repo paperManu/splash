@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -25,6 +25,7 @@
 #ifndef SPLASH_WORLD_H
 #define SPLASH_WORLD_H
 
+#include <condition_variable>
 #include <mutex>
 #include <signal.h>
 #include <string>
@@ -87,7 +88,10 @@ class World : public RootObject
 
         std::string _configFilename;
         Json::Value _config;
+
         bool _childProcessLaunched {false};
+        std::mutex _childProcessMutex;
+        std::condition_variable _childProcessConditionVariable;
         
         // Synchronization testings
         int _swapSynchronizationTesting {0}; // If not 0, number of frames to keep the same color

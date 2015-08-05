@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -43,11 +43,21 @@ namespace Splash {
 class Shader : public BaseObject
 {
     public:
+        enum ProgramType
+        {
+            prgGraphic = 0,
+            prgCompute,
+            prgFeedback
+        };
+
         enum ShaderType
         {
             vertex = 0,
+            tess_ctrl,
+            tess_eval,
             geometry,
-            fragment
+            fragment,
+            compute
         };
 
         enum Sideness
@@ -62,6 +72,7 @@ class Shader : public BaseObject
             texture = 0,
             texture_rect,
             color,
+            primitiveId,
             uv,
             wireframe,
             window
@@ -70,7 +81,7 @@ class Shader : public BaseObject
         /**
          * Constructor
          */
-        Shader();
+        Shader(ProgramType type = prgGraphic);
 
         /**
          * Destructor
@@ -83,39 +94,25 @@ class Shader : public BaseObject
         Shader(const Shader&) = delete;
         Shader& operator=(const Shader&) = delete;
 
-        Shader& operator=(Shader&& s)
-        {
-            if (this != &s)
-            {
-                _shaders = s._shaders;
-                _program = s._program;
-                _isLinked = s._isLinked;
-                _uniforms = s._uniforms;
-                _uniformsToUpdate = s._uniformsToUpdate;
-
-                _fill = s._fill;
-                _sideness = s._sideness;
-                _useBlendingMap = s._useBlendingMap;
-                _blendWidth = s._blendWidth;
-                _blackLevel = s._blackLevel;
-                _brightness = s._brightness;
-                _color = s._color;
-                _scale = s._scale;
-                _textureOverlap = s._textureOverlap;
-                _layout = s._layout;
-            }
-            return *this;
-        }
-
         /**
          * Activate this shader
          */
         void activate();
 
         /**
+         * Activate for feedback rendering
+         */
+        void activateFeedback();
+
+        /**
          * Deactivate this shader
          */
         void deactivate();
+
+        /**
+         * Launch the compute shader, if present
+         */
+        void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
         /**
          * Set the sideness of the object
@@ -126,7 +123,7 @@ class Shader : public BaseObject
         /**
          * Set a shader source
          */
-        void setSource(const std::string& src, const ShaderType type);
+        void setSource(std::string src, const ShaderType type);
 
         /**
          * Set a shader source from file
@@ -151,6 +148,7 @@ class Shader : public BaseObject
     private:
         mutable std::mutex _mutex;
         std::atomic_bool _activated {false};
+        ProgramType _programType {prgGraphic};
 
         std::unordered_map<int, GLuint> _shaders;
         std::unordered_map<int, std::string> _shadersSource;
@@ -169,17 +167,16 @@ class Shader : public BaseObject
         std::vector<std::string> _uniformsToUpdate;
         std::vector<TexturePtr> _textures; // Currently used textures
 
+        // A map of previously compiled programs
+        std::string _currentProgramName {};
+        std::map<std::string, GLuint> _compiledPrograms;
+        std::map<std::string, std::string> _compiledProgramsOptions;
+        std::map<std::string, bool> _programsLinkStatus;
+
         // Rendering parameters
         Fill _fill {texture};
         std::string _shaderOptions {""};
         Sideness _sideness {doubleSided};
-        int _useBlendingMap {0};
-        float _blendWidth {0.05f};
-        float _blackLevel {0.f};
-        float _brightness {1.f};
-        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
-        glm::dvec3 _scale {1.0, 1.0, 1.0};
-        bool _textureOverlap {true};
         std::vector<int> _layout {0, 0, 0, 0};
 
         /**
@@ -191,6 +188,11 @@ class Shader : public BaseObject
          * Link the shader program
          */
         bool linkProgram();
+
+        /**
+         * Parses the shader to replace includes by the corresponding sources
+         */
+        void parseIncludes(std::string& src);
 
         /**
          * Parses the shader to find uniforms
@@ -211,6 +213,9 @@ class Shader : public BaseObject
          * Register new functors to modify attributes
          */
         void registerAttributes();
+        void registerGraphicAttributes();
+        void registerComputeAttributes();
+        void registerFeedbackAttributes();
 };
 
 typedef std::shared_ptr<Shader> ShaderPtr;

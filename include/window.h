@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <deque>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -62,35 +63,6 @@ class Window : public BaseObject
          */
         Window(const Window&) = delete;
         Window& operator=(const Window&) = delete;
-
-        Window(Window&& w)
-        {
-            *this = std::move(w);
-        }
-
-        Window& operator=(Window&& w)
-        {
-            if (this != &w)
-            {
-                _isInitialized = w._isInitialized;
-                _window = w._window;
-                _screenId = w._screenId;
-                _fullscreen = std::move(w._fullscreen);
-                _layout = w._layout;
-                _swapInterval = w._swapInterval;
-
-                _screen = w._screen;
-                _viewProjectionMatrix = w._viewProjectionMatrix;
-                _inTextures = w._inTextures;
-
-                _renderFbo = w._renderFbo;
-                _readFbo = w._readFbo;
-                _renderFence = w._renderFence;
-                _depthTexture = w._depthTexture;
-                _colorTexture = w._colorTexture;
-            }
-            return *this;
-        }
 
         /**
          * Get grabbed character (not necesseraly a specific key)
@@ -141,8 +113,8 @@ class Window : public BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
-        bool unlinkFrom(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Render this window to screen
@@ -162,8 +134,8 @@ class Window : public BaseObject
         /**
          * Set / unset a new texture to draw
          */
-        void setTexture(TexturePtr tex);
-        void unsetTexture(TexturePtr tex);
+        void setTexture(std::shared_ptr<Texture> tex);
+        void unsetTexture(std::shared_ptr<Texture> tex);
 
         /**
          * Swap the back and front buffers
@@ -198,7 +170,7 @@ class Window : public BaseObject
         ObjectPtr _screen;
         ObjectPtr _screenGui;
         glm::dmat4 _viewProjectionMatrix;
-        std::vector<TexturePtr> _inTextures;
+        std::list<std::weak_ptr<Texture>> _inTextures;
         TexturePtr _guiTexture {nullptr}; // The gui has its own texture
 
         static std::mutex _callbackMutex;

@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -28,6 +28,7 @@
 #include <atomic>
 #include <cstddef>
 #include <future>
+#include <list>
 #include <vector>
 #include <json/reader.h>
 
@@ -39,6 +40,7 @@
 #include "coretypes.h"
 #include "basetypes.h"
 #include "gui.h"
+#include "httpServer.h"
 #include "widgets.h"
 
 namespace Splash {
@@ -57,6 +59,7 @@ class Scene : public RootObject
     friend GuiNodeView;
     friend GuiWidget;
     friend Gui;
+    friend HttpServer;
 
     public:
         /**
@@ -87,7 +90,7 @@ class Scene : public RootObject
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
-        GlWindowPtr getNewSharedWindow(std::string name = std::string(), bool gl2 = false);
+        GlWindowPtr getNewSharedWindow(std::string name = std::string());
 
         /**
          * Get the list of objects by their type
@@ -103,6 +106,11 @@ class Scene : public RootObject
          * Check wether it is initialized
          */
         bool isInitialized() const {return _isInitialized;}
+
+        /**
+         * Returns whether the scene is Master or not
+         */
+        bool isMaster() const {return _isMaster;}
 
         /**
          * Check wether the scene is running
@@ -134,6 +142,11 @@ class Scene : public RootObject
         void render();
 
         /**
+         * Render the blending
+         */
+        void renderBlending();
+
+        /**
          * Set the Scene as the master one
          */
         void setAsMaster(std::string configFilePath = "");
@@ -156,6 +169,7 @@ class Scene : public RootObject
 
     protected:
         GlWindowPtr _mainWindow;
+        std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};
 
         std::map<std::string, BaseObjectPtr> _ghostObjects;
@@ -163,6 +177,11 @@ class Scene : public RootObject
         // Gui exists in master scene whatever the configuration
         GuiPtr _gui;
         bool _guiLinkedToWindow {false};
+        
+        // Http server, in master scene too
+        HttpServerPtr _httpServer;
+        std::future<void> _httpServerFuture;
+
         // Objects in charge of calibration
 #if HAVE_GPHOTO
         ColorCalibratorPtr _colorCalibrator;
@@ -171,7 +190,7 @@ class Scene : public RootObject
         /**
          * Creates the blending map from the current calibration of the cameras
          */
-        void computeBlendingMap();
+        void computeBlendingMap(bool once = true);
 
     private:
         ScenePtr _self;
@@ -190,18 +209,30 @@ class Scene : public RootObject
         GlWindowPtr _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
-        GLsync _textureUploadFence;
+        GLsync _textureUploadFence, _cameraDrawnFence;
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
         GLuint _maxSwapBarriers {0};
 
         unsigned long _nextId {0};
+        
+        // Tasks queue
+        std::mutex _taskMutex;
+        std::list<std::function<void()>> _taskQueue;
 
-        // Blending map, used by all cameras (except the GUI camera)
+        // Blending attributes
+        bool _computeBlending {false};
+        bool _computeBlendingOnce {false};
         unsigned int _blendingResolution {2048};
         Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;
+
+        /**
+         * Find which OpenGL version is available
+         * Returns MAJOR and MINOR
+         */
+        std::vector<int> findGLVersion();
 
         /**
          * Set up the context and everything

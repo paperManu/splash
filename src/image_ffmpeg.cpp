@@ -69,7 +69,7 @@ bool Image_FFmpeg::read(const string& filename)
 
     Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
     av_dump_format(*avContext, 0, filename.c_str(), 0);
-    _filename = filename;
+    _filepath = filename;
 
     _continueReadLoop = true;
     _readLoopThread = thread([&]() {
@@ -97,7 +97,7 @@ void Image_FFmpeg::readLoop()
 
     if (videoStream == -1)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - No video stream found in file " << _filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - No video stream found in file " << _filepath << Log::endl;
         return;
     }
 
@@ -113,7 +113,7 @@ void Image_FFmpeg::readLoop()
     }
     else if (codec == nullptr)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Codec not supported for file " << _filename << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Codec not supported for file " << _filepath << Log::endl;
         return;
     }
 
@@ -122,7 +122,7 @@ void Image_FFmpeg::readLoop()
         AVDictionary* optionsDict = nullptr;
         if (avcodec_open2(codecContext, codec, &optionsDict) < 0)
         {
-            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open codec for file " << _filename << Log::endl;
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open codec for file " << _filepath << Log::endl;
             return;
         }
     }
@@ -209,7 +209,7 @@ void Image_FFmpeg::readLoop()
                         oiio::ImageSpec spec;
                         if (textureFormat == "RGB_DXT1")
                             spec = oiio::ImageSpec(codecContext->width, (int)(ceil((float)codecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
-                        if (textureFormat == "RGB_DXT5")
+                        if (textureFormat == "RGBA_DXT5")
                             spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
                         if (textureFormat == "YCoCg_DXT5")
                             spec = oiio::ImageSpec(codecContext->width, codecContext->height, 1, oiio::TypeDesc::UINT8);
@@ -244,7 +244,7 @@ void Image_FFmpeg::readLoop()
 
         if (av_seek_frame(*avContext, videoStream, 0, AVSEEK_FLAG_BACKWARD) < 0)
         {
-            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filename << Log::endl;
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
             break;
         }
     }

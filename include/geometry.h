@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -27,6 +27,7 @@
 
 #include <chrono>
 #include <map>
+#include <utility>
 #include <vector>
 #include <glm/glm.hpp>
 
@@ -34,17 +35,19 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
+#include "gpuBuffer.h"
 #include "mesh.h"
 
 namespace Splash {
 
-class Geometry : public BaseObject
+class Geometry : public BufferObject
 {
     public:
         /**
          * Constructor
          */
         Geometry();
+        Geometry(RootObjectWeakPtr root);
 
         /**
          * Destructor
@@ -57,32 +60,16 @@ class Geometry : public BaseObject
         Geometry(const Geometry&) = delete;
         Geometry& operator=(const Geometry&) = delete;
 
-        Geometry(Geometry&& g)
-        {
-            *this = std::move(g);
-        }
-
-        Geometry& operator=(Geometry&& g)
-        {
-            if (this != &g)
-            {
-                _mesh = std::move(g._mesh);
-                _timestamp = g._timestamp;
-
-                _vertexArray = std::move(g._vertexArray);
-                _vertexCoords = g._vertexCoords;
-                _texCoords = g._texCoords;
-                _normals = g._normals;
-
-                _normals = g._normals;
-            }
-            return *this;
-        }
-
         /**
          * Activate the geometry for rendering
          */
         void activate();
+        void activateAsSharedBuffer();
+
+        /**
+         * Activate the geomtry for feedback into the alternative buffers
+         */
+        void activateForFeedback();
 
         /**
          * Deactivate the geometry for rendering
@@ -90,29 +77,34 @@ class Geometry : public BaseObject
         void deactivate() const;
 
         /**
+         * Deactivate for feedback
+         */
+        void deactivateFeedback();
+
+        /**
          * Get the number of vertices for this geometry
          */
-        int getVerticesNumber() const {return _verticesNumber;}
+        int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
-         * Get the normals
+         * Get the geometry as serialized
          */
-        GLuint getNormals() const {return _normals;}
+        std::unique_ptr<SerializedObject> serialize() const;
 
         /**
-         * Get the texture coords
+         * Deserialize the geometry
          */
-        GLuint getTextureCoords() const {return _texCoords;}
+        bool deserialize(std::unique_ptr<SerializedObject> obj);
 
         /**
-         * Get the vertex coords
+         * Get whether the alternative buffers have been resized during the last feedback call
          */
-        GLuint getVertexCoords() const {return _vertexCoords;}
+        bool hasBeenResized() {return _buffersResized;}
 
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -120,27 +112,64 @@ class Geometry : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Specify the number of vertices to draw
+         */
+        void setAlternativeVerticesNumber(unsigned int nbr) {_alternativeVerticesNumber = nbr;}
+
+        /**
          * Set the mesh for this object
          */
-        void setMesh(MeshPtr mesh) {_mesh = mesh;}
+        void setMesh(MeshPtr mesh) {_mesh = std::weak_ptr<Mesh>(mesh);}
+
+        /**
+         * Swap between temporary and alternative buffers
+         */
+        void swapBuffers();
 
         /**
          * Updates the object
          */
         void update();
 
+        /**
+         * Activate alternative buffers for draw
+         */
+        void useAlternativeBuffers(bool isActive);
+
     private:
         mutable std::mutex _mutex;
+        bool _onMasterScene {false};
 
-        MeshPtr _mesh;
+        std::shared_ptr<Mesh> _defaultMesh;
+        std::weak_ptr<Mesh> _mesh;
         std::chrono::high_resolution_clock::time_point _timestamp;
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
-        GLuint _vertexCoords {0};
-        GLuint _texCoords {0};
-        GLuint _normals {0};
+        std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};
+        std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {}; // Alternative buffers used for rendering
+        std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers {}; // Temporary buffers used for feedback
+        bool _buffersDirty {false};
+        bool _buffersResized {false}; // Holds whether the alternative buffers have been resized in the previous feedback
+        bool _useAlternativeBuffers {false};
 
         int _verticesNumber {0};
+        int _alternativeVerticesNumber {0};
+        int _alternativeBufferSize {0};
+        int _temporaryVerticesNumber {0};
+        int _temporaryBufferSize {0};
+
+        // Transform feedback
+        GLuint _feedbackQuery;
+        bool _feedbackQueryRunning {false};
+        int _feedbackMaxNbrPrimitives {0};
+
+        // Serialization
+        std::unique_ptr<SerializedObject> _serializedObject {};
+
+        /**
+         * Initialization
+         */
+        void init();
 
         /**
          * Register new functors to modify attributes

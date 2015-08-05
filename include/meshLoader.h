@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -259,8 +259,15 @@ namespace Splash
                 for (auto& face : _faces)
                 {
                     if (face[0].normalId == -1)
-                        for (auto& v : face)
-                            normals.push_back(glm::vec3(0.f, 0.f, 0.f));
+                    {
+                        auto edge1 = glm::vec3(_vertices[face[1].vertexId] - _vertices[face[0].vertexId]);
+                        auto edge2 = glm::vec3(_vertices[face[2].vertexId] - _vertices[face[0].vertexId]);
+                        auto normal = glm::normalize(glm::cross(edge1, edge2));
+
+                        normals.push_back(normal);
+                        normals.push_back(normal);
+                        normals.push_back(normal);
+                    }
                     else
                     {
                         normals.push_back(_normals[face[0].normalId]);

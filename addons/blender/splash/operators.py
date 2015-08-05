@@ -8,13 +8,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # 
-# blobserver is distributed in the hope that it will be useful,
+# Splash is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU General Public License
-# along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 # 
 
 import bpy
@@ -139,6 +139,8 @@ class Splash:
                     buffer += bufferVert
                     buffer += bufferPoly
                     target._meshWriter.push(buffer, floor(currentTime * 1e9))
+
+                    bpy.data.meshes.remove(mesh)
     
 
     @staticmethod
@@ -156,6 +158,7 @@ class Splash:
 
             if target._texWriter is None or target._texture.size[0] != target._texSize[0] or target._texture.size[1] != target._texSize[1]:
                 try:
+                    from pyshmdata import Writer
                     os.remove(target._texWriterPath)
                 except:
                     pass
@@ -231,12 +234,6 @@ class SplashSendTexture(Operator):
     bl_label = "Send the texture to Splash"
 
     def execute(self, context):
-        try:
-            from pyshmdata import Writer
-        except:
-            print("Module pyshmdata was not found")
-            return {'FINISHED'}
-
         scene = bpy.context.scene
         splash = scene.splash
 
@@ -302,6 +299,17 @@ def export_to_splash(self, context, filepath):
        "    ],\n"
        "\n"
        "    \"local\" : {\n")
+
+    # Add a window for the GUI
+    fw("        // Default window for the GUI\n"
+       "        \"gui\" : {\n"
+       "            \"type\" : \"window\",\n"
+       "            \"fullscreen\" : -1,\n"
+       "            \"decorated\" : 1,\n"
+       "            \"position\" : [0, 0],\n"
+       "            \"size\" : [732, 932],\n"
+       "            \"srgb\" : [ 1 ]\n"
+       "        },\n")
     
     links = []
     cameras = []
@@ -331,6 +339,8 @@ def export_to_splash(self, context, filepath):
 
             width = objectData.splash_width
             height = objectData.splash_height
+            position_x = objectData.splash_position_x
+            position_y = objectData.splash_position_y
 
             stringArgs = (object.name,
                           int(width), int(height),
@@ -341,7 +351,8 @@ def export_to_splash(self, context, filepath):
                           int(windowIndex),
                           int(fullscreen),
                           int(decoration),
-                          int(width), int(height))
+                          int(width), int(height),
+                          int(position_x), int(position_y))
 
             fw("        \"%s\" : {\n"
                "            \"type\" : \"camera\",\n"
@@ -355,8 +366,8 @@ def export_to_splash(self, context, filepath):
                "            \"type\" : \"window\",\n"
                "            \"fullscreen\" : %i,\n"
                "            \"decorated\" : %i,\n"
-               "            \"position\" : [0, 0],\n"
                "            \"size\" : [%i, %i],\n"
+               "            \"position\" : [%i, %i],\n"
                "            \"srgb\" : [ 1 ]\n"
                "        },\n"
                "\n"

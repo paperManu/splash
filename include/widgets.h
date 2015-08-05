@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -84,7 +84,7 @@ class GuiGlobalView : public GuiWidget
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
-        void setObject(ObjectPtr obj);
+        void setObject(std::shared_ptr<BaseObject> obj);
 
     protected:
         CameraPtr _camera, _guiCamera;
@@ -174,12 +174,15 @@ class GuiNodeView : public GuiWidget
     public:
         GuiNodeView(std::string name) : GuiWidget(name) {}
         void render();
+        std::string getClickedNode() {return _clickedNode;}
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         int updateWindowFlags();
 
     private:
         SceneWeakPtr _scene;
         bool _isHovered {false};
+        std::string _clickedNode {""};
+        std::string _sourceNode {""};
 
         // Node render settings
         std::vector<int> _nodeSize {160, 60};

@@ -3,8 +3,10 @@
     <link href="data/github.css" rel="stylesheet">
 </head>
 
-Splash
-======
+Splash, a multi-projector video-mapping software
+================================================
+
+For a more complete documentation, go visit the [wiki](https://github.com/paperManu/splash/wiki).
 
 Table of Contents
 -----------------
@@ -27,6 +29,8 @@ Table of Contents
 
 [Blending](#blending)
 
+[Blender export](#blender)
+
 
 <a name="introduction"></a>
 Introduction
@@ -37,7 +41,10 @@ Splash is a free (as in GPL) modular mapping software. Provided that the user cr
 
 Splash has been primarily targeted toward fulldome mapping, and has been extensively tested in this context. Two fulldomes have been mapped: a small dome (3m wide) with 4 projectors, and a big one (20m wide) with 8 projectors. It has also been tested sucessfully as a more regular video-mapping software to project on buildings. Focus has been made on optimization: as of yet Splash can handle flawlessly a 3072x3072@30Hz live video input, and 4096x4096@60Hz on eight outputs (two graphic cards) with a powerful enough cpu and the [HapQ](http://vdmx.vidvox.net/blog/hap) video codec (on a SSD as this codec needs a very high bandwidth). Due to its architecture, higher resolutions are more likely to run smoothly when a single graphic card is used, although nothing higher than 4096x4096@60Hz has been tested yet (well, we tested 6144x6144@60Hz but the drive throughput was not enough to sustain the video bitrate).
 
-Video flows are currently read through shared memory, using the libshmdata library. This makes it compatible with most of the softwares from the SAT Metalab, including Scenic2 which is the best choice to feed Splash film or realtime videos. 3D models can be either loaded from files, or sent to Splash through the same shared memory library. An addon for Blender is included, which allows sending any mesh to Splash from Blender.
+Splash can read videos from various sources amoung which video files (most common format and Hap variations), video input (such as video cameras and capture cards), Syphon on OSX, and Shmdata (a shared memory library used to make softwares from the SAT Metalab communicate between each others). An addon for Blender is included which allows for exporting draft configurations and update in real-time the meshes. It also handles automatically a few things:
+- semi automatic geometric calibration of the video-projectors,
+- automatic calibration of the blending between them,
+- automatic colorimetric calibration (with a gPhoto compatible camera)
 
 ### License
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version.
@@ -60,7 +67,7 @@ Installation
 ### Dependencies
 Splash relies on a few libraries to get the job done. These libraries are:
 
-- [OpenGL](http://opengl.org),
+- [OpenGL](http://opengl.org), which should be installed by the graphic driver,
 - [GLFW](http://glfw.org) to handle the GL context creation,
 - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
 - [OpenImageIO](http://www.openimageio.org) to load and manipulate image buffers,
@@ -138,8 +145,7 @@ Grab and install OpenImageIO, the only library needed by Splash which is not pac
 
 We then install Shmdata, which depends on GStreamer:
 
-    sudo port install gstreamer010 gstreamer010-gst-plugins-bad gstreamer010-gst-plugins-base
-    sudo port install gstreamer010-gst-plugins-good gstreamer010-gst-plugins-ugly
+    sudo port install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev python3-dev
     git clone https://github.com/nicobou/shmdata
     cd shmdata
     ./autogen.sh && ./configure
@@ -482,6 +488,8 @@ A few notes on this one:
 Objects description
 -------------------
 
+This section describes the object types which are of use to the final user. Some other types exist but are meant to be used internally or for testing purposes.
+
 ### camera
 Links from:
 
@@ -495,6 +503,7 @@ Attributes:
 
 - activateColorLUT [int]: if set to true, the color look up table will used if present
 - blendWidth [float]: width of the blending zone, along the camera borders
+- blendPrecision [float]: when using vertex blending (activated with OpenGL >= 4.3), this sets the subdivision level hence blending precision
 - blackLevel [float]: minimum value outputted by the camera
 - brightness [float]: modify the global brightness of the rendering
 - colorTemperature [float]: white point for this camera, in Kelvin (default to 6500.0)
@@ -511,18 +520,9 @@ The following attributes should not be edited manually:
 - colorLUT [float array]: look up table created by the color calibration
 - colorMixMatrix [float array]: color mixing matrix created by the color calibration
 
-### geometry
-Links from:
-
-- mesh
-
-Links to:
-
-- object
-
-Attributes: None
-
 ### image
+This class reads a single image from a given file.
+
 Links from: None
 
 Links to:
@@ -538,19 +538,19 @@ Attributes:
 - flop [int]: if set to 1, the image will be mirrored horizontally
 - srgb [int]: if set to anything but 0, the image will be considered to be represented in the sRGB color space
 
-### image_shmdata
-As this class derives from the image class, it shares all its attributes and behaviors.
+### image_ffmpeg
+This class reads a video file. As it derives from the image class, it shares all its attributes and behaviors.
 
-Links from: None
-
-Links to:
-
-- texture
-- window
+### image_opencv
+This class reads a video capture input, using OpenCV capabilities. As it derives from the image class, it shares all its attributes and behaviors.
 
 Attributes:
 
-- file [string]: path to the shared memory to read from
+- size [int, int]: desired capture size (real size may differ)
+- framerate [float]: desired capture framerate (may also differ)
+
+### image_shmdata
+This class reads a video stream from a shmdata socket. As it derives from the image class, it shares all its attributes and behaviors.
 
 ### mesh
 Links from: None
@@ -617,6 +617,7 @@ Links to: None
 Attributes:
 
 - address [string]: ip address of the scene. Currently only "localhost" is accepted
+- blendingResolution [int]: when using blending map (activated for OpenGL < 4.3), this sets its resolution (in pixels)
 - display [int]: index of the display for the scene. Usually corresponds to the GPU number.
 - spawn [int]: if set to one, the main splash process will spawn the process containing this scene. Otherwise it has to be launched by hand with splash-scene [name]
 - name [string]: name of the scene
@@ -624,22 +625,6 @@ Attributes:
     - 0: disables any vSync
     - any positive integer: will wait for as many frames between each window update.
     - any negative integer: tries to use vSync except if render is too slow.
-
-### texture
-A texture handles an image buffer, be it static or dynamic.
-
-Links from:
-
-- image
-
-Links to:
-
-- object
-- window
-
-Attributes:
-
-- resizable [int]: if set to anything but 0, the texture will be resizable
 
 
 ### texture_syphon
@@ -772,6 +757,25 @@ Also, do not forget to save the calibration once you are happy with the results!
 Blending
 --------
 
-This is an easy part, as long as calibration is done: with the GUI open, press 'B' and wait for it to be computed!
+There are two algorithms implemented for blending computation: the first one is based on a blending map, a texture mapped using the UV coordinates of the mesh and storing the number and influence of all the videoprojectors; the second one uses vertex attributes to store this data. The selection is automatically done based on the available OpenGL context version as the latter method is considered to be more precise and advanced than the former. A context version of at least 4.3 activates the vertex blending.
 
-Although it is automatic, it is known to have some issues in specific cases which were not solved yet, but seem to be mostly related to the mesh. In particular, try replacing the mesh with a more / less refined one to check if it solves the issue. Note that the blending map is not saved but computed each time a file is loaded (if set so in the configuration file).
+To activate the blending, and as long as calibration is done correctly, one only has to press ctrl + B. If vertex blending is available, pressing ctrl + alt + B will recalculate the blending at each frame (meaning that it can handle moving objects!).
+
+Blending through a blending map is known to have some issues in specific cases which were not solved yet, but seem to be mostly related to the mesh. In particular, try replacing the mesh with a more / less refined one to check if it solves the issue. Note that the blending map is not saved but computed each time a file is loaded (if set so in the configuration file).
+
+Vertex blending also has some issues, most of which can be handled by tweaking the blending parameters of the cameras: blendWidth and blendPrecision. To find the best values, activate blending with ctrl + alt + B, tune the parameters, and check the result.
+
+
+<a name="blender"/></a>
+Blender export
+--------------
+
+Once Splash is compiled, a Blender addon is packaged, ready for installation. This addon allows to:
+- create a draft scene (textured objects + cameras) and export them as a Splash configuration file,
+- send in real-time, through shmdata, meshes and textures from Blender to Splash.
+
+To install it, open the Blender User Preferences window, select the "Add-ons" panel, then "Install from File...". Navigate to the ./addons/blender subdirectory of the Splash sources and choose "blenderSplash.zip". Now activate the addon which should appear in the "User" categorie.
+
+The addon adds a panel in the Tool shelf called "Video Mapping", where you can activate the real-time sending of meshes (and choose its frequency). It is also possible to send textures through this panel, also they are not sent in real-time but once for each click.
+
+It also adds a subpanel in the Object section of the Properties view, named "Splash parameters". This subpanel is visible for meshes and cameras, and allows for chosing export parameters. The scene can then be exported through File > Export > Export to Splash.

@@ -19,11 +19,13 @@
 #if HAVE_OPENCV
     #include "image_opencv.h"
 #endif
-#include "image_shmdata.h"
+#if HAVE_SHMDATA
+    #include "image_shmdata.h"
+    #include "mesh_shmdata.h"
+#endif
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
-#include "mesh_shmdata.h"
 #include "osUtils.h"
 #include "scene.h"
 #include "timer.h"
@@ -178,8 +180,12 @@ void World::addLocally(string type, string name, string destination)
     {
         if (type == string("image"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
+#if HAVE_SHMDATA
         else if (type == string("image_shmdata"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+        else if (type == string("mesh_shmdata"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
+#endif
 #if HAVE_FFMPEG
         else if (type == string("image_ffmpeg"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
@@ -194,8 +200,6 @@ void World::addLocally(string type, string name, string destination)
 #endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
-        else if (type == string("mesh_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
     }
     if (object.get() != nullptr)
     {
@@ -280,7 +284,14 @@ void World::applyConfig()
 
                 // We wait for the child process to be launched
                 while (!_childProcessLaunched)
-                    this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e8));
+                {
+                    unique_lock<mutex> lock(_childProcessMutex);
+                    if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
+                    {
+                        _quit = true;
+                        return;
+                    }
+                }
             }
             _scenes[name] = pid;
             if (_masterSceneName == "")
@@ -295,14 +306,20 @@ void World::applyConfig()
             for (const auto& param : jsScenes[i])
             {
                 string paramName = sceneMembers[idx];
-                Value v;
-                if (param.isInt())
-                    v = param.asInt();
-                else if (param.isDouble())
-                    v = param.asFloat();
-                else
-                    v = param.asString();
-                sendMessage(name, paramName, {v});
+
+                Values values;
+                for (auto& p : param)
+                {
+                    Value v;
+                    if (p.isInt())
+                        v = p.asInt();
+                    else if (p.isDouble())
+                        v = p.asFloat();
+                    else
+                        v = p.asString();
+                    values.push_back(v);
+                }
+                sendMessage(name, paramName, values);
                 idx++;
             }
         }
@@ -466,7 +483,15 @@ void World::applyConfig()
 
     // Send the start message for all scenes
     for (auto& s : _scenes)
-        auto answer = sendMessageWithAnswer(s.first, "start");
+    {
+        auto answer = sendMessageWithAnswer(s.first, "start", {}, 2e6);
+        if (0 == answer.size())
+        {
+            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to scene \"" << s.first << "\". Exiting." << Log::endl;
+            _quit = true;
+            break;
+        }
+    }
 }
 
 /*************/
@@ -613,11 +638,13 @@ void World::parseArguments(int argc, char** argv)
 
     // Parse the other args
     int idx = 1;
-    string filename {""};
+    string filename = string(DATADIR) + "splash.json";
+    bool defaultFile = true;
     while (idx < argc)
     {
         if ((string(argv[idx]) == "-o" || string(argv[idx]) == "--open") && idx + 1 < argc)
         {
+            defaultFile = false;
             filename = string(argv[idx + 1]);
             idx += 2;
         }
@@ -650,6 +677,9 @@ void World::parseArguments(int argc, char** argv)
             idx++;
     }
 
+    if (defaultFile)
+        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
+
     if (filename != "")
     {
         Json::Value config;
@@ -674,14 +704,57 @@ void World::setAttribute(string name, string attrib, const Values& args)
 /*************/
 void World::registerAttributes()
 {
+    _attribFunctions["addObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        auto type = args[0].asString();
+        auto name = type + "_" + to_string(_nextId);
+        _nextId++;
+
+        unique_lock<mutex> lock(_configurationMutex);
+
+        for (auto& s : _scenes)
+        {
+            sendMessage(s.first, "add", {type, name});
+            addLocally(type, name, s.first);
+        }
+
+        return true;
+    });
+
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
         _childProcessLaunched = true;
+        _childProcessConditionVariable.notify_all();
         return true;
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() == 0 || args[0].asInt() != 0)
-            sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {});
+        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", args);
+        return true;
+    });
+
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        unique_lock<mutex> lock(_configurationMutex);
+        auto objectName = args[0].asString();
+
+        // Delete the object here
+        auto objectDestIt = _objectDest.find(objectName);
+        if (objectDestIt != _objectDest.end())
+            _objectDest.erase(objectDestIt);
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+            _objects.erase(objectIt);
+
+        // Ask for Scenes to delete the object
+        SThread::pool.enqueueWithoutId([=]() {
+            sendMessage(SPLASH_ALL_PAIRS, "deleteObject", args);
+        });
+
         return true;
     });
 
@@ -752,11 +825,31 @@ void World::registerAttributes()
         for (int i = 2; i < args.size(); ++i)
             values.push_back(args[i]);
 
+        // Ask for update of the ghost object if needed
         sendMessage(_masterSceneName, "setGhost", values);
         
+        // Send the updated values to all scenes
         values.erase(values.begin());
         values.erase(values.begin());
         sendMessage(name, attr, values);
+
+        // Also update local version
+        if (_objects.find(name) != _objects.end())
+            _objects[name]->setAttribute(attr, values);
+
+        return true;
+    });
+
+    _attribFunctions["sendAllScenes"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string attr = args[0].asString();
+        Values values;
+        for (int i = 1; i < args.size(); ++i)
+            values.push_back(args[i]);
+        for (auto& scene : _scenes)
+            sendMessage(scene.first, attr, values);
+
         return true;
     });
 

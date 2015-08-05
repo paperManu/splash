@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -28,14 +28,6 @@
 #include "config.h"
 
 #define SPLASH
-
-#define SPLASH_GL_CONTEXT_VERSION_MAJOR 3
-#if HAVE_OSX
-    #define SPLASH_GL_CONTEXT_VERSION_MINOR 2
-#else
-    #define SPLASH_GL_CONTEXT_VERSION_MINOR 3
-#endif
-
 #define SPLASH_GL_DEBUG true
 #define SPLASH_SAMPLES 0
 
@@ -59,6 +51,8 @@
 #ifndef SPLASH_CORETYPES_H
 #define SPLASH_CORETYPES_H
 
+#define PRINT_FUNCTION_LINE std::cout << "------> " << __FUNCTION__ << "::" << __LINE__ << std::endl;
+
 namespace Splash
 {
 
@@ -78,37 +72,6 @@ struct SerializedObject
     SerializedObject(char* start, char* end)
     {
         _data = std::vector<char>(start, end);
-    }
-
-    SerializedObject(const SerializedObject& obj)
-    {
-        _data = obj._data;
-    }
-
-    SerializedObject(SerializedObject&& obj)
-    {
-        *this = std::move(obj);
-    }
-
-    /**
-     * Operators
-     */
-    SerializedObject& operator=(const SerializedObject& obj)
-    {
-        if (this != &obj)
-        {
-            _data = obj._data;
-        }
-        return *this;
-    }
-
-    SerializedObject& operator=(SerializedObject&& obj)
-    {
-        if (this != &obj)
-        {
-            _data = std::move(obj._data);
-        }
-        return *this;
     }
 
     /**
@@ -238,44 +201,18 @@ struct Value
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
         Value(Values v) {_v = v; _type = Type::v;}
 
-        Value(const Value& v) noexcept
+        template<class InputIt>
+        Value(InputIt first, InputIt last)
         {
-            _i = v._i;
-            _f = v._f;
-            _s = v._s;
-            _v = v._v;
-            _type = v._type;
-        }
+            _type = Type::v;
+            _v.clear();
 
-        Value& operator=(const Value& v) noexcept
-        {
-            if (this != &v)
+            auto it = first;
+            while (it != last)
             {
-                _i = v._i;
-                _f = v._f;
-                _s = v._s;
-                _v = v._v;
-                _type = v._type;
+                _v.push_back(Value(*it));
+                ++it;
             }
-            return *this;
-        }
-
-        Value(Value&& v) noexcept
-        {
-            *this = std::move(v);
-        }
-
-        Value& operator=(Value&& v) noexcept
-        {
-            if (this != &v)
-            {
-                _i = v._i;
-                _f = v._f;
-                _s = std::move(v._s);
-                _v = std::move(v._v);
-                _type = v._type;
-            }
-            return *this;
         }
 
         bool operator==(Value v) const

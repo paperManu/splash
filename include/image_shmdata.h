@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -57,41 +57,12 @@ class Image_Shmdata : public Image
         Image_Shmdata(const Image_Shmdata&) = delete;
         Image_Shmdata& operator=(const Image_Shmdata&) = delete;
 
-        Image_Shmdata(Image_Shmdata&& g) noexcept
-        {
-            *this = std::move(g);
-        }
-
-        Image_Shmdata& operator=(Image_Shmdata&& g) noexcept
-        {
-            if (this != &g)
-            {
-                _filename = g._filename;
-                _logger = std::move(g._logger);
-                _reader = std::move(g._reader);
-    
-                _readerBuffer.swap(g._readerBuffer);
-                _inputDataType = g._inputDataType;
-                _bpp = g._bpp;
-                _width = g._width;
-                _height = g._height;
-                _red = g._red;
-                _green = g._green;
-                _blue = g._blue;
-                _channels = g._channels;
-                _isYUV = g._isYUV;
-                _is420 = g._is420;
-            }
-            return *this;
-        }
-
         /**
          * Set the path to read from
          */
         bool read(const std::string& filename);
 
     private:
-        std::string _filename;
         Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};
 

@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -64,19 +64,6 @@ class ColorCalibrator : public BaseObject
          */
         ColorCalibrator(const ColorCalibrator&) = delete;
         ColorCalibrator& operator=(const ColorCalibrator&) = delete;
-
-        ColorCalibrator(ColorCalibrator&& c)
-        {
-            *this = std::move(c);
-        }
-
-        ColorCalibrator& operator=(ColorCalibrator&& c)
-        {
-            if (this != &c)
-            {
-            }
-            return *this;
-        }
 
         /**
          * Update the color calibration of all cameras

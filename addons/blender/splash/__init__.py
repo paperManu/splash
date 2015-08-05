@@ -8,19 +8,19 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # 
-# blobserver is distributed in the hope that it will be useful,
+# Splash is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU General Public License
-# along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 # 
 
 bl_info = {
     "name": "Splash output",
     "author": "Emmanuel Durand",
-    "version": (0, 3, 0),
+    "version": (0, 3, 1),
     "blender": (2, 72, 0),
     "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",
@@ -131,6 +131,7 @@ classes = (
 
 def getTextureTypes(scene, context):
     items = [('image', 'Image', ""),
+             ('image_ffmpeg', 'Video', ""),
              ('image_shmdata', 'Shmdata', ""),
              ('texture_syphon', 'Syphon', "")]
     return items
@@ -143,6 +144,8 @@ def getMeshTypes(scene, context):
 def registerProperties():
     bpy.types.Camera.splash_width = IntProperty("Width", default=1280, min=320)
     bpy.types.Camera.splash_height = IntProperty("Height", default=800, min=240)
+    bpy.types.Camera.splash_position_x = IntProperty("Position X", default=128, min=0)
+    bpy.types.Camera.splash_position_y = IntProperty("Position Y", default=128, min=0)
     bpy.types.Camera.splash_window_decoration = BoolProperty("Window decoration", default=True)
     bpy.types.Camera.splash_window_fullscreen = BoolProperty("Window fullscreen", default=False)
     bpy.types.Camera.splash_fullscreen_index = IntProperty("Fullscreen", default=0, min=0)

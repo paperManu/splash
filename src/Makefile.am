@@ -36,12 +36,12 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
 	cgUtils.cpp \
 	geometry.cpp \
+	gpuBuffer.cpp \
 	gui.cpp \
+	httpServer.cpp \
 	image.cpp \
-	image_shmdata.cpp \
 	link.cpp \
 	mesh.cpp \
-	mesh_shmdata.cpp \
 	object.cpp \
 	scene.cpp \
 	shader.cpp \
@@ -62,6 +62,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	-I$(top_srcdir)/external/bandit/bandit \
+	$(BOOST_CPPFLAGS) \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
@@ -75,6 +76,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lOpenImageIO \
 	-ljsoncpp \
 	-lsnappy \
+	$(BOOST_SYSTEM_LIBS) \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GSL_LIBS) \
@@ -101,6 +103,13 @@ if HAVE_OPENCV
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_opencv.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(OPENCV_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+## Shmdata related
+if HAVE_SHMDATA
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_shmdata.cpp mesh_shmdata.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(SHMDATA_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(SHMDATA_LIBS)
 endif
 
 # OSX
@@ -143,7 +152,8 @@ splash_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
-	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la \
+	$(BOOST_SYSTEM_LIBS)
 
 ## FFmpeg related
 if HAVE_FFMPEG
@@ -155,6 +165,12 @@ endif
 if HAVE_OPENCV
 splash_CXXFLAGS += $(OPENCV_CFLAGS)
 splash_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+## Shmdata related
+if HAVE_SHMDATA
+splash_CXXFLAGS += $(SHMDATA_CFLAGS)
+splash_LDFLAGS += $(SHMDATA_LIBS)
 endif
 
 if HAVE_OSX
@@ -183,7 +199,8 @@ splash_scene_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_scene_LDFLAGS = \
-	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la \
+	$(BOOST_SYSTEM_LIBS)
 
 ## FFmpeg related
 if HAVE_FFMPEG
@@ -195,6 +212,12 @@ endif
 if HAVE_OPENCV
 splash_CXXFLAGS += $(OPENCV_CFLAGS)
 splash_LDFLAGS += $(OPENCV_LIBS)
+endif
+
+## Shmdata related
+if HAVE_SHMDATA
+splash_CXXFLAGS += $(SHMDATA_CFLAGS)
+splash_LDFLAGS += $(SHMDATA_LIBS)
 endif
 
 if HAVE_OSX
@@ -215,7 +238,9 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/colorcalibrator.h \
 	$(top_srcdir)/include/coretypes.h \
 	$(top_srcdir)/include/geometry.h \
+	$(top_srcdir)/include/gpuBuffer.h \
 	$(top_srcdir)/include/gui.h \
+	$(top_srcdir)/include/httpServer.h \
 	$(top_srcdir)/include/image.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \

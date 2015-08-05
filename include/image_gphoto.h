@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -58,19 +58,6 @@ class Image_GPhoto : public Image
          */
         Image_GPhoto(const Image_GPhoto&) = delete;
         Image_GPhoto& operator=(const Image_GPhoto&) = delete;
-
-        Image_GPhoto(Image_GPhoto&& g) noexcept
-        {
-            *this = std::move(g);
-        }
-
-        Image_GPhoto& operator=(Image_GPhoto&& g) noexcept
-        {
-            if (this != &g)
-            {
-            }
-            return *this;
-        }
 
         /**
          * Capture a new photo

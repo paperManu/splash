@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -27,7 +27,9 @@
 
 #include <string>
 #include <unistd.h>
-#include <shmdata/abstract-logger.hpp>
+#if HAVE_SHMDATA
+    #include <shmdata/abstract-logger.hpp>
+#endif
 
 #include "log.h"
 
@@ -71,6 +73,7 @@ namespace Splash
             return filename;
         }
     
+#if HAVE_SHMDATA
         /*****/
         // A shmdata logger dedicated to splash
         class ConsoleLogger: public shmdata::AbstractLogger
@@ -101,6 +104,7 @@ namespace Splash
                     Log::get() << Log::DEBUGGING << "Shmdata::ConsoleLogger - " << str << Log::endl;
                 }
         };
+#endif
     } // end of namespace
 } // end of namespace
 

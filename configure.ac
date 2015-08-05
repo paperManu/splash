@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.3.0, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.3.2, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:0])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:2])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.3])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.3"], [API version])
 
@@ -129,10 +129,10 @@ if test "$HAVE_JSONCPP" = "false" ; then
 fi
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0])
-if test "x${have_shmdata}" = "xfalse" ; then
-    AC_MSG_ERROR([Missing shmdata])
-fi
+PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],
+    AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected]),
+    AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect]))
+AM_CONDITIONAL(HAVE_SHMDATA, test -n "$SHMDATA_LIBS")
 
 # GNU Scientific Library, also used for calibration
 PKG_CHECK_MODULES([GSL], [gsl])
@@ -158,6 +158,10 @@ PKG_CHECK_MODULES([OPENCV], [opencv],
     AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected]))
 AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
 
+# Boost, for the HTTP server
+BOOST_REQUIRE([1.50])
+BOOST_ASIO
+
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
 if test "x$MARKDOWN" = "xtrue" ; then
@@ -176,6 +180,7 @@ AC_CONFIG_FILES([
 	Makefile
     addons/Makefile
     addons/blender/Makefile
+    addons/blender/splash/Makefile
 	src/Makefile
 	data/Makefile
 	data/templates/Makefile

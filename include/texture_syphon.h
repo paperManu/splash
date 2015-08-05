@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -52,6 +52,12 @@ class Texture_Syphon : public Texture
         ~Texture_Syphon();
 
         /**
+         * No copy constructor, but a move one
+         */
+        Texture_Syphon(const Texture_Syphon&) = delete;
+        Texture_Syphon& operator=(const Texture_Syphon&) = delete;
+
+        /**
          * Bind / unbind this texture
          */
         void bind();
@@ -71,7 +77,7 @@ class Texture_Syphon : public Texture
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Update the texture according to the owned Image

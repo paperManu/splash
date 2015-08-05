@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -27,6 +27,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -66,56 +67,25 @@ class Camera : public BaseObject
         Camera(const Camera&) = delete;
         Camera& operator=(const Camera&) = delete;
 
-        Camera(Camera&& c)
-        {
-            *this = std::move(c);
-        }
-
-        Camera& operator=(Camera&& c)
-        {
-            if (this != &c)
-            {
-                _isInitialized = c._isInitialized;
-                _window = c._window;
-
-                _fbo = c._fbo;
-                _outTextures = c._outTextures;
-                _objects = c._objects;
-
-                _drawFrame = c._drawFrame;
-                _wireframe = c._wireframe;
-                _hidden = c._hidden;
-                _flashBG = c._flashBG;
-
-                _models = c._models;
-
-                _fov = c._fov;
-                _width = c._width;
-                _height = c._height;
-                _near = c._near;
-                _far = c._far;
-                _cx = c._cx;
-                _cy = c._cy;
-                _eye = c._eye;
-                _target = c._target;
-                _up = c._up;
-                _blendWidth = c._blendWidth;
-                _blackLevel = c._blackLevel;
-                _brightness = c._brightness;
-
-                _displayCalibration = c._displayCalibration;
-                _showAllCalibrationPoints = c._showAllCalibrationPoints;
-
-                _calibrationPoints = c._calibrationPoints;
-                _selectedCalibrationPoint = c._selectedCalibrationPoint;
-            }
-            return *this;
-        }
-
         /**
          * Computes the blending map for this camera
          */
         void computeBlendingMap(ImagePtr& map);
+
+        /**
+         * Compute the blending for all objects seen by this camera
+         */
+        void computeBlendingContribution();
+
+        /**
+         * Compute the vertex visibility for all objects in front of this camera
+         */
+        void computeVertexVisibility();
+
+        /**
+         * Tessellate the objects for the given camera
+         */
+        void blendingTessellateForCurrentCamera();
 
         /**
          * Compute the calibration given the calibration points
@@ -135,8 +105,8 @@ class Camera : public BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
-        bool unlinkFrom(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -190,7 +160,7 @@ class Camera : public BaseObject
         GLuint _fbo {0};
         Texture_ImagePtr _depthTexture;
         std::vector<Texture_ImagePtr> _outTextures;
-        std::vector<ObjectPtr> _objects;
+        std::vector<std::weak_ptr<Object>> _objects;
 
         // Rendering parameters
         bool _drawFrame {false};
@@ -206,7 +176,9 @@ class Camera : public BaseObject
         glm::mat3 _colorMixMatrix;
 
         // Some default models use in various situations
-        std::unordered_map<std::string, ObjectPtr> _models;
+        std::list<std::shared_ptr<Mesh>> _modelMeshes;
+        std::list<std::shared_ptr<Geometry>> _modelGeometries;
+        std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
         // Camera parameters
         float _fov {35}; // This is the vertical FOV
@@ -218,6 +190,7 @@ class Camera : public BaseObject
         glm::dvec3 _target {0.0, 0.0, 0.0};
         glm::dvec3 _up {0.0, 0.0, 1.0};
         float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
+        float _blendPrecision {0.1f}; // Controls the tessellation level for the blending
         float _blackLevel {0.f};
         float _brightness {1.f};
         float _colorTemperature {6500.f};

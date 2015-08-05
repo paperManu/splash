@@ -23,12 +23,10 @@ Texture_Syphon::~Texture_Syphon()
 }
 
 /**************/
-bool Texture_Syphon::linkTo(BaseObjectPtr obj)
+bool Texture_Syphon::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    Texture::linkTo(obj);
-
-    return true;
+    return Texture::linkTo(obj);
 }
 
 /**************/

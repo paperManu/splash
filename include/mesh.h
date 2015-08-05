@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -46,6 +46,7 @@ class Mesh : public BufferObject
          * Constructor
          */
         Mesh();
+        Mesh(bool linkedToWorld); //< This constructor is used if the object is linked to a World counterpart
 
         /**
          * Destructor
@@ -53,14 +54,10 @@ class Mesh : public BufferObject
         virtual ~Mesh();
 
         /**
-         * = operator
+         * No copy, but some move constructors
          */
-        Mesh& operator=(const Mesh& m)
-        {
-            _mesh = m._mesh;
-            _timestamp = m._timestamp;
-            return *this;
-        }
+        Mesh(const Mesh&) = delete;
+        Mesh& operator=(const Mesh&) = delete;
 
         /**
          * Compare meshes based on their timestamps
@@ -81,6 +78,11 @@ class Mesh : public BufferObject
          * Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
          */
         std::vector<float> getNormals() const;
+
+        /**
+         * Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
+         */
+        std::vector<float> getAnnexe() const;
 
         /**
          * Get the timestamp for the current mesh
@@ -108,17 +110,24 @@ class Mesh : public BufferObject
         virtual void update();
 
     protected:
+        bool _linkedToWorldObject {false};
+
         struct MeshContainer
         {
             std::vector<glm::vec4> vertices;
             std::vector<glm::vec2> uvs;
             std::vector<glm::vec3> normals;
+            std::vector<glm::vec4> annexe;
         };
 
+        std::string _filepath {};
         MeshContainer _mesh;
         MeshContainer _bufferMesh;
         bool _meshUpdated {false};
         bool _benchmark {false};
+
+    private:
+        void init();
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         

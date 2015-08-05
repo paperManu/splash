@@ -9,7 +9,6 @@
 #include "link.h"
 #include "log.h"
 #include "mesh.h"
-#include "mesh_shmdata.h"
 #include "object.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -62,6 +61,12 @@ Scene::~Scene()
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
+    if (_httpServerFuture.valid())
+    {
+        _httpServer->stop();
+        _httpServerFuture.get();
+    }
+
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     unique_lock<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
@@ -98,7 +103,7 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("mesh") || type == string("mesh_shmdata"))
     {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(true));
         obj->setRemoteType(type);
     }
     else if (type == string("object"))
@@ -223,7 +228,7 @@ bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
     lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
-    bool result = first->unlinkFrom(second);
+    bool result = second->unlinkFrom(first);
     glfwMakeContextCurrent(NULL);
 
     return result;
@@ -291,15 +296,138 @@ void Scene::remove(string name)
 }
 
 /*************/
+void Scene::renderBlending()
+{
+    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
+    {
+        static bool blendComputedInPreviousFrame = false;
+        static bool blendComputedOnce = false;
+
+        if (blendComputedOnce && _computeBlendingOnce)
+        {
+            // This allows for blending reset if it was computed once
+            blendComputedOnce = false;
+            _computeBlending = false;
+            _computeBlendingOnce = false;
+            blendComputedInPreviousFrame = true;
+        }
+
+        if (_computeBlending)
+        {
+            // Check for regular or single computation
+            if (_computeBlendingOnce)
+            {
+                _computeBlending = false;
+                _computeBlendingOnce = false;
+                blendComputedOnce = true;
+            }
+            else
+            {
+                blendComputedInPreviousFrame = true;
+            }
+
+            // Only the master scene computes the blending
+            if (_isMaster)
+            {
+                vector<CameraPtr> cameras;
+                vector<ObjectPtr> objects;
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "camera")
+                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                    else if (obj.second->getType() == "object")
+                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
+                for (auto& obj : _ghostObjects)
+                    if (obj.second->getType() == "camera")
+                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                    else if (obj.second->getType() == "object")
+                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
+
+                if (cameras.size() != 0)
+                {
+                    for (auto& object : objects)
+                        object->resetTessellation();
+
+                    glFinish();
+                    for (auto& camera : cameras)
+                    {
+                        for (auto& object : objects)
+                            object->resetVisibility();
+                        camera->computeVertexVisibility();
+                        camera->blendingTessellateForCurrentCamera();
+                        camera->computeBlendingContribution();
+                    }
+                }
+
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "object")
+                        obj.second->setAttribute("activateVertexBlending", {1});
+
+                // If there are some other scenes, send them the blending
+                if (_ghostObjects.size() != 0)
+                    for (auto& obj : _objects)
+                        if (obj.second->getType() == "geometry")
+                        {
+                            auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
+                            _link->sendBuffer(obj.first, std::move(serializedGeometry));
+                        }
+            }
+            // The non-master scenes only need to activate blending
+            else
+            {
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "object")
+                        obj.second->setAttribute("activateVertexBlending", {1});
+                    else if (obj.second->getType() == "geometry")
+                        dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
+            }
+        }
+        else if (blendComputedInPreviousFrame)
+        {
+            blendComputedInPreviousFrame = false;
+            blendComputedOnce = false;
+
+            vector<CameraPtr> cameras;
+            vector<ObjectPtr> objects;
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                else if (obj.second->getType() == "object")
+                    objects.push_back(dynamic_pointer_cast<Object>(obj.second));
+            
+            if (_isMaster && cameras.size() != 0)
+            {
+                for (auto& object : objects)
+                {
+                    object->resetTessellation();
+                    object->resetVisibility();
+                }
+            }
+
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    obj.second->setAttribute("activateVertexBlending", {0});
+                else if (obj.second->getType() == "geometry")
+                    dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(false);
+        }
+    }
+}
+
+/*************/
 void Scene::render()
 {
     bool isError {false};
     vector<unsigned int> threadIds;
+
+    // Compute the blending
+    Timer::get() << "blending";
+    renderBlending();
+    Timer::get() >> "blending";
     
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
     unique_lock<mutex> lock(_textureUploadMutex);
+    glFlush();
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(_textureUploadFence);
 
@@ -308,7 +436,7 @@ void Scene::render()
             isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
     Timer::get() >> "cameras";
 
-    _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     lock.unlock();
 
     // Update the gui
@@ -442,6 +570,14 @@ void Scene::run()
 {
     while (_isRunning)
     {
+        {
+            // Execute waiting tasks
+            unique_lock<mutex> taskLock(_taskMutex);
+            for (auto& task : _taskQueue)
+                task();
+            _taskQueue.clear();
+        }
+
         if (!_started)
         {
             this_thread::sleep_for(chrono::milliseconds(50));
@@ -450,11 +586,12 @@ void Scene::run()
         
         Timer::get() << "sceneLoop";
 
-        this_thread::yield(); // Allows other threads to catch this mutex
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        _mainWindow->setAsCurrentContext();
-        render();
-        _mainWindow->releaseContext();
+        {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            _mainWindow->setAsCurrentContext();
+            render();
+            _mainWindow->releaseContext();
+        }
 
         Timer::get() >> "sceneLoop";
     }
@@ -475,8 +612,9 @@ void Scene::textureUploadRun()
         _textureUploadCondition.wait(lock);
 
         _textureUploadWindow->setAsCurrentContext();
-        glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-        glDeleteSync(_textureUploadFence);
+        glFlush();
+        glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
+        glDeleteSync(_cameraDrawnFence);
 
         Timer::get() << "textureUpload";
         for (auto& obj : _objects)
@@ -542,87 +680,95 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-void Scene::computeBlendingMap()
+void Scene::computeBlendingMap(bool once)
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
-    _mainWindow->setAsCurrentContext();
-
-    if (_isBlendComputed)
+    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
-
-        _isBlendComputed = false;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
+        _computeBlending = !_computeBlending;
+        _computeBlendingOnce = once;
     }
     else
     {
-        initBlendingMap();
-        // Set the blending map to zero
-        _blendingMap->setTo(0.f);
-        _blendingMap->setName("blendingMap");
+        lock_guard<recursive_mutex> lock(_configureMutex);
+        _mainWindow->setAsCurrentContext();
 
-        // Compute the contribution of each camera
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-
-        // Filter the output to fill the blanks (dilate filter)
-        ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
-        unsigned short* pixBuffer = (unsigned short*)buffer->data();
-        unsigned short* pixels = (unsigned short*)_blendingMap->data();
-        int w = _blendingMap->getSpec().width;
-        int h = _blendingMap->getSpec().height;
-        for (int x = 0; x < w; ++x)
-            for (int y = 0; y < h; ++y)
-            {
-                unsigned short maxValue = 0;
-                for (int xx = -1; xx <= 1; ++xx)
-                {
-                    if (x + xx < 0 || x + xx >= w)
-                        continue;
-                    for (int yy = -1; yy <= 1; ++yy)
-                    {
-                        if (y + yy < 0 || y + yy >= h)
-                            continue;
-                        maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
-                    }
-                }
-                pixBuffer[y * w + x] = maxValue;
-            }
-        swap(*_blendingMap, *buffer);
-        _blendingMap->_savable = false;
-        _blendingMap->updateTimestamp();
-
-        // Small hack to handle the fact that texture transfer uses PBOs.
-        // If we send the buffer only once, the displayed PBOs wont be the correct one.
-        if (_isMaster)
+        if (_isBlendComputed)
         {
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
-            timespec nap {0, (long int)1e8};
-            nanosleep(&nap, NULL);
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
+
+            _isBlendComputed = false;
+
+            Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
+        }
+        else
+        {
+            initBlendingMap();
+            // Set the blending map to zero
+            _blendingMap->setTo(0.f);
+            _blendingMap->setName("blendingMap");
+
+            // Compute the contribution of each camera
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+            for (auto& obj : _ghostObjects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+
+            // Filter the output to fill the blanks (dilate filter)
+            ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
+            unsigned short* pixBuffer = (unsigned short*)buffer->data();
+            unsigned short* pixels = (unsigned short*)_blendingMap->data();
+            int w = _blendingMap->getSpec().width;
+            int h = _blendingMap->getSpec().height;
+            for (int x = 0; x < w; ++x)
+                for (int y = 0; y < h; ++y)
+                {
+                    unsigned short maxValue = 0;
+                    for (int xx = -1; xx <= 1; ++xx)
+                    {
+                        if (x + xx < 0 || x + xx >= w)
+                            continue;
+                        for (int yy = -1; yy <= 1; ++yy)
+                        {
+                            if (y + yy < 0 || y + yy >= h)
+                                continue;
+                            maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
+                        }
+                    }
+                    pixBuffer[y * w + x] = maxValue;
+                }
+            swap(_blendingMap, buffer);
+            _blendingMap->_savable = false;
+            _blendingMap->updateTimestamp();
+
+            // Small hack to handle the fact that texture transfer uses PBOs.
+            // If we send the buffer only once, the displayed PBOs wont be the correct one.
+            if (_isMaster)
+            {
+                _link->sendBuffer("blendingMap", _blendingMap->serialize());
+                timespec nap {0, (long int)1e8};
+                nanosleep(&nap, NULL);
+                _link->sendBuffer("blendingMap", _blendingMap->serialize());
+            }
+
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
+
+            _isBlendComputed = true;
+
+            Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
         }
 
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
-
-        _isBlendComputed = true;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
+        _mainWindow->releaseContext();
     }
-
-    _mainWindow->releaseContext();
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
+GlWindowPtr Scene::getNewSharedWindow(string name)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
@@ -633,29 +779,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name, bool gl2)
         return GlWindowPtr(nullptr);
     }
 
-    if (!gl2)
-    {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#if HAVE_OSX
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-    }
-    else
-    {
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_ANY_PROFILE);
-#if HAVE_OSX
-        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_FALSE);
-#endif
-    }
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
+    // The GL version is the same as in the initialization, so we don't have to reset it here
     glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
@@ -712,6 +836,37 @@ Values Scene::getObjectsNameByType(string type)
 }
 
 /*************/
+vector<int> Scene::findGLVersion()
+{
+    vector<vector<int>> glVersionList {{4, 3}, {3, 3}, {3, 2}};
+    vector<int> detectedVersion {0, 0};
+
+    for (auto version : glVersionList)
+    {
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version[0]);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version[1]);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        #if HAVE_OSX
+            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        #endif
+        glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
+        glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
+        glfwWindowHint(GLFW_DEPTH_BITS, 24);
+        glfwWindowHint(GLFW_VISIBLE, false);
+        GLFWwindow* window = glfwCreateWindow(512, 512, "test_window", NULL, NULL);
+
+        if (window)
+        {
+            detectedVersion = version;
+            glfwDestroyWindow(window);
+            break;
+        }
+    }
+
+    return detectedVersion;
+}
+
+/*************/
 void Scene::init(std::string name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
@@ -719,13 +874,24 @@ void Scene::init(std::string name)
     // GLFW stuff
     if (!glfwInit())
     {
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to initialize GLFW" << Log::endl;
         _isInitialized = false;
         return;
     }
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
+    auto glVersion = findGLVersion();
+    if (glVersion[0] == 0)
+    {
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (higher than 3.2)" << Log::endl;
+        _isInitialized = false;
+        return;
+    }
+
+    _glVersion = glVersion;
+    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - GL version: " << glVersion[0] << "." << glVersion[1] << Log::endl;
+
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glVersion[0]);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glVersion[1]);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef DEBUGGL
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
@@ -824,29 +990,36 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 #endif
 {
     string typeString {""};
+    Log::Priority logType;
     switch (type)
     {
     case GL_DEBUG_TYPE_ERROR:
         typeString = "Error";
+        logType = Log::ERROR;
         break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
         typeString = "Deprecated behavior";
+        logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
         typeString = "Undefined behavior";
+        logType = Log::ERROR;
         break;
     case GL_DEBUG_TYPE_PORTABILITY:
         typeString = "Portability";
+        logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_PERFORMANCE:
         typeString = "Performance";
+        logType = Log::WARNING;
         break;
     case GL_DEBUG_TYPE_OTHER:
         typeString = "Other";
+        logType = Log::MESSAGE;
         break;
     }
 
-    Log::get() << Log::WARNING << "GL::debug - [" << typeString << "] - " << message << Log::endl;
+    Log::get() << logType << "GL::debug - [" << typeString << "] - " << message << Log::endl;
 }
 
 /*************/
@@ -889,16 +1062,50 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        computeBlendingMap();
+        unique_lock<mutex> lock(_taskMutex);
+
+        bool once = false;
+        if (args.size() != 0)
+            once = args[0].asInt();
+
+        _taskQueue.push_back([=]() -> void {
+            computeBlendingMap(once);
+        });
         return true;
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
-        Json::Value config = getConfigurationAsJson();
-        string configStr = config.toStyledString();
-        sendMessageToWorld("answerMessage", {"config", _name, configStr});
+        unique_lock<mutex> lock(_taskMutex);
+        _taskQueue.push_back([&]() -> void {
+            setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+            Json::Value config = getConfigurationAsJson();
+            string configStr = config.toStyledString();
+            sendMessageToWorld("answerMessage", {"config", _name, configStr});
+        });
+        return true;
+    });
+
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _taskQueue.push_back([=]() -> void {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            auto objectName = args[0].asString();
+
+            auto objectIt = _objects.find(objectName);
+            for (auto& localObject : _objects)
+                unlink(objectIt->second, localObject.second);
+            if (objectIt != _objects.end())
+                _objects.erase(objectIt);
+
+            objectIt = _ghostObjects.find(objectName);
+            for (auto& ghostObject : _ghostObjects)
+                unlink(objectIt->second, ghostObject.second);
+            if (objectIt != _ghostObjects.end())
+                _objects.erase(objectIt);
+        });
+
         return true;
     });
 
@@ -924,6 +1131,23 @@ void Scene::registerAttributes()
         string type = args[0].asString();
         Values list = getObjectsNameByType(type);
         sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        return true;
+    });
+
+    _attribFunctions["httpServer"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string address = args[0].asString();
+        string port = args[1].asString();
+
+        _httpServer = make_shared<HttpServer>(address, port, _self);
+        if (_httpServer)
+        {
+            _httpServerFuture = async(std::launch::async, [&](){
+                _httpServer->run();
+            });
+        }
+
         return true;
     });
    

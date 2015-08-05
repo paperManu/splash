@@ -1,5 +1,6 @@
 #include "image.h"
 
+#include <fstream>
 #include <memory>
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
@@ -48,6 +49,7 @@ void Image::init()
 /*************/
 Image::~Image()
 {
+    unique_lock<mutex> writeLock(_writeMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif
@@ -208,6 +210,7 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
 /*************/
 bool Image::read(const string& filename)
 {
+    _filepath = filename;
     if (!_linkedToWorldObject)
         return readFile(filename);
     else
@@ -220,6 +223,14 @@ bool Image::readFile(const string& filename)
     auto filepath = string(filename);
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
+
+    _filepath = filepath;
+
+    if (!ifstream(_filepath).is_open())
+    {
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        return false;
+    }
 
     try
     {
@@ -354,6 +365,8 @@ void Image::registerAttributes()
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
+    }, [&]() -> Values {
+        return {_filepath};
     });
 
     _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {

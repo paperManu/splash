@@ -88,6 +88,10 @@ void GuiControl::render()
         if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blendWidth", {blendWidth});
 
+        static auto blendPrecision = 0.1f;
+        if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+            sendValuesToObjectsOfType("camera", "blendPrecision", {blendPrecision});
+
         static auto blackLevel = 0.0f;
         if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
@@ -102,8 +106,17 @@ void GuiControl::render()
         {
             vector<string> objectNames = getObjectNames();
             vector<const char*> items;
+
+            int index = 0;
+            string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
             for (auto& name : objectNames)
+            {
                 items.push_back(name.c_str());
+                // If the object name is the same as the item selected in the node view, we change the targetIndex
+                if (name == clickedNode)
+                    _targetIndex = index;
+                index++;
+            }
             ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
         }
 
@@ -239,10 +252,21 @@ void GuiControl::render()
                 for (auto& v : attr.second)
                 {
                     string tmp = v.asString();
-                    ImGui::Text(tmp.c_str());
+                    tmp.resize(256);
+                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    }
                 }
             }
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Delete selected object"))
+            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
     }
 }
 
@@ -373,7 +397,7 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
-void GuiGlobalView::setObject(ObjectPtr obj)
+void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
 {
     _camera->linkTo(obj);
 }
@@ -791,11 +815,19 @@ void GuiTemplate::render()
 /*************/
 void GuiTemplate::loadTemplates()
 {
+    auto templatePath = string(DATADIR);
     auto examples = vector<string>();
     auto descriptions = vector<string>();
     
     // Try to read the template file
-    ifstream in(string(DATADIR) + "templates.txt", ios::in | ios::binary);
+    ifstream in(templatePath + "templates.txt", ios::in | ios::binary);
+#if HAVE_OSX
+    if (!in)
+    {
+        templatePath = "../Resources/";
+        in = ifstream(templatePath + "templates.txt", ios::in | ios::binary);
+    }
+#endif
     if (in)
     {
         auto newTemplate = false;
@@ -838,7 +870,7 @@ void GuiTemplate::loadTemplates()
     }
     else
     {
-        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
+        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << templatePath << "templates.txt" << Log::endl;
         return;
     }
 
@@ -853,13 +885,8 @@ void GuiTemplate::loadTemplates()
         glGetError();
         auto image = make_shared<Image>();
         image->setName("template_" + example);
-        if (!image->read(string(DATADIR) + "templates/" + example + ".png"))
-        {
-#if HAVE_OSX
-            if (!image->read("../Resources/templates/" + example + ".png"))
-#endif
+        if (!image->read(templatePath + "templates/" + example + ".png"))
             continue;
-        }
 
         auto texture = make_shared<Texture_Image>();
         texture->linkTo(image);
@@ -927,6 +954,8 @@ map<string, string> GuiNodeView::getObjectTypes()
 /*************/
 void GuiNodeView::render()
 {
+    _clickedNode = "";
+
     //if (ImGui::CollapsingHeader(_name.c_str()))
     if (true)
     {
@@ -1030,11 +1059,29 @@ void GuiNodeView::render()
         else
             _isHovered = false;
     }
+
+    // Combo box for adding objects
+    {
+        vector<string> typeNames = {"image", "image_ffmpeg", "image_shmdata",
+                                    "texture_syphon",
+                                    "mesh", "mesh_shmdata",
+                                    "camera", "window"};
+        vector<const char*> items;
+        for (auto& typeName : typeNames)
+            items.push_back(typeName.c_str());
+        static int itemIndex = 0;
+        if (ImGui::Combo("Add an object", &itemIndex, items.data(), items.size()))
+        {
+            _scene.lock()->sendMessageToWorld("addObject", {typeNames[itemIndex]});
+        }
+    }
 }
 
 /*************/
 void GuiNodeView::renderNode(string name)
 {
+    auto& io = ImGui::GetIO();
+
     auto pos = _nodePositions.find(name);
     if (pos == _nodePositions.end())
     {
@@ -1051,13 +1098,26 @@ void GuiNodeView::renderNode(string name)
     ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
 
     ImGui::SetCursorPos(ImVec2(0, 2));
-    if (ImGui::CollapsingHeader(name.c_str()))
-    {
-    }
-
+    
     if (ImGui::IsItemHovered())
     {
-        ImGuiIO& io = ImGui::GetIO();
+        // Object linking
+        if (io.MouseClicked[0])
+        {
+            if (io.KeyShift)
+            {
+                auto scene = _scene.lock();
+                scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
+                scene->sendMessageToWorld("sendAllScenes", {"linkGhost", _sourceNode, name});
+            }
+            else if (io.KeyCtrl)
+            {
+                auto scene = _scene.lock();
+                scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
+                scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
+            }
+        }
+        // Dragging
         if (io.MouseDownTime[0] > 0.0)
         {
             float dx = io.MouseDelta.x;
@@ -1066,6 +1126,14 @@ void GuiNodeView::renderNode(string name)
             nodePos[0] += dx;
             nodePos[1] += dy;
         }
+    }
+
+    // This tricks allows for detecting clicks on the node, while keeping it closed
+    ImGui::SetNextTreeNodeOpened(false);
+    if (ImGui::CollapsingHeader(name.c_str()))
+    {
+        _clickedNode = name;
+        _sourceNode = name;
     }
     
     // End of node rendering

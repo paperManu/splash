@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -45,7 +45,7 @@ class Image : public BufferObject
          * Constructor
          */
         Image();
-        Image(bool linked);
+        Image(bool linked); //< This constructor is used if the object is linked to a World counterpart
         Image(oiio::ImageSpec spec);
 
         /**
@@ -58,26 +58,6 @@ class Image : public BufferObject
          */
         Image(const Image&) = delete;
         Image& operator=(const Image&) = delete;
-        
-        Image(Image&& i) noexcept
-        {
-            *this = std::move(i);
-        }
-
-        Image& operator=(Image&& i) noexcept
-        {
-            if (this != &i)
-            {
-                _image.swap(i._image);
-                _bufferImage.swap(i._bufferImage);
-                _imageUpdated = i._imageUpdated;
-                _flip = i._flip;
-                _flop = i._flop;
-                _srgb = i._srgb;
-                _benchmark = i._benchmark;
-            }
-            return *this;
-        }
 
         /**
          * Get a pointer to the data
@@ -149,6 +129,7 @@ class Image : public BufferObject
     protected:
         oiio::ImageBuf _image;
         oiio::ImageBuf _bufferImage;
+        std::string _filepath;
         bool _flip {false};
         bool _flop {false};
         bool _imageUpdated {false};

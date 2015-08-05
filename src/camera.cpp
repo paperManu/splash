@@ -105,8 +105,12 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     // We want to render the object with a specific texture, containing texture coordinates
     vector<Values> shaderFill;
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         Values fill;
         obj->getAttribute("fill", fill);
         obj->setAttribute("fill", {"uv"});
@@ -147,8 +151,12 @@ void Camera::computeBlendingMap(ImagePtr& map)
 
     // Reset the objects to their initial shader
     int fillIndex {0};
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         obj->setAttribute("fill", shaderFill[fillIndex]);
         fillIndex++;
     }
@@ -179,15 +187,19 @@ void Camera::computeBlendingMap(ImagePtr& map)
             continue;
         isSet[y * mapSpec.width + x] = true;
 
-        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width;
-        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height;
+        // Blending is computed as by Lancelle et al. 2011, "Soft Edge and Soft Corner Blending"
+        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width / _blendWidth;
+        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height / _blendWidth;
+        distX = glm::clamp(distX, 0.0, 1.0);
+        distY = glm::clamp(distY, 0.0, 1.0);
         
         unsigned short blendAddition = 0;
         if (_blendWidth > 0.f)
         {
             // Add some smoothness to the transition
-            double smoothDist = smoothstep(0.0, 1.0, std::min(distX, distY) / _blendWidth) * 256.0;
-            int blendValue = (int)std::min(256.0, smoothDist);
+            double weight = 1.0 / (1.0 / distX + 1.0 / distY);
+            double smoothDist = pow(std::min(std::max(weight, 0.0), 1.0), 2.0) * 256.0;
+            int blendValue = smoothDist;
             blendAddition += blendValue; // One more camera displaying this pixel
         }
         else
@@ -254,6 +266,82 @@ void Camera::computeBlendingMap(ImagePtr& map)
             imageMap[y + mapSpec.width * x] += camMap[y + mapSpec.width * x];
 }
 
+/*************/
+void Camera::computeBlendingContribution()
+{
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
+        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
+    }
+}
+
+/*************/
+void Camera::computeVertexVisibility()
+{
+    // We want to render the object with a specific texture, containing the primitive IDs
+    vector<Values> shaderFill;
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
+        Values fill;
+        obj->getAttribute("fill", fill);
+        obj->setAttribute("fill", {"primitiveId"});
+        shaderFill.push_back(fill);
+    }
+
+    // Render with the current texture, with no marker or frame
+    bool drawFrame = _drawFrame;
+    bool displayCalibration = _displayCalibration;
+    _drawFrame = _displayCalibration = false;
+    render();
+    _drawFrame = drawFrame;
+    _displayCalibration = displayCalibration;
+
+    // Reset the objects to their initial shader
+    int fillIndex {0};
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
+        obj->setAttribute("fill", shaderFill[fillIndex]);
+        fillIndex++;
+    }
+
+    // Update the vertices visibility based on the result
+    glActiveTexture(GL_TEXTURE0);
+    _outTextures[0]->bind();
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
+        obj->transferVisibilityFromTexToAttr(_width, _height);
+    }
+    _outTextures[0]->unbind();
+}
+
+/*************/
+void Camera::blendingTessellateForCurrentCamera()
+{
+    for (auto& o : _objects)
+    {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
+    }
+}
 
 /*************/
 bool Camera::doCalibration()
@@ -430,10 +518,11 @@ bool Camera::doCalibration()
 }
 
 /*************/
-bool Camera::linkTo(BaseObjectPtr obj)
+bool Camera::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
@@ -446,9 +535,17 @@ bool Camera::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-bool Camera::unlinkFrom(BaseObjectPtr obj)
+bool Camera::unlinkFrom(shared_ptr<BaseObject> obj)
 {
-    auto objIterator = find(_objects.begin(), _objects.end(), obj);
+    auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
+        if (o.expired())
+            return false;
+        auto object = o.lock();
+        if (object == obj)
+            return true;
+        return false;
+    });
+
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
@@ -476,8 +573,12 @@ Values Camera::pickVertex(float x, float y)
 
     float distance = numeric_limits<float>::max();
     dvec4 vertex;
-    for (auto& obj : _objects)
+    for (auto& o : _objects)
     {
+        if (o.expired())
+            continue;
+        auto obj = o.lock();
+
         dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up) * obj->getModelMatrix(),
                                computeProjectionMatrix(), dvec4(0, 0, _width, _height));
         glm::dvec3 closestVertex;
@@ -623,8 +724,12 @@ bool Camera::render()
     if (!_hidden)
     {
         // Draw the objects
-        for (auto& obj : _objects)
+        for (auto& o : _objects)
         {
+            if (o.expired())
+                continue;
+            auto obj = o.lock();
+
             obj->activate();
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
@@ -659,9 +764,8 @@ bool Camera::render()
             for (int i = 0; i < _calibrationPoints.size(); ++i)
             {
                 auto& point = _calibrationPoints[i];
-                ObjectPtr worldMarker = _models["3d_marker"];
+                auto& worldMarker = _models["3d_marker"];
 
-                worldMarker->activate();
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                 if (_selectedCalibrationPoint == i)
                     worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
@@ -669,21 +773,24 @@ bool Camera::render()
                     worldMarker->setAttribute("color", SPLASH_MARKER_SET);
                 else
                     worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
+
+                worldMarker->activate();
                 worldMarker->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
                 worldMarker->draw();
                 worldMarker->deactivate();
 
                 if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
-                    ObjectPtr screenMarker = _models["2d_marker"];
+                    auto& screenMarker = _models["2d_marker"];
 
-                    screenMarker->activate();
                     screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                     screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
                     if (_selectedCalibrationPoint == i)
                         screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                     else
                         screenMarker->setAttribute("color", SPLASH_MARKER_SET);
+
+                    screenMarker->activate();
                     screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
                     screenMarker->draw();
                     screenMarker->deactivate();
@@ -1054,15 +1161,21 @@ void Camera::loadDefaultModels()
         }
 
         MeshPtr mesh = make_shared<Mesh>();
-        mesh->setAttribute("name", {file.first});
+        mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
+        _modelMeshes.push_back(mesh);
 
-        ObjectPtr obj = make_shared<Object>();
-        obj->setAttribute("name", {file.first});
+        GeometryPtr geom = make_shared<Geometry>();
+        geom->setName(file.first);
+        geom->linkTo(mesh);
+        _modelGeometries.push_back(geom);
+
+        shared_ptr<Object> obj = make_shared<Object>();
+        obj->setName(file.first);
         obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", SPLASH_MARKER_SET);
-        obj->linkTo(mesh);
+        obj->linkTo(geom);
 
         _models[file.first] = obj;
     }
@@ -1301,6 +1414,15 @@ void Camera::registerAttributes()
         return {_blendWidth};
     });
 
+    _attribFunctions["blendPrecision"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _blendPrecision = args[0].asFloat();
+        return true;
+    }, [&]() -> Values {
+        return {_blendPrecision};
+    });
+
     _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
@@ -1428,8 +1550,13 @@ void Camera::registerAttributes()
         else
             primitive = "wireframe";
 
-        for (auto& obj : _objects)
+        for (auto& o : _objects)
+        {
+            if (o.expired())
+                continue;
+            auto obj = o.lock();
             obj->setAttribute("fill", {primitive});
+        }
         return true;
     });
 

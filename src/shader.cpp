@@ -2,29 +2,55 @@
 
 #include "log.h"
 #include "shaderSources.h"
+#include "timer.h"
 
 #include <fstream>
 #include <sstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 using namespace std;
 
 namespace Splash {
 
 /*************/
-Shader::Shader()
+Shader::Shader(ProgramType type)
 {
     _type = "shader";
 
-    _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
-    _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
-    _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
-    _program = glCreateProgram();
+    if (type == prgGraphic)
+    {
+        _programType = prgGraphic;
+        _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
+        _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
+        _shaders[fragment] = glCreateShader(GL_FRAGMENT_SHADER);
 
-    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-    setSource(ShaderSources.VERSION_DIRECTIVE + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
-    compileProgram();
+        registerGraphicAttributes();
+
+        setAttribute("fill", {"texture"});
+    }
+    else if (type == prgCompute)
+    {
+        _programType = prgCompute;
+        _shaders[compute] = glCreateShader(GL_COMPUTE_SHADER);
+
+        registerComputeAttributes();
+
+        setAttribute("computePhase", {"resetVisibility"});
+    }
+    else if (type == prgFeedback)
+    {
+        _programType = prgFeedback;
+        _shaders[vertex] = glCreateShader(GL_VERTEX_SHADER);
+        _shaders[tess_ctrl] = glCreateShader(GL_TESS_CONTROL_SHADER);
+        _shaders[tess_eval] = glCreateShader(GL_TESS_EVALUATION_SHADER);
+        _shaders[geometry] = glCreateShader(GL_GEOMETRY_SHADER);
+
+        registerFeedbackAttributes();
+
+        setAttribute("feedbackPhase", {"tessellateFromCamera"});
+    }
 
     registerAttributes();
 }
@@ -63,11 +89,7 @@ void Shader::activate()
 
     glUseProgram(_program);
 
-    if (_sideness == doubleSided)
-    {
-        glDisable(GL_CULL_FACE);
-    }
-    else if (_sideness == singleSided)
+    if (_sideness == singleSided)
     {
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
@@ -80,24 +102,77 @@ void Shader::activate()
 }
 
 /*************/
+void Shader::activateFeedback()
+{
+    if (_programType != prgFeedback)
+        return;
+
+    _mutex.lock();
+    if (!_isLinked)
+    {
+        if (!linkProgram())
+            return;
+    }
+
+    _activated = true;
+    glUseProgram(_program);
+    updateUniforms();
+    glEnable(GL_RASTERIZER_DISCARD);
+    glBeginTransformFeedback(GL_TRIANGLES);
+}
+
+/*************/
 void Shader::deactivate()
 {
-    glDisable(GL_CULL_FACE);
+    if (_programType == prgGraphic)
+    {
+        if (_sideness != doubleSided)
+            glDisable(GL_CULL_FACE);
 
 #ifdef DEBUG
-    glUseProgram(0);
+        glUseProgram(0);
 #endif
-    _activated = false;
-    for (int i = 0; i < _textures.size(); ++i)
-        _textures[i]->unbind();
-    _textures.clear();
+        _activated = false;
+        for (int i = 0; i < _textures.size(); ++i)
+            _textures[i]->unbind();
+        _textures.clear();
+    }
+    else if (_programType == prgFeedback)
+    {
+        glEndTransformFeedback();
+        glDisable(GL_RASTERIZER_DISCARD);
+
+        _activated = false;
+    }
+
     _mutex.unlock();
 }
 
 /*************/
-void Shader::setSource(const std::string& src, const ShaderType type)
+void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
+{
+    if (_programType != prgCompute)
+        return;
+
+    if (!_isLinked)
+    {
+        if (!linkProgram())
+            return;
+    }
+
+    _activated = true;
+    glUseProgram(_program);
+    updateUniforms();
+    glDispatchCompute(numGroupsX, numGroupsY, 1);
+    _activated = false;
+}
+
+/*************/
+void Shader::setSource(std::string src, const ShaderType type)
 {
     GLuint shader = _shaders[type];
+
+    parseIncludes(src);
     const char* shaderSrc = src.c_str();
     glShaderSource(shader, 1, (const GLchar**)&shaderSrc, 0);
     glCompileShader(shader);
@@ -146,19 +221,26 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 /*************/
 void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
 {
-    if (_uniforms.find(name) != _uniforms.end())
+    auto uniformIt = _uniforms.find(name);
+
+    if (uniformIt != _uniforms.end())
     {
+        auto& uniform = uniformIt->second;
+        if (uniform.glIndex == -1)
+            return;
+
         glActiveTexture(GL_TEXTURE0 + textureUnit);
         texture->bind();
 
-        glUniform1i(_uniforms[name].glIndex, textureUnit);
+        glUniform1i(uniform.glIndex, textureUnit);
 
         _textures.push_back(texture);
-        if (_uniforms.find("_textureNbr") != _uniforms.end())
-        {
-            _uniforms["_textureNbr"].values = {(int)_textures.size()};
-            _uniformsToUpdate.push_back("_textureNbr");
-        }
+        if ((uniformIt = _uniforms.find("_textureNbr")) != _uniforms.end())
+            if (uniformIt->second.glIndex != -1)
+            {
+                uniformIt->second.values = {(int)_textures.size()};
+                _uniformsToUpdate.push_back("_textureNbr");
+            }
     }
 }
 
@@ -167,10 +249,14 @@ void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4
 {
     glm::mat4 floatMv = (glm::mat4)mv;
     glm::mat4 floatMvp = (glm::mat4)(mp * mv);
-    if (_uniforms.find("_modelViewProjectionMatrix") != _uniforms.end())
-        glUniformMatrix4fv(_uniforms["_modelViewProjectionMatrix"].glIndex, 1, GL_FALSE, glm::value_ptr(floatMvp));
-    if (_uniforms.find("_normalMatrix") != _uniforms.end())
-        glUniformMatrix4fv(_uniforms["_normalMatrix"].glIndex, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
+
+    auto uniformIt = _uniforms.find("_modelViewProjectionMatrix");
+    if (uniformIt != _uniforms.end())
+        if (uniformIt->second.glIndex != -1)
+            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMvp));
+    if ((uniformIt = _uniforms.find("_normalMatrix")) != _uniforms.end())
+        if (uniformIt->second.glIndex != -1)
+            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
 }
 
 /*************/
@@ -232,6 +318,43 @@ bool Shader::linkProgram()
 }
 
 /*************/
+void Shader::parseIncludes(std::string& src)
+{
+    string finalSources = "";
+
+    istringstream input(src);
+    for (string line; getline(input, line);)
+    {
+        // Remove white spaces
+        while (line.substr(0, 1) == " ")
+            line = line.substr(1);
+        if (line.substr(0, 2) == "//")
+            continue;
+
+        string::size_type position;
+        if ((position = line.find("#include")) != string::npos)
+        {
+            string includeName = line.substr(position + 9, string::npos);
+            auto includeIt = ShaderSources.INCLUDES.find(includeName);
+            if (includeIt == ShaderSources.INCLUDES.end())
+            {
+                Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Could not find included shader named " << includeName << Log::endl;
+            }
+            else
+            {
+                finalSources += (*includeIt).second + "\n";
+            }
+        }
+        else
+        {
+            finalSources += line + "\n";
+        }
+    }
+
+    src = finalSources;
+}
+
+/*************/
 void Shader::parseUniforms(const std::string& src)
 {
     istringstream input(src);
@@ -278,6 +401,7 @@ void Shader::parseUniforms(const std::string& src)
 
             // Get the location
             _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
+
             if (type == "int")
                 _uniforms[name].values = {0};
             else if (type == "float")
@@ -390,12 +514,18 @@ string Shader::stringFromShaderType(int type)
     {
     default:
         return string();
-    case 0:
-        return string("vertex");
-    case 1:
-        return string("geometry");
-    case 2:
-        return string("fragment");
+    case vertex:
+        return "vertex";
+    case tess_ctrl:
+        return "tess_ctrl";
+    case tess_eval:
+        return "tess_eval";
+    case geometry:
+        return "geometry";
+    case fragment:
+        return "fragment";
+    case compute:
+        return "compute";
     }
 }
 
@@ -411,6 +541,8 @@ void Shader::updateUniforms()
             auto uniformIt = _uniforms.find(u);
             if (uniformIt == _uniforms.end())
                 continue;
+
+            auto tmpName = uniformIt->first;
 
             auto& uniform = uniformIt->second;
             if (uniform.glIndex == -1)
@@ -449,6 +581,13 @@ void Shader::updateUniforms()
                     for (unsigned int i = 0; i < 9; ++i)
                         m[i] = uniform.values[i].asFloat();
                     glUniformMatrix3fv(uniform.glIndex, 1, GL_FALSE, m.data());
+                }
+                else if (size == 16)
+                {
+                    vector<float> m(16);
+                    for (unsigned int i = 0; i < 16; ++i)
+                        m[i] = uniform.values[i].asFloat();
+                    glUniformMatrix4fv(uniform.glIndex, 1, GL_FALSE, m.data());
                 }
             }
             else if (type == Value::Type::v && uniform.values[0].asValues().size() > 0)
@@ -544,22 +683,45 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["blending"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
+    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
             return false;
-        
-        _uniforms["_texBlendingMap"].values = args;
-        _uniformsToUpdate.push_back("_texBlendingMap");
+
+        string uniformName = args[0].asString();
+        Values uniformArgs;
+        if (args[1].getType() != Value::Type::v)
+        {
+            for (int i = 1; i < args.size(); ++i)
+                uniformArgs.push_back(args[i]);
+        }
+        else
+        {
+            uniformArgs = args[1].asValues();
+        }
+
+        // Check if the values changed from previous use
+        auto uniformIt = _uniforms.find(uniformName);
+        if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
+            return true;
+        else if (uniformIt == _uniforms.end())
+            uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
+
+        uniformIt->second.values = uniformArgs;
+        _uniformsToUpdate.push_back(uniformName);
 
         return true;
     });
+}
 
+/*************/
+void Shader::registerGraphicAttributes()
+{
     _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
 
         // Get additionnal shading options
-        string options = ShaderSources.VERSION_DIRECTIVE;
+        string options = ShaderSources.VERSION_DIRECTIVE_330;
         for (int i = 1; i < args.size(); ++i)
             options += "#define " + args[i].asString() + "\n";
 
@@ -567,7 +729,7 @@ void Shader::registerAttributes()
         {
             _fill = texture;
             _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
@@ -579,6 +741,15 @@ void Shader::registerAttributes()
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
+        {
+            _fill = primitiveId;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+            resetShader(geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
             compileProgram();
         }
         else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
@@ -624,14 +795,6 @@ void Shader::registerAttributes()
         else if (_fill == window)
             fill = "window";
         return {fill};
-    });
-
-    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 4)
-            return false;
-        _uniforms["_color"].values = args;
-        _uniformsToUpdate.push_back("_color");
-        return true;
     });
 
     _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
@@ -684,25 +847,76 @@ void Shader::registerAttributes()
             out.push_back(v);
         return out;
     });
+}
 
-    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
+/*************/
+void Shader::registerComputeAttributes()
+{
+    _attribFunctions["computePhase"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
             return false;
 
-        string uniformName = args[0].asString();
-        Values uniformArgs;
+        // Get additionnal shading options
+        string options = ShaderSources.VERSION_DIRECTIVE_430;
         for (int i = 1; i < args.size(); ++i)
-            uniformArgs.push_back(args[i]);
+            options += "#define " + args[i].asString() + "\n";
 
-        // Check if the values changed from previous use
-        auto uniformIt = _uniforms.find(uniformName);
-        if (uniformIt != _uniforms.end() && Value(uniformArgs) == Value(uniformIt->second.values))
-            return true;
-        else if (uniformIt == _uniforms.end())
-            uniformIt = (_uniforms.emplace(make_pair(uniformName, Uniform()))).first;
+        if ("resetVisibility" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
+            compileProgram();
+        }
+        else if ("computeVisibility" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_VISIBILITY, compute);
+            compileProgram();
+        }
+        else if ("transferVisibilityToAttr" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
+            compileProgram();
+        }
 
-        uniformIt->second.values = uniformArgs;
-        _uniformsToUpdate.push_back(uniformName);
+        return true;
+    });
+}
+
+/*************/
+void Shader::registerFeedbackAttributes()
+{
+    _attribFunctions["feedbackPhase"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+
+        // Get additionnal shader options
+        string options = ShaderSources.VERSION_DIRECTIVE_430;
+        for (int i = 1; i < args.size(); ++i)
+            options += "#define " + args[i].asString() + "\n";
+
+        if ("tessellateFromCamera" == args[0].asString())
+        {
+            setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
+            setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
+            setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
+            setSource(options + ShaderSources.GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, geometry);
+            compileProgram();
+        }
+
+        return true;
+    });
+
+    _attribFunctions["feedbackVaryings"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+
+        const GLchar* feedbackVaryings[args.size()];
+        vector<string> varyingNames;
+        for (int i = 0; i < args.size(); ++i)
+        {
+            varyingNames.push_back(args[i].asString());
+            feedbackVaryings[i] = varyingNames[i].c_str();
+        }
+        glTransformFeedbackVaryings(_program, args.size(), feedbackVaryings, GL_SEPARATE_ATTRIBS);
 
         return true;
     });

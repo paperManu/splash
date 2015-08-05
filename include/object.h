@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -34,6 +34,7 @@
 #include "coretypes.h"
 #include "basetypes.h"
 #include "geometry.h"
+#include "gpuBuffer.h"
 #include "shader.h"
 #include "texture.h"
 
@@ -59,32 +60,15 @@ class Object : public BaseObject
         Object(const Object& o) = delete;
         Object& operator=(const Object& o) = delete;
 
-        Object(Object&& o)
-        {
-            *this = std::move(o);
-        }
-
-        Object& operator=(Object&& o)
-        {
-            if (this != &o)
-            {
-                _shader = o._shader;
-                _textures = o._textures;
-                _geometries = o._geometries;
-                _blendMaps = o._blendMaps;
-
-                _position = o._position;
-                _scale = o._scale;
-
-                _fill = o._fill;
-            }
-            return *this;
-        }
-
         /**
          * Activate this object for rendering
          */
         void activate();
+
+        /**
+         * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
+         */
+        void computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
         /**
          * Deactivate this object for rendering
@@ -119,7 +103,8 @@ class Object : public BaseObject
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -127,14 +112,29 @@ class Object : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Remove a geometry from this object
+         */
+        void removeGeometry(const std::shared_ptr<Geometry>& geometry);
+
+        /**
          * Remove a texture from this object
          */
-        void removeTexture(const TexturePtr texture);
+        void removeTexture(const std::shared_ptr<Texture>& texture);
 
         /**
          * Reset the blending to no blending at all
          */
         void resetBlendingMap();
+
+        /**
+         * Reset tessellation of all linked objects
+         */
+        void resetTessellation();
+
+        /**
+         * Reset computed visibility from any camera
+         */
+        void resetVisibility();
 
         /**
          * Set the blending map for the object
@@ -151,18 +151,40 @@ class Object : public BaseObject
          */
         void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
+        /**
+         * Subdivide the objects wrt the given camera limits (for blending purposes)
+         */
+        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision);
+
+        /**
+         * This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
+         */
+        void transferVisibilityFromTexToAttr(int width, int height);
+
     private:
         mutable std::mutex _mutex;
 
-        ShaderPtr _shader;
+        ShaderPtr _shader {};
+        ShaderPtr _computeShaderResetBlending {};
+        ShaderPtr _computeShaderComputeBlending {};
+        ShaderPtr _computeShaderTransferVisibilityToAttr {};
+        ShaderPtr _feedbackShaderSubdivideCamera {};
+
+        // A map for previously used graphics shaders
+        std::map<std::string, ShaderPtr> _graphicsShaders;
+
         std::vector<TexturePtr> _textures;
         std::vector<GeometryPtr> _geometries;
         std::vector<TexturePtr> _blendMaps;
+
+        bool _vertexBlendingActive {false};
 
         glm::dvec3 _position {0.0, 0.0, 0.0};
         glm::dvec3 _scale {1.0, 1.0, 1.0};
 
         std::string _fill {"texture"};
+        int _sideness {0};
+        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
 
         /**
          * Init function called by constructor

@@ -8,13 +8,13 @@
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 # 
-# blobserver is distributed in the hope that it will be useful,
+# Splash is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 # 
 # You should have received a copy of the GNU General Public License
-# along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+# along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 # 
 
 from bpy.types import Panel
@@ -74,12 +74,12 @@ class SplashToolbar:
 
 # Panel is available in object and editmode
 class SplashToolbarObject(Panel, SplashToolbar):
-    bl_category = "Video Mapping"
+    bl_category = "Splash"
     bl_idname = "MESH_PT_splash_object"
     bl_context = "objectmode"
 
 class SplashToolbarMesh(Panel, SplashToolbar):
-    bl_category = "Video Mapping"
+    bl_category = "Splash"
     bl_idname = "MESH_PT_splash_mesh"
     bl_context = "mesh_edit"
 
@@ -110,6 +110,12 @@ class SplashObjectPanel(Panel):
             row = layout.row()
             row.prop(object, "splash_width", text="Width")
             row.prop(object, "splash_height", text="Height")
+
+            row = layout.row()
+            row.label("Window position:")
+            row = layout.row()
+            row.prop(object, "splash_position_x", text="X")
+            row.prop(object, "splash_position_y", text="Y")
 
             row = layout.row()
             row.prop(object, "splash_window_decoration", text="Window decoration")

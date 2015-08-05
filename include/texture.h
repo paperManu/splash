@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -64,21 +64,6 @@ class Texture : public BaseObject
         Texture(const Texture&) = delete;
         Texture& operator=(const Texture&) = delete;
 
-        Texture(Texture&& t)
-        {
-            *this = std::move(t);
-        }
-
-        Texture& operator=(Texture&& t)
-        {
-            if (this != &t)
-            {
-                _spec = t._spec;
-                _timestamp = t._timestamp;
-            }
-            return *this;
-        }
-
         /**
          * Bind / unbind this texture
          */
@@ -104,7 +89,7 @@ class Texture : public BaseObject
         /**
          * Try to link the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj);
+        virtual bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Lock the texture for read / write operations
@@ -127,7 +112,6 @@ class Texture : public BaseObject
 
         // Store some texture parameters
         bool _resizable {true};
-        bool _filtering {true};
 
         std::chrono::high_resolution_clock::time_point _timestamp;
 

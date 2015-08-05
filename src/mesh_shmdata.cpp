@@ -38,7 +38,7 @@ bool Mesh_Shmdata::read(const string& filename)
                                         [&](){},
                                         &_logger));
 
-    _filename = filename;
+    _filepath = filepath;
 
     return true;
 }
@@ -113,11 +113,6 @@ void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
 /*************/
 void Mesh_Shmdata::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        return read(args[0].asString());
-    });
 }
 
 } // end of namespace

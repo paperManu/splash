@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -83,6 +83,14 @@ class BaseObject
         }
         virtual ~BaseObject() {}
 
+        /**
+         * Safe bool idiom
+         */
+        virtual explicit operator bool() const
+        {
+            return true;
+        }
+
         std::string getType() const {return _type;}
 
         /**
@@ -106,9 +114,18 @@ class BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj)
+        virtual bool linkTo(std::shared_ptr<BaseObject> obj)
         {
-            if (std::find(_linkedObjects.begin(), _linkedObjects.end(), obj) == _linkedObjects.end())
+            auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
+                auto object = o.lock();
+                if (!object)
+                    return false;
+                if (object == obj)
+                    return true;
+                return false;
+            });
+
+            if (objectIt == _linkedObjects.end())
             {
                 _linkedObjects.push_back(obj);
                 return true;
@@ -116,20 +133,38 @@ class BaseObject
             return false;
         }
 
-        virtual bool unlinkFrom(BaseObjectPtr obj)
+        virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
-            auto objIterator = std::find(_linkedObjects.begin(), _linkedObjects.end(), obj);
-            if (objIterator != _linkedObjects.end())
+            auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
+                auto object = o.lock();
+                if (!object)
+                    return false;
+                if (object == obj)
+                    return true;
+                return false;
+            });
+
+            if (objectIt != _linkedObjects.end())
             {
-                _linkedObjects.erase(objIterator);
+                _linkedObjects.erase(objectIt);
                 return true;
             }
             return false;
         }
 
-        const std::vector<BaseObjectPtr>& getLinkedObjects()
+        const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects()
         {
-            return _linkedObjects;
+            std::vector<std::shared_ptr<BaseObject>> objects;
+            for (auto& o : _linkedObjects)
+            {
+                auto obj = o .lock();
+                if (!obj)
+                    continue;
+
+                objects.push_back(obj);
+            }
+
+            return objects;
         }
 
         /**
@@ -251,7 +286,7 @@ class BaseObject
         std::string _configFilePath {""}; // All objects know about their location
 
         RootObjectWeakPtr _root;
-        std::vector<BaseObjectPtr> _linkedObjects;
+        std::vector<std::weak_ptr<BaseObject>> _linkedObjects;
 
         std::unordered_map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
@@ -263,6 +298,13 @@ class BaseObject
                 if (args.size() == 0)
                     return false;
                 _configFilePath = args[0].asString();
+                return true;
+            });
+
+            _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
+                if (args.size() == 0)
+                    return false;
+                _name = args[0].asString();
                 return true;
             });
         }
@@ -293,7 +335,7 @@ class BufferObject : public BaseObject
         void setNotUpdated() {BaseObject::setNotUpdated(); _updatedBuffer = false;}
 
         /**
-         * Update the Image from a serialized representation
+         * Update the BufferObject from a serialized representation
          * The second definition updates from the inner serialized object
          */
         virtual bool deserialize(std::unique_ptr<SerializedObject> obj) = 0;
@@ -372,13 +414,30 @@ class RootObject : public BaseObject
          * Register an object which was created elsewhere
          * If an object was the same name exists, it is replaced
          */
-        void registerObject(BaseObjectPtr object)
+        void registerObject(std::shared_ptr<BaseObject> object)
         {
             if (object.get() != nullptr)
             {
                 object->_savable = false; // This object was created on the fly. Do not save it
                 _objects[object->getName()] = object;
             }
+        }
+
+        /**
+         * Unregister an object which was created elsewhere, from its name,
+         * sending back a shared_ptr for it
+         */
+        std::shared_ptr<BaseObject> unregisterObject(std::string name)
+        {
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end())
+            {
+                auto object = objectIt->second;
+                _objects.erase(objectIt);
+                return object;
+            }
+
+            return {};
         }
 
         /**
@@ -412,7 +471,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::mutex _setMutex;
-        std::map<std::string, BaseObjectPtr> _objects;
+        std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;
@@ -444,13 +503,19 @@ class RootObject : public BaseObject
 
             std::mutex conditionMutex;
             std::unique_lock<std::mutex> conditionLock(conditionMutex);
+
+            auto cvStatus = std::cv_status::no_timeout;
             if (timeout == 0ull)
                 _answerCondition.wait(conditionLock);
             else
-                _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
+                cvStatus = _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
 
             _answerExpected = "";
-            return _lastAnswerReceived;
+
+            if (std::cv_status::no_timeout == cvStatus)
+                return _lastAnswerReceived;
+            else
+                return {};
         }
 };
 

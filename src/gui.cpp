@@ -111,10 +111,10 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 }
 
 /*************/
-void Gui::computeBlending()
+void Gui::computeBlending(bool once)
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("computeBlending");
+    scene->sendMessageToWorld("computeBlending", {(int)once});
 }
 
 /*************/
@@ -193,8 +193,8 @@ sendAsDefault:
             io.KeysDown[key] = true;
         if (action == GLFW_RELEASE)
             io.KeysDown[key] = false;
-        io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
-        io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+        io.KeyCtrl = ((mods & GLFW_MOD_CONTROL) != 0) && (action == GLFW_PRESS);
+        io.KeyShift = ((mods & GLFW_MOD_SHIFT) != 0) && (action == GLFW_PRESS);
     
         break;
     }
@@ -224,7 +224,9 @@ sendAsDefault:
     case GLFW_KEY_B:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            computeBlending();
+            computeBlending(true);
+        else if (action == GLFW_PRESS && mods == (GLFW_MOD_CONTROL + GLFW_MOD_ALT))
+            computeBlending(false);
         break;
     }
 #if HAVE_GPHOTO
@@ -257,6 +259,20 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             flashBackground();
+        break;
+    }
+    case GLFW_KEY_M:
+    {
+        if (mods == GLFW_MOD_CONTROL && action == GLFW_PRESS)
+        {
+            static bool cursorVisible = false;
+            cursorVisible = !cursorVisible;
+
+            auto scene = _scene.lock();
+            for (auto& obj : scene->_objects)
+                if (obj.second->getType() == "window")
+                    dynamic_pointer_cast<Window>(obj.second)->showCursor(cursorVisible);
+        }
         break;
     }
     // Switch the rendering to textured
@@ -334,10 +350,11 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 }
 
 /*************/
-bool Gui::linkTo(BaseObjectPtr obj)
+bool Gui::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
@@ -347,6 +364,17 @@ bool Gui::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+bool Gui::unlinkFrom(shared_ptr<BaseObject> obj)
+{
+    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    {
+        _guiCamera->unlinkFrom(obj);
+    }
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -372,7 +400,7 @@ bool Gui::render()
 
         ImGui::NewFrame();
 
-        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 800), 0.95f, _windowFlags);
+        ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 900), 0.95f, _windowFlags);
         ImGui::SetWindowPos(ImVec2(16, 16), ImGuiSetCond_Once);
         _windowFlags = 0;
 
@@ -388,7 +416,7 @@ bool Gui::render()
             ImGui::Separator();
 #endif
             if (ImGui::Button("Compute blending map"))
-                computeBlending();
+                computeBlending(true);
             if (ImGui::Button("Flash background"))
                 flashBackground();
             if (ImGui::Button("Wireframe / Textured"))
@@ -690,9 +718,11 @@ void Gui::initImWidgets()
     {
         string text;
         text += "Tab: show / hide this GUI\n";
-        text += "Shortcuts for the calibration view:\n";
+        text += "General shortcuts:\n";
         text += " Ctrl+F: white background instead of black\n";
         text += " Ctrl+B: compute the blending between all cameras\n";
+        text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
+        text += " Ctrl+M: hide/show the OS cursor\n";
         text += " Ctrl+T: textured draw mode\n";
         text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO
@@ -702,11 +732,17 @@ void Gui::initImWidgets()
         text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
         text += "\n";
-        text += " Space: switch between cameras (when hovering the Views panel)\n";
-        text += " A: show / hide the target calibration point (when hovering the Views panel)\n";
-        text += " C: calibrate the selected camera (when hovering the Views panel)\n";
-        text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
-        text += " H: hide all but the selected camera (when hovering the Views panel)\n";
+        text += "Views panel:\n";
+        text += " Space: switch between cameras\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " C: calibrate the selected camera\n";
+        text += " R: revert camera to previous calibration\n";
+        text += " H: hide all but the selected camera\n";
+
+        text += "\n";
+        text += "Node view (inside Control panel):\n";
+        text += " Shift + left click: link the clicked node to the selected one\n";
+        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
 
         return text;
     });
@@ -721,6 +757,7 @@ void Gui::initImWidgets()
         static float worldFps {0.f};
         static float upl {0.f};
         static float tex {0.f};
+        static float ble {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
@@ -731,6 +768,7 @@ void Gui::initImWidgets()
         worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, Timer::get()["worldLoop"]) * 0.1;
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
+        ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
         cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
         win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
@@ -743,6 +781,7 @@ void Gui::initImWidgets()
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
         stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
+        stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
@@ -827,7 +866,7 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
         glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
     }
 
-    unsigned char* bufferData = (unsigned char*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    unsigned char* bufferData = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, _imGuiVboMaxSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
     if (!bufferData)
         return;
     for (int n = 0; n < cmd_lists_count; ++n)

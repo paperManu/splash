@@ -187,10 +187,11 @@ vector<string> Window::getPathDropped()
 }
 
 /*************/
-bool Window::linkTo(BaseObjectPtr obj)
+bool Window::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -200,7 +201,7 @@ bool Window::linkTo(BaseObjectPtr obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        Texture_ImagePtr tex = make_shared<Texture_Image>();
+        auto tex = make_shared<Texture_Image>();
         tex->setName(getName() + "_" + obj->getName() + "_tex");
         tex->setAttribute("resizable", {0});
         if (tex->linkTo(obj))
@@ -232,7 +233,7 @@ bool Window::linkTo(BaseObjectPtr obj)
 }
 
 /*************/
-bool Window::unlinkFrom(BaseObjectPtr obj)
+bool Window::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -245,8 +246,13 @@ bool Window::unlinkFrom(BaseObjectPtr obj)
         string texName = getName() + "_" + obj->getName() + "_tex";
         TexturePtr tex = nullptr;
         for (auto& inTex : _inTextures)
-            if (inTex->getName() == texName)
-                tex = inTex;
+        {
+            if (inTex.expired())
+                continue;
+            auto lockedTex = inTex.lock();
+            if (lockedTex->getName() == texName)
+                tex = lockedTex;
+        }
         if (tex != nullptr)
         {
             tex->unlinkFrom(obj);
@@ -341,7 +347,11 @@ bool Window::render()
     if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
     {
         for (auto& t : _inTextures)
-            t->setAttribute("size", {w, h});
+        {
+            if (t.expired())
+                continue;
+            t.lock()->setAttribute("size", {w, h});
+        }   
     }
     if (_guiTexture != nullptr)
         _guiTexture->setAttribute("size", {w, h});
@@ -431,6 +441,7 @@ void Window::swapBuffers()
     if (!_window->setAsCurrentContext()) 
     	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
 
+    glFlush();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer
@@ -489,14 +500,6 @@ bool Window::switchFullscreen(int screenId)
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
     if (glfwGetWindowMonitor(_window->get()) == NULL)
@@ -530,7 +533,16 @@ bool Window::switchFullscreen(int screenId)
 /*************/
 void Window::setTexture(TexturePtr tex)
 {
-    if (find(_inTextures.begin(), _inTextures.end(), tex) != _inTextures.end())
+    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
+        if (t.expired())
+            return false;
+        auto texture = t.lock();
+        if (texture == tex)
+            return true;
+        return false;
+    });
+
+    if (textureIt != _inTextures.end())
         return;
 
     _inTextures.push_back(tex);
@@ -540,10 +552,18 @@ void Window::setTexture(TexturePtr tex)
 /*************/
 void Window::unsetTexture(TexturePtr tex)
 {
-    auto texIterator = find(_inTextures.begin(), _inTextures.end(), tex);
-    if (texIterator != _inTextures.end())
+    auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
+        if (t.expired())
+            return false;
+        auto texture = t.lock();
+        if (texture == tex)
+            return true;
+        return false;
+    });
+
+    if (textureIt != _inTextures.end())
     {
-        _inTextures.erase(texIterator);
+        _inTextures.erase(textureIt);
         _screen->removeTexture(tex);
     }
 }
@@ -659,14 +679,6 @@ void Window::setWindowDecoration(bool hasDecoration)
     if (_screenId != -1)
         return;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, SPLASH_GL_CONTEXT_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, SPLASH_GL_CONTEXT_VERSION_MINOR);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef DEBUGGL
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#else
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
-#endif
     glfwWindowHint(GLFW_VISIBLE, true);
     glfwWindowHint(GLFW_RESIZABLE, hasDecoration);
     glfwWindowHint(GLFW_DECORATED, hasDecoration);

@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -60,7 +60,7 @@ class Timer
         /**
          * Start / end a timer
          */
-        void start(std::string name)
+        void start(const std::string& name)
         {
             if (!_enabled)
                 return;
@@ -76,7 +76,7 @@ class Timer
                 timeIt->second = currentTime;
         }
 
-        void stop(std::string name)
+        void stop(const std::string& name)
         {
             if (!_enabled)
                 return;
@@ -99,7 +99,7 @@ class Timer
         /**
          * Wait for the specified timer to reach a certain value, in us
          */
-         bool waitUntilDuration(std::string name, unsigned long long duration)
+         bool waitUntilDuration(const std::string& name, unsigned long long duration)
          {
             if (!_enabled)
                 return false;
@@ -144,7 +144,7 @@ class Timer
          /**
           * Get the last occurence of the specified duration
           */
-         unsigned long long getDuration(std::string name) const
+         unsigned long long getDuration(const std::string& name) const
          {
             auto durationIt = _durationMap.find(name);
             if (durationIt == _durationMap.end())
@@ -163,7 +163,7 @@ class Timer
          /**
           * Set an element in the duration map. Used for transmitting timings between pairs
           */
-         void setDuration(std::string name, unsigned long long value)
+         void setDuration(const std::string& name, unsigned long long value)
          {
             auto durationIt = _durationMap.find(name);
             if (durationIt == _durationMap.end())
@@ -179,7 +179,7 @@ class Timer
           * Return the time since the last call with this name,
           * or 0 if it is the first time
           */
-         unsigned long long sinceLastSeen(std::string name)
+         unsigned long long sinceLastSeen(const std::string& name)
          {
             if (_timeMap.find(name) == _timeMap.end())
             {
@@ -196,7 +196,7 @@ class Timer
          /**
           * Some facilities
           */
-         Timer& operator<<(std::string name)
+         Timer& operator<<(const std::string& name)
          {
             start(name);
             _currentDuration = 0;
@@ -212,7 +212,7 @@ class Timer
             return *this;
          }
 
-         bool operator>>(std::string name)
+         bool operator>>(const std::string& name)
          {
             unsigned long long duration = 0;
             if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
@@ -231,7 +231,7 @@ class Timer
             return overtime;
          }
 
-         unsigned long long operator[](std::string name) {return getDuration(name);}
+         unsigned long long operator[](const std::string& name) {return getDuration(name);}
 
          /**
           * Enable / disable the timers

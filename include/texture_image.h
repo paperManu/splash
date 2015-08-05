@@ -8,13 +8,13 @@
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * blobserver is distributed in the hope that it will be useful,
+ * Splash is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with blobserver.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 /*
@@ -66,39 +66,10 @@ class Texture_Image : public Texture
         Texture_Image(const Texture_Image&) = delete;
         Texture_Image& operator=(const Texture_Image&) = delete;
 
-        Texture_Image(Texture_Image&& t)
-        {
-            *this = std::move(t);
-        }
-
-        Texture_Image& operator=(Texture_Image&& t)
-        {
-            if (this != &t)
-            {
-                _glTex = t._glTex;
-                _spec = t._spec;
-                _pbos[0] = t._pbos[0];
-                _pbos[1] = t._pbos[1];
-                _pboReadIndex = t._pboReadIndex;
-
-                _filtering = t._filtering;
-                _texTarget = t._texTarget;
-                _texLevel = t._texLevel;
-                _texInternalFormat = t._texInternalFormat;
-                _texBorder = t._texBorder;
-                _texFormat = t._texFormat;
-                _texType = t._texType;
-
-                _img = t._img;
-                _timestamp = t._timestamp;
-            }
-            return *this;
-        }
-
         /**
          * Sets the specified buffer as the texture on the device
          */
-        Texture_Image& operator=(ImagePtr& img);
+        Texture_Image& operator=(const std::shared_ptr<Image>& img);
 
         /**
          * Bind / unbind this texture
@@ -136,7 +107,7 @@ class Texture_Image : public Texture
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Lock the texture for read / write operations
@@ -177,13 +148,14 @@ class Texture_Image : public Texture
         std::vector<unsigned int> _pboCopyThreadIds;
 
         // Store some texture parameters
+        bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;
 
         // And some temporary attributes
         GLint _activeTexture; // To which texture unit the texture is bound
 
-        ImagePtr _img;
+        std::weak_ptr<Image> _img;
 
         // Parameters to send to the shader
         std::unordered_map<std::string, Values> _shaderUniforms;
