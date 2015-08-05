@@ -638,11 +638,13 @@ void World::parseArguments(int argc, char** argv)
 
     // Parse the other args
     int idx = 1;
-    string filename {""};
+    string filename = string(DATADIR) + "splash.json";
+    bool defaultFile = true;
     while (idx < argc)
     {
         if ((string(argv[idx]) == "-o" || string(argv[idx]) == "--open") && idx + 1 < argc)
         {
+            defaultFile = false;
             filename = string(argv[idx + 1]);
             idx += 2;
         }
@@ -674,6 +676,9 @@ void World::parseArguments(int argc, char** argv)
         else
             idx++;
     }
+
+    if (defaultFile)
+        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
 
     if (filename != "")
     {

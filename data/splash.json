@@ -27,17 +27,7 @@
             "blackLevel" : 0.0,
             "shared" : 0
         },
-        "cam2" : {
-            "type" : "camera",
-            "size" : [1280, 1024],
-            "eye" : [2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "blackLevel" : 0.0,
-            "shared" : 0
-        },
         "win1" : {"type" : "window", "fullscreen" : -1, "position" : [0, 0], "size" : [1280, 1024]},
-        "win2" : {"type" : "window", "fullscreen" : -1, "position" : [0, 0], "size" : [1280, 1024]},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj", "benchmark" : 0},
         "object" : {"type" : "object", "sideness" : 2},
@@ -49,10 +39,8 @@
         "links" : [
             ["mesh", "object"],
             ["object", "cam1"],
-            ["object", "cam2"],
             ["image", "object"],
-            ["cam1", "win1"],
-            ["cam2", "win2"]
+            ["cam1", "win1"]
         ]
     }
 }
