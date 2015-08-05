@@ -180,6 +180,7 @@ AC_CONFIG_FILES([
 	Makefile
     addons/Makefile
     addons/blender/Makefile
+    addons/blender/splash/Makefile
 	src/Makefile
 	data/Makefile
 	data/templates/Makefile
