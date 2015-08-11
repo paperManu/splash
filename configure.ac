@@ -152,6 +152,12 @@ PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
     AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected]))
 AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
 
+# PortAudio, to play sound
+PKG_CHECK_MODULES([PORTAUDIO], [portaudio-2.0],
+    AC_DEFINE([HAVE_PORTAUDIO], [1], [Defined to 1 if portaudio-2.0 is detected]),
+    AC_DEFINE([HAVE_PORTAUDIO], [0], [Defined to 1 if portaudio-2.0 is detected]))
+AM_CONDITIONAL(HAVE_PORTAUDIO, test -n "$PORTAUDIO_LIBS")
+
 # OpenCV, for their hardware support
 PKG_CHECK_MODULES([OPENCV], [opencv],
     AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected]),

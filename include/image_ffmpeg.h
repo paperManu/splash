@@ -25,11 +25,23 @@
 #ifndef SPLASH_IMAGE_FFMPEG_H
 #define SPLASH_IMAGE_FFMPEG_H
 
+#include "config.h"
+
 #include <atomic>
+#include <deque>
 #include <mutex>
 #include <thread>
 
-#include "config.h"
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libswscale/swscale.h>
+}
+
+#if HAVE_PORTAUDIO
+    #include <portaudio.h>
+#endif
 
 #include "coretypes.h"
 #include "basetypes.h"
@@ -68,6 +80,13 @@ class Image_FFmpeg : public Image
         std::thread _readLoopThread;
         std::atomic_bool _continueReadLoop;
 
+#if HAVE_PORTAUDIO
+        AVCodecContext* _audioCodecContext {nullptr};
+        PaStream* _portAudioStream {nullptr};
+        std::mutex _portAudioMutex;
+        std::deque<AVPacket*> _portAudioQueue;
+#endif
+
         /**
          * Free everything related to FFmpeg
          */
@@ -77,6 +96,18 @@ class Image_FFmpeg : public Image
          * File read loop
          */
         void readLoop();
+
+#if HAVE_PORTAUDIO
+        /**
+         * Initialize PortAudio
+         */
+        bool initPortAudio();
+
+        /**
+         * PortAudio callback
+         */
+        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+#endif
 
         /**
          * Register new functors to modify attributes

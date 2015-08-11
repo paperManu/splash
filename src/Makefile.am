@@ -98,6 +98,12 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(FFMPEG_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(FFMPEG_LIBS)
 endif
 
+## PortAudio related
+if HAVE_PORTAUDIO
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(PORTAUDIO_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(PORTAUDIO_LIBS)
+endif
+
 ## OpenCV related
 if HAVE_OPENCV
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_opencv.cpp
