@@ -84,7 +84,7 @@ class Image_FFmpeg : public Image
         AVCodecContext* _audioCodecContext {nullptr};
         PaStream* _portAudioStream {nullptr};
         std::mutex _portAudioMutex;
-        std::deque<AVPacket*> _portAudioQueue;
+        std::deque<AVFrame> _portAudioQueue;
 #endif
 
         /**

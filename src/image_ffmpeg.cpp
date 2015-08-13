@@ -91,45 +91,26 @@ int Image_FFmpeg::portAudioCallback(const void* in, void* out, unsigned long fra
     float* output = (float*)out;
     int decodedDataSize = 0;
 
-    unique_lock<mutex> lock(that->_portAudioMutex);
-
     for (unsigned int i = 0; i < framesPerBuffer;)
     {
-
         if (that->_portAudioQueue.size() == 0)
         {
-            lock.unlock();
             this_thread::sleep_for(chrono::microseconds(10));
-            lock.lock();
             continue;
         }
 
-        AVFrame frame;
-        int gotFrame = 0;
-        int length = avcodec_decode_audio4(that->_audioCodecContext, &frame, &gotFrame, that->_portAudioQueue[0]);
-        if (length < 0)
-        {
-            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding audio frame, skipping" << Log::endl;
-            continue;
-        }
-        else
-        {
-            av_free_packet(that->_portAudioQueue[0]);
-            that->_portAudioQueue.pop_front();
-        }
+        unique_lock<mutex> lock(that->_portAudioMutex);
 
         int dataSize = 0;
-        if (gotFrame)
-        {
-            dataSize = av_samples_get_buffer_size(nullptr, that->_audioCodecContext->channels, frame.nb_samples, that->_audioCodecContext->sample_fmt, 1);
-            memcpy(output, frame.data[0], dataSize);
-            output += dataSize;
-            ++i;
-        }
+        dataSize = av_samples_get_buffer_size(nullptr, that->_audioCodecContext->channels, that->_portAudioQueue[0].nb_samples, that->_audioCodecContext->sample_fmt, 1);
+        memcpy(output, that->_portAudioQueue[0].data, dataSize);
+        that->_portAudioQueue.pop_front();
+        output += dataSize;
         if (dataSize <= 0)
             continue;
 
         decodedDataSize += dataSize;
+        i++;
     }
 
     return decodedDataSize;
@@ -245,6 +226,9 @@ void Image_FFmpeg::readLoop()
                 _audioCodecContext = nullptr;
             }
         }
+
+        if (_audioCodecContext)
+            initPortAudio();
     }
 #endif
 
@@ -366,10 +350,18 @@ void Image_FFmpeg::readLoop()
             // Reading the audio
             else if (packet.stream_index == audioStreamIndex)
             {
-                if (av_dup_packet(&packet) >= 0)
+                AVFrame frame;
+                int gotFrame = 0;
+                int length = avcodec_decode_audio4(_audioCodecContext, &frame, &gotFrame, &packet);
+                if (length < 0)
+                    Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding audio frame, skipping" << Log::endl;
+
+                av_free_packet(&packet);
+
+                if (gotFrame)
                 {
                     unique_lock<mutex> lock(_portAudioMutex);
-                    _portAudioQueue.push_back(&packet);
+                    _portAudioQueue.push_back(frame);
                 }
             }
 #endif
