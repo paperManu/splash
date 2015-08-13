@@ -35,8 +35,13 @@ void Image_FFmpeg::freeFFmpegObjects()
     if (_readLoopThread.joinable())
         _readLoopThread.join();
 
+#if HAVE_PORTAUDIO
     if (_avFormatContext)
+    {
         avformat_close_input((AVFormatContext**)&_avFormatContext);
+        Pa_Terminate();
+    }
+#endif
 }
 
 #if HAVE_PORTAUDIO
@@ -60,13 +65,44 @@ bool Image_FFmpeg::initPortAudio()
         return false;
     }
 
-    outputParams.channelCount = 2;
-    outputParams.sampleFormat = paInt16 | paNonInterleaved;
-    outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultHighOutputLatency;
+    outputParams.channelCount = _audioCodecContext->channels;
+    switch (_audioCodecContext->sample_fmt)
+    {
+    default:
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
+        Pa_Terminate();
+        return false;
+    case AV_SAMPLE_FMT_U8:
+        outputParams.sampleFormat = paUInt8;
+        break;
+    case AV_SAMPLE_FMT_S16:
+        outputParams.sampleFormat = paInt16;
+        break;
+    case AV_SAMPLE_FMT_S32:
+        outputParams.sampleFormat = paInt32;
+        break;
+    case AV_SAMPLE_FMT_FLT:
+        outputParams.sampleFormat = paFloat32;
+        break;
+    case AV_SAMPLE_FMT_U8P:
+        outputParams.sampleFormat = paUInt8 | paNonInterleaved;
+        break;
+    case AV_SAMPLE_FMT_S16P:
+        outputParams.sampleFormat = paInt16 | paNonInterleaved;
+        break;
+    case AV_SAMPLE_FMT_S32P:
+        outputParams.sampleFormat = paInt32 | paNonInterleaved;
+        break;
+    case AV_SAMPLE_FMT_FLTP:
+        outputParams.sampleFormat = paFloat32 | paNonInterleaved;
+        break;
+    }
+
+    outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultLowOutputLatency;
     outputParams.hostApiSpecificStreamInfo = nullptr;
 
     //error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, 48000, 1024, paClipOff, Image_FFmpeg::portAudioCallback, this);
-    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, 48000, 512, paClipOff, nullptr, nullptr);
+    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, _audioCodecContext->sample_rate, 512, paClipOff, nullptr, nullptr);
     if (error != paNoError)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
@@ -233,7 +269,10 @@ void Image_FFmpeg::readLoop()
         }
 
         if (_audioCodecContext)
-            initPortAudio();
+        {
+            if (!initPortAudio())
+                return;
+        }
     }
 #endif
 
