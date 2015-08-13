@@ -61,14 +61,15 @@ bool Image_FFmpeg::initPortAudio()
     }
 
     outputParams.channelCount = 2;
-    outputParams.sampleFormat = paFloat32;
-    outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultLowOutputLatency;
+    outputParams.sampleFormat = paInt16 | paNonInterleaved;
+    outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultHighOutputLatency;
     outputParams.hostApiSpecificStreamInfo = nullptr;
 
-    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, 44100, 64, paClipOff, Image_FFmpeg::portAudioCallback, this);
+    //error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, 48000, 1024, paClipOff, Image_FFmpeg::portAudioCallback, this);
+    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, 48000, 512, paClipOff, nullptr, nullptr);
     if (error != paNoError)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open PortAudio stream" << Pa_GetErrorText(error) << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
         Pa_Terminate();
         return false;
     }
@@ -76,9 +77,13 @@ bool Image_FFmpeg::initPortAudio()
     error = Pa_StartStream(_portAudioStream);
     if (error != paNoError)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not start PortAudio stream" << Pa_GetErrorText(error) << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not start PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
         Pa_Terminate();
         return false;
+    }
+    else
+    {
+        Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully opened PortAudio stream" << Log::endl;
     }
 
     return true;
@@ -88,32 +93,32 @@ bool Image_FFmpeg::initPortAudio()
 int Image_FFmpeg::portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
     auto that = (Image_FFmpeg*)userData;
-    float* output = (float*)out;
-    int decodedDataSize = 0;
+    uint16_t* output = (uint16_t*)out;
 
     for (unsigned int i = 0; i < framesPerBuffer;)
     {
         if (that->_portAudioQueue.size() == 0)
         {
+            that->_portAudioPosition = 0;
             this_thread::sleep_for(chrono::microseconds(10));
             continue;
         }
 
-        unique_lock<mutex> lock(that->_portAudioMutex);
+        memcpy(output, &(that->_portAudioQueue[0][that->_portAudioPosition]), 2 * sizeof(uint16_t));
+        output += 2;
 
-        int dataSize = 0;
-        dataSize = av_samples_get_buffer_size(nullptr, that->_audioCodecContext->channels, that->_portAudioQueue[0].nb_samples, that->_audioCodecContext->sample_fmt, 1);
-        memcpy(output, that->_portAudioQueue[0].data, dataSize);
-        that->_portAudioQueue.pop_front();
-        output += dataSize;
-        if (dataSize <= 0)
-            continue;
+        that->_portAudioPosition += 2 * sizeof(uint16_t);
+        if (that->_portAudioPosition >= that->_portAudioQueue[0].size())
+        {
+            unique_lock<mutex> lock(that->_portAudioMutex);
+            that->_portAudioPosition = 0;
+            that->_portAudioQueue.pop_front();
+        }
 
-        decodedDataSize += dataSize;
         i++;
     }
 
-    return decodedDataSize;
+    return paContinue;
 }
 #endif
 
@@ -350,19 +355,24 @@ void Image_FFmpeg::readLoop()
             // Reading the audio
             else if (packet.stream_index == audioStreamIndex)
             {
-                AVFrame frame;
+                auto frame = unique_ptr<AVFrame>(new AVFrame());
                 int gotFrame = 0;
-                int length = avcodec_decode_audio4(_audioCodecContext, &frame, &gotFrame, &packet);
+                int length = avcodec_decode_audio4(_audioCodecContext, frame.get(), &gotFrame, &packet);
                 if (length < 0)
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding audio frame, skipping" << Log::endl;
 
-                av_free_packet(&packet);
-
                 if (gotFrame)
                 {
-                    unique_lock<mutex> lock(_portAudioMutex);
-                    _portAudioQueue.push_back(frame);
+                    //size_t dataSize = av_samples_get_buffer_size(nullptr, _audioCodecContext->channels, frame->nb_samples, _audioCodecContext->sample_fmt, 1);
+                    //vector<char> buffer((char*)frame->data, (char*)frame->data + dataSize * sizeof(char));
+
+                    //unique_lock<mutex> lock(_portAudioMutex);
+                    //_portAudioQueue.push_back(buffer);
+
+                    Pa_WriteStream(_portAudioStream, frame->data, frame->nb_samples);
                 }
+
+                av_free_packet(&packet);
             }
 #endif
             else
