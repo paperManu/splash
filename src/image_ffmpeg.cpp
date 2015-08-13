@@ -418,9 +418,23 @@ void Image_FFmpeg::readLoop()
             {
                 av_free_packet(&packet);
             }
+
+            if (_seekFrame >= 0)
+            {
+                if (avformat_seek_file(*avContext, videoStreamIndex, 0, _seekFrame, _seekFrame, AVSEEK_FLAG_BACKWARD) < 0)
+                {
+                    Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << _seekFrame << Log::endl;
+                }
+                else
+                {
+                    startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _seekFrame * timeBase * 1e6;
+                    previousTime = _seekFrame * timeBase * 1e6;
+                }
+                _seekFrame = -1;
+            }
         }
 
-        if (av_seek_frame(*avContext, videoStreamIndex, 0, AVSEEK_FLAG_BACKWARD) < 0)
+        if (av_seek_frame(*avContext, videoStreamIndex, 0, 0) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
             break;
@@ -440,6 +454,14 @@ void Image_FFmpeg::readLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
+    _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        if (args[0].asInt() >= 0)
+            _seekFrame = args[0].asInt();
+        return true;
+    });
 }
 
 } // end of namespace

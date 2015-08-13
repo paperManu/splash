@@ -80,6 +80,8 @@ class Image_FFmpeg : public Image
         std::thread _readLoopThread;
         std::atomic_bool _continueReadLoop;
 
+        int64_t _seekFrame {-1};
+
 #if HAVE_PORTAUDIO
         AVCodecContext* _audioCodecContext {nullptr};
         PaStream* _portAudioStream {nullptr};
