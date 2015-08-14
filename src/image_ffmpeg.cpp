@@ -74,27 +74,35 @@ bool Image_FFmpeg::initPortAudio()
         return false;
     case AV_SAMPLE_FMT_U8:
         outputParams.sampleFormat = paUInt8;
+        _portAudioSampleSize = sizeof(unsigned char);
         break;
     case AV_SAMPLE_FMT_S16:
         outputParams.sampleFormat = paInt16;
+        _portAudioSampleSize = sizeof(short);
         break;
     case AV_SAMPLE_FMT_S32:
         outputParams.sampleFormat = paInt32;
+        _portAudioSampleSize = sizeof(int);
         break;
     case AV_SAMPLE_FMT_FLT:
         outputParams.sampleFormat = paFloat32;
+        _portAudioSampleSize = sizeof(float);
         break;
     case AV_SAMPLE_FMT_U8P:
         outputParams.sampleFormat = paUInt8 | paNonInterleaved;
+        _portAudioSampleSize = sizeof(unsigned char);
         break;
     case AV_SAMPLE_FMT_S16P:
         outputParams.sampleFormat = paInt16 | paNonInterleaved;
+        _portAudioSampleSize = sizeof(short);
         break;
     case AV_SAMPLE_FMT_S32P:
         outputParams.sampleFormat = paInt32 | paNonInterleaved;
+        _portAudioSampleSize = sizeof(int);
         break;
     case AV_SAMPLE_FMT_FLTP:
         outputParams.sampleFormat = paFloat32 | paNonInterleaved;
+        _portAudioSampleSize = sizeof(float);
         break;
     }
 
@@ -129,7 +137,7 @@ bool Image_FFmpeg::initPortAudio()
 int Image_FFmpeg::portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
     auto that = (Image_FFmpeg*)userData;
-    uint16_t* output = (uint16_t*)out;
+    uint8_t* output = (uint8_t*)out;
 
     for (unsigned int i = 0; i < framesPerBuffer;)
     {
@@ -140,10 +148,11 @@ int Image_FFmpeg::portAudioCallback(const void* in, void* out, unsigned long fra
             continue;
         }
 
-        memcpy(output, &(that->_portAudioQueue[0][that->_portAudioPosition]), 2 * sizeof(uint16_t));
-        output += 2;
+        size_t frameSize = that->_audioCodecContext->channels * that->_portAudioSampleSize;
+        memcpy(output, &(that->_portAudioQueue[0][that->_portAudioPosition]), frameSize);
+        output += frameSize;
 
-        that->_portAudioPosition += 2 * sizeof(uint16_t);
+        that->_portAudioPosition += frameSize;
         if (that->_portAudioPosition >= that->_portAudioQueue[0].size())
         {
             unique_lock<mutex> lock(that->_portAudioMutex);
@@ -461,6 +470,8 @@ void Image_FFmpeg::registerAttributes()
         if (args[0].asInt() >= 0)
             _seekFrame = args[0].asInt();
         return true;
+    }, [&]() -> Values {
+        return {(int)_seekFrame};
     });
 }
 
