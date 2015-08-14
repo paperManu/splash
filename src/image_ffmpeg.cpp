@@ -466,7 +466,6 @@ void Image_FFmpeg::registerAttributes()
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
-
         if (args[0].asInt() >= 0)
             _seekFrame = args[0].asInt();
         return true;

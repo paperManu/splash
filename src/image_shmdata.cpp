@@ -557,11 +557,6 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
 /*************/
 void Image_Shmdata::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        return read(args[0].asString());
-    });
 }
 
 }

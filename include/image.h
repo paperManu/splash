@@ -156,7 +156,7 @@ class Image : public BufferObject
         /**
          * Register new functors to modify attributes
          */
-        virtual void registerAttributes();
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Image> ImagePtr;
