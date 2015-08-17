@@ -39,13 +39,12 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#if HAVE_PORTAUDIO
-    #include <portaudio.h>
-#endif
-
 #include "coretypes.h"
 #include "basetypes.h"
 #include "image.h"
+#if HAVE_PORTAUDIO
+    #include "speaker.h"
+#endif
 
 namespace oiio = OIIO_NAMESPACE;
 
@@ -83,13 +82,17 @@ class Image_FFmpeg : public Image
         int64_t _seekFrame {-1};
 
 #if HAVE_PORTAUDIO
+        std::unique_ptr<Speaker> _speaker;
         AVCodecContext* _audioCodecContext {nullptr};
-        PaStream* _portAudioStream {nullptr};
-        std::mutex _portAudioMutex;
-        size_t _portAudioSampleSize;
-        std::deque<std::vector<char>> _portAudioQueue;
-        unsigned int _portAudioPosition {0};
 #endif
+
+//#if HAVE_PORTAUDIO
+//        PaStream* _portAudioStream {nullptr};
+//        std::mutex _portAudioMutex;
+//        size_t _portAudioSampleSize;
+//        std::deque<std::vector<char>> _portAudioQueue;
+//        unsigned int _portAudioPosition {0};
+//#endif
 
         /**
          * Free everything related to FFmpeg
@@ -101,17 +104,17 @@ class Image_FFmpeg : public Image
          */
         void readLoop();
 
-#if HAVE_PORTAUDIO
-        /**
-         * Initialize PortAudio
-         */
-        bool initPortAudio();
-
-        /**
-         * PortAudio callback
-         */
-        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
-#endif
+//#if HAVE_PORTAUDIO
+//        /**
+//         * Initialize PortAudio
+//         */
+//        bool initPortAudio();
+//
+//        /**
+//         * PortAudio callback
+//         */
+//        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+//#endif
 
         /**
          * Register new functors to modify attributes

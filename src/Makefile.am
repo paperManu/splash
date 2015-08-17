@@ -100,6 +100,7 @@ endif
 
 ## PortAudio related
 if HAVE_PORTAUDIO
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += speaker.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(PORTAUDIO_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(PORTAUDIO_LIBS)
 endif
@@ -262,6 +263,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \
 	$(top_srcdir)/include/shaderSources.h \
+	$(top_srcdir)/include/speaker.h \
 	$(top_srcdir)/include/splash.h \
 	$(top_srcdir)/include/texture.h \
 	$(top_srcdir)/include/texture_image.h \

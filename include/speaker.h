@@ -1,0 +1,159 @@
+/*
+ * Copyright (C) 2015 Emmanuel Durand
+ *
+ * This file is part of Splash.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Splash is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * @speaker.h
+ * The Speaker class, to output sound
+ */
+
+#ifndef SPLASH_SPEAKER_H
+#define SPLASH_SPEAKER_H
+
+#define SPLASH_SPEAKER_RINGBUFFER_SIZE 1048576
+
+#include <array>
+#include <atomic>
+#include <memory>
+#include <mutex>
+#include <vector>
+    
+#include <portaudio.h>
+
+#include "config.h"
+#include "basetypes.h"
+
+namespace Splash {
+
+/*************/
+class Speaker : public BaseObject
+{
+    public:
+        enum SampleFormat
+        {
+            SAMPLE_FMT_UNKNOWN = -1,
+            SAMPLE_FMT_U8 = 0,
+            SAMPLE_FMT_S16,
+            SAMPLE_FMT_S32,
+            SAMPLE_FMT_FLT,
+            SAMPLE_FMT_U8P,
+            SAMPLE_FMT_S16P,
+            SAMPLE_FMT_S32P,
+            SAMPLE_FMT_FLTP
+        };
+        
+        /**
+         * Constructor
+         */
+        Speaker();
+
+        /**
+         * Destructor
+         */
+        ~Speaker();
+
+        /**
+         * Safe bool idiom
+         */
+        explicit operator bool() const
+        {
+            return _ready;
+        }
+
+        /**
+         * No copy, but some move constructors
+         */
+        Speaker(const Speaker&) = delete;
+        Speaker& operator=(const Speaker&) = delete;
+
+        /**
+         * Add a buffer to the playing queue
+         * Returns false if there was an error
+         */
+        template<typename T>
+        bool addToQueue(const std::vector<T>& buffer);
+
+        /**
+         * Set the audio parameters
+         */
+        void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);
+
+    private:
+        bool _ready {false};
+        unsigned int _channels {2};
+        unsigned int _sampleRate {44100};
+        SampleFormat _sampleFormat {SAMPLE_FMT_S16};
+        size_t _sampleSize {2};
+
+        PaStream* _portAudioStream {nullptr};
+
+        std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
+        int _ringWritePosition {0};
+        int _ringReadPosition {0};
+        std::mutex _ringWriteMutex;
+
+        /**
+         * Free all PortAudio resources
+         */
+        void freeResources();
+
+        /**
+         * Initialize PortAudio resources
+         */
+        void initResources();
+
+        /**
+         * PortAudio callback
+         */
+        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
+};
+
+/*************/
+template<typename T>
+bool Speaker::addToQueue(const std::vector<T>& buffer)
+{
+    std::unique_lock<std::mutex> lock(_ringWriteMutex);
+
+    auto bufferSampleSize = sizeof(T);
+    int readPosition = _ringReadPosition;
+    int writePosition = _ringWritePosition;
+
+    int delta = 0;
+    if (readPosition >= writePosition)
+        delta = readPosition - writePosition;
+    else
+        delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition + readPosition;
+
+    if (delta < buffer.size() * bufferSampleSize)
+        return false;
+
+    auto bufferPtr = static_cast<const uint8_t*>(buffer.data());
+    std::copy(bufferPtr, bufferPtr + buffer.size() * bufferSampleSize, &_ringBuffer[writePosition]);
+    _ringWritePosition += buffer.size() * bufferSampleSize % SPLASH_SPEAKER_RINGBUFFER_SIZE;
+
+    return true;
+}
+
+} // end of namespace
+
+#endif
