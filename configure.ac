@@ -168,6 +168,12 @@ AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
 BOOST_REQUIRE([1.50])
 BOOST_ASIO
 
+# LTC, for synchronization with a SMTPE clock through audio input
+PKG_CHECK_MODULES([LTC], [ltc],
+    AC_DEFINE([HAVE_LTC], [1], [Defined to 1 if ltc is detected]),
+    AC_DEFINE([HAVE_LTC], [0], [Defined to 1 if ltc is detected]))
+AM_CONDITIONAL(HAVE_LTC, test -n "$LTC_LIBS")
+
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
 if test "x$MARKDOWN" = "xtrue" ; then

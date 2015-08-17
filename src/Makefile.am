@@ -118,6 +118,13 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(SHMDATA_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(SHMDATA_LIBS)
 endif
 
+## LTC related
+if HAVE_LTC
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += ltcclock.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(LTC_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(LTC_LIBS)
+endif
+
 # OSX
 if HAVE_OSX
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -252,6 +259,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_opencv.h \
 	$(top_srcdir)/include/image_shmdata.h \
+	$(top_srcdir)/include/ltcclock.h \
 	$(top_srcdir)/include/link.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
