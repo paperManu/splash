@@ -25,12 +25,18 @@
 #ifndef SPLASH_LTCCLOCK_H
 #define SPLASH_LTCCLOCK_H
 
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
+
 #include <ltc.h>
 #include <portaudio.h>
 
 #include "config.h"
 #include "coretypes.h"
 #include "basetypes.h"
+#include "listener.h"
 
 namespace Splash {
 
@@ -38,14 +44,40 @@ namespace Splash {
 class LtcClock : public BaseObject
 {
     public:
+        struct Clock
+        {
+            uint8_t hours;
+            uint8_t mins;
+            uint8_t secs;
+            uint8_t frame;
+        };
+
         LtcClock();
         ~LtcClock();
 
-    private:
-        LTCDecoder* _ltcDecoder {nullptr};
-        LTCFrameExt _ltcFrame;
+        /**
+         * Safe bool idiom
+         */
+        explicit operator bool() const
+        {
+            return _ready;
+        }
 
-        PaStream* _paStream {nullptr};
+        Clock getClock();
+
+    private:
+        bool _ready;
+        bool _continue {false};
+        std::thread _ltcThread;
+        std::mutex _ltcMutex;
+
+        Clock _clock;
+        std::unique_ptr<Listener> _listener;
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
 };
 
 } // end of namespace

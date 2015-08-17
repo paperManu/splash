@@ -144,6 +144,7 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
         delta = writePosition - readPosition;
     else
         delta = SPLASH_LISTENER_RINGBUFFER_SIZE - readPosition + writePosition;
+
     int step = buffer.size() * sizeof(T);
     if (delta < step)
     {
@@ -157,12 +158,12 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
 
         if (step <= ringBufferEndLength)
         {
-            copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition + step], buffer.data());
+            std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition + buffer.size()], buffer.data());
         }
         else
         {
-            copy(&_ringBuffer[readPosition], &_ringBuffer[effectiveSpace], buffer.data());
-            copy(&_ringBuffer[0], &_ringBuffer[step - ringBufferEndLength], &buffer[ringBufferEndLength]);
+            std::copy(&_ringBuffer[readPosition], &_ringBuffer[effectiveSpace], buffer.data());
+            std::copy(&_ringBuffer[0], &_ringBuffer[step - ringBufferEndLength], &buffer[ringBufferEndLength]);
         }
 
         readPosition = (readPosition + step) % effectiveSpace;
