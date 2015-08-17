@@ -45,8 +45,8 @@ class LtcClock : public BaseObject
         LTCDecoder* _ltcDecoder {nullptr};
         LTCFrameExt _ltcFrame;
 
-        PaStream* _paStream;
-}
+        PaStream* _paStream {nullptr};
+};
 
 } // end of namespace
 

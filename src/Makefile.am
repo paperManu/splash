@@ -100,7 +100,7 @@ endif
 
 ## PortAudio related
 if HAVE_PORTAUDIO
-libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += speaker.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += speaker.cpp listener.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(PORTAUDIO_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(PORTAUDIO_LIBS)
 endif
@@ -262,6 +262,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/image_shmdata.h \
 	$(top_srcdir)/include/ltcclock.h \
 	$(top_srcdir)/include/link.h \
+	$(top_srcdir)/include/listener.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
