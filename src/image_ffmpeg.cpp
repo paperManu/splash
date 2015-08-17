@@ -34,138 +34,7 @@ void Image_FFmpeg::freeFFmpegObjects()
     _continueReadLoop = false;
     if (_readLoopThread.joinable())
         _readLoopThread.join();
-
-#if HAVE_PORTAUDIO
-    if (_avFormatContext)
-    {
-        avformat_close_input((AVFormatContext**)&_avFormatContext);
-        Pa_Terminate();
-    }
-#endif
 }
-
-#if HAVE_PORTAUDIO
-/*************/
-bool Image_FFmpeg::initPortAudio()
-{
-    auto error = Pa_Initialize();
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not initialized PortAudio: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return false;
-    }
-
-    PaStreamParameters outputParams;
-    outputParams.device = Pa_GetDefaultOutputDevice();
-    if (outputParams.device == paNoDevice)
-    {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not find default audio device" << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return false;
-    }
-
-    outputParams.channelCount = _audioCodecContext->channels;
-    switch (_audioCodecContext->sample_fmt)
-    {
-    default:
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
-        Pa_Terminate();
-        return false;
-    case AV_SAMPLE_FMT_U8:
-        outputParams.sampleFormat = paUInt8;
-        _portAudioSampleSize = sizeof(unsigned char);
-        break;
-    case AV_SAMPLE_FMT_S16:
-        outputParams.sampleFormat = paInt16;
-        _portAudioSampleSize = sizeof(short);
-        break;
-    case AV_SAMPLE_FMT_S32:
-        outputParams.sampleFormat = paInt32;
-        _portAudioSampleSize = sizeof(int);
-        break;
-    case AV_SAMPLE_FMT_FLT:
-        outputParams.sampleFormat = paFloat32;
-        _portAudioSampleSize = sizeof(float);
-        break;
-    case AV_SAMPLE_FMT_U8P:
-        outputParams.sampleFormat = paUInt8 | paNonInterleaved;
-        _portAudioSampleSize = sizeof(unsigned char);
-        break;
-    case AV_SAMPLE_FMT_S16P:
-        outputParams.sampleFormat = paInt16 | paNonInterleaved;
-        _portAudioSampleSize = sizeof(short);
-        break;
-    case AV_SAMPLE_FMT_S32P:
-        outputParams.sampleFormat = paInt32 | paNonInterleaved;
-        _portAudioSampleSize = sizeof(int);
-        break;
-    case AV_SAMPLE_FMT_FLTP:
-        outputParams.sampleFormat = paFloat32 | paNonInterleaved;
-        _portAudioSampleSize = sizeof(float);
-        break;
-    }
-
-    outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultLowOutputLatency;
-    outputParams.hostApiSpecificStreamInfo = nullptr;
-
-    //error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, 48000, 1024, paClipOff, Image_FFmpeg::portAudioCallback, this);
-    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, _audioCodecContext->sample_rate, 512, paClipOff, nullptr, nullptr);
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return false;
-    }
-
-    error = Pa_StartStream(_portAudioStream);
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not start PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return false;
-    }
-    else
-    {
-        Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully opened PortAudio stream" << Log::endl;
-    }
-
-    return true;
-}
-
-/*************/
-int Image_FFmpeg::portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
-{
-    auto that = (Image_FFmpeg*)userData;
-    uint8_t* output = (uint8_t*)out;
-
-    for (unsigned int i = 0; i < framesPerBuffer;)
-    {
-        if (that->_portAudioQueue.size() == 0)
-        {
-            that->_portAudioPosition = 0;
-            this_thread::sleep_for(chrono::microseconds(10));
-            continue;
-        }
-
-        size_t frameSize = that->_audioCodecContext->channels * that->_portAudioSampleSize;
-        memcpy(output, &(that->_portAudioQueue[0][that->_portAudioPosition]), frameSize);
-        output += frameSize;
-
-        that->_portAudioPosition += frameSize;
-        if (that->_portAudioPosition >= that->_portAudioQueue[0].size())
-        {
-            unique_lock<mutex> lock(that->_portAudioMutex);
-            that->_portAudioPosition = 0;
-            that->_portAudioQueue.pop_front();
-        }
-
-        i++;
-    }
-
-    return paContinue;
-}
-#endif
 
 /*************/
 bool Image_FFmpeg::read(const string& filename)
@@ -279,8 +148,43 @@ void Image_FFmpeg::readLoop()
 
         if (_audioCodecContext)
         {
-            if (!initPortAudio())
+            Speaker::SampleFormat format;
+            switch (_audioCodecContext->sample_fmt)
+            {
+            default:
+                Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
                 return;
+            case AV_SAMPLE_FMT_U8:
+                format = Speaker::SAMPLE_FMT_U8;
+                break;
+            case AV_SAMPLE_FMT_S16:
+                format = Speaker::SAMPLE_FMT_S16;
+                break;
+            case AV_SAMPLE_FMT_S32:
+                format = Speaker::SAMPLE_FMT_S32;
+                break;
+            case AV_SAMPLE_FMT_FLT:
+                format = Speaker::SAMPLE_FMT_FLT;
+                break;
+            case AV_SAMPLE_FMT_U8P:
+                format = Speaker::SAMPLE_FMT_U8P;
+                break;
+            case AV_SAMPLE_FMT_S16P:
+                format = Speaker::SAMPLE_FMT_S16P;
+                break;
+            case AV_SAMPLE_FMT_S32P:
+                format = Speaker::SAMPLE_FMT_S32P;
+                break;
+            case AV_SAMPLE_FMT_FLTP:
+                format = Speaker::SAMPLE_FMT_FLTP;
+                break;
+            }
+
+            _speaker = unique_ptr<Speaker>(new Speaker());
+            if (!_speaker)
+                return;
+
+            _speaker->setParameters(_audioCodecContext->channels, _audioCodecContext->sample_rate, format);
         }
     }
 #endif
@@ -411,13 +315,9 @@ void Image_FFmpeg::readLoop()
 
                 if (gotFrame)
                 {
-                    //size_t dataSize = av_samples_get_buffer_size(nullptr, _audioCodecContext->channels, frame->nb_samples, _audioCodecContext->sample_fmt, 1);
-                    //vector<char> buffer((char*)frame->data, (char*)frame->data + dataSize * sizeof(char));
-
-                    //unique_lock<mutex> lock(_portAudioMutex);
-                    //_portAudioQueue.push_back(buffer);
-
-                    Pa_WriteStream(_portAudioStream, frame->data, frame->nb_samples);
+                    size_t dataSize = av_samples_get_buffer_size(nullptr, _audioCodecContext->channels, frame->nb_samples, _audioCodecContext->sample_fmt, 1);
+                    vector<uint8_t> buffer((uint8_t*)frame->data[0], (uint8_t*)frame->data[0] + dataSize);
+                    _speaker->addToQueue(buffer);
                 }
 
                 av_free_packet(&packet);
