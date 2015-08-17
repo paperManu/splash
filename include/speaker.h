@@ -129,10 +129,6 @@ class Speaker : public BaseObject
          * Register new functors to modify attributes
          */
         void registerAttributes();
-
-        ///// TESTS
-        float sine[400];
-        int phase {0};
 };
 
 /*************/

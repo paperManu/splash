@@ -13,9 +13,6 @@ namespace Splash
 Speaker::Speaker()
 {
     registerAttributes();
-
-    for (unsigned int i = 0; i < 400; ++i)
-        sine[i] = (float)sin(((double)i / 400.0) * M_PI * 2.0);
 }
 
 /*************/
@@ -69,7 +66,7 @@ void Speaker::initResources()
     outputParams.device = Pa_GetDefaultOutputDevice();
     if (outputParams.device == paNoDevice)
     {
-        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not find default audio device" << Pa_GetErrorText(error) << Log::endl;
+        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not find default audio output device" << Pa_GetErrorText(error) << Log::endl;
         Pa_Terminate();
         return;
     }
