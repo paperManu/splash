@@ -25,7 +25,7 @@
 #ifndef SPLASH_SPEAKER_H
 #define SPLASH_SPEAKER_H
 
-#define SPLASH_SPEAKER_RINGBUFFER_SIZE 1048576
+#define SPLASH_SPEAKER_RINGBUFFER_SIZE (512 * 1024)
 
 #include <array>
 #include <atomic>
@@ -96,15 +96,18 @@ class Speaker : public BaseObject
     private:
         bool _ready {false};
         unsigned int _channels {2};
+        bool _planar {false};
         unsigned int _sampleRate {44100};
         SampleFormat _sampleFormat {SAMPLE_FMT_S16};
         size_t _sampleSize {2};
 
         PaStream* _portAudioStream {nullptr};
+        bool _abordCallback {false};
 
         std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
-        int _ringWritePosition {0};
-        int _ringReadPosition {0};
+        std::atomic_int _ringWritePosition {0};
+        std::atomic_int _ringReadPosition {0};
+        std::atomic_int _ringUnusedSpace {0};
         std::mutex _ringWriteMutex;
 
         /**
@@ -126,6 +129,10 @@ class Speaker : public BaseObject
          * Register new functors to modify attributes
          */
         void registerAttributes();
+
+        ///// TESTS
+        float sine[400];
+        int phase {0};
 };
 
 /*************/
@@ -134,12 +141,25 @@ bool Speaker::addToQueue(const std::vector<T>& buffer)
 {
     std::unique_lock<std::mutex> lock(_ringWriteMutex);
 
+    // If the input buffer is planar, we need to interlace it
+    std::vector<T> interleavedBuffer(buffer.size());
+    if (_planar)
+    {
+        int sampleNbr = (buffer.size() / _sampleSize) / _channels;
+        for (unsigned int i = 0; i < buffer.size(); i += _sampleSize)
+        {
+            int channel = (i / _sampleSize) / sampleNbr;
+            int sample = (i / _sampleSize) % sampleNbr;
+            std::copy(&buffer[i], &buffer[i + _sampleSize], &interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
+        }
+    }
+
     auto bufferSampleSize = sizeof(T);
     int readPosition = _ringReadPosition;
     int writePosition = _ringWritePosition;
 
     int delta = 0;
-    if (readPosition >= writePosition)
+    if (readPosition > writePosition)
         delta = readPosition - writePosition;
     else
         delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition + readPosition;
@@ -147,10 +167,24 @@ bool Speaker::addToQueue(const std::vector<T>& buffer)
     if (delta < buffer.size() * bufferSampleSize)
         return false;
 
-    auto bufferPtr = static_cast<const uint8_t*>(buffer.data());
-    std::copy(bufferPtr, bufferPtr + buffer.size() * bufferSampleSize, &_ringBuffer[writePosition]);
-    _ringWritePosition += buffer.size() * bufferSampleSize % SPLASH_SPEAKER_RINGBUFFER_SIZE;
+    int spaceLeft = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition;
 
+    const uint8_t* bufferPtr;
+    if (_planar)
+        bufferPtr = static_cast<const uint8_t*>(interleavedBuffer.data());
+    else
+        bufferPtr = static_cast<const uint8_t*>(buffer.data());
+
+    if (spaceLeft < buffer.size() * bufferSampleSize)
+    {
+        _ringUnusedSpace = spaceLeft;
+        writePosition = 0;
+    }
+
+    std::copy(bufferPtr, bufferPtr + buffer.size() * bufferSampleSize, &_ringBuffer[writePosition]);
+    writePosition = (writePosition + buffer.size() * bufferSampleSize);
+
+    _ringWritePosition = writePosition;
     return true;
 }
 

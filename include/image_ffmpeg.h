@@ -86,14 +86,6 @@ class Image_FFmpeg : public Image
         AVCodecContext* _audioCodecContext {nullptr};
 #endif
 
-//#if HAVE_PORTAUDIO
-//        PaStream* _portAudioStream {nullptr};
-//        std::mutex _portAudioMutex;
-//        size_t _portAudioSampleSize;
-//        std::deque<std::vector<char>> _portAudioQueue;
-//        unsigned int _portAudioPosition {0};
-//#endif
-
         /**
          * Free everything related to FFmpeg
          */
@@ -103,18 +95,6 @@ class Image_FFmpeg : public Image
          * File read loop
          */
         void readLoop();
-
-//#if HAVE_PORTAUDIO
-//        /**
-//         * Initialize PortAudio
-//         */
-//        bool initPortAudio();
-//
-//        /**
-//         * PortAudio callback
-//         */
-//        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
-//#endif
 
         /**
          * Register new functors to modify attributes

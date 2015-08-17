@@ -13,6 +13,9 @@ namespace Splash
 Speaker::Speaker()
 {
     registerAttributes();
+
+    for (unsigned int i = 0; i < 400; ++i)
+        sine[i] = (float)sin(((double)i / 400.0) * M_PI * 2.0);
 }
 
 /*************/
@@ -37,8 +40,10 @@ void Speaker::freeResources()
     if (!_ready)
         return;
 
+    _abordCallback = true;
     if (_portAudioStream)
     {
+        Pa_AbortStream(_portAudioStream);
         Pa_CloseStream(_portAudioStream);
         _portAudioStream = nullptr;
     }
@@ -79,41 +84,49 @@ void Speaker::initResources()
     case SAMPLE_FMT_U8:
         outputParams.sampleFormat = paUInt8;
         _sampleSize = sizeof(unsigned char);
+        _planar = false;
         break;
     case SAMPLE_FMT_S16:
         outputParams.sampleFormat = paInt16;
         _sampleSize = sizeof(short);
+        _planar = false;
         break;
     case SAMPLE_FMT_S32:
         outputParams.sampleFormat = paInt32;
         _sampleSize = sizeof(int);
+        _planar = false;
         break;
     case SAMPLE_FMT_FLT:
         outputParams.sampleFormat = paFloat32;
         _sampleSize = sizeof(float);
+        _planar = false;
         break;
     case SAMPLE_FMT_U8P:
-        outputParams.sampleFormat = paUInt8 | paNonInterleaved;
+        outputParams.sampleFormat = paUInt8;
+        _planar = true;
         _sampleSize = sizeof(unsigned char);
         break;
     case SAMPLE_FMT_S16P:
-        outputParams.sampleFormat = paInt16 | paNonInterleaved;
+        outputParams.sampleFormat = paInt16;
         _sampleSize = sizeof(short);
+        _planar = true;
         break;
     case SAMPLE_FMT_S32P:
-        outputParams.sampleFormat = paInt32 | paNonInterleaved;
+        outputParams.sampleFormat = paInt32;
         _sampleSize = sizeof(int);
+        _planar = true;
         break;
     case SAMPLE_FMT_FLTP:
-        outputParams.sampleFormat = paFloat32 | paNonInterleaved;
+        outputParams.sampleFormat = paFloat32;
         _sampleSize = sizeof(float);
+        _planar = true;
         break;
     }
 
     outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultLowOutputLatency;
     outputParams.hostApiSpecificStreamInfo = nullptr;
 
-    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, _sampleRate, 64, paClipOff, Speaker::portAudioCallback, this);
+    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, _sampleRate, 1024, paClipOff, Speaker::portAudioCallback, this);
     if (error != paNoError)
     {
         Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not open PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
@@ -158,11 +171,29 @@ int Speaker::portAudioCallback(const void* in, void* out, unsigned long framesPe
     // Else, we copy the values and move the read position
     else
     {
-        copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[readPosition + step], output);
-        that->_ringReadPosition = (that->_ringReadPosition + step) % SPLASH_SPEAKER_RINGBUFFER_SIZE;
+        int effectiveSpace = SPLASH_SPEAKER_RINGBUFFER_SIZE - that->_ringUnusedSpace;
+
+        int ringBufferEndLength = effectiveSpace - readPosition;
+
+        if (step <= ringBufferEndLength)
+        {
+            copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[readPosition + step], output);
+        }
+        else
+        {
+            copy(&that->_ringBuffer[readPosition], &that->_ringBuffer[effectiveSpace], output);
+            output += ringBufferEndLength;
+            copy(&that->_ringBuffer[0], &that->_ringBuffer[step - ringBufferEndLength], output);
+        }
+
+        readPosition = (readPosition + step) % effectiveSpace;
+        that->_ringReadPosition = readPosition;
     }
 
-    return paContinue;
+    if (that->_abordCallback)
+        return paComplete;
+    else
+        return paContinue;
 }
 
 /*************/
