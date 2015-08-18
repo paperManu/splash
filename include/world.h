@@ -37,6 +37,9 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
+#if HAVE_PORTAUDIO
+    #include "ltcclock.h"
+#endif
 
 namespace Splash {
 
@@ -69,6 +72,9 @@ class World : public RootObject
 
     private:
         WorldPtr _self;
+#if HAVE_PORTAUDIO
+        LtcClock _clock {true};
+#endif
 
         bool _status {true};
         bool _quit {false};

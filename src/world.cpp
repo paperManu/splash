@@ -135,6 +135,10 @@ void World::run()
         auto& durationMap = Timer::get().getDurationMap();
         for (auto& d : durationMap)
             sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        // Also send the master clock if needed
+        Values clock;
+        if (Timer::get().getMasterClock(clock))
+            sendMessage(SPLASH_ALL_PAIRS, "masterClock", clock);
 
         // Send newer logs to all Scenes
         auto logs = Log::get().getLogs();

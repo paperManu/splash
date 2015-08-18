@@ -55,7 +55,7 @@ class LtcClock : public BaseObject
             uint8_t frame;
         };
 
-        LtcClock();
+        LtcClock(bool masterClock = false);
         ~LtcClock();
 
         /**
@@ -67,13 +67,15 @@ class LtcClock : public BaseObject
         }
 
         /**
-         * Get the clock as a Clock struct, or as values (from years to frame)
+         * Get the clock as a Clock struct, or as values
+         * (from years to frame, starting with a bool set to true if clock is running)
          */
         Clock getClock();
         void getClock(Values& clockValues);
 
     private:
         bool _ready;
+        bool _masterClock {false};
         bool _continue {false};
         std::thread _ltcThread;
 

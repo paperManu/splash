@@ -3,12 +3,15 @@
 #include <chrono>
 #include <iostream>
 
+#include "log.h"
+#include "timer.h"
+
 using namespace std;
 
 namespace Splash {
 
 /*************/
-LtcClock::LtcClock()
+LtcClock::LtcClock(bool masterClock)
 {
     registerAttributes();
 
@@ -21,6 +24,7 @@ LtcClock::LtcClock()
     }
 
     _ready = true;
+    _masterClock = true;
     _continue = true;
 
     _ltcThread = thread([&]() {
@@ -55,6 +59,13 @@ LtcClock::LtcClock()
                 clock.secs = stime.secs;
                 clock.frame = stime.frame;
                 _clock = clock;
+
+                if (_masterClock)
+                {
+                    Values v;
+                    getClock(v);
+                    Timer::get().setMasterClock(v);
+                }
             }
         }
 

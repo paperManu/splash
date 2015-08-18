@@ -1115,6 +1115,14 @@ void Scene::registerAttributes()
         Timer::get().setDuration(args[0].asString(), args[1].asInt());
         return true;
     });
+
+    _attribFunctions["masterClock"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 7)
+            return false;
+
+        Timer::get().setMasterClock(args);
+        return true;
+    });
  
     _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
