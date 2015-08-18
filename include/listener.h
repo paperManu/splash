@@ -158,7 +158,7 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
 
         if (step <= ringBufferEndLength)
         {
-            std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition + buffer.size()], buffer.data());
+            std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition] + step, buffer.data());
         }
         else
         {

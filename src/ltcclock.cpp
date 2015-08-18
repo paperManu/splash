@@ -13,7 +13,7 @@ LtcClock::LtcClock()
     registerAttributes();
 
     _listener = unique_ptr<Listener>(new Listener());
-    _listener->setParameters(1, 44100, Listener::SAMPLE_FMT_FLT);
+    _listener->setParameters(1, 44100, Listener::SAMPLE_FMT_U8);
     if (!_listener)
     {
         _listener.reset();
@@ -27,28 +27,34 @@ LtcClock::LtcClock()
         LTCDecoder* ltcDecoder = ltc_decoder_create(1920, 32);
         LTCFrameExt ltcFrame;
 
-        vector<float> inputBuffer(8192);
+        vector<char> inputBuffer(512);
         long int total = 0;
 
         while (_continue)
         {
             if (!_listener->readFromQueue(inputBuffer))
+            {
                 this_thread::sleep_for(chrono::milliseconds(10));
+                continue;
+            }
 
-            ltc_decoder_write_float(ltcDecoder, inputBuffer.data(), inputBuffer.size(), total);
+            ltc_decoder_write(ltcDecoder, (ltcsnd_sample_t*)inputBuffer.data(), inputBuffer.size(), total);
             total += inputBuffer.size();
 
             while (ltc_decoder_read(ltcDecoder, &ltcFrame))
             {
                 SMPTETimecode stime;
                 ltc_frame_to_time(&stime, &ltcFrame.ltc, LTC_TC_CLOCK);
-                cout << stime.hours << ":" << stime.mins << ":" << stime.secs << ":" << stime.frame << endl;
 
-                unique_lock<mutex> lock(_ltcMutex);
-                _clock.hours = stime.hours;
-                _clock.mins = stime.mins;
-                _clock.secs = stime.secs;
-                _clock.frame = stime.frame;
+                Clock clock;
+                clock.years = stime.years;
+                clock.months = stime.months;
+                clock.days = stime.days;
+                clock.hours = stime.hours;
+                clock.mins = stime.mins;
+                clock.secs = stime.secs;
+                clock.frame = stime.frame;
+                _clock = clock;
             }
         }
 
@@ -67,8 +73,22 @@ LtcClock::~LtcClock()
 /*************/
 LtcClock::Clock LtcClock::getClock()
 {
-    unique_lock<mutex> lock(_ltcMutex);
     return _clock;
+}
+
+/*************/
+void LtcClock::getClock(Values& clockValues)
+{
+    Clock clock = _clock;
+
+    clockValues.clear();
+    clockValues.push_back({(int)clock.years});
+    clockValues.push_back({(int)clock.months});
+    clockValues.push_back({(int)clock.days});
+    clockValues.push_back({(int)clock.hours});
+    clockValues.push_back({(int)clock.mins});
+    clockValues.push_back({(int)clock.secs});
+    clockValues.push_back({(int)clock.frame});
 }
 
 /*************/

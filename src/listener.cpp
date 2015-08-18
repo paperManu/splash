@@ -71,6 +71,9 @@ void Listener::initResources()
         return;
     }
 
+    auto deviceInfo = Pa_GetDeviceInfo(inputParams.device);
+    Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Connected to device: " << deviceInfo->name << Log::endl;
+
     inputParams.channelCount = _channels;
     switch (_sampleFormat)
     {

@@ -46,6 +46,9 @@ class LtcClock : public BaseObject
     public:
         struct Clock
         {
+            uint8_t years;
+            uint8_t months;
+            uint8_t days;
             uint8_t hours;
             uint8_t mins;
             uint8_t secs;
@@ -63,13 +66,16 @@ class LtcClock : public BaseObject
             return _ready;
         }
 
+        /**
+         * Get the clock as a Clock struct, or as values (from years to frame)
+         */
         Clock getClock();
+        void getClock(Values& clockValues);
 
     private:
         bool _ready;
         bool _continue {false};
         std::thread _ltcThread;
-        std::mutex _ltcMutex;
 
         Clock _clock;
         std::unique_ptr<Listener> _listener;
