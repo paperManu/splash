@@ -788,12 +788,12 @@ HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr s
     }
     catch (boost::system::system_error ec)
     {
-        Log::get() << Log::ERROR << "HttpServer::" << __FUNCTION__ << " - Unable to open http server at " << address << "::" << port << Log::endl;
+        Log::get() << Log::ERROR << "HttpServer::" << __FUNCTION__ << " - Unable to open http server at " << address << ":" << port << Log::endl;
         _ready = false;
         return;
     }
 
-    Log::get() << Log::MESSAGE << "HttpServer::" << __FUNCTION__ << " - Http server opened at " << address << "::" << port << Log::endl;
+    Log::get() << Log::MESSAGE << "HttpServer::" << __FUNCTION__ << " - Http server opened at " << address << ":" << port << Log::endl;
     _ready = true;
 
     doAccept();
