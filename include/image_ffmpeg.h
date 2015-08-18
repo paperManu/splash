@@ -28,6 +28,7 @@
 #include "config.h"
 
 #include <atomic>
+#include <condition_variable>
 #include <deque>
 #include <mutex>
 #include <thread>
@@ -87,7 +88,9 @@ class Image_FFmpeg : public Image
         };
         std::deque<TimedFrame> _timedFrames;
         std::mutex _videoFramesMutex;
+        std::condition_variable _videoFramesCondition;
 
+        uint64_t _startTime {0};
         int64_t _seekFrame {-1};
 
 #if HAVE_PORTAUDIO

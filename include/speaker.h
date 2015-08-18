@@ -89,6 +89,11 @@ class Speaker : public BaseObject
         bool addToQueue(const std::vector<T>& buffer);
 
         /**
+         * Clear the queue
+         */
+        void clearQueue();
+
+        /**
          * Set the audio parameters
          */
         void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);

@@ -22,6 +22,15 @@ Speaker::~Speaker()
 }
 
 /*************/
+void Speaker::clearQueue()
+{
+    std::unique_lock<std::mutex> lock(_ringWriteMutex);
+    _ringReadPosition = 0;
+    _ringWritePosition = 0;
+    _ringUnusedSpace = 0;
+}
+
+/*************/
 void Speaker::setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format)
 {
     _channels = std::max((uint32_t)1, channels);

@@ -228,7 +228,7 @@ void Image_FFmpeg::readLoop()
     // This implements looping
     while (_continueReadLoop)
     {
-        auto startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         auto previousTime = 0;
         while (_continueReadLoop && av_read_frame(*avContext, &packet) >= 0)
         {
@@ -252,13 +252,14 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         unique_lock<mutex> lockFrames(_videoFramesMutex);
-
                         _timedFrames.emplace_back();
                         _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                         if (packet.pts != AV_NOPTS_VALUE)
                             _timedFrames[_timedFrames.size() - 1].timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
                         else
                             _timedFrames[_timedFrames.size() - 1].timing = 0.0;
+
+                        _videoFramesCondition.notify_one();
                     }
                 }
                 //
@@ -289,12 +290,15 @@ void Image_FFmpeg::readLoop()
 
                         if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
                         {
+                            unique_lock<mutex> lockFrames(_videoFramesMutex);
                             _timedFrames.emplace_back();
                             _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                             if (packet.pts != AV_NOPTS_VALUE)
                                 _timedFrames[_timedFrames.size() - 1].timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
                             else
                                 _timedFrames[_timedFrames.size() - 1].timing = 0.0;
+
+                            _videoFramesCondition.notify_one();
                         }
                     }
                 }
@@ -334,8 +338,11 @@ void Image_FFmpeg::readLoop()
                 }
                 else
                 {
-                    startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _seekFrame * timeBase * 1e6;
+                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _seekFrame * timeBase * 1e6;
                     previousTime = _seekFrame * timeBase * 1e6;
+                    unique_lock<mutex> lockFrames(_videoFramesMutex);
+                    _timedFrames.clear();
+                    _speaker->clearQueue();
                 }
                 _seekFrame = -1;
             }
@@ -361,31 +368,29 @@ void Image_FFmpeg::readLoop()
 /*************/
 void Image_FFmpeg::videoDisplayLoop()
 {
-    auto startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
     auto previousTime = 0;
 
     while(_continueReadLoop)
     {
-        if (_timedFrames.size() == 0)
-        {
-            this_thread::sleep_for(chrono::milliseconds(1));
-            continue;
-        }
-
         unique_lock<mutex> lockFrames(_videoFramesMutex);
-        TimedFrame& timedFrame = _timedFrames[0];
-        if (timedFrame.timing != 0ull)
-        {
-            uint64_t waitTime = timedFrame.timing - previousTime;
-            this_thread::sleep_for(chrono::microseconds(waitTime));
-            previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+        _videoFramesCondition.wait(lockFrames);
 
-            unique_lock<mutex> lock(_writeMutex);
-            _bufferImage.swap(timedFrame.frame);
-            _imageUpdated = true;
-            updateTimestamp();
+        while (_timedFrames.size() > 0)
+        {
+            TimedFrame& timedFrame = _timedFrames[0];
+            if (timedFrame.timing != 0ull)
+            {
+                uint64_t waitTime = timedFrame.timing - previousTime;
+                this_thread::sleep_for(chrono::microseconds(waitTime));
+                previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+
+                unique_lock<mutex> lock(_writeMutex);
+                _bufferImage.swap(timedFrame.frame);
+                _imageUpdated = true;
+                updateTimestamp();
+            }
+            _timedFrames.pop_front();
         }
-        _timedFrames.pop_front();
     }
 }
 
