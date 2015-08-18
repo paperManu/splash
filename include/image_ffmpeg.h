@@ -79,6 +79,15 @@ class Image_FFmpeg : public Image
         std::thread _readLoopThread;
         std::atomic_bool _continueReadLoop;
 
+        std::thread _videoDisplayThread;
+        struct TimedFrame
+        {
+            oiio::ImageBuf frame;
+            uint64_t timing; // in us
+        };
+        std::deque<TimedFrame> _timedFrames;
+        std::mutex _videoFramesMutex;
+
         int64_t _seekFrame {-1};
 
 #if HAVE_PORTAUDIO
@@ -95,6 +104,11 @@ class Image_FFmpeg : public Image
          * File read loop
          */
         void readLoop();
+
+        /**
+         * Video display loop
+         */
+        void videoDisplayLoop();
 
         /**
          * Register new functors to modify attributes

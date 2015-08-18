@@ -34,6 +34,8 @@ void Image_FFmpeg::freeFFmpegObjects()
     _continueReadLoop = false;
     if (_readLoopThread.joinable())
         _readLoopThread.join();
+    if (_videoDisplayThread.joinable())
+        _videoDisplayThread.join();
 }
 
 /*************/
@@ -61,7 +63,12 @@ bool Image_FFmpeg::read(const string& filename)
     av_dump_format(*avContext, 0, filename.c_str(), 0);
     _filepath = filename;
 
+    // Launch the loops
     _continueReadLoop = true;
+    _videoDisplayThread = thread([&]() {
+        videoDisplayLoop();
+    });
+
     _readLoopThread = thread([&]() {
         readLoop();
     });
@@ -94,7 +101,6 @@ void Image_FFmpeg::readLoop()
     if (audioStreamIndex == -1)
     {
         Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - No audio stream found in file " << _filepath << Log::endl;
-        return;
     }
 
     // Find a video decoder
@@ -245,17 +251,14 @@ void Image_FFmpeg::readLoop()
                         unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
                         copy(buffer.begin(), buffer.end(), pixels);
 
-                        // We wait until we get the green light for displaying this frame
-                        unsigned long long waitTime = 0;
-                        if (packet.pts != AV_NOPTS_VALUE)
-                            waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
-                        this_thread::sleep_for(chrono::microseconds(waitTime));
-                        previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+                        unique_lock<mutex> lockFrames(_videoFramesMutex);
 
-                        unique_lock<mutex> lock(_writeMutex);
-                        _bufferImage.swap(img);
-                        _imageUpdated = true;
-                        updateTimestamp();
+                        _timedFrames.emplace_back();
+                        _timedFrames[_timedFrames.size() - 1].frame.swap(img);
+                        if (packet.pts != AV_NOPTS_VALUE)
+                            _timedFrames[_timedFrames.size() - 1].timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
+                        else
+                            _timedFrames[_timedFrames.size() - 1].timing = 0.0;
                     }
                 }
                 //
@@ -286,17 +289,12 @@ void Image_FFmpeg::readLoop()
 
                         if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
                         {
-                            // We wait until we get the green light for displaying this frame
-                            unsigned long long waitTime = 0;
+                            _timedFrames.emplace_back();
+                            _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                             if (packet.pts != AV_NOPTS_VALUE)
-                                waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
-                            this_thread::sleep_for(chrono::microseconds(waitTime));
-                            previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
-
-                            unique_lock<mutex> lock(_writeMutex);
-                            _bufferImage.swap(img);
-                            _imageUpdated = true;
-                            updateTimestamp();
+                                _timedFrames[_timedFrames.size() - 1].timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
+                            else
+                                _timedFrames[_timedFrames.size() - 1].timing = 0.0;
                         }
                     }
                 }
@@ -358,6 +356,37 @@ void Image_FFmpeg::readLoop()
     if (_audioCodecContext)
         avcodec_close(_audioCodecContext);
 #endif
+}
+
+/*************/
+void Image_FFmpeg::videoDisplayLoop()
+{
+    auto startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+    auto previousTime = 0;
+
+    while(_continueReadLoop)
+    {
+        if (_timedFrames.size() == 0)
+        {
+            this_thread::sleep_for(chrono::milliseconds(1));
+            continue;
+        }
+
+        unique_lock<mutex> lockFrames(_videoFramesMutex);
+        TimedFrame& timedFrame = _timedFrames[0];
+        if (timedFrame.timing != 0ull)
+        {
+            uint64_t waitTime = timedFrame.timing - previousTime;
+            this_thread::sleep_for(chrono::microseconds(waitTime));
+            previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+
+            unique_lock<mutex> lock(_writeMutex);
+            _bufferImage.swap(timedFrame.frame);
+            _imageUpdated = true;
+            updateTimestamp();
+        }
+        _timedFrames.pop_front();
+    }
 }
 
 /*************/
