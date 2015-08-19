@@ -100,11 +100,6 @@ class Shader : public BaseObject
         void activate();
 
         /**
-         * Activate for feedback rendering
-         */
-        void activateFeedback();
-
-        /**
          * Deactivate this shader
          */
         void deactivate();
