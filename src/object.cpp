@@ -410,7 +410,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
                 geom->activateForFeedback();
-                _feedbackShaderSubdivideCamera->activateFeedback();
+                _feedbackShaderSubdivideCamera->activate();
                 glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
                 _feedbackShaderSubdivideCamera->deactivate();
 
