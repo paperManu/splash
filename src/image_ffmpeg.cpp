@@ -235,6 +235,10 @@ void Image_FFmpeg::readLoop()
             // Reading the video
             if (packet.stream_index == videoStreamIndex)
             {
+                oiio::ImageBuf img;
+                uint64_t timing;
+                bool hasFrame = false;
+
                 //
                 // If the codec is handled by FFmpeg
                 if (!isHap)
@@ -247,19 +251,20 @@ void Image_FFmpeg::readLoop()
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
                         oiio::ImageSpec spec(videoCodecContext->width, videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
-                        oiio::ImageBuf img(spec);
+                        oiio::ImageBuf tmpImg(spec);
+                        img.swap(tmpImg);
+
                         unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
                         copy(buffer.begin(), buffer.end(), pixels);
 
-                        unique_lock<mutex> lockFrames(_videoFramesMutex);
-                        _timedFrames.emplace_back();
-                        _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                         if (packet.pts != AV_NOPTS_VALUE)
-                            _timedFrames[_timedFrames.size() - 1].timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
+                            timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
                         else
-                            _timedFrames[_timedFrames.size() - 1].timing = 0.0;
+                            timing = 0.0;
+                        // This handles repeated frames
+                        timing += frame->repeat_pict * timeBase * 0.5;
 
-                        _videoFramesCondition.notify_one();
+                        hasFrame = true;
                     }
                 }
                 //
@@ -284,23 +289,30 @@ void Image_FFmpeg::readLoop()
                             return;
 
                         spec.channelnames = {textureFormat};
-                        oiio::ImageBuf img(spec);
+                        oiio::ImageBuf tmpImg(spec);
+                        img.swap(tmpImg);
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
 
                         if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
                         {
-                            unique_lock<mutex> lockFrames(_videoFramesMutex);
-                            _timedFrames.emplace_back();
-                            _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                             if (packet.pts != AV_NOPTS_VALUE)
-                                _timedFrames[_timedFrames.size() - 1].timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
+                                timing = static_cast<uint64_t>((double)packet.pts * timeBase * 1e6);
                             else
-                                _timedFrames[_timedFrames.size() - 1].timing = 0.0;
+                                timing = 0.0;
 
-                            _videoFramesCondition.notify_one();
+                            hasFrame = true;
                         }
                     }
+                }
+
+                if (hasFrame)
+                {
+                    unique_lock<mutex> lockFrames(_videoFramesMutex);
+                    _timedFrames.emplace_back();
+                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
+                    _timedFrames[_timedFrames.size() - 1].timing = timing;
+                    _videoFramesCondition.notify_one();
                 }
 
                 av_free_packet(&packet);
