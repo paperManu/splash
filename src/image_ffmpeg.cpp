@@ -354,7 +354,9 @@ void Image_FFmpeg::readLoop()
                     previousTime = _seekFrame * timeBase * 1e6;
                     unique_lock<mutex> lockFrames(_videoFramesMutex);
                     _timedFrames.clear();
+#if HAVE_PORTAUDIO
                     _speaker->clearQueue();
+#endif
                 }
                 _seekFrame = -1;
             }
