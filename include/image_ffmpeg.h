@@ -84,18 +84,25 @@ class Image_FFmpeg : public Image
         struct TimedFrame
         {
             oiio::ImageBuf frame;
-            uint64_t timing; // in us
+            int64_t timing; // in us
         };
         std::deque<TimedFrame> _timedFrames;
-        std::mutex _videoFramesMutex;
-        std::condition_variable _videoFramesCondition;
+        std::mutex _videoQueueMutex;
+        std::mutex _videoSeekMutex;
+        std::condition_variable _videoQueueCondition;
 
-        uint64_t _startTime {0};
+        int64_t _startTime {0};
         int64_t _seekFrame {-1};
+
+        AVFormatContext** _avContext {nullptr};
+        double _timeBase {0.033};
+        AVCodecContext* _videoCodecContext {nullptr};
+        int _videoStreamIndex {-1};
 
 #if HAVE_PORTAUDIO
         std::unique_ptr<Speaker> _speaker;
         AVCodecContext* _audioCodecContext {nullptr};
+        int _audioStreamIndex {-1};
 #endif
 
         /**
@@ -107,6 +114,11 @@ class Image_FFmpeg : public Image
          * File read loop
          */
         void readLoop();
+
+        /**
+         * Seek in the video
+         */
+        void seek(int frame);
 
         /**
          * Video display loop
