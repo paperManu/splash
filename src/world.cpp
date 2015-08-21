@@ -436,9 +436,18 @@ void World::applyConfig()
 
             idx++;
         }
+    }
 
-        // Link the objects together
-        idx = 0;
+    // Link the objects together
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+        auto sceneMembers = jsScene.getMemberNames();
+
+        int idx = 0;
         for (const auto& obj : jsScene)
         {
             if (sceneMembers[idx] != "links")

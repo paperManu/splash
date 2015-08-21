@@ -145,7 +145,6 @@ BaseObjectPtr Scene::add(string type, string name)
 /*************/
 void Scene::addGhost(string type, string name)
 {
-
     // Currently, only Cameras can be ghosts
     if (type != string("camera"))
         return;
@@ -252,10 +251,6 @@ bool Scene::linkGhost(string first, string second)
     else if (_objects.find(second) != _objects.end())
         sink = _objects[second];
     else
-        return false;
-
-    // TODO: add a mechanism in objects to check if already linked
-    if (source->getType() != "camera" && sink->getType() != "camera")
         return false;
 
     return link(source, sink);
