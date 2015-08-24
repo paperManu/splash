@@ -240,6 +240,8 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColorResponseFunction();
+        else
+            goto sendAsDefault;
         break;
     }
     case GLFW_KEY_P:

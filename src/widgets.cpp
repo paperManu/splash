@@ -355,6 +355,9 @@ void GuiGlobalView::render()
             if (ImGui::Button("Show all points"))
                 showAllCalibrationPoints();
             ImGui::SameLine();
+            if (ImGui::Button("Show all cameras points"))
+                showAllCamerasCalibrationPoints();
+            ImGui::SameLine();
             if (ImGui::Button("Calibrate camera"))
                 doCalibration();
 
@@ -463,6 +466,16 @@ void GuiGlobalView::showAllCalibrationPoints()
 }
 
 /*************/
+void GuiGlobalView::showAllCamerasCalibrationPoints()
+{
+    auto scene = _scene.lock();
+    if (_camera == _guiCamera)
+        _guiCamera->setAttribute("switchDisplayAllCalibration", {});
+    else
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchDisplayAllCalibration"});
+}
+
+/*************/
 void GuiGlobalView::doCalibration()
 {
     CameraParameters params;
@@ -559,6 +572,11 @@ void GuiGlobalView::processKeyEvents()
     else if (io.KeysDown['H'] && io.KeysDownTime['H'] == 0.0)
     {
         switchHideOtherCameras();
+        return;
+    }
+    else if (io.KeysDown['O'] && io.KeysDownTime['O'] == 0.0)
+    {
+        showAllCamerasCalibrationPoints();
         return;
     }
     // Reset to the previous camera calibration

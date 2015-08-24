@@ -86,9 +86,20 @@ class Object : public BaseObject
         void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
 
         /**
+         * Add and remove a calibration point
+         */
+        void addCalibrationPoint(glm::dvec3 point);
+        void removeCalibrationPoint(glm::dvec3 point);
+
+        /**
          * Draw the object
          */
         void draw();
+
+        /**
+         * Get a reference to all the calibration points set
+         */
+        std::vector<glm::dvec3>& getCalibrationPoints() {return _calibrationPoints;}
 
         /**
          * Get the model matrix
@@ -185,6 +196,10 @@ class Object : public BaseObject
         std::string _fill {"texture"};
         int _sideness {0};
         glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
+
+        // A copy of all the cameras' calibration points,
+        // for display purposes. These are not saved
+        std::vector<glm::dvec3> _calibrationPoints;
 
         /**
          * Init function called by constructor

@@ -26,8 +26,11 @@
 #define SPLASH_WORLDMARKER_SCALE 0.015
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
+#define SPLASH_SCREEN_MARKER_SELECTED {0.9, 0.3, 0.1, 1.0}
 #define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
 #define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
+#define SPLASH_SCREEN_MARKER_SET {1.0, 0.7, 0.0, 1.0}
+#define SPLASH_OBJECT_MARKER {0.1, 1.0, 0.2, 1.0}
 #define SPLASH_CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
 
 using namespace std;
@@ -536,6 +539,8 @@ bool Camera::linkTo(shared_ptr<BaseObject> obj)
     {
         ObjectPtr obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
+
+        sendCalibrationPointsToObjects();
         return true;
     }
 
@@ -766,15 +771,45 @@ bool Camera::render()
             obj->deactivate();
         }
 
+        auto viewMatrix = computeViewMatrix();
+        auto projectionMatrix = computeProjectionMatrix();
+
+        // Draw the calibrations points of all the cameras
+        if (_displayAllCalibrations)
+        {
+            for (auto& objWeakPtr : _objects)
+            {
+                auto object = objWeakPtr.lock();
+                auto points = object->getCalibrationPoints();
+
+                auto& worldMarker = _models["3d_marker"];
+                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66});
+
+                for (auto& point : points)
+                {
+                    worldMarker->setAttribute("position", {point.x, point.y, point.z});
+                    worldMarker->setAttribute("color", SPLASH_OBJECT_MARKER);
+
+                    worldMarker->activate();
+                    worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
+                    worldMarker->draw();
+                    worldMarker->deactivate();
+                }
+            }
+        }
+
         // Draw the calibration points
         if (_displayCalibration)
         {
+            auto& worldMarker = _models["3d_marker"];
+            auto& screenMarker = _models["2d_marker"];
+
             for (int i = 0; i < _calibrationPoints.size(); ++i)
             {
                 auto& point = _calibrationPoints[i];
-                auto& worldMarker = _models["3d_marker"];
 
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
+                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
                 if (_selectedCalibrationPoint == i)
                     worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                 else if (point.isSet)
@@ -783,20 +818,19 @@ bool Camera::render()
                     worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
 
                 worldMarker->activate();
-                worldMarker->setViewProjectionMatrix(computeViewMatrix(), computeProjectionMatrix());
+                worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
                 worldMarker->draw();
                 worldMarker->deactivate();
 
                 if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
                 {
-                    auto& screenMarker = _models["2d_marker"];
 
                     screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                     screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
                     if (_selectedCalibrationPoint == i)
-                        screenMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
+                        screenMarker->setAttribute("color", SPLASH_SCREEN_MARKER_SELECTED);
                     else
-                        screenMarker->setAttribute("color", SPLASH_MARKER_SET);
+                        screenMarker->setAttribute("color", SPLASH_SCREEN_MARKER_SET);
 
                     screenMarker->activate();
                     screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
@@ -840,6 +874,14 @@ bool Camera::addCalibrationPoint(const Values& worldPoint)
 
     _calibrationPoints.push_back(CalibrationPoint(world));
     _selectedCalibrationPoint = _calibrationPoints.size() - 1;
+
+    // Set the point as calibrated in all linked objects
+    for (auto& objWeakPtr : _objects)
+    {
+        auto object = objWeakPtr.lock();
+        object->addCalibrationPoint(world);
+    }
+
     return true;
 }
 
@@ -889,6 +931,14 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
 
         if (index != -1)
         {
+            // Set the point as uncalibrated from all linked objects
+            for (auto& objWeakPtr : _objects)
+            {
+                auto object = objWeakPtr.lock();
+                auto pointAsValues = Values({_calibrationPoints[index].world.x, _calibrationPoints[index].world.y, _calibrationPoints[index].world.z});
+                object->removeCalibrationPoint(_calibrationPoints[index].world);
+            }
+
             _calibrationPoints.erase(_calibrationPoints.begin() + index);
             _calibrationCalledOnce = false;
         }
@@ -902,6 +952,14 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
             {
                 if (_calibrationPoints[i].isSet == true && unlessSet)
                     continue;
+
+                // Set the point as uncalibrated from all linked objects
+                for (auto& objWeakPtr : _objects)
+                {
+                    auto object = objWeakPtr.lock();
+                    object->removeCalibrationPoint(world);
+                }
+
                 _calibrationPoints.erase(_calibrationPoints.begin() + i);
                 _selectedCalibrationPoint = -1;
             }
@@ -1191,6 +1249,19 @@ void Camera::loadDefaultModels()
 }
 
 /*************/
+void Camera::sendCalibrationPointsToObjects()
+{
+    for (auto& objWeakPtr : _objects)
+    {
+        auto object = objWeakPtr.lock();
+        for (auto& point : _calibrationPoints)
+        {
+            object->addCalibrationPoint(point.world);
+        }
+    }
+}
+
+/*************/
 void Camera::registerAttributes()
 {
     _attribFunctions["eye"] = AttributeFunctor([&](const Values& args) {
@@ -1402,6 +1473,8 @@ void Camera::registerAttributes()
             _calibrationPoints.push_back(c);
         }
 
+        sendCalibrationPointsToObjects();
+
         return true;
     }, [&]() -> Values {
         Values data;
@@ -1569,6 +1642,7 @@ void Camera::registerAttributes()
         return true;
     });
 
+    //
     // Various options
     _attribFunctions["displayCalibration"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
@@ -1580,8 +1654,22 @@ void Camera::registerAttributes()
         return true;
     });
 
+    // Shows all calibration points for all cameras linked to the same objects
+    _attribFunctions["displayAllCalibrations"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _displayAllCalibrations = (args[0].asInt() > 0) ? true : false;
+        return true;
+    });
+
     _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](const Values& args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
+        return true;
+    });
+
+    _attribFunctions["switchDisplayAllCalibration"] = AttributeFunctor([&](const Values& args) {
+        _displayAllCalibrations = !_displayAllCalibrations;
         return true;
     });
 
