@@ -1,6 +1,7 @@
 AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/external/glad/include \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \

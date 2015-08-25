@@ -914,18 +914,7 @@ void Scene::init(std::string name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
-#if HAVE_OSX
-    glewExperimental = GL_TRUE;
-    GLenum glewError = glewInit();
-    if (GLEW_OK != glewError)
-    {
-        string glewStringError = string((const char*)glewGetErrorString(glewError));
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Error while initializing GLEW: " << glewStringError << Log::endl;
-        _isInitialized = false;
-        return;
-    }
-    else
-#endif
+    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     // Activate GL debug messages
 #if not HAVE_OSX
