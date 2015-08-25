@@ -63,12 +63,6 @@ esac
 # Check for SSE
 AX_EXT
 
-# Also, GLEW is currently needed under OSX
-PKG_CHECK_MODULES([GLEW], [glew], have_glew=true, have_glew=false)
-if test "x${have_glew}" = "xfalse" && test "$HAVE_OSX" = "true" ; then
-  AC_MSG_ERROR([Missing glew, which is needed for building on OSX])
-fi
-
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
 if test "x${have_glfw}" = "xfalse" ; then

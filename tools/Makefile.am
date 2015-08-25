@@ -9,6 +9,14 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/compatibility/include
+else
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/core/include
+endif
+
 if HAVE_GPHOTO
 bin_PROGRAMS = \
 	splash-check-calibration

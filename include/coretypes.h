@@ -22,8 +22,8 @@
  * A few, mostly basic, types
  */
 
-#define GL_GLEXT_PROTOTYPES
-#define GLX_GLXEXT_PROTOTYPES
+//#define GL_GLEXT_PROTOTYPES
+//#define GLX_GLXEXT_PROTOTYPES
 
 #include "config.h"
 
@@ -41,9 +41,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#if HAVE_OSX
-#include <GL/glew.h>
-#endif
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include "threadpool.h"
