@@ -1,7 +1,6 @@
 AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/external/glad/include \
 	-I$(top_srcdir)/external/GLV/GLV \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/piccante/include \
@@ -9,6 +8,14 @@ AM_CPPFLAGS = \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
+
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/compatibility/include
+else
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/core/include
+endif
 
 if HAVE_GPHOTO
 bin_PROGRAMS = \
