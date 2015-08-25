@@ -352,10 +352,10 @@ void GuiGlobalView::render()
             if (ImGui::Button("Hide other cameras"))
                 switchHideOtherCameras();
             ImGui::SameLine();
-            if (ImGui::Button("Show all points"))
+            if (ImGui::Button("Show targets"))
                 showAllCalibrationPoints();
             ImGui::SameLine();
-            if (ImGui::Button("Show all cameras points"))
+            if (ImGui::Button("Show all points"))
                 showAllCamerasCalibrationPoints();
             ImGui::SameLine();
             if (ImGui::Button("Calibrate camera"))

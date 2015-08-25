@@ -740,6 +740,7 @@ void Gui::initImWidgets()
         text += " C: calibrate the selected camera\n";
         text += " R: revert camera to previous calibration\n";
         text += " H: hide all but the selected camera\n";
+        text += " O: show calibration points from all cameras\n";
 
         text += "\n";
         text += "Node view (inside Control panel):\n";
