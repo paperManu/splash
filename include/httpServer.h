@@ -25,12 +25,14 @@
 #ifndef SPLASH_HTTPSERVER_H
 #define SPLASH_HTTPSERVER_H
 
+#include <condition_variable>
 #include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <set>
 #include <string>
+#include <thread>
 #include <utility>
 
 #include <boost/asio.hpp>
@@ -197,6 +199,7 @@ namespace Http {
             enum CommandId
             {
                 nop,
+                get,
                 set
             };
     
@@ -213,15 +216,16 @@ namespace Http {
                 Values args {};
             };
     
-            using ReturnFunction = std::function<void(bool, Values)>;
+            using ReturnFunction = std::function<void(std::string)>;
     
             explicit RequestHandler();
             void handleRequest(const Request& req, Reply& rep);
-            Command getNextCommand();
+            std::pair<Command, ReturnFunction> getNextCommand();
     
         private:
             static bool urlDecode(const std::string& in, std::string& out, Values& args);
             std::deque<Command> _commandQueue;
+            std::deque<ReturnFunction> _commandReturnFuncQueue;
             std::mutex _queueMutex;
     };
 } // end of namespace Http
@@ -253,6 +257,7 @@ class HttpServer : public BaseObject
         Http::RequestHandler _requestHandler;
 
         Http::ConnectionManager _connectionManager;
+        std::thread _messageHandlerThread;
 
         void doAccept();
 
