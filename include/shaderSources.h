@@ -1020,7 +1020,7 @@ struct ShaderSources
         //layout(location = 2) in vec3 _normal;
         //uniform mat4 _modelViewProjectionMatrix;
         //uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        smooth out vec2 texCoord;
+        out vec2 texCoord;
 
         void main(void)
         {
