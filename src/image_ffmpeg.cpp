@@ -223,7 +223,7 @@ void Image_FFmpeg::readLoop()
     while (_continueReadLoop)
     {
         auto startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-        auto previousTime = 0;
+        auto previousTime = 0ull;
         while (_continueReadLoop && av_read_frame(*avContext, &packet) >= 0)
         {
             // Reading the video
@@ -251,6 +251,7 @@ void Image_FFmpeg::readLoop()
                             waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
                         this_thread::sleep_for(chrono::microseconds(waitTime));
                         previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+                        _elapsedTime = previousTime;
 
                         unique_lock<mutex> lock(_writeMutex);
                         _bufferImage.swap(img);
@@ -292,6 +293,7 @@ void Image_FFmpeg::readLoop()
                                 waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
                             this_thread::sleep_for(chrono::microseconds(waitTime));
                             previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
+                            _elapsedTime = previousTime;
 
                             unique_lock<mutex> lock(_writeMutex);
                             _bufferImage.swap(img);
@@ -363,6 +365,28 @@ void Image_FFmpeg::readLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
+    _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
+        return false;
+    }, [&]() -> Values {
+        if (_avFormatContext == nullptr)
+            return {0.f};
+
+        AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
+        float duration = (*avContext)->duration / AV_TIME_BASE;
+        return {duration};
+    });
+
+    _attribFunctions["remaining"] = AttributeFunctor([&](const Values& args) {
+        return false;
+    }, [&]() -> Values {
+        if (_avFormatContext == nullptr)
+            return {0.f};
+
+        AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
+        float duration = (double)(*avContext)->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6;
+        return {duration};
+    });
+
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;

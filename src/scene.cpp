@@ -662,9 +662,15 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessageToWorld(const string message, const Values& value)
+void Scene::sendMessageToWorld(const string& message, const Values& value)
 {
     RootObject::sendMessage("world", message, value);
+}
+
+/*************/
+Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value)
+{
+    return sendMessageWithAnswer("world", message, value);
 }
 
 /*************/

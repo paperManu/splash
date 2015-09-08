@@ -159,7 +159,8 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessageToWorld(const std::string message, const Values& value = {});
+        void sendMessageToWorld(const std::string& message, const Values& value = {});
+        Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {});
 
         /**
          * Wait for synchronization with texture upload

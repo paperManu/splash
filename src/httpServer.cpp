@@ -776,7 +776,7 @@ namespace Http {
         std::string nextArg;
         for (std::size_t i = 0; i < out.size(); ++i)
         {
-            if (out[i] == '&' || out[i] == '=' || out[i] == '!')
+            if (out[i] == '&' || out[i] == '=' || out[i] == '!' || out[i] == '?')
             {
                 if (nextArg != "")
                     args.push_back(nextArg);
@@ -883,18 +883,26 @@ void HttpServer::run()
                     auto attrName = args[2].asString();
 
                     auto objectIt = scene->_objects.find(objectName);
+
+                    Values values;
                     if (objectIt != scene->_objects.end())
                     {
                         auto& object = objectIt->second;
-                        Values values;
-                        if (object->getAttribute(attrName, values) == false || values.size() == 0)
-                            returnFunc("");
-
-                        Json::Value jsValue;
-                        jsValue = getValuesAsJson(values);
-                        string strValue = jsValue.toStyledString();
-                        returnFunc(strValue);
+                        object->getAttribute(attrName, values);
                     }
+
+                    // Ask the World if it knows more about this object
+                    if (values.size() == 0)
+                    {
+                        auto answer = scene->sendMessageToWorldWithAnswer("getAttribute", {objectName, attrName});
+                        for (unsigned int i = 1; i < answer.size(); ++i)
+                            values.push_back(answer[i]);
+                    }
+
+                    Json::Value jsValue;
+                    jsValue[attrName] = getValuesAsJson(values);
+                    string strValue = jsValue.toStyledString();
+                    returnFunc(strValue);
                 }
             }
             else

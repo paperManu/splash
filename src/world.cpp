@@ -781,8 +781,28 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
-        _quit = true;
+    _attribFunctions["getAttribute"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 2)
+            return false;
+
+        auto objectName = args[0].asString();
+        auto attrName = args[1].asString();
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+        {
+            auto& object = objectIt->second;
+            Values values {};
+            object->getAttribute(attrName, values);
+
+            SThread::pool.enqueueWithoutId([=]() {
+                Values sentValues {"getAttribute"};
+                for (auto& v : values)
+                    sentValues.push_back(v);
+                sendMessage(SPLASH_ALL_PAIRS, "answerMessage", sentValues);
+            });
+        }
+
         return true;
     });
 
@@ -811,6 +831,11 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
         Timer::get() >> "pingScene " + args[0].asString();
+        return true;
+    });
+
+    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
+        _quit = true;
         return true;
     });
 

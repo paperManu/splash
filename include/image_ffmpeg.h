@@ -79,6 +79,7 @@ class Image_FFmpeg : public Image
         std::thread _readLoopThread;
         std::atomic_bool _continueReadLoop;
 
+        int64_t _elapsedTime {0};
         int64_t _seekFrame {-1};
 
 #if HAVE_PORTAUDIO
