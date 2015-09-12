@@ -8,6 +8,14 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/compatibility/include
+else
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/core/include
+endif
+
 #*************#
 if HAVE_OSX
 AM_CPPFLAGS += \
@@ -51,6 +59,15 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	window.cpp \
 	widgets.cpp \
 	world.cpp
+
+# GLAD, a GL loader
+if HAVE_OSX
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/glad/compatibility/src/glad_compatibility.c
+else
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/glad/core/src/glad_core.c
+endif
 
 # GUI related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -283,6 +300,11 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/widgets.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
+	\
+	$(top_srcdir)/external/glad/core/include/glad/glad.h \
+	$(top_srcdir)/external/glad/core/include/KHR/khrplatform.h \
+	$(top_srcdir)/external/glad/compatibility/include/glad/glad.h \
+	$(top_srcdir)/external/glad/compatibility/include/KHR/khrplatform.h \
 	\
 	$(top_srcdir)/external/imgui/imgui.h \
 	$(top_srcdir)/external/imgui/imconfig.h \

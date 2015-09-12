@@ -176,6 +176,29 @@ void Object::deactivate()
     _mutex.unlock();
 }
 
+/**************/
+void Object::addCalibrationPoint(glm::dvec3 point)
+{
+    for (auto& p : _calibrationPoints)
+        if (p == point)
+            return;
+    
+    _calibrationPoints.push_back(point);
+}
+
+/**************/
+void Object::removeCalibrationPoint(glm::dvec3 point)
+{
+    for (auto it = _calibrationPoints.begin(), itEnd = _calibrationPoints.end(); it != itEnd; ++it)
+    {
+        if (point == *it)
+        {
+            _calibrationPoints.erase(it);
+            return;
+        }
+    }
+}
+
 /*************/
 void Object::draw()
 {
@@ -410,7 +433,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
                 geom->activateForFeedback();
-                _feedbackShaderSubdivideCamera->activateFeedback();
+                _feedbackShaderSubdivideCamera->activate();
                 glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
                 _feedbackShaderSubdivideCamera->deactivate();
 

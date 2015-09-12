@@ -1,7 +1,7 @@
 #include "httpServer.h"
 
 #include <atomic>
-#include <condition_variable>
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -673,29 +673,65 @@ namespace Http {
             return;
     
         if (requestPath.find("/set") == 0)
-        {
             _commandQueue.push_back({CommandId::set, requestArgs});
-        }
+        else if (requestPath.find("/get") == 0)
+            _commandQueue.push_back({CommandId::get, requestArgs});
         else
         {
             Log::get() << Log::WARNING << "RequestHandler::" << __FUNCTION__ << " - No command associated to URI " << req.uri << Log::endl;
             rep = Reply::stockReply(Reply::bad_request);
             return;
         }
+
+        condition_variable cv;
+        atomic_bool replyState {false};
+        atomic_bool waiting {true};
+        string replyString {""};
+
+        auto replyFunc = [&](string answer) -> void {
+            if (!waiting)
+                return;
+
+            replyState = true;
+            replyString = answer;
+            cv.notify_all();
+        };
+
+        _commandReturnFuncQueue.push_back(replyFunc);
+        cv.wait_for(lock, chrono::milliseconds(2000));
+        waiting = false;
     
-        rep = Reply::stockReply(Reply::ok);
+        if (replyState)
+        {
+            rep = Reply::stockReply(Reply::ok);
+            rep.status = Reply::ok;
+            rep.content = replyString.c_str();
+            rep.headers.resize(2);
+            rep.headers[0].name = "Content-Length";
+            rep.headers[0].value = std::to_string(replyString.size());
+            rep.headers[1].name = "Content-Type";
+            rep.headers[1].value = "text";
+        }
+        else
+        {
+            rep = Reply::stockReply(Reply::internal_server_error);
+        }
     }
     
     /*************/
-    RequestHandler::Command RequestHandler::getNextCommand()
+    pair<RequestHandler::Command, RequestHandler::ReturnFunction> RequestHandler::getNextCommand()
     {
         unique_lock<mutex> lock(_queueMutex);
         if (_commandQueue.size() == 0)
-            return Command(CommandId::nop, Values());
+            return make_pair(Command(CommandId::nop, Values()), ReturnFunction());
     
         auto command = _commandQueue[0];
         _commandQueue.pop_front();
-        return command;
+
+        auto func = _commandReturnFuncQueue[0];
+        _commandReturnFuncQueue.pop_front();
+
+        return make_pair(command, func);
     }
     
     /*************/
@@ -740,7 +776,7 @@ namespace Http {
         std::string nextArg;
         for (std::size_t i = 0; i < out.size(); ++i)
         {
-            if (out[i] == '&' || out[i] == '=' || out[i] == '!')
+            if (out[i] == '&' || out[i] == '=' || out[i] == '!' || out[i] == '?')
             {
                 if (nextArg != "")
                     args.push_back(nextArg);
@@ -788,12 +824,12 @@ HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr s
     }
     catch (boost::system::system_error ec)
     {
-        Log::get() << Log::ERROR << "HttpServer::" << __FUNCTION__ << " - Unable to open http server at " << address << "::" << port << Log::endl;
+        Log::get() << Log::ERROR << "HttpServer::" << __FUNCTION__ << " - Unable to open http server at " << address << ":" << port << Log::endl;
         _ready = false;
         return;
     }
 
-    Log::get() << Log::MESSAGE << "HttpServer::" << __FUNCTION__ << " - Http server opened at " << address << "::" << port << Log::endl;
+    Log::get() << Log::MESSAGE << "HttpServer::" << __FUNCTION__ << " - Http server opened at " << address << ":" << port << Log::endl;
     _ready = true;
 
     doAccept();
@@ -802,12 +838,89 @@ HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr s
 /*************/
 void HttpServer::run()
 {
+    _messageHandlerThread = std::thread([&]() {
+        pair<Http::RequestHandler::Command, Http::RequestHandler::ReturnFunction> message;
+        
+        while (_ready)
+        {
+            if ((message = _requestHandler.getNextCommand()).first.command != Http::RequestHandler::CommandId::nop)
+            {
+                auto command = message.first.command;
+                auto args = message.first.args;
+                auto returnFunc = message.second;
+
+                if (command == Http::RequestHandler::CommandId::set)
+                {
+                    if (args.size() < 4)
+                        continue;
+
+                    auto scene = _scene.lock();
+                    auto objectName = args[1].asString();
+
+                    for (int idx = 2; idx < args.size(); idx += 2)
+                    {
+                        auto attrName = args[idx].asString();
+                        Values attrValue({args[idx + 1]});
+
+                        // Local
+                        if (scene->_objects.find(objectName) != scene->_objects.end())
+                            scene->_objects[objectName]->setAttribute(attrName, attrValue);
+
+                        // And global
+                        Values sendValues {objectName, attrName};
+                        for (auto& v : attrValue)
+                            sendValues.push_back(v);
+                        scene->sendMessageToWorld("sendAll", sendValues);
+                    }
+                }
+                else if (command == Http::RequestHandler::CommandId::get)
+                {
+                    if (args.size() < 3)
+                        continue;
+
+                    auto scene = _scene.lock();
+                    auto objectName = args[1].asString();
+                    auto attrName = args[2].asString();
+
+                    auto objectIt = scene->_objects.find(objectName);
+
+                    Values values;
+                    if (objectIt != scene->_objects.end())
+                    {
+                        auto& object = objectIt->second;
+                        object->getAttribute(attrName, values);
+                    }
+
+                    // Ask the World if it knows more about this object
+                    if (values.size() == 0)
+                    {
+                        auto answer = scene->sendMessageToWorldWithAnswer("getAttribute", {objectName, attrName});
+                        for (unsigned int i = 1; i < answer.size(); ++i)
+                            values.push_back(answer[i]);
+                    }
+
+                    Json::Value jsValue;
+                    jsValue[attrName] = getValuesAsJson(values);
+                    string strValue = jsValue.toStyledString();
+                    returnFunc(strValue);
+                }
+            }
+            else
+            {
+                this_thread::sleep_for(chrono::milliseconds(5));
+            }
+        }
+    });
     _ioService.run();
 }
 
 /*************/
 void HttpServer::stop()
 {
+    _ready = false;
+    if (_messageHandlerThread.joinable())
+        _messageHandlerThread.join();
+
     _acceptor.close();
     _connectionManager.stopAll();
     _ioService.stop();
@@ -822,35 +935,6 @@ void HttpServer::doAccept()
 
         if (!ec)
             _connectionManager.start(make_shared<Http::Connection>(std::move(_socket), _connectionManager, _requestHandler));
-
-        Http::RequestHandler::Command message;
-        while ((message = _requestHandler.getNextCommand()).command != Http::RequestHandler::CommandId::nop)
-        {
-            auto command = message.command;
-            auto args = message.args;
-
-            if (args.size() < 4)
-                continue;
-
-            auto scene = _scene.lock();
-
-            auto objectName = args[1].asString();
-            for (int idx = 2; idx < args.size(); idx += 2)
-            {
-                auto attrName = args[idx].asString();
-                Values attrValue({args[idx + 1]});
-
-                // Local
-                if (scene->_objects.find(objectName) != scene->_objects.end())
-                    scene->_objects[objectName]->setAttribute(attrName, attrValue);
-
-                // And global
-                Values sendValues {objectName, attrName};
-                for (auto& v : attrValue)
-                    sendValues.push_back(v);
-                scene->sendMessageToWorld("sendAll", sendValues);
-            }
-        }
 
         doAccept();
     });
