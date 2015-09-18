@@ -31,7 +31,7 @@ Image_FFmpeg::~Image_FFmpeg()
 /*************/
 void Image_FFmpeg::freeFFmpegObjects()
 {
-    _continueReadLoop = false;
+    _continueRead = false;
     if (_readLoopThread.joinable())
         _readLoopThread.join();
 }
@@ -61,7 +61,7 @@ bool Image_FFmpeg::read(const string& filename)
     av_dump_format(*avContext, 0, filename.c_str(), 0);
     _filepath = filename;
 
-    _continueReadLoop = true;
+    _continueRead = true;
     _readLoopThread = thread([&]() {
         readLoop();
     });
@@ -220,11 +220,11 @@ void Image_FFmpeg::readLoop()
     double timeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
 
     // This implements looping
-    while (_continueReadLoop)
+    do
     {
         auto startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         auto previousTime = 0ull;
-        while (_continueReadLoop && av_read_frame(*avContext, &packet) >= 0)
+        while (_continueRead && av_read_frame(*avContext, &packet) >= 0)
         {
             // Reading the video
             if (packet.stream_index == videoStreamIndex)
@@ -350,7 +350,7 @@ void Image_FFmpeg::readLoop()
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
             break;
         }
-    }
+    } while (_loopOnVideo);
 
     av_free(rgbFrame);
     av_free(frame);
@@ -374,6 +374,17 @@ void Image_FFmpeg::registerAttributes()
         AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
         float duration = (*avContext)->duration / AV_TIME_BASE;
         return {duration};
+    });
+
+    _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _loopOnVideo = (bool)args[0].asInt();
+        return true;
+    }, [&]() -> Values {
+        int loop = _loopOnVideo;
+        return {loop};
     });
 
     _attribFunctions["remaining"] = AttributeFunctor([&](const Values& args) {
