@@ -145,7 +145,6 @@ BaseObjectPtr Scene::add(string type, string name)
 /*************/
 void Scene::addGhost(string type, string name)
 {
-
     // Currently, only Cameras can be ghosts
     if (type != string("camera"))
         return;
@@ -252,10 +251,6 @@ bool Scene::linkGhost(string first, string second)
     else if (_objects.find(second) != _objects.end())
         sink = _objects[second];
     else
-        return false;
-
-    // TODO: add a mechanism in objects to check if already linked
-    if (source->getType() != "camera" && sink->getType() != "camera")
         return false;
 
     return link(source, sink);
@@ -667,9 +662,15 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessageToWorld(const string message, const Values& value)
+void Scene::sendMessageToWorld(const string& message, const Values& value)
 {
     RootObject::sendMessage("world", message, value);
+}
+
+/*************/
+Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value)
+{
+    return sendMessageWithAnswer("world", message, value);
 }
 
 /*************/
@@ -919,18 +920,7 @@ void Scene::init(std::string name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
-#if HAVE_OSX
-    glewExperimental = GL_TRUE;
-    GLenum glewError = glewInit();
-    if (GLEW_OK != glewError)
-    {
-        string glewStringError = string((const char*)glewGetErrorString(glewError));
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Error while initializing GLEW: " << glewStringError << Log::endl;
-        _isInitialized = false;
-        return;
-    }
-    else
-#endif
+    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     // Activate GL debug messages
 #if not HAVE_OSX

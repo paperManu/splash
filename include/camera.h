@@ -198,6 +198,7 @@ class Camera : public BaseObject
         // Calibration parameters
         bool _calibrationCalledOnce {false};
         bool _displayCalibration {false};
+        bool _displayAllCalibrations {false};
         bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
         {
@@ -239,6 +240,11 @@ class Camera : public BaseObject
          * Load some defaults models, like the locator for calibration
          */
         void loadDefaultModels();
+
+        /**
+         * Send calibration points to the model
+         */
+        void sendCalibrationPointsToObjects();
 
         /**
          * Register new functors to modify attributes

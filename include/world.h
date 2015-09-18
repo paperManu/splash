@@ -37,7 +37,7 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
-#if HAVE_PORTAUDIO
+#if HAVE_PORTAUDIO && HAVE_LTC
     #include "ltcclock.h"
 #endif
 
@@ -72,7 +72,7 @@ class World : public RootObject
 
     private:
         WorldPtr _self;
-#if HAVE_PORTAUDIO
+#if HAVE_PORTAUDIO && HAVE_LTC
         LtcClock _clock {true};
 #endif
 
