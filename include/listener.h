@@ -18,14 +18,14 @@
  */
 
 /*
- * @speaker.h
- * The Speaker class, to output sound
+ * @listener.h
+ * The Listener class, to input sound
  */
 
-#ifndef SPLASH_SPEAKER_H
-#define SPLASH_SPEAKER_H
+#ifndef SPLASH_LISTENER_H
+#define SPLASH_LISTENER_H
 
-#define SPLASH_SPEAKER_RINGBUFFER_SIZE (512 * 1024)
+#define SPLASH_LISTENER_RINGBUFFER_SIZE (512 * 1024)
 
 #include <array>
 #include <atomic>
@@ -41,7 +41,7 @@
 namespace Splash {
 
 /*************/
-class Speaker : public BaseObject
+class Listener : public BaseObject
 {
     public:
         enum SampleFormat
@@ -50,22 +50,18 @@ class Speaker : public BaseObject
             SAMPLE_FMT_U8 = 0,
             SAMPLE_FMT_S16,
             SAMPLE_FMT_S32,
-            SAMPLE_FMT_FLT,
-            SAMPLE_FMT_U8P,
-            SAMPLE_FMT_S16P,
-            SAMPLE_FMT_S32P,
-            SAMPLE_FMT_FLTP
+            SAMPLE_FMT_FLT
         };
         
         /**
          * Constructor
          */
-        Speaker();
+        Listener();
 
         /**
          * Destructor
          */
-        ~Speaker();
+        ~Listener();
 
         /**
          * Safe bool idiom
@@ -78,20 +74,15 @@ class Speaker : public BaseObject
         /**
          * No copy, but some move constructors
          */
-        Speaker(const Speaker&) = delete;
-        Speaker& operator=(const Speaker&) = delete;
+        Listener(const Listener&) = delete;
+        Listener& operator=(const Listener&) = delete;
 
         /**
          * Add a buffer to the playing queue
          * Returns false if there was an error
          */
         template<typename T>
-        bool addToQueue(const std::vector<T>& buffer);
-
-        /**
-         * Clear the queue
-         */
-        void clearQueue();
+        bool readFromQueue(std::vector<T>& buffer);
 
         /**
          * Set the audio parameters
@@ -101,19 +92,18 @@ class Speaker : public BaseObject
     private:
         bool _ready {false};
         unsigned int _channels {2};
-        bool _planar {false};
         unsigned int _sampleRate {44100};
-        SampleFormat _sampleFormat {SAMPLE_FMT_S16};
+        SampleFormat _sampleFormat {SAMPLE_FMT_FLT};
         size_t _sampleSize {2};
 
         PaStream* _portAudioStream {nullptr};
         bool _abordCallback {false};
 
-        std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
+        std::array<uint8_t, SPLASH_LISTENER_RINGBUFFER_SIZE> _ringBuffer;
         std::atomic_int _ringWritePosition {0};
         std::atomic_int _ringReadPosition {0};
         std::atomic_int _ringUnusedSpace {0};
-        std::mutex _ringWriteMutex;
+        std::mutex _ringReadMutex;
 
         /**
          * Free all PortAudio resources
@@ -138,54 +128,48 @@ class Speaker : public BaseObject
 
 /*************/
 template<typename T>
-bool Speaker::addToQueue(const std::vector<T>& buffer)
+bool Listener::readFromQueue(std::vector<T>& buffer)
 {
-    std::unique_lock<std::mutex> lock(_ringWriteMutex);
+    if (buffer.size() == 0)
+        return false;
 
-    // If the input buffer is planar, we need to interlace it
-    std::vector<T> interleavedBuffer(buffer.size());
-    if (_planar)
-    {
-        int sampleNbr = (buffer.size() / _sampleSize) / _channels;
-        for (unsigned int i = 0; i < buffer.size(); i += _sampleSize)
-        {
-            int channel = (i / _sampleSize) / sampleNbr;
-            int sample = (i / _sampleSize) % sampleNbr;
-            std::copy(&buffer[i], &buffer[i + _sampleSize], &interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
-        }
-    }
+    std::unique_lock<std::mutex> lock(_ringReadMutex);
 
-    auto bufferSampleSize = sizeof(T);
     int readPosition = _ringReadPosition;
     int writePosition = _ringWritePosition;
 
+    // If the ring buffer is not filled enough, fill with zeros instead
     int delta = 0;
-    if (readPosition > writePosition)
-        delta = readPosition - writePosition;
+    if (writePosition >= readPosition)
+        delta = writePosition - readPosition;
     else
-        delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition + readPosition;
+        delta = SPLASH_LISTENER_RINGBUFFER_SIZE - readPosition + writePosition;
 
-    if (delta < buffer.size() * bufferSampleSize)
-        return false;
-
-    int spaceLeft = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition;
-
-    const uint8_t* bufferPtr;
-    if (_planar)
-        bufferPtr = static_cast<const uint8_t*>(interleavedBuffer.data());
-    else
-        bufferPtr = static_cast<const uint8_t*>(buffer.data());
-
-    if (spaceLeft < buffer.size() * bufferSampleSize)
+    int step = buffer.size() * sizeof(T);
+    if (delta < step)
     {
-        _ringUnusedSpace = spaceLeft;
-        writePosition = 0;
+        return false;
+    }
+    // Else, we copy the values and move the read position
+    else
+    {
+        int effectiveSpace = SPLASH_LISTENER_RINGBUFFER_SIZE - _ringUnusedSpace;
+        int ringBufferEndLength = effectiveSpace - readPosition;
+
+        if (step <= ringBufferEndLength)
+        {
+            std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition] + step, buffer.data());
+        }
+        else
+        {
+            std::copy(&_ringBuffer[readPosition], &_ringBuffer[effectiveSpace], buffer.data());
+            std::copy(&_ringBuffer[0], &_ringBuffer[step - ringBufferEndLength], &buffer[ringBufferEndLength]);
+        }
+
+        readPosition = (readPosition + step) % effectiveSpace;
+        _ringReadPosition = readPosition;
     }
 
-    std::copy(bufferPtr, bufferPtr + buffer.size() * bufferSampleSize, &_ringBuffer[writePosition]);
-    writePosition = (writePosition + buffer.size() * bufferSampleSize);
-
-    _ringWritePosition = writePosition;
     return true;
 }
 

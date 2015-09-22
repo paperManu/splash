@@ -28,6 +28,7 @@
 #include "config.h"
 
 #include <atomic>
+#include <condition_variable>
 #include <deque>
 #include <mutex>
 #include <thread>
@@ -80,12 +81,30 @@ class Image_FFmpeg : public Image
         std::atomic_bool _continueRead;
         std::atomic_bool _loopOnVideo {true};
 
+        std::thread _videoDisplayThread;
+        struct TimedFrame
+        {
+            oiio::ImageBuf frame;
+            int64_t timing; // in us
+        };
+        std::deque<TimedFrame> _timedFrames;
+        std::mutex _videoQueueMutex;
+        std::mutex _videoSeekMutex;
+        std::condition_variable _videoQueueCondition;
+
+        int64_t _startTime {0};
         int64_t _elapsedTime {0};
         int64_t _seekFrame {-1};
+
+        AVFormatContext** _avContext {nullptr};
+        double _timeBase {0.033};
+        AVCodecContext* _videoCodecContext {nullptr};
+        int _videoStreamIndex {-1};
 
 #if HAVE_PORTAUDIO
         std::unique_ptr<Speaker> _speaker;
         AVCodecContext* _audioCodecContext {nullptr};
+        int _audioStreamIndex {-1};
 #endif
 
         /**
@@ -97,6 +116,16 @@ class Image_FFmpeg : public Image
          * File read loop
          */
         void readLoop();
+
+        /**
+         * Seek in the video
+         */
+        void seek(int frame);
+
+        /**
+         * Video display loop
+         */
+        void videoDisplayLoop();
 
         /**
          * Register new functors to modify attributes

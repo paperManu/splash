@@ -34,6 +34,8 @@ void Image_FFmpeg::freeFFmpegObjects()
     _continueRead = false;
     if (_readLoopThread.joinable())
         _readLoopThread.join();
+    if (_videoDisplayThread.joinable())
+        _videoDisplayThread.join();
 }
 
 /*************/
@@ -42,26 +44,31 @@ bool Image_FFmpeg::read(const string& filename)
     // First: cleanup
     freeFFmpegObjects();
 
-    AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
+    _avContext = (AVFormatContext**)&_avFormatContext;
 
-    if (avformat_open_input(avContext, filename.c_str(), nullptr, nullptr) != 0)
+    if (avformat_open_input(_avContext, filename.c_str(), nullptr, nullptr) != 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filename << Log::endl;
         return false;
     }
 
-    if (avformat_find_stream_info(*avContext, NULL) < 0)
+    if (avformat_find_stream_info(*_avContext, NULL) < 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filename << Log::endl;
-        avformat_close_input(avContext);
+        avformat_close_input(_avContext);
         return false;
     }
 
     Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
-    av_dump_format(*avContext, 0, filename.c_str(), 0);
+    av_dump_format(*_avContext, 0, filename.c_str(), 0);
     _filepath = filename;
 
+    // Launch the loops
     _continueRead = true;
+    _videoDisplayThread = thread([&]() {
+        videoDisplayLoop();
+    });
+
     _readLoopThread = thread([&]() {
         readLoop();
     });
@@ -72,38 +79,35 @@ bool Image_FFmpeg::read(const string& filename)
 /*************/
 void Image_FFmpeg::readLoop()
 {
-    AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
+    AVFormatContext** _avContext = (AVFormatContext**)&_avFormatContext;
 
     // Find the first video stream
-    auto videoStreamIndex = -1;
-    auto audioStreamIndex = -1;
-    for (int i = 0; i < (*avContext)->nb_streams; ++i)
+    for (int i = 0; i < (*_avContext)->nb_streams; ++i)
     {
-        if ((*avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && videoStreamIndex < 0)
-            videoStreamIndex = i;
-        else if ((*avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && audioStreamIndex < 0)
-            audioStreamIndex = i;
+        if ((*_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
+            _videoStreamIndex = i;
+        else if ((*_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
+            _audioStreamIndex = i;
     }
 
-    if (videoStreamIndex == -1)
+    if (_videoStreamIndex == -1)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - No video stream found in file " << _filepath << Log::endl;
         return;
     }
 
-    if (audioStreamIndex == -1)
+    if (_audioStreamIndex == -1)
     {
         Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - No audio stream found in file " << _filepath << Log::endl;
-        return;
     }
 
     // Find a video decoder
-    auto videoStream = (*avContext)->streams[videoStreamIndex];
-    auto videoCodecContext = (*avContext)->streams[videoStreamIndex]->codec;
-    auto videoCodec = avcodec_find_decoder(videoCodecContext->codec_id);
+    auto videoStream = (*_avContext)->streams[_videoStreamIndex];
+    auto _videoCodecContext = (*_avContext)->streams[_videoStreamIndex]->codec;
+    auto videoCodec = avcodec_find_decoder(_videoCodecContext->codec_id);
     auto isHap = false;
 
-    if (videoCodec == nullptr && string(videoCodecContext->codec_name).find("Hap") != string::npos)
+    if (videoCodec == nullptr && string(_videoCodecContext->codec_name).find("Hap") != string::npos)
     {
         isHap = true;
     }
@@ -116,7 +120,7 @@ void Image_FFmpeg::readLoop()
     if (videoCodec)
     {
         AVDictionary* optionsDict = nullptr;
-        if (avcodec_open2(videoCodecContext, videoCodec, &optionsDict) < 0)
+        if (avcodec_open2(_videoCodecContext, videoCodec, &optionsDict) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open video codec for file " << _filepath << Log::endl;
             return;
@@ -126,9 +130,9 @@ void Image_FFmpeg::readLoop()
 #if HAVE_PORTAUDIO
     // Find an audio decoder
     AVCodec* audioCodec = nullptr;
-    if (audioStreamIndex >= 0)
+    if (_audioStreamIndex >= 0)
     {
-        _audioCodecContext = (*avContext)->streams[audioStreamIndex]->codec;
+        _audioCodecContext = (*_avContext)->streams[_audioStreamIndex]->codec;
         audioCodec = avcodec_find_decoder(_audioCodecContext->codec_id);
 
         if (audioCodec == nullptr)
@@ -202,61 +206,63 @@ void Image_FFmpeg::readLoop()
         return;
     }
 
-    int numBytes = avpicture_get_size(PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height);
+    int numBytes = avpicture_get_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
     vector<unsigned char> buffer(numBytes);
 
     struct SwsContext* swsContext;
     if (!isHap)
     {
-        swsContext = sws_getContext(videoCodecContext->width, videoCodecContext->height, videoCodecContext->pix_fmt, videoCodecContext->width, videoCodecContext->height,
+        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
                                     PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
     
-        avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height);
+        avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
     }
 
     AVPacket packet;
     av_init_packet(&packet);
 
-    double timeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
+    _timeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
 
     // This implements looping
     do
     {
-        auto startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         auto previousTime = 0ull;
-        while (_continueRead && av_read_frame(*avContext, &packet) >= 0)
+        while (_continueRead && av_read_frame(*_avContext, &packet) >= 0)
         {
             // Reading the video
-            if (packet.stream_index == videoStreamIndex)
+            if (packet.stream_index == _videoStreamIndex)
             {
+                oiio::ImageBuf img;
+                uint64_t timing;
+                bool hasFrame = false;
+
                 //
                 // If the codec is handled by FFmpeg
                 if (!isHap)
                 {
                     int frameFinished;
-                    avcodec_decode_video2(videoCodecContext, frame, &frameFinished, &packet);
+                    avcodec_decode_video2(_videoCodecContext, frame, &frameFinished, &packet);
 
                     if (frameFinished)
                     {
-                        sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
+                        sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                        oiio::ImageSpec spec(videoCodecContext->width, videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
-                        oiio::ImageBuf img(spec);
+                        oiio::ImageSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
+                        oiio::ImageBuf tmpImg(spec);
+                        img.swap(tmpImg);
+
                         unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
                         copy(buffer.begin(), buffer.end(), pixels);
 
-                        // We wait until we get the green light for displaying this frame
-                        unsigned long long waitTime = 0;
                         if (packet.pts != AV_NOPTS_VALUE)
-                            waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
-                        this_thread::sleep_for(chrono::microseconds(waitTime));
-                        previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
-                        _elapsedTime = previousTime;
+                            timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
+                        else
+                            timing = 0.0;
+                        // This handles repeated frames
+                        timing += frame->repeat_pict * _timeBase * 0.5;
 
-                        unique_lock<mutex> lock(_writeMutex);
-                        _bufferImage.swap(img);
-                        _imageUpdated = true;
-                        updateTimestamp();
+                        hasFrame = true;
                     }
                 }
                 //
@@ -272,42 +278,46 @@ void Image_FFmpeg::readLoop()
                         // We set the size so as to have just enough place for the given texture format
                         oiio::ImageSpec spec;
                         if (textureFormat == "RGB_DXT1")
-                            spec = oiio::ImageSpec(videoCodecContext->width, (int)(ceil((float)videoCodecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
+                            spec = oiio::ImageSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
                         if (textureFormat == "RGBA_DXT5")
-                            spec = oiio::ImageSpec(videoCodecContext->width, videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
+                            spec = oiio::ImageSpec(_videoCodecContext->width, _videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
                         if (textureFormat == "YCoCg_DXT5")
-                            spec = oiio::ImageSpec(videoCodecContext->width, videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
+                            spec = oiio::ImageSpec(_videoCodecContext->width, _videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
                         else
                             return;
 
                         spec.channelnames = {textureFormat};
-                        oiio::ImageBuf img(spec);
+                        oiio::ImageBuf tmpImg(spec);
+                        img.swap(tmpImg);
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
 
                         if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
                         {
-                            // We wait until we get the green light for displaying this frame
-                            unsigned long long waitTime = 0;
                             if (packet.pts != AV_NOPTS_VALUE)
-                                waitTime = static_cast<unsigned long long>((double)packet.pts * timeBase * 1e6) - previousTime;
-                            this_thread::sleep_for(chrono::microseconds(waitTime));
-                            previousTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - startTime;
-                            _elapsedTime = previousTime;
+                                timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
+                            else
+                                timing = 0.0;
 
-                            unique_lock<mutex> lock(_writeMutex);
-                            _bufferImage.swap(img);
-                            _imageUpdated = true;
-                            updateTimestamp();
+                            hasFrame = true;
                         }
                     }
+                }
+
+                if (hasFrame)
+                {
+                    unique_lock<mutex> lockFrames(_videoQueueMutex);
+                    _timedFrames.emplace_back();
+                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
+                    _timedFrames[_timedFrames.size() - 1].timing = timing;
+                    _videoQueueCondition.notify_one();
                 }
 
                 av_free_packet(&packet);
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
-            else if (packet.stream_index == audioStreamIndex)
+            else if (packet.stream_index == _audioStreamIndex)
             {
                 auto frame = unique_ptr<AVFrame>(new AVFrame());
                 int gotFrame = 0;
@@ -329,23 +339,9 @@ void Image_FFmpeg::readLoop()
             {
                 av_free_packet(&packet);
             }
-
-            if (_seekFrame >= 0)
-            {
-                if (avformat_seek_file(*avContext, videoStreamIndex, 0, _seekFrame, _seekFrame, AVSEEK_FLAG_BACKWARD) < 0)
-                {
-                    Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << _seekFrame << Log::endl;
-                }
-                else
-                {
-                    startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _seekFrame * timeBase * 1e6;
-                    previousTime = _seekFrame * timeBase * 1e6;
-                }
-                _seekFrame = -1;
-            }
         }
 
-        if (av_seek_frame(*avContext, videoStreamIndex, 0, 0) < 0)
+        if (av_seek_frame(*_avContext, _videoStreamIndex, 0, 0) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
             break;
@@ -355,11 +351,61 @@ void Image_FFmpeg::readLoop()
     av_free(rgbFrame);
     av_free(frame);
     if (!isHap)
-        avcodec_close(videoCodecContext);
+        avcodec_close(_videoCodecContext);
 #if HAVE_PORTAUDIO
     if (_audioCodecContext)
         avcodec_close(_audioCodecContext);
 #endif
+}
+
+/*************/
+void Image_FFmpeg::seek(int frame)
+{
+    unique_lock<mutex> lock(_videoQueueMutex);
+    if (avformat_seek_file(*_avContext, _videoStreamIndex, 0, frame, frame, AVSEEK_FLAG_BACKWARD) < 0)
+    {
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << _seekFrame << Log::endl;
+    }
+    else
+    {
+        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - frame * _timeBase * 1e6;
+        _timedFrames.clear();
+#if HAVE_PORTAUDIO
+        _speaker->clearQueue();
+#endif
+    }
+}
+
+/*************/
+void Image_FFmpeg::videoDisplayLoop()
+{
+    auto previousTime = 0;
+
+    while(_continueRead)
+    {
+        unique_lock<mutex> lockFrames(_videoQueueMutex);
+        _videoQueueCondition.wait(lockFrames);
+
+        while (_timedFrames.size() > 0)
+        {
+            TimedFrame& timedFrame = _timedFrames[0];
+            if (timedFrame.timing != 0ull)
+            {
+                int64_t currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                int64_t waitTime = timedFrame.timing - currentTime;
+                if (waitTime > 0)
+                {
+                    this_thread::sleep_for(chrono::microseconds(waitTime));
+
+                    unique_lock<mutex> lock(_writeMutex);
+                    _bufferImage.swap(timedFrame.frame);
+                    _imageUpdated = true;
+                    updateTimestamp();
+                }
+            }
+            _timedFrames.pop_front();
+        }
+    }
 }
 
 /*************/
@@ -401,8 +447,12 @@ void Image_FFmpeg::registerAttributes()
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
-        if (args[0].asInt() >= 0)
-            _seekFrame = args[0].asInt();
+
+        int frame = args[0].asInt();
+        SThread::pool.enqueueWithoutId([=]() {
+            seek(frame);
+        });
+
         return true;
     }, [&]() -> Values {
         return {(int)_seekFrame};

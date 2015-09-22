@@ -778,8 +778,12 @@ void Gui::initImWidgets()
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
+
         // Create the text message
         ostringstream stream;
+        Values clock;
+        if (Timer::get().getMasterClock(clock))
+            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":" << clock[5].asInt() << ":" << clock[6].asInt() << "\n";
         stream << "Framerate: " << setprecision(4) << fps << " fps\n";
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
