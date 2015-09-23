@@ -1,6 +1,7 @@
 #include "object.h"
 
 #include "image.h"
+#include "filter.h"
 #include "geometry.h"
 #include "log.h"
 #include "mesh.h"
@@ -102,6 +103,10 @@ void Object::activate()
             else
                 _shader->setAttribute("fill", {"texture"});
         }
+    }
+    else if (_fill == "filter")
+    {
+        _shader->setAttribute("fill", {"filter"});
     }
     else if (_fill == "window")
     {

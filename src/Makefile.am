@@ -43,6 +43,7 @@ lib_LTLIBRARIES = \
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
 	cgUtils.cpp \
+	filter.cpp \
 	geometry.cpp \
 	gpuBuffer.cpp \
 	gui.cpp \
@@ -268,6 +269,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/cgUtils.h \
 	$(top_srcdir)/include/colorcalibrator.h \
 	$(top_srcdir)/include/coretypes.h \
+	$(top_srcdir)/include/filter.h \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gpuBuffer.h \
 	$(top_srcdir)/include/gui.h \

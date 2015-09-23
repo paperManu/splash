@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "camera.h"
+#include "filter.h"
 #include "geometry.h"
 #include "gui.h"
 #include "image.h"
@@ -94,6 +95,8 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("camera"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
+    else if (type == string("filter"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
     else if (type == string("geometry"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
     else if (type.find("image") == 0)
@@ -417,6 +420,12 @@ void Scene::render()
     Timer::get() << "blending";
     renderBlending();
     Timer::get() >> "blending";
+
+    Timer::get() << "filters";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "filter")
+            dynamic_pointer_cast<Filter>(obj.second)->update();
+    Timer::get() >> "filters";
     
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering

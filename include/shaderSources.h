@@ -640,6 +640,37 @@ struct ShaderSources
     )"};
 
     /**
+     * Filter vertex shader
+     */
+    const std::string VERTEX_SHADER_FILTER {R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        out vec2 texCoord;
+
+        void main(void)
+        {
+            gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
+            texCoord = _texcoord;
+        }
+    )"};
+
+    /**
+     * Fragment shader for filters
+     */
+    const std::string FRAGMENT_SHADER_FILTER {R"(
+        #define PI 3.14159265359
+
+        uniform sampler2D _tex0;
+        in vec2 texCoord;
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            fragColor = texture(_tex0, texCoord);
+        }
+    )"};
+
+    /**
      * Vertex shader for textured rendering
      */
     const std::string VERTEX_SHADER_TEXTURE {R"(
