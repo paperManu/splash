@@ -32,6 +32,7 @@ Image_FFmpeg::~Image_FFmpeg()
 void Image_FFmpeg::freeFFmpegObjects()
 {
     _continueRead = false;
+    _videoQueueCondition.notify_one();
     if (_readLoopThread.joinable())
         _readLoopThread.join();
     if (_videoDisplayThread.joinable())
@@ -346,7 +347,14 @@ void Image_FFmpeg::readLoop()
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
             break;
         }
-    } while (_loopOnVideo);
+        else
+        {
+            unique_lock<mutex> lock(_videoQueueMutex);
+            _timedFrames.clear();
+            if (_speaker)
+                _speaker->clearQueue();
+        }
+    } while (_loopOnVideo && _continueRead);
 
     av_free(rgbFrame);
     av_free(frame);
@@ -371,7 +379,8 @@ void Image_FFmpeg::seek(int frame)
         _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - frame * _timeBase * 1e6;
         _timedFrames.clear();
 #if HAVE_PORTAUDIO
-        _speaker->clearQueue();
+        if (_speaker)
+            _speaker->clearQueue();
 #endif
     }
 }
@@ -396,6 +405,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 if (waitTime > 0)
                 {
                     this_thread::sleep_for(chrono::microseconds(waitTime));
+                    _elapsedTime = timedFrame.timing;
 
                     unique_lock<mutex> lock(_writeMutex);
                     _bufferImage.swap(timedFrame.frame);

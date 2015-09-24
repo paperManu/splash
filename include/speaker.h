@@ -107,7 +107,7 @@ class Speaker : public BaseObject
         size_t _sampleSize {2};
 
         PaStream* _portAudioStream {nullptr};
-        bool _abordCallback {false};
+        bool _abortCallback {false};
 
         std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
         std::atomic_int _ringWritePosition {0};
