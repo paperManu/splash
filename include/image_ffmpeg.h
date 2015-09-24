@@ -76,7 +76,6 @@ class Image_FFmpeg : public Image
         bool read(const std::string& filename);
 
     private:
-        void* _avFormatContext {nullptr};
         std::thread _readLoopThread;
         std::atomic_bool _continueRead;
         std::atomic_bool _loopOnVideo {true};
@@ -96,7 +95,7 @@ class Image_FFmpeg : public Image
         int64_t _elapsedTime {0};
         int64_t _seekFrame {-1};
 
-        AVFormatContext** _avContext {nullptr};
+        AVFormatContext* _avContext {nullptr};
         double _timeBase {0.033};
         AVCodecContext* _videoCodecContext {nullptr};
         int _videoStreamIndex {-1};

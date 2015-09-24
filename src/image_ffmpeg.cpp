@@ -33,10 +33,17 @@ void Image_FFmpeg::freeFFmpegObjects()
 {
     _continueRead = false;
     _videoQueueCondition.notify_one();
+
     if (_readLoopThread.joinable())
         _readLoopThread.join();
     if (_videoDisplayThread.joinable())
         _videoDisplayThread.join();
+
+    if (_avContext)
+    {
+        avformat_close_input(&_avContext);
+        _avContext = nullptr;
+    }
 }
 
 /*************/
@@ -45,23 +52,21 @@ bool Image_FFmpeg::read(const string& filename)
     // First: cleanup
     freeFFmpegObjects();
 
-    _avContext = (AVFormatContext**)&_avFormatContext;
-
-    if (avformat_open_input(_avContext, filename.c_str(), nullptr, nullptr) != 0)
+    if (avformat_open_input(&_avContext, filename.c_str(), nullptr, nullptr) != 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't read file " << filename << Log::endl;
         return false;
     }
 
-    if (avformat_find_stream_info(*_avContext, NULL) < 0)
+    if (avformat_find_stream_info(_avContext, NULL) < 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Couldn't retrieve information for file " << filename << Log::endl;
-        avformat_close_input(_avContext);
+        avformat_close_input(&_avContext);
         return false;
     }
 
     Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
-    av_dump_format(*_avContext, 0, filename.c_str(), 0);
+    av_dump_format(_avContext, 0, filename.c_str(), 0);
     _filepath = filename;
 
     // Launch the loops
@@ -80,15 +85,13 @@ bool Image_FFmpeg::read(const string& filename)
 /*************/
 void Image_FFmpeg::readLoop()
 {
-    AVFormatContext** _avContext = (AVFormatContext**)&_avFormatContext;
-
     // Find the first video stream
-    for (int i = 0; i < (*_avContext)->nb_streams; ++i)
+    for (int i = 0; i < (_avContext)->nb_streams; ++i)
     {
-        if ((*_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
+        if ((_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
             _videoStreamIndex = i;
 #if HAVE_PORTAUDIO
-        else if ((*_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
+        else if ((_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
             _audioStreamIndex = i;
 #endif
     }
@@ -107,8 +110,8 @@ void Image_FFmpeg::readLoop()
 #endif
 
     // Find a video decoder
-    auto videoStream = (*_avContext)->streams[_videoStreamIndex];
-    auto _videoCodecContext = (*_avContext)->streams[_videoStreamIndex]->codec;
+    auto videoStream = (_avContext)->streams[_videoStreamIndex];
+    auto _videoCodecContext = (_avContext)->streams[_videoStreamIndex]->codec;
     auto videoCodec = avcodec_find_decoder(_videoCodecContext->codec_id);
     auto isHap = false;
 
@@ -137,7 +140,7 @@ void Image_FFmpeg::readLoop()
     AVCodec* audioCodec = nullptr;
     if (_audioStreamIndex >= 0)
     {
-        _audioCodecContext = (*_avContext)->streams[_audioStreamIndex]->codec;
+        _audioCodecContext = (_avContext)->streams[_audioStreamIndex]->codec;
         audioCodec = avcodec_find_decoder(_audioCodecContext->codec_id);
 
         if (audioCodec == nullptr)
@@ -233,7 +236,7 @@ void Image_FFmpeg::readLoop()
     {
         _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         auto previousTime = 0ull;
-        while (_continueRead && av_read_frame(*_avContext, &packet) >= 0)
+        while (_continueRead && av_read_frame(_avContext, &packet) >= 0)
         {
             // Reading the video
             if (packet.stream_index == _videoStreamIndex)
@@ -322,7 +325,7 @@ void Image_FFmpeg::readLoop()
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
-            else if (packet.stream_index == _audioStreamIndex)
+            else if (packet.stream_index == _audioStreamIndex && _audioCodecContext)
             {
                 auto frame = unique_ptr<AVFrame>(new AVFrame());
                 int gotFrame = 0;
@@ -346,7 +349,7 @@ void Image_FFmpeg::readLoop()
             }
         }
 
-        if (av_seek_frame(*_avContext, _videoStreamIndex, 0, 0) < 0)
+        if (av_seek_frame(_avContext, _videoStreamIndex, 0, 0) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
             break;
@@ -366,9 +369,15 @@ void Image_FFmpeg::readLoop()
     av_free(frame);
     if (!isHap)
         avcodec_close(_videoCodecContext);
+    _videoStreamIndex = -1;
+
 #if HAVE_PORTAUDIO
     if (_audioCodecContext)
+    {
         avcodec_close(_audioCodecContext);
+        _speaker.reset();
+    }
+    _audioStreamIndex = -1;
 #endif
 }
 
@@ -376,7 +385,7 @@ void Image_FFmpeg::readLoop()
 void Image_FFmpeg::seek(int frame)
 {
     unique_lock<mutex> lock(_videoQueueMutex);
-    if (avformat_seek_file(*_avContext, _videoStreamIndex, 0, frame, frame, AVSEEK_FLAG_BACKWARD) < 0)
+    if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, AVSEEK_FLAG_BACKWARD) < 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << _seekFrame << Log::endl;
     }
@@ -430,11 +439,10 @@ void Image_FFmpeg::registerAttributes()
     _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
         return false;
     }, [&]() -> Values {
-        if (_avFormatContext == nullptr)
+        if (_avContext == nullptr)
             return {0.f};
 
-        AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
-        float duration = (*avContext)->duration / AV_TIME_BASE;
+        float duration = _avContext->duration / AV_TIME_BASE;
         return {duration};
     });
 
@@ -452,11 +460,10 @@ void Image_FFmpeg::registerAttributes()
     _attribFunctions["remaining"] = AttributeFunctor([&](const Values& args) {
         return false;
     }, [&]() -> Values {
-        if (_avFormatContext == nullptr)
+        if (_avContext == nullptr)
             return {0.f};
 
-        AVFormatContext** avContext = (AVFormatContext**)&_avFormatContext;
-        float duration = (double)(*avContext)->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6;
+        float duration = (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6;
         return {duration};
     });
 

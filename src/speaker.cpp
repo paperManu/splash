@@ -48,11 +48,11 @@ void Speaker::freeResources()
 
     _abortCallback = true;
 
-    //if (_portAudioStream)
-    //{
-    //    Pa_AbortStream(_portAudioStream);
-    //    Pa_CloseStream(_portAudioStream);
-    //}
+    if (_portAudioStream)
+    {
+        Pa_AbortStream(_portAudioStream);
+        Pa_CloseStream(_portAudioStream);
+    }
 
     Pa_Terminate();
     _portAudioStream = nullptr;
