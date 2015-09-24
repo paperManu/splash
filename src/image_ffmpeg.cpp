@@ -405,6 +405,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 if (waitTime > 0)
                 {
                     this_thread::sleep_for(chrono::microseconds(waitTime));
+                    _elapsedTime = timedFrame.timing;
 
                     unique_lock<mutex> lock(_writeMutex);
                     _bufferImage.swap(timedFrame.frame);
