@@ -872,6 +872,8 @@ void HttpServer::run()
                             sendValues.push_back(v);
                         scene->sendMessageToWorld("sendAll", sendValues);
                     }
+
+                    returnFunc("");
                 }
                 else if (command == Http::RequestHandler::CommandId::get)
                 {
