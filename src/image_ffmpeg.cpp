@@ -87,8 +87,10 @@ void Image_FFmpeg::readLoop()
     {
         if ((*_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
             _videoStreamIndex = i;
+#if HAVE_PORTAUDIO
         else if ((*_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
             _audioStreamIndex = i;
+#endif
     }
 
     if (_videoStreamIndex == -1)
@@ -97,10 +99,12 @@ void Image_FFmpeg::readLoop()
         return;
     }
 
+#if HAVE_PORTAUDIO
     if (_audioStreamIndex == -1)
     {
         Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - No audio stream found in file " << _filepath << Log::endl;
     }
+#endif
 
     // Find a video decoder
     auto videoStream = (*_avContext)->streams[_videoStreamIndex];
@@ -351,8 +355,10 @@ void Image_FFmpeg::readLoop()
         {
             unique_lock<mutex> lock(_videoQueueMutex);
             _timedFrames.clear();
+#if HAVE_PORTAUDIO
             if (_speaker)
                 _speaker->clearQueue();
+#endif
         }
     } while (_loopOnVideo && _continueRead);
 

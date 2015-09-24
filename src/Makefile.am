@@ -138,9 +138,11 @@ endif
 
 ## LTC related
 if HAVE_LTC
+if HAVE_PORTAUDIO
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += ltcclock.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(LTC_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(LTC_LIBS)
+endif
 endif
 
 # OSX
