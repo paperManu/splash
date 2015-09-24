@@ -46,15 +46,16 @@ void Speaker::freeResources()
     if (!_ready)
         return;
 
-    _abordCallback = true;
-    if (_portAudioStream)
-    {
-        Pa_AbortStream(_portAudioStream);
-        Pa_CloseStream(_portAudioStream);
-        _portAudioStream = nullptr;
-    }
+    _abortCallback = true;
+
+    //if (_portAudioStream)
+    //{
+    //    Pa_AbortStream(_portAudioStream);
+    //    Pa_CloseStream(_portAudioStream);
+    //}
 
     Pa_Terminate();
+    _portAudioStream = nullptr;
 }
 
 /*************/
@@ -196,7 +197,7 @@ int Speaker::portAudioCallback(const void* in, void* out, unsigned long framesPe
         that->_ringReadPosition = readPosition;
     }
 
-    if (that->_abordCallback)
+    if (that->_abortCallback)
         return paComplete;
     else
         return paContinue;
