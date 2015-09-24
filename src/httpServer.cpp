@@ -882,22 +882,7 @@ void HttpServer::run()
                     auto objectName = args[1].asString();
                     auto attrName = args[2].asString();
 
-                    auto objectIt = scene->_objects.find(objectName);
-
-                    Values values;
-                    if (objectIt != scene->_objects.end())
-                    {
-                        auto& object = objectIt->second;
-                        object->getAttribute(attrName, values);
-                    }
-
-                    // Ask the World if it knows more about this object
-                    if (values.size() == 0)
-                    {
-                        auto answer = scene->sendMessageToWorldWithAnswer("getAttribute", {objectName, attrName});
-                        for (unsigned int i = 1; i < answer.size(); ++i)
-                            values.push_back(answer[i]);
-                    }
+                    auto values = scene->getAttributeFromObject(objectName, attrName);
 
                     Json::Value jsValue;
                     jsValue[attrName] = getValuesAsJson(values);

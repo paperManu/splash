@@ -164,6 +164,29 @@ void Scene::addGhost(string type, string name)
 }
 
 /*************/
+Values Scene::getAttributeFromObject(string name, string attribute)
+{
+    auto objectIt = _objects.find(name);
+    
+    Values values;
+    if (objectIt != _objects.end())
+    {
+        auto& object = objectIt->second;
+        object->getAttribute(attribute, values);
+    }
+    
+    // Ask the World if it knows more about this object
+    if (values.size() == 0)
+    {
+        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute});
+        for (unsigned int i = 1; i < answer.size(); ++i)
+            values.push_back(answer[i]);
+    }
+
+    return values;
+}
+
+/*************/
 Json::Value Scene::getConfigurationAsJson()
 {
     lock_guard<recursive_mutex> lock(_configureMutex);

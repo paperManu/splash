@@ -193,6 +193,12 @@ class Scene : public RootObject
          */
         void computeBlendingMap(bool once = true);
 
+        /**
+         * Get an attribute for the given object
+         * Trie locally and to the World
+         */
+        Values getAttributeFromObject(std::string name, std::string attribute);
+
     private:
         ScenePtr _self;
         bool _started {false};
