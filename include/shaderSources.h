@@ -788,11 +788,6 @@ struct ShaderSources
         } vertexIn;
 
         out vec4 fragColor;
-        // Texture transformation
-        uniform int _tex0_flip = 0;
-        uniform int _tex0_flop = 0;
-        // HapQ specific parameters
-        uniform int _tex0_YCoCg = 0;
 
         void main(void)
         {
@@ -806,29 +801,7 @@ struct ShaderSources
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
-            // Compute the real texture coordinates, according to flip / flop
-            vec2 realCoords;
-            if (_tex0_flip == 1 && _tex0_flop == 0)
-                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
-            else if (_tex0_flip == 0 && _tex0_flop == 1)
-                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
-            else if (_tex0_flip == 1 && _tex0_flop == 1)
-                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
-            else
-                realCoords = texCoord;
-
-            vec4 color = texture(_tex0, realCoords * _tex0_size);
-
-            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
-            if (_tex0_YCoCg == 1)
-            {
-                float scale = (color.z * (255.0 / 8.0)) + 1.0;
-                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
-                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
-                float Y = color.w;
-                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
-                color.rgb = pow(color.rgb, vec3(2.2));
-            }
+            vec4 color = texture(_tex0, texCoord);
 
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
