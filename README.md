@@ -145,7 +145,7 @@ Grab and install OpenImageIO, the only library needed by Splash which is not pac
     make && sudo make install
     cd ..
 
-We then install Shmdata, which depends on GStreamer:
+We then install Shmdata, which depends on GStreamer. Note that Shmdata is only needed if you want Splash to communicate with other Shmdata-compatible softwares. If you want to read video files or feed Splash through Syphon, you can skip this step.
 
     sudo port install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev python3-dev
     git clone https://github.com/nicobou/shmdata
