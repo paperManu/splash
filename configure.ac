@@ -31,10 +31,13 @@ case "$host" in *-darwin* | *-macos10*)
   LIBTOOL="glibtool"
   CXXFLAGS+=" -D__Darwin"
   LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
+  CPPFLAGS+=" -I/usr/local/include -I/usr/local/include/jsoncpp"
+  CXXFLAGS+=" -I/usr/local/include -I/usr/local/include/jsoncpp"
+  LDFLAGS+=" -L/usr/local/lib"
   if test -d /opt/local ; then
-	CPPFLAGS+=" -I/usr/local/include -I/opt/local/include"
-	CXXFLAGS+=" -I/usr/local/include -I/opt/local/include"
-	LDFLAGS+=" -L/usr/local/lib -L/opt/local/lib"
+	CPPFLAGS+=" -I/opt/local/include"
+	CXXFLAGS+=" -I/opt/local/include"
+	LDFLAGS+=" -L/opt/local/lib"
   elif test -d /sw ; then
 	CPPFLAGS+=" -I/sw/include"
 	CXXFLAGS+=" -I/sw/include"
