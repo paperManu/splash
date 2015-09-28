@@ -761,6 +761,7 @@ void Gui::initImWidgets()
         static float upl {0.f};
         static float tex {0.f};
         static float ble {0.f};
+        static float flt {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
@@ -772,6 +773,7 @@ void Gui::initImWidgets()
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
+        flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
         cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
         win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
@@ -789,6 +791,7 @@ void Gui::initImWidgets()
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
         stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
         stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
+        stream << "Filters: " << setprecision(4) << flt << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
