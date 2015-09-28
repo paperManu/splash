@@ -676,6 +676,10 @@ struct ShaderSources
         // HapQ specific parameters
         uniform int _tex0_YCoCg = 0;
 
+        // Film uniforms
+        uniform float _filmDuration = 0.f;
+        uniform float _filmRemaining = 0.f;
+
         void main(void)
         {
             // Compute the real texture coordinates, according to flip / flop

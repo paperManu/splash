@@ -243,12 +243,12 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (obj->getType().find("image") != string::npos)
     {
-        auto tex = make_shared<Texture_Image>(_root);
-        tex->setName(getName() + "_" + obj->getName() + "_tex");
-        if (tex->linkTo(obj))
+        auto filter = make_shared<Filter>(_root);
+        filter->setName(getName() + "_" + obj->getName() + "_filter");
+        if (filter->linkTo(obj))
         {
-            _root.lock()->registerObject(tex);
-            return linkTo(tex);
+            _root.lock()->registerObject(filter);
+            return linkTo(filter);
         }
         else
         {

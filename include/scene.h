@@ -83,6 +83,12 @@ class Scene : public RootObject
         void addGhost(std::string type, std::string name = std::string());
 
         /**
+         * Get an attribute for the given object
+         * Trie locally and to the World
+         */
+        Values getAttributeFromObject(std::string name, std::string attribute);
+
+        /**
          * Get the current configuration of the scene as a json object
          */
         Json::Value getConfigurationAsJson();
@@ -192,12 +198,6 @@ class Scene : public RootObject
          * Creates the blending map from the current calibration of the cameras
          */
         void computeBlendingMap(bool once = true);
-
-        /**
-         * Get an attribute for the given object
-         * Trie locally and to the World
-         */
-        Values getAttributeFromObject(std::string name, std::string attribute);
 
     private:
         ScenePtr _self;

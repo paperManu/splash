@@ -100,8 +100,6 @@ class Filter : public Texture
         std::shared_ptr<Object> _screen;
         oiio::ImageSpec _outTextureSpec;
 
-        GLint _activeTexture; // Texture unit to which the texture is bound
-
         /**
          * Init function called in constructors
          */
@@ -111,6 +109,12 @@ class Filter : public Texture
          * Setup the output texture
          */
         void setOutput();
+
+        /**
+         * Updates the shader uniforms according to the textures and images
+         * the filter is connected to.
+         */
+        void updateUniforms();
 
         /**
          * Register new functors to modify attributes

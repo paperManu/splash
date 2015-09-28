@@ -1,6 +1,7 @@
 #include "filter.h"
 
 #include "log.h"
+#include "scene.h"
 #include "timer.h"
 #include "texture_image.h"
 
@@ -165,6 +166,7 @@ void Filter::update()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _screen->activate();
+    updateUniforms();
     _screen->draw();
     _screen->deactivate();
 
@@ -172,6 +174,28 @@ void Filter::update()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     _outTexture->generateMipmap();
+}
+
+/*************/
+void Filter::updateUniforms()
+{
+    for (auto& weakObject : _linkedObjects)
+    {
+        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+        auto shader = _screen->getShader();
+
+        auto obj = weakObject.lock();
+        if (obj->getType() == "image")
+        {
+            auto duration = scene->getAttributeFromObject(obj->getName(), "duration");
+            auto remainingTime = scene->getAttributeFromObject(obj->getName(), "remaining");
+
+            if (duration.size() == 1)
+                shader->setAttribute("uniform", {"_filmDuration", duration[0].asFloat()});
+            if (remainingTime.size() == 1)
+                shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
+        }
+    }
 }
 
 /*************/
