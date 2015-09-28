@@ -187,11 +187,8 @@ void Filter::updateUniforms()
         auto obj = weakObject.lock();
         if (obj->getType() == "image")
         {
-            auto duration = scene->getAttributeFromObject(obj->getName(), "duration");
-            auto remainingTime = scene->getAttributeFromObject(obj->getName(), "remaining");
-
-            if (duration.size() == 1)
-                shader->setAttribute("uniform", {"_filmDuration", duration[0].asFloat()});
+            Values remainingTime;
+            obj->getAttribute("remaining", remainingTime);
             if (remainingTime.size() == 1)
                 shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
         }
