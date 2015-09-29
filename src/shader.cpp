@@ -732,6 +732,15 @@ void Shader::registerGraphicAttributes()
             setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
             compileProgram();
         }
+        else if (args[0].asString() == "filter" && (_fill != filter || _shaderOptions != options))
+        {
+            _fill = filter;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+            resetShader(geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
+            compileProgram();
+        }
         else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
         {
             _fill = color;

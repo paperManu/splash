@@ -1,6 +1,7 @@
 #include "object.h"
 
 #include "image.h"
+#include "filter.h"
 #include "geometry.h"
 #include "log.h"
 #include "mesh.h"
@@ -102,6 +103,10 @@ void Object::activate()
             else
                 _shader->setAttribute("fill", {"texture"});
         }
+    }
+    else if (_fill == "filter")
+    {
+        _shader->setAttribute("fill", {"filter"});
     }
     else if (_fill == "window")
     {
@@ -216,27 +221,41 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
     if (!BaseObject::linkTo(obj))
         return false;
 
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (obj->getType().find("texture") != string::npos)
     {
-        auto tex = dynamic_pointer_cast<Texture>(obj);
-        addTexture(tex);
-        return true;
-    }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
-    {
-        auto tex = make_shared<Texture_Image>(_root);
-        tex->setName(getName() + "_" + obj->getName() + "_tex");
-        if (tex->linkTo(obj))
+        auto filter = make_shared<Filter>(_root);
+        filter->setName(getName() + "_" + obj->getName() + "_tex");
+        if (filter->linkTo(obj))
         {
-            _root.lock()->registerObject(tex);
-            return linkTo(tex);
+            _root.lock()->registerObject(filter);
+            return linkTo(filter);
         }
         else
         {
             return false;
         }
     }
-    else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
+    else if (obj->getType().find("filter") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        addTexture(tex);
+        return true;
+    }
+    else if (obj->getType().find("image") != string::npos)
+    {
+        auto filter = make_shared<Filter>(_root);
+        filter->setName(getName() + "_" + obj->getName() + "_filter");
+        if (filter->linkTo(obj))
+        {
+            _root.lock()->registerObject(filter);
+            return linkTo(filter);
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if (obj->getType().find("mesh") != string::npos)
     {
         auto geom = make_shared<Geometry>(_root);
         geom->setName(getName() + "_" + obj->getName() + "_geom");
@@ -250,7 +269,7 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
             return false;
         }
     }
-    else if (dynamic_pointer_cast<Geometry>(obj).get() != nullptr)
+    else if (obj->getType().find("geometry") != string::npos)
     {
         auto geom = dynamic_pointer_cast<Geometry>(obj);
         addGeometry(geom);

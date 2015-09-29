@@ -466,6 +466,7 @@ void Image_FFmpeg::registerAttributes()
         float duration = (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6;
         return {duration};
     });
+    _attribFunctions["remaining"].doUpdateDistant(true);
 
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)

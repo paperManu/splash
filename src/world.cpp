@@ -101,6 +101,16 @@ void World::run()
             Timer::get() >> "upload";
         }
 
+        // Update the distant attributes
+        for (auto& o : _objects)
+        {
+            auto attribs = o.second->getDistantAttributes();
+            for (auto& attrib : attribs)
+            {
+                sendMessage(o.second->getName(), attrib.first, attrib.second);
+            }
+        }
+
         // If swap synchronization test is enabled
         if (_swapSynchronizationTesting)
         {
