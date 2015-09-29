@@ -672,45 +672,55 @@ namespace Http {
         if (!urlDecode(req.uri, requestPath, requestArgs))
             return;
     
-        if (requestPath.find("/set") == 0)
-            _commandQueue.push_back({CommandId::set, requestArgs});
-        else if (requestPath.find("/get") == 0)
-            _commandQueue.push_back({CommandId::get, requestArgs});
-        else
-        {
-            Log::get() << Log::WARNING << "RequestHandler::" << __FUNCTION__ << " - No command associated to URI " << req.uri << Log::endl;
-            rep = Reply::stockReply(Reply::bad_request);
-            return;
-        }
-
-        condition_variable cv;
         atomic_bool replyState {false};
-        atomic_bool waiting {true};
         string replyString {""};
 
-        auto replyFunc = [&](string answer) -> void {
-            if (!waiting)
-                return;
+        for (auto& cmdArgs : requestArgs)
+        {
+            auto args = cmdArgs.asValues();
+            if (args.size() == 0)
+                continue;
 
-            replyState = true;
-            replyString = answer;
-            cv.notify_all();
-        };
+            if (args[0].asString() == "/set")
+                _commandQueue.push_back({CommandId::set, args});
+            else if (args[0].asString() == "/get")
+                _commandQueue.push_back({CommandId::get, args});
+            else
+            {
+                Log::get() << Log::WARNING << "RequestHandler::" << __FUNCTION__ << " - No command associated to string " << args[0].asString() << Log::endl;
+                rep = Reply::stockReply(Reply::bad_request);
+                continue;
+            }
 
-        _commandReturnFuncQueue.push_back(replyFunc);
-        cv.wait_for(lock, chrono::milliseconds(2000));
-        waiting = false;
+            condition_variable cv;
+            atomic_bool waiting {true};
+
+            auto replyFunc = [&](string answer) -> void {
+                if (!waiting)
+                    return;
+
+                replyState = true;
+                replyString = answer;
+                cv.notify_all();
+            };
+
+            _commandReturnFuncQueue.push_back(replyFunc);
+            cv.wait_for(lock, chrono::milliseconds(2000));
+            waiting = false;
+        }
     
         if (replyState)
         {
             rep = Reply::stockReply(Reply::ok);
             rep.status = Reply::ok;
             rep.content = replyString.c_str();
-            rep.headers.resize(2);
+            rep.headers.resize(3);
             rep.headers[0].name = "Content-Length";
             rep.headers[0].value = std::to_string(replyString.size());
             rep.headers[1].name = "Content-Type";
             rep.headers[1].value = "text";
+            rep.headers[2].name = "Access-Control-Allow-Origin";
+            rep.headers[2].value = "*";
         }
         else
         {
@@ -773,13 +783,22 @@ namespace Http {
         }
     
         // Get the command arguments
+        // Different commands are separated by '&'
         std::string nextArg;
+        auto currentCommandArgs = Values();
         for (std::size_t i = 0; i < out.size(); ++i)
         {
-            if (out[i] == '&' || out[i] == '=' || out[i] == '!' || out[i] == '?')
+            if (out[i] == '&')
+            {
+                currentCommandArgs.push_back(nextArg);
+                nextArg = "/";
+                args.push_back(currentCommandArgs);
+                currentCommandArgs = Values();
+            }
+            else if (out[i] == '=' || out[i] == '!' || out[i] == '?')
             {
                 if (nextArg != "")
-                    args.push_back(nextArg);
+                    currentCommandArgs.push_back(nextArg);
     
                 nextArg.clear();
     
@@ -791,7 +810,10 @@ namespace Http {
             }
     
             if (i == out.size() - 1 && nextArg != "")
-                args.push_back(nextArg);
+            {
+                currentCommandArgs.push_back(nextArg);
+                args.push_back(currentCommandArgs);
+            }
         }
         
         return true;
