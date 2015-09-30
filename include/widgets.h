@@ -116,6 +116,7 @@ class GuiGlobalView : public GuiWidget
         void switchHideOtherCameras();
         void nextCamera();
         void showAllCalibrationPoints();
+        void showAllCamerasCalibrationPoints();
 };
 
 /*************/

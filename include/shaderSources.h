@@ -640,6 +640,77 @@ struct ShaderSources
     )"};
 
     /**
+     * Filter vertex shader
+     */
+    const std::string VERTEX_SHADER_FILTER {R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        out vec2 texCoord;
+
+        void main(void)
+        {
+            gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
+            texCoord = _texcoord;
+        }
+    )"};
+
+    /**
+     * Fragment shader for filters
+     */
+    const std::string FRAGMENT_SHADER_FILTER {R"(
+        #define PI 3.14159265359
+
+    #ifdef TEXTURE_RECT
+        uniform sampler2DRect _tex0;
+    #else
+        uniform sampler2D _tex0;
+    #endif
+
+        in vec2 texCoord;
+        out vec4 fragColor;
+
+        uniform vec2 _tex0_size = vec2(1.0);
+        // Texture transformation
+        uniform int _tex0_flip = 0;
+        uniform int _tex0_flop = 0;
+        // HapQ specific parameters
+        uniform int _tex0_YCoCg = 0;
+
+        // Film uniforms
+        uniform float _filmDuration = 0.f;
+        uniform float _filmRemaining = 0.f;
+
+        void main(void)
+        {
+            // Compute the real texture coordinates, according to flip / flop
+            vec2 realCoords;
+            if (_tex0_flip == 1 && _tex0_flop == 0)
+                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
+            else if (_tex0_flip == 0 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
+            else if (_tex0_flip == 1 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
+            else
+                realCoords = texCoord;
+
+            vec4 color = texture(_tex0, realCoords * _tex0_size);
+
+            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
+            if (_tex0_YCoCg == 1)
+            {
+                float scale = (color.z * (255.0 / 8.0)) + 1.0;
+                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
+                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
+                float Y = color.w;
+                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
+                color.rgb = pow(color.rgb, vec3(2.2));
+            }
+
+            fragColor = color;
+        }
+    )"};
+
+    /**
      * Vertex shader for textured rendering
      */
     const std::string VERTEX_SHADER_TEXTURE {R"(
@@ -721,11 +792,6 @@ struct ShaderSources
         } vertexIn;
 
         out vec4 fragColor;
-        // Texture transformation
-        uniform int _tex0_flip = 0;
-        uniform int _tex0_flop = 0;
-        // HapQ specific parameters
-        uniform int _tex0_YCoCg = 0;
 
         void main(void)
         {
@@ -739,29 +805,7 @@ struct ShaderSources
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
-            // Compute the real texture coordinates, according to flip / flop
-            vec2 realCoords;
-            if (_tex0_flip == 1 && _tex0_flop == 0)
-                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
-            else if (_tex0_flip == 0 && _tex0_flop == 1)
-                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
-            else if (_tex0_flip == 1 && _tex0_flop == 1)
-                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
-            else
-                realCoords = texCoord;
-
-            vec4 color = texture(_tex0, realCoords * _tex0_size);
-
-            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
-            if (_tex0_YCoCg == 1)
-            {
-                float scale = (color.z * (255.0 / 8.0)) + 1.0;
-                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
-                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
-                float Y = color.w;
-                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
-                color.rgb = pow(color.rgb, vec3(2.2));
-            }
+            vec4 color = texture(_tex0, texCoord);
 
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
@@ -1020,7 +1064,7 @@ struct ShaderSources
         //layout(location = 2) in vec3 _normal;
         //uniform mat4 _modelViewProjectionMatrix;
         //uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        smooth out vec2 texCoord;
+        out vec2 texCoord;
 
         void main(void)
         {

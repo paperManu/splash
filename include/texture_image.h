@@ -153,7 +153,7 @@ class Texture_Image : public Texture
         GLint _texLevel, _texInternalFormat, _texBorder;
 
         // And some temporary attributes
-        GLint _activeTexture; // To which texture unit the texture is bound
+        GLint _activeTexture; // Texture unit to which the texture is bound
 
         std::weak_ptr<Image> _img;
 

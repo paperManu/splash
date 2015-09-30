@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.3.2, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.3.4, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_LIBTOOL
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:2])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:4])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.3])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.3"], [API version])
 
@@ -31,10 +31,13 @@ case "$host" in *-darwin* | *-macos10*)
   LIBTOOL="glibtool"
   CXXFLAGS+=" -D__Darwin"
   LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
+  CPPFLAGS+=" -I/usr/local/include -I/usr/local/include/jsoncpp"
+  CXXFLAGS+=" -I/usr/local/include -I/usr/local/include/jsoncpp"
+  LDFLAGS+=" -L/usr/local/lib"
   if test -d /opt/local ; then
-	CPPFLAGS+=" -I/usr/local/include -I/opt/local/include"
-	CXXFLAGS+=" -I/usr/local/include -I/opt/local/include"
-	LDFLAGS+=" -L/usr/local/lib -L/opt/local/lib"
+	CPPFLAGS+=" -I/opt/local/include"
+	CXXFLAGS+=" -I/opt/local/include"
+	LDFLAGS+=" -L/opt/local/lib"
   elif test -d /sw ; then
 	CPPFLAGS+=" -I/sw/include"
 	CXXFLAGS+=" -I/sw/include"
@@ -62,12 +65,6 @@ esac
 
 # Check for SSE
 AX_EXT
-
-# Also, GLEW is currently needed under OSX
-PKG_CHECK_MODULES([GLEW], [glew], have_glew=true, have_glew=false)
-if test "x${have_glew}" = "xfalse" && test "$HAVE_OSX" = "true" ; then
-  AC_MSG_ERROR([Missing glew, which is needed for building on OSX])
-fi
 
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
@@ -152,6 +149,12 @@ PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
     AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected]))
 AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
 
+# PortAudio, to play sound
+PKG_CHECK_MODULES([PORTAUDIO], [portaudio-2.0],
+    AC_DEFINE([HAVE_PORTAUDIO], [1], [Defined to 1 if portaudio-2.0 is detected]),
+    AC_DEFINE([HAVE_PORTAUDIO], [0], [Defined to 1 if portaudio-2.0 is detected]))
+AM_CONDITIONAL(HAVE_PORTAUDIO, test -n "$PORTAUDIO_LIBS")
+
 # OpenCV, for their hardware support
 PKG_CHECK_MODULES([OPENCV], [opencv],
     AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected]),
@@ -161,6 +164,12 @@ AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
 # Boost, for the HTTP server
 BOOST_REQUIRE([1.50])
 BOOST_ASIO
+
+# LTC, for synchronization with a SMTPE clock through audio input
+PKG_CHECK_MODULES([LTC], [ltc],
+    AC_DEFINE([HAVE_LTC], [1], [Defined to 1 if ltc is detected]),
+    AC_DEFINE([HAVE_LTC], [0], [Defined to 1 if ltc is detected]))
+AM_CONDITIONAL(HAVE_LTC, test -n "$LTC_LIBS")
 
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
@@ -187,6 +196,8 @@ AC_CONFIG_FILES([
     osx/Info.plist:osx/Info.plist.in
     osx/Makefile
 	tests/Makefile
-    tools/Makefile
 	])
+
+    #tools/Makefile
+
 AC_OUTPUT

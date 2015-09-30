@@ -35,6 +35,7 @@
 #include <thread>
 
 #include "config.h"
+#include "coretypes.h"
 
 namespace Splash
 {
@@ -238,6 +239,28 @@ class Timer
           */
          void setStatus(bool enabled) {_enabled = enabled;}
 
+         /**
+          * Master clock related
+          */
+         void setMasterClock(const Values& clock)
+         {
+            if (clock.size() == 7)
+                _clock = clock;
+         }
+
+         bool getMasterClock(Values& clock) const
+         {
+            if (_clock.size() > 0)
+            {
+                clock = _clock;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+         }
+
     private:
         Timer() {}
         ~Timer() {}
@@ -253,6 +276,7 @@ class Timer
         mutable std::mutex _mutex;
         bool _enabled {true};
         bool _isDebug {false};
+        Values _clock;
 };
 
 } // end of namespace

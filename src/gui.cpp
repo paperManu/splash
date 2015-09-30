@@ -240,6 +240,8 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColorResponseFunction();
+        else
+            goto sendAsDefault;
         break;
     }
     case GLFW_KEY_P:
@@ -738,6 +740,7 @@ void Gui::initImWidgets()
         text += " C: calibrate the selected camera\n";
         text += " R: revert camera to previous calibration\n";
         text += " H: hide all but the selected camera\n";
+        text += " O: show calibration points from all cameras\n";
 
         text += "\n";
         text += "Node view (inside Control panel):\n";
@@ -758,6 +761,7 @@ void Gui::initImWidgets()
         static float upl {0.f};
         static float tex {0.f};
         static float ble {0.f};
+        static float flt {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
@@ -769,19 +773,25 @@ void Gui::initImWidgets()
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
+        flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
         cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
         win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
+
         // Create the text message
         ostringstream stream;
+        Values clock;
+        if (Timer::get().getMasterClock(clock))
+            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":" << clock[5].asInt() << ":" << clock[6].asInt() << "\n";
         stream << "Framerate: " << setprecision(4) << fps << " fps\n";
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
         stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
         stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
+        stream << "Filters: " << setprecision(4) << flt << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";

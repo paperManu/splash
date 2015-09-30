@@ -107,9 +107,9 @@ And you should be ready to go!
 
 If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
-    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-dev
-    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt-get install libglfw3-dev
+    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-system-dev
+    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-1.0-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
+    sudo apt-get install libglfw3-dev libxinerama-dev libxcursor-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
@@ -124,9 +124,13 @@ You can now try launching Splash:
 
 #### Mac OSX
 
+Before anything, note that you can grab the latest release version of Splash for OSX right [here](https://github.com/paperManu/splash/releases), as an application bundle.
+
 OSX installation is still a work in progress and has not been extensively tested (far from it!). Also, our current tests have shown that it is far easier to install on OSX version 10.9 or newer, as they switched from libstdc++ (GCC standard library) to libc++ (Clang standard library) as default which seems to solve tedious linking issues.
 
-So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
+So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php) or [Homebrew](https://brew.sh), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
+
+The following steps will be using the port command from MacPorts, you may replace it with the brew equivalent if you are more of a Homebrew user. Note that compiling with the Homebrew versions of the libraries has not been tested, so please report issues (and ideally solutions as I do not have a Mac with Homebrew...).
 
 You can now install the command line tools we will need to download and compile the sources:
 
@@ -137,13 +141,13 @@ Grab and install OpenImageIO, the only library needed by Splash which is not pac
     sudo port install tiff openexr libpng boost
     git clone https://github.com/OpenImageIO/oiio
     cd oiio
-    git checkout Release-1.3.14
+    git checkout Release-1.5.18
     mkdir build && cd build
     cmake ..
     make && sudo make install
     cd ..
 
-We then install Shmdata, which depends on GStreamer:
+We then install Shmdata, which depends on GStreamer. Note that Shmdata is only needed if you want Splash to communicate with other Shmdata-compatible softwares. If you want to read video files or feed Splash through Syphon, you can skip this step.
 
     sudo port install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev python3-dev
     git clone https://github.com/nicobou/shmdata
@@ -170,8 +174,14 @@ You should now be able to launch Splash:
 
     splash --help
 
-It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory:
+It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory. You need to install a small tool which will take care of bundling the necessary libraries:
 
+    git clone https://github.com/auriamg/macdylibbundler
+    cd dylibbundler
+    make && sudo make install
+    cd ..
+    git clone https://github.com/paperManu/splash
+    cd splash
     ./build_osx.sh
 
 Remember that it is a very early port to OSX. Please report any issue you encounter!
@@ -685,7 +695,7 @@ User interface
 
 The user interface is currently separated in two parts: the first one is the json configuration file, where the Cameras, Windows and various Images and Meshes are set. There is currently no way to add any of these objects during runtime, although it is planned.
 
-The second part is a GUI which appears in the very first Window created (this means that if you prefer having the GUI in its own window, you can specify the first window as empty, i.e. no link to anything, this can be very handy). Once Splash is launched, the GUI appears by pressing the tabulation key. The Splash Control Panel is divided in subpanels, as follows:
+The second part is a GUI which appears in the very first Window created (this means that if you prefer having the GUI in its own window, you can specify the first window as empty, i.e. no link to anything, this can be very handy). Once Splash is launched, the GUI appears by pressing Ctrl + Tab. The Splash Control Panel is divided in subpanels, as follows:
 
 - Base commands: contains very generic commands, like saving and computing the blending map,
 - Shortcuts: shows a list of the shortcuts,
@@ -706,7 +716,7 @@ The way calibration works in Splash is to reproduce as closely as possible the p
 
 Once the configuration file is set and each videoprojector has an output, do the following on the screen which has the GUI :
 
-- Press 'tab' to make the GUI appear,
+- Press 'Ctrl + Tab' to make the GUI appear,
 - open the camera views, in the Views panel of the GUI,
 - while hovering the View panelpress space to navigate through all the cameras, until you find the one you want to calibrage,
 - press 'W' to switch the view to wireframe,
@@ -729,7 +739,7 @@ Color calibration is done by capturing (automatically) a bunch of photographs of
 
 - Connect a PTP-compatible camera to the computer. The list of compatible cameras can be found [there](http://gphoto.org/proj/libgphoto2/support.php).
 - Set the camera in manual mode, chose sensitivity (the lower the better regarding noise) and the aperture (between 1/5.6 and 1/8 to reduce vignetting).
-- Open the GUI by pressing 'tab'.
+- Open the GUI by pressing 'Ctrl + Tab'.
 - Go to the Control panel, find the "colorCalibrator" object in the list.
 - Set the various options, default values are a good start:
     - colorSamples is the number of samples taken for each channel of each projector,

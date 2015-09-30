@@ -12,7 +12,8 @@ blenderSplash.zip:
 clean: clean-recursive
 	rm -f blenderSplash.zip Makefile
 
-distclean: distclean-recursive clean
+distclean: distclean-recursive
+	rm -f blenderSplash.zip Makefile
 
 datasdir = $(datadir)/splash/
 datas_DATA = \

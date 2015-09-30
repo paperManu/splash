@@ -40,27 +40,65 @@ namespace Splash
 struct AttributeFunctor
 {
     public:
-        AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(const Values&)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor() {};
+
+        AttributeFunctor(std::function<bool(const Values&)> setFunc)
+        {
+            _setFunc = setFunc;
+            _getFunc = std::function<const Values()>();
+            _defaultSetAndGet = false;
+        }
+        
         AttributeFunctor(std::function<bool(const Values&)> setFunc,
-                            std::function<const Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+                            std::function<const Values()> getFunc)
+        {
+            _setFunc = setFunc;
+            _getFunc = getFunc;
+            _defaultSetAndGet = false;
+        }
+
+        AttributeFunctor(const AttributeFunctor&) = delete;
+        AttributeFunctor(AttributeFunctor&&) = default;
+        AttributeFunctor& operator=(const AttributeFunctor&) = delete;
+        AttributeFunctor& operator=(AttributeFunctor&&) = default;
 
         bool operator()(const Values& args)
         {
-            if (!_setFunc)
+            if (!_setFunc && _defaultSetAndGet)
+            {
+                _values = args;
+                return true;
+            }
+            else if (!_setFunc)
                 return false;
-            return _setFunc(args);
+            return _setFunc(std::forward<const Values&>(args));
         }
+
         Values operator()() const
         {
-            if (!_getFunc)
+            if (!_getFunc && _defaultSetAndGet)
+                return _values;
+            else if (!_getFunc)
                 return Values();
             return _getFunc();
         }
 
+        bool isDefault() const
+        {
+            return _defaultSetAndGet;
+        }
+
+        bool doUpdateDistant() const {return _doUpdateDistant;}
+        void doUpdateDistant(bool update) {_doUpdateDistant = update;}
+
     private:
-        std::function<bool(const Values&)> _setFunc;
-        std::function<const Values()> _getFunc;
+        std::function<bool(const Values&)> _setFunc {};
+        std::function<const Values()> _getFunc {};
+
+        bool _defaultSetAndGet {true};
+        Values _values; // Holds the values for the default set and get functions
+
+        bool _doUpdateDistant {false}; // True if the World should send this attr values to Scenes
 };
 
 class BaseObject;
@@ -173,35 +211,77 @@ class BaseObject
         bool setAttribute(const std::string& attrib, const Values& args)
         {
             auto attribFunction = _attribFunctions.find(attrib);
-            if (attribFunction == _attribFunctions.end())
-                return false;
+            auto attribNotPresent = (attribFunction == _attribFunctions.end());
+
+            if (attribNotPresent)
+            {
+                auto result = _attribFunctions.emplace(std::make_pair(std::string(attrib), AttributeFunctor()));
+                if (!result.second)
+                    return false;
+
+                attribFunction = result.first;
+            }
+
             _updatedParams = true;
-            return (*attribFunction).second(args);
+            auto attribResult = attribFunction->second(args);
+
+            return attribResult && attribNotPresent;
         }
 
         /**
          * Get the specified attribute
+         * \params attrib Attribute name
+         * \params args Values object which will hold the attribute values
+         * \params includeDistant Return true even if the attribute is distant
          */
-        bool getAttribute(const std::string& attrib, Values& args) const
+        bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false) const
         {
             auto attribFunction = _attribFunctions.find(attrib);
             if (attribFunction == _attribFunctions.end())
                 return false;
-            args = (*attribFunction).second();
+
+            args = attribFunction->second();
+
+            if (attribFunction->second.isDefault() && !includeDistant)
+                return false;
+
             return true;
         }
 
         /**
-         * Get all the attributes as a map
+         * Get all the savable attributes as a map
+         * \params includeDistant Also include the distant attributes
          */
-        std::unordered_map<std::string, Values> getAttributes() const
+        std::unordered_map<std::string, Values> getAttributes(bool includeDistant = false) const
         {
             std::unordered_map<std::string, Values> attribs;
             for (auto& attr : _attribFunctions)
             {
                 Values values;
+                if (getAttribute(attr.first, values, includeDistant) == false || values.size() == 0)
+                    continue;
+                attribs[attr.first] = values;
+            }
+
+            return attribs;
+        }
+
+        /**
+         * Get the map of the attributes which should be updated from World to Scene
+         * This is the case when the distant object is different from the World one
+         */
+        std::unordered_map<std::string, Values> getDistantAttributes() const
+        {
+            std::unordered_map<std::string, Values> attribs;
+            for (auto& attr : _attribFunctions)
+            {
+                if (!attr.second.doUpdateDistant())
+                    continue;
+
+                Values values;
                 if (getAttribute(attr.first, values) == false || values.size() == 0)
                     continue;
+
                 attribs[attr.first] = values;
             }
 

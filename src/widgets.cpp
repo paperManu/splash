@@ -140,9 +140,9 @@ void GuiControl::render()
 
         unordered_map<string, Values> attributes;
         if (!isDistant)
-            attributes = scene->_objects[_targetObjectName]->getAttributes();
+            attributes = scene->_objects[_targetObjectName]->getAttributes(true);
         else
-            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes();
+            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
 
         for (auto& attr : attributes)
         {
@@ -161,15 +161,7 @@ void GuiControl::render()
                     float tmp = attr.second[0].asFloat();
                     float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
                     if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
                 }
                 else if (attr.second.size() == 2)
                 {
@@ -177,15 +169,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[0].asFloat());
                     tmp.push_back(attr.second[1].asFloat());
                     if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
                 }
                 else if (attr.second.size() == 3)
                 {
@@ -194,15 +178,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
                     if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
                 }
                 else if (attr.second.size() == 4)
                 {
@@ -212,15 +188,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[2].asFloat());
                     tmp.push_back(attr.second[3].asFloat());
                     if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
                 }
             }
             else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
@@ -254,9 +222,7 @@ void GuiControl::render()
                     string tmp = v.asString();
                     tmp.resize(256);
                     if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
                         scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                    }
                 }
             }
         }
@@ -352,8 +318,11 @@ void GuiGlobalView::render()
             if (ImGui::Button("Hide other cameras"))
                 switchHideOtherCameras();
             ImGui::SameLine();
-            if (ImGui::Button("Show all points"))
+            if (ImGui::Button("Show targets"))
                 showAllCalibrationPoints();
+            ImGui::SameLine();
+            if (ImGui::Button("Show all points"))
+                showAllCamerasCalibrationPoints();
             ImGui::SameLine();
             if (ImGui::Button("Calibrate camera"))
                 doCalibration();
@@ -463,6 +432,16 @@ void GuiGlobalView::showAllCalibrationPoints()
 }
 
 /*************/
+void GuiGlobalView::showAllCamerasCalibrationPoints()
+{
+    auto scene = _scene.lock();
+    if (_camera == _guiCamera)
+        _guiCamera->setAttribute("switchDisplayAllCalibration", {});
+    else
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchDisplayAllCalibration"});
+}
+
+/*************/
 void GuiGlobalView::doCalibration()
 {
     CameraParameters params;
@@ -559,6 +538,11 @@ void GuiGlobalView::processKeyEvents()
     else if (io.KeysDown['H'] && io.KeysDownTime['H'] == 0.0)
     {
         switchHideOtherCameras();
+        return;
+    }
+    else if (io.KeysDown['O'] && io.KeysDownTime['O'] == 0.0)
+    {
+        showAllCamerasCalibrationPoints();
         return;
     }
     // Reset to the previous camera calibration

@@ -127,8 +127,8 @@ class Image : public BufferObject
         bool write(const std::string& filename);
 
     protected:
-        oiio::ImageBuf _image;
-        oiio::ImageBuf _bufferImage;
+        std::unique_ptr<oiio::ImageBuf> _image;
+        std::unique_ptr<oiio::ImageBuf> _bufferImage;
         std::string _filepath;
         bool _flip {false};
         bool _flop {false};
@@ -156,7 +156,7 @@ class Image : public BufferObject
         /**
          * Register new functors to modify attributes
          */
-        virtual void registerAttributes();
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Image> ImagePtr;

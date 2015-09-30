@@ -72,53 +72,51 @@ Shader::~Shader()
 /*************/
 void Shader::activate()
 {
-    _mutex.lock();
-    if (!_isLinked)
+    if (_programType == prgGraphic)
     {
-        if (!linkProgram())
-            return;
+        _mutex.lock();
+        if (!_isLinked)
+        {
+            if (!linkProgram())
+                return;
+        }
+
+        _activated = true;
+
+        for (auto& u : _uniforms)
+        {
+            if (u.second.type == "buffer")
+                glUniformBlockBinding(_program, u.second.glIndex, 1);
+        }
+
+        glUseProgram(_program);
+
+        if (_sideness == singleSided)
+        {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_BACK);
+        }
+        else if (_sideness == inverted)
+        {
+            glEnable(GL_CULL_FACE);
+            glCullFace(GL_FRONT);
+        }
     }
-
-    _activated = true;
-
-    for (auto& u : _uniforms)
+    else if (_programType == prgFeedback)
     {
-        if (u.second.type == "buffer")
-            glUniformBlockBinding(_program, u.second.glIndex, 1);
+        _mutex.lock();
+        if (!_isLinked)
+        {
+            if (!linkProgram())
+                return;
+        }
+
+        _activated = true;
+        glUseProgram(_program);
+        updateUniforms();
+        glEnable(GL_RASTERIZER_DISCARD);
+        glBeginTransformFeedback(GL_TRIANGLES);
     }
-
-    glUseProgram(_program);
-
-    if (_sideness == singleSided)
-    {
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-    }
-    else if (_sideness == inverted)
-    {
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_FRONT);
-    }
-}
-
-/*************/
-void Shader::activateFeedback()
-{
-    if (_programType != prgFeedback)
-        return;
-
-    _mutex.lock();
-    if (!_isLinked)
-    {
-        if (!linkProgram())
-            return;
-    }
-
-    _activated = true;
-    glUseProgram(_program);
-    updateUniforms();
-    glEnable(GL_RASTERIZER_DISCARD);
-    glBeginTransformFeedback(GL_TRIANGLES);
 }
 
 /*************/
@@ -732,6 +730,15 @@ void Shader::registerGraphicAttributes()
             setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "filter" && (_fill != filter || _shaderOptions != options))
+        {
+            _fill = filter;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+            resetShader(geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
             compileProgram();
         }
         else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))

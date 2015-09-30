@@ -25,15 +25,27 @@
 #ifndef SPLASH_IMAGE_FFMPEG_H
 #define SPLASH_IMAGE_FFMPEG_H
 
+#include "config.h"
+
 #include <atomic>
+#include <condition_variable>
+#include <deque>
 #include <mutex>
 #include <thread>
 
-#include "config.h"
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
+#include <libswscale/swscale.h>
+}
 
 #include "coretypes.h"
 #include "basetypes.h"
 #include "image.h"
+#if HAVE_PORTAUDIO
+    #include "speaker.h"
+#endif
 
 namespace oiio = OIIO_NAMESPACE;
 
@@ -64,9 +76,35 @@ class Image_FFmpeg : public Image
         bool read(const std::string& filename);
 
     private:
-        void* _avFormatContext {nullptr};
         std::thread _readLoopThread;
-        std::atomic_bool _continueReadLoop;
+        std::atomic_bool _continueRead;
+        std::atomic_bool _loopOnVideo {true};
+
+        std::thread _videoDisplayThread;
+        struct TimedFrame
+        {
+            std::unique_ptr<oiio::ImageBuf> frame;
+            int64_t timing; // in us
+        };
+        std::deque<TimedFrame> _timedFrames;
+        std::mutex _videoQueueMutex;
+        std::mutex _videoSeekMutex;
+        std::condition_variable _videoQueueCondition;
+
+        int64_t _startTime {0};
+        int64_t _elapsedTime {0};
+        float _seekTime {0};
+
+        AVFormatContext* _avContext {nullptr};
+        double _timeBase {0.033};
+        AVCodecContext* _videoCodecContext {nullptr};
+        int _videoStreamIndex {-1};
+
+#if HAVE_PORTAUDIO
+        std::unique_ptr<Speaker> _speaker;
+        AVCodecContext* _audioCodecContext {nullptr};
+        int _audioStreamIndex {-1};
+#endif
 
         /**
          * Free everything related to FFmpeg
@@ -77,6 +115,16 @@ class Image_FFmpeg : public Image
          * File read loop
          */
         void readLoop();
+
+        /**
+         * Seek in the video
+         */
+        void seek(float seconds);
+
+        /**
+         * Video display loop
+         */
+        void videoDisplayLoop();
 
         /**
          * Register new functors to modify attributes

@@ -5,8 +5,9 @@ SUBDIRS = addons \
           src \
           data \
 		  tests \
-		  tools \
 		  osx
+
+#SUBDIRS += tools
 
 if HAVE_MARKDOWN
 dist_man_MANS = README.md

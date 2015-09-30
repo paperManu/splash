@@ -101,6 +101,16 @@ void World::run()
             Timer::get() >> "upload";
         }
 
+        // Update the distant attributes
+        for (auto& o : _objects)
+        {
+            auto attribs = o.second->getDistantAttributes();
+            for (auto& attrib : attribs)
+            {
+                sendMessage(o.second->getName(), attrib.first, attrib.second);
+            }
+        }
+
         // If swap synchronization test is enabled
         if (_swapSynchronizationTesting)
         {
@@ -135,6 +145,10 @@ void World::run()
         auto& durationMap = Timer::get().getDurationMap();
         for (auto& d : durationMap)
             sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        // Also send the master clock if needed
+        Values clock;
+        if (Timer::get().getMasterClock(clock))
+            sendMessage(SPLASH_ALL_PAIRS, "masterClock", clock);
 
         // Send newer logs to all Scenes
         auto logs = Log::get().getLogs();
@@ -436,9 +450,18 @@ void World::applyConfig()
 
             idx++;
         }
+    }
 
-        // Link the objects together
-        idx = 0;
+    // Link the objects together
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+        auto sceneMembers = jsScene.getMemberNames();
+
+        int idx = 0;
         for (const auto& obj : jsScene)
         {
             if (sceneMembers[idx] != "links")
@@ -772,8 +795,28 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
-        _quit = true;
+    _attribFunctions["getAttribute"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 2)
+            return false;
+
+        auto objectName = args[0].asString();
+        auto attrName = args[1].asString();
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+        {
+            auto& object = objectIt->second;
+            Values values {};
+            object->getAttribute(attrName, values);
+
+            SThread::pool.enqueueWithoutId([=]() {
+                Values sentValues {"getAttribute"};
+                for (auto& v : values)
+                    sentValues.push_back(v);
+                sendMessage(SPLASH_ALL_PAIRS, "answerMessage", sentValues);
+            });
+        }
+
         return true;
     });
 
@@ -802,6 +845,11 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
         Timer::get() >> "pingScene " + args[0].asString();
+        return true;
+    });
+
+    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
+        _quit = true;
         return true;
     });
 

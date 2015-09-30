@@ -179,7 +179,7 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
         _spec.format = TypeDesc::UINT16;
         _spec.channelnames = {"R", "G", "B", "A"};
     }
-    else if (internalFormat == GL_R && type == GL_UNSIGNED_SHORT)
+    else if (internalFormat == GL_RED && type == GL_UNSIGNED_SHORT)
     {
         _spec.nchannels = 1;
         _spec.format = TypeDesc::UINT16;
@@ -328,7 +328,7 @@ void Texture_Image::update()
         else if (spec.nchannels == 1 && spec.format == "uint16" && !isCompressed)
         {
 #ifdef DEBUG
-            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_R" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture of type GL_UNSIGNED_SHORT, format GL_RED" << Log::endl;
 #endif
             img->lock();
             glTexImage2D(GL_TEXTURE_2D, 0, GL_R16, spec.width, spec.height, 0, GL_RED, GL_UNSIGNED_SHORT, img->data());
