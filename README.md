@@ -108,7 +108,7 @@ And you should be ready to go!
 If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
     sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-system-dev
-    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-0.8-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
+    sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-1.0-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
     sudo apt-get install libglfw3-dev libxinerama-dev libxcursor-dev
 
     git clone git://github.com/paperManu/splash
