@@ -1,8 +1,21 @@
 Slash release notes
 ===================
 
-Splash 0.3.3 (2015-xx-xx)
+Splash 0.3.4 (2015-09-30)
 -------------------------
+New features:
+* Sound support in Image_FFmpeg
+* Seeking in Image_FFmpeg
+* Added architecture for effects on video
+* SMPTE LTC support, though not active yet
+
+Improvements:
+* Various fixes to enable building on OSX / Homebrew
+* Now using GLAD as a GL loader
+* Improved HTTP server
+
+Bug fixed:
+* Camera calibration
 
 Splash 0.3.2 (2015-08-05)
 -------------------------
