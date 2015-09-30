@@ -230,8 +230,11 @@ class BaseObject
 
         /**
          * Get the specified attribute
+         * \params attrib Attribute name
+         * \params args Values object which will hold the attribute values
+         * \params includeDistant Return true even if the attribute is distant
          */
-        bool getAttribute(const std::string& attrib, Values& args) const
+        bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false) const
         {
             auto attribFunction = _attribFunctions.find(attrib);
             if (attribFunction == _attribFunctions.end())
@@ -239,7 +242,7 @@ class BaseObject
 
             args = attribFunction->second();
 
-            if (attribFunction->second.isDefault())
+            if (attribFunction->second.isDefault() && !includeDistant)
                 return false;
 
             return true;
@@ -247,14 +250,15 @@ class BaseObject
 
         /**
          * Get all the savable attributes as a map
+         * \params includeDistant Also include the distant attributes
          */
-        std::unordered_map<std::string, Values> getAttributes() const
+        std::unordered_map<std::string, Values> getAttributes(bool includeDistant = false) const
         {
             std::unordered_map<std::string, Values> attribs;
             for (auto& attr : _attribFunctions)
             {
                 Values values;
-                if (getAttribute(attr.first, values) == false || values.size() == 0)
+                if (getAttribute(attr.first, values, includeDistant) == false || values.size() == 0)
                     continue;
                 attribs[attr.first] = values;
             }

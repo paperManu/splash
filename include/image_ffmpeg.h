@@ -93,6 +93,7 @@ class Image_FFmpeg : public Image
 
         int64_t _startTime {0};
         int64_t _elapsedTime {0};
+        float _seekTime {0};
 
         AVFormatContext* _avContext {nullptr};
         double _timeBase {0.033};

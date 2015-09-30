@@ -470,6 +470,7 @@ void Image_FFmpeg::registerAttributes()
         float duration = _avContext->duration / AV_TIME_BASE;
         return {duration};
     });
+    _attribFunctions["duration"].doUpdateDistant(true);
 
     _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -481,6 +482,7 @@ void Image_FFmpeg::registerAttributes()
         int loop = _loopOnVideo;
         return {loop};
     });
+    _attribFunctions["loop"].doUpdateDistant(true);
 
     _attribFunctions["remaining"] = AttributeFunctor([&](const Values& args) {
         return false;
@@ -502,8 +504,12 @@ void Image_FFmpeg::registerAttributes()
             seek(seconds);
         });
 
+        _seekTime = seconds;
         return true;
+    }, [&]() -> Values {
+        return {_seekTime};
     });
+    _attribFunctions["seek"].doUpdateDistant(true);
 }
 
 } // end of namespace
