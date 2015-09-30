@@ -236,10 +236,16 @@ void Image_FFmpeg::readLoop()
     {
         _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
         auto previousTime = 0ull;
-        while (_continueRead && av_read_frame(_avContext, &packet) >= 0)
+        
+        auto shouldContinueLoop = [&]() -> bool {
+            unique_lock<mutex> lock(_videoSeekMutex);
+            return _continueRead && av_read_frame(_avContext, &packet) >= 0;
+        };
+
+        while (shouldContinueLoop())
         {
             // Reading the video
-            if (packet.stream_index == _videoStreamIndex)
+            if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
                 oiio::ImageBuf img;
                 uint64_t timing;
@@ -316,10 +322,13 @@ void Image_FFmpeg::readLoop()
                 {
                     unique_lock<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
-                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
+                    _timedFrames[_timedFrames.size() - 1].frame = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+                    _timedFrames[_timedFrames.size() - 1].frame->swap(img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                     _videoQueueCondition.notify_one();
                 }
+
+               _videoSeekMutex.unlock();
 
                 av_free_packet(&packet);
             }
@@ -382,16 +391,26 @@ void Image_FFmpeg::readLoop()
 }
 
 /*************/
-void Image_FFmpeg::seek(int frame)
+void Image_FFmpeg::seek(float seconds)
 {
-    unique_lock<mutex> lock(_videoQueueMutex);
-    if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, AVSEEK_FLAG_BACKWARD) < 0)
+    unique_lock<mutex> lock(_videoSeekMutex);
+
+    int seekFlag = 0;
+    if (_elapsedTime > seconds)
+        seekFlag = AVSEEK_FLAG_BACKWARD;
+
+    int frame = static_cast<int>(floor(seconds / _timeBase));
+    if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, seekFlag) < 0)
     {
-        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << _seekFrame << Log::endl;
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << seconds << Log::endl;
     }
     else
     {
-        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - frame * _timeBase * 1e6;
+        unique_lock<mutex> lockQueue(_videoQueueMutex);
+        // As seeking will no necessarily go to the desired timestamp, but to the closest i-frame,
+        // we will set _startTime at the next frame in the videoDisplayLoop
+        //_startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - seconds * 1e6;
+        _startTime = -1;
         _timedFrames.clear();
 #if HAVE_PORTAUDIO
         if (_speaker)
@@ -415,6 +434,10 @@ void Image_FFmpeg::videoDisplayLoop()
             TimedFrame& timedFrame = _timedFrames[0];
             if (timedFrame.timing != 0ull)
             {
+                // This sets the start time after a seek
+                if (_startTime == -1)
+                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - timedFrame.timing;
+
                 int64_t currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
                 int64_t waitTime = timedFrame.timing - currentTime;
                 if (waitTime > 0)
@@ -423,6 +446,8 @@ void Image_FFmpeg::videoDisplayLoop()
                     _elapsedTime = timedFrame.timing;
 
                     unique_lock<mutex> lock(_writeMutex);
+                    if (!_bufferImage)
+                        _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
                     _bufferImage.swap(timedFrame.frame);
                     _imageUpdated = true;
                     updateTimestamp();
@@ -472,14 +497,12 @@ void Image_FFmpeg::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        int frame = args[0].asInt();
+        float seconds = args[0].asFloat();
         SThread::pool.enqueueWithoutId([=]() {
-            seek(frame);
+            seek(seconds);
         });
 
         return true;
-    }, [&]() -> Values {
-        return {(int)_seekFrame};
     });
 }
 

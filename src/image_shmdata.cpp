@@ -302,7 +302,9 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
     if (!hapDecodeFrame(data, data_size, ctx->_readerBuffer.localpixels(), outputBufferBytes, textureFormat))
         return;
     
-    ctx->_bufferImage.swap(ctx->_readerBuffer);
+    if (!ctx->_bufferImage)
+        ctx->_bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+    ctx->_bufferImage->swap(ctx->_readerBuffer);
     ctx->_imageUpdated = true;
     ctx->updateTimestamp();
 }
@@ -548,7 +550,9 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
     else
         return;
 
-    ctx->_bufferImage.swap(ctx->_readerBuffer);
+    if (!ctx->_bufferImage)
+        ctx->_bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+    ctx->_bufferImage->swap(ctx->_readerBuffer);
     ctx->_imageUpdated = true;
     ctx->updateTimestamp();
 

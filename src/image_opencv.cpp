@@ -117,7 +117,9 @@ void Image_OpenCV::readLoop()
         copy(capture.data, capture.data + imageSize, pixels);
 
         unique_lock<mutex> lockWrite(_writeMutex);
-        _bufferImage.swap(_readBuffer);
+        if (!_bufferImage)
+            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+        _bufferImage->swap(_readBuffer);
         _imageUpdated = true;
         updateTimestamp();
 

@@ -83,7 +83,7 @@ class Image_FFmpeg : public Image
         std::thread _videoDisplayThread;
         struct TimedFrame
         {
-            oiio::ImageBuf frame;
+            std::unique_ptr<oiio::ImageBuf> frame;
             int64_t timing; // in us
         };
         std::deque<TimedFrame> _timedFrames;
@@ -93,7 +93,6 @@ class Image_FFmpeg : public Image
 
         int64_t _startTime {0};
         int64_t _elapsedTime {0};
-        int64_t _seekFrame {-1};
 
         AVFormatContext* _avContext {nullptr};
         double _timeBase {0.033};
@@ -119,7 +118,7 @@ class Image_FFmpeg : public Image
         /**
          * Seek in the video
          */
-        void seek(int frame);
+        void seek(float seconds);
 
         /**
          * Video display loop

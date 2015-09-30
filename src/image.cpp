@@ -58,7 +58,10 @@ Image::~Image()
 /*************/
 const void* Image::data() const
 {
-    return _image.localpixels();
+    if (_image)
+        return _image->localpixels();
+    else
+        return nullptr;
 }
 
 /*************/
@@ -66,7 +69,8 @@ oiio::ImageBuf Image::get() const
 {
     oiio::ImageBuf img;
     unique_lock<mutex> lock(_readMutex);
-    img.copy(_image);
+    if (_image)
+        img.copy(*_image);
     return img;
 }
 
@@ -74,14 +78,17 @@ oiio::ImageBuf Image::get() const
 oiio::ImageSpec Image::getSpec() const
 {
     unique_lock<mutex> lock(_readMutex);
-    return _image.spec();
+    if (_image)
+        return _image->spec();
+    else
+        return oiio::ImageSpec();
 }
 
 /*************/
 void Image::set(const oiio::ImageBuf& img)
 {
     unique_lock<mutex> lockRead(_readMutex);
-    _image.copy(img);
+    _image->copy(img);
 }
 
 /*************/
@@ -91,7 +98,9 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
     oiio::ImageBuf img(spec);
 
     unique_lock<mutex> lock(_readMutex);
-    _image.swap(img);
+    if (!_image)
+        _image = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+    _image->swap(img);
     updateTimestamp();
 }
 
@@ -104,9 +113,11 @@ unique_ptr<SerializedObject> Image::serialize() const
         Timer::get() << "serialize " + _name;
 
     // We first get the xml version of the specs, and pack them into the obj
-    string xmlSpec = _image.spec().to_xml();
+    if (!_image)
+        return {};
+    string xmlSpec = _image->spec().to_xml();
     int nbrChar = xmlSpec.size();
-    int imgSize = _image.spec().pixel_bytes() * _image.spec().width * _image.spec().height;
+    int imgSize = _image->spec().pixel_bytes() * _image->spec().width * _image->spec().height;
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
     auto obj = unique_ptr<SerializedObject>(new SerializedObject(totalSize));
@@ -121,7 +132,7 @@ unique_ptr<SerializedObject> Image::serialize() const
     currentObjPtr += nbrChar;
 
     // And then, the image
-    const char* imgPtr = reinterpret_cast<const char*>(_image.localpixels());
+    const char* imgPtr = reinterpret_cast<const char*>(_image->localpixels());
     if (imgPtr == NULL)
         return {};
     
@@ -190,7 +201,9 @@ bool Image::deserialize(unique_ptr<SerializedObject> obj)
         copy(currentObjPtr + imgSize / stride * (stride - 1), currentObjPtr + imgSize, ptr + imgSize / stride * (stride - 1));
         SThread::pool.waitThreads(threadIds);
 
-        _bufferImage.swap(_bufferDeserialize);
+        if (!_bufferImage)
+            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+        _bufferImage->swap(_bufferDeserialize);
         _imageUpdated = true;
 
         updateTimestamp();
@@ -262,7 +275,9 @@ bool Image::readFile(const string& filename)
             return false;
 
         unique_lock<mutex> lock(_writeMutex);
-        _bufferImage.swap(img);
+        if (!_bufferImage)
+            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+        _bufferImage->swap(img);
         _imageUpdated = true;
 
         updateTimestamp();
@@ -280,10 +295,13 @@ bool Image::readFile(const string& filename)
 void Image::setTo(float value)
 {
     unique_lock<mutex> lock(_readMutex);
-    float v[_image.nchannels()];
-    for (int i = 0; i < _image.nchannels(); ++i)
+    if (!_image)
+        return;
+
+    float v[_image->nchannels()];
+    for (int i = 0; i < _image->nchannels(); ++i)
         v[i] = (float)value;
-    oiio::ImageBufAlgo::fill(_image, v);
+    oiio::ImageBufAlgo::fill(*_image, v);
 }
 
 /*************/
@@ -308,8 +326,10 @@ bool Image::write(const std::string& filename)
         return false;
 
     unique_lock<mutex> lock(_readMutex);
-    out->open(filename, _image.spec());
-    out->write_image(_image.spec().format, _image.localpixels());
+    if (!_image)
+        return false;
+    out->open(filename, _image->spec());
+    out->write_image(_image->spec().format, _image->localpixels());
     out->close();
     delete out;
 
@@ -336,7 +356,9 @@ void Image::createDefaultImage()
     }
 
     unique_lock<mutex> lock(_readMutex);
-    _image.swap(img);
+    if (!_image)
+        _image = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+    _image->swap(img);
     updateTimestamp();
 }
 
