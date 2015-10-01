@@ -101,11 +101,13 @@ void World::run()
             Timer::get() >> "upload";
         }
 
+#if HAVE_PORTAUDIO && HAVE_LTC
         // Update the clock and send it to all World objects
         Values ltcTime;
         _clock.getClock(ltcTime);
         for (auto& o : _objects)
             o.second->setAttribute("clock", ltcTime);
+#endif
 
         // Update the distant attributes
         for (auto& o : _objects)
