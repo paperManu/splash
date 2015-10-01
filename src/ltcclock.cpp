@@ -23,7 +23,6 @@ LtcClock::LtcClock(bool masterClock)
         return;
     }
 
-    _ready = true;
     _masterClock = true;
     _continue = true;
 
@@ -47,6 +46,8 @@ LtcClock::LtcClock(bool masterClock)
 
             while (ltc_decoder_read(ltcDecoder, &ltcFrame))
             {
+                _ready = true;
+
                 SMPTETimecode stime;
                 ltc_frame_to_time(&stime, &ltcFrame.ltc, LTC_TC_CLOCK);
 
@@ -90,6 +91,9 @@ LtcClock::Clock LtcClock::getClock()
 /*************/
 void LtcClock::getClock(Values& clockValues)
 {
+    if (!_ready)
+        return;
+
     Clock clock = _clock;
 
     clockValues.clear();

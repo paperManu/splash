@@ -96,8 +96,9 @@ class Image_FFmpeg : public Image
         int64_t _elapsedTime {0};
         float _seekTime {0};
 
-        std::atomic_long _clockTime {-1};
-        std::atomic_bool _clockPaused {false};
+        bool _useClock {false};
+        int64_t _clockTime {-1};
+        bool _clockPaused {false};
 
         AVFormatContext* _avContext {nullptr};
         double _timeBase {0.033};

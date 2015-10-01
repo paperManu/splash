@@ -477,6 +477,13 @@ void Image_FFmpeg::registerAttributes()
         if (args.size() != 7)
             return false;
 
+        if (!_useClock)
+        {
+            _clockTime = -1;
+            _clockPaused = false;
+            return true;
+        }
+
         float seconds = (float)(args[6].asInt() + (args[5].asInt() + (args[4].asInt() + args[3].asInt() * 60) * 60) * 30) / 30.f;
         float diff = _elapsedTime / 1e6 - seconds;
         if (abs(diff) > 10.f && _clockTime != -1l)
@@ -551,6 +558,22 @@ void Image_FFmpeg::registerAttributes()
         return {_seekTime};
     });
     _attribFunctions["seek"].doUpdateDistant(true);
+
+    _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _useClock = args[0].asInt();
+        if (!_useClock)
+        {
+            _clockTime = -1;
+            _clockPaused = false;
+        }
+        return true;
+    }, [&]() -> Values {
+        return {(int)_useClock};
+    });
+    _attribFunctions["useClock"].doUpdateDistant(true);
 }
 
 } // end of namespace
