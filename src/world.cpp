@@ -101,6 +101,12 @@ void World::run()
             Timer::get() >> "upload";
         }
 
+        // Update the clock and send it to all World objects
+        Values ltcTime;
+        _clock.getClock(ltcTime);
+        for (auto& o : _objects)
+            o.second->setAttribute("clock", ltcTime);
+
         // Update the distant attributes
         for (auto& o : _objects)
         {

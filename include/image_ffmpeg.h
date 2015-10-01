@@ -92,8 +92,12 @@ class Image_FFmpeg : public Image
         std::condition_variable _videoQueueCondition;
 
         int64_t _startTime {0};
+        int64_t _currentTime {0};
         int64_t _elapsedTime {0};
         float _seekTime {0};
+
+        std::atomic_long _clockTime {-1};
+        std::atomic_bool _clockPaused {false};
 
         AVFormatContext* _avContext {nullptr};
         double _timeBase {0.033};

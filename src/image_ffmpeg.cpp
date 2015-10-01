@@ -31,13 +31,16 @@ Image_FFmpeg::~Image_FFmpeg()
 /*************/
 void Image_FFmpeg::freeFFmpegObjects()
 {
+    _clockPaused = false;
+    _clockTime = -1;
+
     _continueRead = false;
     _videoQueueCondition.notify_one();
 
-    if (_readLoopThread.joinable())
-        _readLoopThread.join();
     if (_videoDisplayThread.joinable())
         _videoDisplayThread.join();
+    if (_readLoopThread.joinable())
+        _readLoopThread.join();
 
     if (_avContext)
     {
@@ -409,7 +412,6 @@ void Image_FFmpeg::seek(float seconds)
         unique_lock<mutex> lockQueue(_videoQueueMutex);
         // As seeking will no necessarily go to the desired timestamp, but to the closest i-frame,
         // we will set _startTime at the next frame in the videoDisplayLoop
-        //_startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - seconds * 1e6;
         _startTime = -1;
         _timedFrames.clear();
 #if HAVE_PORTAUDIO
@@ -431,6 +433,12 @@ void Image_FFmpeg::videoDisplayLoop()
 
         while (_timedFrames.size() > 0)
         {
+            if (_currentTime == _clockTime || _clockPaused)
+            {
+                this_thread::sleep_for(chrono::milliseconds(5));
+                continue;
+            }
+
             TimedFrame& timedFrame = _timedFrames[0];
             if (timedFrame.timing != 0ull)
             {
@@ -438,20 +446,24 @@ void Image_FFmpeg::videoDisplayLoop()
                 if (_startTime == -1)
                     _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - timedFrame.timing;
 
-                int64_t currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                int64_t waitTime = timedFrame.timing - currentTime;
-                if (waitTime > 0)
+                _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                if (_clockTime != -1l)
+                    _currentTime = _clockTime;
+
+                int64_t waitTime = timedFrame.timing - _currentTime;
+                if (waitTime > 0 && waitTime < 1e6)
                 {
                     this_thread::sleep_for(chrono::microseconds(waitTime));
-                    _elapsedTime = timedFrame.timing;
-
-                    unique_lock<mutex> lock(_writeMutex);
-                    if (!_bufferImage)
-                        _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-                    _bufferImage.swap(timedFrame.frame);
-                    _imageUpdated = true;
-                    updateTimestamp();
                 }
+
+                _elapsedTime = timedFrame.timing;
+
+                unique_lock<mutex> lock(_writeMutex);
+                if (!_bufferImage)
+                    _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+                _bufferImage.swap(timedFrame.frame);
+                _imageUpdated = true;
+                updateTimestamp();
             }
             _timedFrames.pop_front();
         }
@@ -461,6 +473,35 @@ void Image_FFmpeg::videoDisplayLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
+    _attribFunctions["clock"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 7)
+            return false;
+
+        float seconds = (float)(args[6].asInt() + (args[5].asInt() + (args[4].asInt() + args[3].asInt() * 60) * 60) * 30) / 30.f;
+        float diff = _elapsedTime / 1e6 - seconds;
+        if (abs(diff) > 10.f && _clockTime != -1l)
+        {
+            _clockTime = -1.f;
+            SThread::pool.enqueueWithoutId([=]() {
+                seek(seconds);
+            });
+        }
+        else
+        {
+            if (_clockTime == seconds * 1e6)
+            {
+                _clockPaused = true;
+            }
+            else
+            {
+                _clockPaused = false;
+                _clockTime = seconds * 1e6;
+            }
+        }
+
+        return true;
+    });
+
     _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
         return false;
     }, [&]() -> Values {
