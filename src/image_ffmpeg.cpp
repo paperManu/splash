@@ -431,6 +431,9 @@ void Image_FFmpeg::videoDisplayLoop()
         unique_lock<mutex> lockFrames(_videoQueueMutex);
         _videoQueueCondition.wait(lockFrames);
 
+        if (!_clockMutex.try_lock())
+            continue;
+
         while (_timedFrames.size() > 0)
         {
             if (_currentTime == _clockTime || _clockPaused)
@@ -467,6 +470,8 @@ void Image_FFmpeg::videoDisplayLoop()
             }
             _timedFrames.pop_front();
         }
+
+        _clockMutex.unlock();
     }
 }
 
@@ -484,12 +489,14 @@ void Image_FFmpeg::registerAttributes()
             return true;
         }
 
-        float seconds = (float)(args[6].asInt() + (args[5].asInt() + (args[4].asInt() + args[3].asInt() * 60) * 60) * 30) / 30.f;
+        float seconds = (float)(args[6].asInt() + (args[5].asInt() + (args[4].asInt() + (args[3].asInt() + args[2].asInt()) * 24) * 60) * 120) / 120.f;
         float diff = _elapsedTime / 1e6 - seconds;
-        if (abs(diff) > 10.f && _clockTime != -1l)
+        if (abs(diff) > 2.f)
         {
-            _clockTime = -1.f;
+            _elapsedTime = seconds * 1e6;
+            _clockTime = _elapsedTime;
             SThread::pool.enqueueWithoutId([=]() {
+                unique_lock<mutex> lock(_clockMutex);
                 seek(seconds);
             });
         }

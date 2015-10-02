@@ -58,7 +58,29 @@ LtcClock::LtcClock(bool masterClock)
                 clock.hours = stime.hours;
                 clock.mins = stime.mins;
                 clock.secs = stime.secs;
-                clock.frame = stime.frame;
+
+                // This updates the maximum frames per second, to be able to handle any framerate
+                if (stime.frame == 0)
+                {
+                    // Only accept some specific values
+                    if (_previousFrame == 24 || _previousFrame == 25 || _previousFrame == 30 || _previousFrame == 60)
+                    {
+                        // Small trick to handle errors
+                        if (_framerateChanged)
+                        {
+                            _maximumFramePerSec = _previousFrame + 1;
+                            _framerateChanged = false;
+                        }
+                        else
+                        {
+                            _framerateChanged = true;
+                        }
+                    }
+                }
+
+                _previousFrame = stime.frame;
+                clock.frame = stime.frame * 120 / _maximumFramePerSec;
+
                 _clock = clock;
 
                 if (_masterClock)

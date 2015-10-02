@@ -96,6 +96,7 @@ class Image_FFmpeg : public Image
         int64_t _elapsedTime {0};
         float _seekTime {0};
 
+        std::mutex _clockMutex;
         bool _useClock {false};
         int64_t _clockTime {-1};
         bool _clockPaused {false};
