@@ -171,6 +171,9 @@ class BaseObject
             return false;
         }
 
+        /**
+         * Unlink a given object
+         */
         virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
             auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
@@ -190,6 +193,9 @@ class BaseObject
             return false;
         }
 
+        /**
+         * Return a vector of the linked objects
+         */
         const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects()
         {
             std::vector<std::shared_ptr<BaseObject>> objects;
@@ -207,23 +213,26 @@ class BaseObject
 
         /**
          * Set the specified attribute
+         * \params attrib Attribute name
+         * \params args Values object which holds attribute values
          */
         bool setAttribute(const std::string& attrib, const Values& args)
         {
             auto attribFunction = _attribFunctions.find(attrib);
-            auto attribNotPresent = (attribFunction == _attribFunctions.end());
+            bool attribNotPresent = (attribFunction == _attribFunctions.end());
 
             if (attribNotPresent)
             {
-                auto result = _attribFunctions.emplace(std::make_pair(std::string(attrib), AttributeFunctor()));
+                auto result = _attribFunctions.emplace(std::make_pair(attrib, AttributeFunctor()));
                 if (!result.second)
                     return false;
 
                 attribFunction = result.first;
             }
 
-            _updatedParams = true;
-            auto attribResult = attribFunction->second(args);
+            if (!attribFunction->second.isDefault())
+                _updatedParams = true;
+            bool attribResult = attribFunction->second(std::forward<const Values&>(args));
 
             return attribResult && attribNotPresent;
         }
