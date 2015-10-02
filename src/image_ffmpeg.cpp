@@ -431,11 +431,39 @@ void Image_FFmpeg::videoDisplayLoop()
         unique_lock<mutex> lockFrames(_videoQueueMutex);
         _videoQueueCondition.wait(lockFrames);
 
-        if (!_clockMutex.try_lock())
-            continue;
-
-        while (_timedFrames.size() > 0)
+        while (_timedFrames.size() > 0 && _continueRead)
         {
+            Values clock;
+            if (_useClock && Timer::get().getMasterClock(clock))
+            {
+                float seconds = (float)(clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120) / 120.f;
+                float diff = _elapsedTime / 1e6 - seconds;
+
+                if (abs(diff) > 2.f)
+                {
+                    _elapsedTime = seconds * 1e6;
+                    _clockTime = _elapsedTime;
+                    _timedFrames.clear();
+
+                    SThread::pool.enqueueWithoutId([=]() {
+                        seek(seconds);
+                    });
+                    continue;
+                }
+                else
+                {
+                    if (_clockTime == seconds * 1e6)
+                    {
+                        _clockPaused = true;
+                    }
+                    else
+                    {
+                        _clockPaused = false;
+                        _clockTime = seconds * 1e6;
+                    }
+                }
+            }
+
             if (_currentTime == _clockTime || _clockPaused)
             {
                 this_thread::sleep_for(chrono::milliseconds(5));
@@ -470,52 +498,12 @@ void Image_FFmpeg::videoDisplayLoop()
             }
             _timedFrames.pop_front();
         }
-
-        _clockMutex.unlock();
     }
 }
 
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
-    _attribFunctions["clock"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 7)
-            return false;
-
-        if (!_useClock)
-        {
-            _clockTime = -1;
-            _clockPaused = false;
-            return true;
-        }
-
-        float seconds = (float)(args[6].asInt() + (args[5].asInt() + (args[4].asInt() + (args[3].asInt() + args[2].asInt()) * 24) * 60) * 120) / 120.f;
-        float diff = _elapsedTime / 1e6 - seconds;
-        if (abs(diff) > 2.f)
-        {
-            _elapsedTime = seconds * 1e6;
-            _clockTime = _elapsedTime;
-            SThread::pool.enqueueWithoutId([=]() {
-                unique_lock<mutex> lock(_clockMutex);
-                seek(seconds);
-            });
-        }
-        else
-        {
-            if (_clockTime == seconds * 1e6)
-            {
-                _clockPaused = true;
-            }
-            else
-            {
-                _clockPaused = false;
-                _clockTime = seconds * 1e6;
-            }
-        }
-
-        return true;
-    });
-
     _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
         return false;
     }, [&]() -> Values {
