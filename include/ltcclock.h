@@ -79,6 +79,10 @@ class LtcClock : public BaseObject
         bool _continue {false};
         std::thread _ltcThread;
 
+        bool _framerateChanged {false};
+        uint8_t _previousFrame {0};
+        uint8_t _maximumFramePerSec {30};
+
         Clock _clock;
         std::unique_ptr<Listener> _listener;
 
