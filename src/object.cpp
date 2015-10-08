@@ -224,7 +224,7 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
     if (obj->getType().find("texture") != string::npos)
     {
         auto filter = make_shared<Filter>(_root);
-        filter->setName(getName() + "_" + obj->getName() + "_tex");
+        filter->setName(getName() + "_" + obj->getName() + "_filter");
         if (filter->linkTo(obj))
         {
             _root.lock()->registerObject(filter);
@@ -285,20 +285,32 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
     {
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
-        removeTexture(tex);
+        auto filterName = getName() + "_" + obj->getName() + "_filter";
+        auto filter = _root.lock()->unregisterObject(filterName);
+
+        if (!filter)
+            return false;
+        else if (filter->unlinkFrom(obj))
+            unlinkFrom(filter);
+        else
+            return false;
     }
     else if (type.find("image") != string::npos)
     {
-        auto textureName = getName() + "_" + obj->getName() + "_tex";
-        auto tex = _root.lock()->unregisterObject(textureName);
+        auto filterName = getName() + "_" + obj->getName() + "_filter";
+        auto filter = _root.lock()->unregisterObject(filterName);
 
-        if (!tex)
+        if (!filter)
             return false;
-        else if (tex->unlinkFrom(obj))
-            unlinkFrom(tex);
+        else if (filter->unlinkFrom(obj))
+            unlinkFrom(filter);
         else
             return false;
+    }
+    else if (type.find("filter") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
     }
     else if (type.find("mesh") != string::npos)
     {
