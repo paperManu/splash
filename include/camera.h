@@ -27,6 +27,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -104,8 +105,8 @@ class Camera : public BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
-        bool unlinkFrom(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -159,7 +160,7 @@ class Camera : public BaseObject
         GLuint _fbo {0};
         Texture_ImagePtr _depthTexture;
         std::vector<Texture_ImagePtr> _outTextures;
-        std::vector<ObjectPtr> _objects;
+        std::vector<std::weak_ptr<Object>> _objects;
 
         // Rendering parameters
         bool _drawFrame {false};
@@ -175,7 +176,9 @@ class Camera : public BaseObject
         glm::mat3 _colorMixMatrix;
 
         // Some default models use in various situations
-        std::unordered_map<std::string, ObjectPtr> _models;
+        std::list<std::shared_ptr<Mesh>> _modelMeshes;
+        std::list<std::shared_ptr<Geometry>> _modelGeometries;
+        std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
         // Camera parameters
         float _fov {35}; // This is the vertical FOV
@@ -195,6 +198,7 @@ class Camera : public BaseObject
         // Calibration parameters
         bool _calibrationCalledOnce {false};
         bool _displayCalibration {false};
+        bool _displayAllCalibrations {false};
         bool _showAllCalibrationPoints {false};
         struct CalibrationPoint
         {
@@ -236,6 +240,11 @@ class Camera : public BaseObject
          * Load some defaults models, like the locator for calibration
          */
         void loadDefaultModels();
+
+        /**
+         * Send calibration points to the model
+         */
+        void sendCalibrationPointsToObjects();
 
         /**
          * Register new functors to modify attributes

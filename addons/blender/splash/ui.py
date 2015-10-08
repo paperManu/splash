@@ -74,12 +74,12 @@ class SplashToolbar:
 
 # Panel is available in object and editmode
 class SplashToolbarObject(Panel, SplashToolbar):
-    bl_category = "Video Mapping"
+    bl_category = "Splash"
     bl_idname = "MESH_PT_splash_object"
     bl_context = "objectmode"
 
 class SplashToolbarMesh(Panel, SplashToolbar):
-    bl_category = "Video Mapping"
+    bl_category = "Splash"
     bl_idname = "MESH_PT_splash_mesh"
     bl_context = "mesh_edit"
 
@@ -110,6 +110,12 @@ class SplashObjectPanel(Panel):
             row = layout.row()
             row.prop(object, "splash_width", text="Width")
             row.prop(object, "splash_height", text="Height")
+
+            row = layout.row()
+            row.label("Window position:")
+            row = layout.row()
+            row.prop(object, "splash_position_x", text="X")
+            row.prop(object, "splash_position_y", text="Y")
 
             row = layout.row()
             row.prop(object, "splash_window_decoration", text="Window decoration")

@@ -84,7 +84,7 @@ class GuiGlobalView : public GuiWidget
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
-        void setObject(ObjectPtr obj);
+        void setObject(std::shared_ptr<BaseObject> obj);
 
     protected:
         CameraPtr _camera, _guiCamera;
@@ -116,6 +116,7 @@ class GuiGlobalView : public GuiWidget
         void switchHideOtherCameras();
         void nextCamera();
         void showAllCalibrationPoints();
+        void showAllCamerasCalibrationPoints();
 };
 
 /*************/
@@ -182,6 +183,7 @@ class GuiNodeView : public GuiWidget
         SceneWeakPtr _scene;
         bool _isHovered {false};
         std::string _clickedNode {""};
+        std::string _sourceNode {""};
 
         // Node render settings
         std::vector<int> _nodeSize {160, 30};

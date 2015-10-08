@@ -72,6 +72,7 @@ class Shader : public BaseObject
             texture = 0,
             texture_rect,
             color,
+            filter,
             primitiveId,
             uv,
             wireframe,
@@ -98,11 +99,6 @@ class Shader : public BaseObject
          * Activate this shader
          */
         void activate();
-
-        /**
-         * Activate for feedback rendering
-         */
-        void activateFeedback();
 
         /**
          * Deactivate this shader

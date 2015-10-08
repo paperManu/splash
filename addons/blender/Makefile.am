@@ -1,16 +1,19 @@
+SUBDIRS = splash
+
 EXTRA_DIST = \
 	splash/__init__.py \
 	splash/operators.py \
 	splash/ui.py
 
 blenderSplash.zip:
-	cd $(top_srcdir)/addons/blender
-	zip blenderSplash.zip -r splash
+	cd $(top_builddir)/addons/blender
+	zip blenderSplash.zip -r splash -x *.swp splash/Makefile*
 
-clean:
+clean: clean-recursive
 	rm -f blenderSplash.zip Makefile
 
-distclean: clean
+distclean: distclean-recursive
+	rm -f blenderSplash.zip Makefile
 
 datasdir = $(datadir)/splash/
 datas_DATA = \

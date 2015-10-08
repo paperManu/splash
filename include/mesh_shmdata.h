@@ -64,7 +64,6 @@ class Mesh_Shmdata : public Mesh
         bool read(const std::string& filename);
 
     protected:
-        std::string _filename {""};
         std::string _caps {""};
         Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};

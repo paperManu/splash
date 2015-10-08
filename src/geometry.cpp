@@ -34,9 +34,11 @@ void Geometry::init()
 
     glGenQueries(1, &_feedbackQuery);
 
-    _mesh = make_shared<Mesh>();
+    _defaultMesh = make_shared<Mesh>();
+    _mesh = weak_ptr<Mesh>(_defaultMesh);
     update();
-    _timestamp = _mesh->getTimestamp();
+    _timestamp = _defaultMesh->getTimestamp();
+
 }
 
 /*************/
@@ -158,10 +160,11 @@ bool Geometry::deserialize(unique_ptr<SerializedObject> obj)
 }
 
 /*************/
-bool Geometry::linkTo(BaseObjectPtr obj)
+bool Geometry::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
@@ -179,7 +182,11 @@ float Geometry::pickVertex(dvec3 p, dvec3& v)
     float distance = numeric_limits<float>::max();
     dvec3 closestVertex;
 
-    vector<float> vertices = _mesh->getVertCoords();
+    if (_mesh.expired())
+        return distance;
+    auto mesh = _mesh.lock();
+
+    vector<float> vertices = mesh->getVertCoords();
     for (int i = 0; i < vertices.size(); i += 4)
     {
         dvec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
@@ -213,35 +220,36 @@ void Geometry::swapBuffers()
 /*************/
 void Geometry::update()
 {
-    if (!_mesh)
-        return; // No mesh, no update
+    if (_mesh.expired())
+        return;
+    auto mesh = _mesh.lock();
 
     if (_glBuffers.size() != 4)
         _glBuffers.resize(4);
 
     // Update the vertex buffers if mesh was updated
-    if (_timestamp != _mesh->getTimestamp())
+    if (_timestamp != mesh->getTimestamp())
     {
-        _mesh->update();
+        mesh->update();
 
-        vector<float> vertices = _mesh->getVertCoords();
+        vector<float> vertices = mesh->getVertCoords();
         if (vertices.size() == 0)
             return;
         _verticesNumber = vertices.size() / 4;
         _glBuffers[0] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, vertices.data());
         
-        vector<float> texcoords = _mesh->getUVCoords();
+        vector<float> texcoords = mesh->getUVCoords();
         if (texcoords.size() == 0)
             return;
         _glBuffers[1] = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, texcoords.data());
 
-        vector<float> normals = _mesh->getNormals();
+        vector<float> normals = mesh->getNormals();
         if (normals.size() == 0)
             return;
         _glBuffers[2] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, normals.data());
 
         // An additional annexe buffer, to be filled by compute shaders. Contains a vec4 for each vertex
-        vector<float> annexe = _mesh->getAnnexe();
+        vector<float> annexe = mesh->getAnnexe();
         if (annexe.size() == 0)
             _glBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _verticesNumber, nullptr);
         else
@@ -264,7 +272,7 @@ void Geometry::update()
             glDeleteVertexArrays(1, &(v.second));
         _vertexArray.clear();
 
-        _timestamp = _mesh->getTimestamp();
+        _timestamp = mesh->getTimestamp();
 
         _buffersDirty = true;
     }

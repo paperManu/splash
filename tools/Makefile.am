@@ -9,6 +9,15 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/compatibility/include
+else
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/core/include
+endif
+
+if HAVE_GPHOTO
 bin_PROGRAMS = \
 	splash-check-calibration
 
@@ -26,3 +35,4 @@ splash_check_calibration_OBJCXXFLAGS = \
 	-F$(top_srcdir)/external/syphon/build/Release \
 	-framework Syphon
 endif
+endif # HAVE_GPHOTO

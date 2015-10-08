@@ -12,11 +12,14 @@ namespace Splash {
 /*************/
 Mesh::Mesh()
 {
-    _type = "mesh";
+    init();
+}
 
-    createDefaultMesh();
-
-    registerAttributes();
+/*************/
+Mesh::Mesh(bool linkedToWorld)
+{
+    init();
+    _linkedToWorldObject = true;
 }
 
 /*************/
@@ -25,6 +28,16 @@ Mesh::~Mesh()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Mesh::~Mesh - Destructor" << Log::endl;
 #endif
+}
+
+/*************/
+void Mesh::init()
+{
+    _type = "mesh";
+
+    createDefaultMesh();
+
+    registerAttributes();
 }
 
 /*************/
@@ -100,21 +113,27 @@ bool Mesh::read(const string& filename)
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
 
-    Loader::Obj objLoader;
-    if (!objLoader.load(filepath))
+    _filepath = filepath;
+
+    if (!_linkedToWorldObject)
     {
-        Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
-        return false;
+        Loader::Obj objLoader;
+        if (!objLoader.load(filepath))
+        {
+            Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
+            return false;
+        }
+
+        _filepath = filepath;
+        MeshContainer mesh;
+        mesh.vertices = objLoader.getVertices();
+        mesh.uvs = objLoader.getUVs();
+        mesh.normals = objLoader.getNormals();
+
+        unique_lock<mutex> lock(_writeMutex);
+        _mesh = mesh;
+        updateTimestamp();
     }
-
-    MeshContainer mesh;
-    mesh.vertices = objLoader.getVertices();
-    mesh.uvs = objLoader.getUVs();
-    mesh.normals = objLoader.getNormals();
-
-    unique_lock<mutex> lock(_writeMutex);
-    _mesh = mesh;
-    updateTimestamp();
 
     return true;
 }
@@ -317,6 +336,8 @@ void Mesh::registerAttributes()
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
+    }, [&]() -> Values {
+        return {_filepath};
     });
     
     _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {

@@ -35,22 +35,25 @@ Image_OpenCV::~Image_OpenCV()
 /*************/
 bool Image_OpenCV::read(const string& filename)
 {
-    unsigned int inputIndex;
     try
     {
-        inputIndex = stoi(filename);
+        _inputIndex = stoi(filename);
     }
     catch (...)
     {
-        inputIndex = 0;
+        _inputIndex = -1;
     }
+
+    if (_inputIndex == -1)
+        _filepath = filename;
+    else
+        _filepath = to_string(_inputIndex);
 
     // This releases any previous input
     _continueReading = false;
     if (_readLoopThread.joinable())
         _readLoopThread.join();
 
-    _inputIndex = inputIndex;
     _continueReading = true;
     _readLoopThread = thread([&]() {
         readLoop();
@@ -70,16 +73,23 @@ void Image_OpenCV::readLoop()
 
     if (!_videoCapture->isOpened())
     {
-        if (!_videoCapture->open(_inputIndex))
+        bool status;
+        if (_inputIndex >= 0)
+            status = _videoCapture->open(_inputIndex);
+        else
+            status = _videoCapture->open(_filepath);
+
+        if (!status)
         {
-            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << _inputIndex << Log::endl;
+            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << _filepath << Log::endl;
             return;
         }
+
         _videoCapture->set(CV_CAP_PROP_FRAME_WIDTH, _width);
         _videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
         _videoCapture->set(CV_CAP_PROP_FPS, _framerate);
 
-        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Sucessfully initialized VideoCapture " << _inputIndex << Log::endl;
+        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Successfully initialized VideoCapture " << _filepath << Log::endl;
     }
 
     while (_continueReading)
@@ -107,7 +117,9 @@ void Image_OpenCV::readLoop()
         copy(capture.data, capture.data + imageSize, pixels);
 
         unique_lock<mutex> lockWrite(_writeMutex);
-        _bufferImage.swap(_readBuffer);
+        if (!_bufferImage)
+            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
+        _bufferImage->swap(_readBuffer);
         _imageUpdated = true;
         updateTimestamp();
 

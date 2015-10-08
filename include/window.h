@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <deque>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <utility>
@@ -112,8 +113,8 @@ class Window : public BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
-        bool unlinkFrom(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Render this window to screen
@@ -133,8 +134,8 @@ class Window : public BaseObject
         /**
          * Set / unset a new texture to draw
          */
-        void setTexture(TexturePtr tex);
-        void unsetTexture(TexturePtr tex);
+        void setTexture(std::shared_ptr<Texture> tex);
+        void unsetTexture(std::shared_ptr<Texture> tex);
 
         /**
          * Swap the back and front buffers
@@ -169,7 +170,7 @@ class Window : public BaseObject
         ObjectPtr _screen;
         ObjectPtr _screenGui;
         glm::dmat4 _viewProjectionMatrix;
-        std::vector<TexturePtr> _inTextures;
+        std::list<std::weak_ptr<Texture>> _inTextures;
         TexturePtr _guiTexture {nullptr}; // The gui has its own texture
 
         static std::mutex _callbackMutex;

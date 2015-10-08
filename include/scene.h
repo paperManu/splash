@@ -40,6 +40,7 @@
 #include "coretypes.h"
 #include "basetypes.h"
 #include "gui.h"
+#include "httpServer.h"
 #include "widgets.h"
 
 namespace Splash {
@@ -58,6 +59,7 @@ class Scene : public RootObject
     friend GuiNodeView;
     friend GuiWidget;
     friend Gui;
+    friend HttpServer;
 
     public:
         /**
@@ -79,6 +81,12 @@ class Scene : public RootObject
          * Add a fake object, keeping only its configuration between uses
          */
         void addGhost(std::string type, std::string name = std::string());
+
+        /**
+         * Get an attribute for the given object
+         * Trie locally and to the World
+         */
+        Values getAttributeFromObject(std::string name, std::string attribute);
 
         /**
          * Get the current configuration of the scene as a json object
@@ -157,7 +165,8 @@ class Scene : public RootObject
         /**
          * Set a message to be sent to the world
          */
-        void sendMessageToWorld(const std::string message, const Values& value = {});
+        void sendMessageToWorld(const std::string& message, const Values& value = {});
+        Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {});
 
         /**
          * Wait for synchronization with texture upload
@@ -175,6 +184,11 @@ class Scene : public RootObject
         // Gui exists in master scene whatever the configuration
         GuiPtr _gui;
         bool _guiLinkedToWindow {false};
+        
+        // Http server, in master scene too
+        HttpServerPtr _httpServer;
+        std::future<void> _httpServerFuture;
+
         // Objects in charge of calibration
 #if HAVE_GPHOTO
         ColorCalibratorPtr _colorCalibrator;

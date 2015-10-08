@@ -1,0 +1,127 @@
+/*
+ * Copyright (C) 2015 Emmanuel Durand
+ *
+ * This file is part of Splash.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Splash is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Splash.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/*
+ * @filter.h
+ * The Filter class
+ */
+
+#ifndef SPLASH_FILTER_H
+#define SPLASH_FILTER_H
+
+#include <memory>
+#include <string>
+#include <vector>
+#include <glm/glm.hpp>
+
+#include "config.h"
+
+#include "coretypes.h"
+#include "basetypes.h"
+#include "image.h"
+#include "object.h"
+#include "texture.h"
+#include "texture_image.h"
+
+namespace Splash {
+
+/*************/
+class Filter : public Texture
+{
+    public:
+        /**
+         * Constructor
+         */
+        Filter(RootObjectWeakPtr root);
+
+        /**
+         * Destructor
+         */
+        ~Filter();
+
+        /**
+         * No copy constructor, but a move one
+         */
+        Filter(const Filter&) = delete;
+        Filter(Filter&&) = default;
+        Filter& operator=(const Filter&) = delete;
+
+        /**
+         * Bind / unbind this texture of this filter
+         */
+        void bind();
+        void unbind();
+
+        /**
+         * Get the shader parameters related to this texture
+         * Texture should be locked first
+         */
+        std::unordered_map<std::string, Values> getShaderUniforms() const;
+
+        /**
+         * Get spec of the texture
+         */
+        oiio::ImageSpec getSpec() const {return _outTextureSpec;}
+
+        /**
+         * Try to link / unlink the given BaseObject to this
+         */
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * Update the texture according to the owned Image
+         */
+        void update();
+
+    private:
+        bool _isInitialized {false};
+        GlWindowPtr _window;
+        std::weak_ptr<Texture> _inTexture;
+
+        GLuint _fbo {0};
+        std::shared_ptr<Texture_Image> _outTexture {nullptr};
+        std::shared_ptr<Object> _screen;
+        oiio::ImageSpec _outTextureSpec;
+
+        /**
+         * Init function called in constructors
+         */
+        void init();
+
+        /**
+         * Setup the output texture
+         */
+        void setOutput();
+
+        /**
+         * Updates the shader uniforms according to the textures and images
+         * the filter is connected to.
+         */
+        void updateUniforms();
+
+        /**
+         * Register new functors to modify attributes
+         */
+        void registerAttributes();
+};
+
+} // end of namespace
+
+#endif // SPLASH_FILTER_H

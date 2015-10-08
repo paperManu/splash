@@ -77,7 +77,7 @@ class Texture_Syphon : public Texture
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
          * Update the texture according to the owned Image

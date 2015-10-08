@@ -45,7 +45,7 @@ class Image : public BufferObject
          * Constructor
          */
         Image();
-        Image(bool linked);
+        Image(bool linked); //< This constructor is used if the object is linked to a World counterpart
         Image(oiio::ImageSpec spec);
 
         /**
@@ -127,8 +127,9 @@ class Image : public BufferObject
         bool write(const std::string& filename);
 
     protected:
-        oiio::ImageBuf _image;
-        oiio::ImageBuf _bufferImage;
+        std::unique_ptr<oiio::ImageBuf> _image;
+        std::unique_ptr<oiio::ImageBuf> _bufferImage;
+        std::string _filepath;
         bool _flip {false};
         bool _flop {false};
         bool _imageUpdated {false};
@@ -155,7 +156,7 @@ class Image : public BufferObject
         /**
          * Register new functors to modify attributes
          */
-        virtual void registerAttributes();
+        void registerAttributes();
 };
 
 typedef std::shared_ptr<Image> ImagePtr;

@@ -193,8 +193,8 @@ sendAsDefault:
             io.KeysDown[key] = true;
         if (action == GLFW_RELEASE)
             io.KeysDown[key] = false;
-        io.KeyCtrl = (mods & GLFW_MOD_CONTROL) != 0;
-        io.KeyShift = (mods & GLFW_MOD_SHIFT) != 0;
+        io.KeyCtrl = ((mods & GLFW_MOD_CONTROL) != 0) && (action == GLFW_PRESS);
+        io.KeyShift = ((mods & GLFW_MOD_SHIFT) != 0) && (action == GLFW_PRESS);
     
         break;
     }
@@ -240,6 +240,8 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
             calibrateColorResponseFunction();
+        else
+            goto sendAsDefault;
         break;
     }
     case GLFW_KEY_P:
@@ -350,10 +352,11 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 }
 
 /*************/
-bool Gui::linkTo(BaseObjectPtr obj)
+bool Gui::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
@@ -363,6 +366,17 @@ bool Gui::linkTo(BaseObjectPtr obj)
     }
 
     return false;
+}
+
+/*************/
+bool Gui::unlinkFrom(shared_ptr<BaseObject> obj)
+{
+    if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
+    {
+        _guiCamera->unlinkFrom(obj);
+    }
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -708,7 +722,7 @@ void Gui::initImWidgets()
     {
         string text;
         text += "Tab: show / hide this GUI\n";
-        text += "Shortcuts for the calibration view:\n";
+        text += "General shortcuts:\n";
         text += " Ctrl+F: white background instead of black\n";
         text += " Ctrl+B: compute the blending between all cameras\n";
         text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
@@ -722,11 +736,18 @@ void Gui::initImWidgets()
         text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
         text += "\n";
-        text += " Space: switch between cameras (when hovering the Views panel)\n";
-        text += " A: show / hide the target calibration point (when hovering the Views panel)\n";
-        text += " C: calibrate the selected camera (when hovering the Views panel)\n";
-        text += " R: revert camera to previous calibration (when hovering the Views panel)\n";
-        text += " H: hide all but the selected camera (when hovering the Views panel)\n";
+        text += "Views panel:\n";
+        text += " Space: switch between cameras\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " C: calibrate the selected camera\n";
+        text += " R: revert camera to previous calibration\n";
+        text += " H: hide all but the selected camera\n";
+        text += " O: show calibration points from all cameras\n";
+
+        text += "\n";
+        text += "Node view (inside Control panel):\n";
+        text += " Shift + left click: link the clicked node to the selected one\n";
+        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
 
         return text;
     });
@@ -742,6 +763,7 @@ void Gui::initImWidgets()
         static float upl {0.f};
         static float tex {0.f};
         static float ble {0.f};
+        static float flt {0.f};
         static float cam {0.f};
         static float gui {0.f};
         static float win {0.f};
@@ -753,19 +775,25 @@ void Gui::initImWidgets()
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
+        flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
         cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
         win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
+
         // Create the text message
         ostringstream stream;
+        Values clock;
+        if (Timer::get().getMasterClock(clock))
+            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":" << clock[5].asInt() << ":" << clock[6].asInt() << "\n";
         stream << "Framerate: " << setprecision(4) << fps << " fps\n";
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
         stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
         stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
+        stream << "Filters: " << setprecision(4) << flt << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";

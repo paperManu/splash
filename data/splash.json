@@ -4,7 +4,7 @@
     "encoding" : "UTF-8",
 
     "world" : {
-        "framerate" : 300
+        "framerate" : 60
     },
 
     "scenes" : [
@@ -13,7 +13,8 @@
             "address" : "localhost",
             "spawn" : 1,
             "display" : 0,
-            "swapInterval" : 1
+            "swapInterval" : 1,
+            "httpServer" : ["127.0.0.1", "9000"]
         }
     ],
 
@@ -27,22 +28,24 @@
             "blackLevel" : 0.0,
             "shared" : 0
         },
-        "cam2" : {
-            "type" : "camera",
-            "size" : [1280, 1024],
-            "eye" : [2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "blackLevel" : 0.0,
-            "shared" : 0
-        },
-        "win1" : {"type" : "window", "fullscreen" : -1, "position" : [0, 0], "size" : [1280, 1024]},
-        "win2" : {"type" : "window", "fullscreen" : -1, "position" : [0, 0], "size" : [1280, 1024]},
+        //"cam2" : {
+        //    "type" : "camera",
+        //    "size" : [1280, 1024],
+        //    "eye" : [-2.0, 2.0, 0.3],
+        //    "target" : [0.0, 0.0, 0.5],
+        //    "blendWidth" : 0.05,
+        //    "blackLevel" : 0.0,
+        //    "shared" : 0
+        //},
+        "win1" : {"type" : "window", "fullscreen" : -1, "position" : [1920, 0], "size" : [1280, 1024]},
+        //"win2" : {"type" : "window", "fullscreen" : -1, "position" : [1920, 0], "size" : [1280, 1024]},
 
         "mesh" : {"type" : "mesh", "file" : "sphere.obj", "benchmark" : 0},
         "object" : {"type" : "object", "sideness" : 2},
-        "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0, "srgb" : 1},
-        //"image" : {"type" : "image_ffmpeg", "file" : "/dev/video0", "benchmark" : 0, "srgb" : 1},
+        //"filter" : {"type" : "filter"},
+        //"image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0, "srgb" : 1},
+        "image" : {"type" : "image_ffmpeg", "file" : "/home/manu/Downloads/big_buck_bunny_1080p_stereo.avi", "benchmark" : 0, "srgb" : 1, "useClock" : 1},
+        "image" : {"type" : "image_ffmpeg", "file" : "/home/manu/Documents/Dome/RIDE.Zero_YUV.avi", "benchmark" : 0, "srgb" : 1, "loop" : 1, "useClock" : 1},
         //"image" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
         //"image" : {"type" : "image_opencv", "file" : "0", "size" : [1920, 1080]},
 
@@ -51,6 +54,7 @@
             ["object", "cam1"],
             ["object", "cam2"],
             ["image", "object"],
+            //["filter", "object"],
             ["cam1", "win1"],
             ["cam2", "win2"]
         ]

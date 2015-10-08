@@ -101,6 +101,16 @@ void World::run()
             Timer::get() >> "upload";
         }
 
+        // Update the distant attributes
+        for (auto& o : _objects)
+        {
+            auto attribs = o.second->getDistantAttributes();
+            for (auto& attrib : attribs)
+            {
+                sendMessage(o.second->getName(), attrib.first, attrib.second);
+            }
+        }
+
         // If swap synchronization test is enabled
         if (_swapSynchronizationTesting)
         {
@@ -135,6 +145,10 @@ void World::run()
         auto& durationMap = Timer::get().getDurationMap();
         for (auto& d : durationMap)
             sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
+        // Also send the master clock if needed
+        Values clock;
+        if (Timer::get().getMasterClock(clock))
+            sendMessage(SPLASH_ALL_PAIRS, "masterClock", clock);
 
         // Send newer logs to all Scenes
         auto logs = Log::get().getLogs();
@@ -306,14 +320,20 @@ void World::applyConfig()
             for (const auto& param : jsScenes[i])
             {
                 string paramName = sceneMembers[idx];
-                Value v;
-                if (param.isInt())
-                    v = param.asInt();
-                else if (param.isDouble())
-                    v = param.asFloat();
-                else
-                    v = param.asString();
-                sendMessage(name, paramName, {v});
+
+                Values values;
+                for (auto& p : param)
+                {
+                    Value v;
+                    if (p.isInt())
+                        v = p.asInt();
+                    else if (p.isDouble())
+                        v = p.asFloat();
+                    else
+                        v = p.asString();
+                    values.push_back(v);
+                }
+                sendMessage(name, paramName, values);
                 idx++;
             }
         }
@@ -430,9 +450,18 @@ void World::applyConfig()
 
             idx++;
         }
+    }
 
-        // Link the objects together
-        idx = 0;
+    // Link the objects together
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+        auto sceneMembers = jsScene.getMemberNames();
+
+        int idx = 0;
         for (const auto& obj : jsScene)
         {
             if (sceneMembers[idx] != "links")
@@ -632,11 +661,13 @@ void World::parseArguments(int argc, char** argv)
 
     // Parse the other args
     int idx = 1;
-    string filename {""};
+    string filename = string(DATADIR) + "splash.json";
+    bool defaultFile = true;
     while (idx < argc)
     {
         if ((string(argv[idx]) == "-o" || string(argv[idx]) == "--open") && idx + 1 < argc)
         {
+            defaultFile = false;
             filename = string(argv[idx + 1]);
             idx += 2;
         }
@@ -669,6 +700,9 @@ void World::parseArguments(int argc, char** argv)
             idx++;
     }
 
+    if (defaultFile)
+        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
+
     if (filename != "")
     {
         Json::Value config;
@@ -693,6 +727,25 @@ void World::setAttribute(string name, string attrib, const Values& args)
 /*************/
 void World::registerAttributes()
 {
+    _attribFunctions["addObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        auto type = args[0].asString();
+        auto name = type + "_" + to_string(_nextId);
+        _nextId++;
+
+        unique_lock<mutex> lock(_configurationMutex);
+
+        for (auto& s : _scenes)
+        {
+            sendMessage(s.first, "add", {type, name});
+            addLocally(type, name, s.first);
+        }
+
+        return true;
+    });
+
     _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
         _childProcessLaunched = true;
         _childProcessConditionVariable.notify_all();
@@ -701,6 +754,30 @@ void World::registerAttributes()
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         sendMessage(SPLASH_ALL_PAIRS, "computeBlending", args);
+        return true;
+    });
+
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        unique_lock<mutex> lock(_configurationMutex);
+        auto objectName = args[0].asString();
+
+        // Delete the object here
+        auto objectDestIt = _objectDest.find(objectName);
+        if (objectDestIt != _objectDest.end())
+            _objectDest.erase(objectDestIt);
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+            _objects.erase(objectIt);
+
+        // Ask for Scenes to delete the object
+        SThread::pool.enqueueWithoutId([=]() {
+            sendMessage(SPLASH_ALL_PAIRS, "deleteObject", args);
+        });
+
         return true;
     });
 
@@ -718,8 +795,28 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
-        _quit = true;
+    _attribFunctions["getAttribute"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 2)
+            return false;
+
+        auto objectName = args[0].asString();
+        auto attrName = args[1].asString();
+
+        auto objectIt = _objects.find(objectName);
+        if (objectIt != _objects.end())
+        {
+            auto& object = objectIt->second;
+            Values values {};
+            object->getAttribute(attrName, values);
+
+            SThread::pool.enqueueWithoutId([=]() {
+                Values sentValues {"getAttribute"};
+                for (auto& v : values)
+                    sentValues.push_back(v);
+                sendMessage(SPLASH_ALL_PAIRS, "answerMessage", sentValues);
+            });
+        }
+
         return true;
     });
 
@@ -751,6 +848,11 @@ void World::registerAttributes()
         return true;
     });
 
+    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
+        _quit = true;
+        return true;
+    });
+
     _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 0)
             _configFilename = args[0].asString();
@@ -771,11 +873,31 @@ void World::registerAttributes()
         for (int i = 2; i < args.size(); ++i)
             values.push_back(args[i]);
 
+        // Ask for update of the ghost object if needed
         sendMessage(_masterSceneName, "setGhost", values);
         
+        // Send the updated values to all scenes
         values.erase(values.begin());
         values.erase(values.begin());
         sendMessage(name, attr, values);
+
+        // Also update local version
+        if (_objects.find(name) != _objects.end())
+            _objects[name]->setAttribute(attr, values);
+
+        return true;
+    });
+
+    _attribFunctions["sendAllScenes"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string attr = args[0].asString();
+        Values values;
+        for (int i = 1; i < args.size(); ++i)
+            values.push_back(args[i]);
+        for (auto& scene : _scenes)
+            sendMessage(scene.first, attr, values);
+
         return true;
     });
 

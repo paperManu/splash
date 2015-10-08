@@ -40,27 +40,65 @@ namespace Splash
 struct AttributeFunctor
 {
     public:
-        AttributeFunctor() {}
-        AttributeFunctor(std::function<bool(const Values&)> setFunc) {_setFunc = setFunc;}
+        AttributeFunctor() {};
+
+        AttributeFunctor(std::function<bool(const Values&)> setFunc)
+        {
+            _setFunc = setFunc;
+            _getFunc = std::function<const Values()>();
+            _defaultSetAndGet = false;
+        }
+        
         AttributeFunctor(std::function<bool(const Values&)> setFunc,
-                            std::function<const Values()> getFunc) {_setFunc = setFunc; _getFunc = getFunc;}
+                            std::function<const Values()> getFunc)
+        {
+            _setFunc = setFunc;
+            _getFunc = getFunc;
+            _defaultSetAndGet = false;
+        }
+
+        AttributeFunctor(const AttributeFunctor&) = delete;
+        AttributeFunctor(AttributeFunctor&&) = default;
+        AttributeFunctor& operator=(const AttributeFunctor&) = delete;
+        AttributeFunctor& operator=(AttributeFunctor&&) = default;
 
         bool operator()(const Values& args)
         {
-            if (!_setFunc)
+            if (!_setFunc && _defaultSetAndGet)
+            {
+                _values = args;
+                return true;
+            }
+            else if (!_setFunc)
                 return false;
-            return _setFunc(args);
+            return _setFunc(std::forward<const Values&>(args));
         }
+
         Values operator()() const
         {
-            if (!_getFunc)
+            if (!_getFunc && _defaultSetAndGet)
+                return _values;
+            else if (!_getFunc)
                 return Values();
             return _getFunc();
         }
 
+        bool isDefault() const
+        {
+            return _defaultSetAndGet;
+        }
+
+        bool doUpdateDistant() const {return _doUpdateDistant;}
+        void doUpdateDistant(bool update) {_doUpdateDistant = update;}
+
     private:
-        std::function<bool(const Values&)> _setFunc;
-        std::function<const Values()> _getFunc;
+        std::function<bool(const Values&)> _setFunc {};
+        std::function<const Values()> _getFunc {};
+
+        bool _defaultSetAndGet {true};
+        Values _values; // Holds the values for the default set and get functions
+
+        bool _doUpdateDistant {false}; // True if the World should send this attr values to Scenes
 };
 
 class BaseObject;
@@ -114,9 +152,18 @@ class BaseObject
         /**
          * Try to link / unlink the given BaseObject to this
          */
-        virtual bool linkTo(BaseObjectPtr obj)
+        virtual bool linkTo(std::shared_ptr<BaseObject> obj)
         {
-            if (std::find(_linkedObjects.begin(), _linkedObjects.end(), obj) == _linkedObjects.end())
+            auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
+                auto object = o.lock();
+                if (!object)
+                    return false;
+                if (object == obj)
+                    return true;
+                return false;
+            });
+
+            if (objectIt == _linkedObjects.end())
             {
                 _linkedObjects.push_back(obj);
                 return true;
@@ -124,57 +171,126 @@ class BaseObject
             return false;
         }
 
-        virtual bool unlinkFrom(BaseObjectPtr obj)
+        /**
+         * Unlink a given object
+         */
+        virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
-            auto objIterator = std::find(_linkedObjects.begin(), _linkedObjects.end(), obj);
-            if (objIterator != _linkedObjects.end())
+            auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
+                auto object = o.lock();
+                if (!object)
+                    return false;
+                if (object == obj)
+                    return true;
+                return false;
+            });
+
+            if (objectIt != _linkedObjects.end())
             {
-                _linkedObjects.erase(objIterator);
+                _linkedObjects.erase(objectIt);
                 return true;
             }
             return false;
         }
 
-        const std::vector<BaseObjectPtr>& getLinkedObjects()
+        /**
+         * Return a vector of the linked objects
+         */
+        const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects()
         {
-            return _linkedObjects;
+            std::vector<std::shared_ptr<BaseObject>> objects;
+            for (auto& o : _linkedObjects)
+            {
+                auto obj = o .lock();
+                if (!obj)
+                    continue;
+
+                objects.push_back(obj);
+            }
+
+            return objects;
         }
 
         /**
          * Set the specified attribute
+         * \params attrib Attribute name
+         * \params args Values object which holds attribute values
          */
         bool setAttribute(const std::string& attrib, const Values& args)
         {
             auto attribFunction = _attribFunctions.find(attrib);
-            if (attribFunction == _attribFunctions.end())
-                return false;
-            _updatedParams = true;
-            return (*attribFunction).second(args);
+            bool attribNotPresent = (attribFunction == _attribFunctions.end());
+
+            if (attribNotPresent)
+            {
+                auto result = _attribFunctions.emplace(std::make_pair(attrib, AttributeFunctor()));
+                if (!result.second)
+                    return false;
+
+                attribFunction = result.first;
+            }
+
+            if (!attribFunction->second.isDefault())
+                _updatedParams = true;
+            bool attribResult = attribFunction->second(std::forward<const Values&>(args));
+
+            return attribResult && attribNotPresent;
         }
 
         /**
          * Get the specified attribute
+         * \params attrib Attribute name
+         * \params args Values object which will hold the attribute values
+         * \params includeDistant Return true even if the attribute is distant
          */
-        bool getAttribute(const std::string& attrib, Values& args) const
+        bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false) const
         {
             auto attribFunction = _attribFunctions.find(attrib);
             if (attribFunction == _attribFunctions.end())
                 return false;
-            args = (*attribFunction).second();
+
+            args = attribFunction->second();
+
+            if (attribFunction->second.isDefault() && !includeDistant)
+                return false;
+
             return true;
         }
 
         /**
-         * Get all the attributes as a map
+         * Get all the savable attributes as a map
+         * \params includeDistant Also include the distant attributes
          */
-        std::unordered_map<std::string, Values> getAttributes() const
+        std::unordered_map<std::string, Values> getAttributes(bool includeDistant = false) const
         {
             std::unordered_map<std::string, Values> attribs;
             for (auto& attr : _attribFunctions)
             {
                 Values values;
+                if (getAttribute(attr.first, values, includeDistant) == false || values.size() == 0)
+                    continue;
+                attribs[attr.first] = values;
+            }
+
+            return attribs;
+        }
+
+        /**
+         * Get the map of the attributes which should be updated from World to Scene
+         * This is the case when the distant object is different from the World one
+         */
+        std::unordered_map<std::string, Values> getDistantAttributes() const
+        {
+            std::unordered_map<std::string, Values> attribs;
+            for (auto& attr : _attribFunctions)
+            {
+                if (!attr.second.doUpdateDistant())
+                    continue;
+
+                Values values;
                 if (getAttribute(attr.first, values) == false || values.size() == 0)
                     continue;
+
                 attribs[attr.first] = values;
             }
 
@@ -259,7 +375,7 @@ class BaseObject
         std::string _configFilePath {""}; // All objects know about their location
 
         RootObjectWeakPtr _root;
-        std::vector<BaseObjectPtr> _linkedObjects;
+        std::vector<std::weak_ptr<BaseObject>> _linkedObjects;
 
         std::unordered_map<std::string, AttributeFunctor> _attribFunctions;
         bool _updatedParams {true};
@@ -271,6 +387,13 @@ class BaseObject
                 if (args.size() == 0)
                     return false;
                 _configFilePath = args[0].asString();
+                return true;
+            });
+
+            _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
+                if (args.size() == 0)
+                    return false;
+                _name = args[0].asString();
                 return true;
             });
         }
@@ -380,13 +503,30 @@ class RootObject : public BaseObject
          * Register an object which was created elsewhere
          * If an object was the same name exists, it is replaced
          */
-        void registerObject(BaseObjectPtr object)
+        void registerObject(std::shared_ptr<BaseObject> object)
         {
             if (object.get() != nullptr)
             {
                 object->_savable = false; // This object was created on the fly. Do not save it
                 _objects[object->getName()] = object;
             }
+        }
+
+        /**
+         * Unregister an object which was created elsewhere, from its name,
+         * sending back a shared_ptr for it
+         */
+        std::shared_ptr<BaseObject> unregisterObject(std::string name)
+        {
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end())
+            {
+                auto object = objectIt->second;
+                _objects.erase(objectIt);
+                return object;
+            }
+
+            return {};
         }
 
         /**
@@ -420,7 +560,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::mutex _setMutex;
-        std::map<std::string, BaseObjectPtr> _objects;
+        std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;

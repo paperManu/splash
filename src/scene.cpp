@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "camera.h"
+#include "filter.h"
 #include "geometry.h"
 #include "gui.h"
 #include "image.h"
@@ -61,6 +62,12 @@ Scene::~Scene()
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
+    if (_httpServerFuture.valid())
+    {
+        _httpServer->stop();
+        _httpServerFuture.get();
+    }
+
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     unique_lock<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
@@ -88,6 +95,8 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("camera"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
+    else if (type == string("filter"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
     else if (type == string("geometry"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
     else if (type.find("image") == 0)
@@ -97,7 +106,7 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("mesh") || type == string("mesh_shmdata"))
     {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(true));
         obj->setRemoteType(type);
     }
     else if (type == string("object"))
@@ -139,7 +148,6 @@ BaseObjectPtr Scene::add(string type, string name)
 /*************/
 void Scene::addGhost(string type, string name)
 {
-
     // Currently, only Cameras can be ghosts
     if (type != string("camera"))
         return;
@@ -153,6 +161,29 @@ void Scene::addGhost(string type, string name)
     lock_guard<recursive_mutex> lock(_configureMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
+}
+
+/*************/
+Values Scene::getAttributeFromObject(string name, string attribute)
+{
+    auto objectIt = _objects.find(name);
+    
+    Values values;
+    if (objectIt != _objects.end())
+    {
+        auto& object = objectIt->second;
+        object->getAttribute(attribute, values);
+    }
+    
+    // Ask the World if it knows more about this object
+    if (values.size() == 0)
+    {
+        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute});
+        for (unsigned int i = 1; i < answer.size(); ++i)
+            values.push_back(answer[i]);
+    }
+
+    return values;
 }
 
 /*************/
@@ -222,7 +253,7 @@ bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
     lock_guard<recursive_mutex> lock(_configureMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
-    bool result = first->unlinkFrom(second);
+    bool result = second->unlinkFrom(first);
     glfwMakeContextCurrent(NULL);
 
     return result;
@@ -246,10 +277,6 @@ bool Scene::linkGhost(string first, string second)
     else if (_objects.find(second) != _objects.end())
         sink = _objects[second];
     else
-        return false;
-
-    // TODO: add a mechanism in objects to check if already linked
-    if (source->getType() != "camera" && sink->getType() != "camera")
         return false;
 
     return link(source, sink);
@@ -416,6 +443,12 @@ void Scene::render()
     Timer::get() << "blending";
     renderBlending();
     Timer::get() >> "blending";
+
+    Timer::get() << "filters";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "filter")
+            dynamic_pointer_cast<Filter>(obj.second)->update();
+    Timer::get() >> "filters";
     
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
@@ -580,10 +613,12 @@ void Scene::run()
         
         Timer::get() << "sceneLoop";
 
-        lock_guard<recursive_mutex> lock(_configureMutex);
-        _mainWindow->setAsCurrentContext();
-        render();
-        _mainWindow->releaseContext();
+        {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            _mainWindow->setAsCurrentContext();
+            render();
+            _mainWindow->releaseContext();
+        }
 
         Timer::get() >> "sceneLoop";
     }
@@ -659,9 +694,15 @@ void Scene::setAsWorldScene()
 }
 
 /*************/
-void Scene::sendMessageToWorld(const string message, const Values& value)
+void Scene::sendMessageToWorld(const string& message, const Values& value)
 {
     RootObject::sendMessage("world", message, value);
+}
+
+/*************/
+Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value)
+{
+    return sendMessageWithAnswer("world", message, value);
 }
 
 /*************/
@@ -911,18 +952,7 @@ void Scene::init(std::string name)
     _isInitialized = true;
 
     _mainWindow->setAsCurrentContext();
-#if HAVE_OSX
-    glewExperimental = GL_TRUE;
-    GLenum glewError = glewInit();
-    if (GLEW_OK != glewError)
-    {
-        string glewStringError = string((const char*)glewGetErrorString(glewError));
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Error while initializing GLEW: " << glewStringError << Log::endl;
-        _isInitialized = false;
-        return;
-    }
-    else
-#endif
+    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
     // Activate GL debug messages
 #if not HAVE_OSX
@@ -1077,10 +1107,42 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _taskQueue.push_back([=]() -> void {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            auto objectName = args[0].asString();
+
+            auto objectIt = _objects.find(objectName);
+            for (auto& localObject : _objects)
+                unlink(objectIt->second, localObject.second);
+            if (objectIt != _objects.end())
+                _objects.erase(objectIt);
+
+            objectIt = _ghostObjects.find(objectName);
+            for (auto& ghostObject : _ghostObjects)
+                unlink(objectIt->second, ghostObject.second);
+            if (objectIt != _ghostObjects.end())
+                _objects.erase(objectIt);
+        });
+
+        return true;
+    });
+
     _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
         Timer::get().setDuration(args[0].asString(), args[1].asInt());
+        return true;
+    });
+
+    _attribFunctions["masterClock"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 7)
+            return false;
+
+        Timer::get().setMasterClock(args);
         return true;
     });
  
@@ -1099,6 +1161,23 @@ void Scene::registerAttributes()
         string type = args[0].asString();
         Values list = getObjectsNameByType(type);
         sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        return true;
+    });
+
+    _attribFunctions["httpServer"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+        string address = args[0].asString();
+        string port = args[1].asString();
+
+        _httpServer = make_shared<HttpServer>(address, port, _self);
+        if (_httpServer)
+        {
+            _httpServerFuture = async(std::launch::async, [&](){
+                _httpServer->run();
+            });
+        }
+
         return true;
     });
    

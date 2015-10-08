@@ -88,6 +88,10 @@ void GuiControl::render()
         if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blendWidth", {blendWidth});
 
+        static auto blendPrecision = 0.1f;
+        if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
+            sendValuesToObjectsOfType("camera", "blendPrecision", {blendPrecision});
+
         static auto blackLevel = 0.0f;
         if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
@@ -136,9 +140,9 @@ void GuiControl::render()
 
         unordered_map<string, Values> attributes;
         if (!isDistant)
-            attributes = scene->_objects[_targetObjectName]->getAttributes();
+            attributes = scene->_objects[_targetObjectName]->getAttributes(true);
         else
-            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes();
+            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
 
         for (auto& attr : attributes)
         {
@@ -157,15 +161,7 @@ void GuiControl::render()
                     float tmp = attr.second[0].asFloat();
                     float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
                     if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
                 }
                 else if (attr.second.size() == 2)
                 {
@@ -173,15 +169,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[0].asFloat());
                     tmp.push_back(attr.second[1].asFloat());
                     if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1]});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
                 }
                 else if (attr.second.size() == 3)
                 {
@@ -190,15 +178,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[1].asFloat());
                     tmp.push_back(attr.second[2].asFloat());
                     if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2]});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
                 }
                 else if (attr.second.size() == 4)
                 {
@@ -208,15 +188,7 @@ void GuiControl::render()
                     tmp.push_back(attr.second[2].asFloat());
                     tmp.push_back(attr.second[3].asFloat());
                     if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    {
-                        if (!isDistant)
-                            scene->_objects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
-                        else
-                        {
-                            scene->_ghostObjects[_targetObjectName]->setAttribute(attr.first, {tmp[0], tmp[1], tmp[2], tmp[3]});
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
-                        }
-                    }
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
                 }
             }
             else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
@@ -248,10 +220,19 @@ void GuiControl::render()
                 for (auto& v : attr.second)
                 {
                     string tmp = v.asString();
-                    ImGui::Text(tmp.c_str());
+                    tmp.resize(256);
+                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
                 }
             }
         }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Delete selected object"))
+            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
     }
 }
 
@@ -337,8 +318,11 @@ void GuiGlobalView::render()
             if (ImGui::Button("Hide other cameras"))
                 switchHideOtherCameras();
             ImGui::SameLine();
-            if (ImGui::Button("Show all points"))
+            if (ImGui::Button("Show targets"))
                 showAllCalibrationPoints();
+            ImGui::SameLine();
+            if (ImGui::Button("Show all points"))
+                showAllCamerasCalibrationPoints();
             ImGui::SameLine();
             if (ImGui::Button("Calibrate camera"))
                 doCalibration();
@@ -382,7 +366,7 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
-void GuiGlobalView::setObject(ObjectPtr obj)
+void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
 {
     _camera->linkTo(obj);
 }
@@ -445,6 +429,16 @@ void GuiGlobalView::showAllCalibrationPoints()
 {
     auto scene = _scene.lock();
     scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
+}
+
+/*************/
+void GuiGlobalView::showAllCamerasCalibrationPoints()
+{
+    auto scene = _scene.lock();
+    if (_camera == _guiCamera)
+        _guiCamera->setAttribute("switchDisplayAllCalibration", {});
+    else
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchDisplayAllCalibration"});
 }
 
 /*************/
@@ -544,6 +538,11 @@ void GuiGlobalView::processKeyEvents()
     else if (io.KeysDown['H'] && io.KeysDownDuration['H'] == 0.0)
     {
         switchHideOtherCameras();
+        return;
+    }
+    else if (io.KeysDown['O'] && io.KeysDownDuration['O'] == 0.0)
+    {
+        showAllCamerasCalibrationPoints();
         return;
     }
     // Reset to the previous camera calibration
@@ -800,14 +799,18 @@ void GuiTemplate::render()
 /*************/
 void GuiTemplate::loadTemplates()
 {
+    auto templatePath = string(DATADIR);
     auto examples = vector<string>();
     auto descriptions = vector<string>();
     
     // Try to read the template file
-    ifstream in(string(DATADIR) + "templates.txt", ios::in | ios::binary);
+    ifstream in(templatePath + "templates.txt", ios::in | ios::binary);
 #if HAVE_OSX
     if (!in)
-        in = ifstream("../Resources/templates.txt", ios::in | ios::binary);
+    {
+        templatePath = "../Resources/";
+        in = ifstream(templatePath + "templates.txt", ios::in | ios::binary);
+    }
 #endif
     if (in)
     {
@@ -851,7 +854,7 @@ void GuiTemplate::loadTemplates()
     }
     else
     {
-        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << DATADIR << "templates.txt" << Log::endl;
+        Log::get() << Log::WARNING << "GuiTemplate::" << __FUNCTION__ << " - Could not load the templates file list in " << templatePath << "templates.txt" << Log::endl;
         return;
     }
 
@@ -866,13 +869,8 @@ void GuiTemplate::loadTemplates()
         glGetError();
         auto image = make_shared<Image>();
         image->setName("template_" + example);
-        if (!image->read(string(DATADIR) + "templates/" + example + ".png"))
-        {
-#if HAVE_OSX
-            if (!image->read("../Resources/templates/" + example + ".png"))
-#endif
+        if (!image->read(templatePath + "templates/" + example + ".png"))
             continue;
-        }
 
         auto texture = make_shared<Texture_Image>();
         texture->linkTo(image);
@@ -1045,11 +1043,29 @@ void GuiNodeView::render()
         else
             _isHovered = false;
     }
+
+    // Combo box for adding objects
+    {
+        vector<string> typeNames = {"image", "image_ffmpeg", "image_shmdata",
+                                    "texture_syphon",
+                                    "mesh", "mesh_shmdata",
+                                    "camera", "window"};
+        vector<const char*> items;
+        for (auto& typeName : typeNames)
+            items.push_back(typeName.c_str());
+        static int itemIndex = 0;
+        if (ImGui::Combo("Add an object", &itemIndex, items.data(), items.size()))
+        {
+            _scene.lock()->sendMessageToWorld("addObject", {typeNames[itemIndex]});
+        }
+    }
 }
 
 /*************/
 void GuiNodeView::renderNode(string name)
 {
+    auto& io = ImGui::GetIO();
+
     auto pos = _nodePositions.find(name);
     if (pos == _nodePositions.end())
     {
@@ -1066,17 +1082,26 @@ void GuiNodeView::renderNode(string name)
     ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
 
     ImGui::SetCursorPos(ImVec2(0, 2));
-
-    // This tricks allows for detecting clicks on the node, while keeping it closed
-    ImGui::SetNextTreeNodeOpened(false);
-    if (ImGui::CollapsingHeader(name.c_str()))
-    {
-        _clickedNode = name;
-    }
-
+    
     if (ImGui::IsItemHovered())
     {
-        ImGuiIO& io = ImGui::GetIO();
+        // Object linking
+        if (io.MouseClicked[0])
+        {
+            if (io.KeyShift)
+            {
+                auto scene = _scene.lock();
+                scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
+                scene->sendMessageToWorld("sendAllScenes", {"linkGhost", _sourceNode, name});
+            }
+            else if (io.KeyCtrl)
+            {
+                auto scene = _scene.lock();
+                scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
+                scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
+            }
+        }
+        // Dragging
         if (io.MouseDownDuration[0] > 0.0)
         {
             float dx = io.MouseDelta.x;
@@ -1085,6 +1110,14 @@ void GuiNodeView::renderNode(string name)
             nodePos[0] += dx;
             nodePos[1] += dy;
         }
+    }
+
+    // This tricks allows for detecting clicks on the node, while keeping it closed
+    ImGui::SetNextTreeNodeOpened(false);
+    if (ImGui::CollapsingHeader(name.c_str()))
+    {
+        _clickedNode = name;
+        _sourceNode = name;
     }
     
     // End of node rendering

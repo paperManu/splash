@@ -86,9 +86,20 @@ class Object : public BaseObject
         void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
 
         /**
+         * Add and remove a calibration point
+         */
+        void addCalibrationPoint(glm::dvec3 point);
+        void removeCalibrationPoint(glm::dvec3 point);
+
+        /**
          * Draw the object
          */
         void draw();
+
+        /**
+         * Get a reference to all the calibration points set
+         */
+        std::vector<glm::dvec3>& getCalibrationPoints() {return _calibrationPoints;}
 
         /**
          * Get the model matrix
@@ -103,7 +114,8 @@ class Object : public BaseObject
         /**
          * Try to link the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -111,9 +123,14 @@ class Object : public BaseObject
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
+         * Remove a geometry from this object
+         */
+        void removeGeometry(const std::shared_ptr<Geometry>& geometry);
+
+        /**
          * Remove a texture from this object
          */
-        void removeTexture(const TexturePtr texture);
+        void removeTexture(const std::shared_ptr<Texture>& texture);
 
         /**
          * Reset the blending to no blending at all
@@ -179,6 +196,10 @@ class Object : public BaseObject
         std::string _fill {"texture"};
         int _sideness {0};
         glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
+
+        // A copy of all the cameras' calibration points,
+        // for display purposes. These are not saved
+        std::vector<glm::dvec3> _calibrationPoints;
 
         /**
          * Init function called by constructor

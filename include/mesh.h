@@ -46,6 +46,7 @@ class Mesh : public BufferObject
          * Constructor
          */
         Mesh();
+        Mesh(bool linkedToWorld); //< This constructor is used if the object is linked to a World counterpart
 
         /**
          * Destructor
@@ -109,6 +110,8 @@ class Mesh : public BufferObject
         virtual void update();
 
     protected:
+        bool _linkedToWorldObject {false};
+
         struct MeshContainer
         {
             std::vector<glm::vec4> vertices;
@@ -117,10 +120,14 @@ class Mesh : public BufferObject
             std::vector<glm::vec4> annexe;
         };
 
+        std::string _filepath {};
         MeshContainer _mesh;
         MeshContainer _bufferMesh;
         bool _meshUpdated {false};
         bool _benchmark {false};
+
+    private:
+        void init();
 
         void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         

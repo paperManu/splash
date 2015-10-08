@@ -8,6 +8,14 @@ AM_CPPFLAGS = \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
 
+if HAVE_OSX
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/compatibility/include
+else
+AM_CPPFLAGS += \
+	-I$(top_srcdir)/external/glad/core/include
+endif
+
 #*************#
 if HAVE_OSX
 AM_CPPFLAGS += \
@@ -35,9 +43,11 @@ lib_LTLIBRARIES = \
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	camera.cpp \
 	cgUtils.cpp \
+	filter.cpp \
 	geometry.cpp \
 	gpuBuffer.cpp \
 	gui.cpp \
+	httpServer.cpp \
 	image.cpp \
 	link.cpp \
 	mesh.cpp \
@@ -51,6 +61,15 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	widgets.cpp \
 	world.cpp
 
+# GLAD, a GL loader
+if HAVE_OSX
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/glad/compatibility/src/glad_compatibility.c
+else
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/glad/core/src/glad_core.c
+endif
+
 # GUI related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/imgui/imgui.cpp
@@ -61,6 +80,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	-I$(top_srcdir)/external/bandit/bandit \
+	$(BOOST_CPPFLAGS) \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
 	$(GLM_CFLAGS) \
@@ -74,6 +94,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
 	-lOpenImageIO \
 	-ljsoncpp \
 	-lsnappy \
+	$(BOOST_SYSTEM_LIBS) \
 	$(GLFW_LIBS) \
 	$(GL_LIBS) \
 	$(GSL_LIBS) \
@@ -95,6 +116,13 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(FFMPEG_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(FFMPEG_LIBS)
 endif
 
+## PortAudio related
+if HAVE_PORTAUDIO
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += speaker.cpp listener.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(PORTAUDIO_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(PORTAUDIO_LIBS)
+endif
+
 ## OpenCV related
 if HAVE_OPENCV
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_opencv.cpp
@@ -107,6 +135,15 @@ if HAVE_SHMDATA
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_shmdata.cpp mesh_shmdata.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(SHMDATA_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(SHMDATA_LIBS)
+endif
+
+## LTC related
+if HAVE_LTC
+if HAVE_PORTAUDIO
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += ltcclock.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(LTC_CFLAGS)
+libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(LTC_LIBS)
+endif
 endif
 
 # OSX
@@ -149,7 +186,8 @@ splash_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_LDFLAGS = \
-	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la \
+	$(BOOST_SYSTEM_LIBS)
 
 ## FFmpeg related
 if HAVE_FFMPEG
@@ -195,7 +233,8 @@ splash_scene_CXXFLAGS = \
 	$(SHMDATA_CFLAGS)
 
 splash_scene_LDFLAGS = \
-	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la
+	$(top_builddir)/src/libsplash-@LIBSPLASH_API_VERSION@.la \
+	$(BOOST_SYSTEM_LIBS)
 
 ## FFmpeg related
 if HAVE_FFMPEG
@@ -232,15 +271,19 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/cgUtils.h \
 	$(top_srcdir)/include/colorcalibrator.h \
 	$(top_srcdir)/include/coretypes.h \
+	$(top_srcdir)/include/filter.h \
 	$(top_srcdir)/include/geometry.h \
 	$(top_srcdir)/include/gpuBuffer.h \
 	$(top_srcdir)/include/gui.h \
+	$(top_srcdir)/include/httpServer.h \
 	$(top_srcdir)/include/image.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_opencv.h \
 	$(top_srcdir)/include/image_shmdata.h \
+	$(top_srcdir)/include/ltcclock.h \
 	$(top_srcdir)/include/link.h \
+	$(top_srcdir)/include/listener.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
@@ -250,6 +293,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \
 	$(top_srcdir)/include/shaderSources.h \
+	$(top_srcdir)/include/speaker.h \
 	$(top_srcdir)/include/splash.h \
 	$(top_srcdir)/include/texture.h \
 	$(top_srcdir)/include/texture_image.h \
@@ -260,6 +304,11 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/widgets.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
+	\
+	$(top_srcdir)/external/glad/core/include/glad/glad.h \
+	$(top_srcdir)/external/glad/core/include/KHR/khrplatform.h \
+	$(top_srcdir)/external/glad/compatibility/include/glad/glad.h \
+	$(top_srcdir)/external/glad/compatibility/include/KHR/khrplatform.h \
 	\
 	$(top_srcdir)/external/imgui/imgui.h \
 	$(top_srcdir)/external/imgui/imconfig.h \

@@ -1,6 +1,7 @@
 #include "object.h"
 
 #include "image.h"
+#include "filter.h"
 #include "geometry.h"
 #include "log.h"
 #include "mesh.h"
@@ -103,6 +104,10 @@ void Object::activate()
                 _shader->setAttribute("fill", {"texture"});
         }
     }
+    else if (_fill == "filter")
+    {
+        _shader->setAttribute("fill", {"filter"});
+    }
     else if (_fill == "window")
     {
         if (_textures.size() == 1)
@@ -117,12 +122,12 @@ void Object::activate()
     else
     {
         _shader->setAttribute("fill", {_fill});
+        _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
     }
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
     _shader->setAttribute("scale", {_scale.x, _scale.y, _scale.z});
-    _shader->setAttribute("color", {_color.r, _color.g, _color.b, _color.a});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -176,6 +181,29 @@ void Object::deactivate()
     _mutex.unlock();
 }
 
+/**************/
+void Object::addCalibrationPoint(glm::dvec3 point)
+{
+    for (auto& p : _calibrationPoints)
+        if (p == point)
+            return;
+    
+    _calibrationPoints.push_back(point);
+}
+
+/**************/
+void Object::removeCalibrationPoint(glm::dvec3 point)
+{
+    for (auto it = _calibrationPoints.begin(), itEnd = _calibrationPoints.end(); it != itEnd; ++it)
+    {
+        if (point == *it)
+        {
+            _calibrationPoints.erase(it);
+            return;
+        }
+    }
+}
+
 /*************/
 void Object::draw()
 {
@@ -187,34 +215,49 @@ void Object::draw()
 }
 
 /*************/
-bool Object::linkTo(BaseObjectPtr obj)
+bool Object::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    BaseObject::linkTo(obj);
+    if (!BaseObject::linkTo(obj))
+        return false;
 
-    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
+    if (obj->getType().find("texture") != string::npos)
     {
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
-        addTexture(tex);
-        return true;
-    }
-    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
-    {
-        Texture_ImagePtr tex = make_shared<Texture_Image>(_root);
-        tex->setName(getName() + "_" + obj->getName() + "_tex");
-        if (tex->linkTo(obj))
+        auto filter = make_shared<Filter>(_root);
+        filter->setName(getName() + "_" + obj->getName() + "_tex");
+        if (filter->linkTo(obj))
         {
-            _root.lock()->registerObject(tex);
-            return linkTo(tex);
+            _root.lock()->registerObject(filter);
+            return linkTo(filter);
         }
         else
         {
             return false;
         }
     }
-    else if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
+    else if (obj->getType().find("filter") != string::npos)
     {
-        GeometryPtr geom = make_shared<Geometry>(_root);
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        addTexture(tex);
+        return true;
+    }
+    else if (obj->getType().find("image") != string::npos)
+    {
+        auto filter = make_shared<Filter>(_root);
+        filter->setName(getName() + "_" + obj->getName() + "_filter");
+        if (filter->linkTo(obj))
+        {
+            _root.lock()->registerObject(filter);
+            return linkTo(filter);
+        }
+        else
+        {
+            return false;
+        }
+    }
+    else if (obj->getType().find("mesh") != string::npos)
+    {
+        auto geom = make_shared<Geometry>(_root);
         geom->setName(getName() + "_" + obj->getName() + "_geom");
         if (geom->linkTo(obj))
         {
@@ -226,14 +269,57 @@ bool Object::linkTo(BaseObjectPtr obj)
             return false;
         }
     }
-    else if (dynamic_pointer_cast<Geometry>(obj).get() != nullptr)
+    else if (obj->getType().find("geometry") != string::npos)
     {
-        GeometryPtr geom = dynamic_pointer_cast<Geometry>(obj);
+        auto geom = dynamic_pointer_cast<Geometry>(obj);
         addGeometry(geom);
         return true;
     }
 
     return false;
+}
+
+/*************/
+bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
+{
+    auto type = obj->getType();
+    if (type.find("texture") != string::npos)
+    {
+        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
+    }
+    else if (type.find("image") != string::npos)
+    {
+        auto textureName = getName() + "_" + obj->getName() + "_tex";
+        auto tex = _root.lock()->unregisterObject(textureName);
+
+        if (!tex)
+            return false;
+        else if (tex->unlinkFrom(obj))
+            unlinkFrom(tex);
+        else
+            return false;
+    }
+    else if (type.find("mesh") != string::npos)
+    {
+        auto geomName = getName() + "_" + obj->getName() + "_geom";
+        auto geom = _root.lock()->unregisterObject(geomName);
+
+        if (!geom)
+            return false;
+        if (geom->unlinkFrom(obj))
+            unlinkFrom(geom);
+        else
+            return false;
+    }
+    else if (type.find("geometry") != string::npos)
+    {
+        auto geom = dynamic_pointer_cast<Geometry>(obj);
+        removeGeometry(geom);
+        return true;
+    }
+
+    return BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -257,7 +343,15 @@ float Object::pickVertex(glm::dvec3 p, glm::dvec3& v)
 }
 
 /*************/
-void Object::removeTexture(TexturePtr tex)
+void Object::removeGeometry(const shared_ptr<Geometry>& geometry)
+{
+    auto geomIt = find(_geometries.begin(), _geometries.end(), geometry);
+    if (geomIt != _geometries.end())
+        _geometries.erase(geomIt);
+}
+
+/*************/
+void Object::removeTexture(const shared_ptr<Texture>& tex)
 {
     auto texIterator = find(_textures.begin(), _textures.end(), tex);
     if (texIterator != _textures.end())
@@ -358,7 +452,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
                 geom->activateForFeedback();
-                _feedbackShaderSubdivideCamera->activateFeedback();
+                _feedbackShaderSubdivideCamera->activate();
                 glDrawArrays(GL_PATCHES, 0, geom->getVerticesNumber());
                 _feedbackShaderSubdivideCamera->deactivate();
 

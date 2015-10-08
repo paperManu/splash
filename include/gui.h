@@ -100,9 +100,10 @@ class Gui : public BaseObject
         void mouseScroll(double xoffset, double yoffset);
 
         /**
-         * Try to link the given BaseObject to this
+         * Try to link / unlink the given BaseObject to this
          */
-        bool linkTo(BaseObjectPtr obj);
+        bool linkTo(std::shared_ptr<BaseObject> obj);
+        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Render this camera into its textures
@@ -127,7 +128,6 @@ class Gui : public BaseObject
         GLuint _fbo;
         Texture_ImagePtr _depthTexture;
         TexturePtr _outTexture;
-        std::vector<ObjectPtr> _objects;
         float _width {512}, _height {512};
 
         // GUI specific camera
