@@ -1,96 +1,215 @@
-// Splash sample configuration file
-{
-    // Default encoding for text
-    "encoding" : "UTF-8",
+{// Default encoding for text
 
-    "world" : {
-        "framerate" : 60
-    },
+   "encoding" : "UTF-8",
+   "first" : {
+      "cam1" : {
+         "activateColorLUT" : [ 0 ],
+         "blackLevel" : [ 0.0 ],
+         "blendPrecision" : [ 0.1000000014901161 ],
+         "blendWidth" : [ 0.05000000074505806 ],
+         "brightness" : [ 1.0 ],
+         "colorMixMatrix" : [
+            [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+         ],
+         "colorTemperature" : [ 6500.0 ],
+         "eye" : [ -2.0, 2.0, 0.3000000119209290 ],
+         "fov" : [ 35.0 ],
+         "principalPoint" : [ 0.50, 0.50 ],
+         "shared" : 0,
+         "size" : [ 1920.0, 1200.0 ],
+         "target" : [ 0.0, 0.0, 0.50 ],
+         "type" : "camera",
+         "up" : [ 0.0, 0.0, 1.0 ]
+      },
+      //"cam2" : {
+      //   "activateColorLUT" : [ 0 ],
+      //   "blackLevel" : [ 0.0 ],
+      //   "blendPrecision" : [ 0.1000000014901161 ],
+      //   "blendWidth" : [ 0.05000000074505806 ],
+      //   "brightness" : [ 1.0 ],
+      //   "colorMixMatrix" : [
+      //      [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+      //   ],
+      //   "colorTemperature" : [ 6500.0 ],
+      //   "eye" : [ 2.0, -2.0, 0.3000000119209290 ],
+      //   "fov" : [ 35.0 ],
+      //   "principalPoint" : [ 0.50, 0.50 ],
+      //   "shared" : 0,
+      //   "size" : [ 1920.0, 1200.0 ],
+      //   "target" : [ 0.0, 0.0, 0.50 ],
+      //   "type" : "camera",
+      //   "up" : [ 0.0, 0.0, 1.0 ]
+      //},
+      "colorCalibrator" : {
+         "colorSamples" : [ 5 ],
+         "detectionThresholdFactor" : [ 1.0 ],
+         "equalizeMethod" : [ 2 ],
+         "hdrStep" : [ 1.0 ],
+         "imagePerHDR" : [ 1 ],
+         "type" : "colorCalibrator"
+      },
+      "first" : {
+         "blendingResolution" : [ 2048 ],
+         "type" : "scene"
+      },
+      "image" : {
+         "benchmark" : 0,
+         "file" : [ "color_map_3k.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image"
+      },//"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
 
-    "scenes" : [
-        {
-            "name" : "first",
-            "address" : "localhost",
-            "spawn" : 1,
-            "display" : 0,
-            "swapInterval" : 1
-        },
-        {
-            "name" : "second",
-            "address" : "localhost",
-            "spawn" : 1,
-            "display" : 0,
-            "swapInterval" : 1
-        }
-    ],
+      "links" : [
+         [ "mesh", "object" ],
+         [ "object", "cam1" ],
+         [ "object", "cam2" ],
+         [ "image", "object" ],
+         [ "cam1", "win1" ],
+         [ "cam2", "win2" ]
+      ],
+      "mesh" : {
+         "file" : [ "sphere.obj" ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "fill" : [ "texture" ],
+         "position" : [ 0.0, 0.0, 0.0 ],
+         "scale" : [ 1.0, 1.0, 1.0 ],
+         "sideness" : [ 2 ],
+         "type" : "object"
+      },
+      "win1" : {
+         "decorated" : [ 1 ],
+         "fullscreen" : [ -1 ],
+         "gamma" : [ 2.200000047683716 ],
+         "layout" : [ 0, 0, 0, 0 ],
+         "position" : [ 0, 25 ],
+         "size" : [ 959, 1148 ],
+         "srgb" : [ 1 ],
+         "type" : "window"
+      }
+      //"win2" : {
+      //   "decorated" : [ 1 ],
+      //   "fullscreen" : [ -1 ],
+      //   "gamma" : [ 2.200000047683716 ],
+      //   "layout" : [ 0, 0, 0, 0 ],
+      //   "position" : [ 0, 25 ],
+      //   "size" : [ 959, 1148 ],
+      //   "srgb" : [ 1 ],
+      //   "type" : "window"
+      //}
+   },
+   "scenes" : [
+      {
+         "address" : "localhost",
+         "display" : 0,
+         "name" : "second",
+         "spawn" : 1,
+         "swapInterval" : 1
+      },
+      {
+         "address" : "localhost",
+         "display" : 0,
+         "name" : "first",
+         "spawn" : 1,
+         "swapInterval" : 1
+      }
+   ],
+   "second" : {
+      "cam3" : {
+         "activateColorLUT" : [ 0 ],
+         "blackLevel" : [ 0.0 ],
+         "blendPrecision" : [ 0.1000000014901161 ],
+         "blendWidth" : [ 0.05000000074505806 ],
+         "brightness" : [ 1.0 ],
+         "colorMixMatrix" : [
+            [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+         ],
+         "colorTemperature" : [ 6500.0 ],
+         "eye" : [ -2.0, -2.0, 0.3000000119209290 ],
+         "fov" : [ 35.0 ],
+         "principalPoint" : [ 0.50, 0.50 ],
+         "shared" : 0,
+         "size" : [ 1920.0, 1200.0 ],
+         "target" : [ 0.0, 0.0, 0.50 ],
+         "type" : "camera",
+         "up" : [ 0.0, 0.0, 1.0 ]
+      },
+      //"cam4" : {
+      //   "activateColorLUT" : [ 0 ],
+      //   "blackLevel" : [ 0.0 ],
+      //   "blendPrecision" : [ 0.1000000014901161 ],
+      //   "blendWidth" : [ 0.05000000074505806 ],
+      //   "brightness" : [ 1.0 ],
+      //   "colorMixMatrix" : [
+      //      [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+      //   ],
+      //   "colorTemperature" : [ 6500.0 ],
+      //   "eye" : [ 2.0, 2.0, -0.50 ],
+      //   "fov" : [ 35.0 ],
+      //   "principalPoint" : [ 0.50, 0.50 ],
+      //   "shared" : 0,
+      //   "size" : [ 1920.0, 1200.0 ],
+      //   "target" : [ 0.0, 0.0, 0.50 ],
+      //   "type" : "camera",
+      //   "up" : [ 0.0, 0.0, 1.0 ]
+      //},
+      "image" : {
+         "benchmark" : 0,
+         "file" : [ "color_map_3k.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image"
+      },//"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
 
-    "first" : {
-        "cam1" : {
-            "type" : "camera",
-            "size" : [1920, 1200],
-            "eye" : [-2.0, 2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "shared" : 0
-        },
-        "cam2" : {
-            "type" : "camera",
-            "size" : [1920, 1200],
-            "eye" : [2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "shared" : 0
-        },
-        "win1" : {"type" : "window", "fullscreen" : -1},
-        "win2" : {"type" : "window", "fullscreen" : -1},
-
-        "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
-        "object" : {"type" : "object", "sideness" : 2},
-        "image" : {"type" : "image", "file" : "color_map_3k.png", "benchmark" : 0},
-        //"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-
-        "links" : [
-            ["mesh", "object"],
-            ["object", "cam1"],
-            ["object", "cam2"],
-            ["image", "object"],
-            ["cam1", "win1"],
-            ["cam2", "win2"]
-        ]
-    },
-
-    "second" : {
-        "cam3" : {
-            "type" : "camera",
-            "size" : [1920, 1200],
-            "eye" : [-2.0, -2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "shared" : 0
-        },
-        "cam4" : {
-            "type" : "camera",
-            "size" : [1920, 1200],
-            "eye" : [2.0, 2.0, -0.5],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "shared" : 0
-        },
-        "win3" : {"type" : "window", "fullscreen" : -1},
-        "win4" : {"type" : "window", "fullscreen" : -1},
-
-        "mesh" : {"type" : "mesh", "file" : "sphere.obj"},
-        "object" : {"type" : "object", "sideness" : 2},
-        "image" : {"type" : "image", "file" : "color_map_3k.png", "benchmark" : 0},
-        //"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-
-        "links" : [
-            ["mesh", "object"],
-            ["object", "cam3"],
-            ["object", "cam4"],
-            ["image", "object"],
-            ["cam3", "win3"],
-            ["cam4", "win4"]
-        ]
-    }
+      "links" : [
+         [ "mesh", "object" ],
+         [ "object", "cam3" ],
+         [ "object", "cam4" ],
+         [ "image", "object" ],
+         [ "cam3", "win3" ],
+         [ "cam4", "win4" ]
+      ],
+      "mesh" : {
+         "file" : [ "sphere.obj" ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "fill" : [ "texture" ],
+         "position" : [ 0.0, 0.0, 0.0 ],
+         "scale" : [ 1.0, 1.0, 1.0 ],
+         "sideness" : [ 2 ],
+         "type" : "object"
+      },
+      "second" : {
+         "blendingResolution" : [ 2048 ],
+         "type" : "scene"
+      },
+      "win3" : {
+         "decorated" : [ 1 ],
+         "fullscreen" : [ -1 ],
+         "gamma" : [ 2.200000047683716 ],
+         "layout" : [ 0, 0, 0, 0 ],
+         "position" : [ 1920, 25 ],
+         "size" : [ 959, 1148 ],
+         "srgb" : [ 1 ],
+         "type" : "window"
+      }
+      //"win4" : {
+      //   "decorated" : [ 1 ],
+      //   "fullscreen" : [ -1 ],
+      //   "gamma" : [ 2.200000047683716 ],
+      //   "layout" : [ 0, 0, 0, 0 ],
+      //   "position" : [ 1920, 25 ],
+      //   "size" : [ 959, 1148 ],
+      //   "srgb" : [ 1 ],
+      //   "type" : "window"
+      //}
+   },
+   "world" : {
+      "framerate" : 60
+   }
 }

@@ -361,6 +361,9 @@ void Image_FFmpeg::readLoop()
             }
         }
 
+        // Set elapsed time to infinity (video finished)
+        _elapsedTime = numeric_limits<float>::max();
+
         if (av_seek_frame(_avContext, _videoStreamIndex, 0, 0) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
@@ -533,7 +536,7 @@ void Image_FFmpeg::registerAttributes()
         if (_avContext == nullptr)
             return {0.f};
 
-        float duration = (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6;
+        float duration = std::max(0.0, (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6);
         return {duration};
     });
     _attribFunctions["remaining"].doUpdateDistant(true);
