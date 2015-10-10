@@ -92,9 +92,12 @@ Splash has currently only been compiled and tested on Ubuntu (version 13.10 and 
 
 Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
-    sudo apt-add-repository ppa:irie/blender
-    sudo apt-add-repository ppa:sat-metalab/metalab
     sudo apt-add-repository ppa:andrewrk/rucksack
+    sudo apt-add-repository ppa:thomas-schiex/blender
+
+    sudo sh -c 'echo "deb http://ppa.launchpad.net/sat-metalab/metalab/ubuntu trusty main" > /etc/apt/sources.list.d/sat-metalab-metalab-trusty.list'
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 27D9A33279DF04BB
+
     sudo apt-get update
 
 And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being...
@@ -110,6 +113,7 @@ If you want to get a more up to date version, you can try compiling and installi
     sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-system-dev
     sudo apt-get install libglm-dev libglew-dev libopenimageio-dev libshmdata-1.0-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
     sudo apt-get install libglfw3-dev libxinerama-dev libxcursor-dev
+    sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev libltc-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
@@ -117,6 +121,7 @@ If you want to get a more up to date version, you can try compiling and installi
     git submodule update --init
     ./autogen.sh && ./configure
     make && sudo make install
+    sudo ldconfig
 
 You can now try launching Splash:
 
@@ -161,6 +166,7 @@ Install all the other dependencies:
     sudo port install jsoncpp snappy
     sudo port install gsl zmq cppzmq
     sudo port install glfw glm glew
+    sudo port install ffmpeg
 
 And then grab and install Splash:
 
