@@ -685,6 +685,8 @@ namespace Http {
                 _commandQueue.push_back({CommandId::set, args});
             else if (args[0].asString() == "/get")
                 _commandQueue.push_back({CommandId::get, args});
+            else if (args[0].asString() == "/scene")
+                _commandQueue.push_back({CommandId::scene, args});
             else
             {
                 Log::get() << Log::WARNING << "RequestHandler::" << __FUNCTION__ << " - No command associated to string " << args[0].asString() << Log::endl;
@@ -912,6 +914,18 @@ void HttpServer::run()
                     jsValue[attrName] = getValuesAsJson(values);
                     string strValue = jsValue.toStyledString();
                     returnFunc(strValue);
+                }
+                else if (command == Http::RequestHandler::CommandId::scene)
+                {
+                    if (args.size() < 2)
+                        continue;
+
+                    auto scene = _scene.lock();
+                    auto commandName = args[1].asString();
+                    if (!scene->setAttribute(commandName, {}))
+                        returnFunc("OK");
+                    else
+                        returnFunc("Failed");
                 }
             }
             else

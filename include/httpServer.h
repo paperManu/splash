@@ -200,7 +200,8 @@ namespace Http {
             {
                 nop,
                 get,
-                set
+                set,
+                scene
             };
     
             struct Command

@@ -198,6 +198,8 @@ class Scene : public RootObject
          * Creates the blending map from the current calibration of the cameras
          */
         void computeBlendingMap(bool once = true);
+        void activateBlendingMap(bool once = true);
+        void deactivateBlendingMap();
 
     private:
         ScenePtr _self;
@@ -207,7 +209,6 @@ class Scene : public RootObject
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
-        bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
         // Texture upload context
@@ -229,6 +230,7 @@ class Scene : public RootObject
         std::list<std::function<void()>> _taskQueue;
 
         // Blending attributes
+        bool _isBlendingComputed {false};
         bool _computeBlending {false};
         bool _computeBlendingOnce {false};
         unsigned int _blendingResolution {2048};
