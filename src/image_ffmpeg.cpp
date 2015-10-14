@@ -328,8 +328,12 @@ void Image_FFmpeg::readLoop()
                     _timedFrames[_timedFrames.size() - 1].frame = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
                     _timedFrames[_timedFrames.size() - 1].frame->swap(img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
-                    _videoQueueCondition.notify_one();
+                    //_videoQueueCondition.notify_one();
                 }
+
+                // Do not store more than a few frames in memory
+                while (_timedFrames.size() > 20 && _continueRead)
+                    this_thread::sleep_for(chrono::milliseconds(10));
 
                _videoSeekMutex.unlock();
 
@@ -431,10 +435,15 @@ void Image_FFmpeg::videoDisplayLoop()
 
     while(_continueRead)
     {
-        unique_lock<mutex> lockFrames(_videoQueueMutex);
-        _videoQueueCondition.wait(lockFrames);
+        auto localQueue = deque<TimedFrame>();
+        {
+            unique_lock<mutex> lockFrames(_videoQueueMutex);
+            //_videoQueueCondition.wait(lockFrames);
 
-        while (_timedFrames.size() > 0 && _continueRead)
+            std::swap(localQueue, _timedFrames);
+        }
+
+        while (localQueue.size() > 0 && _continueRead)
         {
             Values clock;
             if (_useClock && Timer::get().getMasterClock(clock))
@@ -446,7 +455,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 {
                     _elapsedTime = seconds * 1e6;
                     _clockTime = _elapsedTime;
-                    _timedFrames.clear();
+                    localQueue.clear();
 
                     SThread::pool.enqueueWithoutId([=]() {
                         seek(seconds);
@@ -473,7 +482,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            TimedFrame& timedFrame = _timedFrames[0];
+            TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
                 // This sets the start time after a seek
@@ -499,7 +508,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 _imageUpdated = true;
                 updateTimestamp();
             }
-            _timedFrames.pop_front();
+            localQueue.pop_front();
         }
     }
 }
