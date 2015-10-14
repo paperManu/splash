@@ -328,7 +328,6 @@ void Image_FFmpeg::readLoop()
                     _timedFrames[_timedFrames.size() - 1].frame = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
                     _timedFrames[_timedFrames.size() - 1].frame->swap(img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
-                    //_videoQueueCondition.notify_one();
                 }
 
                 // Do not store more than a few frames in memory
@@ -438,13 +437,22 @@ void Image_FFmpeg::videoDisplayLoop()
         auto localQueue = deque<TimedFrame>();
         {
             unique_lock<mutex> lockFrames(_videoQueueMutex);
-            //_videoQueueCondition.wait(lockFrames);
-
             std::swap(localQueue, _timedFrames);
         }
 
+        // This sets the start time after a seek
+        if (localQueue.size() > 0 && _startTime == -1)
+            _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - localQueue[0].timing;
+
         while (localQueue.size() > 0 && _continueRead)
         {
+            // If seek, clear the local queue as the frames should not be shown
+            if (_startTime == -1)
+            {
+                localQueue.clear();
+                continue;
+            }
+
             Values clock;
             if (_useClock && Timer::get().getMasterClock(clock))
             {
@@ -485,10 +493,6 @@ void Image_FFmpeg::videoDisplayLoop()
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                // This sets the start time after a seek
-                if (_startTime == -1)
-                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - timedFrame.timing;
-
                 _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
                 if (_clockTime != -1l)
                     _currentTime = _clockTime;
