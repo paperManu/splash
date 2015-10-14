@@ -328,8 +328,11 @@ void Image_FFmpeg::readLoop()
                     _timedFrames[_timedFrames.size() - 1].frame = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
                     _timedFrames[_timedFrames.size() - 1].frame->swap(img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
-                    _videoQueueCondition.notify_one();
                 }
+
+                // Do not store more than a few frames in memory
+                while (_timedFrames.size() > 20 && _continueRead)
+                    this_thread::sleep_for(chrono::milliseconds(10));
 
                _videoSeekMutex.unlock();
 
@@ -431,11 +434,25 @@ void Image_FFmpeg::videoDisplayLoop()
 
     while(_continueRead)
     {
-        unique_lock<mutex> lockFrames(_videoQueueMutex);
-        _videoQueueCondition.wait(lockFrames);
-
-        while (_timedFrames.size() > 0 && _continueRead)
+        auto localQueue = deque<TimedFrame>();
         {
+            unique_lock<mutex> lockFrames(_videoQueueMutex);
+            std::swap(localQueue, _timedFrames);
+        }
+
+        // This sets the start time after a seek
+        if (localQueue.size() > 0 && _startTime == -1)
+            _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - localQueue[0].timing;
+
+        while (localQueue.size() > 0 && _continueRead)
+        {
+            // If seek, clear the local queue as the frames should not be shown
+            if (_startTime == -1)
+            {
+                localQueue.clear();
+                continue;
+            }
+
             Values clock;
             if (_useClock && Timer::get().getMasterClock(clock))
             {
@@ -446,7 +463,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 {
                     _elapsedTime = seconds * 1e6;
                     _clockTime = _elapsedTime;
-                    _timedFrames.clear();
+                    localQueue.clear();
 
                     SThread::pool.enqueueWithoutId([=]() {
                         seek(seconds);
@@ -473,13 +490,9 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            TimedFrame& timedFrame = _timedFrames[0];
+            TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                // This sets the start time after a seek
-                if (_startTime == -1)
-                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - timedFrame.timing;
-
                 _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
                 if (_clockTime != -1l)
                     _currentTime = _clockTime;
@@ -499,7 +512,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 _imageUpdated = true;
                 updateTimestamp();
             }
-            _timedFrames.pop_front();
+            localQueue.pop_front();
         }
     }
 }
