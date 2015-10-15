@@ -128,6 +128,7 @@ void Object::activate()
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
     _shader->setAttribute("scale", {_scale.x, _scale.y, _scale.z});
+    _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
 
     _geometries[0]->update();
     _geometries[0]->activate();
@@ -608,6 +609,16 @@ void Object::registerAttributes()
             return false;
         _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
+    });
+
+    _attribFunctions["normalExponent"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+
+        _normalExponent = args[0].asFloat();
+        return true;
+    }, [&]() -> Values {
+        return {_normalExponent};
     });
 }
 

@@ -728,11 +728,11 @@ struct ShaderSources
 
         out VertexData
         {
-            vec4 position;
-            vec2 texCoord;
-            vec4 normal;
-            vec4 annexe;
-            float blendingValue;
+            smooth vec4 position;
+            smooth vec2 texCoord;
+            smooth vec4 normal;
+            smooth vec4 annexe;
+            smooth float blendingValue;
         } vertexOut;
 
         void main(void)
@@ -781,6 +781,7 @@ struct ShaderSources
         uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
                                             0.0, 1.0, 0.0,
                                             0.0, 0.0, 1.0);
+        uniform float _normalExp = 0.0;
 
         in VertexData
         {
@@ -861,8 +862,15 @@ struct ShaderSources
                 color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
                 //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
-            
+
             fragColor.rgb = color.rgb;
+
+            if (_normalExp != 0.0)
+            {
+                float normFactor = abs(dot(normal.xyz, vec3(0.0, 0.0, 1.0)));
+                fragColor.rgb *= pow(normFactor, _normalExp);
+            }
+            
             fragColor.a = 1.0;
         }
     )"};
