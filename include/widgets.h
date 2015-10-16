@@ -101,6 +101,7 @@ class GuiGlobalView : public GuiWidget
         // Joystick state
         std::vector<float> _joyAxes {};
         std::vector<uint8_t> _joyButtons {};
+        std::vector<uint8_t> _joyButtonsPrevious {};
 
         // Store the previous camera values
         struct CameraParameters
