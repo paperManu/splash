@@ -616,7 +616,7 @@ void Scene::updateInputs()
     }
 
     // Joystick state
-    if (glfwJoystickPresent(GLFW_JOYSTICK_1))
+    if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
     {
         int count;
         const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
