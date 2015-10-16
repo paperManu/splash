@@ -286,6 +286,11 @@ class Scene : public RootObject
          * Register new functors to modify attributes
          */
         void registerAttributes();
+
+        /**
+         * Update the various inputs (mouse, keyboard...)
+         */
+        void updateInputs();
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;

@@ -486,7 +486,44 @@ void Scene::render()
         if (obj.second->getType() == "window")
             dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
     Timer::get() >> "swap";
+}
 
+/*************/
+void Scene::run()
+{
+    while (_isRunning)
+    {
+        {
+            // Execute waiting tasks
+            unique_lock<mutex> taskLock(_taskMutex);
+            for (auto& task : _taskQueue)
+                task();
+            _taskQueue.clear();
+        }
+
+        if (!_started)
+        {
+            this_thread::sleep_for(chrono::milliseconds(50));
+            continue;
+        }
+        
+        Timer::get() << "sceneLoop";
+
+        {
+            lock_guard<recursive_mutex> lock(_configureMutex);
+            _mainWindow->setAsCurrentContext();
+            render();
+            _mainWindow->releaseContext();
+            updateInputs();
+        }
+
+        Timer::get() >> "sceneLoop";
+    }
+}
+
+/*************/
+void Scene::updateInputs()
+{
     // Update the user events
     glfwPollEvents();
     // Mouse position
@@ -578,6 +615,19 @@ void Scene::render()
             _gui->unicodeChar(unicodeChar);
     }
 
+    // Joystick state
+    if (glfwJoystickPresent(GLFW_JOYSTICK_1))
+    {
+        int count;
+        const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+        auto axes = vector<float>(bufferAxes, bufferAxes + count);
+
+        const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+        auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
+
+        _gui->setJoystick(axes, buttons);
+    }
+
     // Any file dropped onto the window? Then load it.
     auto paths = Window::getPathDropped();
     if (paths.size() != 0)
@@ -589,38 +639,6 @@ void Scene::render()
     if (Window::getQuitFlag())
     {
         sendMessageToWorld("quit");
-    }
-}
-
-/*************/
-void Scene::run()
-{
-    while (_isRunning)
-    {
-        {
-            // Execute waiting tasks
-            unique_lock<mutex> taskLock(_taskMutex);
-            for (auto& task : _taskQueue)
-                task();
-            _taskQueue.clear();
-        }
-
-        if (!_started)
-        {
-            this_thread::sleep_for(chrono::milliseconds(50));
-            continue;
-        }
-        
-        Timer::get() << "sceneLoop";
-
-        {
-            lock_guard<recursive_mutex> lock(_configureMutex);
-            _mainWindow->setAsCurrentContext();
-            render();
-            _mainWindow->releaseContext();
-        }
-
-        Timer::get() >> "sceneLoop";
     }
 }
 

@@ -335,6 +335,7 @@ void GuiGlobalView::render()
                 _noMove = true;
                 processKeyEvents();
                 processMouseEvents();
+                processJoystickState();
             }
             else
                 _noMove = false;
@@ -363,6 +364,13 @@ void GuiGlobalView::setCamera(CameraPtr cam)
         _guiCamera = cam;
         _camera->setAttribute("size", {800, 600});
     }
+}
+
+/*************/
+void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+{
+    _joyAxes = axes;
+    _joyButtons = buttons;
 }
 
 /*************/
@@ -512,6 +520,22 @@ void GuiGlobalView::switchHideOtherCameras()
             if (cam.get() != _camera.get())
                 scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
         _camerasHidden = false;
+    }
+}
+
+/*************/
+void GuiGlobalView::processJoystickState()
+{
+    if (_joyAxes.size() >= 2)
+    {
+        auto scene = _scene.lock();
+
+        float xValue = _joyAxes[0];
+        float yValue = _joyAxes[1];
+
+        scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", xValue, yValue});
+        _camera->moveCalibrationPoint(0.0, 0.0);
+        propagateCalibration();
     }
 }
 
