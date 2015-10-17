@@ -51,6 +51,7 @@ Scene::Scene(std::string name)
     init(_name);
 
     _textureUploadFuture = async(std::launch::async, [&](){textureUploadRun();});
+    _joystickUpdateFuture = async(std::launch::async, [&](){joystickUpdateLoop();});
 
     run();
 }
@@ -61,6 +62,8 @@ Scene::~Scene()
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
+
+    _joystickUpdateFuture.get();
 
     if (_httpServerFuture.valid())
     {
@@ -618,14 +621,9 @@ void Scene::updateInputs()
     // Joystick state
     if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
     {
-        int count;
-        const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
-        auto axes = vector<float>(bufferAxes, bufferAxes + count);
-
-        const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
-        auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
-
-        _gui->setJoystick(axes, buttons);
+        unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
+        _gui->setJoystick(_joystickAxes, _joystickButtons);
+        _joystickAxes.clear();
     }
 
     // Any file dropped onto the window? Then load it.
@@ -1042,6 +1040,38 @@ void Scene::initBlendingMap()
     _blendingTexture = make_shared<Texture_Image>(_self);
     _blendingTexture->setAttribute("filtering", {0});
     *_blendingTexture = _blendingMap;
+}
+
+/*************/
+void Scene::joystickUpdateLoop()
+{
+    while (_isRunning)
+    {
+        if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
+        {
+            int count;
+            const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+            auto axes = vector<float>(bufferAxes, bufferAxes + count);
+
+            for (auto& v : axes)
+                if (abs(v) < 0.2f)
+                    v = 0.f;
+
+            const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+            auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
+
+            unique_lock<mutex> lock(_joystickUpdateMutex);
+
+            // We accumulate values until they are used by the render loop
+            _joystickAxes.swap(axes);
+            for (int i = 0; i < std::min(_joystickAxes.size(), axes.size()); ++i)
+                _joystickAxes[i] += axes[i];
+
+            _joystickButtons.swap(buttons);
+        }
+
+        this_thread::sleep_for(chrono::microseconds(16667));
+    }
 }
 
 /*************/

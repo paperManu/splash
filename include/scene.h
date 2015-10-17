@@ -211,6 +211,12 @@ class Scene : public RootObject
         bool _status {false}; //< Set to true if an error occured during rendering
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
 
+        // Joystick update loop and attributes
+        std::future<void> _joystickUpdateFuture;
+        std::mutex _joystickUpdateMutex;
+        std::vector<float> _joystickAxes;
+        std::vector<uint8_t> _joystickButtons;
+
         // Texture upload context
         std::future<void> _textureUploadFuture;
         std::condition_variable _textureUploadCondition;
@@ -252,6 +258,11 @@ class Scene : public RootObject
          * Set up the blending map
          */
         void initBlendingMap();
+
+        /**
+         * Joystick loop
+         */
+        void joystickUpdateLoop();
 
         /**
          * Get the next available id
