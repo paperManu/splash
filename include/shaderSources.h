@@ -214,9 +214,9 @@ struct ShaderSources
             vec2 texCoords = pixCoords / _texSize;
             vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
 
-            if (all(lessThan(pixCoords.xy, _texSize.xy)) && visibility.b > 0.0)
+            if (all(lessThan(pixCoords.xy, _texSize.xy)))
             {
-                int primitiveID = int(round(visibility.r * 256.0 + visibility.g));
+                int primitiveID = int(round(visibility.r * 65536 + visibility.g * 256.0 + visibility.b));
                 // Mark the primitive found as visible
                 for (int idx = primitiveID * 3; idx < primitiveID * 3 + 3; ++idx)
                     annexe[idx].z = 1.0;
@@ -962,8 +962,7 @@ struct ShaderSources
         void main(void)
         {
             int index = int(round(vertexIn.annexe.w));
-            fragColor.rg = vec2(float(index / 256) / 255.0, float(index % 256) / 255.0);
-            fragColor.ba = vec2(1.0, 1.0);
+            fragColor = vec4(float(index / 65536) / 255.0, float(index / 256) / 255.0, float(index % 256) / 255.0, 1.0);
         }
     )"};
 
