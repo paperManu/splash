@@ -177,16 +177,6 @@ void Gui::flashBackground()
 /*************/
 void Gui::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
 {
-    //cout << "Axes:" << endl;
-    //for (auto& a : axes)
-    //    cout << a << " ";
-    //cout << endl;
-
-    //cout << "Buttons:" << endl;
-    //for (auto& b : buttons)
-    //    cout << (int)b << " ";
-    //cout << endl;
-        
     for (auto& w : _guiWidgets)
         w->setJoystick(axes, buttons);
 }
