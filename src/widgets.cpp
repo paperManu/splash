@@ -335,6 +335,7 @@ void GuiGlobalView::render()
                 _noMove = true;
                 processKeyEvents();
                 processMouseEvents();
+                processJoystickState();
             }
             else
                 _noMove = false;
@@ -363,6 +364,13 @@ void GuiGlobalView::setCamera(CameraPtr cam)
         _guiCamera = cam;
         _camera->setAttribute("size", {800, 600});
     }
+}
+
+/*************/
+void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+{
+    _joyAxes = axes;
+    _joyButtons = buttons;
 }
 
 /*************/
@@ -513,6 +521,66 @@ void GuiGlobalView::switchHideOtherCameras()
                 scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
         _camerasHidden = false;
     }
+}
+
+/*************/
+void GuiGlobalView::processJoystickState()
+{
+    auto scene = _scene.lock();
+
+    float speed = 1.f;
+
+    // Buttons
+    if (_joyButtons.size() >= 4)
+    {
+        if (_joyButtons[0] == 1 && _joyButtons[0] != _joyButtonsPrevious[0])
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectPreviousCalibrationPoint"});
+        }
+        else if (_joyButtons[1] == 1 && _joyButtons[1] != _joyButtonsPrevious[1])
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectNextCalibrationPoint"});
+        }
+        else if (_joyButtons[2] == 1)
+        {
+            speed = 10.f;
+        }
+        else if (_joyButtons[3] == 1 && _joyButtons[3] != _joyButtonsPrevious[3])
+        {
+            doCalibration();
+        }
+    }
+    if (_joyButtons.size() >= 6)
+    {
+        if (_joyButtons[4] == 1 && _joyButtons[4] != _joyButtonsPrevious[4])
+        {
+            showAllCalibrationPoints();
+        }
+        else if (_joyButtons[5] == 1 && _joyButtons[5] != _joyButtonsPrevious[5])
+        {
+            switchHideOtherCameras();
+        }
+    }
+
+    _joyButtonsPrevious = _joyButtons;
+
+    // Axes
+    if (_joyAxes.size() >= 2)
+    {
+        float xValue = _joyAxes[0];
+        float yValue = -_joyAxes[1]; // Y axis goes downward for joysticks...
+
+        if (xValue != 0.f || yValue != 0.f)
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", xValue * speed, yValue * speed});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
+    }
+
+    // This prevents issues when disconnecting the joystick
+    _joyAxes.clear();
+    _joyButtons.clear();
 }
 
 /*************/

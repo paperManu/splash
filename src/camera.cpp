@@ -899,6 +899,7 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 
     _calibrationPoints[_selectedCalibrationPoint].screen.x += dx / _width;
     _calibrationPoints[_selectedCalibrationPoint].screen.y += dy / _height;
+    _calibrationPoints[_selectedCalibrationPoint].isSet = true;
 
     if (_calibrationCalledOnce)
         doCalibration();
@@ -1452,6 +1453,19 @@ void Camera::registerAttributes()
         if (args.size() < 2)
             return false;
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
+    });
+
+    _attribFunctions["selectNextCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+        _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
+        return true;
+    });
+
+    _attribFunctions["selectPreviousCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+        if (_selectedCalibrationPoint == 0)
+            _selectedCalibrationPoint = _calibrationPoints.size() - 1;
+        else
+            _selectedCalibrationPoint--;
+        return true;
     });
 
     // Store / restore calibration points
