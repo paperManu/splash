@@ -100,166 +100,179 @@ class Timer
         /**
          * Wait for the specified timer to reach a certain value, in us
          */
-         bool waitUntilDuration(const std::string& name, unsigned long long duration)
-         {
-            if (!_enabled)
+        bool waitUntilDuration(const std::string& name, unsigned long long duration)
+        {
+           if (!_enabled)
+               return false;
+        
+           if (_timeMap.find(name) == _timeMap.end())
+               return false;
+        
+           auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+           auto timeIt = _timeMap.find(name);
+           auto durationIt = _durationMap.find(name);
+           unsigned long long elapsed;
+           {
+               std::unique_lock<std::mutex> lock(_mutex);
+               elapsed = currentTime - timeIt->second;
+               _timeMap.erase(timeIt);
+           }
+        
+           timespec nap;
+           nap.tv_sec = 0;
+           bool overtime = false;
+           if (elapsed < duration)
+               nap.tv_nsec = (duration - elapsed) * 1e3;
+           else
+           {
+               nap.tv_nsec = 0;
+               overtime = true;
+           }
+        
+           if (durationIt == _durationMap.end())
+           {
+               std::unique_lock<std::mutex> lock(_mutex);
+               _durationMap[name] = std::max(duration, elapsed);
+           }
+           else
+               durationIt->second = std::max(duration, elapsed);
+        
+           nanosleep(&nap, NULL);
+        
+           return overtime;
+        }
+        
+        /**
+         * Get the last occurence of the specified duration
+         */
+        unsigned long long getDuration(const std::string& name) const
+        {
+           auto durationIt = _durationMap.find(name);
+           if (durationIt == _durationMap.end())
+               return 0;
+           return durationIt->second;
+        }
+        
+        /**
+         * Get the whole time map
+         */
+        const std::unordered_map<std::string, std::atomic_ullong>& getDurationMap() const
+        {
+           return _durationMap;
+        }
+        
+        /**
+         * Set an element in the duration map. Used for transmitting timings between pairs
+         */
+        void setDuration(const std::string& name, unsigned long long value)
+        {
+           auto durationIt = _durationMap.find(name);
+           if (durationIt == _durationMap.end())
+           {
+               std::unique_lock<std::mutex> lock(_mutex);
+               _durationMap[name] = value;
+           }
+           else
+               durationIt->second = value;
+        }
+        
+        /**
+         * Return the time since the last call with this name,
+         * or 0 if it is the first time
+         */
+        unsigned long long sinceLastSeen(const std::string& name)
+        {
+           if (_timeMap.find(name) == _timeMap.end())
+           {
+               start(name);
+               return 0;
+           }
+           
+           stop(name);
+           unsigned long long duration = getDuration(name);
+           start(name);
+           return duration;
+        }
+        
+        /**
+         * Some facilities
+         */
+        Timer& operator<<(const std::string& name)
+        {
+           start(name);
+           _currentDuration = 0;
+           return *this;
+        }
+        
+        Timer& operator>>(unsigned long long duration)
+        {
+           _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
+           _currentDuration = duration;
+           _durationThreadId = std::this_thread::get_id();
+           _isDurationSet = true;
+           return *this;
+        }
+        
+        bool operator>>(const std::string& name)
+        {
+           unsigned long long duration = 0;
+           if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
+           {
+               _isDurationSet = false;
+               duration = _currentDuration;
+               _currentDuration = 0;
+               _mutex.unlock();
+           }
+        
+           bool overtime = false;
+           if (duration > 0)
+               overtime = waitUntilDuration(name, duration);
+           else
+               stop(name);
+           return overtime;
+        }
+        
+        unsigned long long operator[](const std::string& name) {return getDuration(name);}
+        
+        /**
+         * Enable / disable the timers
+         */
+        void setStatus(bool enabled) {_enabled = enabled;}
+        
+        /**
+         * Master clock related
+         */
+        void setMasterClock(const Values& clock)
+        {
+           if (clock.size() == 7)
+               _clock = clock;
+        }
+        
+        bool getMasterClock(Values& clock) const
+        {
+           if (_clock.size() > 0)
+           {
+               clock = _clock;
+               return true;
+           }
+           else
+           {
+               return false;
+           }
+        }
+
+        template <typename T>
+        bool getMasterClock(int64_t& time) const
+        {
+            if (_clock.size() == 0)
                 return false;
 
-            if (_timeMap.find(name) == _timeMap.end())
-                return false;
-
-            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-            auto timeIt = _timeMap.find(name);
-            auto durationIt = _durationMap.find(name);
-            unsigned long long elapsed;
-            {
-                std::unique_lock<std::mutex> lock(_mutex);
-                elapsed = currentTime - timeIt->second;
-                _timeMap.erase(timeIt);
-            }
-
-            timespec nap;
-            nap.tv_sec = 0;
-            bool overtime = false;
-            if (elapsed < duration)
-                nap.tv_nsec = (duration - elapsed) * 1e3;
-            else
-            {
-                nap.tv_nsec = 0;
-                overtime = true;
-            }
-
-            if (durationIt == _durationMap.end())
-            {
-                std::unique_lock<std::mutex> lock(_mutex);
-                _durationMap[name] = std::max(duration, elapsed);
-            }
-            else
-                durationIt->second = std::max(duration, elapsed);
-
-            nanosleep(&nap, NULL);
-
-            return overtime;
-         }
-
-         /**
-          * Get the last occurence of the specified duration
-          */
-         unsigned long long getDuration(const std::string& name) const
-         {
-            auto durationIt = _durationMap.find(name);
-            if (durationIt == _durationMap.end())
-                return 0;
-            return durationIt->second;
-         }
-
-         /**
-          * Get the whole time map
-          */
-         const std::unordered_map<std::string, std::atomic_ullong>& getDurationMap() const
-         {
-            return _durationMap;
-         }
-
-         /**
-          * Set an element in the duration map. Used for transmitting timings between pairs
-          */
-         void setDuration(const std::string& name, unsigned long long value)
-         {
-            auto durationIt = _durationMap.find(name);
-            if (durationIt == _durationMap.end())
-            {
-                std::unique_lock<std::mutex> lock(_mutex);
-                _durationMap[name] = value;
-            }
-            else
-                durationIt->second = value;
-         }
-
-         /**
-          * Return the time since the last call with this name,
-          * or 0 if it is the first time
-          */
-         unsigned long long sinceLastSeen(const std::string& name)
-         {
-            if (_timeMap.find(name) == _timeMap.end())
-            {
-                start(name);
-                return 0;
-            }
-            
-            stop(name);
-            unsigned long long duration = getDuration(name);
-            start(name);
-            return duration;
-         }
-
-         /**
-          * Some facilities
-          */
-         Timer& operator<<(const std::string& name)
-         {
-            start(name);
-            _currentDuration = 0;
-            return *this;
-         }
-
-         Timer& operator>>(unsigned long long duration)
-         {
-            _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
-            _currentDuration = duration;
-			_durationThreadId = std::this_thread::get_id();
-            _isDurationSet = true;
-            return *this;
-         }
-
-         bool operator>>(const std::string& name)
-         {
-            unsigned long long duration = 0;
-            if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
-            {
-                _isDurationSet = false;
-                duration = _currentDuration;
-                _currentDuration = 0;
-                _mutex.unlock();
-            }
-
-            bool overtime = false;
-            if (duration > 0)
-                overtime = waitUntilDuration(name, duration);
-            else
-                stop(name);
-            return overtime;
-         }
-
-         unsigned long long operator[](const std::string& name) {return getDuration(name);}
-
-         /**
-          * Enable / disable the timers
-          */
-         void setStatus(bool enabled) {_enabled = enabled;}
-
-         /**
-          * Master clock related
-          */
-         void setMasterClock(const Values& clock)
-         {
-            if (clock.size() == 7)
-                _clock = clock;
-         }
-
-         bool getMasterClock(Values& clock) const
-         {
-            if (_clock.size() > 0)
-            {
-                clock = _clock;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-         }
+            auto clock = _clock;
+            int64_t frames = clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120;
+            std::chrono::microseconds useconds((frames * 1000000) / 120);
+            time = std::chrono::duration_cast<T>(useconds).count();
+            return true;
+        }
 
     private:
         Timer() {}

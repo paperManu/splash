@@ -44,7 +44,7 @@ namespace Splash {
 class World;
 
 /*************/
-class Queue : public BaseObject
+class Queue : public BufferObject
 {
     public:
         /**
@@ -65,10 +65,20 @@ class Queue : public BaseObject
         Queue& operator=(const Queue&) = delete;
 
         /**
-         * Try to link / unlink the given BaseObject to this
+         * The Queue does not exist on the Scene side, there is the QueueSurrogate for this
+         * So deserialization has no meaning
          */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
-        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+        bool deserialize(std::unique_ptr<SerializedObject> obj) {return false;}
+
+        /**
+         * Serialize the underlying source
+         */
+        std::unique_ptr<SerializedObject> serialize() const;
+
+        /**
+         * Returns always true, the Queue object handles update itself
+         */
+        bool wasUpdated() const {return true;}
 
         /**
          * Update the current texture
@@ -82,16 +92,18 @@ class Queue : public BaseObject
         {
             std::string type;
             std::string filename;
-            int64_t start; // in seconds
-            int64_t stop; // in seconds
+            int64_t start; // in useconds
+            int64_t stop; // in useconds
             Values args;
         };
         std::vector<Source> _playlist {}; // Holds a vector of [type, filename, start, stop, args], which is also a Values
+
         bool _useClock {false};
 
-        std::shared_ptr<BaseObject> _currentSource; // The source being played
+        std::shared_ptr<BufferObject> _currentSource; // The source being played
+        bool _defaultSource {false};
 
-        uint32_t _currentSourceIndex {0};
+        int32_t _currentSourceIndex {-1};
         bool _playing {false};
 
         bool _loop {false};
@@ -101,7 +113,7 @@ class Queue : public BaseObject
         /**
          * Create a source object from the given type
          */
-        std::shared_ptr<BaseObject> createSource(std::string type);
+        std::shared_ptr<BufferObject> createSource(std::string type);
 
         /**
          * Register new functors to modify attributes
@@ -146,12 +158,6 @@ class QueueSurrogate : public Texture
          * Get spec of the texture
          */
         oiio::ImageSpec getSpec() const;
-
-        /**
-         * Try to link / unlink the given BaseObject to this
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
-        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Update the texture according to the owned Image

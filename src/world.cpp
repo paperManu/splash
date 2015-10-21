@@ -75,7 +75,7 @@ void World::run()
             vector<unsigned int> threadIds;
             for (auto& o : _objects)
             {
-                //threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                     // Update the local objects
                     o.second->update();
 
@@ -87,14 +87,15 @@ void World::run()
                         {
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
-                            _link->sendBuffer(o.first, std::move(obj));
+                            if (obj)
+                                _link->sendBuffer(o.first, std::move(obj));
                         }
-                        //else
-                        //    return; // if not, exit this thread
+                        else
+                            return; // if not, exit this thread
                     }
-                //}));
+                }));
             }
-            //SThread::pool.waitThreads(threadIds);
+            SThread::pool.waitThreads(threadIds);
 
             _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 60))); // Maximum time to wait for frames to arrive
             sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
@@ -218,10 +219,7 @@ void World::addLocally(string type, string name, string destination)
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
         else if (type == string("queue"))
-        {
-            PRINT_FUNCTION_LINE
             object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
-        }
     }
     if (object.get() != nullptr)
     {

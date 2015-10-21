@@ -3,6 +3,8 @@
 #include "image.h"
 #include "image_ffmpeg.h"
 #include "image_shmdata.h"
+#include "log.h"
+#include "timer.h"
 #include "world.h"
 
 using namespace std;
@@ -12,7 +14,7 @@ namespace Splash
 
 /*************/
 Queue::Queue(RootObjectWeakPtr root)
-    : BaseObject(root)
+    : BufferObject(root)
 {
     _type = "queue";
     _world = dynamic_pointer_cast<World>(root.lock());
@@ -26,15 +28,12 @@ Queue::~Queue()
 }
 
 /*************/
-bool Queue::linkTo(shared_ptr<BaseObject> obj)
+unique_ptr<SerializedObject> Queue::serialize() const
 {
-    return false;
-}
-
-/*************/
-bool Queue::unlinkFrom(shared_ptr<BaseObject> obj)
-{
-    return true;
+    if (_currentSource)
+        return _currentSource->serialize();
+    else
+        return {};
 }
 
 /*************/
@@ -45,45 +44,76 @@ void Queue::update()
 
     if (_startTime < 0)
         _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-    _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
 
-    auto source = _playlist[_currentSourceIndex];
+    int64_t masterClockTime;
+    if (_useClock && Timer::get().getMasterClock<chrono::microseconds>(masterClockTime))
+        _currentTime = masterClockTime;
+    else
+        _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
 
-    if (source.stop < _currentTime)
-    {
-        _currentSourceIndex++;
-        // Auto looping for now
-        if (_currentSourceIndex >= _playlist.size())
-        {
-            _currentSourceIndex = 0;
-            _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
-            _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-        }
+    auto source = _playlist[0];
+    if (_playing)
         source = _playlist[_currentSourceIndex];
 
-        if (_currentSource)
-        {
-            _root.lock()->unregisterObject(_currentSource->getName());
-            _currentSource.reset();
-        }
+    // Get the current index regarding the current time
+    uint32_t sourceIndex = 0;
+    for (auto& playSource : _playlist)
+    {
+        if (playSource.start <= _currentTime && playSource.stop > _currentTime)
+            break;
+        sourceIndex++;
     }
 
-    if (source.start < _currentTime && source.stop > _currentTime)
+    // If loop is activated, and master clock is not used
+    if (!_useClock && _loop && sourceIndex >= _playlist.size())
     {
-        if (!_currentSource)
+        sourceIndex = 0;
+        _startTime = _startTime + _currentTime;
+        _currentTime = 0;
+    }
+
+    // If the index changed
+    if (sourceIndex != _currentSourceIndex)
+    {
+        if (_playing)
         {
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Finished playing file: " << source.filename << Log::endl;
+            _playing = false;
+        }
+
+        _currentSourceIndex = sourceIndex;
+        _currentSource.reset();
+        
+        if (sourceIndex >= _playlist.size())
+        {
+            _currentSource = make_shared<Image>();
+            _world.lock()->sendMessage(_name, "source", {"image"});
+        }
+        else
+        {
+            source = _playlist[_currentSourceIndex];
             _currentSource = createSource(source.type);
+
+            if (_currentSource)
+                _playing = true;
+            else
+                _currentSource = make_shared<Image>();
+
             _currentSource->setAttribute("file", {source.filename});
-            _world.lock()->registerObject(_currentSource);
             _world.lock()->sendMessage(_name, "source", {source.type});
+
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << source.filename << Log::endl;
         }
     }
+    
+    if (_currentSource)
+        _currentSource->update();
 }
 
 /*************/
-shared_ptr<BaseObject> Queue::createSource(string type)
+shared_ptr<BufferObject> Queue::createSource(string type)
 {
-    auto source = shared_ptr<BaseObject>();
+    auto source = shared_ptr<BufferObject>();
 
     if (type == "image")
     {
@@ -219,18 +249,6 @@ oiio::ImageSpec QueueSurrogate::getSpec() const
 }
 
 /*************/
-bool QueueSurrogate::linkTo(shared_ptr<BaseObject> obj)
-{
-    return false;
-}
-
-/*************/
-bool QueueSurrogate::unlinkFrom(shared_ptr<BaseObject> obj)
-{
-    return false;
-}
-
-/*************/
 void QueueSurrogate::update()
 {
     unique_lock<mutex> lock(_taskMutex);
@@ -253,7 +271,7 @@ void QueueSurrogate::registerAttributes()
 
         unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() {
-            auto sourceName = _name + "_source";
+            auto sourceName = _name;
 
             if (_source)
             {
@@ -267,8 +285,11 @@ void QueueSurrogate::registerAttributes()
 
             if (type.find("image") != string::npos)
             {
-                object = make_shared<Image>();
-                object->setRemoteType(type);
+                auto image = make_shared<Image>();
+                image->setTo(0.f);
+                image->setRemoteType(type);
+
+                object = image;
             }
             // TODO: add Texture_Syphon type
             //else if (type.find("texture_syphon") != string::npos)

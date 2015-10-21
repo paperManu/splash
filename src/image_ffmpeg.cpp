@@ -453,10 +453,10 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            Values clock;
-            if (_useClock && Timer::get().getMasterClock(clock))
+            int64_t clockAsMs;
+            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
             {
-                float seconds = (float)(clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120) / 120.f;
+                float seconds = (float)clockAsMs / 1e3f;
                 float diff = _elapsedTime / 1e6 - seconds;
 
                 if (abs(diff) > 2.f)
