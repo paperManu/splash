@@ -456,10 +456,10 @@ void Image_FFmpeg::videoDisplayLoop()
             int64_t clockAsMs;
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
             {
-                float seconds = (float)clockAsMs / 1e3f;
+                float seconds = (float)clockAsMs / 1e3f + _shiftTime;
                 float diff = _elapsedTime / 1e6 - seconds;
 
-                if (abs(diff) > 2.f)
+                if (abs(diff) > 3.f)
                 {
                     _elapsedTime = seconds * 1e6;
                     _clockTime = _elapsedTime;
@@ -585,6 +585,15 @@ void Image_FFmpeg::registerAttributes()
         return {(int)_useClock};
     });
     _attribFunctions["useClock"].doUpdateDistant(true);
+
+    _attribFunctions["timeShift"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _shiftTime = args[0].asFloat();
+
+        return true;
+    });
 }
 
 } // end of namespace

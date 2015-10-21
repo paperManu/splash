@@ -100,6 +100,8 @@ void Queue::update()
                 _currentSource = make_shared<Image>();
 
             _currentSource->setAttribute("file", {source.filename});
+            _currentSource->setAttribute("timeShift", {-(float)source.start / 1e6});
+            _currentSource->setAttribute("useClock", {1});
             _world.lock()->sendMessage(_name, "source", {source.type});
 
             Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << source.filename << Log::endl;
