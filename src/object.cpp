@@ -242,6 +242,14 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
         addTexture(tex);
         return true;
     }
+    else if (obj->getType().find("queue") != string::npos)
+    {
+            cout << "=======================================================================" << endl;
+            cout << "=======================================================================" << endl;
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        addTexture(tex);
+        return true;
+    }
     else if (obj->getType().find("image") != string::npos)
     {
         auto filter = make_shared<Filter>(_root);

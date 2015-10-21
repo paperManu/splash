@@ -27,6 +27,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "osUtils.h"
+#include "queue.h"
 #include "scene.h"
 #include "timer.h"
 #include "threadpool.h"
@@ -74,7 +75,7 @@ void World::run()
             vector<unsigned int> threadIds;
             for (auto& o : _objects)
             {
-                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                //threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                     // Update the local objects
                     o.second->update();
 
@@ -88,12 +89,12 @@ void World::run()
                             bufferObj->setNotUpdated();
                             _link->sendBuffer(o.first, std::move(obj));
                         }
-                        else
-                            return; // if not, exit this thread
+                        //else
+                        //    return; // if not, exit this thread
                     }
-                }));
+                //}));
             }
-            SThread::pool.waitThreads(threadIds);
+            //SThread::pool.waitThreads(threadIds);
 
             _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 60))); // Maximum time to wait for frames to arrive
             sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
@@ -186,7 +187,9 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type.find("image") == string::npos && type.find("mesh") == string::npos)
+    if (type.find("image") == string::npos && 
+        type.find("mesh") == string::npos && 
+        type.find("queue") == string::npos)
         return;
 
     BaseObjectPtr object;
@@ -214,6 +217,11 @@ void World::addLocally(string type, string name, string destination)
 #endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        else if (type == string("queue"))
+        {
+            PRINT_FUNCTION_LINE
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
+        }
     }
     if (object.get() != nullptr)
     {

@@ -507,6 +507,7 @@ class RootObject : public BaseObject
         {
             if (object.get() != nullptr)
             {
+                std::unique_lock<std::mutex> lock(_registerMutex);
                 object->_savable = false; // This object was created on the fly. Do not save it
                 _objects[object->getName()] = object;
             }
@@ -518,6 +519,8 @@ class RootObject : public BaseObject
          */
         std::shared_ptr<BaseObject> unregisterObject(std::string name)
         {
+            std::unique_lock<std::mutex> lock(_registerMutex);
+
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
             {
@@ -559,6 +562,7 @@ class RootObject : public BaseObject
 
     protected:
         std::shared_ptr<Link> _link;
+        mutable std::mutex _registerMutex; // Used in registration and unregistration of objects
         mutable std::mutex _setMutex;
         std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 

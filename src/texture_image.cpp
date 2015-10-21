@@ -110,7 +110,7 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
 {
     if (width == 0 || height == 0)
     {
-        Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Texture size is null" << Log::endl;
         return;
     }
 
