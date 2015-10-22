@@ -55,13 +55,29 @@ void Queue::update()
         return;
 
     if (_startTime < 0)
-        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        _startTime = Timer::getTime<chrono::microseconds>();
 
     int64_t masterClockTime;
     if (_useClock && Timer::get().getMasterClock<chrono::microseconds>(masterClockTime))
+    {
         _currentTime = masterClockTime;
+    }
     else
-        _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+    {
+        auto previousTime = _currentTime;
+        _currentTime = Timer::getTime<chrono::microseconds>() - _startTime;
+
+        if (_paused)
+        {
+            _startTime = _startTime + (_currentTime - previousTime);
+            _currentTime = previousTime;
+            if (_currentSource)
+                _currentSource->setAttribute("pause", {1});
+            return;
+        }
+        else if (_currentSource)
+            _currentSource->setAttribute("pause", {0});
+    }
 
     auto source = _playlist[0];
     if (_playing)
@@ -80,7 +96,7 @@ void Queue::update()
     if (!_useClock && _loop && sourceIndex >= _playlist.size())
     {
         sourceIndex = 0;
-        _startTime = _startTime + _currentTime;
+        _startTime = Timer::getTime<chrono::microseconds>();
         _currentTime = 0;
     }
 
@@ -112,15 +128,26 @@ void Queue::update()
                 _currentSource = make_shared<Image>();
 
             _currentSource->setAttribute("file", {source.filename});
+
             if (_useClock)
             {
+                // If we use the master clock, set a timeshift to be correctly placed in the video
+                // (as the source gets its clock from the same Timer)
                 _currentSource->setAttribute("timeShift", {-(float)source.start / 1e6});
                 _currentSource->setAttribute("useClock", {1});
             }
+
             _world.lock()->sendMessage(_name, "source", {source.type});
 
             Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << source.filename << Log::endl;
         }
+    }
+
+    if (!_useClock && _seeked)
+    {
+        // If we don't use the master clock, we want to seek accordingly in the file
+        _currentSource->setAttribute("seek", {(float)(_currentTime - source.start) / 1e6});
+        _seeked = false;
     }
     
     if (_currentSource)
@@ -171,6 +198,18 @@ void Queue::registerAttributes()
     });
     _attribFunctions["loop"].doUpdateDistant(true);
 
+    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _paused = args[0].asInt();
+
+        return true;
+    }, [&]() -> Values {
+        return {_paused};
+    });
+    _attribFunctions["pause"].doUpdateDistant(true);
+
     _attribFunctions["playlist"] = AttributeFunctor([&](const Values& args) {
         _playlist.clear();
 
@@ -212,6 +251,19 @@ void Queue::registerAttributes()
         return playlist;
     });
     _attribFunctions["playlist"].doUpdateDistant(true);
+
+    _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        int64_t seekTime = args[0].asFloat() * 1e6;
+        _startTime = Timer::getTime<chrono::microseconds>() - seekTime;
+        _seeked = true;
+        return true;
+    }, [&]() -> Values {
+        return {(float)_currentTime / 1e6};
+    });
+    _attribFunctions["seek"].doUpdateDistant(true);
 
     _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)

@@ -493,9 +493,20 @@ void Image_FFmpeg::videoDisplayLoop()
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                if (_clockTime != -1l)
+                if (!_useClock && _paused)
+                {
+                    auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                    _startTime = _startTime + (actualTime - _currentTime);
+                    continue;
+                }
+                else if (_useClock && _clockTime != -1l)
+                {
                     _currentTime = _clockTime;
+                }
+                else
+                {
+                    _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                }
 
                 int64_t waitTime = timedFrame.timing - _currentTime;
                 if (waitTime > 0 && waitTime < 1e6)
@@ -553,6 +564,17 @@ void Image_FFmpeg::registerAttributes()
         return {duration};
     });
     _attribFunctions["remaining"].doUpdateDistant(true);
+
+    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _paused = args[0].asInt();
+        return true;
+    }, [&]() -> Values {
+        return {_paused};
+    });
+    _attribFunctions["pause"].doUpdateDistant(true);
 
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)

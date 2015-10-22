@@ -104,6 +104,7 @@ class Queue : public BufferObject
         std::vector<Source> _playlist {}; // Holds a vector of [type, filename, start, stop, args], which is also a Values
 
         bool _useClock {false};
+        bool _paused {false};
 
         std::shared_ptr<BufferObject> _currentSource; // The source being played
         bool _defaultSource {false};
@@ -112,6 +113,7 @@ class Queue : public BufferObject
         bool _playing {false};
 
         bool _loop {false};
+        bool _seeked {false};
         int64_t _startTime {-1}; // Beginning of the current loop, in us
         int64_t _currentTime {-1}; // Elapsed time since _startTime
 

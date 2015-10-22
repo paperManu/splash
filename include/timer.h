@@ -274,6 +274,12 @@ class Timer
             return true;
         }
 
+        template <typename T>
+        static inline int64_t getTime()
+        {
+            return std::chrono::duration_cast<T>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+        }
+
     private:
         Timer() {}
         ~Timer() {}
