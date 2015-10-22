@@ -1,8 +1,12 @@
 #include "queue.h"
 
 #include "image.h"
-#include "image_ffmpeg.h"
-#include "image_shmdata.h"
+#if HAVE_FFMPEG
+    #include "image_ffmpeg.h"
+#endif
+#if HAVE_SHMDATA
+    #include "image_shmdata.h"
+#endif
 #include "log.h"
 #include "timer.h"
 #include "world.h"
@@ -121,14 +125,18 @@ shared_ptr<BufferObject> Queue::createSource(string type)
     {
         source = make_shared<Image>();
     }
+#if HAVE_SHMDATA
     else if (type == "image_ffmpeg")
     {
         source = make_shared<Image_FFmpeg>();
     }
+#endif
+#if HAVE_SHMDATA
     else if (type == "image_shmdata")
     {
         source = make_shared<Image_Shmdata>();
     }
+#endif
     else
     {
         return {};
