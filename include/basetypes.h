@@ -141,7 +141,7 @@ class BaseObject
          * Set and get the name of the object
          */
         std::string getName() const {return _name;}
-        void setName(std::string name) {_name = name;}
+        virtual std::string setName(const std::string& name) {_name = name; return _name;}
 
         /**
          * Set and get the remote type of the object
@@ -438,6 +438,12 @@ class BufferObject : public BaseObject
 
             return _returnValue;
         }
+
+        /**
+         * Get the name of the distant buffer object, for those which have a different name
+         * between World and Scene (happens with Queues)
+         */
+        virtual std::string getDistantName() const {return _name;}
 
         /**
          * Serialize the image

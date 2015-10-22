@@ -11,6 +11,8 @@
 #include "timer.h"
 #include "world.h"
 
+#define DISTANT_NAME_SUFFIX "_source"
+
 using namespace std;
 
 namespace Splash
@@ -38,6 +40,12 @@ unique_ptr<SerializedObject> Queue::serialize() const
         return _currentSource->serialize();
     else
         return {};
+}
+
+/*************/
+string Queue::getDistantName() const
+{
+    return _name + DISTANT_NAME_SUFFIX;
 }
 
 /*************/
@@ -104,8 +112,11 @@ void Queue::update()
                 _currentSource = make_shared<Image>();
 
             _currentSource->setAttribute("file", {source.filename});
-            _currentSource->setAttribute("timeShift", {-(float)source.start / 1e6});
-            _currentSource->setAttribute("useClock", {1});
+            if (_useClock)
+            {
+                _currentSource->setAttribute("timeShift", {-(float)source.start / 1e6});
+                _currentSource->setAttribute("useClock", {1});
+            }
             _world.lock()->sendMessage(_name, "source", {source.type});
 
             Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << source.filename << Log::endl;
@@ -207,6 +218,9 @@ void Queue::registerAttributes()
             return false;
 
         _useClock = args[0].asInt();
+        if (_currentSource)
+            _currentSource->setAttribute("useClock", {_useClock});
+
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};
@@ -281,7 +295,7 @@ void QueueSurrogate::registerAttributes()
 
         unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() {
-            auto sourceName = _name;
+            auto sourceName = _name + DISTANT_NAME_SUFFIX;
 
             if (_source)
             {

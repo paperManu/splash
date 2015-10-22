@@ -69,6 +69,11 @@ class Queue : public BufferObject
          * So deserialization has no meaning
          */
         bool deserialize(std::unique_ptr<SerializedObject> obj) {return false;}
+        
+        /**
+         * Return the name of the distant buffer object
+         */
+        std::string getDistantName() const;
 
         /**
          * Serialize the underlying source

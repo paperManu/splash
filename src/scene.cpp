@@ -126,7 +126,7 @@ BaseObjectPtr Scene::add(string type, string name)
     if (obj.get() != nullptr)
     {
         obj->setId(getId());
-        obj->setName(name);
+        name = obj->setName(name);
         if (name == string())
             _objects[to_string(obj->getId())] = obj;
         else

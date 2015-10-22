@@ -88,7 +88,7 @@ void World::run()
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
                             if (obj)
-                                _link->sendBuffer(o.first, std::move(obj));
+                                _link->sendBuffer(bufferObj->getDistantName(), std::move(obj));
                         }
                         else
                             return; // if not, exit this thread
@@ -224,7 +224,7 @@ void World::addLocally(string type, string name, string destination)
     if (object.get() != nullptr)
     {
         object->setId(getId());
-        object->setName(name);
+        name = object->setName(name); // The real name is not necessarily the one we set (see Queues)
         _objects[name] = object;
     }
 
