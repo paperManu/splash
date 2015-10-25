@@ -43,6 +43,7 @@
 
 namespace Splash {
 
+class Scene;
 class World;
 typedef std::shared_ptr<World> WorldPtr;
 
@@ -75,6 +76,9 @@ class World : public RootObject
 #if HAVE_PORTAUDIO && HAVE_LTC
         LtcClock _clock {true};
 #endif
+
+        std::unique_ptr<Scene> _innerScene {};
+        std::thread _innerSceneThread;
 
         bool _status {true};
         bool _quit {false};

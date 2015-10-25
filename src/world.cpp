@@ -53,6 +53,9 @@ World::~World()
     Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
 #endif
     SThread::pool.waitAllThreads();
+
+    if (_innerSceneThread.joinable())
+        _innerSceneThread.join();
 }
 
 /*************/
@@ -276,25 +279,39 @@ void World::applyConfig()
                 display += to_string(0);
 
             string name = jsScenes[i]["name"].asString();
-            int pid;
+            int pid = -1;
             if (spawn > 0)
             {
-                // Spawn a new process containing this Scene
-                _childProcessLaunched = false;
-
-                string cmd;
-                if (_executionPath == "")
-                    cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                string worldDisplay = getenv("DISPLAY");
+                // If the current process is on the correct display, we use an inner Scene
+                if (display.find(worldDisplay) != string::npos && !_innerScene)
+                {
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
+                    _innerSceneThread = thread([&]() {
+                        _innerScene = unique_ptr<Scene>(new Scene(name));
+                    });
+                }
                 else
-                    cmd = _executionPath + "splash-scene";
-                string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                string timer = Timer::get().isDebug() ? "-t" : "";
+                {
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+                    
+                    // Spawn a new process containing this Scene
+                    _childProcessLaunched = false;
 
-                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
-                char* env[] = {(char*)display.c_str(), NULL};
-                int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
-                if (status != 0)
-                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+                    string cmd;
+                    if (_executionPath == "")
+                        cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                    else
+                        cmd = _executionPath + "splash-scene";
+                    string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                    string timer = Timer::get().isDebug() ? "-t" : "";
+
+                    char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
+                    char* env[] = {(char*)display.c_str(), NULL};
+                    int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
+                    if (status != 0)
+                        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+                }
 
                 // We wait for the child process to be launched
                 while (!_childProcessLaunched)
@@ -302,6 +319,7 @@ void World::applyConfig()
                     unique_lock<mutex> lock(_childProcessMutex);
                     if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
                     {
+                        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to scene \"" << name << "\". Exiting." << Log::endl;
                         _quit = true;
                         return;
                     }
@@ -831,7 +849,8 @@ void World::registerAttributes()
                 for (auto& s : _scenes)
                 {
                     sendMessage(s.first, "quit", {});
-                    waitpid(s.second, nullptr, 0);
+                    if (s.second != -1)
+                        waitpid(s.second, nullptr, 0);
                 }
 
                 _config = config;
