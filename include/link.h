@@ -34,12 +34,13 @@
 #include <vector>
 #include <zmq.hpp>
 
+#include "config.h"
 #include "coretypes.h"
 
 namespace Splash {
 
 class RootObject;
-typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
+class BufferObject;
 
 /*************/
 class Link
@@ -48,7 +49,7 @@ class Link
         /**
          * Constructor
          */
-        Link(RootObjectWeakPtr root, std::string name);
+        Link(std::weak_ptr<RootObject> root, std::string name);
 
         /**
          * Destructor
@@ -64,6 +65,7 @@ class Link
          * Send a buffer to the connected pairs
          */
         bool sendBuffer(const std::string name, std::unique_ptr<SerializedObject> buffer);
+        bool sendBuffer(const std::string name, const std::shared_ptr<BufferObject>& object);
 
         /**
          * Send a message to connected pairs
@@ -79,7 +81,7 @@ class Link
         bool waitForBufferSending(std::chrono::milliseconds maximumWait);
 
     private:
-        RootObjectWeakPtr _rootObject;
+        std::weak_ptr<RootObject> _rootObject;
         std::string _name;
         std::shared_ptr<zmq::context_t> _context;
         std::mutex _msgSendMutex;

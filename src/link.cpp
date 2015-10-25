@@ -11,7 +11,7 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Link::Link(RootObjectWeakPtr root, string name)
+Link::Link(weak_ptr<RootObject> root, string name)
 {
     try
     {
@@ -136,6 +136,13 @@ bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
     }
 
     return true;
+}
+
+/*************/
+bool Link::sendBuffer(const string name, const shared_ptr<BufferObject>& object)
+{
+    auto buffer = object->serialize();
+    return sendBuffer(name, std::move(buffer));
 }
 
 /*************/
