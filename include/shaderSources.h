@@ -728,11 +728,11 @@ struct ShaderSources
 
         out VertexData
         {
-            smooth vec4 position;
-            smooth vec2 texCoord;
-            smooth vec4 normal;
-            smooth vec4 annexe;
-            smooth float blendingValue;
+            vec4 position;
+            vec2 texCoord;
+            vec4 normal;
+            vec4 annexe;
+            float blendingValue;
         } vertexOut;
 
         void main(void)
