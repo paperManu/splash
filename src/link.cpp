@@ -96,21 +96,6 @@ void Link::connectTo(const std::string& name, const shared_ptr<RootObject>& peer
     else
         return;
 
-    try
-    {
-        // High water mark set to zero for the outputs
-        int hwm = 0;
-        _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
-
-        // TODO: for now, all connections are through IPC.
-        _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
-    }
-    catch (const zmq::error_t& e)
-    {
-        if (errno != ETERM)
-            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
-    }
-
     // Wait a bit for the connection to be up
     this_thread::sleep_for(chrono::milliseconds(100));
     _connectedToInner = true;
@@ -162,7 +147,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
             auto bufferPtr = buffer.get();
 
             _otgMutex.lock();
-            _otgBuffers.push_back(std::move(buffer));
+            _otgBuffers.push_back(buffer);
             _otgMutex.unlock();
 
             _otgNumber += 1;
@@ -194,66 +179,79 @@ bool Link::sendBuffer(const string& name, const shared_ptr<BufferObject>& object
 /*************/
 bool Link::sendMessage(const string& name, const string& attribute, const Values& message)
 {
-    try
+    if (_connectedToInner)
     {
-        unique_lock<mutex> lock(_msgSendMutex);
-
-        // First we send the name of the target
-        zmq::message_t msg(name.size() + 1);
-        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-        // And the target's attribute
-        msg.rebuild(attribute.size() + 1);
-        memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
-        _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-        // Helper function to send messages
-        std::function<void(const Values& message)> sendMessage;
-        sendMessage = [&](const Values& message) {
-            // Size of the message
-            int size = message.size();
-            msg.rebuild(sizeof(size));
-            memcpy(msg.data(), (void*)&size, sizeof(size));
-
-            if (message.size() == 0)
-                _socketMessageOut->send(msg);
-            else
-                _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-            for (int i = 0; i < message.size(); ++i)
-            {
-                auto v = message[i];
-                Value::Type valueType = v.getType();
-
-                msg.rebuild(sizeof(valueType));
-                memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
-                _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-                if (valueType == Value::Type::v)
-                    sendMessage(v.asValues());
-                else
-                {
-                    int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
-                    void* value = v.data();
-                    msg.rebuild(valueSize);
-                    memcpy(msg.data(), value, valueSize);
-
-                    if (i != message.size() - 1)
-                        _socketMessageOut->send(msg, ZMQ_SNDMORE);
-                    else
-                        _socketMessageOut->send(msg);
-                }
-            }
-        };
-
-        // Send the message
-        sendMessage(message);
+        for (auto& rootObjectIt : _connectedTargetPointers)
+        {
+            auto& rootObject = rootObjectIt.second;
+            if (rootObject)
+                rootObject->set(name, attribute, message);
+        }
     }
-    catch (const zmq::error_t& e)
+
+    if (_connectedToOuter)
     {
-        if (errno != ETERM)
-            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        try
+        {
+            unique_lock<mutex> lock(_msgSendMutex);
+
+            // First we send the name of the target
+            zmq::message_t msg(name.size() + 1);
+            memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+            // And the target's attribute
+            msg.rebuild(attribute.size() + 1);
+            memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+            // Helper function to send messages
+            std::function<void(const Values& message)> sendMessage;
+            sendMessage = [&](const Values& message) {
+                // Size of the message
+                int size = message.size();
+                msg.rebuild(sizeof(size));
+                memcpy(msg.data(), (void*)&size, sizeof(size));
+
+                if (message.size() == 0)
+                    _socketMessageOut->send(msg);
+                else
+                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+                for (int i = 0; i < message.size(); ++i)
+                {
+                    auto v = message[i];
+                    Value::Type valueType = v.getType();
+
+                    msg.rebuild(sizeof(valueType));
+                    memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
+                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+                    if (valueType == Value::Type::v)
+                        sendMessage(v.asValues());
+                    else
+                    {
+                        int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
+                        void* value = v.data();
+                        msg.rebuild(valueSize);
+                        memcpy(msg.data(), value, valueSize);
+
+                        if (i != message.size() - 1)
+                            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                        else
+                            _socketMessageOut->send(msg);
+                    }
+                }
+            };
+
+            // Send the message
+            sendMessage(message);
+        }
+        catch (const zmq::error_t& e)
+        {
+            if (errno != ETERM)
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        }
     }
 
     // We don't display broadcast messages, for visibility

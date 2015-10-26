@@ -293,8 +293,8 @@ void World::applyConfig()
                 if (display.find(worldDisplay) != string::npos && !_innerScene)
                 {
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
+                    _innerScene = make_shared<Scene>(name, false);
                     _innerSceneThread = thread([&]() {
-                        _innerScene = make_shared<Scene>(name, false);
                         _innerScene->run();
                     });
                 }
@@ -326,12 +326,13 @@ void World::applyConfig()
                     unique_lock<mutex> lock(_childProcessMutex);
                     if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
                     {
-                        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to scene \"" << name << "\". Exiting." << Log::endl;
+                        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << name << "\". Exiting." << Log::endl;
                         _quit = true;
                         return;
                     }
                 }
             }
+
             _scenes[name] = pid;
             if (_masterSceneName == "")
                 _masterSceneName = name;
