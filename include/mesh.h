@@ -98,12 +98,12 @@ class Mesh : public BufferObject
         /**
          * Get a serialized representation of the mesh
          */
-        std::unique_ptr<SerializedObject> serialize() const;
+        std::shared_ptr<SerializedObject> serialize() const;
 
         /**
          * Set the mesh from a serialized representation
          */
-        bool deserialize(std::unique_ptr<SerializedObject> obj);
+        bool deserialize(std::shared_ptr<SerializedObject> obj);
 
         /**
          * Update the content of the mesh

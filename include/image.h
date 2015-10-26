@@ -100,12 +100,12 @@ class Image : public BufferObject
         /**
          * Serialize the image
          */
-        std::unique_ptr<SerializedObject> serialize() const;
+        std::shared_ptr<SerializedObject> serialize() const;
 
         /**
          * Update the Image from a serialized representation
          */
-        bool deserialize(std::unique_ptr<SerializedObject> obj);
+        bool deserialize(std::shared_ptr<SerializedObject> obj);
 
         /**
          * Set the path to read from

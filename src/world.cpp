@@ -608,7 +608,7 @@ Values World::getObjectsNameByType(string type)
 }
 
 /*************/
-void World::handleSerializedObject(const string name, unique_ptr<SerializedObject> obj)
+void World::handleSerializedObject(const string name, shared_ptr<SerializedObject> obj)
 {
     _link->sendBuffer(name, std::move(obj));
 }

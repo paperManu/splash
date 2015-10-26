@@ -66,7 +66,7 @@ class Link
         /**
          * Send a buffer to the connected pairs
          */
-        bool sendBuffer(const std::string& name, std::unique_ptr<SerializedObject> buffer);
+        bool sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer);
         bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
 
         /**
@@ -100,7 +100,7 @@ class Link
         std::shared_ptr<zmq::socket_t> _socketMessageIn;
         std::shared_ptr<zmq::socket_t> _socketMessageOut;
 
-        std::deque<std::unique_ptr<SerializedObject>> _otgBuffers;
+        std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
         std::mutex _otgMutex;
         std::atomic_int _otgNumber {0};
 

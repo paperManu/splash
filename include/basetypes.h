@@ -427,7 +427,7 @@ class BufferObject : public BaseObject
          * Update the BufferObject from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(std::unique_ptr<SerializedObject> obj) = 0;
+        virtual bool deserialize(std::shared_ptr<SerializedObject> obj) = 0;
         bool deserialize()
         {
             if (_newSerializedObject == false)
@@ -448,16 +448,16 @@ class BufferObject : public BaseObject
         /**
          * Serialize the image
          */
-        virtual std::unique_ptr<SerializedObject> serialize() const = 0;
+        virtual std::shared_ptr<SerializedObject> serialize() const = 0;
 
         /**
          * Set the next serialized object to deserialize to buffer
          */
-        void setSerializedObject(std::unique_ptr<SerializedObject> obj)
+        void setSerializedObject(std::shared_ptr<SerializedObject> obj)
         {
             {
                 std::unique_lock<std::mutex> lock(_writeMutex);
-                _serializedObject = move(obj);
+                _serializedObject = std::move(obj);
                 _newSerializedObject = true;
             }
 
@@ -482,7 +482,7 @@ class BufferObject : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
         bool _updatedBuffer {false};
 
-        std::unique_ptr<SerializedObject> _serializedObject;
+        std::shared_ptr<SerializedObject> _serializedObject;
         bool _newSerializedObject {false};
 };
 
@@ -556,7 +556,7 @@ class RootObject : public BaseObject
          * Set an object from its serialized form
          * If non existant, it is handled by the handleSerializedObject method
          */
-        void setFromSerializedObject(const std::string& name, std::unique_ptr<SerializedObject> obj)
+        void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
             auto objectIt = _objects.find(name);
@@ -583,7 +583,7 @@ class RootObject : public BaseObject
         std::mutex _answerMutex;
         std::string _answerExpected {""};
 
-        virtual void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj) {}
+        virtual void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj) {}
 
         /**
          * Send a message to the target specified by its name

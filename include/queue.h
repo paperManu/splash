@@ -68,7 +68,7 @@ class Queue : public BufferObject
          * The Queue does not exist on the Scene side, there is the QueueSurrogate for this
          * So deserialization has no meaning
          */
-        bool deserialize(std::unique_ptr<SerializedObject> obj) {return false;}
+        bool deserialize(std::shared_ptr<SerializedObject> obj) {return false;}
         
         /**
          * Return the name of the distant buffer object
@@ -78,7 +78,7 @@ class Queue : public BufferObject
         /**
          * Serialize the underlying source
          */
-        std::unique_ptr<SerializedObject> serialize() const;
+        std::shared_ptr<SerializedObject> serialize() const;
 
         /**
          * Returns always true, the Queue object handles update itself

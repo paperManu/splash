@@ -142,7 +142,7 @@ bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
 }
 
 /*************/
-bool Link::sendBuffer(const string& name, unique_ptr<SerializedObject> buffer)
+bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
 {
     if (_connectedToInner)
     {
@@ -150,10 +150,7 @@ bool Link::sendBuffer(const string& name, unique_ptr<SerializedObject> buffer)
         {
             auto& rootObject = rootObjectIt.second;
             if (rootObject)
-            {
-                auto copiedBuffer = unique_ptr<SerializedObject>(new SerializedObject(*buffer));
-                rootObject->setFromSerializedObject(name, std::move(copiedBuffer));
-            }
+                rootObject->setFromSerializedObject(name, buffer);
         }
     }
 
@@ -376,7 +373,7 @@ void Link::handleInputBuffers()
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
-            unique_ptr<SerializedObject> buffer = unique_ptr<SerializedObject>(new SerializedObject((char*)msg.data(), (char*)msg.data() + msg.size()));
+            shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
             
             auto root = _rootObject.lock();
             if (root)

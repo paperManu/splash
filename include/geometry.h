@@ -89,12 +89,12 @@ class Geometry : public BufferObject
         /**
          * Get the geometry as serialized
          */
-        std::unique_ptr<SerializedObject> serialize() const;
+        std::shared_ptr<SerializedObject> serialize() const;
 
         /**
          * Deserialize the geometry
          */
-        bool deserialize(std::unique_ptr<SerializedObject> obj);
+        bool deserialize(std::shared_ptr<SerializedObject> obj);
 
         /**
          * Get whether the alternative buffers have been resized during the last feedback call
@@ -162,9 +162,6 @@ class Geometry : public BufferObject
         GLuint _feedbackQuery;
         bool _feedbackQueryRunning {false};
         int _feedbackMaxNbrPrimitives {0};
-
-        // Serialization
-        std::unique_ptr<SerializedObject> _serializedObject {};
 
         /**
          * Initialization

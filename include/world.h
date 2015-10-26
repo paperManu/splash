@@ -138,7 +138,7 @@ class World : public RootObject
          * Redefinition of a method from RootObject
          * Send the input buffers back to all pairs
          */
-        void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj);
+        void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj);
 
         /**
          * Initialize the GLFW window

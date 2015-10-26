@@ -34,7 +34,7 @@ Queue::~Queue()
 }
 
 /*************/
-unique_ptr<SerializedObject> Queue::serialize() const
+shared_ptr<SerializedObject> Queue::serialize() const
 {
     if (_currentSource)
         return _currentSource->serialize();
