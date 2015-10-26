@@ -445,6 +445,11 @@ class BufferObject : public BaseObject
         virtual std::unique_ptr<SerializedObject> serialize() const = 0;
 
         /**
+         * Set the object from a fellow derived BufferObject
+         */
+        virtual void setObject(const std::shared_ptr<BufferObject>& obj) {}
+
+        /**
          * Set the next serialized object to deserialize to buffer
          */
         void setSerializedObject(std::unique_ptr<SerializedObject> obj)
@@ -544,6 +549,24 @@ class RootObject : public BaseObject
         }
 
         /**
+         * Set an object from an existing one, if it exists
+         */
+        void setObject(std::string name, const std::shared_ptr<BufferObject>& obj)
+        {
+            if (!obj)
+                return;
+
+            std::unique_lock<std::mutex> lock(_setMutex);
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end())
+            {
+                auto object = std::dynamic_pointer_cast<BufferObject>(objectIt->second);
+                if (object)
+                    object->setObject(obj);
+            }
+        }
+
+        /**
          * Set an object from its serialized form
          * If non existant, it is handled by the handleSerializedObject method
          */
@@ -551,10 +574,16 @@ class RootObject : public BaseObject
         {
             std::unique_lock<std::mutex> lock(_setMutex);
             auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end() && std::dynamic_pointer_cast<BufferObject>(objectIt->second).get() != nullptr)
-                std::dynamic_pointer_cast<BufferObject>(objectIt->second)->setSerializedObject(std::move(obj));
+            if (objectIt != _objects.end())
+            {
+                auto object = std::dynamic_pointer_cast<BufferObject>(objectIt->second);
+                if (object)
+                    object->setSerializedObject(std::move(obj));
+            }
             else
+            {
                 handleSerializedObject(name, std::move(obj));
+            }
         }
 
     protected:

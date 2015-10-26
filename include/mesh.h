@@ -54,10 +54,11 @@ class Mesh : public BufferObject
         virtual ~Mesh();
 
         /**
-         * No copy, but some move constructors
+         * No copy constructor, but a copy operator
          */
         Mesh(const Mesh&) = delete;
-        Mesh& operator=(const Mesh&) = delete;
+        Mesh& operator=(const Mesh&) = default;
+        Mesh& operator=(Mesh&&) = default;
 
         /**
          * Compare meshes based on their timestamps

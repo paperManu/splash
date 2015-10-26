@@ -54,10 +54,11 @@ class Image : public BufferObject
         virtual ~Image();
 
         /**
-         * No copy, but some move constructors
+         * No copy constructor, but a copy operator
          */
         Image(const Image&) = delete;
-        Image& operator=(const Image&) = delete;
+        Image& operator=(const Image&) = default;
+        Image& operator=(Image&&) = default;
 
         /**
          * Get a pointer to the data
