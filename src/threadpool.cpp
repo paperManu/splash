@@ -87,13 +87,9 @@ void ThreadPool::waitAllThreads()
 /*************/
 void ThreadPool::waitThreads(vector<unsigned int>& list)
 {
-    timespec nap;
-    nap.tv_sec = 0;
-    nap.tv_nsec = 1e3;
-
     while (true)
     {
-        nanosleep(&nap, NULL);
+        this_thread::sleep_for(chrono::microseconds(100));
 
         queue_mutex.lock();
         if (list.size() == 0 || stop == true)
@@ -102,11 +98,18 @@ void ThreadPool::waitThreads(vector<unsigned int>& list)
             break;
         }
 
-        auto task = find(tasksFinished.begin(), tasksFinished.end(), list[0]);
-        if (task != tasksFinished.end())
+        while (true)
         {
-            list.erase(list.begin());
-            tasksFinished.erase(task);
+            auto task = find(tasksFinished.begin(), tasksFinished.end(), list[0]);
+            if (task != tasksFinished.end())
+            {
+                list.erase(list.begin());
+                tasksFinished.erase(task);
+            }
+            else
+            {
+                break;
+            }
         }
         queue_mutex.unlock();
     }

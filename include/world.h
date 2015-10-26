@@ -80,7 +80,7 @@ class World : public RootObject
         LtcClock _clock {true};
 #endif
 
-        std::unique_ptr<Scene> _innerScene {};
+        std::shared_ptr<Scene> _innerScene {};
         std::thread _innerSceneThread;
 
         bool _status {true};

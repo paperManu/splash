@@ -65,7 +65,7 @@ class Scene : public RootObject
         /**
          * Constructor
          */
-        Scene(std::string name = "Splash");
+        Scene(std::string name = "Splash", bool autoRun = true);
 
         /**
          * Destructor
@@ -151,6 +151,11 @@ class Scene : public RootObject
          * Render the blending
          */
         void renderBlending();
+
+        /**
+         * Main loop for the scene
+         */
+        void run();
 
         /**
          * Set the Scene as the master one
@@ -282,11 +287,6 @@ class Scene : public RootObject
 #else
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, void*);
 #endif
-
-        /**
-         * Main loop for the scene
-         */
-        void run();
 
         /**
          * Texture update loop

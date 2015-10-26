@@ -451,11 +451,6 @@ class BufferObject : public BaseObject
         virtual std::unique_ptr<SerializedObject> serialize() const = 0;
 
         /**
-         * Set the object from a fellow derived BufferObject
-         */
-        virtual void setObject(const std::shared_ptr<BufferObject>& obj) {}
-
-        /**
          * Set the next serialized object to deserialize to buffer
          */
         void setSerializedObject(std::unique_ptr<SerializedObject> obj)
@@ -528,7 +523,7 @@ class RootObject : public BaseObject
          * Unregister an object which was created elsewhere, from its name,
          * sending back a shared_ptr for it
          */
-        std::shared_ptr<BaseObject> unregisterObject(std::string name)
+        std::shared_ptr<BaseObject> unregisterObject(const std::string& name)
         {
             std::unique_lock<std::mutex> lock(_registerMutex);
 
@@ -546,7 +541,7 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(std::string name, std::string attrib, const Values& args)
+        bool set(const std::string& name, const std::string& attrib, const Values& args)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
             if (name == _name || name == SPLASH_ALL_PAIRS)
@@ -558,28 +553,10 @@ class RootObject : public BaseObject
         }
 
         /**
-         * Set an object from an existing one, if it exists
-         */
-        void setObject(std::string name, const std::shared_ptr<BufferObject>& obj)
-        {
-            if (!obj)
-                return;
-
-            std::unique_lock<std::mutex> lock(_setMutex);
-            auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end())
-            {
-                auto object = std::dynamic_pointer_cast<BufferObject>(objectIt->second);
-                if (object)
-                    object->setObject(obj);
-            }
-        }
-
-        /**
          * Set an object from its serialized form
          * If non existant, it is handled by the handleSerializedObject method
          */
-        void setFromSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj)
+        void setFromSerializedObject(const std::string& name, std::unique_ptr<SerializedObject> obj)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
             auto objectIt = _objects.find(name);

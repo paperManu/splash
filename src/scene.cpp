@@ -37,7 +37,7 @@ using namespace OIIO_NAMESPACE;
 namespace Splash {
 
 /*************/
-Scene::Scene(std::string name)
+Scene::Scene(std::string name, bool autoRun)
 {
     _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
 
@@ -54,13 +54,13 @@ Scene::Scene(std::string name)
     _textureUploadFuture = async(std::launch::async, [&](){textureUploadRun();});
     _joystickUpdateFuture = async(std::launch::async, [&](){joystickUpdateLoop();});
 
-    run();
+    if (autoRun)
+        run();
 }
 
 /*************/
 Scene::~Scene()
 {
-    Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
     _textureUploadCondition.notify_all();
     _textureUploadFuture.get();
 
@@ -78,6 +78,8 @@ Scene::~Scene()
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
+
+    Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
 }
 
 /*************/

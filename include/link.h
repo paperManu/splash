@@ -28,6 +28,7 @@
 #include <atomic>
 #include <chrono>
 #include <deque>
+#include <map>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -57,23 +58,24 @@ class Link
         ~Link();
 
         /**
-         * Connect to a pair given its name
+         * Connect to a pair given its name, or a shared_ptr
          */
-        void connectTo(const std::string name);
+        void connectTo(const std::string& name);
+        void connectTo(const std::string& name, const std::shared_ptr<RootObject>& peer);
 
         /**
          * Send a buffer to the connected pairs
          */
-        bool sendBuffer(const std::string name, std::unique_ptr<SerializedObject> buffer);
-        bool sendBuffer(const std::string name, const std::shared_ptr<BufferObject>& object);
+        bool sendBuffer(const std::string& name, std::unique_ptr<SerializedObject> buffer);
+        bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
 
         /**
          * Send a message to connected pairs
          * The second one converts known base types to vector<Value> before sending
          */
-        bool sendMessage(const std::string name, const std::string attribute, const Values& message);
+        bool sendMessage(const std::string& name, const std::string& attribute, const Values& message);
         template <typename T>
-        bool sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message);
+        bool sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message);
 
         /**
          * Check that all buffers were sent to the client
@@ -88,6 +90,10 @@ class Link
         std::mutex _bufferSendMutex;
 
         std::vector<std::string> _connectedTargets;
+        std::map<std::string, std::shared_ptr<RootObject>> _connectedTargetPointers;
+
+        bool _connectedToInner {false};
+        bool _connectedToOuter {false};
 
         std::shared_ptr<zmq::socket_t> _socketBufferIn;
         std::shared_ptr<zmq::socket_t> _socketBufferOut;
@@ -119,7 +125,7 @@ class Link
 
 /*************/
 template <typename T>
-bool Link::sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message)
+bool Link::sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message)
 {
     Values convertedMsg;
 

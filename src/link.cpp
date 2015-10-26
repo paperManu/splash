@@ -55,7 +55,7 @@ Link::~Link()
 }
 
 /*************/
-void Link::connectTo(const string name)
+void Link::connectTo(const string& name)
 {
     if (find(_connectedTargets.begin(), _connectedTargets.end(), name) == _connectedTargets.end())
         _connectedTargets.push_back(name);
@@ -78,9 +78,42 @@ void Link::connectTo(const string name)
         if (errno != ETERM)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
+
     // Wait a bit for the connection to be up
-    timespec nap {0, (long int)1e8};
-    nanosleep(&nap, NULL);
+    this_thread::sleep_for(chrono::milliseconds(100));
+    _connectedToOuter = true;
+}
+
+/*************/
+void Link::connectTo(const std::string& name, const shared_ptr<RootObject>& peer)
+{
+    if (!peer)
+        return;
+
+    auto rootObjectIt = _connectedTargetPointers.find(name);
+    if (rootObjectIt == _connectedTargetPointers.end())
+        _connectedTargetPointers[name] = peer;
+    else
+        return;
+
+    try
+    {
+        // High water mark set to zero for the outputs
+        int hwm = 0;
+        _socketMessageOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+
+        // TODO: for now, all connections are through IPC.
+        _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
+    }
+    catch (const zmq::error_t& e)
+    {
+        if (errno != ETERM)
+            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+    }
+
+    // Wait a bit for the connection to be up
+    this_thread::sleep_for(chrono::milliseconds(100));
+    _connectedToInner = true;
 }
 
 /*************/
@@ -109,44 +142,60 @@ bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
 }
 
 /*************/
-bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
+bool Link::sendBuffer(const string& name, unique_ptr<SerializedObject> buffer)
 {
-    try
+    if (_connectedToInner)
     {
-        unique_lock<mutex> lock(_bufferSendMutex);
-        auto bufferPtr = buffer.get();
-
-        _otgMutex.lock();
-        _otgBuffers.push_back(std::move(buffer));
-        _otgMutex.unlock();
-
-        _otgNumber += 1;
-
-        zmq::message_t msg(name.size() + 1);
-        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        _socketBufferOut->send(msg, ZMQ_SNDMORE);
-
-        msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
-        _socketBufferOut->send(msg);
+        for (auto& rootObjectIt : _connectedTargetPointers)
+        {
+            auto& rootObject = rootObjectIt.second;
+            if (rootObject)
+            {
+                auto copiedBuffer = unique_ptr<SerializedObject>(new SerializedObject(*buffer));
+                rootObject->setFromSerializedObject(name, std::move(copiedBuffer));
+            }
+        }
     }
-    catch (const zmq::error_t& e)
+
+    if (_connectedToOuter)
     {
-        if (errno != ETERM)
-            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        try
+        {
+            unique_lock<mutex> lock(_bufferSendMutex);
+            auto bufferPtr = buffer.get();
+
+            _otgMutex.lock();
+            _otgBuffers.push_back(std::move(buffer));
+            _otgMutex.unlock();
+
+            _otgNumber += 1;
+
+            zmq::message_t msg(name.size() + 1);
+            memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+            _socketBufferOut->send(msg, ZMQ_SNDMORE);
+
+            msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
+            _socketBufferOut->send(msg);
+        }
+        catch (const zmq::error_t& e)
+        {
+            if (errno != ETERM)
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        }
     }
 
     return true;
 }
 
 /*************/
-bool Link::sendBuffer(const string name, const shared_ptr<BufferObject>& object)
+bool Link::sendBuffer(const string& name, const shared_ptr<BufferObject>& object)
 {
     auto buffer = object->serialize();
     return sendBuffer(name, std::move(buffer));
 }
 
 /*************/
-bool Link::sendMessage(const string name, const string attribute, const Values& message)
+bool Link::sendMessage(const string& name, const string& attribute, const Values& message)
 {
     try
     {

@@ -57,7 +57,7 @@ class Image : public BufferObject
          * No copy constructor, but a copy operator
          */
         Image(const Image&) = delete;
-        Image& operator=(const Image&) = default;
+        Image& operator=(const Image&) = delete;
         Image& operator=(Image&&) = default;
 
         /**

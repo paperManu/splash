@@ -294,7 +294,8 @@ void World::applyConfig()
                 {
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                     _innerSceneThread = thread([&]() {
-                        _innerScene = unique_ptr<Scene>(new Scene(name));
+                        _innerScene = make_shared<Scene>(name, false);
+                        _innerScene->run();
                     });
                 }
                 else
@@ -336,7 +337,10 @@ void World::applyConfig()
                 _masterSceneName = name;
             
             // Initialize the communication
-            _link->connectTo(name);
+            if (pid != -1)
+                _link->connectTo(name);
+            else
+                _link->connectTo(name, _innerScene);
 
             // Set the remaining parameters
             auto sceneMembers = jsScenes[i].getMemberNames();
