@@ -348,15 +348,19 @@ void QueueSurrogate::registerAttributes()
         unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() {
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
+            auto type = args[0].asString();
 
-            if (_source)
+            if (_source && type == _source->getType())
+            {
+                return;
+            }
+            else if (_source)
             {
                 _filter->unlinkFrom(_source);
                 _root.lock()->unregisterObject(_source->getName());
                 _source.reset();
             }
 
-            auto type = args[0].asString();
             auto object = shared_ptr<BaseObject>();
 
             if (type.find("image") != string::npos)
