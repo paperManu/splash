@@ -141,7 +141,7 @@ class BaseObject
          * Set and get the name of the object
          */
         std::string getName() const {return _name;}
-        void setName(std::string name) {_name = name;}
+        virtual std::string setName(const std::string& name) {_name = name; return _name;}
 
         /**
          * Set and get the remote type of the object
@@ -440,6 +440,12 @@ class BufferObject : public BaseObject
         }
 
         /**
+         * Get the name of the distant buffer object, for those which have a different name
+         * between World and Scene (happens with Queues)
+         */
+        virtual std::string getDistantName() const {return _name;}
+
+        /**
          * Serialize the image
          */
         virtual std::unique_ptr<SerializedObject> serialize() const = 0;
@@ -507,6 +513,7 @@ class RootObject : public BaseObject
         {
             if (object.get() != nullptr)
             {
+                std::unique_lock<std::mutex> lock(_registerMutex);
                 object->_savable = false; // This object was created on the fly. Do not save it
                 _objects[object->getName()] = object;
             }
@@ -518,6 +525,8 @@ class RootObject : public BaseObject
          */
         std::shared_ptr<BaseObject> unregisterObject(std::string name)
         {
+            std::unique_lock<std::mutex> lock(_registerMutex);
+
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
             {
@@ -559,6 +568,7 @@ class RootObject : public BaseObject
 
     protected:
         std::shared_ptr<Link> _link;
+        mutable std::mutex _registerMutex; // Used in registration and unregistration of objects
         mutable std::mutex _setMutex;
         std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 

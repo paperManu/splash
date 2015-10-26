@@ -1016,7 +1016,7 @@ void GuiNodeView::render()
                                                                  {"window", {8, 32}},
                                                                  {"camera", {32, 64}},
                                                                  {"object", {8, 96}},
-                                                                 {"texture", {32, 128}},
+                                                                 {"texture filter queue", {32, 128}},
                                                                  {"image", {8, 160}},
                                                                  {"mesh", {32, 192}}
                                                                 });
@@ -1051,15 +1051,22 @@ void GuiNodeView::render()
 
             // Get the default position for the given type
             auto nodePosition = ImVec2(-1, -1);
-            auto defaultPosIt = defaultPositionByType.find(type);
-            if (defaultPosIt == defaultPositionByType.end())
+
+            string defaultPosName = "default";
+            for (auto& position : defaultPositionByType)
+            {
+                if (position.first.find(type) != string::npos)
+                    defaultPosName = position.first;
+            }
+
+            if (defaultPosName == "default")
             {
                 type = "default";
                 nodePosition = defaultPositionByType["default"];
             }
             else
             {
-                nodePosition = defaultPosIt->second;
+                nodePosition = defaultPositionByType[defaultPosName];
                 nodePosition.x += shift;
             }
             
