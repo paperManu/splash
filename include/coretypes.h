@@ -186,6 +186,7 @@ struct Value
         enum Type
         {
             i = 0,
+            l,
             f,
             s,
             v
@@ -193,6 +194,7 @@ struct Value
 
         Value() {_i = 0; _type = Type::i;}
         Value(int v) {_i = v; _type = Type::i;}
+        Value(int64_t v) {_l = v; _type = Type::l;}
         Value(float v) {_f = v; _type = Type::f;}
         Value(double v) {_f = (float)v; _type = Type::f;}
         Value(std::string v) {_s = v; _type = Type::s;}
@@ -219,6 +221,8 @@ struct Value
                 return false;
             else if (_type == Type::i)
                 return _i == v._i;
+            else if (_type == Type::l)
+                return _l == v._l;
             else if (_type == Type::f)
                 return _f == v._f;
             else if (_type == Type::s)
@@ -240,8 +244,25 @@ struct Value
         {
             if (_type == Type::i)
                 return _i;
+            else if (_type == Type::l)
+                return (int)_l;
             else if (_type == Type::f)
                 return (int)_f;
+            else if (_type == Type::s)
+                try {return std::stoi(_s);}
+                catch (...) {return 0;}
+            else
+                return 0;
+        }
+
+        int64_t asLong() const
+        {
+            if (_type == Type::i)
+                return (int64_t)_i;
+            else if (_type == Type::l)
+                return _l;
+            else if (_type == Type::f)
+                return (int64_t)_f;
             else if (_type == Type::s)
                 try {return std::stoi(_s);}
                 catch (...) {return 0;}
@@ -253,6 +274,8 @@ struct Value
         {
             if (_type == Type::i)
                 return (float)_i;
+            else if (_type == Type::l)
+                return (float)_l;
             else if (_type == Type::f)
                 return _f;
             else if (_type == Type::s)
@@ -267,6 +290,9 @@ struct Value
             if (_type == Type::i)
                 try {return std::to_string(_i);}
                 catch (...) {return std::string();}
+            else if (_type == Type::l)
+                try {return std::to_string(_l);}
+                catch (...) {return std::string();}
             else if (_type == Type::f)
                 try {return std::to_string(_f);}
                 catch (...) {return std::string();}
@@ -280,6 +306,8 @@ struct Value
         {
             if (_type == Type::i)
                 return {_i};
+            else if (_type == Type::l)
+                return {_l};
             else if (_type == Type::f)
                 return {_f};
             else if (_type == Type::s)
@@ -294,6 +322,8 @@ struct Value
         {
             if (_type == Type::i)
                 return (void*)&_i;
+            else if (_type == Type::l)
+                return (void*)&_l;
             else if (_type == Type::f)
                 return (void*)&_f;
             else if (_type == Type::s)
@@ -308,6 +338,8 @@ struct Value
         {
             if (_type == Type::i)
                 return sizeof(_i);
+            else if (_type == Type::l)
+                return sizeof(_l);
             else if (_type == Type::f)
                 return sizeof(_f);
             else if (_type == Type::s)
@@ -319,6 +351,7 @@ struct Value
     private:
         Type _type;
         int _i {0};
+        int64_t _l {0};
         float _f {0.f};
         std::string _s {""};
         Values _v {};

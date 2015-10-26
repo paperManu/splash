@@ -40,6 +40,7 @@
 #if HAVE_PORTAUDIO && HAVE_LTC
     #include "ltcclock.h"
 #endif
+#include "queue.h"
 
 namespace Splash {
 
@@ -50,6 +51,8 @@ typedef std::shared_ptr<World> WorldPtr;
 /*************/
 class World : public RootObject
 {
+    friend Queue;
+
     public:
         /**
          * Constructor

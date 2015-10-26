@@ -27,6 +27,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "osUtils.h"
+#include "queue.h"
 #include "scene.h"
 #include "timer.h"
 #include "threadpool.h"
@@ -89,7 +90,8 @@ void World::run()
                         {
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
-                            _link->sendBuffer(o.first, std::move(obj));
+                            if (obj)
+                                _link->sendBuffer(bufferObj->getDistantName(), std::move(obj));
                         }
                         else
                             return; // if not, exit this thread
@@ -189,7 +191,9 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type.find("image") == string::npos && type.find("mesh") == string::npos)
+    if (type.find("image") == string::npos && 
+        type.find("mesh") == string::npos && 
+        type.find("queue") == string::npos)
         return;
 
     BaseObjectPtr object;
@@ -217,11 +221,13 @@ void World::addLocally(string type, string name, string destination)
 #endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        else if (type == string("queue"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
     }
     if (object.get() != nullptr)
     {
         object->setId(getId());
-        object->setName(name);
+        name = object->setName(name); // The real name is not necessarily the one we set (see Queues)
         _objects[name] = object;
     }
 

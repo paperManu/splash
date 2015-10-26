@@ -453,13 +453,13 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            Values clock;
-            if (_useClock && Timer::get().getMasterClock(clock))
+            int64_t clockAsMs;
+            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
             {
-                float seconds = (float)(clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120) / 120.f;
+                float seconds = (float)clockAsMs / 1e3f + _shiftTime;
                 float diff = _elapsedTime / 1e6 - seconds;
 
-                if (abs(diff) > 2.f)
+                if (abs(diff) > 3.f)
                 {
                     _elapsedTime = seconds * 1e6;
                     _clockTime = _elapsedTime;
@@ -493,9 +493,20 @@ void Image_FFmpeg::videoDisplayLoop()
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                if (_clockTime != -1l)
+                if (!_useClock && _paused)
+                {
+                    auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                    _startTime = _startTime + (actualTime - _currentTime);
+                    continue;
+                }
+                else if (_useClock && _clockTime != -1l)
+                {
                     _currentTime = _clockTime;
+                }
+                else
+                {
+                    _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                }
 
                 int64_t waitTime = timedFrame.timing - _currentTime;
                 if (waitTime > 0 && waitTime < 1e6)
@@ -554,6 +565,17 @@ void Image_FFmpeg::registerAttributes()
     });
     _attribFunctions["remaining"].doUpdateDistant(true);
 
+    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _paused = args[0].asInt();
+        return true;
+    }, [&]() -> Values {
+        return {_paused};
+    });
+    _attribFunctions["pause"].doUpdateDistant(true);
+
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
@@ -585,6 +607,15 @@ void Image_FFmpeg::registerAttributes()
         return {(int)_useClock};
     });
     _attribFunctions["useClock"].doUpdateDistant(true);
+
+    _attribFunctions["timeShift"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _shiftTime = args[0].asFloat();
+
+        return true;
+    });
 }
 
 } // end of namespace

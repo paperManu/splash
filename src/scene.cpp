@@ -11,6 +11,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
+#include "queue.h"
 #include "texture.h"
 #include "texture_image.h"
 #include "threadpool.h"
@@ -114,6 +115,8 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("object"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
+    else if (type == string("queue"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_self));
     else if (type == string("texture_image"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>());
 #if HAVE_OSX
@@ -126,7 +129,7 @@ BaseObjectPtr Scene::add(string type, string name)
     if (obj.get() != nullptr)
     {
         obj->setId(getId());
-        obj->setName(name);
+        name = obj->setName(name);
         if (name == string())
             _objects[to_string(obj->getId())] = obj;
         else
@@ -447,6 +450,14 @@ void Scene::render()
     renderBlending();
     Timer::get() >> "blending";
 
+    unique_lock<mutex> lock(_textureUploadMutex);
+
+    Timer::get() << "queues";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "queue")
+            dynamic_pointer_cast<QueueSurrogate>(obj.second)->update();
+    Timer::get() >> "queues";
+
     Timer::get() << "filters";
     for (auto& obj : _objects)
         if (obj.second->getType() == "filter")
@@ -456,7 +467,6 @@ void Scene::render()
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
-    unique_lock<mutex> lock(_textureUploadMutex);
     glFlush();
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(_textureUploadFence);
@@ -467,7 +477,8 @@ void Scene::render()
     Timer::get() >> "cameras";
 
     _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    lock.unlock();
+
+    lock.unlock(); // Unlock _textureUploadMutex
 
     // Update the gui
     Timer::get() << "gui";
