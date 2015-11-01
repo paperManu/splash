@@ -513,9 +513,18 @@ class RootObject : public BaseObject
         {
             if (object.get() != nullptr)
             {
-                std::unique_lock<std::mutex> lock(_registerMutex);
+                auto name = object->getName();
+
+                std::unique_lock<std::mutex> registerLock(_registerMutex);
                 object->_savable = false; // This object was created on the fly. Do not save it
-                _objects[object->getName()] = object;
+
+                // We keep the previous object on the side, to prevent double free due to operator[] behavior
+                auto previousObject = std::shared_ptr<BaseObject>();
+                auto objectIt = _objects.find(name);
+                if (objectIt != _objects.end())
+                    previousObject = objectIt->second;
+
+                _objects[name] = object;
             }
         }
 
@@ -544,10 +553,13 @@ class RootObject : public BaseObject
         bool set(const std::string& name, const std::string& attrib, const Values& args)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
+
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 return setAttribute(attrib, args);
-            else if (_objects.find(name) != _objects.end())
-                return _objects[name]->setAttribute(attrib, args);
+
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end())
+                return objectIt->second->setAttribute(attrib, args);
             else
                 return false;
         }
@@ -559,6 +571,7 @@ class RootObject : public BaseObject
         void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
+
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
             {

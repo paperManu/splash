@@ -50,6 +50,7 @@ void Image::init()
 Image::~Image()
 {
     unique_lock<mutex> writeLock(_writeMutex);
+    unique_lock<mutex> readlock(_readMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
 #endif
