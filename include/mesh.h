@@ -54,10 +54,11 @@ class Mesh : public BufferObject
         virtual ~Mesh();
 
         /**
-         * No copy, but some move constructors
+         * No copy constructor, but a copy operator
          */
         Mesh(const Mesh&) = delete;
         Mesh& operator=(const Mesh&) = delete;
+        Mesh& operator=(Mesh&&) = default;
 
         /**
          * Compare meshes based on their timestamps
@@ -97,12 +98,12 @@ class Mesh : public BufferObject
         /**
          * Get a serialized representation of the mesh
          */
-        std::unique_ptr<SerializedObject> serialize() const;
+        std::shared_ptr<SerializedObject> serialize() const;
 
         /**
          * Set the mesh from a serialized representation
          */
-        bool deserialize(std::unique_ptr<SerializedObject> obj);
+        bool deserialize(std::shared_ptr<SerializedObject> obj);
 
         /**
          * Update the content of the mesh

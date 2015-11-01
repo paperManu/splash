@@ -40,15 +40,19 @@
 #if HAVE_PORTAUDIO && HAVE_LTC
     #include "ltcclock.h"
 #endif
+#include "queue.h"
 
 namespace Splash {
 
+class Scene;
 class World;
 typedef std::shared_ptr<World> WorldPtr;
 
 /*************/
 class World : public RootObject
 {
+    friend Queue;
+
     public:
         /**
          * Constructor
@@ -75,6 +79,9 @@ class World : public RootObject
 #if HAVE_PORTAUDIO && HAVE_LTC
         LtcClock _clock {true};
 #endif
+
+        std::shared_ptr<Scene> _innerScene {};
+        std::thread _innerSceneThread;
 
         bool _status {true};
         bool _quit {false};
@@ -131,7 +138,7 @@ class World : public RootObject
          * Redefinition of a method from RootObject
          * Send the input buffers back to all pairs
          */
-        void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj);
+        void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj);
 
         /**
          * Initialize the GLFW window

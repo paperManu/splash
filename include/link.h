@@ -28,18 +28,20 @@
 #include <atomic>
 #include <chrono>
 #include <deque>
+#include <map>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 #include <zmq.hpp>
 
+#include "config.h"
 #include "coretypes.h"
 
 namespace Splash {
 
 class RootObject;
-typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
+class BufferObject;
 
 /*************/
 class Link
@@ -48,7 +50,7 @@ class Link
         /**
          * Constructor
          */
-        Link(RootObjectWeakPtr root, std::string name);
+        Link(std::weak_ptr<RootObject> root, std::string name);
 
         /**
          * Destructor
@@ -56,22 +58,24 @@ class Link
         ~Link();
 
         /**
-         * Connect to a pair given its name
+         * Connect to a pair given its name, or a shared_ptr
          */
-        void connectTo(const std::string name);
+        void connectTo(const std::string& name);
+        void connectTo(const std::string& name, const std::shared_ptr<RootObject>& peer);
 
         /**
          * Send a buffer to the connected pairs
          */
-        bool sendBuffer(const std::string name, std::unique_ptr<SerializedObject> buffer);
+        bool sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer);
+        bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
 
         /**
          * Send a message to connected pairs
          * The second one converts known base types to vector<Value> before sending
          */
-        bool sendMessage(const std::string name, const std::string attribute, const Values& message);
+        bool sendMessage(const std::string& name, const std::string& attribute, const Values& message);
         template <typename T>
-        bool sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message);
+        bool sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message);
 
         /**
          * Check that all buffers were sent to the client
@@ -79,20 +83,24 @@ class Link
         bool waitForBufferSending(std::chrono::milliseconds maximumWait);
 
     private:
-        RootObjectWeakPtr _rootObject;
+        std::weak_ptr<RootObject> _rootObject;
         std::string _name;
         std::shared_ptr<zmq::context_t> _context;
         std::mutex _msgSendMutex;
         std::mutex _bufferSendMutex;
 
         std::vector<std::string> _connectedTargets;
+        std::map<std::string, std::shared_ptr<RootObject>> _connectedTargetPointers;
+
+        bool _connectedToInner {false};
+        bool _connectedToOuter {false};
 
         std::shared_ptr<zmq::socket_t> _socketBufferIn;
         std::shared_ptr<zmq::socket_t> _socketBufferOut;
         std::shared_ptr<zmq::socket_t> _socketMessageIn;
         std::shared_ptr<zmq::socket_t> _socketMessageOut;
 
-        std::deque<std::unique_ptr<SerializedObject>> _otgBuffers;
+        std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
         std::mutex _otgMutex;
         std::atomic_int _otgNumber {0};
 
@@ -117,7 +125,7 @@ class Link
 
 /*************/
 template <typename T>
-bool Link::sendMessage(const std::string name, const std::string attribute, const std::vector<T>& message)
+bool Link::sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message)
 {
     Values convertedMsg;
 

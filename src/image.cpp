@@ -105,7 +105,7 @@ void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::Typ
 }
 
 /*************/
-unique_ptr<SerializedObject> Image::serialize() const
+shared_ptr<SerializedObject> Image::serialize() const
 {
     unique_lock<mutex> lock(_readMutex);
 
@@ -120,7 +120,7 @@ unique_ptr<SerializedObject> Image::serialize() const
     int imgSize = _image->spec().pixel_bytes() * _image->spec().width * _image->spec().height;
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
-    auto obj = unique_ptr<SerializedObject>(new SerializedObject(totalSize));
+    auto obj = make_shared<SerializedObject>(totalSize);
 
     auto currentObjPtr = obj->data();
     const char* ptr = reinterpret_cast<const char*>(&nbrChar);
@@ -154,7 +154,7 @@ unique_ptr<SerializedObject> Image::serialize() const
 }
 
 /*************/
-bool Image::deserialize(unique_ptr<SerializedObject> obj)
+bool Image::deserialize(shared_ptr<SerializedObject> obj)
 {
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
