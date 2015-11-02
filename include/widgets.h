@@ -110,6 +110,7 @@ class GuiGlobalView : public GuiWidget
         };
         std::vector<CameraParameters> _previousCameraParameters;
         Values _newTarget;
+        float _newTargetDistance {1.f};
 
         // Previous point added
         Values _previousPointAdded;

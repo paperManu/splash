@@ -115,8 +115,9 @@ class Camera : public BaseObject
 
         /**
          * Get the coordinates of the given fragment (world coordinates)
+         * Also returns its depth in camera space
          */
-        Values pickFragment(float x, float y);
+        Values pickFragment(float x, float y, float& fragDepth);
 
         /**
          * Get the coordinates of the closest calibration point

@@ -607,7 +607,7 @@ Values Camera::pickVertex(float x, float y)
 }
 
 /*************/
-Values Camera::pickFragment(float x, float y)
+Values Camera::pickFragment(float x, float y, float& fragDepth)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
     float realX = x * _width;
@@ -626,6 +626,7 @@ Values Camera::pickFragment(float x, float y)
     dvec3 screenPoint(realX, realY, depth);
     dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), computeProjectionMatrix(), dvec4(0, 0, _width, _height));
 
+    fragDepth = (lookAt(_eye, _target, _up) * dvec4(point.x, point.y, point.z, 1.0)).z;
     return {point.x, point.y, point.z};
 }
 

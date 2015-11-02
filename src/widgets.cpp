@@ -722,7 +722,13 @@ void GuiGlobalView::processMouseEvents()
     }
     if (io.MouseClicked[1])
     {
-        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y);
+        float fragDepth = 0.f;
+        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y, fragDepth);
+
+        if (fragDepth == 0.f)
+            _newTargetDistance = 1.f;
+        else
+            _newTargetDistance = -fragDepth * 0.1f;
     }
     if (io.MouseDownTime[1] > 0.0) 
     {
@@ -751,8 +757,8 @@ void GuiGlobalView::processMouseEvents()
         // Move the target and the camera (in the camera plane)
         else if (io.KeyShift && !io.KeyCtrl)
         {
-            float dx = io.MouseDelta.x;
-            float dy = io.MouseDelta.y;
+            float dx = io.MouseDelta.x * _newTargetDistance;
+            float dy = io.MouseDelta.y * _newTargetDistance;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", -dx / 100.f, dy / 100.f, 0.f});
@@ -761,7 +767,7 @@ void GuiGlobalView::processMouseEvents()
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
-            float dy = io.MouseDelta.y / 100.f;
+            float dy = io.MouseDelta.y * _newTargetDistance / 100.f;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "forward", dy});
