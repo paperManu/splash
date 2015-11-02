@@ -23,7 +23,7 @@
 #include <glm/gtx/vector_angle.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.015
+#define SPLASH_WORLDMARKER_SCALE 0.01
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
 #define SPLASH_SCREEN_MARKER_SELECTED {0.9, 0.3, 0.1, 1.0}
@@ -809,7 +809,8 @@ bool Camera::render()
                 auto& point = _calibrationPoints[i];
 
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
-                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+                glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
+                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * transformedPoint.z});
                 if (_selectedCalibrationPoint == i)
                     worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                 else if (point.isSet)
