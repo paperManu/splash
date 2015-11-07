@@ -250,7 +250,7 @@ void Image_FFmpeg::readLoop()
             // Reading the video
             if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
-                oiio::ImageBuf img;
+                auto img = unique_ptr<oiio::ImageBuf>();
                 uint64_t timing;
                 bool hasFrame = false;
 
@@ -266,10 +266,9 @@ void Image_FFmpeg::readLoop()
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
                         oiio::ImageSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
-                        oiio::ImageBuf tmpImg(spec);
-                        img.swap(tmpImg);
+                        img.reset(new oiio::ImageBuf(spec));
 
-                        unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
+                        unsigned char* pixels = static_cast<unsigned char*>(img->localpixels());
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
@@ -304,12 +303,11 @@ void Image_FFmpeg::readLoop()
                             return;
 
                         spec.channelnames = {textureFormat};
-                        oiio::ImageBuf tmpImg(spec);
-                        img.swap(tmpImg);
+                        img.reset(new oiio::ImageBuf(spec));
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
 
-                        if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
+                        if (hapDecodeFrame(packet.data, packet.size, img->localpixels(), outputBufferBytes, textureFormat))
                         {
                             if (packet.pts != AV_NOPTS_VALUE)
                                 timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
@@ -325,8 +323,7 @@ void Image_FFmpeg::readLoop()
                 {
                     unique_lock<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
-                    _timedFrames[_timedFrames.size() - 1].frame = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-                    _timedFrames[_timedFrames.size() - 1].frame->swap(img);
+                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                 }
 
