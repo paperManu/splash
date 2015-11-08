@@ -155,10 +155,14 @@ void World::run()
         if (Timer::get().getMasterClock(clock))
             sendMessage(SPLASH_ALL_PAIRS, "masterClock", clock);
 
-        // Send newer logs to all Scenes
-        auto logs = Log::get().getLogs();
-        for (auto& log : logs)
-            sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
+        // Send newer logs to all master Scene
+        // (except if master Scene is an inner Scene)
+        if (_scenes[_masterSceneName] != -1)
+        {
+            auto logs = Log::get().getNewLogs();
+            for (auto& log : logs)
+                sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
+        }
 
         if (_quit)
         {

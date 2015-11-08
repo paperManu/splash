@@ -33,7 +33,7 @@
 #include <mutex>
 #include <string>
 #include <tuple>
-#include <vector>
+#include <deque>
 
 #include "config.h"
 
@@ -120,7 +120,7 @@ class Log
         /**
          * Get the full logs
          */
-        std::vector<std::pair<std::string, Priority>> getFullLogs()
+        std::deque<std::pair<std::string, Priority>> getFullLogs()
         {
             return _logs;
         }
@@ -145,7 +145,7 @@ class Log
         /**
          * Get the new logs (from last call to this method)
          */
-        std::vector<std::pair<std::string, Priority>> getLogs()
+        std::vector<std::pair<std::string, Priority>> getNewLogs()
         {
             std::unique_lock<std::mutex> lock(_mutex);
             std::vector<std::pair<std::string, Priority>> logs;
@@ -182,7 +182,7 @@ class Log
             if (_logs.size() > _logLength)
             {
                 _logPointer = _logPointer > 0 ? _logPointer - 1 : _logPointer;
-                _logs.erase(_logs.begin());
+                _logs.pop_front();
             }
         }
 
@@ -205,8 +205,8 @@ class Log
 
     private:
         mutable std::mutex _mutex;
-        std::vector<std::pair<std::string, Priority>> _logs;
-        int _logLength {5000};
+        std::deque<std::pair<std::string, Priority>> _logs;
+        int _logLength {500};
         int _logPointer {0};
         Priority _verbosity {MESSAGE};
 

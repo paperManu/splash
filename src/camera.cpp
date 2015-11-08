@@ -784,10 +784,11 @@ bool Camera::render()
                 auto points = object->getCalibrationPoints();
 
                 auto& worldMarker = _models["3d_marker"];
-                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66});
 
                 for (auto& point : points)
                 {
+                    glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
+                    worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66 * transformedPoint.z});
                     worldMarker->setAttribute("position", {point.x, point.y, point.z});
                     worldMarker->setAttribute("color", SPLASH_OBJECT_MARKER);
 
