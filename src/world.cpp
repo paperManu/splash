@@ -861,7 +861,17 @@ void World::registerAttributes()
                 {
                     sendMessage(s.first, "quit", {});
                     if (s.second != -1)
+                    {
                         waitpid(s.second, nullptr, 0);
+                    }
+                    else
+                    {
+                        if (_innerSceneThread.joinable())
+                            _innerSceneThread.join();
+                        _innerScene.reset();
+                    }
+
+                    _link->disconnectFrom(s.first);
                 }
 
                 _config = config;

@@ -36,6 +36,8 @@ using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
+bool Scene::_isGlfwInitialized {false};
+
 /*************/
 Scene::Scene(std::string name, bool autoRun)
 {

@@ -85,9 +85,9 @@ void Link::connectTo(const string& name)
 }
 
 /*************/
-void Link::connectTo(const std::string& name, const shared_ptr<RootObject>& peer)
+void Link::connectTo(const std::string& name, const weak_ptr<RootObject>& peer)
 {
-    if (!peer)
+    if (peer.expired())
         return;
 
     auto rootObjectIt = _connectedTargetPointers.find(name);
@@ -99,6 +99,33 @@ void Link::connectTo(const std::string& name, const shared_ptr<RootObject>& peer
     // Wait a bit for the connection to be up
     this_thread::sleep_for(chrono::milliseconds(100));
     _connectedToInner = true;
+}
+
+/*************/
+void Link::disconnectFrom(const std::string& name)
+{
+    auto targetPointerIt = _connectedTargetPointers.find(name);
+    if (targetPointerIt != _connectedTargetPointers.end())
+    {
+        _connectedTargetPointers.erase(targetPointerIt);
+    }
+
+
+    auto targetIt = find(_connectedTargets.begin(), _connectedTargets.end(), name);
+    if (targetIt != _connectedTargets.end())
+    {
+        try
+        {
+            _connectedTargets.erase(targetIt);
+            _socketMessageOut->disconnect((string("ipc:///tmp/splash_msg_") + name).c_str());
+            _socketBufferOut->disconnect((string("ipc:///tmp/splash_msg_") + name).c_str());
+        }
+        catch (const zmq::error_t& e)
+        {
+            if (errno != ETERM)
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        }
+    }
 }
 
 /*************/
@@ -133,7 +160,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
     {
         for (auto& rootObjectIt : _connectedTargetPointers)
         {
-            auto& rootObject = rootObjectIt.second;
+            auto rootObject = rootObjectIt.second.lock();
             if (rootObject)
                 rootObject->setFromSerializedObject(name, buffer);
         }
@@ -183,7 +210,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
     {
         for (auto& rootObjectIt : _connectedTargetPointers)
         {
-            auto& rootObject = rootObjectIt.second;
+            auto rootObject = rootObjectIt.second.lock();
             if (rootObject)
                 rootObject->set(name, attribute, message);
         }

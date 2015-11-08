@@ -207,6 +207,8 @@ class Scene : public RootObject
         void deactivateBlendingMap();
 
     private:
+        static bool _isGlfwInitialized;
+
         ScenePtr _self;
         bool _started {false};
         std::recursive_mutex _configureMutex;

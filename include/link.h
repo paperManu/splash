@@ -61,7 +61,12 @@ class Link
          * Connect to a pair given its name, or a shared_ptr
          */
         void connectTo(const std::string& name);
-        void connectTo(const std::string& name, const std::shared_ptr<RootObject>& peer);
+        void connectTo(const std::string& name, const std::weak_ptr<RootObject>& peer);
+
+        /**
+         * Disconnect from a pair given its name
+         */
+        void disconnectFrom(const std::string& name);
 
         /**
          * Send a buffer to the connected pairs
@@ -90,7 +95,7 @@ class Link
         std::mutex _bufferSendMutex;
 
         std::vector<std::string> _connectedTargets;
-        std::map<std::string, std::shared_ptr<RootObject>> _connectedTargetPointers;
+        std::map<std::string, std::weak_ptr<RootObject>> _connectedTargetPointers;
 
         bool _connectedToInner {false};
         bool _connectedToOuter {false};
