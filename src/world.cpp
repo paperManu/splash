@@ -146,22 +146,22 @@ void World::run()
             sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
         }
 
-        // Send current timings to all Scenes, for display purpose
-        auto& durationMap = Timer::get().getDurationMap();
-        for (auto& d : durationMap)
-            sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
-        // Also send the master clock if needed
-        Values clock;
-        if (Timer::get().getMasterClock(clock))
-            sendMessage(SPLASH_ALL_PAIRS, "masterClock", clock);
-
-        // Send newer logs to all master Scene
-        // (except if master Scene is an inner Scene)
+        // If the master scene is not an inner scene, we have to send it some information
         if (_scenes[_masterSceneName] != -1)
         {
+            // Send current timings to all Scenes, for display purpose
+            auto& durationMap = Timer::get().getDurationMap();
+            for (auto& d : durationMap)
+                sendMessage(_masterSceneName, "duration", {d.first, (int)d.second});
+            // Also send the master clock if needed
+            Values clock;
+            if (Timer::get().getMasterClock(clock))
+                sendMessage(_masterSceneName, "masterClock", clock);
+
+            // Send newer logs to all master Scene
             auto logs = Log::get().getNewLogs();
             for (auto& log : logs)
-                sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
+                sendMessage(_masterSceneName, "log", {log.first, (int)log.second});
         }
 
         if (_quit)
