@@ -96,7 +96,7 @@ class World : public RootObject
         std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
 
-        unsigned long _nextId {0};
+        std::atomic_int _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;
 
         std::string _configFilename;
@@ -127,7 +127,7 @@ class World : public RootObject
         /**
          * Get the next available id
          */
-        unsigned long getId() {return ++_nextId;}
+        int getId() {return _nextId.fetch_add(1);}
 
         /**
          * Get the list of objects by their type

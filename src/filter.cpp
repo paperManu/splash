@@ -122,15 +122,14 @@ void Filter::unbind()
 /*************/
 bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
-    auto type = obj->getType();
-    if (type.find("texture") != string::npos)
+    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         auto inTex = _inTexture.lock();
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
         if (tex->getName() == inTex->getName())
             _inTexture.reset();
     }
-    else if (type.find("image") != string::npos)
+    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
         auto tex = _root.lock()->unregisterObject(textureName);

@@ -393,7 +393,7 @@ class BaseObject
             _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
                 if (args.size() == 0)
                     return false;
-                _name = args[0].asString();
+                setName(args[0].asString());
                 return true;
             });
         }

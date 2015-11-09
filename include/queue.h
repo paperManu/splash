@@ -172,6 +172,7 @@ class QueueSurrogate : public Texture
         void update();
 
     private:
+        int _filterIndex {0};
         std::shared_ptr<Filter> _filter;
         std::shared_ptr<BaseObject> _source;
 

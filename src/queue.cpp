@@ -289,6 +289,7 @@ QueueSurrogate::QueueSurrogate(RootObjectWeakPtr root)
 {
     _type = "queue";
     _filter = make_shared<Filter>(root);
+    _filter->setName("queueFilter" + to_string(_filterIndex++));
     _root.lock()->registerObject(_filter);
 
     registerAttributes();
@@ -350,7 +351,7 @@ void QueueSurrogate::registerAttributes()
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
             auto type = args[0].asString();
 
-            if (_source && type == _source->getType())
+            if (_source && type.find(_source->getType()) != string::npos)
             {
                 return;
             }
@@ -363,6 +364,8 @@ void QueueSurrogate::registerAttributes()
 
             auto object = shared_ptr<BaseObject>();
 
+            // TODO: there is still an issue when re-linking to an Image
+            // which will be problematic when supporting Syphon in Queues
             if (type.find("image") != string::npos)
             {
                 auto image = make_shared<Image>();
@@ -382,8 +385,9 @@ void QueueSurrogate::registerAttributes()
             }
 
             object->setName(sourceName);
-            _root.lock()->registerObject(object);
-            _filter->linkTo(object);
+            _source.swap(object);
+            _root.lock()->registerObject(_source);
+            _filter->linkTo(_source);
         });
 
         return true;

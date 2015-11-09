@@ -342,10 +342,10 @@ void World::applyConfig()
                 _masterSceneName = name;
             
             // Initialize the communication
-            if (pid != -1)
-                _link->connectTo(name);
-            else
+            if (pid == -1 && spawn)
                 _link->connectTo(name, _innerScene);
+            else
+                _link->connectTo(name);
 
             // Set the remaining parameters
             auto sceneMembers = jsScenes[i].getMemberNames();
@@ -765,8 +765,7 @@ void World::registerAttributes()
             return false;
 
         auto type = args[0].asString();
-        auto name = type + "_" + to_string(_nextId);
-        _nextId++;
+        auto name = type + "_" + to_string(getId());
 
         unique_lock<mutex> lock(_configurationMutex);
 
