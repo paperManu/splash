@@ -364,8 +364,6 @@ void QueueSurrogate::registerAttributes()
 
             auto object = shared_ptr<BaseObject>();
 
-            // TODO: there is still an issue when re-linking to an Image
-            // which will be problematic when supporting Syphon in Queues
             if (type.find("image") != string::npos)
             {
                 auto image = make_shared<Image>();
