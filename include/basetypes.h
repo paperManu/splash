@@ -497,6 +497,7 @@ class RootObject : public BaseObject
             _attribFunctions["answerMessage"] = AttributeFunctor([&](const Values& args) {
                 if (args.size() == 0 || args[0].asString() != _answerExpected)
                     return false;
+                std::unique_lock<std::mutex> conditionLock(conditionMutex);
                 _lastAnswerReceived = args;
                 _answerCondition.notify_one();
                 return true;
@@ -593,6 +594,7 @@ class RootObject : public BaseObject
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;
+        std::mutex conditionMutex;
         std::mutex _answerMutex;
         std::string _answerExpected {""};
 
@@ -617,10 +619,9 @@ class RootObject : public BaseObject
 
             std::unique_lock<std::mutex> lock(_answerMutex);
             _answerExpected = attribute;
-            _link->sendMessage(name, attribute, message);
 
-            std::mutex conditionMutex;
             std::unique_lock<std::mutex> conditionLock(conditionMutex);
+            _link->sendMessage(name, attribute, message);
 
             auto cvStatus = std::cv_status::no_timeout;
             if (timeout == 0ull)

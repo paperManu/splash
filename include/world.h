@@ -102,7 +102,7 @@ class World : public RootObject
         std::string _configFilename;
         Json::Value _config;
 
-        bool _childProcessLaunched {false};
+        bool _sceneLaunched {false};
         std::mutex _childProcessMutex;
         std::condition_variable _childProcessConditionVariable;
         

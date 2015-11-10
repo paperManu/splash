@@ -292,7 +292,9 @@ void World::applyConfig()
             int pid = -1;
             if (spawn > 0)
             {
+                _sceneLaunched = false;
                 string worldDisplay = getenv("DISPLAY");
+
                 // If the current process is on the correct display, we use an inner Scene
                 if (display.find(worldDisplay) != string::npos && !_innerScene)
                 {
@@ -304,11 +306,9 @@ void World::applyConfig()
                 }
                 else
                 {
+                    // Spawn a new process containing this Scene
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
                     
-                    // Spawn a new process containing this Scene
-                    _childProcessLaunched = false;
-
                     string cmd;
                     if (_executionPath == "")
                         cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
@@ -325,9 +325,9 @@ void World::applyConfig()
                 }
 
                 // We wait for the child process to be launched
-                while (!_childProcessLaunched)
+                unique_lock<mutex> lock(_childProcessMutex);
+                while (!_sceneLaunched)
                 {
-                    unique_lock<mutex> lock(_childProcessMutex);
                     if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
                     {
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << name << "\". Exiting." << Log::endl;
@@ -778,8 +778,9 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
-        _childProcessLaunched = true;
+    _attribFunctions["sceneLaunched"] = AttributeFunctor([&](const Values& args) {
+        unique_lock<mutex> lock(_childProcessMutex);
+        _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
     });

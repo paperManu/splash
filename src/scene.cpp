@@ -1045,7 +1045,7 @@ void Scene::init(std::string name)
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
-    sendMessageToWorld("childProcessLaunched", {});
+    sendMessageToWorld("sceneLaunched", {});
 }
 
 /*************/
