@@ -89,7 +89,7 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     BaseObjectPtr obj;
     // Create the wanted object
@@ -168,7 +168,7 @@ void Scene::addGhost(string type, string name)
     BaseObjectPtr obj = add(type, name);
 
     // And move it to _ghostObjects
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -199,7 +199,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     Json::Value root;
 
@@ -231,7 +231,7 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
@@ -260,7 +260,7 @@ bool Scene::unlink(string first, string second)
 /*************/
 bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->unlinkFrom(first);
@@ -528,7 +528,7 @@ void Scene::run()
         Timer::get() << "sceneLoop";
 
         {
-            lock_guard<recursive_mutex> lock(_configureMutex);
+            lock_guard<recursive_mutex> lock(_objectsMutex);
             _mainWindow->setAsCurrentContext();
             render();
             _mainWindow->releaseContext();
@@ -669,6 +669,9 @@ void Scene::textureUploadRun()
         unique_lock<mutex> lock(_textureUploadMutex);
         _textureUploadCondition.wait(lock);
 
+        if (!_isRunning)
+            break;
+
         _textureUploadWindow->setAsCurrentContext();
         glFlush();
         glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
@@ -757,7 +760,7 @@ void Scene::activateBlendingMap(bool once)
     }
     else
     {
-        lock_guard<recursive_mutex> lock(_configureMutex);
+        lock_guard<recursive_mutex> lock(_objectsMutex);
         _mainWindow->setAsCurrentContext();
 
         initBlendingMap();
@@ -835,7 +838,7 @@ void Scene::deactivateBlendingMap()
     }
     else
     {
-        lock_guard<recursive_mutex> lock(_configureMutex);
+        lock_guard<recursive_mutex> lock(_objectsMutex);
         _mainWindow->setAsCurrentContext();
 
         for (auto& obj : _objects)
@@ -1219,7 +1222,7 @@ void Scene::registerAttributes()
             return false;
 
         _taskQueue.push_back([=]() -> void {
-            lock_guard<recursive_mutex> lock(_configureMutex);
+            lock_guard<recursive_mutex> lock(_objectsMutex);
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);

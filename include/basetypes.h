@@ -515,7 +515,7 @@ class RootObject : public BaseObject
             {
                 auto name = object->getName();
 
-                std::unique_lock<std::mutex> registerLock(_registerMutex);
+                std::unique_lock<std::recursive_mutex> registerLock(_objectsMutex);
                 object->_savable = false; // This object was created on the fly. Do not save it
 
                 // We keep the previous object on the side, to prevent double free due to operator[] behavior
@@ -534,7 +534,7 @@ class RootObject : public BaseObject
          */
         std::shared_ptr<BaseObject> unregisterObject(const std::string& name)
         {
-            std::unique_lock<std::mutex> lock(_registerMutex);
+            std::unique_lock<std::recursive_mutex> lock(_objectsMutex);
 
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
@@ -587,7 +587,7 @@ class RootObject : public BaseObject
 
     protected:
         std::shared_ptr<Link> _link;
-        mutable std::mutex _registerMutex; // Used in registration and unregistration of objects
+        mutable std::recursive_mutex _objectsMutex; // Used in registration and unregistration of objects
         mutable std::mutex _setMutex;
         std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 
