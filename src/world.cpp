@@ -53,10 +53,11 @@ World::~World()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
 #endif
-    SThread::pool.waitAllThreads();
-
     if (_innerSceneThread.joinable())
         _innerSceneThread.join();
+
+    // This has to be done last. Any object using the threadpool should be destroyed before
+    SThread::pool.waitAllThreads();
 }
 
 /*************/

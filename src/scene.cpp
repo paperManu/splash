@@ -63,7 +63,9 @@ Scene::Scene(std::string name, bool autoRun)
 /*************/
 Scene::~Scene()
 {
+    unique_lock<mutex> textureLock(_textureUploadMutex);
     _textureUploadCondition.notify_all();
+    textureLock.unlock();
     _textureUploadFuture.get();
 
     _joystickUpdateFuture.get();
