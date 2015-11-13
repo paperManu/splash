@@ -557,6 +557,13 @@ Attributes:
 ### image_ffmpeg
 This class reads a video file. As it derives from the image class, it shares all its attributes and behaviors.
 
+Attributes:
+
+- loop [int]: set whether the video should loop
+- pause [int]: set whether the queue should be paused (mostly useful at runtime)
+- seek [float]: go to a specific timing in the queue (mostly useful at runtime)
+- useClock [int]: set whether the queue should be controled by the synchronization clock
+
 ### image_opencv
 This class reads a video capture input, using OpenCV capabilities. As it derives from the image class, it shares all its attributes and behaviors.
 
@@ -600,6 +607,7 @@ Links from:
 
 - texture
 - image
+- queue
 - mesh
 - geometry
 
@@ -622,6 +630,29 @@ Attributes:
     - 0, the object is double sided
     - 1, the object is single sided
     - 2, the object is single sided with sides inverted
+
+### queue
+A *Queue* holds a list of media and timings, activating each media at a time. It derives class texture, and shares all its attributes and behaviors.
+
+Links from: None
+
+Links to:
+
+- object
+- window
+
+Attributes:
+
+- loop [int]: set if the queue should loop at the end
+- pause [int]: set whether the queue should be paused (mostly useful at runtime)
+- playlist [array]: holds the list of media to play, with their start and end timings. This looks as follows (basic form followed by examples):
+    "playlist" : [
+        [type (string), file (string), start time (float), end time (float)],
+        ["image", "color_map.png", 0.0, 10.0],
+        ["image_ffmpeg", "video.avi", 10.0, 30.0]
+    ]
+- seek [float]: go to a specific timing in the queue (mostly useful at runtime)
+- useClock [int]: set whether the queue should be controled by the synchronization clock
 
 ### scene
 A *Scene* is contained in a process and linked to a given GPU. It handles the objects configured in its context, as well as the render loop.
@@ -663,6 +694,7 @@ Links from:
 - camera
 - gui
 - image
+- queue
 - texture
 
 Links to: None

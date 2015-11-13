@@ -34,6 +34,8 @@ $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: M
 	sh $(top_srcdir)/external/build_syphon.sh
 
 export LIBTOOL = glibtool --tag=CXX
+else
+export LIBTOOL = libtool --tag=CXX
 endif
 
 #*************#
