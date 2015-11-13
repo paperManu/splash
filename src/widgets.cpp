@@ -335,6 +335,7 @@ void GuiGlobalView::render()
                 _noMove = true;
                 processKeyEvents();
                 processMouseEvents();
+                processJoystickState();
             }
             else
                 _noMove = false;
@@ -363,6 +364,13 @@ void GuiGlobalView::setCamera(CameraPtr cam)
         _guiCamera = cam;
         _camera->setAttribute("size", {800, 600});
     }
+}
+
+/*************/
+void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+{
+    _joyAxes = axes;
+    _joyButtons = buttons;
 }
 
 /*************/
@@ -516,6 +524,66 @@ void GuiGlobalView::switchHideOtherCameras()
 }
 
 /*************/
+void GuiGlobalView::processJoystickState()
+{
+    auto scene = _scene.lock();
+
+    float speed = 1.f;
+
+    // Buttons
+    if (_joyButtons.size() >= 4)
+    {
+        if (_joyButtons[0] == 1 && _joyButtons[0] != _joyButtonsPrevious[0])
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectPreviousCalibrationPoint"});
+        }
+        else if (_joyButtons[1] == 1 && _joyButtons[1] != _joyButtonsPrevious[1])
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectNextCalibrationPoint"});
+        }
+        else if (_joyButtons[2] == 1)
+        {
+            speed = 10.f;
+        }
+        else if (_joyButtons[3] == 1 && _joyButtons[3] != _joyButtonsPrevious[3])
+        {
+            doCalibration();
+        }
+    }
+    if (_joyButtons.size() >= 6)
+    {
+        if (_joyButtons[4] == 1 && _joyButtons[4] != _joyButtonsPrevious[4])
+        {
+            showAllCalibrationPoints();
+        }
+        else if (_joyButtons[5] == 1 && _joyButtons[5] != _joyButtonsPrevious[5])
+        {
+            switchHideOtherCameras();
+        }
+    }
+
+    _joyButtonsPrevious = _joyButtons;
+
+    // Axes
+    if (_joyAxes.size() >= 2)
+    {
+        float xValue = _joyAxes[0];
+        float yValue = -_joyAxes[1]; // Y axis goes downward for joysticks...
+
+        if (xValue != 0.f || yValue != 0.f)
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", xValue * speed, yValue * speed});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
+    }
+
+    // This prevents issues when disconnecting the joystick
+    _joyAxes.clear();
+    _joyButtons.clear();
+}
+
+/*************/
 void GuiGlobalView::processKeyEvents()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -654,7 +722,13 @@ void GuiGlobalView::processMouseEvents()
     }
     if (io.MouseClicked[1])
     {
-        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y);
+        float fragDepth = 0.f;
+        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y, fragDepth);
+
+        if (fragDepth == 0.f)
+            _newTargetDistance = 1.f;
+        else
+            _newTargetDistance = -fragDepth * 0.1f;
     }
     if (io.MouseDownTime[1] > 0.0) 
     {
@@ -683,8 +757,8 @@ void GuiGlobalView::processMouseEvents()
         // Move the target and the camera (in the camera plane)
         else if (io.KeyShift && !io.KeyCtrl)
         {
-            float dx = io.MouseDelta.x;
-            float dy = io.MouseDelta.y;
+            float dx = io.MouseDelta.x * _newTargetDistance;
+            float dy = io.MouseDelta.y * _newTargetDistance;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", -dx / 100.f, dy / 100.f, 0.f});
@@ -693,7 +767,7 @@ void GuiGlobalView::processMouseEvents()
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
-            float dy = io.MouseDelta.y / 100.f;
+            float dy = io.MouseDelta.y * _newTargetDistance / 100.f;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "forward", dy});
@@ -948,7 +1022,7 @@ void GuiNodeView::render()
                                                                  {"window", {8, 32}},
                                                                  {"camera", {32, 64}},
                                                                  {"object", {8, 96}},
-                                                                 {"texture", {32, 128}},
+                                                                 {"texture filter queue", {32, 128}},
                                                                  {"image", {8, 160}},
                                                                  {"mesh", {32, 192}}
                                                                 });
@@ -983,15 +1057,22 @@ void GuiNodeView::render()
 
             // Get the default position for the given type
             auto nodePosition = ImVec2(-1, -1);
-            auto defaultPosIt = defaultPositionByType.find(type);
-            if (defaultPosIt == defaultPositionByType.end())
+
+            string defaultPosName = "default";
+            for (auto& position : defaultPositionByType)
+            {
+                if (position.first.find(type) != string::npos)
+                    defaultPosName = position.first;
+            }
+
+            if (defaultPosName == "default")
             {
                 type = "default";
                 nodePosition = defaultPositionByType["default"];
             }
             else
             {
-                nodePosition = defaultPosIt->second;
+                nodePosition = defaultPositionByType[defaultPosName];
                 nodePosition.x += shift;
             }
             

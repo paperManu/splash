@@ -27,6 +27,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "osUtils.h"
+#include "queue.h"
 #include "scene.h"
 #include "timer.h"
 #include "threadpool.h"
@@ -52,6 +53,10 @@ World::~World()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "World::~World - Destructor" << Log::endl;
 #endif
+    if (_innerSceneThread.joinable())
+        _innerSceneThread.join();
+
+    // This has to be done last. Any object using the threadpool should be destroyed before
     SThread::pool.waitAllThreads();
 }
 
@@ -86,7 +91,8 @@ void World::run()
                         {
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
-                            _link->sendBuffer(o.first, std::move(obj));
+                            if (obj)
+                                _link->sendBuffer(bufferObj->getDistantName(), std::move(obj));
                         }
                         else
                             return; // if not, exit this thread
@@ -141,19 +147,23 @@ void World::run()
             sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
         }
 
-        // Send current timings to all Scenes, for display purpose
-        auto& durationMap = Timer::get().getDurationMap();
-        for (auto& d : durationMap)
-            sendMessage(SPLASH_ALL_PAIRS, "duration", {d.first, (int)d.second});
-        // Also send the master clock if needed
-        Values clock;
-        if (Timer::get().getMasterClock(clock))
-            sendMessage(SPLASH_ALL_PAIRS, "masterClock", clock);
+        // If the master scene is not an inner scene, we have to send it some information
+        if (_scenes[_masterSceneName] != -1)
+        {
+            // Send current timings to all Scenes, for display purpose
+            auto& durationMap = Timer::get().getDurationMap();
+            for (auto& d : durationMap)
+                sendMessage(_masterSceneName, "duration", {d.first, (int)d.second});
+            // Also send the master clock if needed
+            Values clock;
+            if (Timer::get().getMasterClock(clock))
+                sendMessage(_masterSceneName, "masterClock", clock);
 
-        // Send newer logs to all Scenes
-        auto logs = Log::get().getLogs();
-        for (auto& log : logs)
-            sendMessage(SPLASH_ALL_PAIRS, "log", {log.first, (int)log.second});
+            // Send newer logs to all master Scene
+            auto logs = Log::get().getNewLogs();
+            for (auto& log : logs)
+                sendMessage(_masterSceneName, "log", {log.first, (int)log.second});
+        }
 
         if (_quit)
         {
@@ -186,7 +196,9 @@ void World::run()
 void World::addLocally(string type, string name, string destination)
 {
     // Images and Meshes have a counterpart on this side
-    if (type.find("image") == string::npos && type.find("mesh") == string::npos)
+    if (type.find("image") == string::npos && 
+        type.find("mesh") == string::npos && 
+        type.find("queue") == string::npos)
         return;
 
     BaseObjectPtr object;
@@ -214,11 +226,13 @@ void World::addLocally(string type, string name, string destination)
 #endif
         else if (type == string("mesh"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+        else if (type == string("queue"))
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
     }
     if (object.get() != nullptr)
     {
         object->setId(getId());
-        object->setName(name);
+        name = object->setName(name); // The real name is not necessarily the one we set (see Queues)
         _objects[name] = object;
     }
 
@@ -276,43 +290,63 @@ void World::applyConfig()
                 display += to_string(0);
 
             string name = jsScenes[i]["name"].asString();
-            int pid;
+            int pid = -1;
             if (spawn > 0)
             {
-                // Spawn a new process containing this Scene
-                _childProcessLaunched = false;
+                _sceneLaunched = false;
+                string worldDisplay = getenv("DISPLAY");
 
-                string cmd;
-                if (_executionPath == "")
-                    cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                // If the current process is on the correct display, we use an inner Scene
+                if (display.find(worldDisplay) != string::npos && !_innerScene)
+                {
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
+                    _innerScene = make_shared<Scene>(name, false);
+                    _innerSceneThread = thread([&]() {
+                        _innerScene->run();
+                    });
+                }
                 else
-                    cmd = _executionPath + "splash-scene";
-                string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                string timer = Timer::get().isDebug() ? "-t" : "";
+                {
+                    // Spawn a new process containing this Scene
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+                    
+                    string cmd;
+                    if (_executionPath == "")
+                        cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
+                    else
+                        cmd = _executionPath + "splash-scene";
+                    string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                    string timer = Timer::get().isDebug() ? "-t" : "";
 
-                char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
-                char* env[] = {(char*)display.c_str(), NULL};
-                int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
-                if (status != 0)
-                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+                    char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
+                    char* env[] = {(char*)display.c_str(), NULL};
+                    int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
+                    if (status != 0)
+                        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
+                }
 
                 // We wait for the child process to be launched
-                while (!_childProcessLaunched)
+                unique_lock<mutex> lock(_childProcessMutex);
+                while (!_sceneLaunched)
                 {
-                    unique_lock<mutex> lock(_childProcessMutex);
                     if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
                     {
+                        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << name << "\". Exiting." << Log::endl;
                         _quit = true;
                         return;
                     }
                 }
             }
+
             _scenes[name] = pid;
             if (_masterSceneName == "")
                 _masterSceneName = name;
             
             // Initialize the communication
-            _link->connectTo(name);
+            if (pid == -1 && spawn)
+                _link->connectTo(name, _innerScene);
+            else
+                _link->connectTo(name);
 
             // Set the remaining parameters
             auto sceneMembers = jsScenes[i].getMemberNames();
@@ -580,7 +614,7 @@ Values World::getObjectsNameByType(string type)
 }
 
 /*************/
-void World::handleSerializedObject(const string name, unique_ptr<SerializedObject> obj)
+void World::handleSerializedObject(const string name, shared_ptr<SerializedObject> obj)
 {
     _link->sendBuffer(name, std::move(obj));
 }
@@ -732,8 +766,7 @@ void World::registerAttributes()
             return false;
 
         auto type = args[0].asString();
-        auto name = type + "_" + to_string(_nextId);
-        _nextId++;
+        auto name = type + "_" + to_string(getId());
 
         unique_lock<mutex> lock(_configurationMutex);
 
@@ -746,8 +779,9 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["childProcessLaunched"] = AttributeFunctor([&](const Values& args) {
-        _childProcessLaunched = true;
+    _attribFunctions["sceneLaunched"] = AttributeFunctor([&](const Values& args) {
+        unique_lock<mutex> lock(_childProcessMutex);
+        _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
     });
@@ -831,7 +865,18 @@ void World::registerAttributes()
                 for (auto& s : _scenes)
                 {
                     sendMessage(s.first, "quit", {});
-                    waitpid(s.second, nullptr, 0);
+                    if (s.second != -1)
+                    {
+                        waitpid(s.second, nullptr, 0);
+                    }
+                    else
+                    {
+                        if (_innerSceneThread.joinable())
+                            _innerSceneThread.join();
+                        _innerScene.reset();
+                    }
+
+                    _link->disconnectFrom(s.first);
                 }
 
                 _config = config;

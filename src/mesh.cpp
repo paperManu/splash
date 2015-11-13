@@ -139,9 +139,9 @@ bool Mesh::read(const string& filename)
 }
 
 /*************/
-unique_ptr<SerializedObject> Mesh::serialize() const
+shared_ptr<SerializedObject> Mesh::serialize() const
 {
-    unique_ptr<SerializedObject> obj(new SerializedObject());
+    auto obj = make_shared<SerializedObject>();
 
     if (Timer::get().isDebug())
         Timer::get() << "serialize " + _name;
@@ -179,7 +179,7 @@ unique_ptr<SerializedObject> Mesh::serialize() const
 }
 
 /*************/
-bool Mesh::deserialize(unique_ptr<SerializedObject> obj)
+bool Mesh::deserialize(shared_ptr<SerializedObject> obj)
 {
     if (obj.get() == nullptr || obj->size() == 0)
         return false;

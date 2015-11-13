@@ -341,13 +341,16 @@ def export_to_splash(self, context, filepath):
             height = objectData.splash_height
             position_x = objectData.splash_position_x
             position_y = objectData.splash_position_y
+            shift_x = 0.5 - objectData.shift_x * 2.0
+            shift_y = 0.5 - objectData.shift_y * 2.0
 
             stringArgs = (object.name,
                           int(width), int(height),
                           float(object.matrix_world[0][3]), float(object.matrix_world[1][3]), float(object.matrix_world[2][3]),
                           float(targetVec[0]), float(targetVec[1]), float(targetVec[2]),
                           float(upVec[0]), float(upVec[1]), float(upVec[2]),
-                          float(bpy.data.cameras[object.name].lens),
+                          float(bpy.data.cameras[object.name].angle_y * 180.0 / numpy.pi),
+                          float(shift_x), float(shift_y),
                           int(windowIndex),
                           int(fullscreen),
                           int(decoration),
@@ -360,7 +363,8 @@ def export_to_splash(self, context, filepath):
                "            \"eye\" : [%f, %f, %f],\n"
                "            \"target\" : [%f, %f, %f],\n"
                "            \"up\" : [%f, %f, %f],\n"
-               "            \"fov\" : [%f]\n"
+               "            \"fov\" : [%f],\n"
+               "            \"principalPoint\" : [%f, %f]\n"
                "        },\n"
                "        \"window_%i\" : {\n"
                "            \"type\" : \"window\",\n"

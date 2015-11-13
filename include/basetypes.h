@@ -141,7 +141,7 @@ class BaseObject
          * Set and get the name of the object
          */
         std::string getName() const {return _name;}
-        void setName(std::string name) {_name = name;}
+        virtual std::string setName(const std::string& name) {_name = name; return _name;}
 
         /**
          * Set and get the remote type of the object
@@ -171,6 +171,9 @@ class BaseObject
             return false;
         }
 
+        /**
+         * Unlink a given object
+         */
         virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
             auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
@@ -190,6 +193,9 @@ class BaseObject
             return false;
         }
 
+        /**
+         * Return a vector of the linked objects
+         */
         const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects()
         {
             std::vector<std::shared_ptr<BaseObject>> objects;
@@ -207,23 +213,26 @@ class BaseObject
 
         /**
          * Set the specified attribute
+         * \params attrib Attribute name
+         * \params args Values object which holds attribute values
          */
         bool setAttribute(const std::string& attrib, const Values& args)
         {
             auto attribFunction = _attribFunctions.find(attrib);
-            auto attribNotPresent = (attribFunction == _attribFunctions.end());
+            bool attribNotPresent = (attribFunction == _attribFunctions.end());
 
             if (attribNotPresent)
             {
-                auto result = _attribFunctions.emplace(std::make_pair(std::string(attrib), AttributeFunctor()));
+                auto result = _attribFunctions.emplace(std::make_pair(attrib, AttributeFunctor()));
                 if (!result.second)
                     return false;
 
                 attribFunction = result.first;
             }
 
-            _updatedParams = true;
-            auto attribResult = attribFunction->second(args);
+            if (!attribFunction->second.isDefault())
+                _updatedParams = true;
+            bool attribResult = attribFunction->second(std::forward<const Values&>(args));
 
             return attribResult && attribNotPresent;
         }
@@ -384,7 +393,7 @@ class BaseObject
             _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
                 if (args.size() == 0)
                     return false;
-                _name = args[0].asString();
+                setName(args[0].asString());
                 return true;
             });
         }
@@ -418,7 +427,7 @@ class BufferObject : public BaseObject
          * Update the BufferObject from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(std::unique_ptr<SerializedObject> obj) = 0;
+        virtual bool deserialize(std::shared_ptr<SerializedObject> obj) = 0;
         bool deserialize()
         {
             if (_newSerializedObject == false)
@@ -431,18 +440,24 @@ class BufferObject : public BaseObject
         }
 
         /**
+         * Get the name of the distant buffer object, for those which have a different name
+         * between World and Scene (happens with Queues)
+         */
+        virtual std::string getDistantName() const {return _name;}
+
+        /**
          * Serialize the image
          */
-        virtual std::unique_ptr<SerializedObject> serialize() const = 0;
+        virtual std::shared_ptr<SerializedObject> serialize() const = 0;
 
         /**
          * Set the next serialized object to deserialize to buffer
          */
-        void setSerializedObject(std::unique_ptr<SerializedObject> obj)
+        void setSerializedObject(std::shared_ptr<SerializedObject> obj)
         {
             {
                 std::unique_lock<std::mutex> lock(_writeMutex);
-                _serializedObject = move(obj);
+                _serializedObject = std::move(obj);
                 _newSerializedObject = true;
             }
 
@@ -467,7 +482,7 @@ class BufferObject : public BaseObject
         std::chrono::high_resolution_clock::time_point _timestamp;
         bool _updatedBuffer {false};
 
-        std::unique_ptr<SerializedObject> _serializedObject;
+        std::shared_ptr<SerializedObject> _serializedObject;
         bool _newSerializedObject {false};
 };
 
@@ -482,6 +497,7 @@ class RootObject : public BaseObject
             _attribFunctions["answerMessage"] = AttributeFunctor([&](const Values& args) {
                 if (args.size() == 0 || args[0].asString() != _answerExpected)
                     return false;
+                std::unique_lock<std::mutex> conditionLock(conditionMutex);
                 _lastAnswerReceived = args;
                 _answerCondition.notify_one();
                 return true;
@@ -498,8 +514,18 @@ class RootObject : public BaseObject
         {
             if (object.get() != nullptr)
             {
+                auto name = object->getName();
+
+                std::unique_lock<std::recursive_mutex> registerLock(_objectsMutex);
                 object->_savable = false; // This object was created on the fly. Do not save it
-                _objects[object->getName()] = object;
+
+                // We keep the previous object on the side, to prevent double free due to operator[] behavior
+                auto previousObject = std::shared_ptr<BaseObject>();
+                auto objectIt = _objects.find(name);
+                if (objectIt != _objects.end())
+                    previousObject = objectIt->second;
+
+                _objects[name] = object;
             }
         }
 
@@ -507,8 +533,10 @@ class RootObject : public BaseObject
          * Unregister an object which was created elsewhere, from its name,
          * sending back a shared_ptr for it
          */
-        std::shared_ptr<BaseObject> unregisterObject(std::string name)
+        std::shared_ptr<BaseObject> unregisterObject(const std::string& name)
         {
+            std::unique_lock<std::recursive_mutex> lock(_objectsMutex);
+
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
             {
@@ -523,13 +551,16 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(std::string name, std::string attrib, const Values& args)
+        bool set(const std::string& name, const std::string& attrib, const Values& args)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
+
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 return setAttribute(attrib, args);
-            else if (_objects.find(name) != _objects.end())
-                return _objects[name]->setAttribute(attrib, args);
+
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end())
+                return objectIt->second->setAttribute(attrib, args);
             else
                 return false;
         }
@@ -538,27 +569,36 @@ class RootObject : public BaseObject
          * Set an object from its serialized form
          * If non existant, it is handled by the handleSerializedObject method
          */
-        void setFromSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj)
+        void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
         {
             std::unique_lock<std::mutex> lock(_setMutex);
+
             auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end() && std::dynamic_pointer_cast<BufferObject>(objectIt->second).get() != nullptr)
-                std::dynamic_pointer_cast<BufferObject>(objectIt->second)->setSerializedObject(std::move(obj));
+            if (objectIt != _objects.end())
+            {
+                auto object = std::dynamic_pointer_cast<BufferObject>(objectIt->second);
+                if (object)
+                    object->setSerializedObject(std::move(obj));
+            }
             else
+            {
                 handleSerializedObject(name, std::move(obj));
+            }
         }
 
     protected:
         std::shared_ptr<Link> _link;
+        mutable std::recursive_mutex _objectsMutex; // Used in registration and unregistration of objects
         mutable std::mutex _setMutex;
         std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;
+        std::mutex conditionMutex;
         std::mutex _answerMutex;
         std::string _answerExpected {""};
 
-        virtual void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj) {}
+        virtual void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj) {}
 
         /**
          * Send a message to the target specified by its name
@@ -579,10 +619,9 @@ class RootObject : public BaseObject
 
             std::unique_lock<std::mutex> lock(_answerMutex);
             _answerExpected = attribute;
-            _link->sendMessage(name, attribute, message);
 
-            std::mutex conditionMutex;
             std::unique_lock<std::mutex> conditionLock(conditionMutex);
+            _link->sendMessage(name, attribute, message);
 
             auto cvStatus = std::cv_status::no_timeout;
             if (timeout == 0ull)

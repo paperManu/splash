@@ -65,7 +65,7 @@ class Scene : public RootObject
         /**
          * Constructor
          */
-        Scene(std::string name = "Splash");
+        Scene(std::string name = "Splash", bool autoRun = true);
 
         /**
          * Destructor
@@ -153,6 +153,11 @@ class Scene : public RootObject
         void renderBlending();
 
         /**
+         * Main loop for the scene
+         */
+        void run();
+
+        /**
          * Set the Scene as the master one
          */
         void setAsMaster(std::string configFilePath = "");
@@ -198,17 +203,25 @@ class Scene : public RootObject
          * Creates the blending map from the current calibration of the cameras
          */
         void computeBlendingMap(bool once = true);
+        void activateBlendingMap(bool once = true);
+        void deactivateBlendingMap();
 
     private:
+        static bool _isGlfwInitialized;
+
         ScenePtr _self;
         bool _started {false};
-        std::recursive_mutex _configureMutex;
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
         bool _isInitialized {false};
         bool _status {false}; //< Set to true if an error occured during rendering
-        bool _isBlendComputed {false};
         int _swapInterval {1}; //< Global value for the swap interval, default for all windows
+
+        // Joystick update loop and attributes
+        std::future<void> _joystickUpdateFuture;
+        std::mutex _joystickUpdateMutex;
+        std::vector<float> _joystickAxes;
+        std::vector<uint8_t> _joystickButtons;
 
         // Texture upload context
         std::future<void> _textureUploadFuture;
@@ -229,6 +242,7 @@ class Scene : public RootObject
         std::list<std::function<void()>> _taskQueue;
 
         // Blending attributes
+        bool _isBlendingComputed {false};
         bool _computeBlending {false};
         bool _computeBlendingOnce {false};
         unsigned int _blendingResolution {2048};
@@ -252,6 +266,11 @@ class Scene : public RootObject
         void initBlendingMap();
 
         /**
+         * Joystick loop
+         */
+        void joystickUpdateLoop();
+
+        /**
          * Get the next available id
          */
         unsigned long getId() {return ++_nextId;}
@@ -271,11 +290,6 @@ class Scene : public RootObject
 #endif
 
         /**
-         * Main loop for the scene
-         */
-        void run();
-
-        /**
          * Texture update loop
          */
         void textureUploadRun();
@@ -284,6 +298,11 @@ class Scene : public RootObject
          * Register new functors to modify attributes
          */
         void registerAttributes();
+
+        /**
+         * Update the various inputs (mouse, keyboard...)
+         */
+        void updateInputs();
 };
 
 typedef std::shared_ptr<Scene> ScenePtr;

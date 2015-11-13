@@ -40,15 +40,19 @@
 #if HAVE_PORTAUDIO && HAVE_LTC
     #include "ltcclock.h"
 #endif
+#include "queue.h"
 
 namespace Splash {
 
+class Scene;
 class World;
 typedef std::shared_ptr<World> WorldPtr;
 
 /*************/
 class World : public RootObject
 {
+    friend Queue;
+
     public:
         /**
          * Constructor
@@ -76,6 +80,9 @@ class World : public RootObject
         LtcClock _clock {true};
 #endif
 
+        std::shared_ptr<Scene> _innerScene {};
+        std::thread _innerSceneThread;
+
         bool _status {true};
         bool _quit {false};
         static World* _that;
@@ -89,13 +96,13 @@ class World : public RootObject
         std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
 
-        unsigned long _nextId {0};
+        std::atomic_int _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;
 
         std::string _configFilename;
         Json::Value _config;
 
-        bool _childProcessLaunched {false};
+        bool _sceneLaunched {false};
         std::mutex _childProcessMutex;
         std::condition_variable _childProcessConditionVariable;
         
@@ -120,7 +127,7 @@ class World : public RootObject
         /**
          * Get the next available id
          */
-        unsigned long getId() {return ++_nextId;}
+        int getId() {return _nextId.fetch_add(1);}
 
         /**
          * Get the list of objects by their type
@@ -131,7 +138,7 @@ class World : public RootObject
          * Redefinition of a method from RootObject
          * Send the input buffers back to all pairs
          */
-        void handleSerializedObject(const std::string name, std::unique_ptr<SerializedObject> obj);
+        void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj);
 
         /**
          * Initialize the GLFW window

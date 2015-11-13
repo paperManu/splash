@@ -23,7 +23,7 @@
 #include <glm/gtx/vector_angle.hpp>
 
 #define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.015
+#define SPLASH_WORLDMARKER_SCALE 0.01
 #define SPLASH_SCREENMARKER_SCALE 0.05
 #define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
 #define SPLASH_SCREEN_MARKER_SELECTED {0.9, 0.3, 0.1, 1.0}
@@ -607,7 +607,7 @@ Values Camera::pickVertex(float x, float y)
 }
 
 /*************/
-Values Camera::pickFragment(float x, float y)
+Values Camera::pickFragment(float x, float y, float& fragDepth)
 {
     // Convert the normalized coordinates ([0, 1]) to pixel coordinates
     float realX = x * _width;
@@ -626,6 +626,7 @@ Values Camera::pickFragment(float x, float y)
     dvec3 screenPoint(realX, realY, depth);
     dvec3 point = unProject(screenPoint, lookAt(_eye, _target, _up), computeProjectionMatrix(), dvec4(0, 0, _width, _height));
 
+    fragDepth = (lookAt(_eye, _target, _up) * dvec4(point.x, point.y, point.z, 1.0)).z;
     return {point.x, point.y, point.z};
 }
 
@@ -783,10 +784,11 @@ bool Camera::render()
                 auto points = object->getCalibrationPoints();
 
                 auto& worldMarker = _models["3d_marker"];
-                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66});
 
                 for (auto& point : points)
                 {
+                    glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
+                    worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66 * transformedPoint.z});
                     worldMarker->setAttribute("position", {point.x, point.y, point.z});
                     worldMarker->setAttribute("color", SPLASH_OBJECT_MARKER);
 
@@ -809,7 +811,8 @@ bool Camera::render()
                 auto& point = _calibrationPoints[i];
 
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
-                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+                glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
+                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * transformedPoint.z});
                 if (_selectedCalibrationPoint == i)
                     worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
                 else if (point.isSet)
@@ -899,6 +902,7 @@ void Camera::moveCalibrationPoint(float dx, float dy)
 
     _calibrationPoints[_selectedCalibrationPoint].screen.x += dx / _width;
     _calibrationPoints[_selectedCalibrationPoint].screen.y += dy / _height;
+    _calibrationPoints[_selectedCalibrationPoint].isSet = true;
 
     if (_calibrationCalledOnce)
         doCalibration();
@@ -1452,6 +1456,19 @@ void Camera::registerAttributes()
         if (args.size() < 2)
             return false;
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
+    });
+
+    _attribFunctions["selectNextCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+        _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
+        return true;
+    });
+
+    _attribFunctions["selectPreviousCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+        if (_selectedCalibrationPoint == 0)
+            _selectedCalibrationPoint = _calibrationPoints.size() - 1;
+        else
+            _selectedCalibrationPoint--;
+        return true;
     });
 
     // Store / restore calibration points

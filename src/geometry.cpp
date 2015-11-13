@@ -135,9 +135,9 @@ void Geometry::deactivateFeedback()
 }
 
 /*************/
-unique_ptr<SerializedObject> Geometry::serialize() const
+shared_ptr<SerializedObject> Geometry::serialize() const
 {
-    auto serializedObject = unique_ptr<SerializedObject>(new SerializedObject());
+    auto serializedObject = make_shared<SerializedObject>();
     serializedObject->resize(sizeof(int));
     *(int*)(serializedObject->data()) = _alternativeVerticesNumber;
     for (auto& buffer : _glAlternativeBuffers)
@@ -152,7 +152,7 @@ unique_ptr<SerializedObject> Geometry::serialize() const
 }
 
 /*************/
-bool Geometry::deserialize(unique_ptr<SerializedObject> obj)
+bool Geometry::deserialize(shared_ptr<SerializedObject> obj)
 {
     unique_lock<mutex> lock(_writeMutex);
     _serializedObject = std::move(obj);

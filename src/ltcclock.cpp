@@ -23,7 +23,6 @@ LtcClock::LtcClock(bool masterClock)
         return;
     }
 
-    _ready = true;
     _masterClock = true;
     _continue = true;
 
@@ -47,6 +46,8 @@ LtcClock::LtcClock(bool masterClock)
 
             while (ltc_decoder_read(ltcDecoder, &ltcFrame))
             {
+                _ready = true;
+
                 SMPTETimecode stime;
                 ltc_frame_to_time(&stime, &ltcFrame.ltc, LTC_TC_CLOCK);
 
@@ -57,7 +58,29 @@ LtcClock::LtcClock(bool masterClock)
                 clock.hours = stime.hours;
                 clock.mins = stime.mins;
                 clock.secs = stime.secs;
-                clock.frame = stime.frame;
+
+                // This updates the maximum frames per second, to be able to handle any framerate
+                if (stime.frame == 0)
+                {
+                    // Only accept some specific values
+                    if (_previousFrame == 24 || _previousFrame == 25 || _previousFrame == 30 || _previousFrame == 60)
+                    {
+                        // Small trick to handle errors
+                        if (_framerateChanged)
+                        {
+                            _maximumFramePerSec = _previousFrame + 1;
+                            _framerateChanged = false;
+                        }
+                        else
+                        {
+                            _framerateChanged = true;
+                        }
+                    }
+                }
+
+                _previousFrame = stime.frame;
+                clock.frame = stime.frame * 120 / _maximumFramePerSec;
+
                 _clock = clock;
 
                 if (_masterClock)
@@ -90,6 +113,9 @@ LtcClock::Clock LtcClock::getClock()
 /*************/
 void LtcClock::getClock(Values& clockValues)
 {
+    if (!_ready)
+        return;
+
     Clock clock = _clock;
 
     clockValues.clear();
