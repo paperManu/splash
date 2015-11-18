@@ -448,3 +448,134 @@ def export_to_splash(self, context, filepath):
     file.close()
 
     return {'FINISHED'}
+
+
+class SplashExportNodeTree(Operator):
+    """Exports the Splash node tree from the calling node"""
+    bl_idname = "splash.export_node_tree"
+    bl_label = "Exports the node tree"
+
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    world_node = None
+    scene_lists = {}
+    node_links = {}
+
+    def execute(self, context):
+        self.scene_lists.clear()
+        self.node_links.clear()
+
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                node = nodeTree.nodes[nodeIndex]
+                break
+
+        self.world_node = node
+
+        connectedScenes = [socket.links[0].from_node for socket in node.inputs if socket.is_linked]
+        for scene in connectedScenes:
+            scene_list = {}
+            node_links = []
+            self.parseTree(scene, scene_list, node_links)
+
+            self.scene_lists[scene.name] = scene_list
+            self.node_links[scene.name] = node_links
+
+        return self.export()
+
+    def parseTree(self, node, scene_list, node_links):
+        scene_list[node.name] = node
+
+        connectedNodes = [socket.links[0].from_node for socket in node.inputs if socket.is_linked]
+        for connectedNode in connectedNodes:
+            node_links.append([connectedNode.name, node.name])
+            self.parseTree(connectedNode, scene_list, node_links)
+
+    def export(self):
+        file = open(self.filepath, "w", encoding="utf8", newline="\n")
+        fw = file.write
+
+        # World informations
+        worldArgs =  self.world_node.socketsToDict()
+        fw("// Splash configuration file\n"
+           "// Exported with Blender Splash add-on\n"
+           "{\n"
+           "    \"encoding\" : \"UTF-8\",\n"
+           "\n"
+           "    \"world\" : {\n"
+           "        \"framerate\" : %i\n"
+           "    },\n" % (worldArgs['framerate']))
+
+        # Scenes list
+        fw("    \"scenes\" : [\n")
+        sceneIndex = 0
+        for scene in self.scene_lists:
+            # Find the Scene nodes
+            for node in self.scene_lists[scene]:
+                if self.scene_lists[scene][node].bl_idname == "SplashSceneNodeType":
+                    args = self.scene_lists[scene][node].socketsToDict()
+                    fw("        {\n")
+                    valueIndex = 0
+                    for values in args:
+                        fw("            \"%s\" : %s" % (values, args[values]))
+
+                        if valueIndex < len(args) - 1:
+                            fw(",\n")
+                        else:
+                            fw("\n")
+                        valueIndex = valueIndex + 1
+                    fw("        }")
+
+                    if sceneIndex < len(self.scene_lists) - 1:
+                        fw(",\n")
+                    else:
+                        fw("\n")
+                    sceneIndex = sceneIndex + 1
+        fw("    ],\n")
+           
+        # Scenes information
+        sceneIndex = 0
+        for scene in self.scene_lists:
+            fw("    \"%s\" : {\n" % scene)
+            for node in self.scene_lists[scene]:
+                if self.scene_lists[scene][node].bl_idname != "SplashSceneNodeType":
+                    args = self.scene_lists[scene][node].socketsToDict()
+                    fw("        \"%s\" : {\n" % node)
+                    valueIndex = 0
+                    for values in args:
+                        fw("            \"%s\" : %s" % (values, args[values]))
+
+                        if valueIndex < len(args) - 1:
+                            fw(",\n")
+                        else:
+                            fw("\n")
+                        valueIndex = valueIndex + 1
+                    fw("        },\n")
+
+            # Links
+            fw("        \"links\" : [\n")
+            linkIndex = 0
+            for link in self.node_links[scene]:
+                fw("            [\"%s\", \"%s\"]" % (link[0], link[1]))
+                if linkIndex < len(self.node_links[scene]) - 1:
+                    fw(",\n")
+                else:
+                    fw("\n")
+                linkIndex = linkIndex + 1
+            fw("        ]\n")
+
+            if sceneIndex < len(self.scene_lists) - 1:
+                fw("    },\n")
+            else:
+                fw("    }\n")
+            sceneIndex = sceneIndex + 1
+
+        fw("}")
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}

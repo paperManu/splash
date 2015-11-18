@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Splash output",
     "author": "Emmanuel Durand",
-    "version": (0, 3, 1),
+    "version": (0, 3, 7),
     "blender": (2, 72, 0),
     "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",
@@ -33,6 +33,7 @@ if "bpy" in locals():
     import imp
     imp.reload(ui)
     imp.reload(operators)
+    imp.reload(nodes)
 else:
     import bpy
     from bpy.props import (StringProperty,
@@ -48,6 +49,7 @@ else:
                            )
     from . import ui
     from . import operators
+    from . import nodes
 
 def getImageList(scene, context):
     images = []
@@ -125,6 +127,19 @@ classes = (
     operators.SplashSendTexture,
     operators.SplashStopSelected,
 
+    nodes.SplashTree,
+    nodes.SplashLinkSocket,
+    nodes.SplashBaseNode,
+    nodes.SplashCameraNode,
+    nodes.SplashImageNode,
+    nodes.SplashMeshNode,
+    nodes.SplashObjectNode,
+    nodes.SplashSceneNode,
+    nodes.SplashWindowNode,
+    nodes.SplashWorldNode,
+
+    operators.SplashExportNodeTree,
+
     SplashSettings
     )
 
@@ -173,6 +188,9 @@ def register():
     bpy.types.Scene.splash = PointerProperty(type=SplashSettings)
     registerProperties()
 
+    import nodeitems_utils
+    nodeitems_utils.register_node_categories("SPLASH_NODES", nodes.node_categories)
+
 
 def unregister():
     for cls in classes:
@@ -181,3 +199,6 @@ def unregister():
     bpy.types.INFO_MT_file_export.remove(ui.splash_menu_export)
 
     del bpy.types.Scene.splash
+
+    import nodeitems_utils
+    nodeitems_utils.unregister_node_categories("SPLASH_NODES")
