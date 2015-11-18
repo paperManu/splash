@@ -498,7 +498,7 @@ class SplashExportNodeTree(Operator):
         fw = file.write
 
         # World informations
-        worldArgs =  self.world_node.socketsToDict()
+        worldArgs =  self.world_node.exportProperties(self.filepath)
         fw("// Splash configuration file\n"
            "// Exported with Blender Splash add-on\n"
            "{\n"
@@ -515,7 +515,7 @@ class SplashExportNodeTree(Operator):
             # Find the Scene nodes
             for node in self.scene_lists[scene]:
                 if self.scene_lists[scene][node].bl_idname == "SplashSceneNodeType":
-                    args = self.scene_lists[scene][node].socketsToDict()
+                    args = self.scene_lists[scene][node].exportProperties(self.filepath)
                     fw("        {\n")
                     valueIndex = 0
                     for values in args:
@@ -541,7 +541,7 @@ class SplashExportNodeTree(Operator):
             fw("    \"%s\" : {\n" % scene)
             for node in self.scene_lists[scene]:
                 if self.scene_lists[scene][node].bl_idname != "SplashSceneNodeType":
-                    args = self.scene_lists[scene][node].socketsToDict()
+                    args = self.scene_lists[scene][node].exportProperties(self.filepath)
                     fw("        \"%s\" : {\n" % node)
                     valueIndex = 0
                     for values in args:
@@ -579,3 +579,84 @@ class SplashExportNodeTree(Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
+
+
+class SplashSelectFilePath(Operator):
+    """Select a file path"""
+    bl_idname = "splash.select_file_path"
+    bl_label = "Select a file path"
+
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    current_node = None
+
+    def execute(self, context):
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                self.current_node = nodeTree.nodes[nodeIndex]
+
+        if self.current_node is not None:
+            self.current_node.inputs['File'].default_value = self.filepath
+            self.current_node.inputs['File'].enabled = True
+            self.current_node.inputs['Object'].enabled = False
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class SplashSelectObject(Operator):
+    """Select an Object"""
+    bl_idname = "splash.select_object"
+    bl_label = "Select an Object"
+
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    current_node = None
+
+    def execute(self, context):
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                self.current_node = nodeTree.nodes[nodeIndex]
+
+        if self.current_node is not None and context.active_object is not None and isinstance(context.active_object.data, bpy.types.Mesh):
+            self.current_node.inputs['File'].enabled = False
+            self.current_node.inputs['Object'].default_value = context.active_object.data.name
+            self.current_node.inputs['Object'].enabled = True
+
+            objectName = context.active_object.data.name
+            path = "/tmp/splash_" + objectName + ".obj"
+            bpy.ops.object.select_pattern(pattern = objectName, extend=False)
+            bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
+                                     use_uvs=True, axis_forward='Y', axis_up='Z')
+
+        return {'FINISHED'}
+
+
+class SplashSelectCamera(Operator):
+    """Select a Camera"""
+    bl_idname = "splash.select_camera"
+    bl_label = "Select a camera"
+
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    current_node = None
+
+    def execute(self, context):
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                self.current_node = nodeTree.nodes[nodeIndex]
+
+        if self.current_node is not None and context.active_object is not None and isinstance(context.active_object.data, bpy.types.Camera):
+            self.current_node.sp_objectProperty = context.active_object.name
+            self.current_node.sp_cameraProperty = context.active_object.data.name
+
+        return {'FINISHED'}

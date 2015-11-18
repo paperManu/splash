@@ -139,6 +139,9 @@ classes = (
     nodes.SplashWorldNode,
 
     operators.SplashExportNodeTree,
+    operators.SplashSelectFilePath,
+    operators.SplashSelectCamera,
+    operators.SplashSelectObject,
 
     SplashSettings
     )

@@ -18,8 +18,11 @@
 # 
 
 
+import numpy
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
+from math import floor
+from mathutils import Vector, Matrix
 
 import imp
 if "operators" in locals():
@@ -88,7 +91,7 @@ class SplashBaseNode(Node, SplashTreeNode):
         if len(linksInput) == len(links):
             self.inputs.new('SplashLinkSocket', "Input link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         pass
 
 
@@ -101,8 +104,22 @@ class SplashCameraNode(SplashBaseNode):
         'SplashObjectNodeType',
         ]
 
+    sp_objectProperty = bpy.props.StringProperty(name="Source object",
+                                         description="Object holding the camera",
+                                         default="",
+                                         maxlen=1024)
+    sp_cameraProperty = bpy.props.StringProperty(name="Source camera",
+                                         description="Camera which feeds a given projector",
+                                         default="",
+                                         maxlen=1024)
+
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
+        row = layout.row()
+        operator = row.operator("splash.select_camera", text="Select the active Camera")
+        operator.node_name = self.name
+        row = layout.row()
+        row.prop(self, "sp_cameraProperty")
 
     def init(self, context):
         self.inputs.new('NodeSocketFloat', 'Black level').default_value = 0.0
@@ -116,8 +133,26 @@ class SplashCameraNode(SplashBaseNode):
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
+        values['type'] = "\"camera\""
+
+        object = bpy.data.objects[self.sp_objectProperty]
+        camera = bpy.data.cameras[self.sp_cameraProperty]
+        if object is not None and camera is not None:
+            # Get some parameters
+            rotMatrix = object.matrix_world.to_3x3()
+            targetVec = Vector((0.0, 0.0, -1.0))
+            targetVec = rotMatrix * targetVec + object.matrix_world.to_translation()
+            upVec = Vector((0.0, 1.0, 0.0))
+            upVec = rotMatrix * upVec
+
+            values['eye'] = [float(object.matrix_world[0][3]), float(object.matrix_world[1][3]), float(object.matrix_world[2][3])]
+            values['target'] = [targetVec[0], targetVec[1], targetVec[2]]
+            values['up'] = [upVec[0], upVec[1], upVec[2]]
+            values['fov'] = camera.angle_y * 180.0 / numpy.pi
+            values['principalPoint'] = [0.5 - camera.shift_x * 2.0, 0.5 - camera.shift_y * 2.0]
+
         values['blackLevel'] = self.inputs['Black level'].default_value
         values['blendWidth'] = self.inputs['Blending width'].default_value
         values['blendPrecision'] = self.inputs['Blending precision'].default_value
@@ -138,19 +173,38 @@ class SplashImageNode(SplashBaseNode):
 
     sp_acceptedLinks = []
 
+    sp_imageTypes = [
+        ("image", "image", "Static image"),
+        ("image_ffmpeg", "video", "Video file"),
+        ("image_shmdata", "shared memory", "Video through shared memory")
+    ]
+    sp_imageTypeProperty = bpy.props.EnumProperty(name="Type",
+                                                  description="Image source type",
+                                                  items=sp_imageTypes,
+                                                  default="image")
+
     def draw_buttons(self, context, layout):
+        row = layout.row()
         layout.prop(self, "name")
+        row = layout.row()
+        row.prop(self, "sp_imageTypeProperty")
+        row = layout.row()
+        operator = row.operator("splash.select_file_path", text="Select file path")
+        operator.node_name = self.name
 
     def init(self, context):
         self.inputs.new('NodeSocketString', 'File').default_value = ""
+        self.inputs.new('NodeSocketString', 'Object').default_value = ""
+        self.inputs['Object'].enabled = False
         self.inputs.new('NodeSocketBool', 'Flip').default_value = False
         self.inputs.new('NodeSocketBool', 'Flop').default_value = False
         self.inputs.new('NodeSocketBool', 'sRGB').default_value = True
 
         self.outputs.new('SplashLinkSocket', "Output link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
+        values['type'] = "\"" + self.sp_imageTypeProperty + "\""
         values['file'] = "\"" + self.inputs['File'].default_value + "\""
         values['flip'] = int(self.inputs['Flip'].default_value)
         values['flip'] = int(self.inputs['Flop'].default_value)
@@ -169,17 +223,52 @@ class SplashMeshNode(SplashBaseNode):
 
     sp_acceptedLinks = []
 
+    sp_meshTypes = [
+        ("mesh", "OBJ file", "Mesh from OBJ file"),
+        ("mesh_shmdata", "Shared memory", "Mesh from shared memory")
+    ]
+    sp_meshTypeProperty = bpy.props.EnumProperty(name="Type",
+                                                  description="Mesh source type",
+                                                  items=sp_meshTypes,
+                                                  default="mesh")
+
     def draw_buttons(self, context, layout):
+        row = layout.row()
         layout.prop(self, "name")
+        row = layout.row()
+        row.prop(self, "sp_meshTypeProperty")
+        row = layout.row()
+        operator = row.operator("splash.select_file_path", text="Select file path")
+        operator.node_name = self.name
+        row = layout.row()
+        operator = row.operator("splash.select_object", text="Select the active Object")
+        operator.node_name = self.name
 
     def init(self, context):
         self.inputs.new('NodeSocketString', 'File').default_value = ""
+        self.inputs.new('NodeSocketString', 'Object').default_value = ""
+        self.inputs['Object'].enabled = False
 
         self.outputs.new('SplashLinkSocket', "Output link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
-        values['file'] = "\"" + self.inputs['File'].default_value + "\""
+        values['type'] = "\"" + self.sp_meshTypeProperty + "\""
+
+        if self.inputs['Object'].enabled:
+            import os
+            from shutil import copyfile
+
+            objectName = self.inputs['Object'].default_value
+            path = os.path.dirname(exportPath) + "/splash_" + objectName + ".obj"
+            try:
+                copyfile("/tmp/splash_" + objectName + ".obj", path)
+            except IOError:
+                print(bl_idname + " - Error while copying the given file")
+
+            values['file'] = "\"" + path + "\""
+        else:
+            values['file'] = "\"" + self.inputs['File'].default_value + "\""
 
         return values
 
@@ -209,8 +298,9 @@ class SplashObjectNode(SplashBaseNode):
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
+        values['type'] = "\"object\""
         values['color'] = [self.inputs['Color'].default_value[0],
                            self.inputs['Color'].default_value[1],
                            self.inputs['Color'].default_value[2]]
@@ -250,9 +340,10 @@ class SplashSceneNode(SplashBaseNode):
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
-        values['address'] = self.inputs['Address'].default_value
+        values['name'] = "\"" + self.name + "\""
+        values['address'] = "\"" + self.inputs['Address'].default_value + "\""
         values['blendingResolution'] = self.inputs['Blending resolution'].default_value
         values['display'] = self.inputs['Display'].default_value
         values['spawn'] = int(self.inputs['Spawn'].default_value)
@@ -290,8 +381,9 @@ class SplashWindowNode(SplashBaseNode):
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
+        values['type'] = "\"window\""
         values['decorated'] = int(self.inputs['Decorated'].default_value)
         if self.inputs['Fullscreen'].default_value:
             values['fullscreen'] = self.inputs['Screen'].default_value
@@ -328,7 +420,7 @@ class SplashWorldNode(SplashBaseNode):
 
         self.inputs.new('SplashLinkSocket', "Input link")
 
-    def socketsToDict(self):
+    def exportProperties(self, exportPath):
         values = {}
         values['framerate'] = self.inputs['Refresh rate'].default_value
 
