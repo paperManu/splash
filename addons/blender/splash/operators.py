@@ -312,7 +312,9 @@ class SplashExportNodeTree(Operator):
 
         connectedNodes = [socket.links[0].from_node for socket in node.inputs if socket.is_linked]
         for connectedNode in connectedNodes:
-            node_links.append([connectedNode.name, node.name])
+            newLink = [connectedNode.name, node.name]
+            if newLink not in node_links:
+                node_links.append([connectedNode.name, node.name])
             self.parseTree(connectedNode, scene_list, node_links)
 
     def export(self):
