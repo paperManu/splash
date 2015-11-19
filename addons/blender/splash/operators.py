@@ -630,12 +630,6 @@ class SplashSelectObject(Operator):
             self.current_node.inputs['Object'].default_value = context.active_object.data.name
             self.current_node.inputs['Object'].enabled = True
 
-            objectName = context.active_object.data.name
-            path = "/tmp/splash_" + objectName + ".obj"
-            bpy.ops.object.select_pattern(pattern = objectName, extend=False)
-            bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
-                                     use_uvs=True, axis_forward='Y', axis_up='Z')
-
         return {'FINISHED'}
 
 

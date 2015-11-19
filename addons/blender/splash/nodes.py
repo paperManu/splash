@@ -137,9 +137,9 @@ class SplashCameraNode(SplashBaseNode):
         values = {}
         values['type'] = "\"camera\""
 
-        object = bpy.data.objects[self.sp_objectProperty]
-        camera = bpy.data.cameras[self.sp_cameraProperty]
-        if object is not None and camera is not None:
+        if bpy.data.objects.find(self.sp_objectProperty) != -1 and bpy.data.cameras.find(self.sp_cameraProperty) != -1:
+            object = bpy.data.objects[self.sp_objectProperty]
+            camera = bpy.data.cameras[self.sp_cameraProperty]
             # Get some parameters
             rotMatrix = object.matrix_world.to_3x3()
             targetVec = Vector((0.0, 0.0, -1.0))
@@ -257,14 +257,14 @@ class SplashMeshNode(SplashBaseNode):
 
         if self.inputs['Object'].enabled:
             import os
-            from shutil import copyfile
 
             objectName = self.inputs['Object'].default_value
+
+            bpy.ops.object.select_all(action='DESELECT')
+            bpy.data.objects[objectName].select = True
             path = os.path.dirname(exportPath) + "/splash_" + objectName + ".obj"
-            try:
-                copyfile("/tmp/splash_" + objectName + ".obj", path)
-            except IOError:
-                print(bl_idname + " - Error while copying the given file")
+            bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
+                                     use_uvs=True, axis_forward='Y', axis_up='Z')
 
             values['file'] = "\"" + path + "\""
         else:
