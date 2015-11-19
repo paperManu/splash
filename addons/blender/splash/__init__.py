@@ -120,8 +120,6 @@ class SplashSettings(PropertyGroup):
 classes = (
     ui.SplashToolbarObject,
     ui.SplashToolbarMesh,
-    ui.SplashObjectPanel,
-    ui.SplashExport,
 
     operators.SplashActivateSendMesh,
     operators.SplashSendTexture,
@@ -186,8 +184,6 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.INFO_MT_file_export.append(ui.splash_menu_export)
-
     bpy.types.Scene.splash = PointerProperty(type=SplashSettings)
     registerProperties()
 
@@ -198,8 +194,6 @@ def register():
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
-
-    bpy.types.INFO_MT_file_export.remove(ui.splash_menu_export)
 
     del bpy.types.Scene.splash
 
