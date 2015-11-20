@@ -424,6 +424,7 @@ class SplashSelectFilePath(Operator):
         if self.current_node is not None:
             self.current_node.inputs['File'].default_value = self.filepath
             self.current_node.inputs['File'].enabled = True
+            self.current_node.inputs['Object'].default_value = ""
             self.current_node.inputs['Object'].enabled = False
 
         return {'FINISHED'}
@@ -450,6 +451,7 @@ class SplashSelectObject(Operator):
                 self.current_node = nodeTree.nodes[nodeIndex]
 
         if self.current_node is not None and context.active_object is not None and isinstance(context.active_object.data, bpy.types.Mesh):
+            self.current_node.inputs['File'].default_value = ""
             self.current_node.inputs['File'].enabled = False
             self.current_node.inputs['Object'].default_value = context.active_object.data.name
             self.current_node.inputs['Object'].enabled = True

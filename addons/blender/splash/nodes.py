@@ -73,6 +73,9 @@ class SplashBaseNode(Node, SplashTreeNode):
 
     sp_acceptedLinks = []
 
+    def draw_label(self):
+        return self.name + " (" + self.bl_label + ")"
+
     def updateSockets(self):
         linksInput = [socket for socket in self.inputs if socket.bl_idname == 'SplashLinkSocket']
         links = [socket for socket in linksInput if socket.is_linked is True]
@@ -81,6 +84,12 @@ class SplashBaseNode(Node, SplashTreeNode):
             for link in socket.links:
                 if link.from_node.bl_idname not in self.sp_acceptedLinks:
                     self.inputs.remove(socket)
+
+        for socket in [socket for socket in self.outputs if socket.bl_idname == 'SplashLinkSocket' and socket.is_linked is True]:
+            for link in socket.links:
+                if not isinstance(link.to_socket, SplashLinkSocket):
+                    self.outputs.remove(self.outputs["Output link"])
+                    self.outputs.new("SplashLinkSocket", "Output link")
 
         if len(links) < len(linksInput) - 1:
             for socket in linksInput:
@@ -173,15 +182,39 @@ class SplashImageNode(SplashBaseNode):
 
     sp_acceptedLinks = []
 
+    def update_image_type(self, context):
+        if self.sp_imageTypeProperty == "image_ffmpeg":
+            self.inputs['Clock'].enabled = True
+        else:
+            self.inputs['Clock'].enabled = False
+
+        if self.sp_imageTypeProperty == "texture_syphon":
+            self.inputs['Server name'].enabled = True
+            self.inputs['Application name'].enabled = True
+            self.inputs['File'].enabled = False
+            self.inputs['Flip'].enabled = False
+            self.inputs['Flop'].enabled = False
+            self.inputs['sRGB'].enabled = False
+        else:
+            self.inputs['Server name'].enabled = False
+            self.inputs['Application name'].enabled = False
+            self.inputs['File'].enabled = True
+            self.inputs['Flip'].enabled = True
+            self.inputs['Flop'].enabled = True
+            self.inputs['sRGB'].enabled = True
+            
+
     sp_imageTypes = [
         ("image", "image", "Static image"),
         ("image_ffmpeg", "video", "Video file"),
-        ("image_shmdata", "shared memory", "Video through shared memory")
+        ("image_shmdata", "shared memory", "Video through shared memory"),
+        ("texture_syphon", "syphon", "Video through Syphon (only on OSX)"),
     ]
     sp_imageTypeProperty = bpy.props.EnumProperty(name="Type",
                                                   description="Image source type",
                                                   items=sp_imageTypes,
-                                                  default="image")
+                                                  default="image",
+                                                  update=update_image_type)
 
     def draw_buttons(self, context, layout):
         row = layout.row()
@@ -194,21 +227,33 @@ class SplashImageNode(SplashBaseNode):
 
     def init(self, context):
         self.inputs.new('NodeSocketString', 'File').default_value = ""
+        self.inputs.new('NodeSocketBool', 'Flip').default_value = False
         self.inputs.new('NodeSocketString', 'Object').default_value = ""
         self.inputs['Object'].enabled = False
-        self.inputs.new('NodeSocketBool', 'Flip').default_value = False
         self.inputs.new('NodeSocketBool', 'Flop').default_value = False
         self.inputs.new('NodeSocketBool', 'sRGB').default_value = True
+        self.inputs.new('NodeSocketBool', 'Clock').default_value = False
+        self.inputs['Clock'].enabled = False
+        self.inputs.new('NodeSocketString', 'Server name').default_value = ""
+        self.inputs.new('NodeSocketString', 'Application name').default_value = ""
+        self.inputs['Server name'].enabled = False
+        self.inputs['Application name'].enabled = False
 
         self.outputs.new('SplashLinkSocket', "Output link")
 
     def exportProperties(self, exportPath):
         values = {}
         values['type'] = "\"" + self.sp_imageTypeProperty + "\""
-        values['file'] = "\"" + self.inputs['File'].default_value + "\""
-        values['flip'] = int(self.inputs['Flip'].default_value)
-        values['flip'] = int(self.inputs['Flop'].default_value)
-        values['srgb'] = int(self.inputs['sRGB'].default_value)
+        if self.sp_imageTypeProperty == "texture_syphon":
+            values['servername'] = "\"" + self.inputs['Server name'].default_value + "\""
+            values['appname'] = "\"" + self.inputs['Application name'].default_value + "\""
+        else:
+            values['file'] = "\"" + self.inputs['File'].default_value + "\""
+            values['flip'] = int(self.inputs['Flip'].default_value)
+            values['flop'] = int(self.inputs['Flop'].default_value)
+            values['srgb'] = int(self.inputs['sRGB'].default_value)
+            if self.sp_imageTypeProperty == "image_ffmpeg":
+                values['clock'] = int(self.inputs['Clock'].default_value)
 
         return values
 
