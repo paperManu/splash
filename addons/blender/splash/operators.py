@@ -272,179 +272,211 @@ class SplashStopSelected(Operator):
         return {'FINISHED'}
 
 
-def export_to_splash(self, context, filepath):
-    scene = context.scene
+class SplashExportNodeTree(Operator):
+    """Exports the Splash node tree from the calling node"""
+    bl_idname = "splash.export_node_tree"
+    bl_label = "Exports the node tree"
 
-    file = open(filepath, "w", encoding="utf8", newline="\n")
-    fw = file.write
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
 
-    # Header, not dependant of the objects in scene
-    fw("// Splash configuration file\n"
-       "// Exported with Blender Splash export\n"
-       "{\n"
-       "    \"encoding\" : \"UTF-8\",\n"
-       "\n"
-       "    \"world\" : {\n"
-       "        \"framerate\" : 60\n"
-       "    },\n"
-       "\n"
-       "    \"scenes\" : [\n"
-       "        {\n"
-       "            \"name\" : \"local\",\n"
-       "            \"address\" : \"localhost\",\n"
-       "            \"spawn\" : 1,\n"
-       "            \"display\" : 0,\n"
-       "            \"swapInterval\" : 1\n"
-       "        }\n"
-       "    ],\n"
-       "\n"
-       "    \"local\" : {\n")
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    world_node = None
+    scene_lists = {}
+    node_links = {}
 
-    # Add a window for the GUI
-    fw("        // Default window for the GUI\n"
-       "        \"gui\" : {\n"
-       "            \"type\" : \"window\",\n"
-       "            \"fullscreen\" : -1,\n"
-       "            \"decorated\" : 1,\n"
-       "            \"position\" : [0, 0],\n"
-       "            \"size\" : [732, 932],\n"
-       "            \"srgb\" : [ 1 ]\n"
-       "        },\n")
-    
-    links = []
-    cameras = []
-    windowIndex = 1
+    def execute(self, context):
+        self.scene_lists.clear()
+        self.node_links.clear()
 
-    # Export cameras
-    for item in scene.objects.items():
-        object = item[1]
-        if object.type == 'CAMERA':
-            # Get some parameters
-            rotMatrix = object.matrix_world.to_3x3()
-            targetVec = Vector((0.0, 0.0, -1.0))
-            targetVec = rotMatrix * targetVec + object.matrix_world.to_translation()
-            upVec = Vector((0.0, 1.0, 0.0))
-            upVec = rotMatrix * upVec
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                node = nodeTree.nodes[nodeIndex]
+                break
 
-            objectData = bpy.data.cameras[object.name]
-            if objectData.splash_window_fullscreen is True:
-                fullscreen = objectData.splash_fullscreen_index
+        self.world_node = node
+
+        connectedScenes = [socket.links[0].from_node for socket in node.inputs if socket.is_linked]
+        for scene in connectedScenes:
+            scene_list = {}
+            node_links = []
+            self.parseTree(scene, scene_list, node_links)
+
+            self.scene_lists[scene.name] = scene_list
+            self.node_links[scene.name] = node_links
+
+        return self.export()
+
+    def parseTree(self, node, scene_list, node_links):
+        scene_list[node.name] = node
+
+        connectedNodes = [socket.links[0].from_node for socket in node.inputs if socket.is_linked]
+        for connectedNode in connectedNodes:
+            newLink = [connectedNode.name, node.name]
+            if newLink not in node_links:
+                node_links.append([connectedNode.name, node.name])
+            self.parseTree(connectedNode, scene_list, node_links)
+
+    def export(self):
+        file = open(self.filepath, "w", encoding="utf8", newline="\n")
+        fw = file.write
+
+        # World informations
+        worldArgs =  self.world_node.exportProperties(self.filepath)
+        fw("// Splash configuration file\n"
+           "// Exported with Blender Splash add-on\n"
+           "{\n"
+           "    \"encoding\" : \"UTF-8\",\n"
+           "\n"
+           "    \"world\" : {\n"
+           "        \"framerate\" : %i\n"
+           "    },\n" % (worldArgs['framerate']))
+
+        # Scenes list
+        fw("    \"scenes\" : [\n")
+        sceneIndex = 0
+        for scene in self.scene_lists:
+            # Find the Scene nodes
+            for node in self.scene_lists[scene]:
+                if self.scene_lists[scene][node].bl_idname == "SplashSceneNodeType":
+                    args = self.scene_lists[scene][node].exportProperties(self.filepath)
+                    fw("        {\n")
+                    valueIndex = 0
+                    for values in args:
+                        fw("            \"%s\" : %s" % (values, args[values]))
+
+                        if valueIndex < len(args) - 1:
+                            fw(",\n")
+                        else:
+                            fw("\n")
+                        valueIndex = valueIndex + 1
+                    fw("        }")
+
+                    if sceneIndex < len(self.scene_lists) - 1:
+                        fw(",\n")
+                    else:
+                        fw("\n")
+                    sceneIndex = sceneIndex + 1
+        fw("    ],\n")
+           
+        # Scenes information
+        sceneIndex = 0
+        for scene in self.scene_lists:
+            fw("    \"%s\" : {\n" % scene)
+            for node in self.scene_lists[scene]:
+                if self.scene_lists[scene][node].bl_idname != "SplashSceneNodeType":
+                    args = self.scene_lists[scene][node].exportProperties(self.filepath)
+                    fw("        \"%s\" : {\n" % node)
+                    valueIndex = 0
+                    for values in args:
+                        fw("            \"%s\" : %s" % (values, args[values]))
+
+                        if valueIndex < len(args) - 1:
+                            fw(",\n")
+                        else:
+                            fw("\n")
+                        valueIndex = valueIndex + 1
+                    fw("        },\n")
+
+            # Links
+            fw("        \"links\" : [\n")
+            linkIndex = 0
+            for link in self.node_links[scene]:
+                fw("            [\"%s\", \"%s\"]" % (link[0], link[1]))
+                if linkIndex < len(self.node_links[scene]) - 1:
+                    fw(",\n")
+                else:
+                    fw("\n")
+                linkIndex = linkIndex + 1
+            fw("        ]\n")
+
+            if sceneIndex < len(self.scene_lists) - 1:
+                fw("    },\n")
             else:
-                fullscreen = -1
+                fw("    }\n")
+            sceneIndex = sceneIndex + 1
 
-            if objectData.splash_window_decoration is True:
-                decoration = 1
-            else:
-                decoration = 0
+        fw("}")
 
-            width = objectData.splash_width
-            height = objectData.splash_height
-            position_x = objectData.splash_position_x
-            position_y = objectData.splash_position_y
-            shift_x = 0.5 - objectData.shift_x * 2.0
-            shift_y = 0.5 - objectData.shift_y * 2.0
+        return {'FINISHED'}
 
-            stringArgs = (object.name,
-                          int(width), int(height),
-                          float(object.matrix_world[0][3]), float(object.matrix_world[1][3]), float(object.matrix_world[2][3]),
-                          float(targetVec[0]), float(targetVec[1]), float(targetVec[2]),
-                          float(upVec[0]), float(upVec[1]), float(upVec[2]),
-                          float(bpy.data.cameras[object.name].angle_y * 180.0 / numpy.pi),
-                          float(shift_x), float(shift_y),
-                          int(windowIndex),
-                          int(fullscreen),
-                          int(decoration),
-                          int(width), int(height),
-                          int(position_x), int(position_y))
-
-            fw("        \"%s\" : {\n"
-               "            \"type\" : \"camera\",\n"
-               "            \"size\" : [%i, %i],\n"
-               "            \"eye\" : [%f, %f, %f],\n"
-               "            \"target\" : [%f, %f, %f],\n"
-               "            \"up\" : [%f, %f, %f],\n"
-               "            \"fov\" : [%f],\n"
-               "            \"principalPoint\" : [%f, %f]\n"
-               "        },\n"
-               "        \"window_%i\" : {\n"
-               "            \"type\" : \"window\",\n"
-               "            \"fullscreen\" : %i,\n"
-               "            \"decorated\" : %i,\n"
-               "            \"size\" : [%i, %i],\n"
-               "            \"position\" : [%i, %i],\n"
-               "            \"srgb\" : [ 1 ]\n"
-               "        },\n"
-               "\n"
-               % stringArgs)
-            
-            cameras.append(object.name)
-            links.append([object.name, "window_%i" % int(windowIndex)])
-            windowIndex += 1
-        
-    # Export meshes
-    for item in scene.objects.items():
-        object = item[1]
-        if object.type == 'MESH':
-
-            # Fill splash configuration
-            objectData = bpy.data.meshes[object.name]
-
-            if objectData.splash_mesh_type == "mesh" and objectData.splash_mesh_path == "":
-                meshPath = "%s.obj" % object.name
-                # Export the selected mesh
-                path = os.path.dirname(filepath) + "/" + object.name + ".obj"
-                bpy.ops.object.select_pattern(pattern=object.name, extend=False)
-                bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
-                                         use_uvs=True, axis_forward='Y', axis_up='Z')
-            else:
-                meshPath = objectData.splash_mesh_path
-
-            stringArgs = (object.name,
-                          objectData.splash_mesh_type, meshPath,
-                          "image_%s" % object.name, objectData.splash_texture_type, objectData.splash_texture_path,
-                          "object_%s" % object.name,
-                          object.scale[0], object.scale[1], object.scale[2],
-                          object.matrix_world[0][3], object.matrix_world[1][3], object.matrix_world[2][3])
-
-            fw("        \"%s\" : {\n"
-               "            \"type\" : \"%s\",\n"
-               "            \"file\" : \"%s\"\n"
-               "        },\n"
-               "        \"%s\" : {\n"
-               "            \"type\" : \"%s\",\n"
-               "            \"file\" : \"%s\",\n"
-               "            \"flip\" : [ 0 ],\n"
-               "            \"flop\" : [ 0 ],\n"
-               "            \"srgb\" : [ 1 ]\n"
-               "        },\n"
-               "        \"%s\" : {\n"
-               "            \"type\" : \"object\",\n"
-               "            \"sideness\" : 0,\n"
-               "            \"scale\" : [%f, %f, %f],\n"
-               "            \"position\" : [%f, %f, %f]\n"
-               "        },\n"
-               "\n"
-               % stringArgs)
-
-            links.append([object.name, "object_%s" % object.name])
-            links.append(["image_%s" % object.name, "object_%s" % object.name])
-            for cam in cameras:
-                links.append(["object_%s" % object.name, cam])
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
 
 
-    # Export links
-    fw("        \"links\" : [\n")
-    for i in range(len(links)):
-        link = links[i]
-        linkArgs = (link[0], link[1])
-        if i == len(links) - 1:
-            fw("            [\"%s\", \"%s\"]\n" % linkArgs)
-        else:
-            fw("            [\"%s\", \"%s\"],\n" % linkArgs)
-    fw("        ]\n")
+class SplashSelectFilePath(Operator):
+    """Select a file path"""
+    bl_idname = "splash.select_file_path"
+    bl_label = "Select a file path"
 
-    fw("    }\n"
-       "}")
-    file.close()
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
 
-    return {'FINISHED'}
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    current_node = None
+
+    def execute(self, context):
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                self.current_node = nodeTree.nodes[nodeIndex]
+
+        if self.current_node is not None:
+            self.current_node.inputs['File'].default_value = self.filepath
+            self.current_node.inputs['File'].enabled = True
+            self.current_node.inputs['Object'].default_value = ""
+            self.current_node.inputs['Object'].enabled = False
+
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+
+class SplashSelectObject(Operator):
+    """Select an Object"""
+    bl_idname = "splash.select_object"
+    bl_label = "Select an Object"
+
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    current_node = None
+
+    def execute(self, context):
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                self.current_node = nodeTree.nodes[nodeIndex]
+
+        if self.current_node is not None and context.active_object is not None and isinstance(context.active_object.data, bpy.types.Mesh):
+            self.current_node.inputs['File'].default_value = ""
+            self.current_node.inputs['File'].enabled = False
+            self.current_node.inputs['Object'].default_value = context.active_object.data.name
+            self.current_node.inputs['Object'].enabled = True
+
+        return {'FINISHED'}
+
+
+class SplashSelectCamera(Operator):
+    """Select a Camera"""
+    bl_idname = "splash.select_camera"
+    bl_label = "Select a camera"
+
+    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+
+    node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    current_node = None
+
+    def execute(self, context):
+        for nodeTree in bpy.data.node_groups:
+            nodeIndex = nodeTree.nodes.find(self.node_name)
+            if nodeIndex != -1:
+                self.current_node = nodeTree.nodes[nodeIndex]
+
+        if self.current_node is not None and context.active_object is not None and isinstance(context.active_object.data, bpy.types.Camera):
+            self.current_node.sp_objectProperty = context.active_object.name
+            self.current_node.sp_cameraProperty = context.active_object.data.name
+
+        return {'FINISHED'}
