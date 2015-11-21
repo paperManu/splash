@@ -129,6 +129,7 @@ classes = (
     nodes.SplashLinkSocket,
     nodes.SplashBaseNode,
     nodes.SplashCameraNode,
+    nodes.SplashGuiNode,
     nodes.SplashImageNode,
     nodes.SplashMeshNode,
     nodes.SplashObjectNode,

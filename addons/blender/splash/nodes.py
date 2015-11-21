@@ -175,6 +175,36 @@ class SplashCameraNode(SplashBaseNode):
         self.updateSockets()
 
 
+class SplashGuiNode(SplashBaseNode):
+    '''Splash Gui node'''
+    bl_idname = 'SplashGuiNodeType'
+    bl_label = 'Gui'
+    name = 'Gui'
+
+    sp_acceptedLinks = [
+        ]
+
+    def init(self, context):
+        self.inputs.new('NodeSocketBool', 'Decorated').default_value = True
+        self.inputs.new('NodeSocketVector', 'Position').default_value = [0.0, 0.0, 0.0]
+        self.inputs.new('NodeSocketInt', 'Width').default_value = 732
+        self.inputs.new('NodeSocketInt', 'Height').default_value = 932
+
+        self.outputs.new('SplashLinkSocket', "Output link")
+
+    def exportProperties(self, exportPath):
+        values = {}
+        values['type'] = "\"window\""
+        values['decorated'] = int(self.inputs['Decorated'].default_value)
+        values['position'] = [self.inputs['Position'].default_value[0], self.inputs['Position'].default_value[1]]
+        values['size'] = [self.inputs['Width'].default_value, self.inputs['Height'].default_value]
+
+        return values
+
+    def update(self):
+        pass
+
+
 class SplashImageNode(SplashBaseNode):
     '''Splash Image node'''
     bl_idname = 'SplashImageNodeType'
@@ -370,6 +400,7 @@ class SplashSceneNode(SplashBaseNode):
 
     sp_acceptedLinks = [
         'SplashWindowNodeType',
+        'SplashGuiNodeType'
         ]
 
     def draw_buttons(self, context, layout):
@@ -487,6 +518,7 @@ class SplashNodeCategory(NodeCategory):
 node_categories = [
     SplashNodeCategory("SPLASHNODES", "Splash Nodes", items = [
         NodeItem("SplashCameraNodeType"),
+        NodeItem("SplashGuiNodeType"),
         NodeItem("SplashImageNodeType"),
         NodeItem("SplashMeshNodeType"),
         NodeItem("SplashObjectNodeType"),
