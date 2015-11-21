@@ -298,6 +298,11 @@ class SplashMeshNode(SplashBaseNode):
 
     sp_acceptedLinks = []
 
+    def update_mesh_type(self, context):
+        if self.sp_meshTypeProperty == "mesh_shmdata":
+            self.inputs['File'].enabled = True
+            self.inputs['Object'].enabled = False
+
     sp_meshTypes = [
         ("mesh", "OBJ file", "Mesh from OBJ file"),
         ("mesh_shmdata", "Shared memory", "Mesh from shared memory")
@@ -305,7 +310,8 @@ class SplashMeshNode(SplashBaseNode):
     sp_meshTypeProperty = bpy.props.EnumProperty(name="Type",
                                                   description="Mesh source type",
                                                   items=sp_meshTypes,
-                                                  default="mesh")
+                                                  default="mesh",
+                                                  update=update_mesh_type)
 
     def draw_buttons(self, context, layout):
         row = layout.row()
@@ -315,9 +321,10 @@ class SplashMeshNode(SplashBaseNode):
         row = layout.row()
         operator = row.operator("splash.select_file_path", text="Select file path")
         operator.node_name = self.name
-        row = layout.row()
-        operator = row.operator("splash.select_object", text="Select the active Object")
-        operator.node_name = self.name
+        if self.sp_meshTypeProperty == "mesh":
+            row = layout.row()
+            operator = row.operator("splash.select_object", text="Select the active Object")
+            operator.node_name = self.name
 
     def init(self, context):
         self.inputs.new('NodeSocketString', 'File').default_value = ""
