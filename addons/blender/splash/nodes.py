@@ -117,10 +117,6 @@ class SplashCameraNode(SplashBaseNode):
                                          description="Object holding the camera",
                                          default="",
                                          maxlen=1024)
-    sp_cameraProperty = bpy.props.StringProperty(name="Source camera",
-                                         description="Camera which feeds a given projector",
-                                         default="",
-                                         maxlen=1024)
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
@@ -128,7 +124,7 @@ class SplashCameraNode(SplashBaseNode):
         operator = row.operator("splash.select_camera", text="Select the active Camera")
         operator.node_name = self.name
         row = layout.row()
-        row.prop(self, "sp_cameraProperty")
+        row.prop(self, "sp_objectProperty")
 
     def init(self, context):
         self.inputs.new('NodeSocketFloat', 'Black level').default_value = 0.0
@@ -146,9 +142,9 @@ class SplashCameraNode(SplashBaseNode):
         values = {}
         values['type'] = "\"camera\""
 
-        if bpy.data.objects.find(self.sp_objectProperty) != -1 and bpy.data.cameras.find(self.sp_cameraProperty) != -1:
+        if bpy.data.objects.find(self.sp_objectProperty) != -1 and bpy.data.cameras.find(bpy.data.objects[self.sp_objectProperty].data.name) != -1:
             object = bpy.data.objects[self.sp_objectProperty]
-            camera = bpy.data.cameras[self.sp_cameraProperty]
+            camera = bpy.data.objects[self.sp_objectProperty].data
             # Get some parameters
             rotMatrix = object.matrix_world.to_3x3()
             targetVec = Vector((0.0, 0.0, -1.0))
