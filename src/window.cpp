@@ -720,8 +720,11 @@ void Window::updateSwapInterval()
 /*************/
 void Window::updateWindowShape()
 {
-    glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
-    glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
+    if (_screenId == -1)
+    {
+        glfwSetWindowPos(_window->get(), _windowRect[0], _windowRect[1]);
+        glfwSetWindowSize(_window->get(), _windowRect[2], _windowRect[3]);
+    }
 }
 
 /*************/

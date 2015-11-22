@@ -20,7 +20,7 @@
 bl_info = {
     "name": "Splash output",
     "author": "Emmanuel Durand",
-    "version": (0, 3, 1),
+    "version": (0, 3, 8),
     "blender": (2, 72, 0),
     "location": "3D View > Toolbox, File > Export",
     "description": "Utility tools to connect Blender to the Splash videomapper",
@@ -33,6 +33,7 @@ if "bpy" in locals():
     import imp
     imp.reload(ui)
     imp.reload(operators)
+    imp.reload(nodes)
 else:
     import bpy
     from bpy.props import (StringProperty,
@@ -48,6 +49,7 @@ else:
                            )
     from . import ui
     from . import operators
+    from . import nodes
 
 def getImageList(scene, context):
     images = []
@@ -118,12 +120,27 @@ class SplashSettings(PropertyGroup):
 classes = (
     ui.SplashToolbarObject,
     ui.SplashToolbarMesh,
-    ui.SplashObjectPanel,
-    ui.SplashExport,
 
     operators.SplashActivateSendMesh,
     operators.SplashSendTexture,
     operators.SplashStopSelected,
+
+    nodes.SplashTree,
+    nodes.SplashLinkSocket,
+    nodes.SplashBaseNode,
+    nodes.SplashCameraNode,
+    nodes.SplashGuiNode,
+    nodes.SplashImageNode,
+    nodes.SplashMeshNode,
+    nodes.SplashObjectNode,
+    nodes.SplashSceneNode,
+    nodes.SplashWindowNode,
+    nodes.SplashWorldNode,
+
+    operators.SplashExportNodeTree,
+    operators.SplashSelectFilePath,
+    operators.SplashSelectCamera,
+    operators.SplashSelectObject,
 
     SplashSettings
     )
@@ -168,16 +185,18 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
 
-    bpy.types.INFO_MT_file_export.append(ui.splash_menu_export)
-
     bpy.types.Scene.splash = PointerProperty(type=SplashSettings)
     registerProperties()
+
+    import nodeitems_utils
+    nodeitems_utils.register_node_categories("SPLASH_NODES", nodes.node_categories)
 
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
 
-    bpy.types.INFO_MT_file_export.remove(ui.splash_menu_export)
-
     del bpy.types.Scene.splash
+
+    import nodeitems_utils
+    nodeitems_utils.unregister_node_categories("SPLASH_NODES")

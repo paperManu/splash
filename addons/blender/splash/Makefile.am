@@ -1,9 +1,8 @@
 EXTRA_DIST = \
 	__init__.py \
 	operators.py \
+	nodes.py \
 	ui.py
 
-clean:
+distclean:
 	rm -f Makefile
-
-distclean: clean
