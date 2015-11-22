@@ -281,10 +281,12 @@ class SplashExportNodeTree(Operator):
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
     world_node = None
+    scene_order = []
     scene_lists = {}
     node_links = {}
 
     def execute(self, context):
+        self.scene_order.clear()
         self.scene_lists.clear()
         self.node_links.clear()
 
@@ -302,9 +304,11 @@ class SplashExportNodeTree(Operator):
             node_links = []
             self.parseTree(scene, scene_list, node_links)
 
+            self.scene_order.append(scene.name)
             self.scene_lists[scene.name] = scene_list
             self.node_links[scene.name] = node_links
 
+        print(self.scene_order)
         return self.export()
 
     def parseTree(self, node, scene_list, node_links):
@@ -335,7 +339,7 @@ class SplashExportNodeTree(Operator):
         # Scenes list
         fw("    \"scenes\" : [\n")
         sceneIndex = 0
-        for scene in self.scene_lists:
+        for scene in self.scene_order:
             # Find the Scene nodes
             for node in self.scene_lists[scene]:
                 if self.scene_lists[scene][node].bl_idname == "SplashSceneNodeType":
@@ -361,7 +365,7 @@ class SplashExportNodeTree(Operator):
            
         # Scenes information
         sceneIndex = 0
-        for scene in self.scene_lists:
+        for scene in self.scene_order:
             fw("    \"%s\" : {\n" % scene)
             for node in self.scene_lists[scene]:
                 if self.scene_lists[scene][node].bl_idname != "SplashSceneNodeType":
