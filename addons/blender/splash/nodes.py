@@ -340,6 +340,10 @@ class SplashMeshNode(SplashBaseNode):
         if self.inputs['Object'].enabled:
             import os
 
+            if bpy.context.edit_object is not None:
+                editedObject = context.edit_object.name
+                bpy.ops.object.editmode_toggle()
+
             objectName = self.inputs['Object'].default_value
 
             bpy.ops.object.select_all(action='DESELECT')
