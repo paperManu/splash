@@ -32,6 +32,7 @@
 #define SPLASH_SCREEN_MARKER_SET {1.0, 0.7, 0.0, 1.0}
 #define SPLASH_OBJECT_MARKER {0.1, 1.0, 0.2, 1.0}
 #define SPLASH_CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
+#define SPLASH_DEFAULT_COLOR {0.2, 0.2, 1.0, 1.0}
 
 using namespace std;
 using namespace glm;
@@ -529,6 +530,12 @@ bool Camera::doCalibration()
 }
 
 /*************/
+void Camera::drawModelOnce(const std::string& modelName, const glm::dmat4& rtMatrix)
+{
+    _drawables.push_back(Drawable(modelName, rtMatrix));
+}
+
+/*************/
 bool Camera::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
@@ -788,7 +795,7 @@ bool Camera::render()
                 for (auto& point : points)
                 {
                     glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
-                    worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66 * transformedPoint.z});
+                    worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
                     worldMarker->setAttribute("position", {point.x, point.y, point.z});
                     worldMarker->setAttribute("color", SPLASH_OBJECT_MARKER);
 
@@ -842,6 +849,30 @@ bool Camera::render()
                 }
             }
         }
+
+        // Draw the additionals objects
+        for (auto& object : _drawables)
+        {
+            auto modelIt = _models.find(object.model);
+            if (modelIt != _models.end())
+            {
+                auto& model = modelIt->second;
+                auto rtMatrix = glm::inverse(object.rtMatrix);
+
+                auto position = glm::column(rtMatrix, 3);
+                glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * position;
+
+                model->setAttribute("scale", {0.01 * std::max(transformedPoint.z, 1.0) * _fov});
+                model->setAttribute("color", SPLASH_DEFAULT_COLOR);
+                model->setModelMatrix(rtMatrix);
+
+                model->activate();
+                model->setViewProjectionMatrix(viewMatrix, projectionMatrix);
+                model->draw();
+                model->deactivate();
+            }
+        }
+        _drawables.clear();
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -1212,7 +1243,9 @@ dmat4 Camera::computeViewMatrix()
 /*************/
 void Camera::loadDefaultModels()
 {
-    map<string, string> files {{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}};
+    map<string, string> files {{"3d_marker", "3d_marker.obj"},
+                               {"2d_marker", "2d_marker.obj"},
+                               {"camera", "camera.obj"}};
     
     for (auto& file : files)
     {

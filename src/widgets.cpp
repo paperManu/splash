@@ -297,7 +297,13 @@ void GuiGlobalView::render()
         if (_camera != nullptr)
         {
             if (_camera == _guiCamera)
+            {
                 _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
+
+                auto rtMatrices = getCamerasRTMatrices();
+                for (auto& matrix : rtMatrices)
+                    _guiCamera->drawModelOnce("camera", matrix);
+            }
 
             _camera->render();
 
@@ -380,15 +386,31 @@ void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
 }
 
 /*************/
+vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
+{
+    auto scene = _scene.lock();
+    auto rtMatrices = vector<glm::dmat4>();
+
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "camera")
+            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "camera")
+            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+
+    return rtMatrices;
+}
+
+/*************/
 void GuiGlobalView::nextCamera()
 {
     auto scene = _scene.lock();
     vector<CameraPtr> cameras;
     for (auto& obj : scene->_objects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+        if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
     for (auto& obj : scene->_ghostObjects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+        if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
     // Empty previous camera parameters

@@ -126,6 +126,9 @@ class GuiGlobalView : public GuiWidget
         void nextCamera();
         void showAllCalibrationPoints();
         void showAllCamerasCalibrationPoints();
+
+        // Other
+        std::vector<glm::dmat4> getCamerasRTMatrices();
 };
 
 /*************/

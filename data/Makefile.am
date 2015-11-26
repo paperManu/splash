@@ -4,6 +4,7 @@ datasdir = $(datadir)/splash/
 datas_DATA = \
 	3d_marker.obj \
 	2d_marker.obj \
+	camera.obj \
 	color_map.png \
 	plane.obj \
 	sphere.obj \
@@ -13,6 +14,7 @@ datas_DATA = \
 EXTRA_DIST = \
 	3d_marker.obj \
 	2d_marker.obj \
+	camera.obj \
 	color_map.png \
 	plane.obj \
 	sphere.obj \

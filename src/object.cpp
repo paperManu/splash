@@ -15,6 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 using namespace std;
 
@@ -39,6 +40,7 @@ void Object::init()
     _type = "object";
 
     _shader = make_shared<Shader>();
+    _modelMatrix = glm::dmat4(0.0);
 
     registerAttributes();
 }
@@ -158,7 +160,10 @@ void Object::activate()
 /*************/
 glm::dmat4 Object::computeModelMatrix() const
 {
-    return glm::translate(glm::dmat4(1.f), _position);
+    if (_modelMatrix != glm::dmat4(0.0))
+        return _modelMatrix;
+    else
+        return glm::translate(glm::dmat4(1.f), _position);
 }
 
 /*************/

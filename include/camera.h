@@ -68,6 +68,11 @@ class Camera : public BaseObject
         Camera& operator=(const Camera&) = delete;
 
         /**
+         * Tessellate the objects for the given camera
+         */
+        void blendingTessellateForCurrentCamera();
+
+        /**
          * Computes the blending map for this camera
          */
         void computeBlendingMap(ImagePtr& map);
@@ -83,14 +88,25 @@ class Camera : public BaseObject
         void computeVertexVisibility();
 
         /**
-         * Tessellate the objects for the given camera
+         * Get the frustum matrix from the current camera parameters
          */
-        void blendingTessellateForCurrentCamera();
+        glm::dmat4 computeProjectionMatrix();
+        glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
+
+        /**
+         * Get the view matrix from the camera parameters
+         */
+        glm::dmat4 computeViewMatrix();
 
         /**
          * Compute the calibration given the calibration points
          */
         bool doCalibration();
+
+        /**
+         * Add one of the core models to the next redraw, with the given transformation matrix
+         */
+        void drawModelOnce(const std::string& modelName, const glm::dmat4& rtMatrix);
 
         /**
          * Get pointers to this camera textures
@@ -212,6 +228,17 @@ class Camera : public BaseObject
         };
         std::vector<CalibrationPoint> _calibrationPoints;
         int _selectedCalibrationPoint {-1};
+
+        // List of additional objects to draw
+        struct Drawable
+        {
+            Drawable(std::string name, glm::dmat4 mat)
+                : model(name), rtMatrix(mat) {}
+
+            std::string model;
+            glm::dmat4 rtMatrix;
+        };
+        std::list<Drawable> _drawables;
         
         // Function used for the calibration (camera parameters optimization)
         static double cameraCalibration_f(const gsl_vector* v, void* params);
@@ -220,17 +247,6 @@ class Camera : public BaseObject
          * Get the color balance (r/g and b/g) from a black body temperature
          */
         glm::vec2 colorBalanceFromTemperature(float temp);
-
-        /**
-         * Get the frustum matrix from the current camera parameters
-         */
-        glm::dmat4 computeProjectionMatrix();
-        glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
-
-        /**
-         * Get the view matrix from the camera parameters
-         */
-        glm::dmat4 computeViewMatrix();
 
         /**
          * Init function called in constructors
