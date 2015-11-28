@@ -85,7 +85,6 @@ class GuiGlobalView : public GuiWidget
         int updateWindowFlags();
         void setCamera(CameraPtr cam);
         void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
-        void setObject(std::shared_ptr<BaseObject> obj);
         void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     protected:
@@ -129,6 +128,7 @@ class GuiGlobalView : public GuiWidget
 
         // Other
         std::vector<glm::dmat4> getCamerasRTMatrices();
+        std::vector<std::shared_ptr<Camera>> getCameras();
 };
 
 /*************/
