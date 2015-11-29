@@ -214,9 +214,9 @@ struct ShaderSources
             vec2 texCoords = pixCoords / _texSize;
             vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
 
-            if (all(lessThan(pixCoords.xy, _texSize.xy)) && visibility.b > 0.0)
+            if (all(lessThan(pixCoords.xy, _texSize.xy)))
             {
-                int primitiveID = int(round(visibility.r * 256.0 + visibility.g));
+                int primitiveID = int(round(visibility.r * 65536 + visibility.g * 256.0 + visibility.b));
                 // Mark the primitive found as visible
                 for (int idx = primitiveID * 3; idx < primitiveID * 3 + 3; ++idx)
                     annexe[idx].z = 1.0;
@@ -781,6 +781,7 @@ struct ShaderSources
         uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
                                             0.0, 1.0, 0.0,
                                             0.0, 0.0, 1.0);
+        uniform float _normalExp = 0.0;
 
         in VertexData
         {
@@ -861,8 +862,15 @@ struct ShaderSources
                 color.rgb = vec3(_colorLUT[icolor.r].r, _colorLUT[icolor.g].g, _colorLUT[icolor.b].b);
                 //color.rgb = clamp(_colorMixMatrix * color.rgb, vec3(0.0), vec3(1.0));
             }
-            
+
             fragColor.rgb = color.rgb;
+
+            if (_normalExp != 0.0)
+            {
+                float normFactor = abs(dot(normal.xyz, vec3(0.0, 0.0, 1.0)));
+                fragColor.rgb *= pow(normFactor, _normalExp);
+            }
+            
             fragColor.a = 1.0;
         }
     )"};
@@ -893,7 +901,8 @@ struct ShaderSources
             vec2 texCoord = vertexIn.texCoord;
             vec4 normal = vertexIn.normal;
 
-            fragColor = _color;
+            fragColor.rgb = _color.rgb * vec3(0.3 + 0.7 * dot(normal.xyz, normalize(vec3(1.0, 1.0, 1.0))));
+            fragColor.a = _color.a;
         }
     )"};
 
@@ -954,8 +963,7 @@ struct ShaderSources
         void main(void)
         {
             int index = int(round(vertexIn.annexe.w));
-            fragColor.rg = vec2(float(index / 256) / 255.0, float(index % 256) / 255.0);
-            fragColor.ba = vec2(1.0, 1.0);
+            fragColor = vec4(float(index / 65536) / 255.0, float(index / 256) / 255.0, float(index % 256) / 255.0, 1.0);
         }
     )"};
 

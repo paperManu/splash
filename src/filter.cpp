@@ -81,7 +81,7 @@ unordered_map<string, Values> Filter::getShaderUniforms() const
 bool Filter::linkTo(std::shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
-    if (!Texture::linkTo(obj))
+    if (!obj || !Texture::linkTo(obj))
         return false;
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
@@ -122,15 +122,15 @@ void Filter::unbind()
 /*************/
 bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
-    auto type = obj->getType();
-    if (type.find("texture") != string::npos)
+    if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         auto inTex = _inTexture.lock();
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        _screen->removeTexture(tex);
         if (tex->getName() == inTex->getName())
             _inTexture.reset();
     }
-    else if (type.find("image") != string::npos)
+    else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
         auto tex = _root.lock()->unregisterObject(textureName);
@@ -185,12 +185,15 @@ void Filter::updateUniforms()
         auto shader = _screen->getShader();
 
         auto obj = weakObject.lock();
-        if (obj->getType() == "image")
+        if (obj)
         {
-            Values remainingTime;
-            obj->getAttribute("remaining", remainingTime);
-            if (remainingTime.size() == 1)
-                shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
+            if (obj->getType() == "image")
+            {
+                Values remainingTime;
+                obj->getAttribute("remaining", remainingTime);
+                if (remainingTime.size() == 1)
+                    shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
+            }
         }
     }
 }

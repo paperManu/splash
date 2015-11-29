@@ -11,6 +11,7 @@
 #include "log.h"
 #include "mesh.h"
 #include "object.h"
+#include "queue.h"
 #include "texture.h"
 #include "texture_image.h"
 #include "threadpool.h"
@@ -35,8 +36,10 @@ using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
+bool Scene::_isGlfwInitialized {false};
+
 /*************/
-Scene::Scene(std::string name)
+Scene::Scene(std::string name, bool autoRun)
 {
     _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
 
@@ -51,16 +54,21 @@ Scene::Scene(std::string name)
     init(_name);
 
     _textureUploadFuture = async(std::launch::async, [&](){textureUploadRun();});
+    _joystickUpdateFuture = async(std::launch::async, [&](){joystickUpdateLoop();});
 
-    run();
+    if (autoRun)
+        run();
 }
 
 /*************/
 Scene::~Scene()
 {
-    Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
+    unique_lock<mutex> textureLock(_textureUploadMutex);
     _textureUploadCondition.notify_all();
+    textureLock.unlock();
     _textureUploadFuture.get();
+
+    _joystickUpdateFuture.get();
 
     if (_httpServerFuture.valid())
     {
@@ -74,6 +82,8 @@ Scene::~Scene()
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
+
+    Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
 }
 
 /*************/
@@ -81,7 +91,7 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     BaseObjectPtr obj;
     // Create the wanted object
@@ -111,6 +121,8 @@ BaseObjectPtr Scene::add(string type, string name)
     }
     else if (type == string("object"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
+    else if (type == string("queue"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_self));
     else if (type == string("texture_image"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>());
 #if HAVE_OSX
@@ -123,7 +135,7 @@ BaseObjectPtr Scene::add(string type, string name)
     if (obj.get() != nullptr)
     {
         obj->setId(getId());
-        obj->setName(name);
+        name = obj->setName(name);
         if (name == string())
             _objects[to_string(obj->getId())] = obj;
         else
@@ -158,7 +170,7 @@ void Scene::addGhost(string type, string name)
     BaseObjectPtr obj = add(type, name);
 
     // And move it to _ghostObjects
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -189,7 +201,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     Json::Value root;
 
@@ -221,7 +233,7 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
@@ -250,7 +262,7 @@ bool Scene::unlink(string first, string second)
 /*************/
 bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
-    lock_guard<recursive_mutex> lock(_configureMutex);
+    lock_guard<recursive_mutex> lock(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->unlinkFrom(first);
@@ -444,6 +456,14 @@ void Scene::render()
     renderBlending();
     Timer::get() >> "blending";
 
+    unique_lock<mutex> lock(_textureUploadMutex);
+
+    Timer::get() << "queues";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "queue")
+            dynamic_pointer_cast<QueueSurrogate>(obj.second)->update();
+    Timer::get() >> "queues";
+
     Timer::get() << "filters";
     for (auto& obj : _objects)
         if (obj.second->getType() == "filter")
@@ -453,7 +473,6 @@ void Scene::render()
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
-    unique_lock<mutex> lock(_textureUploadMutex);
     glFlush();
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
     glDeleteSync(_textureUploadFence);
@@ -464,7 +483,8 @@ void Scene::render()
     Timer::get() >> "cameras";
 
     _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    lock.unlock();
+
+    lock.unlock(); // Unlock _textureUploadMutex
 
     // Update the gui
     Timer::get() << "gui";
@@ -486,7 +506,44 @@ void Scene::render()
         if (obj.second->getType() == "window")
             dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
     Timer::get() >> "swap";
+}
 
+/*************/
+void Scene::run()
+{
+    while (_isRunning)
+    {
+        {
+            // Execute waiting tasks
+            unique_lock<mutex> taskLock(_taskMutex);
+            for (auto& task : _taskQueue)
+                task();
+            _taskQueue.clear();
+        }
+
+        if (!_started)
+        {
+            this_thread::sleep_for(chrono::milliseconds(50));
+            continue;
+        }
+        
+        Timer::get() << "sceneLoop";
+
+        {
+            lock_guard<recursive_mutex> lock(_objectsMutex);
+            _mainWindow->setAsCurrentContext();
+            render();
+            _mainWindow->releaseContext();
+            updateInputs();
+        }
+
+        Timer::get() >> "sceneLoop";
+    }
+}
+
+/*************/
+void Scene::updateInputs()
+{
     // Update the user events
     glfwPollEvents();
     // Mouse position
@@ -578,6 +635,14 @@ void Scene::render()
             _gui->unicodeChar(unicodeChar);
     }
 
+    // Joystick state
+    if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
+    {
+        unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
+        _gui->setJoystick(_joystickAxes, _joystickButtons);
+        _joystickAxes.clear();
+    }
+
     // Any file dropped onto the window? Then load it.
     auto paths = Window::getPathDropped();
     if (paths.size() != 0)
@@ -589,38 +654,6 @@ void Scene::render()
     if (Window::getQuitFlag())
     {
         sendMessageToWorld("quit");
-    }
-}
-
-/*************/
-void Scene::run()
-{
-    while (_isRunning)
-    {
-        {
-            // Execute waiting tasks
-            unique_lock<mutex> taskLock(_taskMutex);
-            for (auto& task : _taskQueue)
-                task();
-            _taskQueue.clear();
-        }
-
-        if (!_started)
-        {
-            this_thread::sleep_for(chrono::milliseconds(50));
-            continue;
-        }
-        
-        Timer::get() << "sceneLoop";
-
-        {
-            lock_guard<recursive_mutex> lock(_configureMutex);
-            _mainWindow->setAsCurrentContext();
-            render();
-            _mainWindow->releaseContext();
-        }
-
-        Timer::get() >> "sceneLoop";
     }
 }
 
@@ -637,6 +670,9 @@ void Scene::textureUploadRun()
 
         unique_lock<mutex> lock(_textureUploadMutex);
         _textureUploadCondition.wait(lock);
+
+        if (!_isRunning)
+            break;
 
         _textureUploadWindow->setAsCurrentContext();
         glFlush();
@@ -713,91 +749,119 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-void Scene::computeBlendingMap(bool once)
+void Scene::activateBlendingMap(bool once)
 {
+    if (_isBlendingComputed)
+        return;
+    _isBlendingComputed = true;
+
     if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
     {
-        _computeBlending = !_computeBlending;
+        _computeBlending = true;
         _computeBlendingOnce = once;
     }
     else
     {
-        lock_guard<recursive_mutex> lock(_configureMutex);
+        lock_guard<recursive_mutex> lock(_objectsMutex);
         _mainWindow->setAsCurrentContext();
 
-        if (_isBlendComputed)
-        {
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "object")
-                    dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
+        initBlendingMap();
+        // Set the blending map to zero
+        _blendingMap->setTo(0.f);
+        _blendingMap->setName("blendingMap");
 
-            _isBlendComputed = false;
+        // Compute the contribution of each camera
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "camera")
+                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
+        for (auto& obj : _ghostObjects)
+            if (obj.second->getType() == "camera")
+                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
-            Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
-        }
-        else
-        {
-            initBlendingMap();
-            // Set the blending map to zero
-            _blendingMap->setTo(0.f);
-            _blendingMap->setName("blendingMap");
-
-            // Compute the contribution of each camera
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "camera")
-                    dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-            for (auto& obj : _ghostObjects)
-                if (obj.second->getType() == "camera")
-                    dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-
-            // Filter the output to fill the blanks (dilate filter)
-            ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
-            unsigned short* pixBuffer = (unsigned short*)buffer->data();
-            unsigned short* pixels = (unsigned short*)_blendingMap->data();
-            int w = _blendingMap->getSpec().width;
-            int h = _blendingMap->getSpec().height;
-            for (int x = 0; x < w; ++x)
-                for (int y = 0; y < h; ++y)
-                {
-                    unsigned short maxValue = 0;
-                    for (int xx = -1; xx <= 1; ++xx)
-                    {
-                        if (x + xx < 0 || x + xx >= w)
-                            continue;
-                        for (int yy = -1; yy <= 1; ++yy)
-                        {
-                            if (y + yy < 0 || y + yy >= h)
-                                continue;
-                            maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
-                        }
-                    }
-                    pixBuffer[y * w + x] = maxValue;
-                }
-            swap(_blendingMap, buffer);
-            _blendingMap->_savable = false;
-            _blendingMap->updateTimestamp();
-
-            // Small hack to handle the fact that texture transfer uses PBOs.
-            // If we send the buffer only once, the displayed PBOs wont be the correct one.
-            if (_isMaster)
+        // Filter the output to fill the blanks (dilate filter)
+        ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
+        unsigned short* pixBuffer = (unsigned short*)buffer->data();
+        unsigned short* pixels = (unsigned short*)_blendingMap->data();
+        int w = _blendingMap->getSpec().width;
+        int h = _blendingMap->getSpec().height;
+        for (int x = 0; x < w; ++x)
+            for (int y = 0; y < h; ++y)
             {
-                _link->sendBuffer("blendingMap", _blendingMap->serialize());
-                timespec nap {0, (long int)1e8};
-                nanosleep(&nap, NULL);
-                _link->sendBuffer("blendingMap", _blendingMap->serialize());
+                unsigned short maxValue = 0;
+                for (int xx = -1; xx <= 1; ++xx)
+                {
+                    if (x + xx < 0 || x + xx >= w)
+                        continue;
+                    for (int yy = -1; yy <= 1; ++yy)
+                    {
+                        if (y + yy < 0 || y + yy >= h)
+                            continue;
+                        maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
+                    }
+                }
+                pixBuffer[y * w + x] = maxValue;
             }
+        swap(_blendingMap, buffer);
+        _blendingMap->_savable = false;
+        _blendingMap->updateTimestamp();
 
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "object")
-                    dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
-
-            _isBlendComputed = true;
-
-            Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
+        // Small hack to handle the fact that texture transfer uses PBOs.
+        // If we send the buffer only once, the displayed PBOs wont be the correct one.
+        if (_isMaster)
+        {
+            _link->sendBuffer("blendingMap", _blendingMap->serialize());
+            timespec nap {0, (long int)1e8};
+            nanosleep(&nap, NULL);
+            _link->sendBuffer("blendingMap", _blendingMap->serialize());
         }
+
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "object")
+                dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
+
+        _computeBlending = true;
+
+        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
+        
 
         _mainWindow->releaseContext();
     }
+}
+
+/*************/
+void Scene::deactivateBlendingMap()
+{
+    _isBlendingComputed = false;
+    
+    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
+    {
+        _computeBlending = false;
+        _computeBlendingOnce = true;
+    }
+    else
+    {
+        lock_guard<recursive_mutex> lock(_objectsMutex);
+        _mainWindow->setAsCurrentContext();
+
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "object")
+                dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
+
+        _computeBlending = false;
+
+        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
+
+        _mainWindow->releaseContext();
+    }
+}
+
+/*************/
+void Scene::computeBlendingMap(bool once)
+{
+    if (_isBlendingComputed)
+        deactivateBlendingMap();
+    else
+        activateBlendingMap(once);
 }
 
 /*************/
@@ -983,7 +1047,7 @@ void Scene::init(std::string name)
     // Create the link and connect to the World
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
-    sendMessageToWorld("childProcessLaunched", {});
+    sendMessageToWorld("sceneLaunched", {});
 }
 
 /*************/
@@ -996,6 +1060,38 @@ void Scene::initBlendingMap()
     _blendingTexture = make_shared<Texture_Image>(_self);
     _blendingTexture->setAttribute("filtering", {0});
     *_blendingTexture = _blendingMap;
+}
+
+/*************/
+void Scene::joystickUpdateLoop()
+{
+    while (_isRunning)
+    {
+        if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
+        {
+            int count;
+            const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
+            auto axes = vector<float>(bufferAxes, bufferAxes + count);
+
+            for (auto& v : axes)
+                if (abs(v) < 0.2f)
+                    v = 0.f;
+
+            const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
+            auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
+
+            unique_lock<mutex> lock(_joystickUpdateMutex);
+
+            // We accumulate values until they are used by the render loop
+            _joystickAxes.swap(axes);
+            for (int i = 0; i < std::min(_joystickAxes.size(), axes.size()); ++i)
+                _joystickAxes[i] += axes[i];
+
+            _joystickButtons.swap(buttons);
+        }
+
+        this_thread::sleep_for(chrono::microseconds(16667));
+    }
 }
 
 /*************/
@@ -1096,6 +1192,22 @@ void Scene::registerAttributes()
         return true;
     });
 
+    _attribFunctions["activateBlendingMap"] = AttributeFunctor([&](const Values& args) {
+        _taskQueue.push_back([=]() -> void {
+            activateBlendingMap();
+        });
+
+        return true;
+    });
+
+    _attribFunctions["deactivateBlendingMap"] = AttributeFunctor([&](const Values& args) {
+        _taskQueue.push_back([=]() -> void {
+            deactivateBlendingMap();
+        });
+
+        return true;
+    });
+
     _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
         unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([&]() -> void {
@@ -1112,7 +1224,7 @@ void Scene::registerAttributes()
             return false;
 
         _taskQueue.push_back([=]() -> void {
-            lock_guard<recursive_mutex> lock(_configureMutex);
+            lock_guard<recursive_mutex> lock(_objectsMutex);
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);

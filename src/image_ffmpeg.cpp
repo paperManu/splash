@@ -250,7 +250,7 @@ void Image_FFmpeg::readLoop()
             // Reading the video
             if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
-                oiio::ImageBuf img;
+                auto img = unique_ptr<oiio::ImageBuf>();
                 uint64_t timing;
                 bool hasFrame = false;
 
@@ -266,10 +266,9 @@ void Image_FFmpeg::readLoop()
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
                         oiio::ImageSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
-                        oiio::ImageBuf tmpImg(spec);
-                        img.swap(tmpImg);
+                        img.reset(new oiio::ImageBuf(spec));
 
-                        unsigned char* pixels = static_cast<unsigned char*>(img.localpixels());
+                        unsigned char* pixels = static_cast<unsigned char*>(img->localpixels());
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
@@ -304,12 +303,11 @@ void Image_FFmpeg::readLoop()
                             return;
 
                         spec.channelnames = {textureFormat};
-                        oiio::ImageBuf tmpImg(spec);
-                        img.swap(tmpImg);
+                        img.reset(new oiio::ImageBuf(spec));
 
                         unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
 
-                        if (hapDecodeFrame(packet.data, packet.size, img.localpixels(), outputBufferBytes, textureFormat))
+                        if (hapDecodeFrame(packet.data, packet.size, img->localpixels(), outputBufferBytes, textureFormat))
                         {
                             if (packet.pts != AV_NOPTS_VALUE)
                                 timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
@@ -325,11 +323,13 @@ void Image_FFmpeg::readLoop()
                 {
                     unique_lock<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
-                    _timedFrames[_timedFrames.size() - 1].frame = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-                    _timedFrames[_timedFrames.size() - 1].frame->swap(img);
+                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
-                    _videoQueueCondition.notify_one();
                 }
+
+                // Do not store more than a few frames in memory
+                while (_timedFrames.size() > 20 && _continueRead)
+                    this_thread::sleep_for(chrono::milliseconds(10));
 
                _videoSeekMutex.unlock();
 
@@ -431,22 +431,36 @@ void Image_FFmpeg::videoDisplayLoop()
 
     while(_continueRead)
     {
-        unique_lock<mutex> lockFrames(_videoQueueMutex);
-        _videoQueueCondition.wait(lockFrames);
-
-        while (_timedFrames.size() > 0 && _continueRead)
+        auto localQueue = deque<TimedFrame>();
         {
-            Values clock;
-            if (_useClock && Timer::get().getMasterClock(clock))
+            unique_lock<mutex> lockFrames(_videoQueueMutex);
+            std::swap(localQueue, _timedFrames);
+        }
+
+        // This sets the start time after a seek
+        if (localQueue.size() > 0 && _startTime == -1)
+            _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - localQueue[0].timing;
+
+        while (localQueue.size() > 0 && _continueRead)
+        {
+            // If seek, clear the local queue as the frames should not be shown
+            if (_startTime == -1)
             {
-                float seconds = (float)(clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120) / 120.f;
+                localQueue.clear();
+                continue;
+            }
+
+            int64_t clockAsMs;
+            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
+            {
+                float seconds = (float)clockAsMs / 1e3f + _shiftTime;
                 float diff = _elapsedTime / 1e6 - seconds;
 
-                if (abs(diff) > 2.f)
+                if (abs(diff) > 3.f)
                 {
                     _elapsedTime = seconds * 1e6;
                     _clockTime = _elapsedTime;
-                    _timedFrames.clear();
+                    localQueue.clear();
 
                     SThread::pool.enqueueWithoutId([=]() {
                         seek(seconds);
@@ -473,16 +487,23 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            TimedFrame& timedFrame = _timedFrames[0];
+            TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                // This sets the start time after a seek
-                if (_startTime == -1)
-                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - timedFrame.timing;
-
-                _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                if (_clockTime != -1l)
+                if (!_useClock && _paused)
+                {
+                    auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                    _startTime = _startTime + (actualTime - _currentTime);
+                    continue;
+                }
+                else if (_useClock && _clockTime != -1l)
+                {
                     _currentTime = _clockTime;
+                }
+                else
+                {
+                    _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                }
 
                 int64_t waitTime = timedFrame.timing - _currentTime;
                 if (waitTime > 0 && waitTime < 1e6)
@@ -499,7 +520,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 _imageUpdated = true;
                 updateTimestamp();
             }
-            _timedFrames.pop_front();
+            localQueue.pop_front();
         }
     }
 }
@@ -541,6 +562,17 @@ void Image_FFmpeg::registerAttributes()
     });
     _attribFunctions["remaining"].doUpdateDistant(true);
 
+    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _paused = args[0].asInt();
+        return true;
+    }, [&]() -> Values {
+        return {_paused};
+    });
+    _attribFunctions["pause"].doUpdateDistant(true);
+
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
@@ -572,6 +604,15 @@ void Image_FFmpeg::registerAttributes()
         return {(int)_useClock};
     });
     _attribFunctions["useClock"].doUpdateDistant(true);
+
+    _attribFunctions["timeShift"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _shiftTime = args[0].asFloat();
+
+        return true;
+    });
 }
 
 } // end of namespace

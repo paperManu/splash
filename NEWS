@@ -1,8 +1,31 @@
-Slash release notes
+Splash release notes
 ===================
 
-Splash 0.3.5 (2015-xx-xx)
+Splash 0.3.9 (2015-xx-xx)
 -------------------------
+
+Splash 0.3.8 (2015-11-22)
+-------------------------
+Improvements
+* Big improvements to the Blender addon
+
+Splash 0.3.6 (2015-11-13)
+-------------------------
+New features:
+* Added queues, to create playlists of media
+* SMTPE LTC can be activated for compatible sources (image_ffmpeg and queues)
+* Added a preliminary support for joysticks during calibration
+
+Improvements:
+* If possible, no additional process is launched for a Scene
+* Improved sound synchronization
+* HttpServer can control Scene parameters
+* Improved Blender addon
+* Improved logs and timing handling
+
+Bug fixed:
+* Fixed a race condition at launch time
+* Fixed random freezes when quitting
 
 Splash 0.3.4 (2015-09-30)
 -------------------------

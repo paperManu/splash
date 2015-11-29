@@ -41,7 +41,7 @@ void Listener::freeResources()
     if (_portAudioStream)
     {
         Pa_AbortStream(_portAudioStream);
-        Pa_CloseStream(_portAudioStream);
+        //Pa_CloseStream(_portAudioStream);
         _portAudioStream = nullptr;
     }
 

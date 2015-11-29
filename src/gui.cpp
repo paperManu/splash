@@ -175,6 +175,13 @@ void Gui::flashBackground()
 }
 
 /*************/
+void Gui::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
+{
+    for (auto& w : _guiWidgets)
+        w->setJoystick(axes, buttons);
+}
+
+/*************/
 void Gui::key(int key, int action, int mods)
 {
     switch (key)
@@ -651,6 +658,7 @@ void Gui::initImGui(int width, int height)
     ImGuiStyle& style = ImGui::GetStyle();
     style.ChildWindowRounding = 2.f;
     style.FrameRounding = 2.f;
+    style.ScrollbarWidth = 12.f;
     style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);

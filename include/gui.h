@@ -88,6 +88,11 @@ class Gui : public BaseObject
         void unicodeChar(unsigned int unicodeChar);
 
         /**
+         * Forward joystick state
+         */
+        void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
+
+        /**
          * Forward a key event
          */
         void key(int key, int action, int mods);

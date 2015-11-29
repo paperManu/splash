@@ -6,6 +6,8 @@
 *.libs
 *.deps
 *.html
+*.tar.gz
+*.tar.bz2
 *.zip
 *.DS_Store
 aclocal.m4

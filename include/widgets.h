@@ -58,6 +58,7 @@ class GuiWidget
         virtual ~GuiWidget() {}
         virtual void render() {}
         virtual int updateWindowFlags() {return 0;}
+        virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
 
     protected:
         std::string _name {""};
@@ -82,9 +83,9 @@ class GuiGlobalView : public GuiWidget
         GuiGlobalView(std::string name = "");
         void render();
         int updateWindowFlags();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
         void setCamera(CameraPtr cam);
-        void setObject(std::shared_ptr<BaseObject> obj);
+        void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     protected:
         CameraPtr _camera, _guiCamera;
@@ -96,6 +97,11 @@ class GuiGlobalView : public GuiWidget
         // Size of the view
         int _camWidth, _camHeight;
 
+        // Joystick state
+        std::vector<float> _joyAxes {};
+        std::vector<uint8_t> _joyButtons {};
+        std::vector<uint8_t> _joyButtonsPrevious {};
+
         // Store the previous camera values
         struct CameraParameters
         {
@@ -103,10 +109,12 @@ class GuiGlobalView : public GuiWidget
         };
         std::vector<CameraParameters> _previousCameraParameters;
         Values _newTarget;
+        float _newTargetDistance {1.f};
 
         // Previous point added
         Values _previousPointAdded;
 
+        void processJoystickState();
         void processKeyEvents();
         void processMouseEvents();
 
@@ -117,6 +125,10 @@ class GuiGlobalView : public GuiWidget
         void nextCamera();
         void showAllCalibrationPoints();
         void showAllCamerasCalibrationPoints();
+
+        // Other
+        std::vector<glm::dmat4> getCamerasRTMatrices();
+        std::vector<std::shared_ptr<Camera>> getCameras();
 };
 
 /*************/

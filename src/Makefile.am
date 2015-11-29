@@ -34,6 +34,8 @@ $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: M
 	sh $(top_srcdir)/external/build_syphon.sh
 
 export LIBTOOL = glibtool --tag=CXX
+else
+export LIBTOOL = libtool --tag=CXX
 endif
 
 #*************#
@@ -52,6 +54,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	link.cpp \
 	mesh.cpp \
 	object.cpp \
+	queue.cpp \
 	scene.cpp \
 	shader.cpp \
 	texture.cpp \
@@ -294,6 +297,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \
 	$(top_srcdir)/include/osUtils.h \
+	$(top_srcdir)/include/queue.h \
 	$(top_srcdir)/include/scene.h \
 	$(top_srcdir)/include/shader.h \
 	$(top_srcdir)/include/shaderSources.h \

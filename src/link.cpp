@@ -11,7 +11,7 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Link::Link(RootObjectWeakPtr root, string name)
+Link::Link(weak_ptr<RootObject> root, string name)
 {
     try
     {
@@ -55,7 +55,7 @@ Link::~Link()
 }
 
 /*************/
-void Link::connectTo(const string name)
+void Link::connectTo(const string& name)
 {
     if (find(_connectedTargets.begin(), _connectedTargets.end(), name) == _connectedTargets.end())
         _connectedTargets.push_back(name);
@@ -78,9 +78,54 @@ void Link::connectTo(const string name)
         if (errno != ETERM)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
+
     // Wait a bit for the connection to be up
-    timespec nap {0, (long int)1e8};
-    nanosleep(&nap, NULL);
+    this_thread::sleep_for(chrono::milliseconds(100));
+    _connectedToOuter = true;
+}
+
+/*************/
+void Link::connectTo(const std::string& name, const weak_ptr<RootObject>& peer)
+{
+    if (peer.expired())
+        return;
+
+    auto rootObjectIt = _connectedTargetPointers.find(name);
+    if (rootObjectIt == _connectedTargetPointers.end())
+        _connectedTargetPointers[name] = peer;
+    else
+        return;
+
+    // Wait a bit for the connection to be up
+    this_thread::sleep_for(chrono::milliseconds(100));
+    _connectedToInner = true;
+}
+
+/*************/
+void Link::disconnectFrom(const std::string& name)
+{
+    auto targetPointerIt = _connectedTargetPointers.find(name);
+    if (targetPointerIt != _connectedTargetPointers.end())
+    {
+        _connectedTargetPointers.erase(targetPointerIt);
+    }
+
+
+    auto targetIt = find(_connectedTargets.begin(), _connectedTargets.end(), name);
+    if (targetIt != _connectedTargets.end())
+    {
+        try
+        {
+            _connectedTargets.erase(targetIt);
+            _socketMessageOut->disconnect((string("ipc:///tmp/splash_msg_") + name).c_str());
+            _socketBufferOut->disconnect((string("ipc:///tmp/splash_msg_") + name).c_str());
+        }
+        catch (const zmq::error_t& e)
+        {
+            if (errno != ETERM)
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        }
+    }
 }
 
 /*************/
@@ -109,98 +154,131 @@ bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
 }
 
 /*************/
-bool Link::sendBuffer(const string name, unique_ptr<SerializedObject> buffer)
+bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
 {
-    try
+    if (_connectedToInner)
     {
-        unique_lock<mutex> lock(_bufferSendMutex);
-        auto bufferPtr = buffer.get();
-
-        _otgMutex.lock();
-        _otgBuffers.push_back(std::move(buffer));
-        _otgMutex.unlock();
-
-        _otgNumber += 1;
-
-        zmq::message_t msg(name.size() + 1);
-        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        _socketBufferOut->send(msg, ZMQ_SNDMORE);
-
-        msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
-        _socketBufferOut->send(msg);
+        for (auto& rootObjectIt : _connectedTargetPointers)
+        {
+            auto rootObject = rootObjectIt.second.lock();
+            if (rootObject)
+                rootObject->setFromSerializedObject(name, buffer);
+        }
     }
-    catch (const zmq::error_t& e)
+
+    if (_connectedToOuter)
     {
-        if (errno != ETERM)
-            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        try
+        {
+            unique_lock<mutex> lock(_bufferSendMutex);
+            auto bufferPtr = buffer.get();
+
+            _otgMutex.lock();
+            _otgBuffers.push_back(buffer);
+            _otgMutex.unlock();
+
+            _otgNumber += 1;
+
+            zmq::message_t msg(name.size() + 1);
+            memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+            _socketBufferOut->send(msg, ZMQ_SNDMORE);
+
+            msg.rebuild(bufferPtr->data(), bufferPtr->size(), Link::freeOlderBuffer, this);
+            _socketBufferOut->send(msg);
+        }
+        catch (const zmq::error_t& e)
+        {
+            if (errno != ETERM)
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        }
     }
 
     return true;
 }
 
 /*************/
-bool Link::sendMessage(const string name, const string attribute, const Values& message)
+bool Link::sendBuffer(const string& name, const shared_ptr<BufferObject>& object)
 {
-    try
+    auto buffer = object->serialize();
+    return sendBuffer(name, std::move(buffer));
+}
+
+/*************/
+bool Link::sendMessage(const string& name, const string& attribute, const Values& message)
+{
+    if (_connectedToInner)
     {
-        unique_lock<mutex> lock(_msgSendMutex);
-
-        // First we send the name of the target
-        zmq::message_t msg(name.size() + 1);
-        memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
-        _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-        // And the target's attribute
-        msg.rebuild(attribute.size() + 1);
-        memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
-        _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-        // Helper function to send messages
-        std::function<void(const Values& message)> sendMessage;
-        sendMessage = [&](const Values& message) {
-            // Size of the message
-            int size = message.size();
-            msg.rebuild(sizeof(size));
-            memcpy(msg.data(), (void*)&size, sizeof(size));
-
-            if (message.size() == 0)
-                _socketMessageOut->send(msg);
-            else
-                _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-            for (int i = 0; i < message.size(); ++i)
-            {
-                auto v = message[i];
-                Value::Type valueType = v.getType();
-
-                msg.rebuild(sizeof(valueType));
-                memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
-                _socketMessageOut->send(msg, ZMQ_SNDMORE);
-
-                if (valueType == Value::Type::v)
-                    sendMessage(v.asValues());
-                else
-                {
-                    int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
-                    void* value = v.data();
-                    msg.rebuild(valueSize);
-                    memcpy(msg.data(), value, valueSize);
-
-                    if (i != message.size() - 1)
-                        _socketMessageOut->send(msg, ZMQ_SNDMORE);
-                    else
-                        _socketMessageOut->send(msg);
-                }
-            }
-        };
-
-        // Send the message
-        sendMessage(message);
+        for (auto& rootObjectIt : _connectedTargetPointers)
+        {
+            auto rootObject = rootObjectIt.second.lock();
+            if (rootObject)
+                rootObject->set(name, attribute, message);
+        }
     }
-    catch (const zmq::error_t& e)
+
+    if (_connectedToOuter)
     {
-        if (errno != ETERM)
-            Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        try
+        {
+            unique_lock<mutex> lock(_msgSendMutex);
+
+            // First we send the name of the target
+            zmq::message_t msg(name.size() + 1);
+            memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+            // And the target's attribute
+            msg.rebuild(attribute.size() + 1);
+            memcpy(msg.data(), (void*)attribute.c_str(), attribute.size() + 1);
+            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+            // Helper function to send messages
+            std::function<void(const Values& message)> sendMessage;
+            sendMessage = [&](const Values& message) {
+                // Size of the message
+                int size = message.size();
+                msg.rebuild(sizeof(size));
+                memcpy(msg.data(), (void*)&size, sizeof(size));
+
+                if (message.size() == 0)
+                    _socketMessageOut->send(msg);
+                else
+                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+                for (int i = 0; i < message.size(); ++i)
+                {
+                    auto v = message[i];
+                    Value::Type valueType = v.getType();
+
+                    msg.rebuild(sizeof(valueType));
+                    memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
+                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
+                    if (valueType == Value::Type::v)
+                        sendMessage(v.asValues());
+                    else
+                    {
+                        int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
+                        void* value = v.data();
+                        msg.rebuild(valueSize);
+                        memcpy(msg.data(), value, valueSize);
+
+                        if (i != message.size() - 1)
+                            _socketMessageOut->send(msg, ZMQ_SNDMORE);
+                        else
+                            _socketMessageOut->send(msg);
+                    }
+                }
+            };
+
+            // Send the message
+            sendMessage(message);
+        }
+        catch (const zmq::error_t& e)
+        {
+            if (errno != ETERM)
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+        }
     }
 
     // We don't display broadcast messages, for visibility
@@ -320,7 +398,7 @@ void Link::handleInputBuffers()
             string name((char*)msg.data());
 
             _socketBufferIn->recv(&msg);
-            unique_ptr<SerializedObject> buffer = unique_ptr<SerializedObject>(new SerializedObject((char*)msg.data(), (char*)msg.data() + msg.size()));
+            shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
             
             auto root = _rootObject.lock();
             if (root)

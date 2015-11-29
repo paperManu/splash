@@ -284,6 +284,7 @@ int GuiControl::updateWindowFlags()
 }
 
 /*************/
+/*************/
 GuiGlobalView::GuiGlobalView(string name)
     : GuiWidget(name)
 {
@@ -294,51 +295,90 @@ void GuiGlobalView::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        if (ImGui::Button("Hide other cameras"))
+            switchHideOtherCameras();
+        ImGui::SameLine();
+        if (ImGui::Button("Show targets"))
+            showAllCalibrationPoints();
+        ImGui::SameLine();
+        if (ImGui::Button("Show all points"))
+            showAllCamerasCalibrationPoints();
+        ImGui::SameLine();
+        if (ImGui::Button("Calibrate camera"))
+            doCalibration();
+
+        ImVec2 winSize = ImGui::GetWindowSize();
+        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+
+        auto cameras = getCameras();
+        
+        ImGui::BeginChild("Cameras", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
+        ImGui::Text("Select a camera:");
+        for (auto& camera : cameras)
+        {
+            camera->render();
+
+            Values size;
+            camera->getAttribute("size", size);
+
+            int w = ImGui::GetWindowWidth() - 4 * leftMargin;
+            int h = w * size[1].asInt() / size[0].asInt();
+
+            if(ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            {
+                auto scene = _scene.lock();
+
+                // Empty previous camera parameters
+                _previousCameraParameters.clear();
+
+                // Ensure that all cameras are shown
+                _camerasHidden = false;
+                for (auto& cam : cameras)
+                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+
+                _camera = camera;
+
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+            }
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(camera->getName().c_str());
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Calibration", ImVec2(0, ImGui::GetWindowWidth() * 0.67), false);
         if (_camera != nullptr)
         {
-            if (_camera == _guiCamera)
-                _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
-
-            _camera->render();
-
             Values size;
             _camera->getAttribute("size", size);
 
-            double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-            ImVec2 winSize = ImGui::GetWindowSize();
-            int w = std::max(400.0, winSize.x - 4 * leftMargin);
+            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
             int h = w * size[1].asInt() / size[0].asInt();
 
             _camWidth = w;
             _camHeight = h;
 
-            if (ImGui::Button("Next camera"))
-                nextCamera();
-            ImGui::SameLine();
-            if (ImGui::Button("Hide other cameras"))
-                switchHideOtherCameras();
-            ImGui::SameLine();
-            if (ImGui::Button("Show targets"))
-                showAllCalibrationPoints();
-            ImGui::SameLine();
-            if (ImGui::Button("Show all points"))
-                showAllCamerasCalibrationPoints();
-            ImGui::SameLine();
-            if (ImGui::Button("Calibrate camera"))
-                doCalibration();
-
             ImGui::Text(("Current camera: " + _camera->getName()).c_str());
 
             ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-            if (ImGui::IsItemHovered())
+            if (ImGui::IsItemHoveredRect())
             {
                 _noMove = true;
                 processKeyEvents();
                 processMouseEvents();
+                processJoystickState();
             }
             else
+            {
                 _noMove = false;
+            }
         }
+        ImGui::EndChild();
     }
 }
 
@@ -366,9 +406,26 @@ void GuiGlobalView::setCamera(CameraPtr cam)
 }
 
 /*************/
-void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
+void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
 {
-    _camera->linkTo(obj);
+    _joyAxes = axes;
+    _joyButtons = buttons;
+}
+
+/*************/
+vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
+{
+    auto scene = _scene.lock();
+    auto rtMatrices = vector<glm::dmat4>();
+
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "camera")
+            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "camera")
+            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+
+    return rtMatrices;
 }
 
 /*************/
@@ -377,10 +434,10 @@ void GuiGlobalView::nextCamera()
     auto scene = _scene.lock();
     vector<CameraPtr> cameras;
     for (auto& obj : scene->_objects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+        if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
     for (auto& obj : scene->_ghostObjects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+        if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
     // Empty previous camera parameters
@@ -513,6 +570,66 @@ void GuiGlobalView::switchHideOtherCameras()
                 scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
         _camerasHidden = false;
     }
+}
+
+/*************/
+void GuiGlobalView::processJoystickState()
+{
+    auto scene = _scene.lock();
+
+    float speed = 1.f;
+
+    // Buttons
+    if (_joyButtons.size() >= 4)
+    {
+        if (_joyButtons[0] == 1 && _joyButtons[0] != _joyButtonsPrevious[0])
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectPreviousCalibrationPoint"});
+        }
+        else if (_joyButtons[1] == 1 && _joyButtons[1] != _joyButtonsPrevious[1])
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectNextCalibrationPoint"});
+        }
+        else if (_joyButtons[2] == 1)
+        {
+            speed = 10.f;
+        }
+        else if (_joyButtons[3] == 1 && _joyButtons[3] != _joyButtonsPrevious[3])
+        {
+            doCalibration();
+        }
+    }
+    if (_joyButtons.size() >= 6)
+    {
+        if (_joyButtons[4] == 1 && _joyButtons[4] != _joyButtonsPrevious[4])
+        {
+            showAllCalibrationPoints();
+        }
+        else if (_joyButtons[5] == 1 && _joyButtons[5] != _joyButtonsPrevious[5])
+        {
+            switchHideOtherCameras();
+        }
+    }
+
+    _joyButtonsPrevious = _joyButtons;
+
+    // Axes
+    if (_joyAxes.size() >= 2)
+    {
+        float xValue = _joyAxes[0];
+        float yValue = -_joyAxes[1]; // Y axis goes downward for joysticks...
+
+        if (xValue != 0.f || yValue != 0.f)
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", xValue * speed, yValue * speed});
+            _camera->moveCalibrationPoint(0.0, 0.0);
+            propagateCalibration();
+        }
+    }
+
+    // This prevents issues when disconnecting the joystick
+    _joyAxes.clear();
+    _joyButtons.clear();
 }
 
 /*************/
@@ -654,7 +771,13 @@ void GuiGlobalView::processMouseEvents()
     }
     if (io.MouseClicked[1])
     {
-        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y);
+        float fragDepth = 0.f;
+        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y, fragDepth);
+
+        if (fragDepth == 0.f)
+            _newTargetDistance = 1.f;
+        else
+            _newTargetDistance = -fragDepth * 0.1f;
     }
     if (io.MouseDownDuration[1] > 0.0) 
     {
@@ -683,8 +806,8 @@ void GuiGlobalView::processMouseEvents()
         // Move the target and the camera (in the camera plane)
         else if (io.KeyShift && !io.KeyCtrl)
         {
-            float dx = io.MouseDelta.x;
-            float dy = io.MouseDelta.y;
+            float dx = io.MouseDelta.x * _newTargetDistance;
+            float dy = io.MouseDelta.y * _newTargetDistance;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", -dx / 100.f, dy / 100.f, 0.f});
@@ -693,7 +816,7 @@ void GuiGlobalView::processMouseEvents()
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
-            float dy = io.MouseDelta.y / 100.f;
+            float dy = io.MouseDelta.y * _newTargetDistance / 100.f;
             auto scene = _scene.lock();
             if (_camera != _guiCamera)
                 scene->sendMessageToWorld("sendAll", {_camera->getName(), "forward", dy});
@@ -718,6 +841,30 @@ void GuiGlobalView::processMouseEvents()
     }
 }
 
+/*************/
+vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
+{
+    auto cameras = vector<shared_ptr<Camera>>();
+
+    _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
+
+    auto rtMatrices = getCamerasRTMatrices();
+    for (auto& matrix : rtMatrices)
+        _guiCamera->drawModelOnce("camera", matrix);
+    cameras.push_back(_guiCamera);
+
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "camera")
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "camera")
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+    return cameras;
+}
+
+/*************/
 /*************/
 void GuiGraph::render()
 {
@@ -948,7 +1095,7 @@ void GuiNodeView::render()
                                                                  {"window", {8, 32}},
                                                                  {"camera", {32, 64}},
                                                                  {"object", {8, 96}},
-                                                                 {"texture", {32, 128}},
+                                                                 {"texture filter queue", {32, 128}},
                                                                  {"image", {8, 160}},
                                                                  {"mesh", {32, 192}}
                                                                 });
@@ -983,15 +1130,22 @@ void GuiNodeView::render()
 
             // Get the default position for the given type
             auto nodePosition = ImVec2(-1, -1);
-            auto defaultPosIt = defaultPositionByType.find(type);
-            if (defaultPosIt == defaultPositionByType.end())
+
+            string defaultPosName = "default";
+            for (auto& position : defaultPositionByType)
+            {
+                if (position.first.find(type) != string::npos)
+                    defaultPosName = position.first;
+            }
+
+            if (defaultPosName == "default")
             {
                 type = "default";
                 nodePosition = defaultPositionByType["default"];
             }
             else
             {
-                nodePosition = defaultPosIt->second;
+                nodePosition = defaultPositionByType[defaultPosName];
                 nodePosition.x += shift;
             }
             
