@@ -78,6 +78,11 @@ class Image : public BufferObject
         oiio::ImageBuf get() const;
 
         /**
+         * Get the file path
+         */
+        std::string getFilepath() const {return _filepath;}
+
+        /**
          * Get the image buffer specs
          */
         oiio::ImageSpec getSpec() const;

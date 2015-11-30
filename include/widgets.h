@@ -32,6 +32,7 @@
 #include <atomic>
 #include <deque>
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <unordered_map>
@@ -129,6 +130,24 @@ class GuiGlobalView : public GuiWidget
         // Other
         std::vector<glm::dmat4> getCamerasRTMatrices();
         std::vector<std::shared_ptr<Camera>> getCameras();
+};
+
+/*************/
+class GuiMediaSelector : public GuiWidget
+{
+    public:
+        GuiMediaSelector(std::string name) : GuiWidget(name) {}
+        void render();
+        int updateWindowFlags();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        SceneWeakPtr _scene;
+        std::map<std::string, std::string> _mediaPaths;
+        std::map<std::string, int> _mediaTypeIndex;
+
+        std::list<std::shared_ptr<Image>> getSceneImages();
+        void replaceMediaFile(std::shared_ptr<Image> previousImage, std::string path, int typeIndex);
 };
 
 /*************/

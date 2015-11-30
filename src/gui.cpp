@@ -833,6 +833,11 @@ void Gui::initImWidgets()
     controlView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
+    // Media selector
+    auto mediaSelector = make_shared<GuiMediaSelector>("Media selector");
+    mediaSelector->setScene(_scene);
+    _guiWidgets.push_back(mediaSelector);
+
     // GUI camera view
     auto globalView = make_shared<GuiGlobalView>("Views");
     globalView->setCamera(_guiCamera);

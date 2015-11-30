@@ -5,6 +5,9 @@
 #include <imgui.h>
 
 #include "camera.h"
+#include "image.h"
+#include "image_ffmpeg.h"
+#include "image_shmdata.h"
 #include "log.h"
 #include "object.h"
 #include "scene.h"
@@ -43,6 +46,115 @@ void GuiTextBox::render()
     }
 }
 
+/*************/
+/*************/
+void GuiMediaSelector::render()
+{
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        auto imageList = getSceneImages();
+        for (auto& image : imageList)
+        {
+            auto imageName = image->getName();
+            if (ImGui::TreeNode(imageName.c_str()))
+            {
+                ImGui::Text("Type & file: ");
+                ImGui::SameLine();
+
+                if (_mediaTypeIndex.find(imageName) == _mediaTypeIndex.end())
+                    _mediaTypeIndex[imageName] = 0;
+                vector<const char*> mediaTypes {"image", "video", "shared memory"};
+
+                ImGui::PushItemWidth(128);
+                ImGui::Combo("", &_mediaTypeIndex[imageName], mediaTypes.data(), mediaTypes.size());
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+
+                if (_mediaPaths.find(imageName) == _mediaPaths.end())
+                    _mediaPaths[imageName] = image->getFilepath();
+                _mediaPaths[imageName].resize(512);
+
+                ImGui::PushItemWidth(-0.01f);
+                if (ImGui::InputText("Path", const_cast<char*>(_mediaPaths[imageName].c_str()), _mediaPaths[imageName].size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    replaceMediaFile(image, _mediaPaths[imageName], _mediaTypeIndex[imageName]);
+                }
+                ImGui::PopItemWidth();
+
+                ImGui::TreePop();
+            }
+        }
+    }
+}
+
+/*************/
+void GuiMediaSelector::replaceMediaFile(shared_ptr<Image> previousImage, string path, int typeIndex)
+{
+    auto scene = _scene.lock();
+
+    // We get the list of all objects linked to previousImage
+    auto targetObjects = list<shared_ptr<BaseObject>>();
+    for (auto& objIt : scene->_objects)
+    {
+        auto& object = objIt.second;
+        if (!object->_savable)
+            continue;
+        auto linkedObjects = object->getLinkedObjects();
+        for (auto& linked : linkedObjects)
+            if (linked->getName() == previousImage->getName())
+                targetObjects.push_back(object);
+    }
+
+    // Delete the image
+    scene->sendMessageToWorld("deleteObject", {previousImage->getName()});
+    
+    // Replace the current Image with the new one
+    // TODO: this has to be done in a thread because "deleteObject" is asynched and "addObject" is synched...
+    SThread::pool.enqueueWithoutId([=]() {
+        this_thread::sleep_for(chrono::milliseconds(100));
+        static vector<string> types {"image", "image_ffmpeg" , "image_shmdata"};
+        scene->sendMessageToWorld("addObject", {types[typeIndex], previousImage->getName()});
+        scene->sendMessageToWorld("sendAll", {previousImage->getName(), "file", path});
+
+        for (auto& object : targetObjects)
+        {
+            scene->sendMessageToWorld("sendAllScenes", {"link", previousImage->getName(), object->getName()});
+            scene->sendMessageToWorld("sendAllScenes", {"linkGhost", previousImage->getName(), object->getName()});
+        }
+    });
+}
+
+/*************/
+int GuiMediaSelector::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    return flags;
+}
+
+/*************/
+list<shared_ptr<Image>> GuiMediaSelector::getSceneImages()
+{
+    auto imageList = list<shared_ptr<Image>>();
+    auto scene = _scene.lock();
+
+    for (auto& obj : scene->_objects)
+    {
+        auto objPtr = dynamic_pointer_cast<Image>(obj.second);
+        if (objPtr)
+            imageList.push_back(objPtr);
+    }
+
+    for (auto& obj : scene->_ghostObjects)
+    {
+        auto objPtr = dynamic_pointer_cast<Image>(obj.second);
+        if (objPtr)
+            imageList.push_back(objPtr);
+    }
+
+    return imageList;
+}
+
+/*************/
 /*************/
 void GuiControl::render()
 {
