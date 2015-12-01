@@ -553,7 +553,7 @@ class RootObject : public BaseObject
          */
         bool set(const std::string& name, const std::string& attrib, const Values& args)
         {
-            std::unique_lock<std::mutex> lock(_setMutex);
+            std::unique_lock<std::recursive_mutex> lock(_setMutex);
 
             if (name == _name || name == SPLASH_ALL_PAIRS)
                 return setAttribute(attrib, args);
@@ -571,7 +571,7 @@ class RootObject : public BaseObject
          */
         void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
         {
-            std::unique_lock<std::mutex> lock(_setMutex);
+            std::unique_lock<std::recursive_mutex> lock(_setMutex);
 
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
@@ -589,7 +589,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::recursive_mutex _objectsMutex; // Used in registration and unregistration of objects
-        mutable std::mutex _setMutex;
+        mutable std::recursive_mutex _setMutex;
         std::map<std::string, std::shared_ptr<BaseObject>> _objects;
 
         Values _lastAnswerReceived {};

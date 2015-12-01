@@ -762,11 +762,16 @@ void World::setAttribute(string name, string attrib, const Values& args)
 void World::registerAttributes()
 {
     _attribFunctions["addObject"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
+        if (args.size() == 0 || args.size() > 2)
             return false;
 
         auto type = args[0].asString();
-        auto name = type + "_" + to_string(getId());
+        auto name = string();
+
+        if (args.size() == 1)
+            name = type + "_" + to_string(getId());
+        else if (args.size() == 2)
+            name = args[1].asString();
 
         unique_lock<mutex> lock(_configurationMutex);
 
@@ -775,6 +780,9 @@ void World::registerAttributes()
             sendMessage(s.first, "add", {type, name});
             addLocally(type, name, s.first);
         }
+
+        auto path = Utils::getPathFromFilePath(_configFilename);
+        set(name, "configFilePath", {path});
 
         return true;
     });
