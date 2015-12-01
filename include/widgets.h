@@ -32,6 +32,7 @@
 #include <atomic>
 #include <deque>
 #include <functional>
+#include <list>
 #include <map>
 #include <memory>
 #include <unordered_map>
@@ -123,12 +124,38 @@ class GuiGlobalView : public GuiWidget
         void propagateCalibration(); // Propagates calibration to other Scenes if needed
         void switchHideOtherCameras();
         void nextCamera();
+        void revertCalibration();
         void showAllCalibrationPoints();
         void showAllCamerasCalibrationPoints();
 
         // Other
         std::vector<glm::dmat4> getCamerasRTMatrices();
         std::vector<std::shared_ptr<Camera>> getCameras();
+};
+
+/*************/
+class GuiMedia : public GuiWidget
+{
+    public:
+        GuiMedia(std::string name) : GuiWidget(name) {}
+        void render();
+        int updateWindowFlags();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        SceneWeakPtr _scene;
+        std::map<std::string, int> _mediaTypeIndex;
+        std::map<std::string, std::string> _mediaTypes {{"image", "image"},
+                                                        {"video", "image_ffmpeg"},
+                                                        {"shared memory", "image_shmdata"},
+#if HAVE_OSX
+                                                        {"syphon", "texture_syphon"}};
+#else
+                                                        };
+#endif
+
+        std::list<std::shared_ptr<Image>> getSceneImages();
+        void replaceMedia(std::shared_ptr<Image> previousImage, std::string type);
 };
 
 /*************/

@@ -414,7 +414,7 @@ bool Gui::render()
         _windowFlags = 0;
 
         // Some global buttons
-        if (ImGui::CollapsingHeader("Base commands", nullptr, true, true))
+        if (ImGui::CollapsingHeader("General commands", nullptr, true, true))
         {
 #if HAVE_GPHOTO
             ImGui::Columns(2);
@@ -426,22 +426,40 @@ bool Gui::render()
 #endif
             if (ImGui::Button("Compute blending map"))
                 computeBlending(true);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("To use once cameras are calibrated (Ctrl+B, Ctrl+Alt+B to compute at each frames)");
+
             if (ImGui::Button("Flash background"))
                 flashBackground();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Set the background as light gray (Ctrl+F)");
+
             if (ImGui::Button("Wireframe / Textured"))
             {
                 auto scene = _scene.lock();
                 _wireframe = !_wireframe;
                 scene->sendMessageToWorld("wireframe", {(int)_wireframe});
             }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
+
 #if HAVE_GPHOTO
             ImGui::NextColumn();
             if (ImGui::Button("Calibrate camera response"))
                 calibrateColorResponseFunction();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Needs to be done before projector calibration (Ctrl+O)");
+
             if (ImGui::Button("Calibrate displays / projectors"))
                 calibrateColors();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Calibrates all outputs (Ctrl+P)");
+
             if (ImGui::Button("Activate correction"))
                 activateLUT();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Activate color LUT, once calibrated (Ctrl+L)");
+
             ImGui::Columns(1);
 #endif
             ImGui::Separator();
@@ -450,11 +468,17 @@ bool Gui::render()
             strcpy(configurationPath, _configurationPath.data());
             ImGui::InputText("Path", configurationPath, 512);
             _configurationPath = string(configurationPath);
+
             if (ImGui::Button("Save configuration"))
                 saveConfiguration();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Configuration is saved to the given path (Ctrl+S)");
+
             ImGui::SameLine();
             if (ImGui::Button("Load configuration"))
                 loadConfiguration();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Load the given path");
         }
 
         // Specific widgets
@@ -720,46 +744,52 @@ void Gui::initImGui(int width, int height)
 void Gui::initImWidgets()
 {
     // Template configurations
-    auto templateBox = make_shared<GuiTemplate>("Templates");
-    templateBox->setScene(_scene);
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
+    if (Log::get().getVerbosity() == Log::DEBUGGING)
+    {
+        auto templateBox = make_shared<GuiTemplate>("Templates");
+        templateBox->setScene(_scene);
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
+    }
 
     // Some help regarding keyboard shortcuts
-    auto helpBox = make_shared<GuiTextBox>("Shortcuts");
-    helpBox->setTextFunc([]()
+    if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        string text;
-        text += "Tab: show / hide this GUI\n";
-        text += "General shortcuts:\n";
-        text += " Ctrl+F: white background instead of black\n";
-        text += " Ctrl+B: compute the blending between all cameras\n";
-        text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
-        text += " Ctrl+M: hide/show the OS cursor\n";
-        text += " Ctrl+T: textured draw mode\n";
-        text += " Ctrl+W: wireframe draw mode\n";
+        auto helpBox = make_shared<GuiTextBox>("Shortcuts");
+        helpBox->setTextFunc([]()
+        {
+            string text;
+            text += "Tab: show / hide this GUI\n";
+            text += "General shortcuts:\n";
+            text += " Ctrl+F: white background instead of black\n";
+            text += " Ctrl+B: compute the blending between all cameras\n";
+            text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
+            text += " Ctrl+M: hide/show the OS cursor\n";
+            text += " Ctrl+T: textured draw mode\n";
+            text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO
-        text += "\n";
-        text += " Ctrl+O: launch camera calibration\n";
-        text += " Ctrl+P: launch projectors calibration\n";
-        text += " Ctrl+L: activate color LUT (if calibrated)\n";
+            text += "\n";
+            text += " Ctrl+O: launch camera calibration\n";
+            text += " Ctrl+P: launch projectors calibration\n";
+            text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
-        text += "\n";
-        text += "Views panel:\n";
-        text += " Space: switch between cameras\n";
-        text += " A: show / hide the target calibration point\n";
-        text += " C: calibrate the selected camera\n";
-        text += " R: revert camera to previous calibration\n";
-        text += " H: hide all but the selected camera\n";
-        text += " O: show calibration points from all cameras\n";
+            text += "\n";
+            text += "Views panel:\n";
+            text += " Space: switch between cameras\n";
+            text += " A: show / hide the target calibration point\n";
+            text += " C: calibrate the selected camera\n";
+            text += " R: revert camera to previous calibration\n";
+            text += " H: hide all but the selected camera\n";
+            text += " O: show calibration points from all cameras\n";
 
-        text += "\n";
-        text += "Node view (inside Control panel):\n";
-        text += " Shift + left click: link the clicked node to the selected one\n";
-        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
+            text += "\n";
+            text += "Node view (inside Control panel):\n";
+            text += " Shift + left click: link the clicked node to the selected one\n";
+            text += " Ctrl + left click: unlink the clicked node from the selected one\n";
 
-        return text;
-    });
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
+            return text;
+        });
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
+    }
 
     // FPS and timings
     auto timingBox = make_shared<GuiTextBox>("Timings");
@@ -812,38 +842,49 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(timingBox));
 
     // Log display
-    auto logBox = make_shared<GuiTextBox>("Logs");
-    logBox->setTextFunc([]()
+    if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        int nbrLines = 10;
-        // Convert the last lines of the text log
-        vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
-        string text;
-        int start = std::max(0, (int)logs.size() - nbrLines);
-        for (int i = start; i < logs.size(); ++i)
+        auto logBox = make_shared<GuiTextBox>("Logs");
+        logBox->setTextFunc([]()
         {
-            if (i >= 0)
-                text += logs[i] + string("\n");
-        }
+            int nbrLines = 10;
+            // Convert the last lines of the text log
+            vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
+            string text;
+            int start = std::max(0, (int)logs.size() - nbrLines);
+            for (int i = start; i < logs.size(); ++i)
+            {
+                if (i >= 0)
+                    text += logs[i] + string("\n");
+            }
 
-        return text;
-    });
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
+            return text;
+        });
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(logBox));
+    }
 
     // Control
     auto controlView = make_shared<GuiControl>("Controls");
     controlView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
+    // Media
+    auto mediaSelector = make_shared<GuiMedia>("Media");
+    mediaSelector->setScene(_scene);
+    _guiWidgets.push_back(mediaSelector);
+
     // GUI camera view
-    auto globalView = make_shared<GuiGlobalView>("Views");
+    auto globalView = make_shared<GuiGlobalView>("Cameras");
     globalView->setCamera(_guiCamera);
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Performance graph
-    auto perfGraph = make_shared<GuiGraph>("Performance Graph");
-    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
+    if (Log::get().getVerbosity() == Log::DEBUGGING)
+    {
+        auto perfGraph = make_shared<GuiGraph>("Performance Graph");
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
+    }
 }
 
 /*************/
