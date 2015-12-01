@@ -124,6 +124,7 @@ class GuiGlobalView : public GuiWidget
         void propagateCalibration(); // Propagates calibration to other Scenes if needed
         void switchHideOtherCameras();
         void nextCamera();
+        void revertCalibration();
         void showAllCalibrationPoints();
         void showAllCamerasCalibrationPoints();
 
@@ -133,21 +134,28 @@ class GuiGlobalView : public GuiWidget
 };
 
 /*************/
-class GuiMediaSelector : public GuiWidget
+class GuiMedia : public GuiWidget
 {
     public:
-        GuiMediaSelector(std::string name) : GuiWidget(name) {}
+        GuiMedia(std::string name) : GuiWidget(name) {}
         void render();
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
         SceneWeakPtr _scene;
-        std::map<std::string, std::string> _mediaPaths;
         std::map<std::string, int> _mediaTypeIndex;
+        std::map<std::string, std::string> _mediaTypes {{"image", "image"},
+                                                        {"video", "image_ffmpeg"},
+                                                        {"shared memory", "image_shmdata"},
+#if HAVE_OSX
+                                                        {"syphon", "texture_syphon"}};
+#else
+                                                        };
+#endif
 
         std::list<std::shared_ptr<Image>> getSceneImages();
-        void replaceMediaFile(std::shared_ptr<Image> previousImage, std::string path, int typeIndex);
+        void replaceMedia(std::shared_ptr<Image> previousImage, std::string type);
 };
 
 /*************/
