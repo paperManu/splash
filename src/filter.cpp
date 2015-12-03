@@ -124,6 +124,9 @@ bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
+        if (_inTexture.expired())
+            return false;
+
         auto inTex = _inTexture.lock();
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
         _screen->removeTexture(tex);

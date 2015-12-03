@@ -54,27 +54,27 @@ void GuiMedia::render()
     {
         auto scene = _scene.lock();
 
-        auto imageList = getSceneImages();
-        for (auto& image : imageList)
+        auto mediaList = getSceneMedia();
+        for (auto& media : mediaList)
         {
-            auto imageName = image->getName();
-            if (ImGui::TreeNode(imageName.c_str()))
+            auto mediaName = media->getName();
+            if (ImGui::TreeNode(mediaName.c_str()))
             {
                 ImGui::Text("Media type: ");
                 ImGui::SameLine();
 
-                if (_mediaTypeIndex.find(imageName) == _mediaTypeIndex.end())
-                    _mediaTypeIndex[imageName] = 0;
+                if (_mediaTypeIndex.find(mediaName) == _mediaTypeIndex.end())
+                    _mediaTypeIndex[mediaName] = 0;
 
                 vector<const char*> mediaTypes;
                 for (auto& type : _mediaTypes)
                     mediaTypes.push_back(type.first.c_str());
 
-                if (ImGui::Combo("", &_mediaTypeIndex[imageName], mediaTypes.data(), mediaTypes.size()))
-                    replaceMedia(image, mediaTypes[_mediaTypeIndex[imageName]]);
+                if (ImGui::Combo("", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
+                    replaceMedia(media->getName(), mediaTypes[_mediaTypeIndex[mediaName]]);
 
                 ImGui::Text("Parameters:");
-                auto attributes = image->getAttributes(true);
+                auto attributes = media->getAttributes(true);
                 for (auto& attr : attributes)
                 {
                     if (attr.second.size() > 4 || attr.second.size() == 0)
@@ -92,7 +92,7 @@ void GuiMedia::render()
                             float tmp = attr.second[0].asFloat();
                             float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
                             if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {image->getName(), attr.first, tmp});
+                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp});
                         }
                         else if (attr.second.size() == 2)
                         {
@@ -100,7 +100,7 @@ void GuiMedia::render()
                             tmp.push_back(attr.second[0].asFloat());
                             tmp.push_back(attr.second[1].asFloat());
                             if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {image->getName(), attr.first, tmp[0], tmp[1]});
+                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp[0], tmp[1]});
                         }
                         else if (attr.second.size() == 3)
                         {
@@ -109,7 +109,7 @@ void GuiMedia::render()
                             tmp.push_back(attr.second[1].asFloat());
                             tmp.push_back(attr.second[2].asFloat());
                             if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {image->getName(), attr.first, tmp[0], tmp[1], tmp[2]});
+                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp[0], tmp[1], tmp[2]});
                         }
                         else if (attr.second.size() == 4)
                         {
@@ -119,7 +119,7 @@ void GuiMedia::render()
                             tmp.push_back(attr.second[2].asFloat());
                             tmp.push_back(attr.second[3].asFloat());
                             if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {image->getName(), attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
                         }
                     }
                     else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
@@ -153,7 +153,7 @@ void GuiMedia::render()
                             string tmp = v.asString();
                             tmp.resize(256);
                             if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {image->getName(), attr.first, tmp});
+                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp});
                         }
                     }
                 }
@@ -165,12 +165,12 @@ void GuiMedia::render()
 }
 
 /*************/
-void GuiMedia::replaceMedia(shared_ptr<Image> previousImage, string type)
+void GuiMedia::replaceMedia(string previousMedia, string type)
 {
     auto scene = _scene.lock();
 
-    // We get the list of all objects linked to previousImage
-    auto targetObjects = list<shared_ptr<BaseObject>>();
+    // We get the list of all objects linked to previousMedia
+    auto targetObjects = list<weak_ptr<BaseObject>>();
     for (auto& objIt : scene->_objects)
     {
         auto& object = objIt.second;
@@ -178,23 +178,26 @@ void GuiMedia::replaceMedia(shared_ptr<Image> previousImage, string type)
             continue;
         auto linkedObjects = object->getLinkedObjects();
         for (auto& linked : linkedObjects)
-            if (linked->getName() == previousImage->getName())
+            if (linked->getName() == previousMedia)
                 targetObjects.push_back(object);
     }
 
-    // Delete the image
-    scene->sendMessageToWorld("deleteObject", {previousImage->getName()});
+    // Delete the media
+    scene->sendMessageToWorld("deleteObject", {previousMedia});
     
     // Replace the current Image with the new one
     // TODO: this has to be done in a thread because "deleteObject" is asynched and "addObject" is synched...
     SThread::pool.enqueueWithoutId([=]() {
         this_thread::sleep_for(chrono::milliseconds(100));
-        scene->sendMessageToWorld("addObject", {_mediaTypes[type], previousImage->getName()});
+        scene->sendMessageToWorld("addObject", {_mediaTypes[type], previousMedia});
 
-        for (auto& object : targetObjects)
+        for (auto& weakObject : targetObjects)
         {
-            scene->sendMessageToWorld("sendAllScenes", {"link", previousImage->getName(), object->getName()});
-            scene->sendMessageToWorld("sendAllScenes", {"linkGhost", previousImage->getName(), object->getName()});
+            if (weakObject.expired())
+                continue;
+            auto object = weakObject.lock();
+            scene->sendMessageToWorld("sendAllScenes", {"link", previousMedia, object->getName()});
+            scene->sendMessageToWorld("sendAllScenes", {"linkGhost", previousMedia, object->getName()});
         }
     });
 }
@@ -207,26 +210,34 @@ int GuiMedia::updateWindowFlags()
 }
 
 /*************/
-list<shared_ptr<Image>> GuiMedia::getSceneImages()
+list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 {
-    auto imageList = list<shared_ptr<Image>>();
+    auto mediaList = list<shared_ptr<BaseObject>>();
     auto scene = _scene.lock();
 
     for (auto& obj : scene->_objects)
     {
-        auto objPtr = dynamic_pointer_cast<Image>(obj.second);
-        if (objPtr)
-            imageList.push_back(objPtr);
+        if (!obj.second->_savable)
+            continue;
+
+        if (dynamic_pointer_cast<Image>(obj.second))
+            mediaList.push_back(obj.second);
+        else if (dynamic_pointer_cast<Texture>(obj.second))
+            mediaList.push_back(obj.second);
     }
 
     for (auto& obj : scene->_ghostObjects)
     {
-        auto objPtr = dynamic_pointer_cast<Image>(obj.second);
-        if (objPtr)
-            imageList.push_back(objPtr);
+        if (!obj.second->_savable)
+            continue;
+
+        if (dynamic_pointer_cast<Image>(obj.second))
+            mediaList.push_back(obj.second);
+        else if (dynamic_pointer_cast<Texture>(obj.second))
+            mediaList.push_back(obj.second);
     }
 
-    return imageList;
+    return mediaList;
 }
 
 /*************/

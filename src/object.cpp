@@ -342,6 +342,12 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
         removeGeometry(geom);
         return true;
     }
+    else if (obj->getType().find("queue") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
+        return true;
+    }
 
     return BaseObject::unlinkFrom(obj);
 }

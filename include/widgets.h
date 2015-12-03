@@ -148,14 +148,15 @@ class GuiMedia : public GuiWidget
         std::map<std::string, std::string> _mediaTypes {{"image", "image"},
                                                         {"video", "image_ffmpeg"},
                                                         {"shared memory", "image_shmdata"},
+                                                        {"queue", "queue"},
 #if HAVE_OSX
                                                         {"syphon", "texture_syphon"}};
 #else
                                                         };
 #endif
 
-        std::list<std::shared_ptr<Image>> getSceneImages();
-        void replaceMedia(std::shared_ptr<Image> previousImage, std::string type);
+        std::list<std::shared_ptr<BaseObject>> getSceneMedia();
+        void replaceMedia(std::string previousMedia, std::string type);
 };
 
 /*************/
