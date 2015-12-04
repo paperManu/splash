@@ -10,6 +10,7 @@
 #include "image_shmdata.h"
 #include "log.h"
 #include "object.h"
+#include "queue.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -48,6 +49,14 @@ void GuiTextBox::render()
 
 /*************/
 /*************/
+GuiMedia::GuiMedia(std::string name)
+    : GuiWidget(name)
+{
+    for (auto& type : _mediaTypes)
+        _mediaTypesReversed[type.second] = type.first;
+}
+
+/*************/
 void GuiMedia::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
@@ -71,7 +80,7 @@ void GuiMedia::render()
                     mediaTypes.push_back(type.first.c_str());
 
                 if (ImGui::Combo("", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
-                    replaceMedia(media->getName(), mediaTypes[_mediaTypeIndex[mediaName]]);
+                    replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
 
                 ImGui::Text("Parameters:");
                 auto attributes = media->getAttributes(true);
@@ -92,7 +101,7 @@ void GuiMedia::render()
                             float tmp = attr.second[0].asFloat();
                             float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
                             if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp});
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
                         }
                         else if (attr.second.size() == 2)
                         {
@@ -100,7 +109,7 @@ void GuiMedia::render()
                             tmp.push_back(attr.second[0].asFloat());
                             tmp.push_back(attr.second[1].asFloat());
                             if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp[0], tmp[1]});
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1]});
                         }
                         else if (attr.second.size() == 3)
                         {
@@ -109,7 +118,7 @@ void GuiMedia::render()
                             tmp.push_back(attr.second[1].asFloat());
                             tmp.push_back(attr.second[2].asFloat());
                             if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp[0], tmp[1], tmp[2]});
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1], tmp[2]});
                         }
                         else if (attr.second.size() == 4)
                         {
@@ -119,7 +128,7 @@ void GuiMedia::render()
                             tmp.push_back(attr.second[2].asFloat());
                             tmp.push_back(attr.second[3].asFloat());
                             if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
                         }
                     }
                     else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
@@ -153,9 +162,149 @@ void GuiMedia::render()
                             string tmp = v.asString();
                             tmp.resize(256);
                             if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {media->getName(), attr.first, tmp});
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
                         }
                     }
+                }
+
+
+                // TODO: specific part for Queues. Need better Attributes definition to remove this
+                if (dynamic_pointer_cast<QueueSurrogate>(media))
+                {
+                    if (ImGui::TreeNode("Playlist"))
+                    {
+                        auto updated = false;
+                        Values playlist;
+
+                        auto playlistIt = attributes.find("playlist");
+                        if (playlistIt != attributes.end())
+                        {
+                            playlist = playlistIt->second;
+
+                            // Current sources
+                            int index = 0;
+                            int deleteIndex = -1;
+                            for (auto& source : playlist)
+                            {
+                                auto values = source.asValues();
+                                auto idStack = mediaName + values[0].asString();
+
+                                ImGui::PushID((idStack + "delete").c_str());
+                                if (ImGui::Button("-"))
+                                    deleteIndex = index;
+                                ImGui::PopID();
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Delete this media");
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(96);
+                                ImGui::PushID(idStack.c_str());
+                                ImGui::Text(_mediaTypesReversed[values[0].asString()].c_str());
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Media type");
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(96);
+                                float tmp = values[2].asFloat();
+                                ImGui::PushID((idStack + values[2].asString()).c_str());
+                                if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                {
+                                    source[2] = tmp;
+                                    updated = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Start time (s)");
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(96);
+                                tmp = values[3].asFloat();
+                                ImGui::PushID((idStack + values[3].asString()).c_str());
+                                if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                {
+                                    source[3] = tmp;
+                                    updated = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Stop time (s)");
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(-0.01f);
+                                ImGui::PushID((idStack + values[1].asString()).c_str());
+                                ImGui::Text(values[1].asString().c_str());
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Media path");
+                                ImGui::PopID();
+                                ImGui::PopItemWidth();
+
+                                ++index;
+                            }
+
+                            if (deleteIndex >= 0)
+                            {
+                                playlist.erase(playlist.begin() + deleteIndex);
+                                updated = true;
+                            }
+                        }
+
+                        // Adding a source
+                        ImGui::Text("Add a media:");
+
+                        int typeIndex;
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID("newMediaType");
+                        if (ImGui::Combo("", &_newMediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
+                            _newMedia[0] = _mediaTypes[mediaTypes[_newMediaTypeIndex]];
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Media type");
+                        ImGui::PopID();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID("newMediaStart");
+                        if (ImGui::InputFloat("", &_newMediaStart, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                            _newMedia[2] = _newMediaStart;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Start time (s)");
+                        ImGui::PopID();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID("newMediaStop");
+                        if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                            _newMedia[3] = _newMediaStop;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Stop time (s)");
+                        ImGui::PopID();
+
+                        string filepath;
+                        filepath.resize(512);
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(-0.01f);
+                        ImGui::PushID("newMediaFile");
+                        if (ImGui::InputText("", const_cast<char*>(filepath.c_str()), filepath.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        {
+                            _newMedia[1] = filepath;
+                            playlist.push_back(_newMedia);
+                            updated = true;
+                        }
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Media path");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+                        
+                        if (updated)
+                        {
+                            playlist.push_front("playlist");
+                            playlist.push_front(mediaName);
+                            scene->sendMessageToWorld("sendAll", playlist);
+                        }
+
+                        ImGui::TreePop();
+                    }
+
                 }
 
                 ImGui::TreePop();

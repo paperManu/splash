@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <deque>
 #include <ostream>
 #include <memory>
 #include <mutex>
@@ -177,7 +178,7 @@ class GlWindow
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
 
 struct Value;
-typedef std::vector<Value> Values;
+typedef std::deque<Value> Values;
 
 /*************/
 struct Value
@@ -238,6 +239,14 @@ struct Value
             }
             else
                 return false;
+        }
+
+        Value& operator[](int index)
+        {
+            if (_type != Type::v)
+                return *this;
+            else
+                return _v[index];
         }
 
         int asInt() const
