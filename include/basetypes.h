@@ -590,7 +590,7 @@ class RootObject : public BaseObject
         std::shared_ptr<Link> _link;
         mutable std::recursive_mutex _objectsMutex; // Used in registration and unregistration of objects
         mutable std::recursive_mutex _setMutex;
-        std::map<std::string, std::shared_ptr<BaseObject>> _objects;
+        std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects;
 
         Values _lastAnswerReceived {};
         std::condition_variable _answerCondition;
