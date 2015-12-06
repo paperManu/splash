@@ -302,10 +302,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!filter)
             return false;
-        else if (filter->unlinkFrom(obj))
-            unlinkFrom(filter);
-        else
-            return false;
+        filter->unlinkFrom(obj);
+        return unlinkFrom(filter);
     }
     else if (type.find("image") != string::npos)
     {
@@ -314,10 +312,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!filter)
             return false;
-        else if (filter->unlinkFrom(obj))
-            unlinkFrom(filter);
-        else
-            return false;
+        filter->unlinkFrom(obj);
+        return unlinkFrom(filter);
     }
     else if (type.find("filter") != string::npos)
     {
@@ -331,10 +327,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!geom)
             return false;
-        if (geom->unlinkFrom(obj))
-            unlinkFrom(geom);
-        else
-            return false;
+        geom->unlinkFrom(obj);
+        return unlinkFrom(geom);
     }
     else if (type.find("geometry") != string::npos)
     {

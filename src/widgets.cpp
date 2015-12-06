@@ -187,7 +187,7 @@ void GuiMedia::render()
                             for (auto& source : playlist)
                             {
                                 auto values = source.asValues();
-                                auto idStack = mediaName + values[0].asString();
+                                auto idStack = to_string(index) + values[0].asString();
 
                                 ImGui::PushID((idStack + "delete").c_str());
                                 if (ImGui::Button("-"))
@@ -252,7 +252,18 @@ void GuiMedia::render()
                         // Adding a source
                         ImGui::Text("Add a media:");
 
+                        ImGui::PushID("addNewMedia");
+                        if (ImGui::Button("+"))
+                        {
+                            playlist.push_back(_newMedia);
+                            updated = true;
+                        }
+                        ImGui::PopID();
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Add this media");
+
                         int typeIndex;
+                        ImGui::SameLine();
                         ImGui::PushItemWidth(96);
                         ImGui::PushID("newMediaType");
                         if (ImGui::Combo("", &_newMediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
@@ -279,17 +290,13 @@ void GuiMedia::render()
                             ImGui::SetTooltip("Stop time (s)");
                         ImGui::PopID();
 
-                        string filepath;
+                        string filepath = _newMedia[1].asString();
                         filepath.resize(512);
                         ImGui::SameLine();
                         ImGui::PushItemWidth(-0.01f);
                         ImGui::PushID("newMediaFile");
                         if (ImGui::InputText("", const_cast<char*>(filepath.c_str()), filepath.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        {
                             _newMedia[1] = filepath;
-                            playlist.push_back(_newMedia);
-                            updated = true;
-                        }
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media path");
                         ImGui::PopID();

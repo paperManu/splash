@@ -37,6 +37,7 @@
 #include <atomic>
 #include <chrono>
 #include <deque>
+#include <execinfo.h>
 #include <ostream>
 #include <memory>
 #include <mutex>
@@ -51,6 +52,20 @@
 #define SPLASH_CORETYPES_H
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __FUNCTION__ << "::" << __LINE__ << std::endl;
+#define PRINT_CALL_STACK \
+{ \
+    int j, nptrs; \
+    int size = 100; \
+    void* buffers[size]; \
+    char** strings; \
+    \
+    nptrs = backtrace(buffers, size); \
+    strings = backtrace_symbols(buffers, nptrs); \
+    for (j = 0; j < nptrs; ++j) \
+        std::cout << strings[j] << endl; \
+    \
+    free(strings); \
+}
 
 namespace Splash
 {
