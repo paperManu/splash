@@ -6,6 +6,7 @@ datas_DATA = \
 	2d_marker.obj \
 	camera.obj \
 	color_map.png \
+	cubes.obj \
 	plane.obj \
 	sphere.obj \
 	splash.json \
@@ -16,6 +17,7 @@ EXTRA_DIST = \
 	2d_marker.obj \
 	camera.obj \
 	color_map.png \
+	cubes.obj \
 	plane.obj \
 	sphere.obj \
 	splash.json \
