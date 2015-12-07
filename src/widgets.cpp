@@ -7,7 +7,9 @@
 #include "camera.h"
 #include "image.h"
 #include "image_ffmpeg.h"
-#include "image_shmdata.h"
+#if HAVE_SHMDATA
+    #include "image_shmdata.h"
+#endif
 #include "log.h"
 #include "object.h"
 #include "queue.h"

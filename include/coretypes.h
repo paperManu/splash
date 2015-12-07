@@ -215,18 +215,32 @@ struct Value
         Value(double v) {_f = (float)v; _type = Type::f;}
         Value(std::string v) {_s = v; _type = Type::s;}
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
-        Value(Values v) {_v = v; _type = Type::v;}
+        Value(Values v)
+        {
+            if (!_v)
+                _v = new Values();
+            *_v = v;
+            _type = Type::v;
+        }
+
+        ~Value()
+        {
+            if (_v)
+                free(_v);
+        }
 
         template<class InputIt>
         Value(InputIt first, InputIt last)
         {
             _type = Type::v;
-            _v.clear();
+            if (!_v)
+                _v = new Values();
+            _v->clear();
 
             auto it = first;
             while (it != last)
             {
-                _v.push_back(Value(*it));
+                _v->push_back(Value(*it));
                 ++it;
             }
         }
@@ -245,11 +259,11 @@ struct Value
                 return _s == v._s;
             else if (_type == Type::v)
             {
-                if (_v.size() != v._v.size())
+                if (_v->size() != v._v->size())
                     return false;
                 bool isEqual = true;
-                for (int i = 0; i < _v.size(); ++i)
-                    isEqual &= (_v[i] == v._v[i]);
+                for (int i = 0; i < _v->size(); ++i)
+                    isEqual &= (_v->at(i) == v._v->at(i));
                 return isEqual;
             }
             else
@@ -261,7 +275,7 @@ struct Value
             if (_type != Type::v)
                 return *this;
             else
-                return _v[index];
+                return _v->at(index);
         }
 
         int asInt() const
@@ -337,7 +351,7 @@ struct Value
             else if (_type == Type::s)
                 return {_s};
             else if (_type == Type::v)
-                return _v;
+                return *_v;
             else
                 return {};
         }
@@ -378,7 +392,7 @@ struct Value
         int64_t _l {0};
         float _f {0.f};
         std::string _s {""};
-        Values _v {};
+        Values* _v {nullptr};
 };
 
 /*************/
