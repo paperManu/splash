@@ -223,10 +223,35 @@ struct Value
             _type = Type::v;
         }
 
+        Value(const Value& v)
+        {
+            operator=(v);
+        }
+
+        Value& operator=(const Value& v)
+        {
+            if (this != &v)
+            {
+                _type = v._type;
+                _i = v._i;
+                _l = v._l;
+                _f = v._f;
+                _s = v._s;
+
+                if (!_v && v._v)
+                {
+                    _v = new Values();
+                    *_v = *v._v;
+                }
+            }
+
+            return *this;
+        }
+
         ~Value()
         {
             if (_v)
-                free(_v);
+                delete _v;
         }
 
         template<class InputIt>
