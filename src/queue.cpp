@@ -51,6 +51,8 @@ string Queue::getDistantName() const
 /*************/
 void Queue::update()
 {
+    unique_lock<mutex> lock(_playlistMutex);
+
     if (_playlist.size() == 0)
         return;
 
@@ -211,6 +213,7 @@ void Queue::registerAttributes()
     _attribFunctions["pause"].doUpdateDistant(true);
 
     _attribFunctions["playlist"] = AttributeFunctor([&](const Values& args) {
+        unique_lock<mutex> lock(_playlistMutex);
         _playlist.clear();
 
         for (auto& it : args)
@@ -234,7 +237,9 @@ void Queue::registerAttributes()
 
         return true;
     }, [&]() -> Values {
+        unique_lock<mutex> lock(_playlistMutex);
         Values playlist;
+
         for (auto& src : _playlist)
         {
             Values source;

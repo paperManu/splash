@@ -102,6 +102,7 @@ class Queue : public BufferObject
             Values args;
         };
         std::vector<Source> _playlist {}; // Holds a vector of [type, filename, start, stop, args], which is also a Values
+        std::mutex _playlistMutex;
 
         bool _useClock {false};
         bool _paused {false};

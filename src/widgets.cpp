@@ -5,8 +5,14 @@
 #include <imgui.h>
 
 #include "camera.h"
+#include "image.h"
+#include "image_ffmpeg.h"
+#if HAVE_SHMDATA
+    #include "image_shmdata.h"
+#endif
 #include "log.h"
 #include "object.h"
+#include "queue.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -44,6 +50,356 @@ void GuiTextBox::render()
 }
 
 /*************/
+/*************/
+GuiMedia::GuiMedia(std::string name)
+    : GuiWidget(name)
+{
+    for (auto& type : _mediaTypes)
+        _mediaTypesReversed[type.second] = type.first;
+}
+
+/*************/
+void GuiMedia::render()
+{
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        auto scene = _scene.lock();
+
+        auto mediaList = getSceneMedia();
+        for (auto& media : mediaList)
+        {
+            auto mediaName = media->getName();
+            if (ImGui::TreeNode(mediaName.c_str()))
+            {
+                ImGui::Text("Media type: ");
+                ImGui::SameLine();
+
+                if (_mediaTypeIndex.find(mediaName) == _mediaTypeIndex.end())
+                    _mediaTypeIndex[mediaName] = 0;
+
+                vector<const char*> mediaTypes;
+                for (auto& type : _mediaTypes)
+                    mediaTypes.push_back(type.first.c_str());
+
+                if (ImGui::Combo("", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
+                    replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
+
+                ImGui::Text("Parameters:");
+                auto attributes = media->getAttributes(true);
+                for (auto& attr : attributes)
+                {
+                    if (attr.second.size() > 4 || attr.second.size() == 0)
+                        continue;
+
+                    if (attr.second[0].getType() == Value::Type::i
+                        || attr.second[0].getType() == Value::Type::f)
+                    {
+                        int precision = 0;
+                        if (attr.second[0].getType() == Value::Type::f)
+                            precision = 2;
+
+                        if (attr.second.size() == 1)
+                        {
+                            float tmp = attr.second[0].asFloat();
+                            float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
+                            if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                        }
+                        else if (attr.second.size() == 2)
+                        {
+                            vector<float> tmp;
+                            tmp.push_back(attr.second[0].asFloat());
+                            tmp.push_back(attr.second[1].asFloat());
+                            if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1]});
+                        }
+                        else if (attr.second.size() == 3)
+                        {
+                            vector<float> tmp;
+                            tmp.push_back(attr.second[0].asFloat());
+                            tmp.push_back(attr.second[1].asFloat());
+                            tmp.push_back(attr.second[2].asFloat());
+                            if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1], tmp[2]});
+                        }
+                        else if (attr.second.size() == 4)
+                        {
+                            vector<float> tmp;
+                            tmp.push_back(attr.second[0].asFloat());
+                            tmp.push_back(attr.second[1].asFloat());
+                            tmp.push_back(attr.second[2].asFloat());
+                            tmp.push_back(attr.second[3].asFloat());
+                            if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                        }
+                    }
+                    else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
+                    {
+                        // We skip anything that looks like a vector / matrix
+                        // (for usefulness reasons...)
+                        Values values = attr.second[0].asValues();
+                        if (values.size() > 16)
+                        {
+                            if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
+                            {
+                                float minValue = numeric_limits<float>::max();
+                                float maxValue = numeric_limits<float>::min();
+                                vector<float> samples;
+                                for (auto& v : values)
+                                {
+                                    float value = v.asFloat();
+                                    maxValue = std::max(value, maxValue);
+                                    minValue = std::min(value, minValue);
+                                    samples.push_back(value);
+                                }
+                                
+                                ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
+                            }
+                        }
+                    }
+                    else if (attr.second[0].getType() == Value::Type::s)
+                    {
+                        for (auto& v : attr.second)
+                        {
+                            string tmp = v.asString();
+                            tmp.resize(256);
+                            if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                        }
+                    }
+                }
+
+
+                // TODO: specific part for Queues. Need better Attributes definition to remove this
+                if (dynamic_pointer_cast<QueueSurrogate>(media))
+                {
+                    if (ImGui::TreeNode("Playlist"))
+                    {
+                        auto updated = false;
+                        Values playlist;
+
+                        auto playlistIt = attributes.find("playlist");
+                        if (playlistIt != attributes.end())
+                        {
+                            playlist = playlistIt->second;
+
+                            // Current sources
+                            int index = 0;
+                            int deleteIndex = -1;
+                            for (auto& source : playlist)
+                            {
+                                auto values = source.asValues();
+                                auto idStack = to_string(index) + values[0].asString();
+
+                                ImGui::PushID((idStack + "delete").c_str());
+                                if (ImGui::Button("-"))
+                                    deleteIndex = index;
+                                ImGui::PopID();
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Delete this media");
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(96);
+                                ImGui::PushID(idStack.c_str());
+                                ImGui::Text(_mediaTypesReversed[values[0].asString()].c_str());
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Media type");
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(96);
+                                float tmp = values[2].asFloat();
+                                ImGui::PushID((idStack + values[2].asString()).c_str());
+                                if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                {
+                                    source[2] = tmp;
+                                    updated = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Start time (s)");
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(96);
+                                tmp = values[3].asFloat();
+                                ImGui::PushID((idStack + values[3].asString()).c_str());
+                                if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                {
+                                    source[3] = tmp;
+                                    updated = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Stop time (s)");
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(-0.01f);
+                                ImGui::PushID((idStack + values[1].asString()).c_str());
+                                ImGui::Text(values[1].asString().c_str());
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Media path");
+                                ImGui::PopID();
+                                ImGui::PopItemWidth();
+
+                                ++index;
+                            }
+
+                            if (deleteIndex >= 0)
+                            {
+                                playlist.erase(playlist.begin() + deleteIndex);
+                                updated = true;
+                            }
+                        }
+
+                        // Adding a source
+                        ImGui::Text("Add a media:");
+
+                        ImGui::PushID("addNewMedia");
+                        if (ImGui::Button("+"))
+                        {
+                            playlist.push_back(_newMedia);
+                            updated = true;
+                        }
+                        ImGui::PopID();
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Add this media");
+
+                        int typeIndex;
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID("newMediaType");
+                        if (ImGui::Combo("", &_newMediaTypeIndex, mediaTypes.data(), mediaTypes.size()))
+                            _newMedia[0] = _mediaTypes[mediaTypes[_newMediaTypeIndex]];
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Media type");
+                        ImGui::PopID();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID("newMediaStart");
+                        if (ImGui::InputFloat("", &_newMediaStart, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                            _newMedia[2] = _newMediaStart;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Start time (s)");
+                        ImGui::PopID();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(96);
+                        ImGui::PushID("newMediaStop");
+                        if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                            _newMedia[3] = _newMediaStop;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Stop time (s)");
+                        ImGui::PopID();
+
+                        string filepath = _newMedia[1].asString();
+                        filepath.resize(512);
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(-0.01f);
+                        ImGui::PushID("newMediaFile");
+                        if (ImGui::InputText("", const_cast<char*>(filepath.c_str()), filepath.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                            _newMedia[1] = filepath;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Media path");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+                        
+                        if (updated)
+                        {
+                            playlist.push_front("playlist");
+                            playlist.push_front(mediaName);
+                            scene->sendMessageToWorld("sendAll", playlist);
+                        }
+
+                        ImGui::TreePop();
+                    }
+
+                }
+
+                ImGui::TreePop();
+            }
+        }
+    }
+}
+
+/*************/
+void GuiMedia::replaceMedia(string previousMedia, string type)
+{
+    auto scene = _scene.lock();
+
+    // We get the list of all objects linked to previousMedia
+    auto targetObjects = list<weak_ptr<BaseObject>>();
+    for (auto& objIt : scene->_objects)
+    {
+        auto& object = objIt.second;
+        if (!object->_savable)
+            continue;
+        auto linkedObjects = object->getLinkedObjects();
+        for (auto& linked : linkedObjects)
+            if (linked->getName() == previousMedia)
+                targetObjects.push_back(object);
+    }
+
+    // Delete the media
+    scene->sendMessageToWorld("deleteObject", {previousMedia});
+    
+    // Replace the current Image with the new one
+    // TODO: this has to be done in a thread because "deleteObject" is asynched and "addObject" is synched...
+    SThread::pool.enqueueWithoutId([=]() {
+        this_thread::sleep_for(chrono::milliseconds(100));
+        scene->sendMessageToWorld("addObject", {_mediaTypes[type], previousMedia});
+
+        for (auto& weakObject : targetObjects)
+        {
+            if (weakObject.expired())
+                continue;
+            auto object = weakObject.lock();
+            scene->sendMessageToWorld("sendAllScenes", {"link", previousMedia, object->getName()});
+            scene->sendMessageToWorld("sendAllScenes", {"linkGhost", previousMedia, object->getName()});
+        }
+    });
+}
+
+/*************/
+int GuiMedia::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    return flags;
+}
+
+/*************/
+list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
+{
+    auto mediaList = list<shared_ptr<BaseObject>>();
+    auto scene = _scene.lock();
+
+    for (auto& obj : scene->_objects)
+    {
+        if (!obj.second->_savable)
+            continue;
+
+        if (dynamic_pointer_cast<Image>(obj.second))
+            mediaList.push_back(obj.second);
+        else if (dynamic_pointer_cast<Texture>(obj.second))
+            mediaList.push_back(obj.second);
+    }
+
+    for (auto& obj : scene->_ghostObjects)
+    {
+        if (!obj.second->_savable)
+            continue;
+
+        if (dynamic_pointer_cast<Image>(obj.second))
+            mediaList.push_back(obj.second);
+        else if (dynamic_pointer_cast<Texture>(obj.second))
+            mediaList.push_back(obj.second);
+    }
+
+    return mediaList;
+}
+
+/*************/
+/*************/
 void GuiControl::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
@@ -69,18 +425,21 @@ void GuiControl::render()
         ImGui::Spacing();
 
         // Node view
-        if (!_nodeView)
+        if (Log::get().getVerbosity() == Log::DEBUGGING)
         {
-            auto nodeView = make_shared<GuiNodeView>("Nodes");
-            nodeView->setScene(_scene);
-            _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
-        }
-        ImGui::Text("Configuration global view");
-        _nodeView->render();
+            if (!_nodeView)
+            {
+                auto nodeView = make_shared<GuiNodeView>("Nodes");
+                nodeView->setScene(_scene);
+                _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
+            }
+            ImGui::Text("Configuration global view");
+            _nodeView->render();
 
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
 
         // Configuration applied to multiple objects
         ImGui::Text("Global configuration (saved!)");
@@ -96,143 +455,146 @@ void GuiControl::render()
         if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
 
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        // Node configuration
-        ImGui::Text("Objects configuration (saved!)");
-        // Select the object the control
+        if (Log::get().getVerbosity() == Log::DEBUGGING)
         {
-            vector<string> objectNames = getObjectNames();
-            vector<const char*> items;
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
 
-            int index = 0;
-            string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
-            for (auto& name : objectNames)
+            // Node configuration
+            ImGui::Text("Objects configuration (saved!)");
+            // Select the object the control
             {
-                items.push_back(name.c_str());
-                // If the object name is the same as the item selected in the node view, we change the targetIndex
-                if (name == clickedNode)
-                    _targetIndex = index;
-                index++;
-            }
-            ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
-        }
+                vector<string> objectNames = getObjectNames();
+                vector<const char*> items;
 
-        // Initialize the target
-        if (_targetIndex >= 0)
-        {
-            vector<string> objectNames = getObjectNames();
-            if (objectNames.size() <= _targetIndex)
+                int index = 0;
+                string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
+                for (auto& name : objectNames)
+                {
+                    items.push_back(name.c_str());
+                    // If the object name is the same as the item selected in the node view, we change the targetIndex
+                    if (name == clickedNode)
+                        _targetIndex = index;
+                    index++;
+                }
+                ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
+            }
+
+            // Initialize the target
+            if (_targetIndex >= 0)
+            {
+                vector<string> objectNames = getObjectNames();
+                if (objectNames.size() <= _targetIndex)
+                    return;
+                _targetObjectName = objectNames[_targetIndex];
+            }
+
+            if (_targetObjectName == "")
                 return;
-            _targetObjectName = objectNames[_targetIndex];
-        }
 
-        if (_targetObjectName == "")
-            return;
+            auto scene = _scene.lock();
 
-        auto scene = _scene.lock();
+            bool isDistant = false;
+            if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
+                isDistant = true;
 
-        bool isDistant = false;
-        if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
-            isDistant = true;
+            unordered_map<string, Values> attributes;
+            if (!isDistant)
+                attributes = scene->_objects[_targetObjectName]->getAttributes(true);
+            else
+                attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
 
-        unordered_map<string, Values> attributes;
-        if (!isDistant)
-            attributes = scene->_objects[_targetObjectName]->getAttributes(true);
-        else
-            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
-
-        for (auto& attr : attributes)
-        {
-            if (attr.second.size() > 4 || attr.second.size() == 0)
-                continue;
-
-            if (attr.second[0].getType() == Value::Type::i
-                || attr.second[0].getType() == Value::Type::f)
+            for (auto& attr : attributes)
             {
-                int precision = 0;
-                if (attr.second[0].getType() == Value::Type::f)
-                    precision = 2;
+                if (attr.second.size() > 4 || attr.second.size() == 0)
+                    continue;
 
-                if (attr.second.size() == 1)
+                if (attr.second[0].getType() == Value::Type::i
+                    || attr.second[0].getType() == Value::Type::f)
                 {
-                    float tmp = attr.second[0].asFloat();
-                    float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
-                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                }
-                else if (attr.second.size() == 2)
-                {
-                    vector<float> tmp;
-                    tmp.push_back(attr.second[0].asFloat());
-                    tmp.push_back(attr.second[1].asFloat());
-                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
-                }
-                else if (attr.second.size() == 3)
-                {
-                    vector<float> tmp;
-                    tmp.push_back(attr.second[0].asFloat());
-                    tmp.push_back(attr.second[1].asFloat());
-                    tmp.push_back(attr.second[2].asFloat());
-                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
-                }
-                else if (attr.second.size() == 4)
-                {
-                    vector<float> tmp;
-                    tmp.push_back(attr.second[0].asFloat());
-                    tmp.push_back(attr.second[1].asFloat());
-                    tmp.push_back(attr.second[2].asFloat());
-                    tmp.push_back(attr.second[3].asFloat());
-                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
-                }
-            }
-            else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
-            {
-                // We skip anything that looks like a vector / matrix
-                // (for usefulness reasons...)
-                Values values = attr.second[0].asValues();
-                if (values.size() > 16)
-                {
-                    if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
+                    int precision = 0;
+                    if (attr.second[0].getType() == Value::Type::f)
+                        precision = 2;
+
+                    if (attr.second.size() == 1)
                     {
-                        float minValue = numeric_limits<float>::max();
-                        float maxValue = numeric_limits<float>::min();
-                        vector<float> samples;
-                        for (auto& v : values)
+                        float tmp = attr.second[0].asFloat();
+                        float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
+                        if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    }
+                    else if (attr.second.size() == 2)
+                    {
+                        vector<float> tmp;
+                        tmp.push_back(attr.second[0].asFloat());
+                        tmp.push_back(attr.second[1].asFloat());
+                        if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
+                    }
+                    else if (attr.second.size() == 3)
+                    {
+                        vector<float> tmp;
+                        tmp.push_back(attr.second[0].asFloat());
+                        tmp.push_back(attr.second[1].asFloat());
+                        tmp.push_back(attr.second[2].asFloat());
+                        if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
+                    }
+                    else if (attr.second.size() == 4)
+                    {
+                        vector<float> tmp;
+                        tmp.push_back(attr.second[0].asFloat());
+                        tmp.push_back(attr.second[1].asFloat());
+                        tmp.push_back(attr.second[2].asFloat());
+                        tmp.push_back(attr.second[3].asFloat());
+                        if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                    }
+                }
+                else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
+                {
+                    // We skip anything that looks like a vector / matrix
+                    // (for usefulness reasons...)
+                    Values values = attr.second[0].asValues();
+                    if (values.size() > 16)
+                    {
+                        if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
                         {
-                            float value = v.asFloat();
-                            maxValue = std::max(value, maxValue);
-                            minValue = std::min(value, minValue);
-                            samples.push_back(value);
+                            float minValue = numeric_limits<float>::max();
+                            float maxValue = numeric_limits<float>::min();
+                            vector<float> samples;
+                            for (auto& v : values)
+                            {
+                                float value = v.asFloat();
+                                maxValue = std::max(value, maxValue);
+                                minValue = std::min(value, minValue);
+                                samples.push_back(value);
+                            }
+                            
+                            ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
                         }
-                        
-                        ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
+                    }
+                }
+                else if (attr.second[0].getType() == Value::Type::s)
+                {
+                    for (auto& v : attr.second)
+                    {
+                        string tmp = v.asString();
+                        tmp.resize(256);
+                        if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
                     }
                 }
             }
-            else if (attr.second[0].getType() == Value::Type::s)
-            {
-                for (auto& v : attr.second)
-                {
-                    string tmp = v.asString();
-                    tmp.resize(256);
-                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                }
-            }
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (ImGui::Button("Delete selected object"))
+                scene->sendMessageToWorld("deleteObject", {_targetObjectName});
         }
-
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        if (ImGui::Button("Delete selected object"))
-            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
     }
 }
 
@@ -284,6 +646,7 @@ int GuiControl::updateWindowFlags()
 }
 
 /*************/
+/*************/
 GuiGlobalView::GuiGlobalView(string name)
     : GuiWidget(name)
 {
@@ -294,43 +657,95 @@ void GuiGlobalView::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        if (ImGui::Button("Hide other cameras"))
+            switchHideOtherCameras();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Hide all but the selected camera (H while hovering the view)");
+        ImGui::SameLine();
+
+        if (ImGui::Button("Show targets"))
+            showAllCalibrationPoints();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Show the target positions for the calibration points (A while hovering the view)");
+        ImGui::SameLine();
+
+        if (ImGui::Button("Show all points"))
+            showAllCamerasCalibrationPoints();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Show the calibration points from all cameras (O while hovering the view)");
+        ImGui::SameLine();
+
+        if (ImGui::Button("Calibrate camera"))
+            doCalibration();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Calibrate the selected camera (C while hovering the view)");
+        ImGui::SameLine();
+
+        if (ImGui::Button("Revert camera"))
+            revertCalibration();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Revert the selected camera to its previous calibration (R while hovering the view)");
+
+        ImVec2 winSize = ImGui::GetWindowSize();
+        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+
+        auto cameras = getCameras();
+        
+        ImGui::BeginChild("Cameras", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
+        ImGui::Text("Select a camera:");
+        for (auto& camera : cameras)
+        {
+            camera->render();
+
+            Values size;
+            camera->getAttribute("size", size);
+
+            int w = ImGui::GetWindowWidth() - 4 * leftMargin;
+            int h = w * size[1].asInt() / size[0].asInt();
+
+            if(ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            {
+                auto scene = _scene.lock();
+
+                // Empty previous camera parameters
+                _previousCameraParameters.clear();
+
+                // Ensure that all cameras are shown
+                _camerasHidden = false;
+                for (auto& cam : cameras)
+                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+
+                _camera = camera;
+
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
+                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+            }
+
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(camera->getName().c_str());
+        }
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Calibration", ImVec2(0, ImGui::GetWindowWidth() * 0.67), false);
         if (_camera != nullptr)
         {
-            if (_camera == _guiCamera)
-                _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
-
-            _camera->render();
-
             Values size;
             _camera->getAttribute("size", size);
 
-            double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-            ImVec2 winSize = ImGui::GetWindowSize();
-            int w = std::max(400.0, winSize.x - 4 * leftMargin);
+            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
             int h = w * size[1].asInt() / size[0].asInt();
 
             _camWidth = w;
             _camHeight = h;
 
-            if (ImGui::Button("Next camera"))
-                nextCamera();
-            ImGui::SameLine();
-            if (ImGui::Button("Hide other cameras"))
-                switchHideOtherCameras();
-            ImGui::SameLine();
-            if (ImGui::Button("Show targets"))
-                showAllCalibrationPoints();
-            ImGui::SameLine();
-            if (ImGui::Button("Show all points"))
-                showAllCamerasCalibrationPoints();
-            ImGui::SameLine();
-            if (ImGui::Button("Calibrate camera"))
-                doCalibration();
-
             ImGui::Text(("Current camera: " + _camera->getName()).c_str());
 
             ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-            if (ImGui::IsItemHovered())
+            if (ImGui::IsItemHoveredRect())
             {
                 _noMove = true;
                 processKeyEvents();
@@ -338,8 +753,11 @@ void GuiGlobalView::render()
                 processJoystickState();
             }
             else
+            {
                 _noMove = false;
+            }
         }
+        ImGui::EndChild();
     }
 }
 
@@ -374,9 +792,19 @@ void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>
 }
 
 /*************/
-void GuiGlobalView::setObject(shared_ptr<BaseObject> obj)
+vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 {
-    _camera->linkTo(obj);
+    auto scene = _scene.lock();
+    auto rtMatrices = vector<glm::dmat4>();
+
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "camera")
+            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "camera")
+            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+
+    return rtMatrices;
 }
 
 /*************/
@@ -385,10 +813,10 @@ void GuiGlobalView::nextCamera()
     auto scene = _scene.lock();
     vector<CameraPtr> cameras;
     for (auto& obj : scene->_objects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+        if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
     for (auto& obj : scene->_ghostObjects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+        if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
     // Empty previous camera parameters
@@ -430,6 +858,35 @@ void GuiGlobalView::nextCamera()
     }
 
     return;
+}
+
+/*************/
+void GuiGlobalView::revertCalibration()
+{
+    if (_previousCameraParameters.size() == 0)
+        return;
+    
+    Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
+    
+    auto params = _previousCameraParameters.back();
+    _previousCameraParameters.pop_back();
+    
+    _camera->setAttribute("eye", params.eye);
+    _camera->setAttribute("target", params.target);
+    _camera->setAttribute("up", params.up);
+    _camera->setAttribute("fov", params.fov);
+    _camera->setAttribute("principalPoint", params.principalPoint);
+    
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_ghostObjects)
+        if (_camera->getName() == obj.second->getName())
+        {
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", params.eye[0], params.eye[1], params.eye[2]});
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", params.target[0], params.target[1], params.target[2]});
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", params.up[0], params.up[1], params.up[2]});
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", params.fov[0]});
+            scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", params.principalPoint[0], params.principalPoint[1]});
+        }
 }
 
 /*************/
@@ -616,30 +1073,8 @@ void GuiGlobalView::processKeyEvents()
     // Reset to the previous camera calibration
     else if (io.KeysDown['R'] && io.KeysDownTime['R'] == 0.0)
     {
-        if (_previousCameraParameters.size() == 0)
-            return;
-
-        Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
-
-        auto params = _previousCameraParameters.back();
-        _previousCameraParameters.pop_back();
-
-        _camera->setAttribute("eye", params.eye);
-        _camera->setAttribute("target", params.target);
-        _camera->setAttribute("up", params.up);
-        _camera->setAttribute("fov", params.fov);
-        _camera->setAttribute("principalPoint", params.principalPoint);
-
-        auto scene = _scene.lock();
-        for (auto& obj : scene->_ghostObjects)
-            if (_camera->getName() == obj.second->getName())
-            {
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", params.eye[0], params.eye[1], params.eye[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", params.target[0], params.target[1], params.target[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", params.up[0], params.up[1], params.up[2]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", params.fov[0]});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", params.principalPoint[0], params.principalPoint[1]});
-            }
+        revertCalibration();
+        return;
     }
     // Arrow keys
     else
@@ -792,6 +1227,30 @@ void GuiGlobalView::processMouseEvents()
     }
 }
 
+/*************/
+vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
+{
+    auto cameras = vector<shared_ptr<Camera>>();
+
+    _guiCamera->setAttribute("size", {ImGui::GetWindowWidth(), ImGui::GetWindowWidth() * 3 / 4});
+
+    auto rtMatrices = getCamerasRTMatrices();
+    for (auto& matrix : rtMatrices)
+        _guiCamera->drawModelOnce("camera", matrix);
+    cameras.push_back(_guiCamera);
+
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "camera")
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "camera")
+            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+
+    return cameras;
+}
+
+/*************/
 /*************/
 void GuiGraph::render()
 {

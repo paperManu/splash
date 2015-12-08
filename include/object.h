@@ -163,6 +163,11 @@ class Object : public BaseObject
         void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
         /**
+         * Set the model matrix. This overrides the position attribute
+         */
+        void setModelMatrix(const glm::dmat4& model) {_modelMatrix = model;}
+
+        /**
          * Subdivide the objects wrt the given camera limits (for blending purposes)
          */
         void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision);
@@ -192,6 +197,7 @@ class Object : public BaseObject
 
         glm::dvec3 _position {0.0, 0.0, 0.0};
         glm::dvec3 _scale {1.0, 1.0, 1.0};
+        glm::dmat4 _modelMatrix;
 
         std::string _fill {"texture"};
         int _sideness {0};

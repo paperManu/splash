@@ -15,6 +15,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 using namespace std;
 
@@ -39,6 +40,7 @@ void Object::init()
     _type = "object";
 
     _shader = make_shared<Shader>();
+    _modelMatrix = glm::dmat4(0.0);
 
     registerAttributes();
 }
@@ -158,7 +160,10 @@ void Object::activate()
 /*************/
 glm::dmat4 Object::computeModelMatrix() const
 {
-    return glm::translate(glm::dmat4(1.f), _position);
+    if (_modelMatrix != glm::dmat4(0.0))
+        return _modelMatrix;
+    else
+        return glm::translate(glm::dmat4(1.f), _position);
 }
 
 /*************/
@@ -297,10 +302,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!filter)
             return false;
-        else if (filter->unlinkFrom(obj))
-            unlinkFrom(filter);
-        else
-            return false;
+        filter->unlinkFrom(obj);
+        return unlinkFrom(filter);
     }
     else if (type.find("image") != string::npos)
     {
@@ -309,10 +312,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!filter)
             return false;
-        else if (filter->unlinkFrom(obj))
-            unlinkFrom(filter);
-        else
-            return false;
+        filter->unlinkFrom(obj);
+        return unlinkFrom(filter);
     }
     else if (type.find("filter") != string::npos)
     {
@@ -326,15 +327,19 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!geom)
             return false;
-        if (geom->unlinkFrom(obj))
-            unlinkFrom(geom);
-        else
-            return false;
+        geom->unlinkFrom(obj);
+        return unlinkFrom(geom);
     }
     else if (type.find("geometry") != string::npos)
     {
         auto geom = dynamic_pointer_cast<Geometry>(obj);
         removeGeometry(geom);
+        return true;
+    }
+    else if (obj->getType().find("queue") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
         return true;
     }
 

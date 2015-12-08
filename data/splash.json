@@ -1,49 +1,89 @@
-// Splash sample configuration file
-{
-    // Default encoding for text
-    "encoding" : "UTF-8",
+{// Default encoding for text
 
-    "world" : {
-        "framerate" : 60
-    },
-
-    "scenes" : [
-        {
-            "name" : "local",
-            "address" : "localhost",
-            "spawn" : 1,
-            "display" : 0,
-            "swapInterval" : 1,
-            "httpServer" : ["127.0.0.1", "9000"]
-        }
-    ],
-
-    "local" : {
-        "cam1" : {
-            "type" : "camera",
-            "size" : [1280, 1024],
-            "eye" : [-2.0, 2.0, 0.3],
-            "target" : [0.0, 0.0, 0.5],
-            "blendWidth" : 0.05,
-            "blackLevel" : 0.0,
-            "shared" : 0
-        },
-        "win1" : {"type" : "window", "fullscreen" : -1, "position" : [1920, 0], "size" : [1280, 1024]},
-
-        "mesh" : {"type" : "mesh", "file" : "sphere.obj", "benchmark" : 0},
-        "object" : {"type" : "object", "sideness" : 2},
-        "image" : {"type" : "image", "file" : "color_map.png", "benchmark" : 0, "srgb" : 1},
-        "image" : {"type" : "image_ffmpeg", "file" : "big_buck_bunny_1080p_stereo.avi", "benchmark" : 0, "srgb" : 1, "useClock" : 1},
-        //"image" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-        //"image" : {"type" : "image_opencv", "file" : "0", "size" : [1920, 1080]},
-
-        "links" : [
-            ["mesh", "object"],
-            ["object", "cam1"],
-            ["object", "cam2"],
-            ["image", "object"],
-            ["cam1", "win1"],
-            ["cam2", "win2"]
-        ]
-    }
+   "encoding" : "UTF-8",
+   "local" : {
+      "cam1" : {
+         "activateColorLUT" : [ 0 ],
+         "blackLevel" : [ 0.0 ],
+         "blendPrecision" : [ 0.1000000014901161 ],
+         "blendWidth" : [ 0.05000000074505806 ],
+         "brightness" : [ 1.0 ],
+         "colorMixMatrix" : [
+            [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+         ],
+         "colorTemperature" : [ 6500.0 ],
+         "eye" : [ -0.7457204461097717, -2.000045061111450, 1.961251258850098 ],
+         "fov" : [ 59.0 ],
+         "principalPoint" : [ 0.50, 0.50 ],
+         "shared" : 0,
+         "size" : [ 1280.0, 1024.0 ],
+         "target" : [ 0.2087247669696808, 0.1021501868963242, 0.3151015341281891 ],
+         "type" : "camera",
+         "up" : [ 0.0, 0.0, 1.0 ]
+      },
+      "colorCalibrator" : {
+         "colorSamples" : [ 5 ],
+         "detectionThresholdFactor" : [ 1.0 ],
+         "equalizeMethod" : [ 2 ],
+         "hdrStep" : [ 1.0 ],
+         "imagePerHDR" : [ 1 ],
+         "type" : "colorCalibrator"
+      },
+      "image" : {
+         "benchmark" : 0,
+         "file" : [ "color_map.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image"
+      },
+      "links" : [
+         [ "mesh", "object" ],
+         [ "object", "cam1" ],
+         [ "object", "cam2" ],
+         [ "image", "object" ],
+         [ "cam1", "win1" ],
+         [ "cam2", "win2" ]
+      ],
+      "local" : {
+         "blendingResolution" : [ 2048 ],
+         "type" : "scene"
+      },
+      "mesh" : {
+         "benchmark" : 0,
+         "file" : [ "cubes.obj" ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "fill" : [ "texture" ],
+         "normalExponent" : [ 0.0 ],
+         "position" : [ 0.0, 0.0, 0.0 ],
+         "scale" : [ 1.0, 1.0, 1.0 ],
+         "sideness" : [ 0 ],
+         "type" : "object"
+      },
+      "win1" : {
+         "decorated" : [ 1 ],
+         "fullscreen" : [ -1 ],
+         "gamma" : [ 2.200000047683716 ],
+         "layout" : [ 0, 0, 0, 0 ],
+         "position" : [ 611, 17 ],
+         "size" : [ 1280, 1024 ],
+         "srgb" : [ 1 ],
+         "type" : "window"
+      }
+   },
+   "scenes" : [
+      {
+         "address" : "localhost",
+         "display" : 0,
+         "httpServer" : [ "127.0.0.1", "9000" ],
+         "name" : "local",
+         "spawn" : 1,
+         "swapInterval" : 1
+      }
+   ],
+   "world" : {
+      "framerate" : 60
+   }
 }

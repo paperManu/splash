@@ -78,7 +78,7 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    unique_lock<mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
+    unique_lock<recursive_mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
@@ -1223,6 +1223,7 @@ void Scene::registerAttributes()
         if (args.size() != 1)
             return false;
 
+        unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() -> void {
             lock_guard<recursive_mutex> lock(_objectsMutex);
             auto objectName = args[0].asString();

@@ -901,7 +901,8 @@ struct ShaderSources
             vec2 texCoord = vertexIn.texCoord;
             vec4 normal = vertexIn.normal;
 
-            fragColor = _color;
+            fragColor.rgb = _color.rgb * vec3(0.3 + 0.7 * dot(normal.xyz, normalize(vec3(1.0, 1.0, 1.0))));
+            fragColor.a = _color.a;
         }
     )"};
 

@@ -36,6 +36,8 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <deque>
+#include <execinfo.h>
 #include <ostream>
 #include <memory>
 #include <mutex>
@@ -50,6 +52,20 @@
 #define SPLASH_CORETYPES_H
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __FUNCTION__ << "::" << __LINE__ << std::endl;
+#define PRINT_CALL_STACK \
+{ \
+    int j, nptrs; \
+    int size = 100; \
+    void* buffers[size]; \
+    char** strings; \
+    \
+    nptrs = backtrace(buffers, size); \
+    strings = backtrace_symbols(buffers, nptrs); \
+    for (j = 0; j < nptrs; ++j) \
+        std::cout << strings[j] << endl; \
+    \
+    free(strings); \
+}
 
 namespace Splash
 {
@@ -177,7 +193,7 @@ class GlWindow
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
 
 struct Value;
-typedef std::vector<Value> Values;
+typedef std::deque<Value> Values;
 
 /*************/
 struct Value
@@ -199,18 +215,57 @@ struct Value
         Value(double v) {_f = (float)v; _type = Type::f;}
         Value(std::string v) {_s = v; _type = Type::s;}
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
-        Value(Values v) {_v = v; _type = Type::v;}
+        Value(Values v)
+        {
+            if (!_v)
+                _v = new Values();
+            *_v = v;
+            _type = Type::v;
+        }
+
+        Value(const Value& v)
+        {
+            operator=(v);
+        }
+
+        Value& operator=(const Value& v)
+        {
+            if (this != &v)
+            {
+                _type = v._type;
+                _i = v._i;
+                _l = v._l;
+                _f = v._f;
+                _s = v._s;
+
+                if (!_v && v._v)
+                {
+                    _v = new Values();
+                    *_v = *v._v;
+                }
+            }
+
+            return *this;
+        }
+
+        ~Value()
+        {
+            if (_v)
+                delete _v;
+        }
 
         template<class InputIt>
         Value(InputIt first, InputIt last)
         {
             _type = Type::v;
-            _v.clear();
+            if (!_v)
+                _v = new Values();
+            _v->clear();
 
             auto it = first;
             while (it != last)
             {
-                _v.push_back(Value(*it));
+                _v->push_back(Value(*it));
                 ++it;
             }
         }
@@ -229,15 +284,23 @@ struct Value
                 return _s == v._s;
             else if (_type == Type::v)
             {
-                if (_v.size() != v._v.size())
+                if (_v->size() != v._v->size())
                     return false;
                 bool isEqual = true;
-                for (int i = 0; i < _v.size(); ++i)
-                    isEqual &= (_v[i] == v._v[i]);
+                for (int i = 0; i < _v->size(); ++i)
+                    isEqual &= (_v->at(i) == v._v->at(i));
                 return isEqual;
             }
             else
                 return false;
+        }
+
+        Value& operator[](int index)
+        {
+            if (_type != Type::v)
+                return *this;
+            else
+                return _v->at(index);
         }
 
         int asInt() const
@@ -313,7 +376,7 @@ struct Value
             else if (_type == Type::s)
                 return {_s};
             else if (_type == Type::v)
-                return _v;
+                return *_v;
             else
                 return {};
         }
@@ -354,7 +417,7 @@ struct Value
         int64_t _l {0};
         float _f {0.f};
         std::string _s {""};
-        Values _v {};
+        Values* _v {nullptr};
 };
 
 /*************/
