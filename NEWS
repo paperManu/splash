@@ -1,12 +1,18 @@
 Splash release notes
 ===================
 
-Splash 0.3.9 (2015-xx-xx)
+Splash 0.3.10 (2015-12-08)
 -------------------------
+Improvements:
+* Improved GUI to hide complexity
+
+Bug fixed:
+* Fixed a random race condition in Timer
+* Fixed a crash happening on Object deletion
 
 Splash 0.3.8 (2015-11-22)
 -------------------------
-Improvements
+Improvements:
 * Big improvements to the Blender addon
 
 Splash 0.3.6 (2015-11-13)
