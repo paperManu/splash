@@ -294,10 +294,12 @@ void World::applyConfig()
             if (spawn > 0)
             {
                 _sceneLaunched = false;
-                string worldDisplay = getenv("DISPLAY");
+                string worldDisplay = "none";
+                if (getenv("DISPLAY"))
+                    worldDisplay = getenv("DISPLAY");
 
                 // If the current process is on the correct display, we use an inner Scene
-                if (display.find(worldDisplay) != string::npos && !_innerScene)
+                if (worldDisplay.size() > 0 && display.find(worldDisplay) != string::npos && !_innerScene)
                 {
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                     _innerScene = make_shared<Scene>(name, false);
