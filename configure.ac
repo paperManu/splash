@@ -4,13 +4,14 @@
 AC_PREREQ(2.68)
 AC_INIT(SPLASH, 0.3.11, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
-AC_PROG_LIBTOOL
-AM_INIT_AUTOMAKE([1.9 tar-ustar])
+AM_INIT_AUTOMAKE([1.10 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
 AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:11])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.3])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.3"], [API version])
+
+AC_PROG_LIBTOOL
 
 # Check for C and C++ compilers
 AC_PROG_CXX
@@ -116,14 +117,14 @@ fi
 
 # JSoncpp
 # Not tested through pkgconfig for OSX / Macports compatibility
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([json/reader.h],
-	[HAVE_JSONCPP=true],
-	[HAVE_JSONCPP=false])
-AC_LANG_POP
-if test "$HAVE_JSONCPP" = "false" ; then
-	AC_MSG_ERROR([Missing JsonCPP])
-fi
+#AC_LANG_PUSH([C++])
+#AC_CHECK_HEADER([json/reader.h],
+#	[HAVE_JSONCPP=true],
+#	[HAVE_JSONCPP=false])
+#AC_LANG_POP
+#if test "$HAVE_JSONCPP" = "false" ; then
+#	AC_MSG_ERROR([Missing JsonCPP])
+#fi
 
 # Shmdata
 PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],

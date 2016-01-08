@@ -28,7 +28,7 @@
 #include <condition_variable>
 #include <map>
 #include <unordered_map>
-#include <json/reader.h>
+#include <json/json.h>
 
 #include "coretypes.h"
 #include "link.h"

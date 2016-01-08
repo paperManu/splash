@@ -4,8 +4,6 @@
 #include <fstream>
 #include <unistd.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <json/reader.h>
-#include <json/writer.h>
 #include <spawn.h>
 #include <sys/wait.h>
 

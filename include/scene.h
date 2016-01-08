@@ -30,7 +30,6 @@
 #include <future>
 #include <list>
 #include <vector>
-#include <json/reader.h>
 
 #include "config.h"
 
