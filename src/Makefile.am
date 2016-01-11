@@ -52,6 +52,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	gui.cpp \
 	httpServer.cpp \
 	image.cpp \
+	imageBuffer.cpp \
 	link.cpp \
 	mesh.cpp \
 	object.cpp \
@@ -284,6 +285,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/httpServer.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/imageBuffer.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_opencv.h \
