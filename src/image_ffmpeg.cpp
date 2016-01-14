@@ -250,7 +250,7 @@ void Image_FFmpeg::readLoop()
             // Reading the video
             if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
-                auto img = unique_ptr<oiio::ImageBuf>();
+                auto img = unique_ptr<ImageBuffer>();
                 uint64_t timing;
                 bool hasFrame = false;
 
@@ -265,10 +265,10 @@ void Image_FFmpeg::readLoop()
                     {
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                        oiio::ImageSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
-                        img.reset(new oiio::ImageBuf(spec));
+                        ImageBufferSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, ImageBufferSpec::Type::UINT8);
+                        img.reset(new ImageBuffer(spec));
 
-                        unsigned char* pixels = static_cast<unsigned char*>(img->localpixels());
+                        unsigned char* pixels = static_cast<unsigned char*>(img->data());
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
@@ -285,29 +285,29 @@ void Image_FFmpeg::readLoop()
                 // If the codec is marked as Hap / Hap alpha / Hap Q
                 else if (isHap)
                 {
-                    // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
+                    // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
                     // First, we check the texture format type
                     std::string textureFormat;
                     if (hapDecodeFrame(packet.data, packet.size, nullptr, 0, textureFormat))
                     {
                         // Check if we need to resize the reader buffer
                         // We set the size so as to have just enough place for the given texture format
-                        oiio::ImageSpec spec;
+                        ImageBufferSpec spec;
                         if (textureFormat == "RGB_DXT1")
-                            spec = oiio::ImageSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
+                            spec = ImageBufferSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
                         if (textureFormat == "RGBA_DXT5")
-                            spec = oiio::ImageSpec(_videoCodecContext->width, _videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
+                            spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
                         if (textureFormat == "YCoCg_DXT5")
-                            spec = oiio::ImageSpec(_videoCodecContext->width, _videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
+                            spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
                         else
                             return;
 
-                        spec.channelnames = {textureFormat};
-                        img.reset(new oiio::ImageBuf(spec));
+                        spec.format = {textureFormat};
+                        img.reset(new ImageBuffer(spec));
 
-                        unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
+                        unsigned long outputBufferBytes = spec.width * spec.height * spec.channels;
 
-                        if (hapDecodeFrame(packet.data, packet.size, img->localpixels(), outputBufferBytes, textureFormat))
+                        if (hapDecodeFrame(packet.data, packet.size, img->data(), outputBufferBytes, textureFormat))
                         {
                             if (packet.pts != AV_NOPTS_VALUE)
                                 timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
@@ -323,7 +323,7 @@ void Image_FFmpeg::readLoop()
                 {
                     unique_lock<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
-                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
+                    std::swap(_timedFrames[_timedFrames.size() - 1].frame, img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                 }
 
@@ -515,8 +515,8 @@ void Image_FFmpeg::videoDisplayLoop()
 
                 unique_lock<mutex> lock(_writeMutex);
                 if (!_bufferImage)
-                    _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-                _bufferImage.swap(timedFrame.frame);
+                    _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+                std::swap(_bufferImage, timedFrame.frame);
                 _imageUpdated = true;
                 updateTimestamp();
             }

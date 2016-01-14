@@ -33,8 +33,7 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
-
-namespace oiio = OIIO_NAMESPACE;
+#include "imageBuffer.h"
 
 namespace Splash {
 
@@ -46,7 +45,7 @@ class Image : public BufferObject
          */
         Image();
         Image(bool linked); //< This constructor is used if the object is linked to a World counterpart
-        Image(oiio::ImageSpec spec);
+        Image(ImageBufferSpec spec);
 
         /**
          * Destructor
@@ -75,7 +74,7 @@ class Image : public BufferObject
         /**
          * Get the image buffer
          */
-        oiio::ImageBuf get() const;
+        ImageBuffer get() const;
 
         /**
          * Get the file path
@@ -85,7 +84,7 @@ class Image : public BufferObject
         /**
          * Get the image buffer specs
          */
-        oiio::ImageSpec getSpec() const;
+        ImageBufferSpec getSpec() const;
 
         /**
          * Get the timestamp for the current mesh
@@ -93,14 +92,14 @@ class Image : public BufferObject
         std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
 
         /**
-         * Set the image from an ImageBuf
+         * Set the image from an ImageBuffer
          */
-        void set(const oiio::ImageBuf& img);
+        void set(const ImageBuffer& img);
 
         /**
          * Set the image as a empty with the given size / channels / typedesc
          */
-        void set(unsigned int w, unsigned int h, unsigned int channels, oiio::TypeDesc type);
+        void set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type);
 
         /**
          * Serialize the image
@@ -133,8 +132,8 @@ class Image : public BufferObject
         bool write(const std::string& filename);
 
     protected:
-        std::unique_ptr<oiio::ImageBuf> _image;
-        std::unique_ptr<oiio::ImageBuf> _bufferImage;
+        std::unique_ptr<ImageBuffer> _image;
+        std::unique_ptr<ImageBuffer> _bufferImage;
         std::string _filepath;
         bool _flip {false};
         bool _flop {false};
@@ -152,7 +151,7 @@ class Image : public BufferObject
         
     private:
         // Deserialization is done in this buffer, to avoid realloc
-        oiio::ImageBuf _bufferDeserialize;
+        ImageBuffer _bufferDeserialize;
 
         /**
          * Base init for the class

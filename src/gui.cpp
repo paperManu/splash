@@ -392,7 +392,7 @@ bool Gui::render()
     if (!_isInitialized)
         return false;
 
-    ImageSpec spec = _outTexture->getSpec();
+    ImageBufferSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 

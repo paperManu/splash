@@ -165,7 +165,7 @@ class QueueSurrogate : public Texture
         /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const;
+        ImageBufferSpec getSpec() const;
 
         /**
          * Update the texture according to the owned Image

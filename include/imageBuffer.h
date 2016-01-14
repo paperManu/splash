@@ -45,6 +45,15 @@ class ImageBufferSpec
             FLOAT
         };
 
+        ImageBufferSpec() {};
+        ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, ImageBufferSpec::Type t)
+        {
+            width = w;
+            height = h;
+            channels = c;
+            type = t;
+        }
+
         uint32_t width {0};
         uint32_t height {0};
         uint32_t channels {0};
@@ -69,6 +78,24 @@ class ImageBufferSpec
 
         std::string to_string();
         void from_string(const std::string& spec);
+
+        int pixel_bytes()
+        {
+            int bytes = channels;
+            switch (type)
+            {
+            case Type::UINT8:
+                break;
+            case Type::UINT16:
+                bytes *= 2;
+                break;
+            case Type::FLOAT:
+                bytes *= 4;
+                break;
+            }
+
+            return bytes;
+        }
 };
 
 /*************/
@@ -87,11 +114,8 @@ class ImageBuffer
          */
         ~ImageBuffer();
 
-        /**
-         * No copy constructor, but a copy operator
-         */
-        ImageBuffer(const ImageBuffer&) = delete;
-        ImageBuffer& operator=(const ImageBuffer&) = delete;
+        ImageBuffer(const ImageBuffer&) = default;
+        ImageBuffer& operator=(const ImageBuffer&) = default;
         ImageBuffer& operator=(ImageBuffer&&) = default;
 
         uint8_t* data()
@@ -103,6 +127,8 @@ class ImageBuffer
         }
 
         ImageBufferSpec getSpec() {return _spec;}
+
+        void fill(float value);
         
     private:
         ImageBufferSpec _spec {};

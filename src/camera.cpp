@@ -101,7 +101,7 @@ Camera::~Camera()
 /*************/
 void Camera::computeBlendingMap(ImagePtr& map)
 {
-    if (map->getSpec().format != oiio::TypeDesc::UINT16)
+    if (map->getSpec().type != ImageBufferSpec::Type::UINT16)
     {
         Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
         return;
@@ -149,8 +149,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
     GLenum error = glGetError();
 #endif
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-    ImageBuf img(_outTextures[0]->getSpec());
-    glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.localpixels());
+    ImageBuffer img(_outTextures[0]->getSpec());
+    glReadPixels(0, 0, img.getSpec().width, img.getSpec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.data());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     // Reset the objects to their initial shader
@@ -173,46 +173,47 @@ void Camera::computeBlendingMap(ImagePtr& map)
     setOutputSize(width, height);
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
-    oiio::ImageSpec mapSpec = map->getSpec();
+    ImageBufferSpec mapSpec = map->getSpec();
     vector<unsigned short> camMap(mapSpec.width * mapSpec.height, 0);
     vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
-    unsigned short* imageMap = (unsigned short*)map->data();
+
+    uint16_t* imgPtr = reinterpret_cast<uint16_t*>(img.data());
+    uint16_t* imageMap = (uint16_t*)map->data();
     
-    for (ImageBuf::ConstIterator<unsigned short> p(img); !p.done(); ++p)
-    {
-        if (!p.exists())
-            continue;
-
-        // UV coordinates are mapped on 2 uchar each
-        int x = (int)floor((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
-        int y = (int)floor((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
-
-        if (isSet[y * mapSpec.width + x] || (x == 0 && y == 0))
-            continue;
-        isSet[y * mapSpec.width + x] = true;
-
-        // Blending is computed as by Lancelle et al. 2011, "Soft Edge and Soft Corner Blending"
-        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width / _blendWidth;
-        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height / _blendWidth;
-        distX = glm::clamp(distX, 0.0, 1.0);
-        distY = glm::clamp(distY, 0.0, 1.0);
-        
-        unsigned short blendAddition = 0;
-        if (_blendWidth > 0.f)
+    for (int y = 0; y < img.getSpec().height; ++y)
+        for (int x = 0; x < img.getSpec().width; ++x)
         {
-            // Add some smoothness to the transition
-            double weight = 1.0 / (1.0 / distX + 1.0 / distY);
-            double smoothDist = pow(std::min(std::max(weight, 0.0), 1.0), 2.0) * 256.0;
-            int blendValue = smoothDist;
-            blendAddition += blendValue; // One more camera displaying this pixel
-        }
-        else
-            blendAddition += 256; // One more camera displaying this pixel
+            uint16_t* pixel = &imgPtr[(x + y * img.getSpec().width) * 4];
+            // UV coordinates are mapped on 2 uchar each
+            int destX = (int)floor((pixel[0] * 65536.0 + pixel[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
+            int destY = (int)floor((pixel[2] * 65536.0 + pixel[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
-        // We keep the real number of projectors, hidden higher in the shorts
-        blendAddition += 4096;
-        camMap[y * mapSpec.width + x] = blendAddition;
-    }
+            if (isSet[destY * mapSpec.width + destX] || (destX == 0 && destY == 0))
+                continue;
+            isSet[destY * mapSpec.width + destX] = true;
+
+            // Blending is computed as by Lancelle et al. 2011, "Soft Edge and Soft Corner Blending"
+            double distX = (double)std::min((double)x, (double)img.getSpec().width - 1 - x) / (double)img.getSpec().width / _blendWidth;
+            double distY = (double)std::min((double)y, (double)img.getSpec().height - 1 - y) / (double)img.getSpec().height / _blendWidth;
+            distX = glm::clamp(distX, 0.0, 1.0);
+            distY = glm::clamp(distY, 0.0, 1.0);
+            
+            unsigned short blendAddition = 0;
+            if (_blendWidth > 0.f)
+            {
+                // Add some smoothness to the transition
+                double weight = 1.0 / (1.0 / distX + 1.0 / distY);
+                double smoothDist = pow(std::min(std::max(weight, 0.0), 1.0), 2.0) * 256.0;
+                int blendValue = smoothDist;
+                blendAddition += blendValue; // One more camera displaying this pixel
+            }
+            else
+                blendAddition += 256; // One more camera displaying this pixel
+
+            // We keep the real number of projectors, hidden higher in the shorts
+            blendAddition += 4096;
+            camMap[destY * mapSpec.width + destX] = blendAddition;
+        }
 
     // Fill the holes
     for (unsigned int y = 0; y < mapSpec.height; ++y)
@@ -709,7 +710,7 @@ bool Camera::render()
         _newHeight = 0;
     }
 
-    ImageSpec spec = _outTextures[0]->getSpec();
+    ImageBufferSpec spec = _outTextures[0]->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 

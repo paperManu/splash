@@ -140,6 +140,39 @@ void ImageBuffer::init(const ImageBufferSpec& spec)
     }
 
     _buffer.resize(size);
+    fill(0.f);
+}
+
+/*************/
+void ImageBuffer::fill(float value)
+{
+    size_t size = 1;
+    switch (_spec.type)
+    {
+    case ImageBufferSpec::Type::UINT8:
+        {
+            uint8_t* data = static_cast<uint8_t*>(_buffer.data());
+            uint8_t v = static_cast<uint8_t>(value);
+            for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
+                data[p] = v;
+        }
+        break;
+    case ImageBufferSpec::Type::UINT16:
+        {
+            uint16_t* data = reinterpret_cast<uint16_t*>(_buffer.data());
+            uint16_t v = static_cast<uint16_t>(value);
+            for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
+                data[p] = v;
+        }
+        break;
+    case ImageBufferSpec::Type::FLOAT:
+        {
+            float* data = reinterpret_cast<float*>(_buffer.data());
+            for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
+                data[p] = value;
+        }
+        break;
+    }
 }
 
 } // end of namespace

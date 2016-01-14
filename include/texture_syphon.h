@@ -72,7 +72,7 @@ class Texture_Syphon : public Texture
         /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const {return oiio::ImageSpec();}
+        ImageBufferSpec getSpec() const {return ImageBufferSpec();}
 
         /**
          * Try to link the given BaseObject to this
