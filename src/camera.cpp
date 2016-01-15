@@ -36,7 +36,6 @@
 
 using namespace std;
 using namespace glm;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 

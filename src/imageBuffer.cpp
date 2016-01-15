@@ -71,7 +71,7 @@ void ImageBufferSpec::from_string(const string& spec)
     curr = roi.find(";");
     if (curr == string::npos)
         return;
-    switch (stoi(spec.substr(prev, curr)))
+    switch (stoi(roi.substr(prev, curr)))
     {
     case 0:
         type = Type::UINT8;

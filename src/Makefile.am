@@ -101,7 +101,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	$(ZMQ_CFLAGS)
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
-	-lOpenImageIO \
 	-lsnappy \
 	$(BOOST_SYSTEM_LIBS) \
 	$(GLFW_LIBS) \

@@ -76,6 +76,11 @@ class ImageBufferSpec
             return true;
         }
 
+        inline bool operator!=(const ImageBufferSpec& spec)
+        {
+            return !(*this == spec);
+        }
+
         std::string to_string();
         void from_string(const std::string& spec);
 

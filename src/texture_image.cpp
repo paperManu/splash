@@ -10,7 +10,6 @@
 #define SPLASH_TEXTURE_COPY_THREADS 4
 
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 

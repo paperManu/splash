@@ -2,8 +2,6 @@
 
 #include <fstream>
 #include <memory>
-#include <OpenImageIO/imageio.h>
-#include <OpenImageIO/imagebufalgo.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -188,7 +186,7 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
         spec.from_string(xmlSpec.c_str());
 
         ImageBufferSpec curSpec = _bufferDeserialize.getSpec();
-        if (spec.width != curSpec.width || spec.height != curSpec.height || spec.channels != curSpec.channels || spec.format != curSpec.format)
+        if (spec != curSpec)
             _bufferDeserialize = ImageBuffer(spec);
 
         int imgSize = _bufferDeserialize.getSpec().pixel_bytes() * _bufferDeserialize.getSpec().width * _bufferDeserialize.getSpec().height;

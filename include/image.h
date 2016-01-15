@@ -27,7 +27,6 @@
 
 #include <chrono>
 #include <mutex>
-#include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
 

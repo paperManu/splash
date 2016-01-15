@@ -5,7 +5,6 @@
 using namespace std;
 using namespace bandit;
 using namespace Splash;
-using namespace OIIO_NAMESPACE;
 
 go_bandit([]() {
     /*********/

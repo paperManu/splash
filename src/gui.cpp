@@ -11,7 +11,6 @@
 #include "window.h"
 
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash
 {

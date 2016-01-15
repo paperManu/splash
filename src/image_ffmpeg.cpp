@@ -266,6 +266,7 @@ void Image_FFmpeg::readLoop()
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
                         ImageBufferSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, ImageBufferSpec::Type::UINT8);
+                        spec.format = {"R", "G", "B"};
                         img.reset(new ImageBuffer(spec));
 
                         unsigned char* pixels = static_cast<unsigned char*>(img->data());
@@ -294,11 +295,20 @@ void Image_FFmpeg::readLoop()
                         // We set the size so as to have just enough place for the given texture format
                         ImageBufferSpec spec;
                         if (textureFormat == "RGB_DXT1")
+                        {
                             spec = ImageBufferSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
+                            spec.format = {textureFormat};
+                        }
                         if (textureFormat == "RGBA_DXT5")
+                        {
                             spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
+                            spec.format = {textureFormat};
+                        }
                         if (textureFormat == "YCoCg_DXT5")
+                        {
                             spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
+                            spec.format = {textureFormat};
+                        }
                         else
                             return;
 
