@@ -4,7 +4,9 @@
 #include <memory>
 
 #define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include <stb_image.h>
+#include <stb_image_write.h>
 
 #include "log.h"
 #include "osUtils.h"
@@ -300,20 +302,33 @@ void Image::update()
 /*************/
 bool Image::write(const std::string& filename)
 {
-// TODO: reimplement image write with std_image_write
-//    oiio::ImageOutput* out = oiio::ImageOutput::create(filename);
-//    if (!out)
-//        return false;
-//
-//    unique_lock<mutex> lock(_readMutex);
-//    if (!_image)
-//        return false;
-//    out->open(filename, _image->spec());
-//    out->write_image(_image->spec().format, _image->localpixels());
-//    out->close();
-//    delete out;
-//
-    return true;
+    int strSize = filename.size();
+    if (strSize < 5)
+        return false;
+
+    if (!_image)
+        return false;
+
+    auto spec = _image->getSpec();
+
+    unique_lock<mutex> lock(_readMutex);
+    if (filename.substr(strSize - 3, strSize) == "png")
+    {
+        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.height * spec.pixel_bytes());
+        return (result != 0);
+    }
+    else if (filename.substr(strSize - 3, strSize) == "bmp")
+    {
+        auto result = stbi_write_bmp(filename.c_str(), spec.width, spec.height, spec.channels, _image->data());
+        return (result != 0);
+    }
+    else if (filename.substr(strSize - 3, strSize) == "tga")
+    {
+        auto result = stbi_write_tga(filename.c_str(), spec.width, spec.height, spec.channels, _image->data());
+        return (result != 0);
+    }
+    else
+        return false;
 }
 
 /*************/
