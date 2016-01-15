@@ -29,8 +29,15 @@ string ImageBufferSpec::to_string()
     }
     spec += ";";
 
+    spec += std::to_string(format.size());
+    spec += ";";
+
     for (auto& c : format)
+    {
         spec += c;
+        spec += ";";
+    }
+
     return spec;
 }
 
@@ -39,25 +46,29 @@ void ImageBufferSpec::from_string(const string& spec)
 {
     auto prev = 0;
 
+    // Width
     auto curr = spec.find(";");
     if (curr == string::npos)
         return;
     width = stoi(spec.substr(prev, curr));
 
-    prev = curr + 1;
-    curr = spec.find(";");
+    // Height
+    auto roi = spec.substr(curr + 1);
+    curr = roi.find(";");
     if (curr == string::npos)
         return;
-    height = stoi(spec.substr(prev, curr));
+    height = stoi(roi.substr(0, curr));
 
-    prev = curr + 1;
-    curr = spec.find(";");
+    // Channels
+    roi = roi.substr(curr + 1);
+    curr = roi.find(";");
     if (curr == string::npos)
         return;
-    channels = stoi(spec.substr(prev, curr));
+    channels = stoi(roi.substr(0, curr));
 
-    prev = curr + 1;
-    curr = spec.find(";");
+    // Type
+    roi = roi.substr(curr + 1);
+    curr = roi.find(";");
     if (curr == string::npos)
         return;
     switch (stoi(spec.substr(prev, curr)))
@@ -73,10 +84,21 @@ void ImageBufferSpec::from_string(const string& spec)
         break;
     }
 
-    prev = curr + 1;
+    // Format descriptor size
+    roi = roi.substr(curr + 1);
+    curr = roi.find(";");
+    if (curr == string::npos)
+        return;
+    int formatSize = stoi(roi.substr(0, curr));
+
+    // Format
     format.clear();
-    for (uint32_t pos = prev; pos < spec.size(); ++pos)
-        format.push_back(spec.substr(pos, pos + 1));
+    for (uint32_t pos = 0; pos < formatSize; ++pos)
+    {
+        roi = roi.substr(curr + 1);
+        curr = roi.find(";");
+        format.push_back(roi.substr(0, curr));
+    }
 }
 
 /*************/
