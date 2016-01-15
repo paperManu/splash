@@ -5,6 +5,9 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 #include "log.h"
 #include "osUtils.h"
 #include "threadpool.h"
@@ -246,52 +249,30 @@ bool Image::readFile(const string& filename)
         return false;
     }
 
-    try
+    int w, h, c;
+    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 3);
+
+    if (!rawImage)
     {
-        // TODO: replace file reading with stb_image
-        //auto in = oiio::ImageInput::open(filepath);
-
-        //if (!in)
-        //{
-        //    Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
-        //    return false;
-        //}
-
-        //const oiio::ImageSpec& spec = in->getSpec();
-        //if (spec.format != oiio::TypeDesc::UINT8)
-        //{
-        //    Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
-        //    return false;
-        //}
-
-        //int xres = spec.width;
-        //int yres = spec.height;
-        //int channels = spec.nchannels;
-        //ImageBuffer img(spec); 
-        //in->read_image(oiio::TypeDesc::UINT8, img.data());
-
-        //in->close();
-        //delete in;
-
-        //if (channels != 3 && channels != 4)
-        //    return false;
-
-        //unique_lock<mutex> lock(_writeMutex);
-        // TODO: put the loaded image into _bufferImage
-        //if (!_bufferImage)
-        //    _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-        //_bufferImage->swap(img);
-        //_imageUpdated = true;
-
-        updateTimestamp();
-
-        return true;
-    }
-    catch (const exception& e)
-    {
-        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an exception while opening image file: " << e.what() << Log::endl;
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an error while opening image file " << filepath << Log::endl;
         return false;
     }
+
+    auto spec = ImageBufferSpec(w, h, c, ImageBufferSpec::Type::UINT8);
+    spec.format = {"R", "G", "B"};
+    auto img = ImageBuffer(spec);
+    memcpy(img.data(), rawImage, w * h * c);
+    stbi_image_free(rawImage);
+
+    unique_lock<mutex> lock(_writeMutex);
+    if (!_bufferImage)
+        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*_bufferImage, img);
+    _imageUpdated =  true;
+
+    updateTimestamp();
+
+    return true;
 }
 
 /*************/

@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/jsoncpp \
 	-I$(top_srcdir)/external/piccante/include \
+	-I$(top_srcdir)/external/stb \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
@@ -329,6 +330,9 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/hap/source/hap.h \
 	\
 	$(top_srcdir)/external/jsoncpp/json/json.h \
+	\
+	$(top_srcdir)/external/stb/stb_image.h \
+	$(top_srcdir)/external/stb/stb_image_write.h \
 	\
 	$(top_srcdir)/external/piccante/include/image_samplers/image_sampler.hpp \
 	$(top_srcdir)/external/piccante/include/image_samplers/image_sampler_gaussian.hpp \
