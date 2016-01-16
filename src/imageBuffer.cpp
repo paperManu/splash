@@ -136,6 +136,8 @@ ImageBuffer::ImageBuffer(unsigned int width, unsigned int height, unsigned int c
         spec.format = {"R", "G", "B", "A"};
         break;
     }
+
+    init(spec);
 }
 
 /*************/
@@ -162,7 +164,6 @@ void ImageBuffer::init(const ImageBufferSpec& spec)
     }
 
     _buffer.resize(size);
-    fill(0.f);
 }
 
 /*************/
