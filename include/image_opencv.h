@@ -35,8 +35,6 @@
 #include "basetypes.h"
 #include "image.h"
 
-namespace oiio = OIIO_NAMESPACE;
-
 namespace cv {
     class VideoCapture;
 }
@@ -76,7 +74,7 @@ class Image_OpenCV : public Image
 
         std::thread _readLoopThread;
         std::atomic_bool _continueReading {false};
-        oiio::ImageBuf _readBuffer;
+        ImageBuffer _readBuffer;
 
         /**
          * Input read loop

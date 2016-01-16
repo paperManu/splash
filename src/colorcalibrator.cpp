@@ -514,24 +514,22 @@ float ColorCalibrator::findCorrectExposure()
         }
 
         _gcamera->update();
-        oiio::ImageBuf img = _gcamera->get();
-        oiio::ImageSpec spec = _gcamera->getSpec();
+        ImageBuffer img = _gcamera->get();
+        ImageBufferSpec spec = _gcamera->getSpec();
 
         // Exposure is found from a centered area, covering 4% of the frame
         int roiSize = spec.width / 5;
         unsigned long total = roiSize * roiSize;
         unsigned long sum = 0;
-        for (oiio::ImageBuf::ConstIterator<unsigned char> p(img); !p.done(); ++p)
-        {
-            if (!p.exists())
-                continue;
-
-            if (p.x() < spec.width / 2 - roiSize / 2 || p.x() > spec.width / 2 + roiSize / 2
-                || p.y() < spec.height / 2 - roiSize / 2 || p.y() > spec.height / 2 + roiSize / 2)
-                continue;
-
-            sum += (unsigned long)(255.f * (0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2]));
-        }
+        
+        uint8_t* pixel = reinterpret_cast<uint8_t*>(img.data());
+        for (int y = spec.height / 2 - roiSize / 2; y < spec.height / 2 + roiSize / 2; ++y)
+            for (int x = spec.width / 2 - roiSize / 2; x < spec.width / 2 + roiSize / 2; ++x)
+            {
+                sum += (unsigned long)(255.f * (0.2126 * pixel[(x + y * spec.width) * 3]
+                                              + 0.7152 * pixel[(x + y * spec.width) * 3 + 1]
+                                              + 0.0722 * pixel[(x + y * spec.width) * 3 + 2]));
+            }
 
         float meanValue = (float)sum / (float)total;
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;

@@ -29,7 +29,6 @@
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
-#include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
 
@@ -37,8 +36,6 @@
 #include "basetypes.h"
 #include "image.h"
 #include "texture.h"
-
-namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -102,7 +99,7 @@ class Texture_Image : public Texture
         /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const {return _spec;}
+        ImageBufferSpec getSpec() const {return _spec;}
 
         /**
          * Try to link the given BaseObject to this

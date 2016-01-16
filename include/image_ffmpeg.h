@@ -47,8 +47,6 @@ extern "C" {
     #include "speaker.h"
 #endif
 
-namespace oiio = OIIO_NAMESPACE;
-
 namespace Splash {
 
 class Image_FFmpeg : public Image
@@ -83,7 +81,7 @@ class Image_FFmpeg : public Image
         std::thread _videoDisplayThread;
         struct TimedFrame
         {
-            std::unique_ptr<oiio::ImageBuf> frame;
+            std::unique_ptr<ImageBuffer> frame;
             int64_t timing; // in us
         };
         std::deque<TimedFrame> _timedFrames;

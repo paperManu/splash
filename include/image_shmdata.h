@@ -33,8 +33,6 @@
 #include "image.h"
 #include "osUtils.h"
 
-namespace oiio = OIIO_NAMESPACE;
-
 namespace Splash
 {
 
@@ -66,7 +64,7 @@ class Image_Shmdata : public Image
         Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};
 
-        oiio::ImageBuf _readerBuffer;
+        ImageBuffer _readerBuffer;
         std::string _inputDataType {""};
         int _bpp {0};
         int _width {0};

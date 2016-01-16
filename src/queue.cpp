@@ -325,7 +325,7 @@ unordered_map<string, Values> QueueSurrogate::getShaderUniforms() const
 }
 
 /*************/
-oiio::ImageSpec QueueSurrogate::getSpec() const
+ImageBufferSpec QueueSurrogate::getSpec() const
 {
     return _filter->getSpec();
 }

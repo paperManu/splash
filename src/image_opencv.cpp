@@ -104,22 +104,22 @@ void Image_OpenCV::readLoop()
             return;
         }
 
-        auto spec = _readBuffer.spec();
-        if (spec.width != capture.rows || spec.height != capture.cols || spec.nchannels != capture.channels())
+        auto spec = _readBuffer.getSpec();
+        if (spec.width != capture.rows || spec.height != capture.cols || spec.channels != capture.channels())
         {
-            oiio::ImageSpec newSpec(capture.cols, capture.rows, capture.channels(), oiio::TypeDesc::UINT8);
-            newSpec.channelnames = vector<string>({"B", "G", "R"});
-            _readBuffer.reset(newSpec);
+            ImageBufferSpec newSpec(capture.cols, capture.rows, capture.channels(), ImageBufferSpec::Type::UINT8);
+            newSpec.format = vector<string>({"B", "G", "R"});
+            _readBuffer = ImageBuffer(newSpec);
         }
-        unsigned char* pixels = static_cast<unsigned char*>(_readBuffer.localpixels());
+        unsigned char* pixels = static_cast<unsigned char*>(_readBuffer.data());
 
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
         copy(capture.data, capture.data + imageSize, pixels);
 
         unique_lock<mutex> lockWrite(_writeMutex);
         if (!_bufferImage)
-            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-        _bufferImage->swap(_readBuffer);
+            _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+        std::swap(*_bufferImage, _readBuffer);
         _imageUpdated = true;
         updateTimestamp();
 

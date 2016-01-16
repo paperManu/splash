@@ -108,16 +108,6 @@ if test "$HAVE_SNAPPY" = "false" ; then
 	AC_MSG_ERROR([Missing Snappy])
 fi
 
-# OpenImageIO
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([OpenImageIO/imageio.h],
-	[HAVE_OIIO=true],
-	[HAVE_OIIO=false])
-AC_LANG_POP
-if test "$HAVE_OIIO" = "false" ; then
-	AC_MSG_ERROR([Missing OpenImageIO])
-fi
-
 #
 # Non-mandatory dependencies
 #

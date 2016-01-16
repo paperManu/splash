@@ -32,7 +32,6 @@
 #endif
 
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -1054,7 +1053,7 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap = make_shared<Image>();
-    _blendingMap->set(_blendingResolution, _blendingResolution, 1, TypeDesc::UINT16);
+    _blendingMap->set(_blendingResolution, _blendingResolution, 1, ImageBufferSpec::Type::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
     _blendingTexture = make_shared<Texture_Image>(_self);

@@ -32,8 +32,6 @@
 
 #include "image.h"
 
-namespace oiio = OIIO_NAMESPACE;
-
 typedef Camera GpCamera;
 
 namespace Splash

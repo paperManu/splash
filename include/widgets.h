@@ -149,8 +149,11 @@ class GuiMedia : public GuiWidget
                                                         {"video", "image_ffmpeg"},
                                                         {"shared memory", "image_shmdata"},
                                                         {"queue", "queue"},
+#if HAVE_OPENCV
+                                                        {"video grabber", "image_opencv"},
+#endif
 #if HAVE_OSX
-                                                        {"syphon", "texture_syphon"}};
+                                                        {"syphon", "texture_syphon"},
 #else
                                                         };
 #endif

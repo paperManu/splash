@@ -77,7 +77,7 @@ class Filter : public Texture
         /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const {return _outTextureSpec;}
+        ImageBufferSpec getSpec() const {return _outTextureSpec;}
 
         /**
          * Try to link / unlink the given BaseObject to this
@@ -98,7 +98,7 @@ class Filter : public Texture
         GLuint _fbo {0};
         std::shared_ptr<Texture_Image> _outTexture {nullptr};
         std::shared_ptr<Object> _screen;
-        oiio::ImageSpec _outTextureSpec;
+        ImageBufferSpec _outTextureSpec;
 
         /**
          * Init function called in constructors
