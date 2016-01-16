@@ -52,6 +52,27 @@ class ImageBufferSpec
             height = h;
             channels = c;
             type = t;
+
+            switch (channels)
+            {
+            default:
+                format = {"R", "G", "B"};
+                break;
+            case 0:
+                break;
+            case 1:
+                format = {"R"};
+                break;
+            case 2:
+                format = {"R", "G"};
+                break;
+            case 3:
+                format = {"R", "G", "B"};
+                break;
+            case 4:
+                format = {"R", "G", "B", "A"};
+                break;
+            }
         }
 
         uint32_t width {0};
