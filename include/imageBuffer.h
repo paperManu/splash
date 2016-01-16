@@ -105,7 +105,7 @@ class ImageBufferSpec
         std::string to_string();
         void from_string(const std::string& spec);
 
-        int pixel_bytes()
+        int pixelBytes()
         {
             int bytes = channels;
             switch (type)

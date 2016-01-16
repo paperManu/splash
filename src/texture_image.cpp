@@ -239,7 +239,7 @@ void Texture_Image::update()
         glGenTextures(1, &_glTex);
 
     // Store the image data size
-    int imageDataSize = spec.width * spec.height * spec.pixel_bytes();
+    int imageDataSize = spec.width * spec.height * spec.pixelBytes();
 
     GLint glChannelOrder;
     if (spec.format == vector<string>({"B", "G", "R"}))
@@ -371,7 +371,7 @@ void Texture_Image::update()
             Log::get() << Log::WARNING << "Texture_Image::" <<  __FUNCTION__ << " - Texture format not supported" << Log::endl;
             return;
         }
-        updatePbos(spec.width, spec.height, spec.pixel_bytes());
+        updatePbos(spec.width, spec.height, spec.pixelBytes());
 
         // Fill one of the PBOs right now
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);

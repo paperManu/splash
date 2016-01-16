@@ -121,7 +121,7 @@ shared_ptr<SerializedObject> Image::serialize() const
         return {};
     string xmlSpec = _image->getSpec().to_string();
     int nbrChar = xmlSpec.size();
-    int imgSize = _image->getSpec().pixel_bytes() * _image->getSpec().width * _image->getSpec().height;
+    int imgSize = _image->getSpec().pixelBytes() * _image->getSpec().width * _image->getSpec().height;
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
     auto obj = make_shared<SerializedObject>(totalSize);
@@ -191,7 +191,7 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
         if (spec != curSpec)
             _bufferDeserialize = ImageBuffer(spec);
 
-        int imgSize = _bufferDeserialize.getSpec().pixel_bytes() * _bufferDeserialize.getSpec().width * _bufferDeserialize.getSpec().height;
+        int imgSize = _bufferDeserialize.getSpec().pixelBytes() * _bufferDeserialize.getSpec().width * _bufferDeserialize.getSpec().height;
         ptr = reinterpret_cast<char*>(_bufferDeserialize.data());
 
         vector<unsigned int> threadIds;
@@ -314,7 +314,7 @@ bool Image::write(const std::string& filename)
     unique_lock<mutex> lock(_readMutex);
     if (filename.substr(strSize - 3, strSize) == "png")
     {
-        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.height * spec.pixel_bytes());
+        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.height * spec.pixelBytes());
         return (result != 0);
     }
     else if (filename.substr(strSize - 3, strSize) == "bmp")
@@ -344,10 +344,10 @@ void Image::createDefaultImage()
         {
             if (x % 16 > 7 && y % 64 > 31)
                 for (int c = 0; c < 4; ++c)
-                    p[(x + y * 512) * 3 + c] = 255;
+                    p[(x + y * 512) * 4 + c] = 255;
             else
                 for (int c = 0; c < 4; ++c)
-                    p[(x + y * 512) * 3 + c] = 0;
+                    p[(x + y * 512) * 4 + c] = 0;
         }
 
     unique_lock<mutex> lock(_readMutex);
