@@ -281,29 +281,40 @@ void World::applyConfig()
             if (jsScenes[i].isMember("spawn"))
                 spawn = jsScenes[i]["spawn"].asInt();
 
+#if HAVE_LINUX
             string display = "DISPLAY=:0.";
             if (jsScenes[i].isMember("display"))
                 display += to_string(jsScenes[i]["display"].asInt());
             else
                 display += to_string(0);
+#endif
 
             string name = jsScenes[i]["name"].asString();
             int pid = -1;
             if (spawn > 0)
             {
                 _sceneLaunched = false;
+#if HAVE_LINUX
                 string worldDisplay = "none";
                 if (getenv("DISPLAY"))
-                    worldDisplay = getenv("DISPLAY");
-
-                // If the current process is on the correct display, we use an inner Scene
-                if (worldDisplay.size() > 0 && display.find(worldDisplay) != string::npos && !_innerScene)
                 {
+                    worldDisplay = getenv("DISPLAY");
+                    if (worldDisplay.size() == 2)
+                        worldDisplay += ".0";
+                }
+#endif
+
+#if HAVE_LINUX
+                // If the current process is on the correct display, we use an inner Scene
+                if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
+                {
+#endif
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                     _innerScene = make_shared<Scene>(name, false);
                     _innerSceneThread = thread([&]() {
                         _innerScene->run();
                     });
+#if HAVE_LINUX
                 }
                 else
                 {
@@ -324,6 +335,7 @@ void World::applyConfig()
                     if (status != 0)
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
                 }
+#endif
 
                 // We wait for the child process to be launched
                 unique_lock<mutex> lock(_childProcessMutex);

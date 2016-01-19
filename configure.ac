@@ -48,6 +48,7 @@ case "$host" in *-darwin* | *-macos10*)
   have_osx=true
   AM_CONDITIONAL([HAVE_OSX], true)
   AC_DEFINE(HAVE_OSX,[1],[Apple Mac OS X operating system detected])
+  AC_DEFINE(HAVE_LINUX,[0],[Not a Linux system])
   
   # OSX does not include /usr/local/lib/pkgconfig path, so we export it here
   # (for everyone, just in case)
@@ -59,7 +60,8 @@ case "$host" in *-darwin* | *-macos10*)
 *)
   have_osx=false
   AM_CONDITIONAL([HAVE_OSX], false)
-  AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected, considering a Linux system])
+  AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected])
+  AC_DEFINE(HAVE_LINUX,[1],[Considering a Linux system])
   ;;
 esac
 
