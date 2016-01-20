@@ -122,6 +122,11 @@ class ImageBufferSpec
 
             return bytes;
         }
+
+        int rawSize()
+        {
+            return pixelBytes() * width * height;
+        }
 };
 
 /*************/

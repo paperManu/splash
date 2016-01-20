@@ -121,7 +121,7 @@ shared_ptr<SerializedObject> Image::serialize() const
         return {};
     string xmlSpec = _image->getSpec().to_string();
     int nbrChar = xmlSpec.size();
-    int imgSize = _image->getSpec().pixelBytes() * _image->getSpec().width * _image->getSpec().height;
+    int imgSize = _image->getSpec().rawSize();
     int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
     
     auto obj = make_shared<SerializedObject>(totalSize);
@@ -191,7 +191,7 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
         if (spec != curSpec)
             _bufferDeserialize = ImageBuffer(spec);
 
-        int imgSize = _bufferDeserialize.getSpec().pixelBytes() * _bufferDeserialize.getSpec().width * _bufferDeserialize.getSpec().height;
+        int imgSize = _bufferDeserialize.getSpec().rawSize();
         ptr = reinterpret_cast<char*>(_bufferDeserialize.data());
 
         vector<unsigned int> threadIds;
@@ -314,7 +314,7 @@ bool Image::write(const std::string& filename)
     unique_lock<mutex> lock(_readMutex);
     if (filename.substr(strSize - 3, strSize) == "png")
     {
-        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.height * spec.pixelBytes());
+        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.rawSize());
         return (result != 0);
     }
     else if (filename.substr(strSize - 3, strSize) == "bmp")

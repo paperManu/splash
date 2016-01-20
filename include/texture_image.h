@@ -139,6 +139,9 @@ class Texture_Image : public Texture
         void update();
 
     private:
+        GLint _glVersionMajor {0};
+        GLint _glVersionMinor {0};
+
         GLuint _glTex {0};
         GLuint _pbos[2];
         int _pboReadIndex {0};
@@ -161,6 +164,11 @@ class Texture_Image : public Texture
          * As says its name
          */
         void init();
+
+        /**
+         * Get GL channel order according to spec.format
+         */
+        GLenum getChannelOrder(const ImageBufferSpec& spec);
 
         /**
          * Update the pbos according to the parameters
