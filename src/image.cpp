@@ -13,7 +13,7 @@
 #include "threadpool.h"
 #include "timer.h"
 
-#define SPLASH_IMAGE_COPY_THREADS 4
+#define SPLASH_IMAGE_COPY_THREADS 2
 
 using namespace std;
 

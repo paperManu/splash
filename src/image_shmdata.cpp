@@ -19,7 +19,7 @@
 #include "timer.h"
 #include "threadpool.h"
 
-#define SPLASH_SHMDATA_THREADS 16
+#define SPLASH_SHMDATA_THREADS 2
 
 using namespace std;
 

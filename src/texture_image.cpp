@@ -7,7 +7,7 @@
 
 #include <string>
 
-#define SPLASH_TEXTURE_COPY_THREADS 4
+#define SPLASH_TEXTURE_COPY_THREADS 2
 
 using namespace std;
 
