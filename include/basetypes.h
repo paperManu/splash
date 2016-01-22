@@ -25,6 +25,7 @@
 #ifndef SPLASH_BASETYPES_H
 #define SPLASH_BASETYPES_H
 
+#include <atomic>
 #include <condition_variable>
 #include <map>
 #include <unordered_map>
@@ -589,6 +590,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::recursive_mutex _objectsMutex; // Used in registration and unregistration of objects
+        std::atomic_bool _objectsCurrentlyUpdated {false};
         mutable std::recursive_mutex _setMutex;
         std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects;
 

@@ -685,13 +685,16 @@ void Scene::textureUploadRun()
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lock.unlock();
 
-        for (auto& obj : _objects)
-            if (obj.second->getType().find("texture") != string::npos)
-            {
-                auto texImage = dynamic_pointer_cast<Texture_Image>(obj.second);
-                if (texImage)
-                    texImage->flushPbo();
-            }
+        if (!_objectsCurrentlyUpdated)
+        {
+            for (auto& obj : _objects)
+                if (obj.second->getType().find("texture") != string::npos)
+                {
+                    auto texImage = dynamic_pointer_cast<Texture_Image>(obj.second);
+                    if (texImage)
+                        texImage->flushPbo();
+                }
+        }
 
         _textureUploadWindow->releaseContext();
         Timer::get() >> "textureUpload";
@@ -1225,6 +1228,7 @@ void Scene::registerAttributes()
         unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() -> void {
             lock_guard<recursive_mutex> lock(_objectsMutex);
+            _objectsCurrentlyUpdated = true;
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);
@@ -1238,6 +1242,7 @@ void Scene::registerAttributes()
                 unlink(objectIt->second, ghostObject.second);
             if (objectIt != _ghostObjects.end())
                 _objects.erase(objectIt);
+            _objectsCurrentlyUpdated = false;
         });
 
         return true;
