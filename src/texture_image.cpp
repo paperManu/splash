@@ -346,6 +346,13 @@ void Texture_Image::update()
     // Update the textures if the format changed
     if (spec != _spec)
     {
+        // glTexStorage2D is immutable, so we have to delete the texture first
+        if (_glVersionMajor >= 4 && _glVersionMinor >= 2)
+        {
+            glDeleteTextures(1, &_glTex);
+            glGenTextures(1, &_glTex);
+        }
+
         glBindTexture(GL_TEXTURE_2D, _glTex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
