@@ -66,7 +66,6 @@ class Timer
             if (!_enabled)
                 return;
 
-            std::unique_lock<std::mutex> lock(_mutex);
             auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
             auto timeIt = _timeMap.find(name);
             if (timeIt == _timeMap.end())
@@ -85,7 +84,6 @@ class Timer
             {
                 auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 
-                std::unique_lock<std::mutex> lock(_mutex);
                 auto durationIt = _durationMap.find(name);
                 if (durationIt == _durationMap.end())
                     _durationMap[name] = currentTime - timeIt->second;
@@ -109,11 +107,8 @@ class Timer
            auto timeIt = _timeMap.find(name);
            auto durationIt = _durationMap.find(name);
            unsigned long long elapsed;
-           {
-               std::unique_lock<std::mutex> lock(_mutex);
-               elapsed = currentTime - timeIt->second;
-               _timeMap.erase(timeIt);
-           }
+
+           elapsed = currentTime - timeIt->second;
         
            timespec nap;
            nap.tv_sec = 0;
@@ -127,10 +122,7 @@ class Timer
            }
         
            if (durationIt == _durationMap.end())
-           {
-               std::unique_lock<std::mutex> lock(_mutex);
                _durationMap[name] = std::max(duration, elapsed);
-           }
            else
                durationIt->second = std::max(duration, elapsed);
         
@@ -163,7 +155,6 @@ class Timer
          */
         void setDuration(const std::string& name, unsigned long long value)
         {
-           std::unique_lock<std::mutex> lock(_mutex);
            auto durationIt = _durationMap.find(name);
            if (durationIt == _durationMap.end())
                _durationMap[name] = value;
