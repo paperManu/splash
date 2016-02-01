@@ -26,6 +26,7 @@
 #define SPLASH_IMAGEBUFFER_H
 
 #include <chrono>
+#include <memory>
 #include <mutex>
 
 #include "config.h"
@@ -145,16 +146,14 @@ class ImageBuffer
          */
         ~ImageBuffer();
 
-        ImageBuffer(const ImageBuffer&) = default;
-        ImageBuffer& operator=(const ImageBuffer&) = default;
-        ImageBuffer& operator=(ImageBuffer&&) = default;
+        ImageBuffer(const ImageBuffer& i) = default;
+        ImageBuffer(ImageBuffer&& i) = default;
+        ImageBuffer& operator=(const ImageBuffer& i) = default;
+        ImageBuffer& operator=(ImageBuffer&& i) = default;
 
         uint8_t* data()
         {
-            if (_buffer.size())
-                return _buffer.data();
-            else
-                return nullptr;
+            return _buffer.data();
         }
 
         ImageBufferSpec getSpec() {return _spec;}
@@ -163,7 +162,7 @@ class ImageBuffer
         
     private:
         ImageBufferSpec _spec {};
-        std::vector<uint8_t> _buffer {};
+        ResizableArray<uint8_t> _buffer;
 
         void init(const ImageBufferSpec& spec);
 };

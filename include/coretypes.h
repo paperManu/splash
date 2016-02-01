@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstring>
 #include <deque>
 #include <execinfo.h>
 #include <ostream>
@@ -71,6 +72,83 @@ namespace Splash
 {
 
 /*************/
+// Resizable array, used to hold big buffers (like raw images)
+template <typename T>
+class ResizableArray
+{
+    public:
+        ResizableArray() {};
+
+        ResizableArray(size_t size)
+        {
+            resize(size);
+        }
+
+        ResizableArray(T* start, T* end)
+        {
+            if (end <= start)
+            {
+                _size = 0;
+                _buffer.reset();
+
+                return;
+            }
+
+            _size = static_cast<size_t>(end - start);
+            _buffer = std::unique_ptr<T[]>(new T[_size]);
+            memcpy(_buffer.get(), start, _size * sizeof(T));
+        }
+
+        ResizableArray(const ResizableArray& a)
+        {
+            _size = a._size;
+            _buffer = std::unique_ptr<T[]>(new T[_size]);
+            memcpy(_buffer.get(), a._buffer.get(), _size);
+        }
+
+        ResizableArray(ResizableArray&& a)
+        {
+            _size = a._size;
+            _buffer = std::move(a._buffer);
+        }
+
+        ResizableArray& operator=(const ResizableArray& a)
+        {
+            if (this == &a)
+                return *this;
+
+            _size = a._size;
+            _buffer = std::unique_ptr<T[]>(new T[_size]);
+            memcpy(_buffer.get(), a._buffer.get(), _size);
+
+            return *this;
+        }
+
+        ResizableArray& operator=(ResizableArray&& a)
+        {
+            if (this == &a)
+                return *this;
+
+            _size = a._size;
+            _buffer = std::move(a._buffer);
+
+            return *this;
+        }
+
+        inline T* data() {return _buffer.get();}
+        inline size_t size() {return _size;}
+        inline void resize(size_t size)
+        {
+            _buffer = std::unique_ptr<T[]>(new T[size]);
+            _size = size;
+        }
+
+    private:
+        size_t _size {0};
+        std::unique_ptr<T[]> _buffer {nullptr};
+};
+
+/*************/
 struct SerializedObject
 {
     /**
@@ -85,7 +163,7 @@ struct SerializedObject
 
     SerializedObject(char* start, char* end)
     {
-        _data = std::vector<char>(start, end);
+        _data = ResizableArray<char>(start, end);
     }
 
     /**
@@ -115,7 +193,7 @@ struct SerializedObject
     /**
      * Attributes
      */
-    std::vector<char> _data;
+    ResizableArray<char> _data;
 };
 
 /*************/
