@@ -425,21 +425,18 @@ void GuiControl::render()
         ImGui::Spacing();
 
         // Node view
-        if (Log::get().getVerbosity() == Log::DEBUGGING)
+        if (!_nodeView)
         {
-            if (!_nodeView)
-            {
-                auto nodeView = make_shared<GuiNodeView>("Nodes");
-                nodeView->setScene(_scene);
-                _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
-            }
-            ImGui::Text("Configuration global view");
-            _nodeView->render();
-
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+            auto nodeView = make_shared<GuiNodeView>("Nodes");
+            nodeView->setScene(_scene);
+            _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
         }
+        ImGui::Text("Configuration global view");
+        _nodeView->render();
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
 
         // Configuration applied to multiple objects
         ImGui::Text("Global configuration (saved!)");
@@ -455,146 +452,143 @@ void GuiControl::render()
         if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
 
-        if (Log::get().getVerbosity() == Log::DEBUGGING)
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        // Node configuration
+        ImGui::Text("Objects configuration (saved!)");
+        // Select the object the control
         {
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+            vector<string> objectNames = getObjectNames();
+            vector<const char*> items;
 
-            // Node configuration
-            ImGui::Text("Objects configuration (saved!)");
-            // Select the object the control
+            int index = 0;
+            string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
+            for (auto& name : objectNames)
             {
-                vector<string> objectNames = getObjectNames();
-                vector<const char*> items;
-
-                int index = 0;
-                string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
-                for (auto& name : objectNames)
-                {
-                    items.push_back(name.c_str());
-                    // If the object name is the same as the item selected in the node view, we change the targetIndex
-                    if (name == clickedNode)
-                        _targetIndex = index;
-                    index++;
-                }
-                ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
+                items.push_back(name.c_str());
+                // If the object name is the same as the item selected in the node view, we change the targetIndex
+                if (name == clickedNode)
+                    _targetIndex = index;
+                index++;
             }
-
-            // Initialize the target
-            if (_targetIndex >= 0)
-            {
-                vector<string> objectNames = getObjectNames();
-                if (objectNames.size() <= _targetIndex)
-                    return;
-                _targetObjectName = objectNames[_targetIndex];
-            }
-
-            if (_targetObjectName == "")
-                return;
-
-            auto scene = _scene.lock();
-
-            bool isDistant = false;
-            if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
-                isDistant = true;
-
-            unordered_map<string, Values> attributes;
-            if (!isDistant)
-                attributes = scene->_objects[_targetObjectName]->getAttributes(true);
-            else
-                attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
-
-            for (auto& attr : attributes)
-            {
-                if (attr.second.size() > 4 || attr.second.size() == 0)
-                    continue;
-
-                if (attr.second[0].getType() == Value::Type::i
-                    || attr.second[0].getType() == Value::Type::f)
-                {
-                    int precision = 0;
-                    if (attr.second[0].getType() == Value::Type::f)
-                        precision = 2;
-
-                    if (attr.second.size() == 1)
-                    {
-                        float tmp = attr.second[0].asFloat();
-                        float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
-                        if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                    }
-                    else if (attr.second.size() == 2)
-                    {
-                        vector<float> tmp;
-                        tmp.push_back(attr.second[0].asFloat());
-                        tmp.push_back(attr.second[1].asFloat());
-                        if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
-                    }
-                    else if (attr.second.size() == 3)
-                    {
-                        vector<float> tmp;
-                        tmp.push_back(attr.second[0].asFloat());
-                        tmp.push_back(attr.second[1].asFloat());
-                        tmp.push_back(attr.second[2].asFloat());
-                        if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
-                    }
-                    else if (attr.second.size() == 4)
-                    {
-                        vector<float> tmp;
-                        tmp.push_back(attr.second[0].asFloat());
-                        tmp.push_back(attr.second[1].asFloat());
-                        tmp.push_back(attr.second[2].asFloat());
-                        tmp.push_back(attr.second[3].asFloat());
-                        if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
-                    }
-                }
-                else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
-                {
-                    // We skip anything that looks like a vector / matrix
-                    // (for usefulness reasons...)
-                    Values values = attr.second[0].asValues();
-                    if (values.size() > 16)
-                    {
-                        if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
-                        {
-                            float minValue = numeric_limits<float>::max();
-                            float maxValue = numeric_limits<float>::min();
-                            vector<float> samples;
-                            for (auto& v : values)
-                            {
-                                float value = v.asFloat();
-                                maxValue = std::max(value, maxValue);
-                                minValue = std::min(value, minValue);
-                                samples.push_back(value);
-                            }
-                            
-                            ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
-                        }
-                    }
-                }
-                else if (attr.second[0].getType() == Value::Type::s)
-                {
-                    for (auto& v : attr.second)
-                    {
-                        string tmp = v.asString();
-                        tmp.resize(256);
-                        if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                    }
-                }
-            }
-
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
-
-            if (ImGui::Button("Delete selected object"))
-                scene->sendMessageToWorld("deleteObject", {_targetObjectName});
+            ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
         }
+
+        // Initialize the target
+        if (_targetIndex >= 0)
+        {
+            vector<string> objectNames = getObjectNames();
+            if (objectNames.size() <= _targetIndex)
+                return;
+            _targetObjectName = objectNames[_targetIndex];
+        }
+
+        if (_targetObjectName == "")
+            return;
+
+        auto scene = _scene.lock();
+
+        bool isDistant = false;
+        if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
+            isDistant = true;
+
+        unordered_map<string, Values> attributes;
+        if (!isDistant)
+            attributes = scene->_objects[_targetObjectName]->getAttributes(true);
+        else
+            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
+
+        for (auto& attr : attributes)
+        {
+            if (attr.second.size() > 4 || attr.second.size() == 0)
+                continue;
+
+            if (attr.second[0].getType() == Value::Type::i
+                || attr.second[0].getType() == Value::Type::f)
+            {
+                int precision = 0;
+                if (attr.second[0].getType() == Value::Type::f)
+                    precision = 2;
+
+                if (attr.second.size() == 1)
+                {
+                    float tmp = attr.second[0].asFloat();
+                    float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
+                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                }
+                else if (attr.second.size() == 2)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
+                }
+                else if (attr.second.size() == 3)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    tmp.push_back(attr.second[2].asFloat());
+                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
+                }
+                else if (attr.second.size() == 4)
+                {
+                    vector<float> tmp;
+                    tmp.push_back(attr.second[0].asFloat());
+                    tmp.push_back(attr.second[1].asFloat());
+                    tmp.push_back(attr.second[2].asFloat());
+                    tmp.push_back(attr.second[3].asFloat());
+                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+                }
+            }
+            else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
+            {
+                // We skip anything that looks like a vector / matrix
+                // (for usefulness reasons...)
+                Values values = attr.second[0].asValues();
+                if (values.size() > 16)
+                {
+                    if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
+                    {
+                        float minValue = numeric_limits<float>::max();
+                        float maxValue = numeric_limits<float>::min();
+                        vector<float> samples;
+                        for (auto& v : values)
+                        {
+                            float value = v.asFloat();
+                            maxValue = std::max(value, maxValue);
+                            minValue = std::min(value, minValue);
+                            samples.push_back(value);
+                        }
+                        
+                        ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
+                    }
+                }
+            }
+            else if (attr.second[0].getType() == Value::Type::s)
+            {
+                for (auto& v : attr.second)
+                {
+                    string tmp = v.asString();
+                    tmp.resize(256);
+                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                }
+            }
+        }
+
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+
+        if (ImGui::Button("Delete selected object"))
+            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
     }
 }
 
