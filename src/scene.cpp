@@ -1238,10 +1238,13 @@ void Scene::registerAttributes()
                 _objects.erase(objectIt);
 
             objectIt = _ghostObjects.find(objectName);
-            for (auto& ghostObject : _ghostObjects)
-                unlink(objectIt->second, ghostObject.second);
             if (objectIt != _ghostObjects.end())
-                _objects.erase(objectIt);
+            {
+                for (auto& ghostObject : _ghostObjects)
+                    unlink(objectIt->second, ghostObject.second);
+                _ghostObjects.erase(objectIt);
+            }
+
             _objectsCurrentlyUpdated = false;
         });
 
