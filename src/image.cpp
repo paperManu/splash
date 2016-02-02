@@ -14,6 +14,7 @@
 #include "timer.h"
 
 #define SPLASH_IMAGE_COPY_THREADS 2
+#define SPLASH_IMAGE_SERIALIZED_HEADER_SIZE 4096
 
 using namespace std;
 
@@ -122,7 +123,7 @@ shared_ptr<SerializedObject> Image::serialize() const
     string xmlSpec = _image->getSpec().to_string();
     int nbrChar = xmlSpec.size();
     int imgSize = _image->getSpec().rawSize();
-    int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
+    int totalSize = SPLASH_IMAGE_SERIALIZED_HEADER_SIZE + imgSize;
     
     auto obj = make_shared<SerializedObject>(totalSize);
 
@@ -133,7 +134,7 @@ shared_ptr<SerializedObject> Image::serialize() const
 
     const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
     copy(charPtr, charPtr + nbrChar, currentObjPtr);
-    currentObjPtr += nbrChar;
+    currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
 
     // And then, the image
     const char* imgPtr = reinterpret_cast<const char*>(_image->data());
@@ -181,7 +182,7 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
-        currentObjPtr += nbrChar;
+        currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
         string xmlSpec(xmlSpecChar);
 
         ImageBufferSpec spec;
@@ -191,19 +192,9 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
         if (spec != curSpec)
             _bufferDeserialize = ImageBuffer(spec);
 
-        int imgSize = _bufferDeserialize.getSpec().rawSize();
-        ptr = reinterpret_cast<char*>(_bufferDeserialize.data());
-
-        vector<unsigned int> threadIds;
-        int stride = SPLASH_IMAGE_COPY_THREADS;
-        for (int i = 0; i < stride - 1; ++i)
-        {
-            threadIds.push_back(SThread::pool.enqueue([=]() {
-                copy(currentObjPtr + imgSize / stride * i, currentObjPtr + imgSize / stride * (i + 1), ptr + imgSize / stride * i);
-            }));
-        }
-        copy(currentObjPtr + imgSize / stride * (stride - 1), currentObjPtr + imgSize, ptr + imgSize / stride * (stride - 1));
-        SThread::pool.waitThreads(threadIds);
+        auto rawBuffer = obj->grabData();
+        rawBuffer.shift(SPLASH_IMAGE_SERIALIZED_HEADER_SIZE);
+        _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 
         if (!_bufferImage)
             _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());

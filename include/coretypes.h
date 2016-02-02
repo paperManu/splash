@@ -89,26 +89,30 @@ class ResizableArray
             if (end <= start)
             {
                 _size = 0;
+                _shift = 0;
                 _buffer.reset();
 
                 return;
             }
 
             _size = static_cast<size_t>(end - start);
+            _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
             memcpy(_buffer.get(), start, _size * sizeof(T));
         }
 
         ResizableArray(const ResizableArray& a)
         {
-            _size = a._size;
+            _size = a._size - a._shift;
+            _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
-            memcpy(_buffer.get(), a._buffer.get(), _size);
+            memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
         }
 
         ResizableArray(ResizableArray&& a)
         {
             _size = a._size;
+            _shift = a._shift;
             _buffer = std::move(a._buffer);
         }
 
@@ -117,9 +121,10 @@ class ResizableArray
             if (this == &a)
                 return *this;
 
-            _size = a._size;
+            _size = a._size - a._shift;
+            _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
-            memcpy(_buffer.get(), a._buffer.get(), _size);
+            memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
 
             return *this;
         }
@@ -130,21 +135,47 @@ class ResizableArray
                 return *this;
 
             _size = a._size;
+            _shift = a._shift;
             _buffer = std::move(a._buffer);
 
             return *this;
         }
 
-        inline T* data() {return _buffer.get();}
-        inline size_t size() {return _size;}
+        /**
+         * Get a pointer to the data
+         */
+        inline T* data() {return _buffer.get() + _shift;}
+
+        /**
+         * Shift the data, for example to get rid of a header without copying
+         */
+        inline void shift(size_t shift)
+        {
+            if (shift < _size)
+            {
+                _shift = shift;
+                _size -= shift;
+            }
+        }
+
+        /**
+         * Get the size of the buffer
+         */
+        inline size_t size() {return _size - _shift;}
+
+        /**
+         * Resize the buffer
+         */
         inline void resize(size_t size)
         {
             _buffer = std::unique_ptr<T[]>(new T[size]);
             _size = size;
+            _shift = 0;
         }
 
     private:
         size_t _size {0};
+        size_t _shift {0};
         std::unique_ptr<T[]> _buffer {nullptr};
 };
 
@@ -173,6 +204,12 @@ struct SerializedObject
     {
         return _data.data();
     }
+
+    /**
+     * Get ownership over the inner buffer
+     * Use with caution, as it invalidates the SerializedObject
+     */
+    ResizableArray<char>&& grabData() {return std::move(_data);}
 
     /**
      * Return the size of the data

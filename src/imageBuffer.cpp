@@ -174,8 +174,8 @@ void ImageBuffer::fill(float value)
     {
     case ImageBufferSpec::Type::UINT8:
         {
-            uint8_t* data = _buffer.data();
-            uint8_t v = static_cast<uint8_t>(value);
+            uint8_t* data = reinterpret_cast<uint8_t*>(_buffer.data());
+            uint8_t v = static_cast<char>(value);
             for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
                 data[p] = v;
         }

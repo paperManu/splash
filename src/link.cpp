@@ -161,8 +161,18 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
         for (auto& rootObjectIt : _connectedTargetPointers)
         {
             auto rootObject = rootObjectIt.second.lock();
-            if (rootObject)
+            // If there is also a connection to another process,
+            // we make a copy of the buffer right now
+            if (rootObject && _connectedToOuter)
+            {
+                auto copiedBuffer = make_shared<SerializedObject>();
+                *copiedBuffer = *buffer;
+                rootObject->setFromSerializedObject(name, copiedBuffer);
+            }
+            else
+            {
                 rootObject->setFromSerializedObject(name, buffer);
+            }
         }
     }
 

@@ -151,7 +151,7 @@ class ImageBuffer
         ImageBuffer& operator=(const ImageBuffer& i) = default;
         ImageBuffer& operator=(ImageBuffer&& i) = default;
 
-        uint8_t* data()
+        char* data()
         {
             return _buffer.data();
         }
@@ -159,10 +159,19 @@ class ImageBuffer
         ImageBufferSpec getSpec() {return _spec;}
 
         void fill(float value);
+
+        /**
+         * Set the inner raw buffer, to use with caution,
+         * its size must match the spec
+         */
+        void setRawBuffer(ResizableArray<char>&& buffer)
+        {
+            _buffer = std::move(buffer);
+        }
         
     private:
         ImageBufferSpec _spec {};
-        ResizableArray<uint8_t> _buffer;
+        ResizableArray<char> _buffer;
 
         void init(const ImageBufferSpec& spec);
 };

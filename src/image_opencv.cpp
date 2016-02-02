@@ -111,7 +111,7 @@ void Image_OpenCV::readLoop()
             newSpec.format = vector<string>({"B", "G", "R"});
             _readBuffer = ImageBuffer(newSpec);
         }
-        unsigned char* pixels = static_cast<unsigned char*>(_readBuffer.data());
+        unsigned char* pixels = reinterpret_cast<unsigned char*>(_readBuffer.data());
 
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
         copy(capture.data, capture.data + imageSize, pixels);

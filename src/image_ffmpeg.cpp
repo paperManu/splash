@@ -269,7 +269,7 @@ void Image_FFmpeg::readLoop()
                         spec.format = {"R", "G", "B"};
                         img.reset(new ImageBuffer(spec));
 
-                        unsigned char* pixels = static_cast<unsigned char*>(img->data());
+                        unsigned char* pixels = reinterpret_cast<unsigned char*>(img->data());
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
