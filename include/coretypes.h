@@ -168,7 +168,13 @@ class ResizableArray
          */
         inline void resize(size_t size)
         {
-            _buffer = std::unique_ptr<T[]>(new T[size]);
+            auto newBuffer = std::unique_ptr<T[]>(new T[size]);
+            if (size >= _size)
+                memcpy(newBuffer.get(), _buffer.get(), _size);
+            else
+                memcpy(newBuffer.get(), _buffer.get(), size);
+
+            std::swap(_buffer, newBuffer);
             _size = size;
             _shift = 0;
         }
