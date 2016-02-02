@@ -258,6 +258,25 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
+
+    // Helper function to read arrays
+    std::function<Values(Json::Value)> processArray;
+    processArray = [&processArray](Json::Value values) {
+        Values outValues;
+        for (auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt());
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat());
+            else if (v.isArray())
+                outValues.emplace_back(processArray(v));
+            else
+                outValues.emplace_back(v.asString());
+        }
+        return outValues;
+    };
+
     unique_lock<mutex> lock(_configurationMutex);
 
     // We first destroy all scene and objects
@@ -368,17 +387,15 @@ void World::applyConfig()
                 string paramName = sceneMembers[idx];
 
                 Values values;
-                for (auto& p : param)
-                {
-                    Value v;
-                    if (p.isInt())
-                        v = p.asInt();
-                    else if (p.isDouble())
-                        v = p.asFloat();
-                    else
-                        v = p.asString();
-                    values.push_back(v);
-                }
+                if (param.isArray())
+                    values = processArray(param);
+                else if (param.isInt())
+                    values.emplace_back(param.asInt());
+                else if (param.isDouble())
+                    values.emplace_back(param.asFloat());
+                else if (param.isString())
+                    values.emplace_back(param.asString());
+
                 sendMessage(name, paramName, values);
                 idx++;
             }
@@ -446,24 +463,6 @@ void World::applyConfig()
                     idxAttr++;
                     continue;
                 }
-
-                // Helper function to read arrays
-                std::function<Values(Json::Value)> processArray;
-                processArray = [&processArray](Json::Value values) {
-                    Values outValues;
-                    for (auto& v : values)
-                    {
-                        if (v.isInt())
-                            outValues.emplace_back(v.asInt());
-                        else if (v.isDouble())
-                            outValues.emplace_back(v.asFloat());
-                        else if (v.isArray())
-                            outValues.emplace_back(processArray(v));
-                        else
-                            outValues.emplace_back(v.asString());
-                    }
-                    return outValues;
-                };
 
                 Values values;
                 if (attr.isArray())
