@@ -306,6 +306,9 @@ void GuiMedia::render()
                         
                         if (updated)
                         {
+                            for (auto& p : playlist)
+                                cout << p[1].asString() << endl;
+                            cout << endl;
                             playlist.push_front("playlist");
                             playlist.push_front(mediaName);
                             scene->sendMessageToWorld("sendAll", playlist);

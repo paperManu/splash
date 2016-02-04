@@ -338,9 +338,8 @@ struct Value
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
         Value(Values v)
         {
-            if (!_v)
-                _v = new Values();
-            *_v = v;
+            _v = std::unique_ptr<Values>(new Values());
+            *_v = v; 
             _type = Type::v;
         }
 
@@ -358,30 +357,19 @@ struct Value
                 _l = v._l;
                 _f = v._f;
                 _s = v._s;
-
-                if (!_v && v._v)
-                {
-                    _v = new Values();
-                    *_v = *v._v;
-                }
+                _v = std::unique_ptr<Values>(new Values());
+                if (v._v)
+                    *_v = *(v._v);
             }
 
             return *this;
-        }
-
-        ~Value()
-        {
-            if (_v)
-                delete _v;
         }
 
         template<class InputIt>
         Value(InputIt first, InputIt last)
         {
             _type = Type::v;
-            if (!_v)
-                _v = new Values();
-            _v->clear();
+            _v = std::unique_ptr<Values>(new Values());
 
             auto it = first;
             while (it != last)
@@ -538,7 +526,7 @@ struct Value
         int64_t _l {0};
         float _f {0.f};
         std::string _s {""};
-        Values* _v {nullptr};
+        std::unique_ptr<Values> _v {nullptr};
 };
 
 /*************/
