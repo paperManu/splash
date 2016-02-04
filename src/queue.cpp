@@ -164,17 +164,20 @@ shared_ptr<BufferObject> Queue::createSource(string type)
     if (type == "image")
     {
         source = make_shared<Image>();
+        dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #if HAVE_SHMDATA
     else if (type == "image_ffmpeg")
     {
         source = make_shared<Image_FFmpeg>();
+        dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #endif
 #if HAVE_SHMDATA
     else if (type == "image_shmdata")
     {
         source = make_shared<Image_Shmdata>();
+        dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #endif
     else
