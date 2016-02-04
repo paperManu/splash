@@ -548,6 +548,7 @@ void Image_FFmpeg::registerAttributes()
         return {duration};
     });
     _attribFunctions["duration"].doUpdateDistant(true);
+    _attribFunctions["duration"].savable(false);
 
     _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -571,6 +572,7 @@ void Image_FFmpeg::registerAttributes()
         return {duration};
     });
     _attribFunctions["remaining"].doUpdateDistant(true);
+    _attribFunctions["remaining"].savable(false);
 
     _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -582,6 +584,7 @@ void Image_FFmpeg::registerAttributes()
         return {_paused};
     });
     _attribFunctions["pause"].doUpdateDistant(true);
+    _attribFunctions["pause"].savable(false);
 
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -598,6 +601,7 @@ void Image_FFmpeg::registerAttributes()
         return {_seekTime};
     });
     _attribFunctions["seek"].doUpdateDistant(true);
+    _attribFunctions["seek"].savable(false);
 
     _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)

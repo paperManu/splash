@@ -214,6 +214,7 @@ void Queue::registerAttributes()
         return {_paused};
     });
     _attribFunctions["pause"].doUpdateDistant(true);
+    _attribFunctions["pause"].savable(false);
 
     _attribFunctions["playlist"] = AttributeFunctor([&](const Values& args) {
         unique_lock<mutex> lock(_playlistMutex);
@@ -272,6 +273,7 @@ void Queue::registerAttributes()
         return {(float)_currentTime / 1e6};
     });
     _attribFunctions["seek"].doUpdateDistant(true);
+    _attribFunctions["seek"].savable(false);
 
     _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)

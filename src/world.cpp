@@ -605,8 +605,17 @@ void World::saveConfig()
                     _config[sceneName][m] = Json::Value();
 
                 Json::Value::Members attributes = scene[m].getMemberNames();
-                for (auto& a : attributes)
+                for (const auto& a : attributes)
                     _config[sceneName][m][a] = scene[m][a];
+
+                const auto& obj = _objects.find(m);
+                if (obj != _objects.end())
+                {
+                    Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                    attributes = worldObjValue.getMemberNames();
+                    for (const auto& a : attributes)
+                        _config[sceneName][m][a] = worldObjValue[a];
+                }
             }
         }
     }
