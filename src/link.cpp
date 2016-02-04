@@ -350,6 +350,8 @@ void Link::handleInputMessages()
                     _socketMessageIn->recv(&msg);
                     if (valueType == Value::Type::i)
                         values.push_back(*(int*)msg.data());
+                    else if (valueType == Value::Type::l)
+                        values.push_back(*(int64_t*)msg.data());
                     else if (valueType == Value::Type::f)
                         values.push_back(*(float*)msg.data());
                     else if (valueType == Value::Type::s)
