@@ -116,63 +116,33 @@ fi
 
 # Shmdata
 PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],
-    AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected]),
-    AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect]))
+    [SHMDATA_BUILD=enabled AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected])],
+    [SHMDATA_BUILD=disabled AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect])])
 AM_CONDITIONAL(HAVE_SHMDATA, test -n "$SHMDATA_LIBS")
-
-if test "x$HAVE_SHMDATA" = "xfalse" ; then
-    SHMDATA_BUILD=disabled
-else
-    SHMDATA_BUILD=enabled
-fi
 
 # GPhoto
 PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
-    AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected]),
-    AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
+    [GPHOTO_BUILD=enabled AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected])],
+    [GPHOTO_BUILD=disabled AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected])])
 AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
-
-if test "x$HAVE_GPHOTO" = "xfalse" ; then
-    GPHOTO_BUILD=disabled
-else
-    GPHOTO_BUILD=enabled
-fi
 
 # FFMPEG, for very simple internal file reading
 PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
-    AC_DEFINE([HAVE_FFMPEG], [1], [Defined to 1 if ffmpeg is detected]),
-    AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected]))
+    [FFMPEG_BUILD=enabled AC_DEFINE([HAVE_FFMPEG], [1], [Defined to 1 if ffmpeg is detected])],
+    [FFMPEG_BUILD=disabled AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected])])
 AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
-
-if test "x$HAVE_FFMPEG" = "xfalse" ; then
-    FFMPEG_BUILD=disabled
-else
-    FFMPEG_BUILD=enabled
-fi
 
 # PortAudio, to play sound
 PKG_CHECK_MODULES([PORTAUDIO], [portaudio-2.0],
-    AC_DEFINE([HAVE_PORTAUDIO], [1], [Defined to 1 if portaudio-2.0 is detected]),
-    AC_DEFINE([HAVE_PORTAUDIO], [0], [Defined to 1 if portaudio-2.0 is detected]))
+    [PORTAUDIO_BUILD=enabled AC_DEFINE([HAVE_PORTAUDIO], [1], [Defined to 1 if portaudio-2.0 is detected])],
+    [PORTAUDIO_BUILD=disabled AC_DEFINE([HAVE_PORTAUDIO], [0], [Defined to 1 if portaudio-2.0 is detected])])
 AM_CONDITIONAL(HAVE_PORTAUDIO, test -n "$PORTAUDIO_LIBS")
-
-if test "x$HAVE_PORTAUDIO" = "xfalse" ; then
-    PORTAUDIO_BUILD=disabled
-else
-    PORTAUDIO_BUILD=enabled
-fi
 
 # OpenCV, for their hardware support
 PKG_CHECK_MODULES([OPENCV], [opencv],
-    AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected]),
-    AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected]))
+    [OPENCV_BUILD=enabled AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected])],
+    [OPENCV_BUILD=disabled AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected])])
 AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
-
-if test "x$HAVE_OPENCV" = "xfalse" ; then
-    OPENCV_BUILD=disabled
-else
-    OPENCV_BUILD=enabled
-fi
 
 # Boost, for the HTTP server
 BOOST_REQUIRE([1.50])
@@ -180,15 +150,9 @@ BOOST_ASIO
 
 # LTC, for synchronization with a SMTPE clock through audio input
 PKG_CHECK_MODULES([LTC], [ltc],
-    AC_DEFINE([HAVE_LTC], [1], [Defined to 1 if ltc is detected]),
-    AC_DEFINE([HAVE_LTC], [0], [Defined to 1 if ltc is detected]))
+    [LTC_BUILD=enabled AC_DEFINE([HAVE_LTC], [1], [Defined to 1 if ltc is detected])],
+    [LTC_BUILD=disabled AC_DEFINE([HAVE_LTC], [0], [Defined to 1 if ltc is detected])])
 AM_CONDITIONAL(HAVE_LTC, test -n "$LTC_LIBS")
-
-if test "x$HAVE_LTC" = "xfalse" ; then
-    LTC_BUILD=disabled
-else
-    LTC_BUILD=enabled
-fi
 
 # Check for Markdown to generate documentation
 AC_CHECK_PROGS([MARKDOWN], [markdown])
