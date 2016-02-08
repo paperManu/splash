@@ -166,7 +166,7 @@ shared_ptr<BufferObject> Queue::createSource(string type)
         source = make_shared<Image>();
         dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
-#if HAVE_SHMDATA
+#if HAVE_FFMPEG
     else if (type == "image_ffmpeg")
     {
         source = make_shared<Image_FFmpeg>();
