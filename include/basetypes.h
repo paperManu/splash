@@ -59,28 +59,56 @@ struct AttributeFunctor
         }
 
         AttributeFunctor(const AttributeFunctor&) = delete;
-        AttributeFunctor(AttributeFunctor&&) = default;
         AttributeFunctor& operator=(const AttributeFunctor&) = delete;
-        AttributeFunctor& operator=(AttributeFunctor&&) = default;
+
+        AttributeFunctor(AttributeFunctor&& a)
+        {
+            operator=(std::move(a));
+        }
+
+        AttributeFunctor& operator=(AttributeFunctor&& a)
+        {
+            if (this != &a)
+            {
+                _setFunc = std::move(a._setFunc);
+                _getFunc = std::move(a._getFunc);
+                _defaultSetAndGet = std::move(a._defaultSetAndGet);
+                _values = std::move(a._values);
+                _doUpdateDistant = std::move(a._doUpdateDistant);
+                _savable = std::move(a._savable);
+            }
+
+            return *this;
+        }
 
         bool operator()(const Values& args)
         {
             if (!_setFunc && _defaultSetAndGet)
             {
+                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
                 _values = args;
                 return true;
             }
             else if (!_setFunc)
+            {
                 return false;
+            }
+
             return _setFunc(std::forward<const Values&>(args));
         }
 
         Values operator()() const
         {
             if (!_getFunc && _defaultSetAndGet)
+            {
+                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
                 return _values;
+            }
             else if (!_getFunc)
+            {
                 return Values();
+            }
+
             return _getFunc();
         }
 
@@ -96,6 +124,7 @@ struct AttributeFunctor
         void savable(bool save) {_savable = save;}
 
     private:
+        mutable std::mutex _defaultFuncMutex {};
         std::function<bool(const Values&)> _setFunc {};
         std::function<const Values()> _getFunc {};
 
@@ -228,7 +257,7 @@ class BaseObject
 
             if (attribNotPresent)
             {
-                auto result = _attribFunctions.emplace(std::make_pair(attrib, AttributeFunctor()));
+                auto result = _attribFunctions.emplace(attrib, AttributeFunctor());
                 if (!result.second)
                     return false;
 
