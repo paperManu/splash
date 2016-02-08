@@ -1,5 +1,7 @@
 #include "queue.h"
 
+#include <algorithm>
+
 #include "image.h"
 #if HAVE_FFMPEG
     #include "image_ffmpeg.h"
@@ -81,10 +83,6 @@ void Queue::update()
             _currentSource->setAttribute("pause", {0});
     }
 
-    auto source = _playlist[0];
-    if (_playing)
-        source = _playlist[_currentSourceIndex];
-
     // Get the current index regarding the current time
     uint32_t sourceIndex = 0;
     for (auto& playSource : _playlist)
@@ -107,7 +105,7 @@ void Queue::update()
     {
         if (_playing)
         {
-            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Finished playing file: " << source.filename << Log::endl;
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Finished playing file: " << _playlist[_currentSourceIndex].filename << Log::endl;
             _playing = false;
         }
 
@@ -121,39 +119,96 @@ void Queue::update()
         }
         else
         {
-            source = _playlist[_currentSourceIndex];
-            _currentSource = createSource(source.type);
+            _currentSource = createSource(_playlist[_currentSourceIndex].type);
 
             if (_currentSource)
                 _playing = true;
             else
                 _currentSource = make_shared<Image>();
 
-            _currentSource->setAttribute("file", {source.filename});
+            _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
 
             if (_useClock)
             {
                 // If we use the master clock, set a timeshift to be correctly placed in the video
                 // (as the source gets its clock from the same Timer)
-                _currentSource->setAttribute("timeShift", {-(float)source.start / 1e6});
+                _currentSource->setAttribute("timeShift", {-(float)_playlist[_currentSourceIndex].start / 1e6});
                 _currentSource->setAttribute("useClock", {1});
             }
 
-            _world.lock()->sendMessage(_name, "source", {source.type});
+            _world.lock()->sendMessage(_name, "source", {_playlist[_currentSourceIndex].type});
 
-            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << source.filename << Log::endl;
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << _playlist[_currentSourceIndex].filename << Log::endl;
         }
     }
 
     if (!_useClock && _seeked)
     {
         // If we don't use the master clock, we want to seek accordingly in the file
-        _currentSource->setAttribute("seek", {(float)(_currentTime - source.start) / 1e6});
+        _currentSource->setAttribute("seek", {(float)(_currentTime - _playlist[_currentSourceIndex].start) / 1e6});
         _seeked = false;
     }
     
     if (_currentSource)
         _currentSource->update();
+}
+
+/*************/
+void Queue::cleanPlaylist(vector<Source>& playlist)
+{
+    auto cleanList = vector<Source>();
+
+    std::sort(playlist.begin(), playlist.end(), [](const Source& a, const Source& b) {
+        return a.start < b.start;
+    });
+
+    int64_t previousEnd = 0;
+    for (const auto& source : playlist)
+    {
+        if (previousEnd < source.start)
+        {
+            if (source.filename == "" && source.type == "image")
+            {
+                cleanList.push_back(source);
+                cleanList.back().start = previousEnd;
+            }
+            else
+            {
+                Source blackSource;
+                blackSource.start = previousEnd;
+                blackSource.stop = source.start;
+                blackSource.type = "image";
+                blackSource.filename = "black";
+                cleanList.push_back(blackSource);
+                cleanList.push_back(source);
+            }
+        }
+        else if (previousEnd == source.start)
+        {
+            cleanList.push_back(source);
+        }
+        else if (previousEnd > source.start)
+        {
+            if (previousEnd < source.stop)
+            {
+                cleanList.back().stop = source.start;
+                cleanList.push_back(source);
+            }
+        }
+
+        previousEnd = source.stop;
+    }
+
+    // Remove zero length sources
+    for (auto it = cleanList.begin(); it != cleanList.end();)
+    {
+        if (it->start == it->stop)
+            it = cleanList.erase(it);
+        else
+            it++;
+    }
+
+    playlist = cleanList;
 }
 
 /*************/
@@ -238,6 +293,8 @@ void Queue::registerAttributes()
                     _playlist.push_back(source);
             }
         }
+
+        cleanPlaylist(_playlist);
 
         return true;
     }, [&]() -> Values {

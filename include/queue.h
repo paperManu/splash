@@ -95,11 +95,11 @@ class Queue : public BufferObject
 
         struct Source
         {
-            std::string type;
-            std::string filename;
-            int64_t start; // in useconds
-            int64_t stop; // in useconds
-            Values args;
+            std::string type {"image"};
+            std::string filename {""};
+            int64_t start {0}; // in useconds
+            int64_t stop {0}; // in useconds
+            Values args {};
         };
         std::vector<Source> _playlist {}; // Holds a vector of [type, filename, start, stop, args], which is also a Values
         std::mutex _playlistMutex;
@@ -117,6 +117,11 @@ class Queue : public BufferObject
         bool _seeked {false};
         int64_t _startTime {-1}; // Beginning of the current loop, in us
         int64_t _currentTime {-1}; // Elapsed time since _startTime
+
+        /**
+         * Clean the playlist for holes and overlaps
+         */
+        void cleanPlaylist(std::vector<Source>& playlist);
 
         /**
          * Create a source object from the given type
