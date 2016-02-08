@@ -86,6 +86,27 @@ bool Image_FFmpeg::read(const string& filename)
 }
 
 /*************/
+string Image_FFmpeg::tagToFourCC(unsigned int tag)
+{
+    string fourcc;
+    fourcc.resize(4);
+
+    unsigned int sum = 0;
+    fourcc[3] = char(tag >> 24);
+    sum += (fourcc[3]) << 24;
+
+    fourcc[2] = char((tag - sum) >> 16);
+    sum += (fourcc[2]) << 16;
+
+    fourcc[1] = char((tag - sum) >> 8);
+    sum += (fourcc[1]) << 8;
+
+    fourcc[0] = char(tag - sum);
+
+    return fourcc;
+}
+
+/*************/
 void Image_FFmpeg::readLoop()
 {
     // Find the first video stream
@@ -118,7 +139,8 @@ void Image_FFmpeg::readLoop()
     auto videoCodec = avcodec_find_decoder(_videoCodecContext->codec_id);
     auto isHap = false;
 
-    if (videoCodec == nullptr && string(_videoCodecContext->codec_name).find("Hap") != string::npos)
+    auto fourcc = tagToFourCC(_videoCodecContext->codec_tag);
+    if (videoCodec == nullptr && fourcc.find("Hap") != string::npos)
     {
         isHap = true;
     }
@@ -310,7 +332,10 @@ void Image_FFmpeg::readLoop()
                             spec.format = {textureFormat};
                         }
                         else
+                        {
+                            av_free_packet(&packet);
                             return;
+                        }
 
                         spec.format = {textureFormat};
                         img.reset(new ImageBuffer(spec));

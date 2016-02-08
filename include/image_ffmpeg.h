@@ -113,6 +113,11 @@ class Image_FFmpeg : public Image
 #endif
 
         /**
+         * Convert a codec tag to a fourcc
+         */
+        std::string tagToFourCC(unsigned int tag);
+
+        /**
          * Free everything related to FFmpeg
          */
         void freeFFmpegObjects();
