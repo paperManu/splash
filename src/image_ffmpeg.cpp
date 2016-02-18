@@ -31,7 +31,6 @@ Image_FFmpeg::~Image_FFmpeg()
 /*************/
 void Image_FFmpeg::freeFFmpegObjects()
 {
-    _clockPaused = false;
     _clockTime = -1;
 
     _continueRead = false;
@@ -139,10 +138,18 @@ void Image_FFmpeg::readLoop()
     auto videoCodec = avcodec_find_decoder(_videoCodecContext->codec_id);
     auto isHap = false;
 
+    // Check whether the video codec only has intra frames
+    auto desc = avcodec_descriptor_get(_videoCodecContext->codec_id);
+    if (desc)
+        _intraOnly = !!(desc->props & AV_CODEC_PROP_INTRA_ONLY);
+    else
+        _intraOnly = false; // We don't know, so we consider it's not
+
     auto fourcc = tagToFourCC(_videoCodecContext->codec_tag);
     if (videoCodec == nullptr && fourcc.find("Hap") != string::npos)
     {
         isHap = true;
+        _intraOnly = true; // Hap is necessarily intra only
     }
     else if (videoCodec == nullptr)
     {
@@ -363,8 +370,8 @@ void Image_FFmpeg::readLoop()
                 }
 
                 // Do not store more than a few frames in memory
-                while (_timedFrames.size() > 20 && _continueRead)
-                    this_thread::sleep_for(chrono::milliseconds(10));
+                while (_timedFrames.size() > 30 && _continueRead)
+                    this_thread::sleep_for(chrono::milliseconds(2));
 
                _videoSeekMutex.unlock();
 
@@ -476,6 +483,7 @@ void Image_FFmpeg::videoDisplayLoop()
         if (localQueue.size() > 0 && _startTime == -1)
             _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - localQueue[0].timing;
 
+        auto previousFrameTiming = 0ull; // We store the previous frame timing to get the frame period
         while (localQueue.size() > 0 && _continueRead)
         {
             // If seek, clear the local queue as the frames should not be shown
@@ -486,12 +494,14 @@ void Image_FFmpeg::videoDisplayLoop()
             }
 
             int64_t clockAsMs;
+
+            float seekTiming = _intraOnly ? 0.33f : 3.f; // Maximum diff for seek to happen when synced to a master clock
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
                 float diff = _elapsedTime / 1e6 - seconds;
 
-                if (abs(diff) > 3.f)
+                if (abs(diff) > seekTiming)
                 {
                     _elapsedTime = seconds * 1e6;
                     _clockTime = _elapsedTime;
@@ -504,19 +514,11 @@ void Image_FFmpeg::videoDisplayLoop()
                 }
                 else
                 {
-                    if (_clockTime == seconds * 1e6)
-                    {
-                        _clockPaused = true;
-                    }
-                    else
-                    {
-                        _clockPaused = false;
-                        _clockTime = seconds * 1e6;
-                    }
+                    _clockTime = seconds * 1e6;
                 }
             }
 
-            if (_currentTime == _clockTime || _clockPaused)
+            if (_currentTime == _clockTime)
             {
                 this_thread::sleep_for(chrono::milliseconds(5));
                 continue;
@@ -541,10 +543,8 @@ void Image_FFmpeg::videoDisplayLoop()
                 }
 
                 int64_t waitTime = timedFrame.timing - _currentTime;
-                if (waitTime > 0 && waitTime < 1e6)
-                {
+                if (waitTime > 5e3 && waitTime < seekTiming) // we don't wait if the frame is due for the next 5ms
                     this_thread::sleep_for(chrono::microseconds(waitTime));
-                }
 
                 _elapsedTime = timedFrame.timing;
 
@@ -634,10 +634,10 @@ void Image_FFmpeg::registerAttributes()
 
         _useClock = args[0].asInt();
         if (!_useClock)
-        {
             _clockTime = -1;
-            _clockPaused = false;
-        }
+        else
+            _clockTime = 0;
+
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};

@@ -117,15 +117,13 @@ void LtcClock::getClock(Values& clockValues)
         return;
 
     Clock clock = _clock;
-
-    clockValues.clear();
-    clockValues.push_back({(int)clock.years});
-    clockValues.push_back({(int)clock.months});
-    clockValues.push_back({(int)clock.days});
-    clockValues.push_back({(int)clock.hours});
-    clockValues.push_back({(int)clock.mins});
-    clockValues.push_back({(int)clock.secs});
-    clockValues.push_back({(int)clock.frame});
+    clockValues = Values({(int)clock.years,
+                          (int)clock.months,
+                          (int)clock.days,
+                          (int)clock.hours,
+                          (int)clock.mins,
+                          (int)clock.secs,
+                          (int)clock.frame});
 }
 
 /*************/
