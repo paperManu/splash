@@ -141,7 +141,8 @@ class Image : public BufferObject
         bool _benchmark {false};
         bool _linkedToWorldObject {false};
 
-        void createDefaultImage(); //< Create a default pattern
+        void createDefaultImage(); //< Create a default black image
+        void createPattern(); //< Create a default pattern
 
         /**
          * Read the specified image file

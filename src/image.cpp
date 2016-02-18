@@ -325,6 +325,20 @@ bool Image::write(const std::string& filename)
 /*************/
 void Image::createDefaultImage()
 {
+    ImageBufferSpec spec(128, 128, 4, ImageBufferSpec::Type::UINT8);
+    ImageBuffer img(spec);
+    img.fill(0);
+
+    unique_lock<mutex> lock(_readMutex);
+    if (!_image)
+        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*_image, img);
+    updateTimestamp();
+}
+
+/*************/
+void Image::createPattern()
+{
     ImageBufferSpec spec(512, 512, 4, ImageBufferSpec::Type::UINT8);
     ImageBuffer img(spec);
 
@@ -394,6 +408,13 @@ void Image::registerAttributes()
         else
             _benchmark = false;
         return true;
+    });
+
+    _attribFunctions["pattern"] = AttributeFunctor([&](const Values& args) {
+        createPattern();
+        return true;
+    }, [&]() -> Values {
+        return {true};
     });
 }
 
