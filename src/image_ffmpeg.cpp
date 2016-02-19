@@ -483,7 +483,6 @@ void Image_FFmpeg::videoDisplayLoop()
         if (localQueue.size() > 0 && _startTime == -1)
             _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - localQueue[0].timing;
 
-        auto previousFrameTiming = 0ull; // We store the previous frame timing to get the frame period
         while (localQueue.size() > 0 && _continueRead)
         {
             // If seek, clear the local queue as the frames should not be shown
@@ -499,23 +498,7 @@ void Image_FFmpeg::videoDisplayLoop()
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
-                float diff = _elapsedTime / 1e6 - seconds;
-
-                if (abs(diff) > seekTiming)
-                {
-                    _elapsedTime = seconds * 1e6;
-                    _clockTime = _elapsedTime;
-                    localQueue.clear();
-
-                    SThread::pool.enqueueWithoutId([=]() {
-                        seek(seconds);
-                    });
-                    continue;
-                }
-                else
-                {
-                    _clockTime = seconds * 1e6;
-                }
+                _clockTime = seconds * 1e6;
             }
 
             if (_currentTime == _clockTime)
@@ -527,7 +510,7 @@ void Image_FFmpeg::videoDisplayLoop()
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                if (!_useClock && _paused)
+                if (_paused)
                 {
                     auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
                     _startTime = _startTime + (actualTime - _currentTime);
@@ -542,8 +525,22 @@ void Image_FFmpeg::videoDisplayLoop()
                     _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
                 }
 
+                // Compute the difference between next frame and the current clock
                 int64_t waitTime = timedFrame.timing - _currentTime;
-                if (waitTime > 5e3 && waitTime < seekTiming) // we don't wait if the frame is due for the next 5ms
+
+                // If the gap is too big, we seek through the video
+                if (abs(waitTime / 1e6) > seekTiming)
+                {
+                    _elapsedTime = _currentTime / 1e6 + _shiftTime;
+                    localQueue.clear();
+                    SThread::pool.enqueueWithoutId([=]() {
+                        seek(_elapsedTime);
+                    });
+                    continue;
+                }
+
+                // Otherwise, wait for the right time to display the frame
+                if (waitTime > 5e3) // we don't wait if the frame is due for the next 5ms
                     this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;
