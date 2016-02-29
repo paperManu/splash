@@ -251,7 +251,10 @@ class Timer
         bool getMasterClock(int64_t& time, bool& paused) const
         {
             if (_clock.size() == 0)
+            {
+                paused = true;
                 return false;
+            }
 
             auto clock = _clock;
             int64_t frames = clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120;
