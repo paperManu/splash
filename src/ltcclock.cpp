@@ -23,8 +23,10 @@ LtcClock::LtcClock(bool masterClock)
         return;
     }
 
-    _masterClock = true;
+    _masterClock = masterClock;
     _continue = true;
+
+    Log::get() << Log::MESSAGE << "LtcClock::" << __FUNCTION__ << " - Input clock enabled" << Log::endl;
 
     _ltcThread = thread([&]() {
         LTCDecoder* ltcDecoder = ltc_decoder_create(1920, 32);
@@ -102,6 +104,8 @@ LtcClock::~LtcClock()
     _continue = false;
     if (_ltcThread.joinable())
         _ltcThread.join();
+
+    Log::get() << Log::MESSAGE << "LtcClock::" << __FUNCTION__ << " - Input clock disabled" << Log::endl;
 }
 
 /*************/

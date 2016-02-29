@@ -77,7 +77,7 @@ class World : public RootObject
     private:
         WorldPtr _self;
 #if HAVE_PORTAUDIO && HAVE_LTC
-        LtcClock _clock {true};
+        std::unique_ptr<LtcClock> _clock {nullptr};
 #endif
 
         std::shared_ptr<Scene> _innerScene {};

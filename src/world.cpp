@@ -549,6 +549,9 @@ void World::applyConfig()
         }
     }
 
+    // Also, enable the master clock
+    _clock = unique_ptr<LtcClock>(new LtcClock(true));
+
     // Send the start message for all scenes
     for (auto& s : _scenes)
     {
