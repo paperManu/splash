@@ -230,7 +230,7 @@ class Timer
          */
         void setMasterClock(const Values& clock)
         {
-           if (clock.size() == 7)
+           if (clock.size() == 8)
                _clock = clock;
         }
         
@@ -248,7 +248,7 @@ class Timer
         }
 
         template <typename T>
-        bool getMasterClock(int64_t& time) const
+        bool getMasterClock(int64_t& time, bool& paused) const
         {
             if (_clock.size() == 0)
                 return false;
@@ -257,6 +257,9 @@ class Timer
             int64_t frames = clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120;
             std::chrono::microseconds useconds((frames * 1000000) / 120);
             time = std::chrono::duration_cast<T>(useconds).count();
+
+            paused = clock[7].asInt();
+
             return true;
         }
 

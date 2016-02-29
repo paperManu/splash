@@ -46,13 +46,14 @@ class LtcClock : public BaseObject
     public:
         struct Clock
         {
-            uint8_t years;
-            uint8_t months;
-            uint8_t days;
-            uint8_t hours;
-            uint8_t mins;
-            uint8_t secs;
-            uint8_t frame;
+            uint8_t years {0};
+            uint8_t months {0};
+            uint8_t days {0};
+            uint8_t hours {0};
+            uint8_t mins {0};
+            uint8_t secs {0};
+            uint8_t frame {0};
+            bool paused {false};
         };
 
         LtcClock(bool masterClock = false);
