@@ -62,7 +62,8 @@ void Queue::update()
         _startTime = Timer::getTime<chrono::microseconds>();
 
     int64_t masterClockTime;
-    if (_useClock && Timer::get().getMasterClock<chrono::microseconds>(masterClockTime))
+    bool masterClockPaused;
+    if (_useClock && Timer::get().getMasterClock<chrono::microseconds>(masterClockTime, masterClockPaused))
     {
         _currentTime = masterClockTime;
     }

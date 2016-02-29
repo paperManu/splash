@@ -369,13 +369,12 @@ void Image_FFmpeg::readLoop()
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                 }
 
+               _videoSeekMutex.unlock();
+                av_free_packet(&packet);
+
                 // Do not store more than a few frames in memory
                 while (_timedFrames.size() > 30 && _continueRead)
                     this_thread::sleep_for(chrono::milliseconds(2));
-
-               _videoSeekMutex.unlock();
-
-                av_free_packet(&packet);
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
@@ -493,24 +492,27 @@ void Image_FFmpeg::videoDisplayLoop()
             }
 
             int64_t clockAsMs;
+            bool clockIsPaused {false};
+
+            //
+            // Get the current master and local clocks
+            //
+            _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
 
             float seekTiming = _intraOnly ? 0.33f : 3.f; // Maximum diff for seek to happen when synced to a master clock
-            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
+            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
                 _clockTime = seconds * 1e6;
             }
 
-            if (_currentTime == _clockTime)
-            {
-                this_thread::sleep_for(chrono::milliseconds(5));
-                continue;
-            }
-
+            //
+            // Show the frame at the right timing, according to clocks
+            //
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                if (_paused)
+                if (_paused || (clockIsPaused && _useClock))
                 {
                     auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
                     _startTime = _startTime + (actualTime - _currentTime);
@@ -518,11 +520,13 @@ void Image_FFmpeg::videoDisplayLoop()
                 }
                 else if (_useClock && _clockTime != -1l)
                 {
-                    _currentTime = _clockTime;
-                }
-                else
-                {
-                    _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                    auto delta = abs(_currentTime - _clockTime);
+                    // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock
+                    if (delta > 50000)
+                    {
+                        _startTime = _startTime + _currentTime - _clockTime;
+                        _currentTime = _clockTime;
+                    }
                 }
 
                 // Compute the difference between next frame and the current clock
@@ -531,16 +535,22 @@ void Image_FFmpeg::videoDisplayLoop()
                 // If the gap is too big, we seek through the video
                 if (abs(waitTime / 1e6) > seekTiming)
                 {
-                    _elapsedTime = _currentTime / 1e6 + _shiftTime;
-                    localQueue.clear();
-                    SThread::pool.enqueueWithoutId([=]() {
-                        seek(_elapsedTime);
-                    });
+                    if (!_timeJump) // We do not want more than one jump at a time...
+                    {
+                        _timeJump = true;
+                        _elapsedTime = _currentTime / 1e6 + _shiftTime;
+                        localQueue.clear();
+                        auto seekThread = thread([=]() {
+                            seek(_elapsedTime);
+                            _timeJump = false;
+                        });
+                        seekThread.detach();
+                    }
                     continue;
                 }
 
                 // Otherwise, wait for the right time to display the frame
-                if (waitTime > 5e3) // we don't wait if the frame is due for the next 5ms
+                if (waitTime > 1e3) // we don't wait if the frame is due for the next ms
                     this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;

@@ -32,16 +32,29 @@ LtcClock::LtcClock(bool masterClock)
         LTCDecoder* ltcDecoder = ltc_decoder_create(1920, 32);
         LTCFrameExt ltcFrame;
 
-        vector<char> inputBuffer(512);
+        vector<uint8_t> inputBuffer(256);
         long int total = 0;
 
         while (_continue)
         {
             if (!_listener->readFromQueue(inputBuffer))
             {
-                this_thread::sleep_for(chrono::milliseconds(10));
+                this_thread::sleep_for(chrono::milliseconds(5));
                 continue;
             }
+
+            // Check all values to check whether the clock is paused or not 
+            bool paused = true;
+            for (auto& v : inputBuffer)
+            {
+                if (v < 126 || v > 129) // This is for noise handling. There is not enough room for a clock in between.
+                {
+                    paused = false;
+                    break;
+                }
+            }
+
+            _clock.paused = paused;
 
             ltc_decoder_write(ltcDecoder, (ltcsnd_sample_t*)inputBuffer.data(), inputBuffer.size(), total);
             total += inputBuffer.size();
@@ -84,13 +97,13 @@ LtcClock::LtcClock(bool masterClock)
                 clock.frame = stime.frame * 120 / _maximumFramePerSec;
 
                 _clock = clock;
+            }
 
-                if (_masterClock)
-                {
-                    Values v;
-                    getClock(v);
-                    Timer::get().setMasterClock(v);
-                }
+            if (_masterClock)
+            {
+                Values v;
+                getClock(v);
+                Timer::get().setMasterClock(v);
             }
         }
 
@@ -127,7 +140,8 @@ void LtcClock::getClock(Values& clockValues)
                           (int)clock.hours,
                           (int)clock.mins,
                           (int)clock.secs,
-                          (int)clock.frame});
+                          (int)clock.frame,
+                          (int)clock.paused});
 }
 
 /*************/
