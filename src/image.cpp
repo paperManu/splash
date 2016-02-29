@@ -414,7 +414,7 @@ void Image::registerAttributes()
         createPattern();
         return true;
     }, [&]() -> Values {
-        return {true};
+        return {false};
     });
 }
 
