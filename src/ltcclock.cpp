@@ -46,11 +46,13 @@ LtcClock::LtcClock(bool masterClock)
             // Check all values to check whether the clock is paused or not 
             bool paused = true;
             for (auto& v : inputBuffer)
-                if (v < 120 || v > 136) // This is for noise handling. There is not enough room for a clock in between.
+            {
+                if (v < 126 || v > 129) // This is for noise handling. There is not enough room for a clock in between.
                 {
                     paused = false;
                     break;
                 }
+            }
 
             _clock.paused = paused;
 
