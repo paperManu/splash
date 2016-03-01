@@ -403,7 +403,7 @@ void Image_FFmpeg::readLoop()
         }
 
         // Set elapsed time to infinity (video finished)
-        _elapsedTime = numeric_limits<float>::max();
+        //_elapsedTime = numeric_limits<float>::max();
 
         if (av_seek_frame(_avContext, _videoStreamIndex, 0, 0) < 0)
         {
@@ -445,6 +445,12 @@ void Image_FFmpeg::seek(float seconds)
     int seekFlag = 0;
     if (_elapsedTime > seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
+
+    float duration = _avContext->duration / AV_TIME_BASE;
+    if (seconds < 0)
+        seconds = 0;
+    else if (seconds > duration)
+        seconds = duration;
 
     int frame = static_cast<int>(floor(seconds / _timeBase));
     if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, seekFlag) < 0)
@@ -499,7 +505,7 @@ void Image_FFmpeg::videoDisplayLoop()
             //
             _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
 
-            float seekTiming = _intraOnly ? 0.33f : 3.f; // Maximum diff for seek to happen when synced to a master clock
+            float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
@@ -540,11 +546,10 @@ void Image_FFmpeg::videoDisplayLoop()
                         _timeJump = true;
                         _elapsedTime = _currentTime / 1e6 + _shiftTime;
                         localQueue.clear();
-                        auto seekThread = thread([=]() {
+                        SThread::pool.enqueueWithoutId([=]() {
                             seek(_elapsedTime);
                             _timeJump = false;
                         });
-                        seekThread.detach();
                     }
                     continue;
                 }
@@ -562,6 +567,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 _imageUpdated = true;
                 updateTimestamp();
             }
+
             localQueue.pop_front();
         }
     }

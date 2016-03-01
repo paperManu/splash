@@ -411,7 +411,12 @@ void Image::registerAttributes()
     });
 
     _attribFunctions["pattern"] = AttributeFunctor([&](const Values& args) {
-        createPattern();
+        if (args.size() != 1)
+            return false;
+
+        if (args[0].asInt() == 1)
+            createPattern();
+
         return true;
     }, [&]() -> Values {
         return {false};
