@@ -377,7 +377,7 @@ void Image_FFmpeg::readLoop()
                 // Do not store more than a few frames in memory
                 while (timedFramesBuffered > 30 && _continueRead)
                 {
-                    this_thread::sleep_for(chrono::milliseconds(2));
+                    this_thread::sleep_for(chrono::milliseconds(5));
                     unique_lock<mutex> lockSeek(_videoSeekMutex);
                     unique_lock<mutex> lockQueue(_videoQueueMutex);
                     timedFramesBuffered = _timedFrames.size();
@@ -513,8 +513,7 @@ void Image_FFmpeg::videoDisplayLoop()
             {
                 if (_paused || (clockIsPaused && _useClock))
                 {
-                    auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                    _startTime = _startTime + (actualTime - _currentTime);
+                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _currentTime;
                     continue;
                 }
                 else if (_useClock && _clockTime != -1l)
@@ -548,7 +547,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 }
 
                 // Otherwise, wait for the right time to display the frame
-                if (waitTime > 1e3) // we don't wait if the frame is due for the next ms
+                if (waitTime > 2e3) // we don't wait if the frame is due for the next few ms
                     this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;
