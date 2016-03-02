@@ -369,12 +369,18 @@ void Image_FFmpeg::readLoop()
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                 }
 
+                int timedFramesBuffered = _timedFrames.size();
+
                _videoSeekMutex.unlock();
                 av_free_packet(&packet);
 
                 // Do not store more than a few frames in memory
-                while (_timedFrames.size() > 30 && _continueRead)
+                while (timedFramesBuffered > 30 && _continueRead)
+                {
                     this_thread::sleep_for(chrono::milliseconds(2));
+                    unique_lock<mutex> lockSeek(_videoSeekMutex);
+                    timedFramesBuffered = _timedFrames.size();
+                }
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
