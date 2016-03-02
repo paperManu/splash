@@ -379,6 +379,7 @@ void Image_FFmpeg::readLoop()
                 {
                     this_thread::sleep_for(chrono::milliseconds(2));
                     unique_lock<mutex> lockSeek(_videoSeekMutex);
+                    unique_lock<mutex> lockQueue(_videoQueueMutex);
                     timedFramesBuffered = _timedFrames.size();
                 }
             }
@@ -408,23 +409,8 @@ void Image_FFmpeg::readLoop()
             }
         }
 
-        // Set elapsed time to infinity (video finished)
-        //_elapsedTime = numeric_limits<float>::max();
+        seek(0); // Go back to the beginning of the file
 
-        if (av_seek_frame(_avContext, _videoStreamIndex, 0, 0) < 0)
-        {
-            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
-            break;
-        }
-        else
-        {
-            unique_lock<mutex> lock(_videoQueueMutex);
-            _timedFrames.clear();
-#if HAVE_PORTAUDIO
-            if (_speaker)
-                _speaker->clearQueue();
-#endif
-        }
     } while (_loopOnVideo && _continueRead);
 
     av_free(rgbFrame);
@@ -452,6 +438,7 @@ void Image_FFmpeg::seek(float seconds)
     if (_elapsedTime > seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
 
+    // Prevent seeking outside of the file
     float duration = _avContext->duration / AV_TIME_BASE;
     if (seconds < 0)
         seconds = 0;
@@ -503,15 +490,15 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            int64_t clockAsMs;
-            bool clockIsPaused {false};
-
             //
             // Get the current master and local clocks
             //
             _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
 
             float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
+
+            int64_t clockAsMs;
+            bool clockIsPaused {false};
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
