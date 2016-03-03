@@ -514,6 +514,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 if (_paused || (clockIsPaused && _useClock))
                 {
                     _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _currentTime;
+                    this_thread::sleep_for(chrono::milliseconds(2));
                     continue;
                 }
                 else if (_useClock && _clockTime != -1l)
