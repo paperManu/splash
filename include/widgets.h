@@ -52,6 +52,22 @@ class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 /*************/
+class GuiFileSelect
+{
+    public:
+        void draw();
+        bool getFilepath(std::string& filepath);
+        void setPath(const std::string& path);
+
+    private:
+        std::string _currentPath {""};
+        std::vector<std::string> _files {};
+        int _selectedId;
+        bool _selectionDone {false};
+        bool _cancelled {false};
+};
+
+/*************/
 class GuiWidget
 {
     public:

@@ -465,8 +465,27 @@ bool Gui::render()
             ImGui::Text("Configuration file");
             char configurationPath[512];
             strcpy(configurationPath, _configurationPath.data());
-            ImGui::InputText("Path", configurationPath, 512);
+            ImGui::InputText("##Path", configurationPath, 512);
             _configurationPath = string(configurationPath);
+
+            ImGui::SameLine();
+            static unique_ptr<GuiFileSelect> configurationFileSelect;
+            if (ImGui::Button("..."))
+            {
+                if (!configurationFileSelect)
+                {
+                    configurationFileSelect = unique_ptr<GuiFileSelect>(new GuiFileSelect());
+                    configurationFileSelect->setPath("/");
+                }
+            }
+            if (configurationFileSelect)
+            {
+                configurationFileSelect->draw();
+                if (configurationFileSelect->getFilepath(_configurationPath))
+                {
+                    configurationFileSelect.reset();
+                }
+            }
 
             if (ImGui::Button("Save configuration"))
                 saveConfiguration();

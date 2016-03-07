@@ -1,5 +1,7 @@
 #include "widgets.h"
 
+#include <dirent.h>
+
 #include <array>
 #include <fstream>
 #include <imgui.h>
@@ -27,6 +29,70 @@ using namespace std;
 namespace Splash
 {
 
+/*************/
+void GuiFileSelect::draw()
+{
+    ImGui::Begin("Select file path", nullptr, ImVec2(400, 300), 0.95f);
+    ImGui::Text(_currentPath.c_str());
+        
+    ImGui::BeginChild("##filelist", ImVec2(0, -32), true);
+    for (int i = 0; i < _files.size(); ++i)
+    {
+        bool isSelected = (_selectedId == i);
+        if (ImGui::Selectable(_files[i].c_str(), isSelected))
+        {
+            _selectedId = i;
+        }
+    }
+
+    if (ImGui::IsMouseDoubleClicked(0))
+    {
+        auto newPath = _currentPath + "/" + _files[_selectedId];
+        setPath(newPath);
+    }
+    ImGui::EndChild();
+
+    if (ImGui::Button("Select path"))
+        _selectionDone = true;;
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel"))
+        _cancelled = true;;
+
+    ImGui::End();
+}
+
+/*************/
+void GuiFileSelect::setPath(const string& path)
+{
+    _selectedId = 0;
+
+    auto directory = opendir(path.c_str());
+    if (directory != nullptr)
+    {
+        _currentPath = path;
+        _files.clear();
+
+        struct dirent* dirEntry;
+        while ((dirEntry = readdir(directory)) != nullptr)
+        {
+            _files.push_back(string(dirEntry->d_name));
+        }
+        closedir(directory);
+
+        std::sort(_files.begin(), _files.end());
+    }
+}
+
+/*************/
+bool GuiFileSelect::getFilepath(string& filepath)
+{
+    if (_selectionDone)
+        filepath = _currentPath + "/" + _files[_selectedId];
+
+    return _selectionDone || _cancelled;
+}
+
+/*************/
 /*************/
 GuiWidget::GuiWidget(string name)
 {
