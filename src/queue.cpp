@@ -1,5 +1,7 @@
 #include "queue.h"
 
+#include <algorithm>
+
 #include "image.h"
 #if HAVE_FFMPEG
     #include "image_ffmpeg.h"
@@ -51,6 +53,8 @@ string Queue::getDistantName() const
 /*************/
 void Queue::update()
 {
+    unique_lock<mutex> lock(_playlistMutex);
+
     if (_playlist.size() == 0)
         return;
 
@@ -58,7 +62,8 @@ void Queue::update()
         _startTime = Timer::getTime<chrono::microseconds>();
 
     int64_t masterClockTime;
-    if (_useClock && Timer::get().getMasterClock<chrono::microseconds>(masterClockTime))
+    bool masterClockPaused;
+    if (_useClock && Timer::get().getMasterClock<chrono::microseconds>(masterClockTime, masterClockPaused))
     {
         _currentTime = masterClockTime;
     }
@@ -78,10 +83,6 @@ void Queue::update()
         else if (_currentSource)
             _currentSource->setAttribute("pause", {0});
     }
-
-    auto source = _playlist[0];
-    if (_playing)
-        source = _playlist[_currentSourceIndex];
 
     // Get the current index regarding the current time
     uint32_t sourceIndex = 0;
@@ -105,7 +106,7 @@ void Queue::update()
     {
         if (_playing)
         {
-            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Finished playing file: " << source.filename << Log::endl;
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Finished playing file: " << _playlist[_currentSourceIndex].filename << Log::endl;
             _playing = false;
         }
 
@@ -119,39 +120,128 @@ void Queue::update()
         }
         else
         {
-            source = _playlist[_currentSourceIndex];
-            _currentSource = createSource(source.type);
+            _currentSource = createSource(_playlist[_currentSourceIndex].type);
 
             if (_currentSource)
                 _playing = true;
             else
                 _currentSource = make_shared<Image>();
 
-            _currentSource->setAttribute("file", {source.filename});
+            _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
 
             if (_useClock)
             {
                 // If we use the master clock, set a timeshift to be correctly placed in the video
                 // (as the source gets its clock from the same Timer)
-                _currentSource->setAttribute("timeShift", {-(float)source.start / 1e6});
+                _currentSource->setAttribute("timeShift", {-(float)_playlist[_currentSourceIndex].start / 1e6});
                 _currentSource->setAttribute("useClock", {1});
             }
 
-            _world.lock()->sendMessage(_name, "source", {source.type});
+            _world.lock()->sendMessage(_name, "source", {_playlist[_currentSourceIndex].type});
 
-            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << source.filename << Log::endl;
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << _playlist[_currentSourceIndex].filename << Log::endl;
         }
     }
 
     if (!_useClock && _seeked)
     {
         // If we don't use the master clock, we want to seek accordingly in the file
-        _currentSource->setAttribute("seek", {(float)(_currentTime - source.start) / 1e6});
+        _currentSource->setAttribute("seek", {(float)(_currentTime - _playlist[_currentSourceIndex].start) / 1e6});
         _seeked = false;
     }
     
     if (_currentSource)
         _currentSource->update();
+}
+
+/*************/
+void Queue::cleanPlaylist(vector<Source>& playlist)
+{
+    auto cleanList = vector<Source>();
+
+    std::sort(playlist.begin(), playlist.end(), [](const Source& a, const Source& b) {
+        return a.start < b.start;
+    });
+
+    // Clean each individual source
+    for (auto it = playlist.begin(); it != playlist.end();)
+    {
+        if (it->start >= it->stop)
+        {
+            if (it->stop > 1000000l)
+                it->start = it->stop - 1000000l;
+        }
+        else
+        {
+            it++;
+        }
+    }
+
+    // Clean the queue, add black intermediate images, ...
+    int64_t previousEnd = 0;
+    for (const auto& source : playlist)
+    {
+        if (previousEnd < source.start)
+        {
+            if (source.filename == "black")
+            {
+                if (cleanList.back().filename == "black")
+                {
+                    cleanList.back().stop = source.stop;
+                }
+                else
+                {
+                    cleanList.push_back(source);
+                    cleanList.back().start = previousEnd;
+                }
+            }
+            else if (cleanList.size() > 0 && cleanList.back().filename == "black")
+            {
+                cleanList.back().stop = source.start;
+                cleanList.push_back(source);
+            }
+            else
+            {
+                Source blackSource;
+                blackSource.start = previousEnd;
+                blackSource.stop = source.start;
+                blackSource.type = "image";
+                blackSource.filename = "black";
+                cleanList.push_back(blackSource);
+                cleanList.push_back(source);
+            }
+        }
+        else if (previousEnd == source.start)
+        {
+            cleanList.push_back(source);
+        }
+        else if (previousEnd > source.start)
+        {
+            if (source.filename == "black")
+            {
+                cleanList.push_back(source);
+                cleanList.back().start = previousEnd;
+            }
+            else
+            {
+                cleanList.back().stop = source.start;
+                cleanList.push_back(source);
+            }
+        }
+
+        previousEnd = source.stop;
+    }
+
+    // Remove zero length black sources
+    for (auto it = cleanList.begin(); it != cleanList.end();)
+    {
+        if (it->start >= it->stop && it->filename == "black")
+            it = cleanList.erase(it);
+        else
+            it++;
+    }
+
+    playlist = cleanList;
 }
 
 /*************/
@@ -162,17 +252,20 @@ shared_ptr<BufferObject> Queue::createSource(string type)
     if (type == "image")
     {
         source = make_shared<Image>();
+        dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
-#if HAVE_SHMDATA
+#if HAVE_FFMPEG
     else if (type == "image_ffmpeg")
     {
         source = make_shared<Image_FFmpeg>();
+        dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #endif
 #if HAVE_SHMDATA
     else if (type == "image_shmdata")
     {
         source = make_shared<Image_Shmdata>();
+        dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #endif
     else
@@ -209,8 +302,10 @@ void Queue::registerAttributes()
         return {_paused};
     });
     _attribFunctions["pause"].doUpdateDistant(true);
+    _attribFunctions["pause"].savable(false);
 
     _attribFunctions["playlist"] = AttributeFunctor([&](const Values& args) {
+        unique_lock<mutex> lock(_playlistMutex);
         _playlist.clear();
 
         for (auto& it : args)
@@ -227,14 +322,17 @@ void Queue::registerAttributes()
                 for (auto idx = 4; idx < src.size(); ++idx)
                     source.args.push_back(src[idx]);
 
-                if (source.start < source.stop)
-                    _playlist.push_back(source);
+                _playlist.push_back(source);
             }
         }
 
+        cleanPlaylist(_playlist);
+
         return true;
     }, [&]() -> Values {
+        unique_lock<mutex> lock(_playlistMutex);
         Values playlist;
+
         for (auto& src : _playlist)
         {
             Values source;
@@ -264,6 +362,7 @@ void Queue::registerAttributes()
         return {(float)_currentTime / 1e6};
     });
     _attribFunctions["seek"].doUpdateDistant(true);
+    _attribFunctions["seek"].savable(false);
 
     _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -320,7 +419,7 @@ unordered_map<string, Values> QueueSurrogate::getShaderUniforms() const
 }
 
 /*************/
-oiio::ImageSpec QueueSurrogate::getSpec() const
+ImageBufferSpec QueueSurrogate::getSpec() const
 {
     return _filter->getSpec();
 }

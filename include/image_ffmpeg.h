@@ -47,8 +47,6 @@ extern "C" {
     #include "speaker.h"
 #endif
 
-namespace oiio = OIIO_NAMESPACE;
-
 namespace Splash {
 
 class Image_FFmpeg : public Image
@@ -83,14 +81,17 @@ class Image_FFmpeg : public Image
         std::thread _videoDisplayThread;
         struct TimedFrame
         {
-            std::unique_ptr<oiio::ImageBuf> frame;
-            int64_t timing; // in us
+            std::unique_ptr<ImageBuffer> frame {};
+            int64_t timing {0ull}; // in us
         };
         std::deque<TimedFrame> _timedFrames;
         std::mutex _videoQueueMutex;
         std::mutex _videoSeekMutex;
         std::condition_variable _videoQueueCondition;
 
+        std::atomic_bool _timeJump {false};
+
+        bool _intraOnly {false};
         int64_t _startTime {0};
         int64_t _currentTime {0};
         int64_t _elapsedTime {0};
@@ -101,7 +102,6 @@ class Image_FFmpeg : public Image
         std::mutex _clockMutex;
         bool _useClock {false};
         int64_t _clockTime {-1};
-        bool _clockPaused {false};
 
         AVFormatContext* _avContext {nullptr};
         double _timeBase {0.033};
@@ -113,6 +113,11 @@ class Image_FFmpeg : public Image
         AVCodecContext* _audioCodecContext {nullptr};
         int _audioStreamIndex {-1};
 #endif
+
+        /**
+         * Convert a codec tag to a fourcc
+         */
+        std::string tagToFourCC(unsigned int tag);
 
         /**
          * Free everything related to FFmpeg

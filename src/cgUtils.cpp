@@ -11,17 +11,18 @@ void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, 
     std::vector<unsigned int> threadIds;
     for (unsigned int i = 0; i < count; ++i)
     {
-        threadIds.push_back(SThread::pool.enqueue([&]() {
+        threadIds.push_back(SThread::pool.enqueue([=]() {
             func(p, i);
         }));
     }
+
     SThread::pool.waitThreads(threadIds);
 }
 
 /*************/
 bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSize, std::string& format)
 {
-    // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
+    // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
     unsigned int textureFormat = 0;
     if (HapGetFrameTextureFormat(in, inSize, &textureFormat) != HapResult_No_Error)

@@ -2,15 +2,16 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.3.9, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.3.11, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
-AC_PROG_LIBTOOL
-AM_INIT_AUTOMAKE([1.9 tar-ustar])
+AM_INIT_AUTOMAKE([1.10 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:9])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:3:11])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.3])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.3"], [API version])
+
+AC_PROG_LIBTOOL
 
 # Check for C and C++ compilers
 AC_PROG_CXX
@@ -31,8 +32,8 @@ case "$host" in *-darwin* | *-macos10*)
   LIBTOOL="glibtool"
   CXXFLAGS+=" -D__Darwin"
   LDFLAGS+=" -undefined dynamic_lookup -Wl,-headerpad_max_install_names"
-  CPPFLAGS+=" -I/usr/local/include -I/usr/local/include/jsoncpp"
-  CXXFLAGS+=" -I/usr/local/include -I/usr/local/include/jsoncpp"
+  CPPFLAGS+=" -I/usr/local/include"
+  CXXFLAGS+=" -I/usr/local/include"
   LDFLAGS+=" -L/usr/local/lib"
   if test -d /opt/local ; then
 	CPPFLAGS+=" -I/opt/local/include"
@@ -47,6 +48,7 @@ case "$host" in *-darwin* | *-macos10*)
   have_osx=true
   AM_CONDITIONAL([HAVE_OSX], true)
   AC_DEFINE(HAVE_OSX,[1],[Apple Mac OS X operating system detected])
+  AC_DEFINE(HAVE_LINUX,[0],[Not a Linux system])
   
   # OSX does not include /usr/local/lib/pkgconfig path, so we export it here
   # (for everyone, just in case)
@@ -58,25 +60,23 @@ case "$host" in *-darwin* | *-macos10*)
 *)
   have_osx=false
   AM_CONDITIONAL([HAVE_OSX], false)
-  AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected, considering a Linux system])
-  CXXFLAGS+=" -I/usr/include/jsoncpp -I/usr/local/include/jsoncpp"
+  AC_DEFINE(HAVE_OSX,[0],[Apple Mac OS X operating system not detected])
+  AC_DEFINE(HAVE_LINUX,[1],[Considering a Linux system])
   ;;
 esac
 
 # Check for SSE
 AX_EXT
 
+#
+# Mandatory dependencies
+#
+
 # GLFW
 PKG_CHECK_MODULES([GLFW], [glfw3 >= 3.0.3])
 if test "x${have_glfw}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing glfw])
 fi
-
-# OpenGL
-#PKG_CHECK_MODULES([GL], [gl >= 2.3])
-#if test "x${have_gl}" = "xfalse" ; then
-#	AC_MSG_ERROR([Missing opengl])
-#fi
 
 # GLM
 AC_LANG_PUSH([C++])
@@ -87,49 +87,6 @@ AC_LANG_POP
 if test "$HAVE_GLM" = "false" ; then
 	AC_MSG_ERROR([Missing glm])
 fi
-
-# GPhoto
-PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
-    AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected]),
-    AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected]))
-AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
-
-# OpenImageIO
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([OpenImageIO/imageio.h],
-	[HAVE_OIIO=true],
-	[HAVE_OIIO=false])
-AC_LANG_POP
-if test "$HAVE_OIIO" = "false" ; then
-	AC_MSG_ERROR([Missing OpenImageIO])
-fi
-
-# Snappy
-AC_LANG_PUSH([C])
-AC_CHECK_HEADER([snappy-c.h],
-	[HAVE_SNAPPY=true],
-	[HAVE_SNAPPY=false])
-AC_LANG_POP
-if test "$HAVE_SNAPPY" = "false" ; then
-	AC_MSG_ERROR([Missing Snappy])
-fi
-
-# JSoncpp
-# Not tested through pkgconfig for OSX / Macports compatibility
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([json/reader.h],
-	[HAVE_JSONCPP=true],
-	[HAVE_JSONCPP=false])
-AC_LANG_POP
-if test "$HAVE_JSONCPP" = "false" ; then
-	AC_MSG_ERROR([Missing JsonCPP])
-fi
-
-# Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],
-    AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected]),
-    AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect]))
-AM_CONDITIONAL(HAVE_SHMDATA, test -n "$SHMDATA_LIBS")
 
 # GNU Scientific Library, also used for calibration
 PKG_CHECK_MODULES([GSL], [gsl])
@@ -143,22 +100,48 @@ if test "x${have_zmq}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing libzmq])
 fi
 
+# Snappy
+AC_LANG_PUSH([C])
+AC_CHECK_HEADER([snappy-c.h],
+	[HAVE_SNAPPY=true],
+	[HAVE_SNAPPY=false])
+AC_LANG_POP
+if test "$HAVE_SNAPPY" = "false" ; then
+	AC_MSG_ERROR([Missing Snappy])
+fi
+
+#
+# Non-mandatory dependencies
+#
+
+# Shmdata
+PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],
+    [SHMDATA_BUILD=enabled AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected])],
+    [SHMDATA_BUILD=disabled AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect])])
+AM_CONDITIONAL(HAVE_SHMDATA, test -n "$SHMDATA_LIBS")
+
+# GPhoto
+PKG_CHECK_MODULES([GPHOTO], [libgphoto2],
+    [GPHOTO_BUILD=enabled AC_DEFINE([HAVE_GPHOTO], [1], [Defined to 1 if libgphoto2 is detected])],
+    [GPHOTO_BUILD=disabled AC_DEFINE([HAVE_GPHOTO], [0], [Defined to 1 if libgphoto2 is detected])])
+AM_CONDITIONAL(HAVE_GPHOTO, test -n "$GPHOTO_LIBS")
+
 # FFMPEG, for very simple internal file reading
 PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
-    AC_DEFINE([HAVE_FFMPEG], [1], [Defined to 1 if ffmpeg is detected]),
-    AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected]))
+    [FFMPEG_BUILD=enabled AC_DEFINE([HAVE_FFMPEG], [1], [Defined to 1 if ffmpeg is detected])],
+    [FFMPEG_BUILD=disabled AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected])])
 AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
 
 # PortAudio, to play sound
 PKG_CHECK_MODULES([PORTAUDIO], [portaudio-2.0],
-    AC_DEFINE([HAVE_PORTAUDIO], [1], [Defined to 1 if portaudio-2.0 is detected]),
-    AC_DEFINE([HAVE_PORTAUDIO], [0], [Defined to 1 if portaudio-2.0 is detected]))
+    [PORTAUDIO_BUILD=enabled AC_DEFINE([HAVE_PORTAUDIO], [1], [Defined to 1 if portaudio-2.0 is detected])],
+    [PORTAUDIO_BUILD=disabled AC_DEFINE([HAVE_PORTAUDIO], [0], [Defined to 1 if portaudio-2.0 is detected])])
 AM_CONDITIONAL(HAVE_PORTAUDIO, test -n "$PORTAUDIO_LIBS")
 
 # OpenCV, for their hardware support
 PKG_CHECK_MODULES([OPENCV], [opencv],
-    AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected]),
-    AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected]))
+    [OPENCV_BUILD=enabled AC_DEFINE([HAVE_OPENCV], [1], [Defined to 1 if OpenCV is detected])],
+    [OPENCV_BUILD=disabled AC_DEFINE([HAVE_OPENCV], [0], [Defined to 1 if OpenCV is detected])])
 AM_CONDITIONAL(HAVE_OPENCV, test -n "$OPENCV_LIBS")
 
 # Boost, for the HTTP server
@@ -167,8 +150,8 @@ BOOST_ASIO
 
 # LTC, for synchronization with a SMTPE clock through audio input
 PKG_CHECK_MODULES([LTC], [ltc],
-    AC_DEFINE([HAVE_LTC], [1], [Defined to 1 if ltc is detected]),
-    AC_DEFINE([HAVE_LTC], [0], [Defined to 1 if ltc is detected]))
+    [LTC_BUILD=enabled AC_DEFINE([HAVE_LTC], [1], [Defined to 1 if ltc is detected])],
+    [LTC_BUILD=disabled AC_DEFINE([HAVE_LTC], [0], [Defined to 1 if ltc is detected])])
 AM_CONDITIONAL(HAVE_LTC, test -n "$LTC_LIBS")
 
 # Check for Markdown to generate documentation
@@ -202,3 +185,18 @@ AC_CONFIG_FILES([
     #tools/Makefile
 
 AC_OUTPUT
+
+[echo ""]
+[echo "-----------------------------------"]
+[echo ""]
+[echo "Splash configured successfully"]
+[echo ""]
+[echo "Optional dependencies"]
+[echo ""]
+[echo "FFmpeg (video reading)           ${FFMPEG_BUILD}"]
+[echo "Shmdata (shared memory)          ${SHMDATA_BUILD}"]
+[echo "PortAudio (audio playing)        ${PORTAUDIO_BUILD}"]
+[echo "OpenCV (video camera support)    ${OPENCV_BUILD}"]
+[echo "GPhoto (camera support)          ${GPHOTO_BUILD}"]
+[echo "LTC (input master clock)         ${LTC_BUILD}"]
+[echo ""]

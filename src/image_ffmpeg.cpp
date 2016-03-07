@@ -31,7 +31,6 @@ Image_FFmpeg::~Image_FFmpeg()
 /*************/
 void Image_FFmpeg::freeFFmpegObjects()
 {
-    _clockPaused = false;
     _clockTime = -1;
 
     _continueRead = false;
@@ -86,6 +85,27 @@ bool Image_FFmpeg::read(const string& filename)
 }
 
 /*************/
+string Image_FFmpeg::tagToFourCC(unsigned int tag)
+{
+    string fourcc;
+    fourcc.resize(4);
+
+    unsigned int sum = 0;
+    fourcc[3] = char(tag >> 24);
+    sum += (fourcc[3]) << 24;
+
+    fourcc[2] = char((tag - sum) >> 16);
+    sum += (fourcc[2]) << 16;
+
+    fourcc[1] = char((tag - sum) >> 8);
+    sum += (fourcc[1]) << 8;
+
+    fourcc[0] = char(tag - sum);
+
+    return fourcc;
+}
+
+/*************/
 void Image_FFmpeg::readLoop()
 {
     // Find the first video stream
@@ -118,9 +138,18 @@ void Image_FFmpeg::readLoop()
     auto videoCodec = avcodec_find_decoder(_videoCodecContext->codec_id);
     auto isHap = false;
 
-    if (videoCodec == nullptr && string(_videoCodecContext->codec_name).find("Hap") != string::npos)
+    // Check whether the video codec only has intra frames
+    auto desc = avcodec_descriptor_get(_videoCodecContext->codec_id);
+    if (desc)
+        _intraOnly = !!(desc->props & AV_CODEC_PROP_INTRA_ONLY);
+    else
+        _intraOnly = false; // We don't know, so we consider it's not
+
+    auto fourcc = tagToFourCC(_videoCodecContext->codec_tag);
+    if (videoCodec == nullptr && fourcc.find("Hap") != string::npos)
     {
         isHap = true;
+        _intraOnly = true; // Hap is necessarily intra only
     }
     else if (videoCodec == nullptr)
     {
@@ -250,7 +279,7 @@ void Image_FFmpeg::readLoop()
             // Reading the video
             if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
-                auto img = unique_ptr<oiio::ImageBuf>();
+                auto img = unique_ptr<ImageBuffer>();
                 uint64_t timing;
                 bool hasFrame = false;
 
@@ -265,10 +294,11 @@ void Image_FFmpeg::readLoop()
                     {
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                        oiio::ImageSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, oiio::TypeDesc::UINT8);
-                        img.reset(new oiio::ImageBuf(spec));
+                        ImageBufferSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, ImageBufferSpec::Type::UINT8);
+                        spec.format = {"R", "G", "B"};
+                        img.reset(new ImageBuffer(spec));
 
-                        unsigned char* pixels = static_cast<unsigned char*>(img->localpixels());
+                        unsigned char* pixels = reinterpret_cast<unsigned char*>(img->data());
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
@@ -285,29 +315,41 @@ void Image_FFmpeg::readLoop()
                 // If the codec is marked as Hap / Hap alpha / Hap Q
                 else if (isHap)
                 {
-                    // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
+                    // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
                     // First, we check the texture format type
                     std::string textureFormat;
                     if (hapDecodeFrame(packet.data, packet.size, nullptr, 0, textureFormat))
                     {
                         // Check if we need to resize the reader buffer
                         // We set the size so as to have just enough place for the given texture format
-                        oiio::ImageSpec spec;
+                        ImageBufferSpec spec;
                         if (textureFormat == "RGB_DXT1")
-                            spec = oiio::ImageSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, oiio::TypeDesc::UINT8);
+                        {
+                            spec = ImageBufferSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
+                            spec.format = {textureFormat};
+                        }
                         if (textureFormat == "RGBA_DXT5")
-                            spec = oiio::ImageSpec(_videoCodecContext->width, _videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
+                        {
+                            spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
+                            spec.format = {textureFormat};
+                        }
                         if (textureFormat == "YCoCg_DXT5")
-                            spec = oiio::ImageSpec(_videoCodecContext->width, _videoCodecContext->height, 1, oiio::TypeDesc::UINT8);
+                        {
+                            spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
+                            spec.format = {textureFormat};
+                        }
                         else
+                        {
+                            av_free_packet(&packet);
                             return;
+                        }
 
-                        spec.channelnames = {textureFormat};
-                        img.reset(new oiio::ImageBuf(spec));
+                        spec.format = {textureFormat};
+                        img.reset(new ImageBuffer(spec));
 
-                        unsigned long outputBufferBytes = spec.width * spec.height * spec.nchannels;
+                        unsigned long outputBufferBytes = spec.width * spec.height * spec.channels;
 
-                        if (hapDecodeFrame(packet.data, packet.size, img->localpixels(), outputBufferBytes, textureFormat))
+                        if (hapDecodeFrame(packet.data, packet.size, img->data(), outputBufferBytes, textureFormat))
                         {
                             if (packet.pts != AV_NOPTS_VALUE)
                                 timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
@@ -323,17 +365,23 @@ void Image_FFmpeg::readLoop()
                 {
                     unique_lock<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
-                    _timedFrames[_timedFrames.size() - 1].frame.swap(img);
+                    std::swap(_timedFrames[_timedFrames.size() - 1].frame, img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                 }
 
-                // Do not store more than a few frames in memory
-                while (_timedFrames.size() > 20 && _continueRead)
-                    this_thread::sleep_for(chrono::milliseconds(10));
+                int timedFramesBuffered = _timedFrames.size();
 
                _videoSeekMutex.unlock();
-
                 av_free_packet(&packet);
+
+                // Do not store more than a few frames in memory
+                while (timedFramesBuffered > 30 && _continueRead)
+                {
+                    this_thread::sleep_for(chrono::milliseconds(5));
+                    unique_lock<mutex> lockSeek(_videoSeekMutex);
+                    unique_lock<mutex> lockQueue(_videoQueueMutex);
+                    timedFramesBuffered = _timedFrames.size();
+                }
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
@@ -361,23 +409,8 @@ void Image_FFmpeg::readLoop()
             }
         }
 
-        // Set elapsed time to infinity (video finished)
-        _elapsedTime = numeric_limits<float>::max();
+        seek(0); // Go back to the beginning of the file
 
-        if (av_seek_frame(_avContext, _videoStreamIndex, 0, 0) < 0)
-        {
-            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
-            break;
-        }
-        else
-        {
-            unique_lock<mutex> lock(_videoQueueMutex);
-            _timedFrames.clear();
-#if HAVE_PORTAUDIO
-            if (_speaker)
-                _speaker->clearQueue();
-#endif
-        }
     } while (_loopOnVideo && _continueRead);
 
     av_free(rgbFrame);
@@ -404,6 +437,13 @@ void Image_FFmpeg::seek(float seconds)
     int seekFlag = 0;
     if (_elapsedTime > seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
+
+    // Prevent seeking outside of the file
+    float duration = _avContext->duration / AV_TIME_BASE;
+    if (seconds < 0)
+        seconds = 0;
+    else if (seconds > duration)
+        seconds = duration;
 
     int frame = static_cast<int>(floor(seconds / _timeBase));
     if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, seekFlag) < 0)
@@ -450,76 +490,77 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
+            //
+            // Get the current master and local clocks
+            //
+            _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+
+            float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
+
             int64_t clockAsMs;
-            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs))
+            bool clockIsPaused {false};
+            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
-                float diff = _elapsedTime / 1e6 - seconds;
-
-                if (abs(diff) > 3.f)
-                {
-                    _elapsedTime = seconds * 1e6;
-                    _clockTime = _elapsedTime;
-                    localQueue.clear();
-
-                    SThread::pool.enqueueWithoutId([=]() {
-                        seek(seconds);
-                    });
-                    continue;
-                }
-                else
-                {
-                    if (_clockTime == seconds * 1e6)
-                    {
-                        _clockPaused = true;
-                    }
-                    else
-                    {
-                        _clockPaused = false;
-                        _clockTime = seconds * 1e6;
-                    }
-                }
+                _clockTime = seconds * 1e6;
             }
 
-            if (_currentTime == _clockTime || _clockPaused)
-            {
-                this_thread::sleep_for(chrono::milliseconds(5));
-                continue;
-            }
-
+            //
+            // Show the frame at the right timing, according to clocks
+            //
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                if (!_useClock && _paused)
+                if (_paused || (clockIsPaused && _useClock))
                 {
-                    auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                    _startTime = _startTime + (actualTime - _currentTime);
+                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _currentTime;
+                    this_thread::sleep_for(chrono::milliseconds(2));
                     continue;
                 }
                 else if (_useClock && _clockTime != -1l)
                 {
-                    _currentTime = _clockTime;
-                }
-                else
-                {
-                    _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+                    auto delta = abs(_currentTime - _clockTime);
+                    // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock
+                    if (delta > 50000)
+                    {
+                        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _clockTime;
+                        _currentTime = _clockTime;
+                    }
                 }
 
+                // Compute the difference between next frame and the current clock
                 int64_t waitTime = timedFrame.timing - _currentTime;
-                if (waitTime > 0 && waitTime < 1e6)
+
+                // If the gap is too big, we seek through the video
+                if (abs(waitTime / 1e6) > seekTiming)
                 {
-                    this_thread::sleep_for(chrono::microseconds(waitTime));
+                    if (!_timeJump) // We do not want more than one jump at a time...
+                    {
+                        _timeJump = true;
+                        _elapsedTime = _currentTime / 1e6 + _shiftTime;
+                        localQueue.clear();
+                        SThread::pool.enqueueWithoutId([=]() {
+                            seek(_elapsedTime);
+                            _timeJump = false;
+                        });
+                    }
+                    continue;
                 }
+
+                // Otherwise, wait for the right time to display the frame
+                if (waitTime > 2e3) // we don't wait if the frame is due for the next few ms
+                    this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;
 
                 unique_lock<mutex> lock(_writeMutex);
                 if (!_bufferImage)
-                    _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-                _bufferImage.swap(timedFrame.frame);
+                    _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+                std::swap(_bufferImage, timedFrame.frame);
                 _imageUpdated = true;
                 updateTimestamp();
             }
+
             localQueue.pop_front();
         }
     }
@@ -538,6 +579,7 @@ void Image_FFmpeg::registerAttributes()
         return {duration};
     });
     _attribFunctions["duration"].doUpdateDistant(true);
+    _attribFunctions["duration"].savable(false);
 
     _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -561,6 +603,7 @@ void Image_FFmpeg::registerAttributes()
         return {duration};
     });
     _attribFunctions["remaining"].doUpdateDistant(true);
+    _attribFunctions["remaining"].savable(false);
 
     _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -572,6 +615,7 @@ void Image_FFmpeg::registerAttributes()
         return {_paused};
     });
     _attribFunctions["pause"].doUpdateDistant(true);
+    _attribFunctions["pause"].savable(false);
 
     _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -588,6 +632,7 @@ void Image_FFmpeg::registerAttributes()
         return {_seekTime};
     });
     _attribFunctions["seek"].doUpdateDistant(true);
+    _attribFunctions["seek"].savable(false);
 
     _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
@@ -595,10 +640,10 @@ void Image_FFmpeg::registerAttributes()
 
         _useClock = args[0].asInt();
         if (!_useClock)
-        {
             _clockTime = -1;
-            _clockPaused = false;
-        }
+        else
+            _clockTime = 0;
+
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};

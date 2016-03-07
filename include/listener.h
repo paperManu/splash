@@ -25,7 +25,7 @@
 #ifndef SPLASH_LISTENER_H
 #define SPLASH_LISTENER_H
 
-#define SPLASH_LISTENER_RINGBUFFER_SIZE (512 * 1024)
+#define SPLASH_LISTENER_RINGBUFFER_SIZE (4 * 1024 * 1024) // use a 4MB ring buffer
 
 #include <array>
 #include <atomic>
@@ -103,7 +103,6 @@ class Listener : public BaseObject
         std::atomic_int _ringWritePosition {0};
         std::atomic_int _ringReadPosition {0};
         std::atomic_int _ringUnusedSpace {0};
-        std::mutex _ringReadMutex;
 
         /**
          * Free all PortAudio resources
@@ -133,17 +132,16 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     if (buffer.size() == 0)
         return false;
 
-    std::unique_lock<std::mutex> lock(_ringReadMutex);
-
     int readPosition = _ringReadPosition;
     int writePosition = _ringWritePosition;
+    int unusedSpace = _ringUnusedSpace;
 
     // If the ring buffer is not filled enough, fill with zeros instead
     int delta = 0;
     if (writePosition >= readPosition)
         delta = writePosition - readPosition;
     else
-        delta = SPLASH_LISTENER_RINGBUFFER_SIZE - readPosition + writePosition;
+        delta = SPLASH_LISTENER_RINGBUFFER_SIZE - unusedSpace - readPosition + writePosition;
 
     int step = buffer.size() * sizeof(T);
     if (delta < step)
@@ -153,20 +151,21 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     // Else, we copy the values and move the read position
     else
     {
-        int effectiveSpace = SPLASH_LISTENER_RINGBUFFER_SIZE - _ringUnusedSpace;
+        int effectiveSpace = SPLASH_LISTENER_RINGBUFFER_SIZE - unusedSpace;
         int ringBufferEndLength = effectiveSpace - readPosition;
 
         if (step <= ringBufferEndLength)
         {
             std::copy(&_ringBuffer[readPosition], &_ringBuffer[readPosition] + step, buffer.data());
+            readPosition = readPosition + step;
         }
         else
         {
             std::copy(&_ringBuffer[readPosition], &_ringBuffer[effectiveSpace], buffer.data());
-            std::copy(&_ringBuffer[0], &_ringBuffer[step - ringBufferEndLength], &buffer[ringBufferEndLength]);
+            std::copy(&_ringBuffer[0], &_ringBuffer[step - ringBufferEndLength], reinterpret_cast<char*>(buffer.data()) + ringBufferEndLength);
+            readPosition = step - ringBufferEndLength;
         }
 
-        readPosition = (readPosition + step) % effectiveSpace;
         _ringReadPosition = readPosition;
     }
 

@@ -23,23 +23,38 @@ LtcClock::LtcClock(bool masterClock)
         return;
     }
 
-    _masterClock = true;
+    _masterClock = masterClock;
     _continue = true;
+
+    Log::get() << Log::MESSAGE << "LtcClock::" << __FUNCTION__ << " - Input clock enabled" << Log::endl;
 
     _ltcThread = thread([&]() {
         LTCDecoder* ltcDecoder = ltc_decoder_create(1920, 32);
         LTCFrameExt ltcFrame;
 
-        vector<char> inputBuffer(512);
+        vector<uint8_t> inputBuffer(256);
         long int total = 0;
 
         while (_continue)
         {
             if (!_listener->readFromQueue(inputBuffer))
             {
-                this_thread::sleep_for(chrono::milliseconds(10));
+                this_thread::sleep_for(chrono::milliseconds(5));
                 continue;
             }
+
+            // Check all values to check whether the clock is paused or not 
+            bool paused = true;
+            for (auto& v : inputBuffer)
+            {
+                if (v < 126 || v > 129) // This is for noise handling. There is not enough room for a clock in between.
+                {
+                    paused = false;
+                    break;
+                }
+            }
+
+            _clock.paused = paused;
 
             ltc_decoder_write(ltcDecoder, (ltcsnd_sample_t*)inputBuffer.data(), inputBuffer.size(), total);
             total += inputBuffer.size();
@@ -82,13 +97,13 @@ LtcClock::LtcClock(bool masterClock)
                 clock.frame = stime.frame * 120 / _maximumFramePerSec;
 
                 _clock = clock;
+            }
 
-                if (_masterClock)
-                {
-                    Values v;
-                    getClock(v);
-                    Timer::get().setMasterClock(v);
-                }
+            if (_masterClock)
+            {
+                Values v;
+                getClock(v);
+                Timer::get().setMasterClock(v);
             }
         }
 
@@ -102,6 +117,8 @@ LtcClock::~LtcClock()
     _continue = false;
     if (_ltcThread.joinable())
         _ltcThread.join();
+
+    Log::get() << Log::MESSAGE << "LtcClock::" << __FUNCTION__ << " - Input clock disabled" << Log::endl;
 }
 
 /*************/
@@ -117,15 +134,14 @@ void LtcClock::getClock(Values& clockValues)
         return;
 
     Clock clock = _clock;
-
-    clockValues.clear();
-    clockValues.push_back({(int)clock.years});
-    clockValues.push_back({(int)clock.months});
-    clockValues.push_back({(int)clock.days});
-    clockValues.push_back({(int)clock.hours});
-    clockValues.push_back({(int)clock.mins});
-    clockValues.push_back({(int)clock.secs});
-    clockValues.push_back({(int)clock.frame});
+    clockValues = Values({(int)clock.years,
+                          (int)clock.months,
+                          (int)clock.days,
+                          (int)clock.hours,
+                          (int)clock.mins,
+                          (int)clock.secs,
+                          (int)clock.frame,
+                          (int)clock.paused});
 }
 
 /*************/

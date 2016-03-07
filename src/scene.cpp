@@ -32,7 +32,6 @@
 #endif
 
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -686,13 +685,16 @@ void Scene::textureUploadRun()
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lock.unlock();
 
-        for (auto& obj : _objects)
-            if (obj.second->getType().find("texture") != string::npos)
-            {
-                auto texImage = dynamic_pointer_cast<Texture_Image>(obj.second);
-                if (texImage)
-                    texImage->flushPbo();
-            }
+        if (!_objectsCurrentlyUpdated)
+        {
+            for (auto& obj : _objects)
+                if (obj.second->getType().find("texture") != string::npos)
+                {
+                    auto texImage = dynamic_pointer_cast<Texture_Image>(obj.second);
+                    if (texImage)
+                        texImage->flushPbo();
+                }
+        }
 
         _textureUploadWindow->releaseContext();
         Timer::get() >> "textureUpload";
@@ -1054,7 +1056,7 @@ void Scene::init(std::string name)
 void Scene::initBlendingMap()
 {
     _blendingMap = make_shared<Image>();
-    _blendingMap->set(_blendingResolution, _blendingResolution, 1, TypeDesc::UINT16);
+    _blendingMap->set(_blendingResolution, _blendingResolution, 1, ImageBufferSpec::Type::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
     _blendingTexture = make_shared<Texture_Image>(_self);
@@ -1226,6 +1228,7 @@ void Scene::registerAttributes()
         unique_lock<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() -> void {
             lock_guard<recursive_mutex> lock(_objectsMutex);
+            _objectsCurrentlyUpdated = true;
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);
@@ -1235,10 +1238,14 @@ void Scene::registerAttributes()
                 _objects.erase(objectIt);
 
             objectIt = _ghostObjects.find(objectName);
-            for (auto& ghostObject : _ghostObjects)
-                unlink(objectIt->second, ghostObject.second);
             if (objectIt != _ghostObjects.end())
-                _objects.erase(objectIt);
+            {
+                for (auto& ghostObject : _ghostObjects)
+                    unlink(objectIt->second, ghostObject.second);
+                _ghostObjects.erase(objectIt);
+            }
+
+            _objectsCurrentlyUpdated = false;
         });
 
         return true;

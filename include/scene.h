@@ -30,7 +30,6 @@
 #include <future>
 #include <list>
 #include <vector>
-#include <json/reader.h>
 
 #include "config.h"
 
@@ -185,7 +184,7 @@ class Scene : public RootObject
         std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};
 
-        std::map<std::string, BaseObjectPtr> _ghostObjects;
+        std::unordered_map<std::string, BaseObjectPtr> _ghostObjects;
 
         // Gui exists in master scene whatever the configuration
         GuiPtr _gui;

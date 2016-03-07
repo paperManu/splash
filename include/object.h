@@ -196,6 +196,7 @@ class Object : public BaseObject
         bool _vertexBlendingActive {false};
 
         glm::dvec3 _position {0.0, 0.0, 0.0};
+        glm::dvec3 _rotation {0.0, 0.0, 0.0};
         glm::dvec3 _scale {1.0, 1.0, 1.0};
         glm::dmat4 _modelMatrix;
 

@@ -3,7 +3,9 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/jsoncpp \
 	-I$(top_srcdir)/external/piccante/include \
+	-I$(top_srcdir)/external/stb \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
@@ -35,7 +37,7 @@ $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: M
 
 export LIBTOOL = glibtool --tag=CXX
 else
-export LIBTOOL = libtool --tag=CXX
+export LIBTOOL = $(top_srcdir)/libtool --tag=CXX
 endif
 
 #*************#
@@ -51,6 +53,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	gui.cpp \
 	httpServer.cpp \
 	image.cpp \
+	imageBuffer.cpp \
 	link.cpp \
 	mesh.cpp \
 	object.cpp \
@@ -77,6 +80,10 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/glad/core/src/glad_core.c
 endif
 
+# JsonCpp sources
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/jsoncpp/jsoncpp.cpp
+
 # GUI related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/imgui/imgui.cpp
@@ -98,8 +105,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	$(ZMQ_CFLAGS)
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
-	-lOpenImageIO \
-	-ljsoncpp \
 	-lsnappy \
 	$(BOOST_SYSTEM_LIBS) \
 	$(GLFW_LIBS) \
@@ -284,6 +289,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/httpServer.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/imageBuffer.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_opencv.h \
@@ -326,6 +332,11 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/imgui/stb_truetype.h \
 	\
 	$(top_srcdir)/external/hap/source/hap.h \
+	\
+	$(top_srcdir)/external/jsoncpp/json/json.h \
+	\
+	$(top_srcdir)/external/stb/stb_image.h \
+	$(top_srcdir)/external/stb/stb_image_write.h \
 	\
 	$(top_srcdir)/external/piccante/include/image_samplers/image_sampler.hpp \
 	$(top_srcdir)/external/piccante/include/image_samplers/image_sampler_gaussian.hpp \

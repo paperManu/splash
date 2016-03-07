@@ -2,15 +2,19 @@
 
 #include <fstream>
 #include <memory>
-#include <OpenImageIO/imageio.h>
-#include <OpenImageIO/imagebufalgo.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image.h>
+#include <stb_image_write.h>
 
 #include "log.h"
 #include "osUtils.h"
 #include "threadpool.h"
 #include "timer.h"
 
-#define SPLASH_IMAGE_COPY_THREADS 4
+#define SPLASH_IMAGE_COPY_THREADS 2
+#define SPLASH_IMAGE_SERIALIZED_HEADER_SIZE 4096
 
 using namespace std;
 
@@ -30,17 +34,16 @@ Image::Image(bool linked)
 }
 
 /*************/
-Image::Image(oiio::ImageSpec spec)
+Image::Image(ImageBufferSpec spec)
 {
     init();
-    set(spec.width, spec.height, spec.nchannels, spec.format);
+    set(spec.width, spec.height, spec.channels, spec.type);
 }
 
 /*************/
 void Image::init()
 {
     _type = "image";
-    oiio::attribute("threads", 0); // Disable the thread limitation for OIIO
 
     createDefaultImage();
     registerAttributes();
@@ -60,48 +63,49 @@ Image::~Image()
 const void* Image::data() const
 {
     if (_image)
-        return _image->localpixels();
+        return _image->data();
     else
         return nullptr;
 }
 
 /*************/
-oiio::ImageBuf Image::get() const
+ImageBuffer Image::get() const
 {
-    oiio::ImageBuf img;
+    ImageBuffer img;
     unique_lock<mutex> lock(_readMutex);
     if (_image)
-        img.copy(*_image);
+        img = *_image;
     return img;
 }
 
 /*************/
-oiio::ImageSpec Image::getSpec() const
+ImageBufferSpec Image::getSpec() const
 {
     unique_lock<mutex> lock(_readMutex);
     if (_image)
-        return _image->spec();
+        return _image->getSpec();
     else
-        return oiio::ImageSpec();
+        return ImageBufferSpec();
 }
 
 /*************/
-void Image::set(const oiio::ImageBuf& img)
+void Image::set(const ImageBuffer& img)
 {
     unique_lock<mutex> lockRead(_readMutex);
-    _image->copy(img);
+    if (_image)
+        *_image = img;
 }
 
 /*************/
-void Image::set(unsigned int w, unsigned int h, unsigned int channels, oiio::TypeDesc type)
+void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type)
 {
-    oiio::ImageSpec spec(w, h, channels, type);
-    oiio::ImageBuf img(spec);
+    ImageBufferSpec spec(w, h, channels, type);
+    ImageBuffer img(spec);
 
     unique_lock<mutex> lock(_readMutex);
     if (!_image)
-        _image = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-    _image->swap(img);
+        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*_image, img);
     updateTimestamp();
 }
 
@@ -116,10 +120,10 @@ shared_ptr<SerializedObject> Image::serialize() const
     // We first get the xml version of the specs, and pack them into the obj
     if (!_image)
         return {};
-    string xmlSpec = _image->spec().to_xml();
+    string xmlSpec = _image->getSpec().to_string();
     int nbrChar = xmlSpec.size();
-    int imgSize = _image->spec().pixel_bytes() * _image->spec().width * _image->spec().height;
-    int totalSize = sizeof(nbrChar) + nbrChar + imgSize;
+    int imgSize = _image->getSpec().rawSize();
+    int totalSize = SPLASH_IMAGE_SERIALIZED_HEADER_SIZE + imgSize;
     
     auto obj = make_shared<SerializedObject>(totalSize);
 
@@ -130,10 +134,10 @@ shared_ptr<SerializedObject> Image::serialize() const
 
     const char* charPtr = reinterpret_cast<const char*>(xmlSpec.c_str());
     copy(charPtr, charPtr + nbrChar, currentObjPtr);
-    currentObjPtr += nbrChar;
+    currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
 
     // And then, the image
-    const char* imgPtr = reinterpret_cast<const char*>(_image->localpixels());
+    const char* imgPtr = reinterpret_cast<const char*>(_image->data());
     if (imgPtr == NULL)
         return {};
     
@@ -178,33 +182,23 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
-        currentObjPtr += nbrChar;
+        currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
         string xmlSpec(xmlSpecChar);
 
-        oiio::ImageSpec spec;
-        spec.from_xml(xmlSpec.c_str());
+        ImageBufferSpec spec;
+        spec.from_string(xmlSpec.c_str());
 
-        oiio::ImageSpec curSpec = _bufferDeserialize.spec();
-        if (spec.width != curSpec.width || spec.height != curSpec.height || spec.nchannels != curSpec.nchannels || spec.format != curSpec.format)
-            _bufferDeserialize.reset(spec);
+        ImageBufferSpec curSpec = _bufferDeserialize.getSpec();
+        if (spec != curSpec)
+            _bufferDeserialize = ImageBuffer(spec);
 
-        int imgSize = _bufferDeserialize.spec().pixel_bytes() * _bufferDeserialize.spec().width * _bufferDeserialize.spec().height;
-        ptr = reinterpret_cast<char*>(_bufferDeserialize.localpixels());
-
-        vector<unsigned int> threadIds;
-        int stride = SPLASH_IMAGE_COPY_THREADS;
-        for (int i = 0; i < stride - 1; ++i)
-        {
-            threadIds.push_back(SThread::pool.enqueue([=]() {
-                copy(currentObjPtr + imgSize / stride * i, currentObjPtr + imgSize / stride * (i + 1), ptr + imgSize / stride * i);
-            }));
-        }
-        copy(currentObjPtr + imgSize / stride * (stride - 1), currentObjPtr + imgSize, ptr + imgSize / stride * (stride - 1));
-        SThread::pool.waitThreads(threadIds);
+        auto rawBuffer = obj->grabData();
+        rawBuffer.shift(SPLASH_IMAGE_SERIALIZED_HEADER_SIZE);
+        _bufferDeserialize.setRawBuffer(std::move(rawBuffer));
 
         if (!_bufferImage)
-            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-        _bufferImage->swap(_bufferDeserialize);
+            _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+        std::swap(*_bufferImage, _bufferDeserialize);
         _imageUpdated = true;
 
         updateTimestamp();
@@ -246,50 +240,30 @@ bool Image::readFile(const string& filename)
         return false;
     }
 
-    try
+    int w, h, c;
+    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 3);
+
+    if (!rawImage)
     {
-        auto in = oiio::ImageInput::open(filepath);
-
-        if (!in)
-        {
-            Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
-            return false;
-        }
-
-        const oiio::ImageSpec& spec = in->spec();
-        if (spec.format != oiio::TypeDesc::UINT8)
-        {
-            Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Only 8bit images are supported." << Log::endl;
-            return false;
-        }
-
-        int xres = spec.width;
-        int yres = spec.height;
-        int channels = spec.nchannels;
-        oiio::ImageBuf img(spec); 
-        in->read_image(oiio::TypeDesc::UINT8, img.localpixels());
-
-        in->close();
-        delete in;
-
-        if (channels != 3 && channels != 4)
-            return false;
-
-        unique_lock<mutex> lock(_writeMutex);
-        if (!_bufferImage)
-            _bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-        _bufferImage->swap(img);
-        _imageUpdated = true;
-
-        updateTimestamp();
-
-        return true;
-    }
-    catch (const exception& e)
-    {
-        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an exception while opening image file: " << e.what() << Log::endl;
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an error while opening image file " << filepath << Log::endl;
         return false;
     }
+
+    auto spec = ImageBufferSpec(w, h, c, ImageBufferSpec::Type::UINT8);
+    spec.format = {"R", "G", "B"};
+    auto img = ImageBuffer(spec);
+    memcpy(img.data(), rawImage, w * h * c);
+    stbi_image_free(rawImage);
+
+    unique_lock<mutex> lock(_writeMutex);
+    if (!_bufferImage)
+        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*_bufferImage, img);
+    _imageUpdated =  true;
+
+    updateTimestamp();
+
+    return true;
 }
 
 /*************/
@@ -299,10 +273,7 @@ void Image::setTo(float value)
     if (!_image)
         return;
 
-    float v[_image->nchannels()];
-    for (int i = 0; i < _image->nchannels(); ++i)
-        v[i] = (float)value;
-    oiio::ImageBufAlgo::fill(*_image, v);
+    _image->fill(value);
 }
 
 /*************/
@@ -322,44 +293,72 @@ void Image::update()
 /*************/
 bool Image::write(const std::string& filename)
 {
-    oiio::ImageOutput* out = oiio::ImageOutput::create(filename);
-    if (!out)
+    int strSize = filename.size();
+    if (strSize < 5)
         return false;
 
-    unique_lock<mutex> lock(_readMutex);
     if (!_image)
         return false;
-    out->open(filename, _image->spec());
-    out->write_image(_image->spec().format, _image->localpixels());
-    out->close();
-    delete out;
 
-    return true;
+    auto spec = _image->getSpec();
+
+    unique_lock<mutex> lock(_readMutex);
+    if (filename.substr(strSize - 3, strSize) == "png")
+    {
+        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.rawSize());
+        return (result != 0);
+    }
+    else if (filename.substr(strSize - 3, strSize) == "bmp")
+    {
+        auto result = stbi_write_bmp(filename.c_str(), spec.width, spec.height, spec.channels, _image->data());
+        return (result != 0);
+    }
+    else if (filename.substr(strSize - 3, strSize) == "tga")
+    {
+        auto result = stbi_write_tga(filename.c_str(), spec.width, spec.height, spec.channels, _image->data());
+        return (result != 0);
+    }
+    else
+        return false;
 }
 
 /*************/
 void Image::createDefaultImage()
 {
-    oiio::ImageSpec spec(512, 512, 4, oiio::TypeDesc::UINT8);
-    oiio::ImageBuf img(spec);
-
-    for (oiio::ImageBuf::Iterator<unsigned char> p(img); !p.done(); ++p)
-    {
-        if (!p.exists())
-            continue;
-
-        if (p.x() % 16 > 7 && p.y() % 64 > 31)
-            for (int c = 0; c < img.nchannels(); ++c)
-                p[c] = 255;
-        else
-            for (int c = 0; c < img.nchannels(); ++c)
-                p[c] = 0;
-    }
+    ImageBufferSpec spec(128, 128, 4, ImageBufferSpec::Type::UINT8);
+    ImageBuffer img(spec);
+    img.fill(0);
 
     unique_lock<mutex> lock(_readMutex);
     if (!_image)
-        _image = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-    _image->swap(img);
+        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*_image, img);
+    updateTimestamp();
+}
+
+/*************/
+void Image::createPattern()
+{
+    ImageBufferSpec spec(512, 512, 4, ImageBufferSpec::Type::UINT8);
+    ImageBuffer img(spec);
+
+    uint8_t* p = reinterpret_cast<uint8_t*>(img.data());
+
+    for (int y = 0; y < 512; ++y)
+        for (int x = 0; x < 512; ++x)
+        {
+            if (x % 16 > 7 && y % 64 > 31)
+                for (int c = 0; c < 4; ++c)
+                    p[(x + y * 512) * 4 + c] = 255;
+            else
+                for (int c = 0; c < 4; ++c)
+                    p[(x + y * 512) * 4 + c] = 0;
+        }
+
+    unique_lock<mutex> lock(_readMutex);
+    if (!_image)
+        _image = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*_image, img);
     updateTimestamp();
 }
 
@@ -409,6 +408,18 @@ void Image::registerAttributes()
         else
             _benchmark = false;
         return true;
+    });
+
+    _attribFunctions["pattern"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        if (args[0].asInt() == 1)
+            createPattern();
+
+        return true;
+    }, [&]() -> Values {
+        return {false};
     });
 }
 

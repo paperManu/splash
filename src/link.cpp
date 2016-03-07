@@ -161,8 +161,18 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
         for (auto& rootObjectIt : _connectedTargetPointers)
         {
             auto rootObject = rootObjectIt.second.lock();
-            if (rootObject)
+            // If there is also a connection to another process,
+            // we make a copy of the buffer right now
+            if (rootObject && _connectedToOuter)
+            {
+                auto copiedBuffer = make_shared<SerializedObject>();
+                *copiedBuffer = *buffer;
+                rootObject->setFromSerializedObject(name, copiedBuffer);
+            }
+            else
+            {
                 rootObject->setFromSerializedObject(name, buffer);
+            }
         }
     }
 
@@ -340,6 +350,8 @@ void Link::handleInputMessages()
                     _socketMessageIn->recv(&msg);
                     if (valueType == Value::Type::i)
                         values.push_back(*(int*)msg.data());
+                    else if (valueType == Value::Type::l)
+                        values.push_back(*(int64_t*)msg.data());
                     else if (valueType == Value::Type::f)
                         values.push_back(*(float*)msg.data());
                     else if (valueType == Value::Type::s)

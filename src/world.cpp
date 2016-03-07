@@ -4,8 +4,6 @@
 #include <fstream>
 #include <unistd.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <json/reader.h>
-#include <json/writer.h>
 #include <spawn.h>
 #include <sys/wait.h>
 
@@ -260,6 +258,25 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
+
+    // Helper function to read arrays
+    std::function<Values(Json::Value)> processArray;
+    processArray = [&processArray](Json::Value values) {
+        Values outValues;
+        for (auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt());
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat());
+            else if (v.isArray())
+                outValues.emplace_back(processArray(v));
+            else
+                outValues.emplace_back(v.asString());
+        }
+        return outValues;
+    };
+
     unique_lock<mutex> lock(_configurationMutex);
 
     // We first destroy all scene and objects
@@ -283,27 +300,40 @@ void World::applyConfig()
             if (jsScenes[i].isMember("spawn"))
                 spawn = jsScenes[i]["spawn"].asInt();
 
+#if HAVE_LINUX
             string display = "DISPLAY=:0.";
             if (jsScenes[i].isMember("display"))
                 display += to_string(jsScenes[i]["display"].asInt());
             else
                 display += to_string(0);
+#endif
 
             string name = jsScenes[i]["name"].asString();
             int pid = -1;
             if (spawn > 0)
             {
                 _sceneLaunched = false;
-                string worldDisplay = getenv("DISPLAY");
-
-                // If the current process is on the correct display, we use an inner Scene
-                if (display.find(worldDisplay) != string::npos && !_innerScene)
+#if HAVE_LINUX
+                string worldDisplay = "none";
+                if (getenv("DISPLAY"))
                 {
+                    worldDisplay = getenv("DISPLAY");
+                    if (worldDisplay.size() == 2)
+                        worldDisplay += ".0";
+                }
+#endif
+
+#if HAVE_LINUX
+                // If the current process is on the correct display, we use an inner Scene
+                if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
+                {
+#endif
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                     _innerScene = make_shared<Scene>(name, false);
                     _innerSceneThread = thread([&]() {
                         _innerScene->run();
                     });
+#if HAVE_LINUX
                 }
                 else
                 {
@@ -324,6 +354,7 @@ void World::applyConfig()
                     if (status != 0)
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
                 }
+#endif
 
                 // We wait for the child process to be launched
                 unique_lock<mutex> lock(_childProcessMutex);
@@ -356,17 +387,15 @@ void World::applyConfig()
                 string paramName = sceneMembers[idx];
 
                 Values values;
-                for (auto& p : param)
-                {
-                    Value v;
-                    if (p.isInt())
-                        v = p.asInt();
-                    else if (p.isDouble())
-                        v = p.asFloat();
-                    else
-                        v = p.asString();
-                    values.push_back(v);
-                }
+                if (param.isArray())
+                    values = processArray(param);
+                else if (param.isInt())
+                    values.emplace_back(param.asInt());
+                else if (param.isDouble())
+                    values.emplace_back(param.asFloat());
+                else if (param.isString())
+                    values.emplace_back(param.asString());
+
                 sendMessage(name, paramName, values);
                 idx++;
             }
@@ -434,24 +463,6 @@ void World::applyConfig()
                     idxAttr++;
                     continue;
                 }
-
-                // Helper function to read arrays
-                std::function<Values(Json::Value)> processArray;
-                processArray = [&processArray](Json::Value values) {
-                    Values outValues;
-                    for (auto& v : values)
-                    {
-                        if (v.isInt())
-                            outValues.emplace_back(v.asInt());
-                        else if (v.isDouble())
-                            outValues.emplace_back(v.asFloat());
-                        else if (v.isArray())
-                            outValues.emplace_back(processArray(v));
-                        else
-                            outValues.emplace_back(v.asString());
-                    }
-                    return outValues;
-                };
 
                 Values values;
                 if (attr.isArray())
@@ -538,6 +549,9 @@ void World::applyConfig()
         }
     }
 
+    // Also, enable the master clock
+    _clock = unique_ptr<LtcClock>(new LtcClock(true));
+
     // Send the start message for all scenes
     for (auto& s : _scenes)
     {
@@ -594,8 +608,17 @@ void World::saveConfig()
                     _config[sceneName][m] = Json::Value();
 
                 Json::Value::Members attributes = scene[m].getMemberNames();
-                for (auto& a : attributes)
+                for (const auto& a : attributes)
                     _config[sceneName][m][a] = scene[m][a];
+
+                const auto& obj = _objects.find(m);
+                if (obj != _objects.end())
+                {
+                    Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                    attributes = worldObjValue.getMemberNames();
+                    for (const auto& a : attributes)
+                        _config[sceneName][m][a] = worldObjValue[a];
+                }
             }
         }
     }

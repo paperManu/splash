@@ -163,7 +163,10 @@ glm::dmat4 Object::computeModelMatrix() const
     if (_modelMatrix != glm::dmat4(0.0))
         return _modelMatrix;
     else
-        return glm::translate(glm::dmat4(1.f), _position);
+        return glm::translate(glm::dmat4(1.f), _position)
+             * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0))
+             * glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0))
+             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0));
 }
 
 /*************/
@@ -302,10 +305,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!filter)
             return false;
-        else if (filter->unlinkFrom(obj))
-            unlinkFrom(filter);
-        else
-            return false;
+        filter->unlinkFrom(obj);
+        return unlinkFrom(filter);
     }
     else if (type.find("image") != string::npos)
     {
@@ -314,10 +315,8 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!filter)
             return false;
-        else if (filter->unlinkFrom(obj))
-            unlinkFrom(filter);
-        else
-            return false;
+        filter->unlinkFrom(obj);
+        return unlinkFrom(filter);
     }
     else if (type.find("filter") != string::npos)
     {
@@ -331,15 +330,19 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
 
         if (!geom)
             return false;
-        if (geom->unlinkFrom(obj))
-            unlinkFrom(geom);
-        else
-            return false;
+        geom->unlinkFrom(obj);
+        return unlinkFrom(geom);
     }
     else if (type.find("geometry") != string::npos)
     {
         auto geom = dynamic_pointer_cast<Geometry>(obj);
         removeGeometry(geom);
+        return true;
+    }
+    else if (obj->getType().find("queue") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
         return true;
     }
 
@@ -580,6 +583,15 @@ void Object::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_position.x, _position.y, _position.z};
+    });
+
+    _attribFunctions["rotation"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 3)
+            return false;
+        _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
+        return true;
+    }, [&]() -> Values {
+        return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
     });
 
     _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {

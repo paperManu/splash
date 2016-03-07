@@ -137,7 +137,7 @@ class GuiGlobalView : public GuiWidget
 class GuiMedia : public GuiWidget
 {
     public:
-        GuiMedia(std::string name) : GuiWidget(name) {}
+        GuiMedia(std::string name);
         void render();
         int updateWindowFlags();
         void setScene(SceneWeakPtr scene) {_scene = scene;}
@@ -148,14 +148,24 @@ class GuiMedia : public GuiWidget
         std::map<std::string, std::string> _mediaTypes {{"image", "image"},
                                                         {"video", "image_ffmpeg"},
                                                         {"shared memory", "image_shmdata"},
+                                                        {"queue", "queue"},
+#if HAVE_OPENCV
+                                                        {"video grabber", "image_opencv"},
+#endif
 #if HAVE_OSX
-                                                        {"syphon", "texture_syphon"}};
+                                                        {"syphon", "texture_syphon"},
 #else
                                                         };
 #endif
+        std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
 
-        std::list<std::shared_ptr<Image>> getSceneImages();
-        void replaceMedia(std::shared_ptr<Image> previousImage, std::string type);
+        Values _newMedia {"image", "", 0.f, 0.f};
+        int _newMediaTypeIndex {0};
+        float _newMediaStart {0.f};
+        float _newMediaStop {0.f};
+
+        std::list<std::shared_ptr<BaseObject>> getSceneMedia();
+        void replaceMedia(std::string previousMedia, std::string type);
 };
 
 /*************/

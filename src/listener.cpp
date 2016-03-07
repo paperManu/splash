@@ -145,13 +145,14 @@ int Listener::portAudioCallback(const void* in, void* out, unsigned long framesP
     int spaceLeft = SPLASH_LISTENER_RINGBUFFER_SIZE - writePosition;
 
     if (spaceLeft < step)
-    {
-        that->_ringUnusedSpace = spaceLeft;
         writePosition = 0;
-    }
+    else
+        spaceLeft = 0;
 
     std::copy(input, input + step, &that->_ringBuffer[writePosition]);
     writePosition = (writePosition + step);
+
+    that->_ringUnusedSpace = spaceLeft;
     that->_ringWritePosition = writePosition;
 
     if (that->_abordCallback)

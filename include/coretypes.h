@@ -36,6 +36,9 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstring>
+#include <deque>
+#include <execinfo.h>
 #include <ostream>
 #include <memory>
 #include <mutex>
@@ -50,9 +53,137 @@
 #define SPLASH_CORETYPES_H
 
 #define PRINT_FUNCTION_LINE std::cout << "------> " << __FUNCTION__ << "::" << __LINE__ << std::endl;
+#define PRINT_CALL_STACK \
+{ \
+    int j, nptrs; \
+    int size = 100; \
+    void* buffers[size]; \
+    char** strings; \
+    \
+    nptrs = backtrace(buffers, size); \
+    strings = backtrace_symbols(buffers, nptrs); \
+    for (j = 0; j < nptrs; ++j) \
+        std::cout << strings[j] << endl; \
+    \
+    free(strings); \
+}
 
 namespace Splash
 {
+
+/*************/
+// Resizable array, used to hold big buffers (like raw images)
+template <typename T>
+class ResizableArray
+{
+    public:
+        ResizableArray() {};
+
+        ResizableArray(size_t size)
+        {
+            resize(size);
+        }
+
+        ResizableArray(T* start, T* end)
+        {
+            if (end <= start)
+            {
+                _size = 0;
+                _shift = 0;
+                _buffer.reset();
+
+                return;
+            }
+
+            _size = static_cast<size_t>(end - start);
+            _shift = 0;
+            _buffer = std::unique_ptr<T[]>(new T[_size]);
+            memcpy(_buffer.get(), start, _size * sizeof(T));
+        }
+
+        ResizableArray(const ResizableArray& a)
+        {
+            _size = a._size - a._shift;
+            _shift = 0;
+            _buffer = std::unique_ptr<T[]>(new T[_size]);
+            memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
+        }
+
+        ResizableArray(ResizableArray&& a)
+        {
+            _size = a._size;
+            _shift = a._shift;
+            _buffer = std::move(a._buffer);
+        }
+
+        ResizableArray& operator=(const ResizableArray& a)
+        {
+            if (this == &a)
+                return *this;
+
+            _size = a._size - a._shift;
+            _shift = 0;
+            _buffer = std::unique_ptr<T[]>(new T[_size]);
+            memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
+
+            return *this;
+        }
+
+        ResizableArray& operator=(ResizableArray&& a)
+        {
+            if (this == &a)
+                return *this;
+
+            _size = a._size;
+            _shift = a._shift;
+            _buffer = std::move(a._buffer);
+
+            return *this;
+        }
+
+        /**
+         * Get a pointer to the data
+         */
+        inline T* data() {return _buffer.get() + _shift;}
+
+        /**
+         * Shift the data, for example to get rid of a header without copying
+         */
+        inline void shift(size_t shift)
+        {
+            if (shift < _size)
+            {
+                _shift = shift;
+                _size -= shift;
+            }
+        }
+
+        /**
+         * Get the size of the buffer
+         */
+        inline size_t size() {return _size - _shift;}
+
+        /**
+         * Resize the buffer
+         */
+        inline void resize(size_t size)
+        {
+            auto newBuffer = std::unique_ptr<T[]>(new T[size]);
+            if (size >= _size)
+                memcpy(newBuffer.get(), _buffer.get(), _size);
+            else
+                memcpy(newBuffer.get(), _buffer.get(), size);
+
+            std::swap(_buffer, newBuffer);
+            _size = size;
+            _shift = 0;
+        }
+
+    private:
+        size_t _size {0};
+        size_t _shift {0};
+        std::unique_ptr<T[]> _buffer {nullptr};
+};
 
 /*************/
 struct SerializedObject
@@ -69,7 +200,7 @@ struct SerializedObject
 
     SerializedObject(char* start, char* end)
     {
-        _data = std::vector<char>(start, end);
+        _data = ResizableArray<char>(start, end);
     }
 
     /**
@@ -79,6 +210,12 @@ struct SerializedObject
     {
         return _data.data();
     }
+
+    /**
+     * Get ownership over the inner buffer
+     * Use with caution, as it invalidates the SerializedObject
+     */
+    ResizableArray<char>&& grabData() {return std::move(_data);}
 
     /**
      * Return the size of the data
@@ -99,7 +236,7 @@ struct SerializedObject
     /**
      * Attributes
      */
-    std::vector<char> _data;
+    ResizableArray<char> _data;
 };
 
 /*************/
@@ -177,7 +314,7 @@ class GlWindow
 typedef std::shared_ptr<GlWindow> GlWindowPtr;
 
 struct Value;
-typedef std::vector<Value> Values;
+typedef std::deque<Value> Values;
 
 /*************/
 struct Value
@@ -199,18 +336,45 @@ struct Value
         Value(double v) {_f = (float)v; _type = Type::f;}
         Value(std::string v) {_s = v; _type = Type::s;}
         Value(const char* c) {_s = std::string(c); _type = Type::s;}
-        Value(Values v) {_v = v; _type = Type::v;}
+        Value(Values v)
+        {
+            _v = std::unique_ptr<Values>(new Values());
+            *_v = v; 
+            _type = Type::v;
+        }
+
+        Value(const Value& v)
+        {
+            operator=(v);
+        }
+
+        Value& operator=(const Value& v)
+        {
+            if (this != &v)
+            {
+                _type = v._type;
+                _i = v._i;
+                _l = v._l;
+                _f = v._f;
+                _s = v._s;
+                _v = std::unique_ptr<Values>(new Values());
+                if (v._v)
+                    *_v = *(v._v);
+            }
+
+            return *this;
+        }
 
         template<class InputIt>
         Value(InputIt first, InputIt last)
         {
             _type = Type::v;
-            _v.clear();
+            _v = std::unique_ptr<Values>(new Values());
 
             auto it = first;
             while (it != last)
             {
-                _v.push_back(Value(*it));
+                _v->push_back(Value(*it));
                 ++it;
             }
         }
@@ -229,15 +393,23 @@ struct Value
                 return _s == v._s;
             else if (_type == Type::v)
             {
-                if (_v.size() != v._v.size())
+                if (_v->size() != v._v->size())
                     return false;
                 bool isEqual = true;
-                for (int i = 0; i < _v.size(); ++i)
-                    isEqual &= (_v[i] == v._v[i]);
+                for (int i = 0; i < _v->size(); ++i)
+                    isEqual &= (_v->at(i) == v._v->at(i));
                 return isEqual;
             }
             else
                 return false;
+        }
+
+        Value& operator[](int index)
+        {
+            if (_type != Type::v)
+                return *this;
+            else
+                return _v->at(index);
         }
 
         int asInt() const
@@ -313,7 +485,7 @@ struct Value
             else if (_type == Type::s)
                 return {_s};
             else if (_type == Type::v)
-                return _v;
+                return *_v;
             else
                 return {};
         }
@@ -354,7 +526,7 @@ struct Value
         int64_t _l {0};
         float _f {0.f};
         std::string _s {""};
-        Values _v {};
+        std::unique_ptr<Values> _v {nullptr};
 };
 
 /*************/

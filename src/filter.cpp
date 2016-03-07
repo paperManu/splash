@@ -124,11 +124,15 @@ bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
+        if (_inTexture.expired())
+            return false;
+
         auto inTex = _inTexture.lock();
         TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
         _screen->removeTexture(tex);
         if (tex->getName() == inTex->getName())
             _inTexture.reset();
+        return true;
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
@@ -137,10 +141,8 @@ bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 
         if (!tex)
             return false;
-        else if (tex->unlinkFrom(obj))
-            unlinkFrom(tex);
-        else
-            return false;
+        tex->unlinkFrom(obj);
+        return unlinkFrom(tex);
     }
 
     return Texture::unlinkFrom(obj);

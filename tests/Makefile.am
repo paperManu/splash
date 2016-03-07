@@ -7,7 +7,6 @@ AM_CPPFLAGS = \
     -DGLV_GLFW
 
 AM_LDFLAGS = \
-	-lOpenImageIO \
     $(GLFW_LIBS) \
 	$(GL_LIBS) \
     $(GLEW_LIBS) \
