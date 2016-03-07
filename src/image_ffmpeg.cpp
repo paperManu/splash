@@ -523,7 +523,7 @@ void Image_FFmpeg::videoDisplayLoop()
                     // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock
                     if (delta > 50000)
                     {
-                        _startTime = _startTime + _currentTime - _clockTime;
+                        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _clockTime;
                         _currentTime = _clockTime;
                     }
                 }
