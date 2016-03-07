@@ -200,7 +200,7 @@ void GuiMedia::render()
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
-                                ImGui::PushID(idStack.c_str());
+                                ImGui::PushID((idStack + "media_type").c_str());
                                 ImGui::Text(_mediaTypesReversed[values[0].asString()].c_str());
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media type");
@@ -209,7 +209,7 @@ void GuiMedia::render()
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
                                 float tmp = values[2].asFloat();
-                                ImGui::PushID((idStack + values[2].asString()).c_str());
+                                ImGui::PushID((idStack + "start").c_str());
                                 if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
                                     source[2] = tmp;
@@ -222,7 +222,7 @@ void GuiMedia::render()
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
                                 tmp = values[3].asFloat();
-                                ImGui::PushID((idStack + values[3].asString()).c_str());
+                                ImGui::PushID((idStack + "stop").c_str());
                                 if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
                                     source[3] = tmp;
@@ -234,7 +234,7 @@ void GuiMedia::render()
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(-0.01f);
-                                ImGui::PushID((idStack + values[1].asString()).c_str());
+                                ImGui::PushID((idStack + "path").c_str());
                                 ImGui::Text(values[1].asString().c_str());
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media path");
