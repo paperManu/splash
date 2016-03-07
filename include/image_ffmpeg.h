@@ -81,8 +81,8 @@ class Image_FFmpeg : public Image
         std::thread _videoDisplayThread;
         struct TimedFrame
         {
-            std::unique_ptr<ImageBuffer> frame;
-            int64_t timing; // in us
+            std::unique_ptr<ImageBuffer> frame {};
+            int64_t timing {0ull}; // in us
         };
         std::deque<TimedFrame> _timedFrames;
         std::mutex _videoQueueMutex;

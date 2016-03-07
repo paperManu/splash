@@ -369,12 +369,19 @@ void Image_FFmpeg::readLoop()
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
                 }
 
+                int timedFramesBuffered = _timedFrames.size();
+
                _videoSeekMutex.unlock();
                 av_free_packet(&packet);
 
                 // Do not store more than a few frames in memory
-                while (_timedFrames.size() > 30 && _continueRead)
-                    this_thread::sleep_for(chrono::milliseconds(2));
+                while (timedFramesBuffered > 30 && _continueRead)
+                {
+                    this_thread::sleep_for(chrono::milliseconds(5));
+                    unique_lock<mutex> lockSeek(_videoSeekMutex);
+                    unique_lock<mutex> lockQueue(_videoQueueMutex);
+                    timedFramesBuffered = _timedFrames.size();
+                }
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
@@ -402,23 +409,8 @@ void Image_FFmpeg::readLoop()
             }
         }
 
-        // Set elapsed time to infinity (video finished)
-        _elapsedTime = numeric_limits<float>::max();
+        seek(0); // Go back to the beginning of the file
 
-        if (av_seek_frame(_avContext, _videoStreamIndex, 0, 0) < 0)
-        {
-            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek in file " << _filepath << Log::endl;
-            break;
-        }
-        else
-        {
-            unique_lock<mutex> lock(_videoQueueMutex);
-            _timedFrames.clear();
-#if HAVE_PORTAUDIO
-            if (_speaker)
-                _speaker->clearQueue();
-#endif
-        }
     } while (_loopOnVideo && _continueRead);
 
     av_free(rgbFrame);
@@ -445,6 +437,13 @@ void Image_FFmpeg::seek(float seconds)
     int seekFlag = 0;
     if (_elapsedTime > seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
+
+    // Prevent seeking outside of the file
+    float duration = _avContext->duration / AV_TIME_BASE;
+    if (seconds < 0)
+        seconds = 0;
+    else if (seconds > duration)
+        seconds = duration;
 
     int frame = static_cast<int>(floor(seconds / _timeBase));
     if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, seekFlag) < 0)
@@ -491,15 +490,15 @@ void Image_FFmpeg::videoDisplayLoop()
                 continue;
             }
 
-            int64_t clockAsMs;
-            bool clockIsPaused {false};
-
             //
             // Get the current master and local clocks
             //
             _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
 
-            float seekTiming = _intraOnly ? 0.33f : 3.f; // Maximum diff for seek to happen when synced to a master clock
+            float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
+
+            int64_t clockAsMs;
+            bool clockIsPaused {false};
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
@@ -514,8 +513,8 @@ void Image_FFmpeg::videoDisplayLoop()
             {
                 if (_paused || (clockIsPaused && _useClock))
                 {
-                    auto actualTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
-                    _startTime = _startTime + (actualTime - _currentTime);
+                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _currentTime;
+                    this_thread::sleep_for(chrono::milliseconds(2));
                     continue;
                 }
                 else if (_useClock && _clockTime != -1l)
@@ -524,7 +523,7 @@ void Image_FFmpeg::videoDisplayLoop()
                     // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock
                     if (delta > 50000)
                     {
-                        _startTime = _startTime + _currentTime - _clockTime;
+                        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _clockTime;
                         _currentTime = _clockTime;
                     }
                 }
@@ -540,17 +539,16 @@ void Image_FFmpeg::videoDisplayLoop()
                         _timeJump = true;
                         _elapsedTime = _currentTime / 1e6 + _shiftTime;
                         localQueue.clear();
-                        auto seekThread = thread([=]() {
+                        SThread::pool.enqueueWithoutId([=]() {
                             seek(_elapsedTime);
                             _timeJump = false;
                         });
-                        seekThread.detach();
                     }
                     continue;
                 }
 
                 // Otherwise, wait for the right time to display the frame
-                if (waitTime > 1e3) // we don't wait if the frame is due for the next ms
+                if (waitTime > 2e3) // we don't wait if the frame is due for the next few ms
                     this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;
@@ -562,6 +560,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 _imageUpdated = true;
                 updateTimestamp();
             }
+
             localQueue.pop_front();
         }
     }

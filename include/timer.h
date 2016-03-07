@@ -192,7 +192,7 @@ class Timer
         
         Timer& operator>>(unsigned long long duration)
         {
-           _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
+           _timerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
            _currentDuration = duration;
            _durationThreadId = std::this_thread::get_id();
            _isDurationSet = true;
@@ -207,7 +207,7 @@ class Timer
                _isDurationSet = false;
                duration = _currentDuration;
                _currentDuration = 0;
-               _mutex.unlock();
+               _timerMutex.unlock();
            }
         
            bool overtime = false;
@@ -230,21 +230,25 @@ class Timer
          */
         void setMasterClock(const Values& clock)
         {
-           if (clock.size() == 8)
-               _clock = clock;
+            if (clock.size() == 8)
+            {
+                std::unique_lock<std::mutex> lockClock(_clockMutex);
+                _clock = clock;
+            }
         }
         
         bool getMasterClock(Values& clock) const
         {
-           if (_clock.size() > 0)
-           {
-               clock = _clock;
-               return true;
-           }
-           else
-           {
-               return false;
-           }
+            if (_clock.size() > 0)
+            {
+                std::unique_lock<std::mutex> lockClock(_clockMutex);
+                clock = _clock;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         template <typename T>
@@ -256,7 +260,10 @@ class Timer
                 return false;
             }
 
+            std::unique_lock<std::mutex> lockClock(_clockMutex);
             auto clock = _clock;
+            lockClock.unlock();
+
             int64_t frames = clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120;
             std::chrono::microseconds useconds((frames * 1000000) / 120);
             time = std::chrono::duration_cast<T>(useconds).count();
@@ -284,7 +291,8 @@ class Timer
         std::atomic_ullong _currentDuration {0};
         bool _isDurationSet {false};
 		std::thread::id _durationThreadId;
-        mutable std::mutex _mutex;
+        mutable std::mutex _timerMutex;
+        mutable std::mutex _clockMutex;
         bool _enabled {true};
         bool _isDebug {false};
         Values _clock;
