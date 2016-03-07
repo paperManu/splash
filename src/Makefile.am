@@ -67,6 +67,10 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	widgets.cpp \
 	world.cpp
 
+# ImGui sources
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/imgui/imgui_draw.cpp
+
 # GLAD, a GL loader
 if HAVE_OSX
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -321,6 +325,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/glad/compatibility/include/KHR/khrplatform.h \
 	\
 	$(top_srcdir)/external/imgui/imgui.h \
+	$(top_srcdir)/external/imgui/imgui_internal.h \
 	$(top_srcdir)/external/imgui/imconfig.h \
 	$(top_srcdir)/external/imgui/stb_rect_pack.h \
 	$(top_srcdir)/external/imgui/stb_textedit.h \

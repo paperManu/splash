@@ -168,7 +168,7 @@ class Gui : public BaseObject
         /**
          * ImGui render function
          */
-        static void imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count);
+        static void imGuiRenderDrawLists(ImDrawData* draw_data);
 
         /**
          * Actions

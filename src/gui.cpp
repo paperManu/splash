@@ -681,7 +681,7 @@ void Gui::initImGui(int width, int height)
     ImGuiStyle& style = ImGui::GetStyle();
     style.ChildWindowRounding = 2.f;
     style.FrameRounding = 2.f;
-    style.ScrollbarWidth = 12.f;
+    style.ScrollbarSize = 12.f;
     style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -690,6 +690,7 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
     style.Colors[ImGuiCol_TitleBg]               = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
     style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.81f, 0.40f, 0.25f, 0.45f);
+    style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
     style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.79f, 0.40f, 0.25f, 0.15f);
     style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
     style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
@@ -721,6 +722,7 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
     style.Colors[ImGuiCol_TooltipBg]             = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
+    style.AntiAliasedLines = false;
 
     unsigned char* pixels;
     int w, h;
@@ -890,9 +892,9 @@ void Gui::initImWidgets()
 }
 
 /*************/
-void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
+void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 {
-    if (!cmd_lists_count)
+    if (!draw_data->CmdListsCount)
         return;
 
     glEnable(GL_BLEND);
@@ -916,49 +918,46 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
     glUseProgram(_imGuiShaderHandle);
     glUniform1i(_imGuiTextureLocation, 0);
     glUniformMatrix4fv(_imGuiProjMatrixLocation, 1, GL_FALSE, (float*)orthoProjection);
-
-    size_t totalVertexCount = 0;
-    for (int n = 0; n < cmd_lists_count; ++n)
-        totalVertexCount += cmd_lists[n]->vtx_buffer.size();
-    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-
-    size_t neededBufferSize = totalVertexCount * sizeof(ImDrawVert);
-    if (neededBufferSize > _imGuiVboMaxSize)
-    {
-        _imGuiVboMaxSize = neededBufferSize + 5000;
-        glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
-    }
-
-    unsigned char* bufferData = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, _imGuiVboMaxSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-    if (!bufferData)
-        return;
-    for (int n = 0; n < cmd_lists_count; ++n)
-    {
-        const ImDrawList* cmdList = cmd_lists[n];
-        memcpy(bufferData, &cmdList->vtx_buffer[0], cmdList->vtx_buffer.size() * sizeof(ImDrawVert));
-        bufferData += cmdList->vtx_buffer.size() * sizeof(ImDrawVert);
-    }
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(_imGuiVaoHandle);
 
-    int cmd_offset = 0;
-    for (int n = 0; n < cmd_lists_count; ++n)
+    for (int n = 0; n < draw_data->CmdListsCount; ++n)
     {
-        const ImDrawList* cmd_list = cmd_lists[n];
-        int vtx_offset = cmd_offset;
-        for (auto& pcmd : cmd_list->commands)
+        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+        const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
+
+        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+        int needed_vtx_size = cmd_list->VtxBuffer.size() * sizeof(ImDrawVert);
+        if (_imGuiVboMaxSize < needed_vtx_size)
         {
-            glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd.texture_id);
-            glScissor((int)pcmd.clip_rect.x, (int)(height - pcmd.clip_rect.w),
-                      (int)(pcmd.clip_rect.z - pcmd.clip_rect.x), (int)(pcmd.clip_rect.w - pcmd.clip_rect.y));
-            glDrawArrays(GL_TRIANGLES, vtx_offset, pcmd.vtx_count);
-            vtx_offset += pcmd.vtx_count;
+            _imGuiVboMaxSize = needed_vtx_size + 2000 * sizeof(ImDrawVert);
+            glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)_imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
         }
-        cmd_offset = vtx_offset;
+
+        unsigned char* vtx_data = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, needed_vtx_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        if (!vtx_data)
+            continue;
+        memcpy(vtx_data, &cmd_list->VtxBuffer[0], cmd_list->VtxBuffer.size() * sizeof(ImDrawVert));
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+
+        for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); ++pcmd)
+        {
+            if (pcmd->UserCallback)
+            {
+                pcmd->UserCallback(cmd_list, pcmd);
+            }
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+                glScissor((int)pcmd->ClipRect.x, (int)(height - pcmd->ClipRect.w),
+                          (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
+                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, GL_UNSIGNED_SHORT, idx_buffer);
+            }
+            idx_buffer += pcmd->ElemCount;
+        }
     }
 
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glUseProgram(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
