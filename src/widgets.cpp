@@ -210,7 +210,7 @@ void GuiMedia::render()
                                 ImGui::PushItemWidth(96);
                                 float tmp = values[2].asFloat();
                                 ImGui::PushID((idStack + "start").c_str());
-                                if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                if (ImGui::InputFloat("", &tmp, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
                                     source[2] = tmp;
                                     updated = true;
@@ -223,7 +223,7 @@ void GuiMedia::render()
                                 ImGui::PushItemWidth(96);
                                 tmp = values[3].asFloat();
                                 ImGui::PushID((idStack + "stop").c_str());
-                                if (ImGui::InputFloat("", &tmp, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                if (ImGui::InputFloat("", &tmp, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
                                     source[3] = tmp;
                                     updated = true;
@@ -286,6 +286,8 @@ void GuiMedia::render()
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
                         ImGui::PushID("newMediaStop");
+                        if (_newMediaStop < _newMediaStart)
+                            _newMediaStop = _newMediaStart;
                         if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                             _newMedia[3] = _newMediaStop;
                         if (ImGui::IsItemHovered())
@@ -306,9 +308,6 @@ void GuiMedia::render()
                         
                         if (updated)
                         {
-                            for (auto& p : playlist)
-                                cout << p[1].asString() << endl;
-                            cout << endl;
                             playlist.push_front("playlist");
                             playlist.push_front(mediaName);
                             scene->sendMessageToWorld("sendAll", playlist);

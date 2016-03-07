@@ -163,15 +163,42 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         return a.start < b.start;
     });
 
+    // Clean each individual source
+    for (auto it = playlist.begin(); it != playlist.end();)
+    {
+        if (it->start >= it->stop)
+        {
+            if (it->stop > 1000000l)
+                it->start = it->stop - 1000000l;
+        }
+        else
+        {
+            it++;
+        }
+    }
+
+    // Clean the queue, add black intermediate images, ...
     int64_t previousEnd = 0;
     for (const auto& source : playlist)
     {
         if (previousEnd < source.start)
         {
-            if (source.filename == "" && source.type == "image")
+            if (source.filename == "black")
             {
+                if (cleanList.back().filename == "black")
+                {
+                    cleanList.back().stop = source.stop;
+                }
+                else
+                {
+                    cleanList.push_back(source);
+                    cleanList.back().start = previousEnd;
+                }
+            }
+            else if (cleanList.size() > 0 && cleanList.back().filename == "black")
+            {
+                cleanList.back().stop = source.start;
                 cleanList.push_back(source);
-                cleanList.back().start = previousEnd;
             }
             else
             {
@@ -190,7 +217,12 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         }
         else if (previousEnd > source.start)
         {
-            if (previousEnd < source.stop)
+            if (source.filename == "black")
+            {
+                cleanList.push_back(source);
+                cleanList.back().start = previousEnd;
+            }
+            else
             {
                 cleanList.back().stop = source.start;
                 cleanList.push_back(source);
@@ -200,10 +232,10 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         previousEnd = source.stop;
     }
 
-    // Remove zero length sources
+    // Remove zero length black sources
     for (auto it = cleanList.begin(); it != cleanList.end();)
     {
-        if (it->start == it->stop)
+        if (it->start >= it->stop && it->filename == "black")
             it = cleanList.erase(it);
         else
             it++;
@@ -290,8 +322,7 @@ void Queue::registerAttributes()
                 for (auto idx = 4; idx < src.size(); ++idx)
                     source.args.push_back(src[idx]);
 
-                if (source.start < source.stop)
-                    _playlist.push_back(source);
+                _playlist.push_back(source);
             }
         }
 
