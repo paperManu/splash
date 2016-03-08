@@ -51,38 +51,17 @@ class Gui;
 class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
-/*************/
-class GuiFileSelect
+namespace SplashImGui
 {
-    public:
-        GuiFileSelect(std::string name = "");
-        void draw();
-        bool getFilepath(std::string& filepath);
-        bool setPath(const std::string& path);
-        void setShowNormalFiles(bool show) {_showNormalFiles = show;}
-        void setVisibleExtensions(std::vector<std::string> extensions)
-        {
-            _extensions = extensions;
-            setPath(_currentPath);
-        }
+    struct FilesystemFile
+    {
+        std::string filename {""};
+        bool isDir {false};
+    };
 
-    private:
-        std::string _targetName {""};
-        bool _showNormalFiles {true}; // If false, show only directories
-        std::vector<std::string> _extensions {};
-
-        struct LocalPath
-        {
-            std::string filename {""};
-            bool isDir {false};
-        };
-        std::string _currentPath {""};
-        std::vector<LocalPath> _files {};
-        int _selectedId;
-        bool _selectionDone {false};
-        bool _cancelled {false};
-        bool _manualPath {false};
-};
+    bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
+    bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
+}
 
 /*************/
 class GuiWidget
@@ -191,7 +170,6 @@ class GuiMedia : public GuiWidget
                                                         };
 #endif
         std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
-        std::unique_ptr<GuiFileSelect> _fileSelector {nullptr};
         std::string _fileSelectorTarget {""};
 
         Values _newMedia {"image", "", 0.f, 0.f};
@@ -218,7 +196,6 @@ class GuiControl : public GuiWidget
         int _targetIndex {-1};
         std::string _targetObjectName {};
 
-        std::unique_ptr<GuiFileSelect> _fileSelector {nullptr};
         std::string _fileSelectorTarget {""};
         
         std::vector<std::string> getObjectNames();

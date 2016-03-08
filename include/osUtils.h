@@ -133,6 +133,9 @@ namespace Splash
                 path += link;
             }
 
+            if (path.size() == 0)
+                path = "/";
+
             return path;
         }
     

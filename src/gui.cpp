@@ -470,22 +470,23 @@ bool Gui::render()
             _configurationPath = string(configurationPath);
 
             ImGui::SameLine();
-            static unique_ptr<GuiFileSelect> configurationFileSelect;
+            static bool showFileSelector {false};
             if (ImGui::Button("..."))
             {
-                if (!configurationFileSelect)
-                {
-                    configurationFileSelect = unique_ptr<GuiFileSelect>(new GuiFileSelect("Configuration"));
-                    configurationFileSelect->setPath(Utils::getPathFromFilePath("./"));
-                    configurationFileSelect->setVisibleExtensions({{"json"}});
-                }
+                showFileSelector = true;
             }
-            if (configurationFileSelect)
+            if (showFileSelector)
             {
-                configurationFileSelect->draw();
-                if (configurationFileSelect->getFilepath(_configurationPath))
+                static string path = Utils::getPathFromFilePath("./");
+                bool cancelled;
+                if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
                 {
-                    configurationFileSelect.reset();
+                    if (!cancelled)
+                    {
+                        _configurationPath = path;
+                        path = Utils::getPathFromFilePath("./");
+                    }
+                    showFileSelector = false;
                 }
             }
 
