@@ -31,9 +31,19 @@ namespace Splash
 {
 
 /*************/
+GuiFileSelect::GuiFileSelect(string name)
+    : _targetName(name)
+{
+}
+
+/*************/
 void GuiFileSelect::draw()
 {
-    ImGui::Begin("Select file path", nullptr, ImVec2(400, 600), 0.95f);
+    string windowName = "Select file path";
+    if (_targetName.size() != 0)
+        windowName += " - " + _targetName;
+
+    ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
     char textBuffer[512];
     strcpy(textBuffer, _currentPath.c_str());
     ImGui::PushItemWidth(-1.f);
@@ -298,10 +308,53 @@ void GuiMedia::render()
                     {
                         for (auto& v : attr.second)
                         {
-                            string tmp = v.asString();
-                            tmp.resize(256);
-                            if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                            // We have a special way to handle file paths
+                            if (attr.first == "file")
+                            {
+                                string tmp = v.asString();
+                                tmp.resize(512);
+                                ImGui::PushID((mediaName + attr.first).c_str());
+                                if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                                    scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                                ImGui::PopID();
+
+                                ImGui::SameLine();
+                                if (ImGui::Button("..."))
+                                {
+                                    if (!_fileSelector || _fileSelectorTarget != mediaName)
+                                    {
+                                        _fileSelector = unique_ptr<GuiFileSelect>(new GuiFileSelect(mediaName));
+                                        _fileSelector->setPath(Utils::getPathFromFilePath(tmp));
+                                        _fileSelector->setVisibleExtensions({{"bmp"},
+                                                                             {"jpg"},
+                                                                             {"png"},
+                                                                             {"tga"},
+                                                                             {"tif"},
+                                                                             {"avi"},
+                                                                             {"mov"},
+                                                                             {"mp4"}});
+                                        _fileSelectorTarget = mediaName;
+                                    }
+                                }
+                                if (_fileSelector && _fileSelectorTarget == mediaName)
+                                {
+                                    _fileSelector->draw();
+                                    if (_fileSelector->getFilepath(tmp))
+                                    {
+                                        _fileSelector.reset();
+                                        _fileSelectorTarget = "";
+                                        scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                                    }
+                                }
+                            }
+                            // For everything else ...
+                            else
+                            {
+                                string tmp = v.asString();
+                                tmp.resize(256);
+                                if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                                    scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                            }
                         }
                     }
                 }
@@ -434,14 +487,44 @@ void GuiMedia::render()
                         string filepath = _newMedia[1].asString();
                         filepath.resize(512);
                         ImGui::SameLine();
-                        ImGui::PushItemWidth(-0.01f);
+                        ImGui::PushItemWidth(-32.f);
                         ImGui::PushID("newMediaFile");
                         if (ImGui::InputText("", const_cast<char*>(filepath.c_str()), filepath.size(), ImGuiInputTextFlags_EnterReturnsTrue))
                             _newMedia[1] = filepath;
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media path");
+
                         ImGui::PopID();
                         ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("..."))
+                        {
+                            if (!_fileSelector || _fileSelectorTarget != mediaName)
+                            {
+                                _fileSelector = unique_ptr<GuiFileSelect>(new GuiFileSelect(mediaName));
+                                _fileSelector->setPath(Utils::getPathFromFilePath(filepath));
+                                _fileSelector->setVisibleExtensions({{"bmp"},
+                                                                     {"jpg"},
+                                                                     {"png"},
+                                                                     {"tga"},
+                                                                     {"tif"},
+                                                                     {"avi"},
+                                                                     {"mov"},
+                                                                     {"mp4"}});
+                                _fileSelectorTarget = mediaName;
+                            }
+                        }
+                        if (_fileSelector && _fileSelectorTarget == mediaName)
+                        {
+                            _fileSelector->draw();
+                            if (_fileSelector->getFilepath(filepath))
+                            {
+                                _fileSelector.reset();
+                                _fileSelectorTarget = "";
+                                _newMedia[1] = filepath;
+                            }
+                        }
                         
                         if (updated)
                         {
@@ -714,10 +797,54 @@ void GuiControl::render()
             {
                 for (auto& v : attr.second)
                 {
-                    string tmp = v.asString();
-                    tmp.resize(256);
-                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    // We have a special way to handle file paths
+                    if (attr.first == "file")
+                    {
+                        string tmp = v.asString();
+                        tmp.resize(512);
+                        ImGui::PushID((_targetObjectName + attr.first).c_str());
+                        if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("..."))
+                        {
+                            if (!_fileSelector || _fileSelectorTarget != _targetObjectName)
+                            {
+                                _fileSelector = unique_ptr<GuiFileSelect>(new GuiFileSelect(_targetObjectName));
+                                _fileSelector->setPath(Utils::getPathFromFilePath(tmp));
+                                _fileSelector->setVisibleExtensions({{"bmp"},
+                                                                     {"jpg"},
+                                                                     {"png"},
+                                                                     {"tga"},
+                                                                     {"tif"},
+                                                                     {"avi"},
+                                                                     {"mov"},
+                                                                     {"mp4"},
+                                                                     {"obj"}});
+                                _fileSelectorTarget = _targetObjectName;
+                            }
+                        }
+                        if (_fileSelector && _fileSelectorTarget == _targetObjectName)
+                        {
+                            _fileSelector->draw();
+                            if (_fileSelector->getFilepath(tmp))
+                            {
+                                _fileSelector.reset();
+                                _fileSelectorTarget = "";
+                                scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                            }
+                        }
+                        ImGui::PopID();
+                    }
+                    // For everything else ...
+                    else
+                    {
+                        string tmp = v.asString();
+                        tmp.resize(256);
+                        if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    }
                 }
             }
         }

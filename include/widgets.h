@@ -55,6 +55,7 @@ typedef std::weak_ptr<Scene> SceneWeakPtr;
 class GuiFileSelect
 {
     public:
+        GuiFileSelect(std::string name = "");
         void draw();
         bool getFilepath(std::string& filepath);
         bool setPath(const std::string& path);
@@ -66,6 +67,7 @@ class GuiFileSelect
         }
 
     private:
+        std::string _targetName {""};
         bool _showNormalFiles {true}; // If false, show only directories
         std::vector<std::string> _extensions {};
 
@@ -189,6 +191,8 @@ class GuiMedia : public GuiWidget
                                                         };
 #endif
         std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
+        std::unique_ptr<GuiFileSelect> _fileSelector {nullptr};
+        std::string _fileSelectorTarget {""};
 
         Values _newMedia {"image", "", 0.f, 0.f};
         int _newMediaTypeIndex {0};
@@ -213,6 +217,9 @@ class GuiControl : public GuiWidget
         std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
+
+        std::unique_ptr<GuiFileSelect> _fileSelector {nullptr};
+        std::string _fileSelectorTarget {""};
         
         std::vector<std::string> getObjectNames();
         void sendValuesToObjectsOfType(std::string type, std::string attr, Values values);

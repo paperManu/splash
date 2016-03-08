@@ -41,25 +41,33 @@ namespace Splash
         /*****/
         inline std::string getPathFromFilePath(const std::string& filepath)
         {
-            size_t slashPos = filepath.rfind("/");
-            bool isRelative = filepath.find(".") == 0 ? true : false;
-            bool isAbsolute = filepath.find("/") == 0 ? true : false;
-            auto filePath = std::string("");
-            if (slashPos != std::string::npos)
+            auto path = filepath;
+
+            bool isRelative = path.find(".") == 0 ? true : false;
+            bool isAbsolute = path.find("/") == 0 ? true : false;
+            auto fullPath = std::string("");
+
+            if (!isRelative && !isAbsolute)
             {
-                if (isAbsolute)
-                    filePath = filepath.substr(0, slashPos) + "/";
-                else if (isRelative)
-                {
-                    char workingPathChar[256];
-                    auto workingPath = std::string(getcwd(workingPathChar, 255));
-                    if (filepath.find("/") == 1)
-                        filePath = workingPath + filepath.substr(1, slashPos) + "/";
-                    else if (filepath.find("/") == 2)
-                        filePath = workingPath + "/" + filepath.substr(0, slashPos) + "/";
-                }
+                isRelative = true;
+                path = "./" + filepath;
             }
-            return filePath;
+
+            size_t slashPos = path.rfind("/");
+
+            if (isAbsolute)
+                fullPath = path.substr(0, slashPos) + "/";
+            else if (isRelative)
+            {
+                char workingPathChar[256];
+                auto workingPath = std::string(getcwd(workingPathChar, 255));
+                if (path.find("/") == 1)
+                    fullPath = workingPath + path.substr(1, slashPos) + "/";
+                else if (path.find("/") == 2)
+                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+            }
+
+            return fullPath;
         }
 
         /*****/
