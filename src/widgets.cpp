@@ -35,11 +35,20 @@ namespace SplashImGui
     /*********/
     bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
     {
-        auto directory = opendir(path.c_str());
+        bool isDirectoryPath = true;
+        path = Utils::cleanPath(path);
+        string tmpPath = path;
+
+        auto directory = opendir(tmpPath.c_str());
+        if (directory == nullptr)
+        {
+            isDirectoryPath = false;
+            tmpPath = Utils::getPathFromFilePath(tmpPath);
+            directory = opendir(tmpPath.c_str());
+        }
+
         if (directory != nullptr)
         {
-            path = Utils::cleanPath(path);
-
             list.clear();
             vector<FilesystemFile> files {};
 
@@ -94,13 +103,9 @@ namespace SplashImGui
                     return filteredOut;
                 }), list.end());
             }
+        }
 
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        return isDirectoryPath;
     }
 
     /*********/
@@ -157,7 +162,8 @@ namespace SplashImGui
 
         if (ImGui::Button("Select path"))
         {
-            path = path + "/" + fileList[selectedId].filename;
+            if (!manualPath)
+                path = path + "/" + fileList[selectedId].filename;
             selectionDone = true;;
         }
         ImGui::SameLine();
