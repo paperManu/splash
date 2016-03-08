@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "log.h"
 #include "object.h"
+#include "osUtils.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -475,7 +476,7 @@ bool Gui::render()
                 if (!configurationFileSelect)
                 {
                     configurationFileSelect = unique_ptr<GuiFileSelect>(new GuiFileSelect());
-                    configurationFileSelect->setPath("/");
+                    configurationFileSelect->setPath(Utils::getPathFromFilePath("./"));
                 }
             }
             if (configurationFileSelect)

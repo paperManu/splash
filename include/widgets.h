@@ -60,8 +60,13 @@ class GuiFileSelect
         void setPath(const std::string& path);
 
     private:
+        struct LocalPath
+        {
+            std::string filename {""};
+            bool isDir {false};
+        };
         std::string _currentPath {""};
-        std::vector<std::string> _files {};
+        std::vector<LocalPath> _files {};
         int _selectedId;
         bool _selectionDone {false};
         bool _cancelled {false};

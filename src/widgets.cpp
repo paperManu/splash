@@ -15,6 +15,7 @@
 #include "log.h"
 #include "object.h"
 #include "queue.h"
+#include "osUtils.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -39,7 +40,12 @@ void GuiFileSelect::draw()
     for (int i = 0; i < _files.size(); ++i)
     {
         bool isSelected = (_selectedId == i);
-        if (ImGui::Selectable(_files[i].c_str(), isSelected))
+
+        auto filename = _files[i].filename;
+        if (_files[i].isDir)
+            filename += "/";
+
+        if (ImGui::Selectable(filename.c_str(), isSelected))
         {
             _selectedId = i;
         }
@@ -47,7 +53,7 @@ void GuiFileSelect::draw()
 
     if (ImGui::IsMouseDoubleClicked(0))
     {
-        auto newPath = _currentPath + "/" + _files[_selectedId];
+        auto newPath = _currentPath + "/" + _files[_selectedId].filename;
         setPath(newPath);
     }
     ImGui::EndChild();
@@ -69,17 +75,23 @@ void GuiFileSelect::setPath(const string& path)
     auto directory = opendir(path.c_str());
     if (directory != nullptr)
     {
-        _currentPath = path;
+        _currentPath = Utils::cleanPath(path);
         _files.clear();
 
         struct dirent* dirEntry;
         while ((dirEntry = readdir(directory)) != nullptr)
         {
-            _files.push_back(string(dirEntry->d_name));
+            LocalPath path;
+            path.filename = dirEntry->d_name;
+            if (dirEntry->d_type == DT_DIR)
+                path.isDir = true;
+            _files.push_back(path);
         }
         closedir(directory);
 
-        std::sort(_files.begin(), _files.end());
+        std::sort(_files.begin(), _files.end(), [](LocalPath a, LocalPath b) {
+            return a.filename < b.filename;
+        });
     }
 }
 
@@ -87,7 +99,7 @@ void GuiFileSelect::setPath(const string& path)
 bool GuiFileSelect::getFilepath(string& filepath)
 {
     if (_selectionDone)
-        filepath = _currentPath + "/" + _files[_selectedId];
+        filepath = _currentPath + "/" + _files[_selectedId].filename;
 
     return _selectionDone || _cancelled;
 }

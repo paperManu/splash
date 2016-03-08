@@ -26,6 +26,7 @@
 #define SPLASH_OSUTILS_H
 
 #include <string>
+#include <vector>
 #include <unistd.h>
 #if HAVE_SHMDATA
     #include <shmdata/abstract-logger.hpp>
@@ -71,6 +72,60 @@ namespace Splash
             else
                 filename = filepath.substr(slashPos);
             return filename;
+        }
+
+        /*****/
+        inline std::string cleanPath(const std::string& filepath)
+        {
+            std::vector<std::string> links;
+
+            auto remain = filepath;
+            while (remain.size() != 0)
+            {
+                auto nextSlashPos = remain.find("/");
+                if (nextSlashPos == 0)
+                {
+                    remain = remain.substr(1, std::string::npos);
+                    continue;
+                }
+                
+                auto link = remain.substr(0, nextSlashPos);
+                links.push_back(link);
+
+                if (nextSlashPos == std::string::npos)
+                    remain.clear();
+                else
+                    remain = remain.substr(nextSlashPos + 1, std::string::npos);
+            }
+
+            for (int i = 0; i < links.size();)
+            {
+                if (links[i] == "..")
+                {
+                    links.erase(links.begin() + i);
+                    if (i > 0)
+                        links.erase(links.begin() + i - 1);
+                    i -= 1;
+                    continue;
+                }
+
+                if (links[i] == ".")
+                {
+                    links.erase(links.begin() + i);
+                    continue;
+                }
+
+                ++i;
+            }
+
+            auto path = std::string("");
+            for (auto& link : links)
+            {
+                path += "/";
+                path += link;
+            }
+
+            return path;
         }
     
 #if HAVE_SHMDATA
