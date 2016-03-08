@@ -51,6 +51,18 @@ class Gui;
 class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
+namespace SplashImGui
+{
+    struct FilesystemFile
+    {
+        std::string filename {""};
+        bool isDir {false};
+    };
+
+    bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
+    bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
+}
+
 /*************/
 class GuiWidget
 {
@@ -158,6 +170,7 @@ class GuiMedia : public GuiWidget
                                                         };
 #endif
         std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
+        std::string _fileSelectorTarget {""};
 
         Values _newMedia {"image", "", 0.f, 0.f};
         int _newMediaTypeIndex {0};
@@ -182,6 +195,8 @@ class GuiControl : public GuiWidget
         std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
+
+        std::string _fileSelectorTarget {""};
         
         std::vector<std::string> getObjectNames();
         void sendValuesToObjectsOfType(std::string type, std::string attr, Values values);

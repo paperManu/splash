@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "log.h"
 #include "object.h"
+#include "osUtils.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -465,8 +466,29 @@ bool Gui::render()
             ImGui::Text("Configuration file");
             char configurationPath[512];
             strcpy(configurationPath, _configurationPath.data());
-            ImGui::InputText("Path", configurationPath, 512);
+            ImGui::InputText("##Path", configurationPath, 512);
             _configurationPath = string(configurationPath);
+
+            ImGui::SameLine();
+            static bool showFileSelector {false};
+            if (ImGui::Button("..."))
+            {
+                showFileSelector = true;
+            }
+            if (showFileSelector)
+            {
+                static string path = Utils::getPathFromFilePath("./");
+                bool cancelled;
+                if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
+                {
+                    if (!cancelled)
+                    {
+                        _configurationPath = path;
+                        path = Utils::getPathFromFilePath("./");
+                    }
+                    showFileSelector = false;
+                }
+            }
 
             if (ImGui::Button("Save configuration"))
                 saveConfiguration();

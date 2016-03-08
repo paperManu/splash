@@ -1,5 +1,7 @@
 #include "widgets.h"
 
+#include <dirent.h>
+
 #include <array>
 #include <fstream>
 #include <imgui.h>
@@ -13,6 +15,7 @@
 #include "log.h"
 #include "object.h"
 #include "queue.h"
+#include "osUtils.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -27,6 +30,152 @@ using namespace std;
 namespace Splash
 {
 
+namespace SplashImGui
+{
+    /*********/
+    bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
+    {
+        auto directory = opendir(path.c_str());
+        if (directory != nullptr)
+        {
+            path = Utils::cleanPath(path);
+
+            list.clear();
+            vector<FilesystemFile> files {};
+
+            struct dirent* dirEntry;
+            while ((dirEntry = readdir(directory)) != nullptr)
+            {
+                FilesystemFile path;
+                path.filename = dirEntry->d_name;
+
+                // Do not show hidden files
+                if (path.filename.size() > 2 && path.filename[0] == '.')
+                    continue;
+
+                if (dirEntry->d_type == DT_DIR)
+                    path.isDir = true;
+                else if (!showNormalFiles)
+                    continue;
+
+                files.push_back(path);
+            }
+            closedir(directory);
+
+            // Alphabetical order
+            std::sort(files.begin(), files.end(), [](FilesystemFile a, FilesystemFile b) {
+                return a.filename < b.filename;
+            });
+
+            // But we put directories first
+            std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) {
+                return p.isDir;
+            });
+
+            std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) {
+                return !p.isDir;
+            });
+
+            // Filter files based on extension
+            if (extensions.size() != 0)
+            {
+                list.erase(std::remove_if(list.begin(), list.end(), [&extensions](FilesystemFile p) {
+                    if (p.isDir)
+                        return false;
+
+                    bool filteredOut = true;
+                    for (auto& ext : extensions)
+                    {
+                        auto pos = p.filename.rfind(ext);
+                        if (pos != string::npos && pos == p.filename.size() - ext.size())
+                            filteredOut = false;
+                    }
+
+                    return filteredOut;
+                }), list.end());
+            }
+
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    /*********/
+    bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
+    {
+        bool manualPath = false;
+        bool selectionDone = false;
+        cancelled = false;
+
+        ImGui::PushID(label.c_str());
+
+        string windowName = "Select file path";
+        if (label.size() != 0)
+            windowName += " - " + label;
+
+        ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
+        char textBuffer[512];
+        strcpy(textBuffer, path.c_str());
+
+        ImGui::PushItemWidth(-1.f);
+        vector<FilesystemFile> fileList;
+        if (ImGui::InputText("##FileSelectFullPath", textBuffer, 512))
+        {
+            path = string(textBuffer);
+        }
+
+        if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
+            manualPath = true;
+            
+        ImGui::BeginChild("##filelist", ImVec2(0, -32), true);
+        static int selectedId = 0;
+        for (int i = 0; i < fileList.size(); ++i)
+        {
+            bool isSelected = (selectedId == i);
+
+            auto filename = fileList[i].filename;
+            if (fileList[i].isDir)
+                filename += "/";
+
+            if (ImGui::Selectable(filename.c_str(), isSelected))
+            {
+                selectedId = i;
+                manualPath = false;
+            }
+        }
+
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0))
+        {
+            path = path + "/" + fileList[selectedId].filename;
+            if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
+                selectionDone = true;
+        }
+        ImGui::EndChild();
+
+        if (ImGui::Button("Select path"))
+        {
+            path = path + "/" + fileList[selectedId].filename;
+            selectionDone = true;;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+            cancelled = true;;
+
+        ImGui::End();
+
+        ImGui::PopID();
+
+        if (selectionDone || cancelled)
+            return true;
+
+        return false;
+    }
+}
+
+/*************/
 /*************/
 GuiWidget::GuiWidget(string name)
 {
@@ -161,10 +310,45 @@ void GuiMedia::render()
                     {
                         for (auto& v : attr.second)
                         {
-                            string tmp = v.asString();
-                            tmp.resize(256);
-                            if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                            // We have a special way to handle file paths
+                            if (attr.first == "file")
+                            {
+                                string tmp = v.asString();
+                                tmp.resize(512);
+                                ImGui::PushID((mediaName + attr.first).c_str());
+                                if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                                    scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+
+                                ImGui::SameLine();
+                                if (ImGui::Button("..."))
+                                {
+                                    _fileSelectorTarget = mediaName;
+                                }
+                                if (_fileSelectorTarget == mediaName)
+                                {
+                                    static string path = Utils::getPathFromFilePath("./");
+                                    bool cancelled;
+                                    vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
+                                    if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))
+                                    {
+                                        if (!cancelled)
+                                        {
+                                            scene->sendMessageToWorld("sendAll", {mediaName, attr.first, path});
+                                            path = Utils::getPathFromFilePath("./");
+                                        }
+                                        _fileSelectorTarget = "";
+                                    }
+                                }
+                                ImGui::PopID();
+                            }
+                            // For everything else ...
+                            else
+                            {
+                                string tmp = v.asString();
+                                tmp.resize(256);
+                                if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                                    scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
+                            }
                         }
                     }
                 }
@@ -297,14 +481,36 @@ void GuiMedia::render()
                         string filepath = _newMedia[1].asString();
                         filepath.resize(512);
                         ImGui::SameLine();
-                        ImGui::PushItemWidth(-0.01f);
+                        ImGui::PushItemWidth(-32.f);
                         ImGui::PushID("newMediaFile");
                         if (ImGui::InputText("", const_cast<char*>(filepath.c_str()), filepath.size(), ImGuiInputTextFlags_EnterReturnsTrue))
                             _newMedia[1] = filepath;
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media path");
-                        ImGui::PopID();
+
                         ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("..."))
+                        {
+                            _fileSelectorTarget = mediaName;
+                        }
+                        if (_fileSelectorTarget == mediaName)
+                        {
+                            static string path = Utils::getPathFromFilePath("./");
+                            bool cancelled;
+                            vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
+                            if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))
+                            {
+                                if (!cancelled)
+                                {
+                                    _newMedia[1] = path;
+                                    path = Utils::getPathFromFilePath("./");
+                                }
+                                _fileSelectorTarget = "";
+                            }
+                        }
+                        ImGui::PopID();
                         
                         if (updated)
                         {
@@ -577,10 +783,48 @@ void GuiControl::render()
             {
                 for (auto& v : attr.second)
                 {
-                    string tmp = v.asString();
-                    tmp.resize(256);
-                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    // We have a special way to handle file paths
+                    if (attr.first == "file")
+                    {
+                        string tmp = v.asString();
+                        tmp.resize(512);
+                        ImGui::PushID((_targetObjectName + attr.first).c_str());
+                        if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+
+                        ImGui::SameLine();
+                        if (ImGui::Button("..."))
+                        {
+                            _fileSelectorTarget = _targetObjectName;
+                        }
+                        if (_fileSelectorTarget == _targetObjectName)
+                        {
+                            static string path = Utils::getPathFromFilePath("./");
+                            bool cancelled;
+                            vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"},
+                                                       {"avi"}, {"mov"}, {"mp4"},
+                                                       {"obj"}};
+                            if (SplashImGui::FileSelector(_targetObjectName, path, cancelled, extensions))
+                            {
+                                if (!cancelled)
+                                {
+                                    scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, path});
+                                    path = Utils::getPathFromFilePath("./");
+                                }
+                                _fileSelectorTarget = "";
+                            }
+                        }
+
+                        ImGui::PopID();
+                    }
+                    // For everything else ...
+                    else
+                    {
+                        string tmp = v.asString();
+                        tmp.resize(256);
+                        if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
+                    }
                 }
             }
         }
