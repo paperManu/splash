@@ -477,6 +477,7 @@ bool Gui::render()
                 {
                     configurationFileSelect = unique_ptr<GuiFileSelect>(new GuiFileSelect());
                     configurationFileSelect->setPath(Utils::getPathFromFilePath("./"));
+                    configurationFileSelect->setVisibleExtensions({{"json"}});
                 }
             }
             if (configurationFileSelect)

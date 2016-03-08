@@ -57,9 +57,18 @@ class GuiFileSelect
     public:
         void draw();
         bool getFilepath(std::string& filepath);
-        void setPath(const std::string& path);
+        bool setPath(const std::string& path);
+        void setShowNormalFiles(bool show) {_showNormalFiles = show;}
+        void setVisibleExtensions(std::vector<std::string> extensions)
+        {
+            _extensions = extensions;
+            setPath(_currentPath);
+        }
 
     private:
+        bool _showNormalFiles {true}; // If false, show only directories
+        std::vector<std::string> _extensions {};
+
         struct LocalPath
         {
             std::string filename {""};
@@ -70,6 +79,7 @@ class GuiFileSelect
         int _selectedId;
         bool _selectionDone {false};
         bool _cancelled {false};
+        bool _manualPath {false};
 };
 
 /*************/

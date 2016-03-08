@@ -33,8 +33,16 @@ namespace Splash
 /*************/
 void GuiFileSelect::draw()
 {
-    ImGui::Begin("Select file path", nullptr, ImVec2(400, 300), 0.95f);
-    ImGui::Text(_currentPath.c_str());
+    ImGui::Begin("Select file path", nullptr, ImVec2(400, 600), 0.95f);
+    char textBuffer[512];
+    strcpy(textBuffer, _currentPath.c_str());
+    ImGui::PushItemWidth(-1.f);
+    if (ImGui::InputText("##FileSelectFullPath", textBuffer, 512))
+    {
+        _currentPath = string(textBuffer);
+        if (!setPath(_currentPath))
+            _manualPath = true;
+    }
         
     ImGui::BeginChild("##filelist", ImVec2(0, -32), true);
     for (int i = 0; i < _files.size(); ++i)
@@ -48,13 +56,15 @@ void GuiFileSelect::draw()
         if (ImGui::Selectable(filename.c_str(), isSelected))
         {
             _selectedId = i;
+            _manualPath = false;
         }
     }
 
     if (ImGui::IsMouseDoubleClicked(0))
     {
         auto newPath = _currentPath + "/" + _files[_selectedId].filename;
-        setPath(newPath);
+        if (!setPath(newPath))
+            _selectionDone = true;
     }
     ImGui::EndChild();
 
@@ -68,30 +78,74 @@ void GuiFileSelect::draw()
 }
 
 /*************/
-void GuiFileSelect::setPath(const string& path)
+bool GuiFileSelect::setPath(const string& path)
 {
-    _selectedId = 0;
-
     auto directory = opendir(path.c_str());
     if (directory != nullptr)
     {
+        _selectedId = 0;
         _currentPath = Utils::cleanPath(path);
+
         _files.clear();
+        vector<LocalPath> files {};
 
         struct dirent* dirEntry;
         while ((dirEntry = readdir(directory)) != nullptr)
         {
             LocalPath path;
             path.filename = dirEntry->d_name;
+
+            // Do not show hidden files
+            if (path.filename.size() > 2 && path.filename[0] == '.')
+                continue;
+
             if (dirEntry->d_type == DT_DIR)
                 path.isDir = true;
-            _files.push_back(path);
+            else if (!_showNormalFiles)
+                continue;
+
+            files.push_back(path);
         }
         closedir(directory);
 
-        std::sort(_files.begin(), _files.end(), [](LocalPath a, LocalPath b) {
+        // Alphabetical order
+        std::sort(files.begin(), files.end(), [](LocalPath a, LocalPath b) {
             return a.filename < b.filename;
         });
+
+        // But we put directories first
+        std::copy_if(files.begin(), files.end(), std::back_inserter(_files), [](LocalPath p) {
+            return p.isDir;
+        });
+
+        std::copy_if(files.begin(), files.end(), std::back_inserter(_files), [](LocalPath p) {
+            return !p.isDir;
+        });
+
+        // Filter files based on extension
+        if (_extensions.size() != 0)
+        {
+            _files.erase(std::remove_if(_files.begin(), _files.end(), [this](LocalPath p) {
+                if (p.isDir)
+                    return false;
+
+                bool filteredOut = true;
+                for (auto& ext : _extensions)
+                {
+                    auto pos = p.filename.rfind(ext);
+                    if (pos != string::npos && pos == p.filename.size() - ext.size())
+                        filteredOut = false;
+                }
+
+                return filteredOut;
+            }), _files.end());
+        }
+
+        return true;
+    }
+    else
+    {
+        return false;
     }
 }
 
@@ -99,7 +153,12 @@ void GuiFileSelect::setPath(const string& path)
 bool GuiFileSelect::getFilepath(string& filepath)
 {
     if (_selectionDone)
-        filepath = _currentPath + "/" + _files[_selectedId].filename;
+    {
+        if (_manualPath)
+            filepath = _currentPath;
+        else
+            filepath = _currentPath + "/" + _files[_selectedId].filename;
+    }
 
     return _selectionDone || _cancelled;
 }
