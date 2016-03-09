@@ -111,6 +111,7 @@ namespace SplashImGui
     /*********/
     bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
     {
+        static bool filterExtension = true;;
         bool manualPath = false;
         bool selectionDone = false;
         cancelled = false;
@@ -132,10 +133,18 @@ namespace SplashImGui
             path = string(textBuffer);
         }
 
-        if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
-            manualPath = true;
+        if (filterExtension)
+        {
+            if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
+                manualPath = true;
+        }
+        else
+        {
+            if (!FileSelectorParseDir(path, fileList, {}, showNormalFiles))
+                manualPath = true;
+        }
             
-        ImGui::BeginChild("##filelist", ImVec2(0, -32), true);
+        ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
         static int selectedId = 0;
         for (int i = 0; i < fileList.size(); ++i)
         {
@@ -159,6 +168,8 @@ namespace SplashImGui
                 selectionDone = true;
         }
         ImGui::EndChild();
+
+        ImGui::Checkbox("Filter files", &filterExtension);
 
         if (ImGui::Button("Select path"))
         {
