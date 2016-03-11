@@ -146,7 +146,7 @@ class Gui : public BaseObject
         static GLint _imGuiPositionLocation;
         static GLint _imGuiUVLocation;
         static GLint _imGuiColorLocation;
-        static GLuint _imGuiVboHandle, _imGuiVaoHandle;
+        static GLuint _imGuiVboHandle, _imGuiElementsHandle, _imGuiVaoHandle;
         static size_t _imGuiVboMaxSize;
 
         // ImGUI objects
