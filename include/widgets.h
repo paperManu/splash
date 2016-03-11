@@ -166,9 +166,8 @@ class GuiMedia : public GuiWidget
 #endif
 #if HAVE_OSX
                                                         {"syphon", "texture_syphon"},
-#else
-                                                        };
 #endif
+                                                        };
         std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
         std::string _fileSelectorTarget {""};
 
