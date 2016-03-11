@@ -300,8 +300,8 @@ void World::applyConfig()
             if (jsScenes[i].isMember("spawn"))
                 spawn = jsScenes[i]["spawn"].asInt();
 
-#if HAVE_LINUX
             string display = "DISPLAY=:0.";
+#if HAVE_LINUX
             if (jsScenes[i].isMember("display"))
                 display += to_string(jsScenes[i]["display"].asInt());
             else
@@ -313,8 +313,8 @@ void World::applyConfig()
             if (spawn > 0)
             {
                 _sceneLaunched = false;
-#if HAVE_LINUX
                 string worldDisplay = "none";
+#if HAVE_LINUX
                 if (getenv("DISPLAY"))
                 {
                     worldDisplay = getenv("DISPLAY");
@@ -323,17 +323,14 @@ void World::applyConfig()
                 }
 #endif
 
-#if HAVE_LINUX
                 // If the current process is on the correct display, we use an inner Scene
                 if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
                 {
-#endif
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                     _innerScene = make_shared<Scene>(name, false);
                     _innerSceneThread = thread([&]() {
                         _innerScene->run();
                     });
-#if HAVE_LINUX
                 }
                 else
                 {
@@ -354,7 +351,6 @@ void World::applyConfig()
                     if (status != 0)
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
                 }
-#endif
 
                 // We wait for the child process to be launched
                 unique_lock<mutex> lock(_childProcessMutex);
@@ -550,7 +546,9 @@ void World::applyConfig()
     }
 
     // Also, enable the master clock
+#if HAVE_PORTAUDIO && HAVE_LTC
     _clock = unique_ptr<LtcClock>(new LtcClock(true));
+#endif
 
     // Send the start message for all scenes
     for (auto& s : _scenes)
