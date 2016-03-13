@@ -151,7 +151,7 @@ We then install Shmdata, which depends on GStreamer. Note that Shmdata is only n
 Install all the other dependencies:
 
     sudo port install jsoncpp snappy
-    sudo port install gsl zmq cppzmq
+    sudo port install gsl zmq
     sudo port install glfw glm
     sudo port install ffmpeg
 

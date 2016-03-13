@@ -1,6 +1,7 @@
 AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/external/cppzmq \
 	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/jsoncpp \
@@ -318,6 +319,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/widgets.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
+	$(top_srcdir)/external/cppzmq/zmq.hpp \
 	\
 	$(top_srcdir)/external/glad/core/include/glad/glad.h \
 	$(top_srcdir)/external/glad/core/include/KHR/khrplatform.h \
