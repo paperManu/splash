@@ -546,7 +546,7 @@ void World::applyConfig()
     }
 
     // Also, enable the master clock
-#if HAVE_PORTAUDIO && HAVE_LTC
+#if HAVE_PORTAUDIO
     _clock = unique_ptr<LtcClock>(new LtcClock(true));
 #endif
 

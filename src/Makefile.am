@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/hap/source \
 	-I$(top_srcdir)/external/jsoncpp \
+	-I$(top_srcdir)/external/libltc/src \
 	-I$(top_srcdir)/external/piccante/include \
 	-I$(top_srcdir)/external/stb \
 	-DGLM_FORCE_RADIANS \
@@ -131,7 +132,14 @@ endif
 
 ## PortAudio related
 if HAVE_PORTAUDIO
-libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += speaker.cpp listener.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+    speaker.cpp \
+    listener.cpp \
+    ltcclock.cpp \
+    $(top_srcdir)/external/libltc/src/decoder.c \
+    $(top_srcdir)/external/libltc/src/encoder.c \
+    $(top_srcdir)/external/libltc/src/ltc.c \
+    $(top_srcdir)/external/libltc/src/timecode.c
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(PORTAUDIO_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(PORTAUDIO_LIBS)
 endif
@@ -148,15 +156,6 @@ if HAVE_SHMDATA
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_shmdata.cpp mesh_shmdata.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(SHMDATA_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(SHMDATA_LIBS)
-endif
-
-## LTC related
-if HAVE_LTC
-if HAVE_PORTAUDIO
-libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += ltcclock.cpp
-libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(LTC_CFLAGS)
-libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(LTC_LIBS)
-endif
 endif
 
 # OSX
@@ -336,6 +335,10 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/hap/source/hap.h \
 	\
 	$(top_srcdir)/external/jsoncpp/json/json.h \
+    \
+    $(top_srcdir)/external/libltc/src/decoder.h \
+    $(top_srcdir)/external/libltc/src/encoder.h \
+    $(top_srcdir)/external/libltc/src/ltc.h \
 	\
 	$(top_srcdir)/external/stb/stb_image.h \
 	$(top_srcdir)/external/stb/stb_image_write.h \

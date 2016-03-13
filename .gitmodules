@@ -17,3 +17,6 @@
 [submodule "external/cppzmq"]
 	path = external/cppzmq
 	url = https://github.com/zeromq/cppzmq.git
+[submodule "external/libltc"]
+	path = external/libltc
+	url = https://github.com/x42/libltc.git
