@@ -1126,7 +1126,9 @@ void GuiGlobalView::revertCalibration()
     Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
     
     auto params = _previousCameraParameters.back();
-    _previousCameraParameters.pop_back();
+    // We keep the very first calibration, it has proven useful
+    if (_previousCameraParameters.size() > 1)
+        _previousCameraParameters.pop_back();
     
     _camera->setAttribute("eye", params.eye);
     _camera->setAttribute("target", params.target);
