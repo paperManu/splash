@@ -941,7 +941,7 @@ void GuiGlobalView::render()
         if (ImGui::Button("Revert camera"))
             revertCalibration();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Revert the selected camera to its previous calibration (R while hovering the view)");
+            ImGui::SetTooltip("Revert the selected camera to its previous calibration (Ctrl + Z while hovering the view)");
 
         ImVec2 winSize = ImGui::GetWindowSize();
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -1328,9 +1328,10 @@ void GuiGlobalView::processKeyEvents()
         return;
     }
     // Reset to the previous camera calibration
-    else if (io.KeysDown['R'] && io.KeysDownDuration['R'] == 0.0)
+    else if (io.KeysDown['Z'] && io.KeysDownDuration['Z'] == 0.0)
     {
-        revertCalibration();
+        if (io.KeyCtrl)
+            revertCalibration();
         return;
     }
     // Arrow keys

@@ -775,44 +775,41 @@ void Gui::initImWidgets()
     }
 
     // Some help regarding keyboard shortcuts
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
+    auto helpBox = make_shared<GuiTextBox>("Shortcuts");
+    helpBox->setTextFunc([]()
     {
-        auto helpBox = make_shared<GuiTextBox>("Shortcuts");
-        helpBox->setTextFunc([]()
-        {
-            string text;
-            text += "Tab: show / hide this GUI\n";
-            text += "General shortcuts:\n";
-            text += " Ctrl+F: white background instead of black\n";
-            text += " Ctrl+B: compute the blending between all cameras\n";
-            text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
-            text += " Ctrl+M: hide/show the OS cursor\n";
-            text += " Ctrl+T: textured draw mode\n";
-            text += " Ctrl+W: wireframe draw mode\n";
+        string text;
+        text += "Tab: show / hide this GUI\n";
+        text += "General shortcuts:\n";
+        text += " Ctrl+F: white background instead of black\n";
+        text += " Ctrl+B: compute the blending between all cameras\n";
+        text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
+        text += " Ctrl+M: hide/show the OS cursor\n";
+        text += " Ctrl+T: textured draw mode\n";
+        text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO
-            text += "\n";
-            text += " Ctrl+O: launch camera calibration\n";
-            text += " Ctrl+P: launch projectors calibration\n";
-            text += " Ctrl+L: activate color LUT (if calibrated)\n";
+        text += "\n";
+        text += " Ctrl+O: launch camera calibration\n";
+        text += " Ctrl+P: launch projectors calibration\n";
+        text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
-            text += "\n";
-            text += "Views panel:\n";
-            text += " Space: switch between cameras\n";
-            text += " A: show / hide the target calibration point\n";
-            text += " C: calibrate the selected camera\n";
-            text += " R: revert camera to previous calibration\n";
-            text += " H: hide all but the selected camera\n";
-            text += " O: show calibration points from all cameras\n";
+        text += "\n";
+        text += "Views panel:\n";
+        text += " Space: switch between cameras\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " C: calibrate the selected camera\n";
+        text += " H: hide all but the selected camera\n";
+        text += " O: show calibration points from all cameras\n";
+        text += " Ctrl+Z: revert camera to previous calibration\n";
 
-            text += "\n";
-            text += "Node view (inside Control panel):\n";
-            text += " Shift + left click: link the clicked node to the selected one\n";
-            text += " Ctrl + left click: unlink the clicked node from the selected one\n";
+        text += "\n";
+        text += "Node view (inside Control panel):\n";
+        text += " Shift + left click: link the clicked node to the selected one\n";
+        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
 
-            return text;
-        });
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
-    }
+        return text;
+    });
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
 
     // FPS and timings
     auto timingBox = make_shared<GuiTextBox>("Timings");
