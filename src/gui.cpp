@@ -782,20 +782,21 @@ void Gui::initImWidgets()
         text += "Tab: show / hide this GUI\n";
         text += "General shortcuts:\n";
         text += " Ctrl+F: white background instead of black\n";
-        text += " Ctrl+B: compute the blending between all cameras\n";
-        text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
+        text += " Ctrl+B: compute the blending between all projectors\n";
+        text += " Ctrl+Alt+B: compute the blending between all projectors at every frame\n";
         text += " Ctrl+M: hide/show the OS cursor\n";
         text += " Ctrl+T: textured draw mode\n";
         text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO
         text += "\n";
-        text += " Ctrl+O: launch camera calibration\n";
-        text += " Ctrl+P: launch projectors calibration\n";
+        text += " Ctrl+O: launch camera color calibration\n";
+        text += " Ctrl+P: launch projectors color calibration\n";
         text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
         text += "\n";
         text += "Views panel:\n";
-        text += " Space: switch between cameras\n";
+        text += " Ctrl + left click on a camera thumbnail: hide / show the given camera\n";
+        text += " Space: switch between projectors\n";
         text += " A: show / hide the target calibration point\n";
         text += " C: calibrate the selected camera\n";
         text += " H: hide all but the selected camera\n";

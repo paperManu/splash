@@ -912,6 +912,8 @@ GuiGlobalView::GuiGlobalView(string name)
 /*************/
 void GuiGlobalView::render()
 {
+    ImGuiIO& io = ImGui::GetIO();
+
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
         if (ImGui::Button("Hide other cameras"))
@@ -964,21 +966,29 @@ void GuiGlobalView::render()
             {
                 auto scene = _scene.lock();
 
-                // Empty previous camera parameters
-                _previousCameraParameters.clear();
+                // If shift is pressed, we hide / unhide this camera
+                if (io.KeyCtrl)
+                {
+                    scene->sendMessageToWorld("sendAll", {camera->getName(), "hide", -1});
+                }
+                else
+                {
+                    // Empty previous camera parameters
+                    _previousCameraParameters.clear();
 
-                // Ensure that all cameras are shown
-                _camerasHidden = false;
-                for (auto& cam : cameras)
-                    scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+                    // Ensure that all cameras are shown
+                    _camerasHidden = false;
+                    for (auto& cam : cameras)
+                        scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
 
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
 
-                _camera = camera;
+                    _camera = camera;
 
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
+                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+                }
             }
 
             if (ImGui::IsItemHovered())

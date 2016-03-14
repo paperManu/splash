@@ -1667,8 +1667,10 @@ void Camera::registerAttributes()
             return false;
         if (args[0].asInt() > 0)
             _hidden = true;
-        else
+        else if (args[0].asInt() == 0)
             _hidden = false;
+        else
+            _hidden = !_hidden;
         return true;
     });
 
