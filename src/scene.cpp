@@ -62,9 +62,9 @@ Scene::Scene(std::string name, bool autoRun)
 /*************/
 Scene::~Scene()
 {
-    unique_lock<mutex> textureLock(_textureUploadMutex);
+    unique_lock<mutex> lockTexture(_textureUploadMutex);
     _textureUploadCondition.notify_all();
-    textureLock.unlock();
+    lockTexture.unlock();
     _textureUploadFuture.get();
 
     _joystickUpdateFuture.get();
@@ -77,7 +77,7 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    unique_lock<recursive_mutex> lock(_setMutex); // We don't want our objects to be set while destroyed
+    unique_lock<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
@@ -90,7 +90,7 @@ BaseObjectPtr Scene::add(string type, string name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
-    lock_guard<recursive_mutex> lock(_objectsMutex);
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     BaseObjectPtr obj;
     // Create the wanted object
@@ -169,7 +169,7 @@ void Scene::addGhost(string type, string name)
     BaseObjectPtr obj = add(type, name);
 
     // And move it to _ghostObjects
-    lock_guard<recursive_mutex> lock(_objectsMutex);
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     _objects.erase(obj->getName());
     _ghostObjects[obj->getName()] = obj;
 }
@@ -200,7 +200,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 /*************/
 Json::Value Scene::getConfigurationAsJson()
 {
-    lock_guard<recursive_mutex> lock(_objectsMutex);
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     Json::Value root;
 
@@ -232,7 +232,7 @@ bool Scene::link(string first, string second)
 /*************/
 bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 {
-    lock_guard<recursive_mutex> lock(_objectsMutex);
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
@@ -261,7 +261,7 @@ bool Scene::unlink(string first, string second)
 /*************/
 bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
-    lock_guard<recursive_mutex> lock(_objectsMutex);
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->unlinkFrom(first);
@@ -455,7 +455,7 @@ void Scene::render()
     renderBlending();
     Timer::get() >> "blending";
 
-    unique_lock<mutex> lock(_textureUploadMutex);
+    unique_lock<mutex> lockTexture(_textureUploadMutex);
 
     Timer::get() << "queues";
     for (auto& obj : _objects)
@@ -483,7 +483,7 @@ void Scene::render()
 
     _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-    lock.unlock(); // Unlock _textureUploadMutex
+    lockTexture.unlock(); // Unlock _textureUploadMutex
 
     // Update the gui
     Timer::get() << "gui";
@@ -514,7 +514,7 @@ void Scene::run()
     {
         {
             // Execute waiting tasks
-            unique_lock<mutex> taskLock(_taskMutex);
+            unique_lock<mutex> lockTask(_taskMutex);
             for (auto& task : _taskQueue)
                 task();
             _taskQueue.clear();
@@ -529,7 +529,7 @@ void Scene::run()
         Timer::get() << "sceneLoop";
 
         {
-            lock_guard<recursive_mutex> lock(_objectsMutex);
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             _mainWindow->setAsCurrentContext();
             render();
             _mainWindow->releaseContext();
@@ -667,8 +667,8 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        unique_lock<mutex> lock(_textureUploadMutex);
-        _textureUploadCondition.wait(lock);
+        unique_lock<mutex> lockTexture(_textureUploadMutex);
+        _textureUploadCondition.wait(lockTexture);
 
         if (!_isRunning)
             break;
@@ -683,7 +683,7 @@ void Scene::textureUploadRun()
             if (obj.second->getType().find("texture") != string::npos)
                 dynamic_pointer_cast<Texture>(obj.second)->update();
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        lock.unlock();
+        lockTexture.unlock();
 
         if (!_objectsCurrentlyUpdated)
         {
@@ -746,7 +746,7 @@ Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& 
 /*************/
 void Scene::waitTextureUpload()
 {
-    unique_lock<mutex> lock(_textureUploadMutex);
+    unique_lock<mutex> lockTexture(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
@@ -764,7 +764,7 @@ void Scene::activateBlendingMap(bool once)
     }
     else
     {
-        lock_guard<recursive_mutex> lock(_objectsMutex);
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
         _mainWindow->setAsCurrentContext();
 
         initBlendingMap();
@@ -842,7 +842,7 @@ void Scene::deactivateBlendingMap()
     }
     else
     {
-        lock_guard<recursive_mutex> lock(_objectsMutex);
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
         _mainWindow->setAsCurrentContext();
 
         for (auto& obj : _objects)
@@ -1082,7 +1082,7 @@ void Scene::joystickUpdateLoop()
             const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
             auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
 
-            unique_lock<mutex> lock(_joystickUpdateMutex);
+            unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
 
             // We accumulate values until they are used by the render loop
             _joystickAxes.swap(axes);
@@ -1182,7 +1182,7 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lock(_taskMutex);
+        unique_lock<mutex> lockTask(_taskMutex);
 
         bool once = false;
         if (args.size() != 0)
@@ -1211,7 +1211,7 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lock(_taskMutex);
+        unique_lock<mutex> lockTask(_taskMutex);
         _taskQueue.push_back([&]() -> void {
             setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
             Json::Value config = getConfigurationAsJson();
@@ -1225,9 +1225,9 @@ void Scene::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<mutex> lock(_taskMutex);
+        unique_lock<mutex> lockTask(_taskMutex);
         _taskQueue.push_back([=]() -> void {
-            lock_guard<recursive_mutex> lock(_objectsMutex);
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             _objectsCurrentlyUpdated = true;
             auto objectName = args[0].asString();
 

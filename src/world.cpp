@@ -69,9 +69,10 @@ void World::run()
     while (true)
     {
         Timer::get() << "worldLoop";
+        unique_lock<mutex> lockConfiguration(_configurationMutex);
 
         {
-            unique_lock<mutex> lock(_configurationMutex);
+            unique_lock<recursive_mutex> lockObjects(_objectsMutex);
 
             Timer::get() << "upload";
             vector<unsigned int> threadIds;
@@ -277,7 +278,7 @@ void World::applyConfig()
         return outValues;
     };
 
-    unique_lock<mutex> lock(_configurationMutex);
+    unique_lock<mutex> lockConfiguration(_configurationMutex);
 
     // We first destroy all scene and objects
     _scenes.clear();
@@ -353,10 +354,10 @@ void World::applyConfig()
                 }
 
                 // We wait for the child process to be launched
-                unique_lock<mutex> lock(_childProcessMutex);
+                unique_lock<mutex> lockChildProcess(_childProcessMutex);
                 while (!_sceneLaunched)
                 {
-                    if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
+                    if (cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, chrono::seconds(5)))
                     {
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << name << "\". Exiting." << Log::endl;
                         _quit = true;
@@ -794,7 +795,7 @@ void World::registerAttributes()
         else if (args.size() == 2)
             name = args[1].asString();
 
-        unique_lock<mutex> lock(_configurationMutex);
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
         for (auto& s : _scenes)
         {
@@ -809,7 +810,7 @@ void World::registerAttributes()
     });
 
     _attribFunctions["sceneLaunched"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lock(_childProcessMutex);
+        unique_lock<mutex> lockChildProcess(_childProcessMutex);
         _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
@@ -824,7 +825,7 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<mutex> lock(_configurationMutex);
+        unique_lock<recursive_mutex> lockObjects(_objectsMutex);
         auto objectName = args[0].asString();
 
         // Delete the object here
