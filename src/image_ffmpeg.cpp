@@ -266,7 +266,7 @@ void Image_FFmpeg::readLoop()
     // This implements looping
     do
     {
-        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+        _startTime = Timer::getTime();
         auto previousTime = 0ull;
         
         auto shouldContinueLoop = [&]() -> bool {
@@ -479,7 +479,7 @@ void Image_FFmpeg::videoDisplayLoop()
 
         // This sets the start time after a seek
         if (localQueue.size() > 0 && _startTime == -1)
-            _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - localQueue[0].timing;
+            _startTime = Timer::getTime() - localQueue[0].timing;
 
         while (localQueue.size() > 0 && _continueRead)
         {
@@ -493,7 +493,7 @@ void Image_FFmpeg::videoDisplayLoop()
             //
             // Get the current master and local clocks
             //
-            _currentTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _startTime;
+            _currentTime = Timer::getTime() - _startTime;
 
             float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
 
@@ -513,7 +513,7 @@ void Image_FFmpeg::videoDisplayLoop()
             {
                 if (_paused || (clockIsPaused && _useClock))
                 {
-                    _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _currentTime;
+                    _startTime = Timer::getTime() - _currentTime;
                     this_thread::sleep_for(chrono::milliseconds(2));
                     continue;
                 }
@@ -523,7 +523,7 @@ void Image_FFmpeg::videoDisplayLoop()
                     // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock
                     if (delta > 50000)
                     {
-                        _startTime = chrono::duration_cast<chrono::microseconds>(chrono::high_resolution_clock::now().time_since_epoch()).count() - _clockTime;
+                        _startTime = Timer::getTime() - _clockTime;
                         _currentTime = _clockTime;
                     }
                 }

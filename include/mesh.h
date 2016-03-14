@@ -86,11 +86,6 @@ class Mesh : public BufferObject
         std::vector<float> getAnnexe() const;
 
         /**
-         * Get the timestamp for the current mesh
-         */
-        std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
-
-        /**
          * Read / update the mesh
          */
         virtual bool read(const std::string& filename);

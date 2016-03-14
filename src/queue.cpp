@@ -59,7 +59,7 @@ void Queue::update()
         return;
 
     if (_startTime < 0)
-        _startTime = Timer::getTime<chrono::microseconds>();
+        _startTime = Timer::getTime();
 
     int64_t masterClockTime;
     bool masterClockPaused;
@@ -70,7 +70,7 @@ void Queue::update()
     else
     {
         auto previousTime = _currentTime;
-        _currentTime = Timer::getTime<chrono::microseconds>() - _startTime;
+        _currentTime = Timer::getTime() - _startTime;
 
         if (_paused)
         {
@@ -97,7 +97,7 @@ void Queue::update()
     if (!_useClock && _loop && sourceIndex >= _playlist.size())
     {
         sourceIndex = 0;
-        _startTime = Timer::getTime<chrono::microseconds>();
+        _startTime = Timer::getTime();
         _currentTime = 0;
     }
 
@@ -355,7 +355,7 @@ void Queue::registerAttributes()
             return false;
 
         int64_t seekTime = args[0].asFloat() * 1e6;
-        _startTime = Timer::getTime<chrono::microseconds>() - seekTime;
+        _startTime = Timer::getTime() - seekTime;
         _seeked = true;
         return true;
     }, [&]() -> Values {

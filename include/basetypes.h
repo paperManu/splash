@@ -33,6 +33,7 @@
 
 #include "coretypes.h"
 #include "link.h"
+#include "timer.h"
 
 namespace Splash
 {
@@ -482,6 +483,11 @@ class BufferObject : public BaseObject
         virtual std::string getDistantName() const {return _name;}
 
         /**
+         * Get the timestamp for the current buffer object
+         */
+        int64_t getTimestamp() const {return _timestamp;}
+
+        /**
          * Serialize the image
          */
         virtual std::shared_ptr<SerializedObject> serialize() const = 0;
@@ -508,14 +514,14 @@ class BufferObject : public BaseObject
          */
         void updateTimestamp()
         {
-            _timestamp = std::chrono::high_resolution_clock::now();
+            _timestamp = Timer::getTime();
             _updatedBuffer = true;
         }
 
     protected:
         mutable std::mutex _readMutex;
         mutable std::mutex _writeMutex;
-        std::chrono::high_resolution_clock::time_point _timestamp;
+        int64_t _timestamp;
         bool _updatedBuffer {false};
 
         std::shared_ptr<SerializedObject> _serializedObject;

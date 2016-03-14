@@ -111,7 +111,7 @@ class Texture : public BaseObject
         // Store some texture parameters
         bool _resizable {true};
 
-        std::chrono::high_resolution_clock::time_point _timestamp;
+        int64_t _timestamp;
 
     private:
         /**

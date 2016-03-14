@@ -53,7 +53,7 @@ void Texture::init()
     registerAttributes();
 
     _type = "texture";
-    _timestamp = chrono::high_resolution_clock::now();
+    _timestamp = Timer::getTime();
 }
 
 /*************/

@@ -86,11 +86,6 @@ class Image : public BufferObject
         ImageBufferSpec getSpec() const;
 
         /**
-         * Get the timestamp for the current mesh
-         */
-        std::chrono::high_resolution_clock::time_point getTimestamp() const {return _timestamp;}
-
-        /**
          * Set the image from an ImageBuffer
          */
         void set(const ImageBuffer& img);

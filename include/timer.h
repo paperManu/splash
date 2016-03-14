@@ -66,7 +66,7 @@ class Timer
             if (!_enabled)
                 return;
 
-            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
             auto timeIt = _timeMap.find(name);
             if (timeIt == _timeMap.end())
                 _timeMap[name] = currentTime;
@@ -82,7 +82,7 @@ class Timer
             auto timeIt = _timeMap.find(name);
             if (timeIt != _timeMap.end())
             {
-                auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+                auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
                 auto durationIt = _durationMap.find(name);
                 if (durationIt == _durationMap.end())
@@ -103,7 +103,7 @@ class Timer
            if (_timeMap.find(name) == _timeMap.end())
                return false;
         
-           auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+           auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
            auto timeIt = _timeMap.find(name);
            auto durationIt = _durationMap.find(name);
            unsigned long long elapsed;
@@ -273,10 +273,12 @@ class Timer
             return true;
         }
 
-        template <typename T>
+        /**
+         * Get the current time in microseconds from epoch
+         */
         static inline int64_t getTime()
         {
-            return std::chrono::duration_cast<T>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         }
 
     private:

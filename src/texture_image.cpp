@@ -509,7 +509,7 @@ void Texture_Image::init()
     glGetIntegerv(GL_MINOR_VERSION, &_glVersionMinor);
 
     _type = "texture_image";
-    _timestamp = chrono::high_resolution_clock::now();
+    _timestamp = Timer::getTime();
 
     _texTarget = GL_TEXTURE_2D;
 
