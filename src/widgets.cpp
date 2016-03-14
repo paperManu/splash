@@ -926,10 +926,10 @@ void GuiGlobalView::render()
             ImGui::SetTooltip("Show the target positions for the calibration points (A while hovering the view)");
         ImGui::SameLine();
 
-        if (ImGui::Button("Show all points"))
+        if (ImGui::Button("Show points everywhere"))
             showAllCamerasCalibrationPoints();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Show the calibration points from all cameras (O while hovering the view)");
+            ImGui::SetTooltip("Show this camera's calibration points in other cameras (O while hovering the view)");
         ImGui::SameLine();
 
         if (ImGui::Button("Calibrate camera"))
