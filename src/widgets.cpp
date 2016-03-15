@@ -200,6 +200,134 @@ GuiWidget::GuiWidget(string name)
 }
 
 /*************/
+void GuiWidget::drawAttributes(const string& objName, const unordered_map<string, Values>& attributes)
+{
+    auto scene = _scene.lock();
+
+    for (auto& attr : attributes)
+    {
+        if (attr.second.size() > 4 || attr.second.size() == 0)
+            continue;
+    
+        if (attr.second[0].getType() == Value::Type::i
+            || attr.second[0].getType() == Value::Type::f)
+        {
+            int precision = 0;
+            if (attr.second[0].getType() == Value::Type::f)
+                precision = 2;
+    
+            if (attr.second.size() == 1)
+            {
+                float tmp = attr.second[0].asFloat();
+                float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
+                if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                    scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
+            }
+            else if (attr.second.size() == 2)
+            {
+                vector<float> tmp;
+                tmp.push_back(attr.second[0].asFloat());
+                tmp.push_back(attr.second[1].asFloat());
+                if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                    scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp[0], tmp[1]});
+            }
+            else if (attr.second.size() == 3)
+            {
+                vector<float> tmp;
+                tmp.push_back(attr.second[0].asFloat());
+                tmp.push_back(attr.second[1].asFloat());
+                tmp.push_back(attr.second[2].asFloat());
+                if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                    scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp[0], tmp[1], tmp[2]});
+            }
+            else if (attr.second.size() == 4)
+            {
+                vector<float> tmp;
+                tmp.push_back(attr.second[0].asFloat());
+                tmp.push_back(attr.second[1].asFloat());
+                tmp.push_back(attr.second[2].asFloat());
+                tmp.push_back(attr.second[3].asFloat());
+                if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
+                    scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
+            }
+        }
+        else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
+        {
+            // We skip anything that looks like a vector / matrix
+            // (for usefulness reasons...)
+            Values values = attr.second[0].asValues();
+            if (values.size() > 16)
+            {
+                if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
+                {
+                    float minValue = numeric_limits<float>::max();
+                    float maxValue = numeric_limits<float>::min();
+                    vector<float> samples;
+                    for (auto& v : values)
+                    {
+                        float value = v.asFloat();
+                        maxValue = std::max(value, maxValue);
+                        minValue = std::min(value, minValue);
+                        samples.push_back(value);
+                    }
+                    
+                    ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
+                }
+            }
+        }
+        else if (attr.second[0].getType() == Value::Type::s)
+        {
+            for (auto& v : attr.second)
+            {
+                // We have a special way to handle file paths
+                if (attr.first == "file")
+                {
+                    string tmp = v.asString();
+                    tmp.resize(512);
+                    ImGui::PushID((objName + attr.first).c_str());
+                    if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
+    
+                    ImGui::SameLine();
+                    if (ImGui::Button("..."))
+                    {
+                        _fileSelectorTarget = objName;
+                    }
+                    if (_fileSelectorTarget == objName)
+                    {
+                        static string path = Utils::getPathFromFilePath("./");
+                        bool cancelled;
+                        vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"},
+                                                   {"avi"}, {"mov"}, {"mp4"},
+                                                   {"obj"}};
+                        if (SplashImGui::FileSelector(objName, path, cancelled, extensions))
+                        {
+                            if (!cancelled)
+                            {
+                                scene->sendMessageToWorld("sendAll", {objName, attr.first, path});
+                                path = Utils::getPathFromFilePath("./");
+                            }
+                            _fileSelectorTarget = "";
+                        }
+                    }
+    
+                    ImGui::PopID();
+                }
+                // For everything else ...
+                else
+                {
+                    string tmp = v.asString();
+                    tmp.resize(256);
+                    if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
+                }
+            }
+        }
+    }
+}
+
+/*************/
+/*************/
 GuiTextBox::GuiTextBox(string name)
     : GuiWidget(name)
 {
@@ -237,7 +365,7 @@ void GuiMedia::render()
             auto mediaName = media->getName();
             if (ImGui::TreeNode(mediaName.c_str()))
             {
-                ImGui::Text("Media type: ");
+                ImGui::Text("Change media type: ");
                 ImGui::SameLine();
 
                 if (_mediaTypeIndex.find(mediaName) == _mediaTypeIndex.end())
@@ -250,126 +378,11 @@ void GuiMedia::render()
                 if (ImGui::Combo("", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
                     replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
 
+                ImGui::Text(("Current media type: " + _mediaTypesReversed[media->getRemoteType()]).c_str());
+
                 ImGui::Text("Parameters:");
                 auto attributes = media->getAttributes(true);
-                for (auto& attr : attributes)
-                {
-                    if (attr.second.size() > 4 || attr.second.size() == 0)
-                        continue;
-
-                    if (attr.second[0].getType() == Value::Type::i
-                        || attr.second[0].getType() == Value::Type::f)
-                    {
-                        int precision = 0;
-                        if (attr.second[0].getType() == Value::Type::f)
-                            precision = 2;
-
-                        if (attr.second.size() == 1)
-                        {
-                            float tmp = attr.second[0].asFloat();
-                            float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
-                            if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
-                        }
-                        else if (attr.second.size() == 2)
-                        {
-                            vector<float> tmp;
-                            tmp.push_back(attr.second[0].asFloat());
-                            tmp.push_back(attr.second[1].asFloat());
-                            if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1]});
-                        }
-                        else if (attr.second.size() == 3)
-                        {
-                            vector<float> tmp;
-                            tmp.push_back(attr.second[0].asFloat());
-                            tmp.push_back(attr.second[1].asFloat());
-                            tmp.push_back(attr.second[2].asFloat());
-                            if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1], tmp[2]});
-                        }
-                        else if (attr.second.size() == 4)
-                        {
-                            vector<float> tmp;
-                            tmp.push_back(attr.second[0].asFloat());
-                            tmp.push_back(attr.second[1].asFloat());
-                            tmp.push_back(attr.second[2].asFloat());
-                            tmp.push_back(attr.second[3].asFloat());
-                            if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                                scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
-                        }
-                    }
-                    else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
-                    {
-                        // We skip anything that looks like a vector / matrix
-                        // (for usefulness reasons...)
-                        Values values = attr.second[0].asValues();
-                        if (values.size() > 16)
-                        {
-                            if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
-                            {
-                                float minValue = numeric_limits<float>::max();
-                                float maxValue = numeric_limits<float>::min();
-                                vector<float> samples;
-                                for (auto& v : values)
-                                {
-                                    float value = v.asFloat();
-                                    maxValue = std::max(value, maxValue);
-                                    minValue = std::min(value, minValue);
-                                    samples.push_back(value);
-                                }
-                                
-                                ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
-                            }
-                        }
-                    }
-                    else if (attr.second[0].getType() == Value::Type::s)
-                    {
-                        for (auto& v : attr.second)
-                        {
-                            // We have a special way to handle file paths
-                            if (attr.first == "file")
-                            {
-                                string tmp = v.asString();
-                                tmp.resize(512);
-                                ImGui::PushID((mediaName + attr.first).c_str());
-                                if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                                    scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
-
-                                ImGui::SameLine();
-                                if (ImGui::Button("..."))
-                                {
-                                    _fileSelectorTarget = mediaName;
-                                }
-                                if (_fileSelectorTarget == mediaName)
-                                {
-                                    static string path = Utils::getPathFromFilePath("./");
-                                    bool cancelled;
-                                    vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
-                                    if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))
-                                    {
-                                        if (!cancelled)
-                                        {
-                                            scene->sendMessageToWorld("sendAll", {mediaName, attr.first, path});
-                                            path = Utils::getPathFromFilePath("./");
-                                        }
-                                        _fileSelectorTarget = "";
-                                    }
-                                }
-                                ImGui::PopID();
-                            }
-                            // For everything else ...
-                            else
-                            {
-                                string tmp = v.asString();
-                                tmp.resize(256);
-                                if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                                    scene->sendMessageToWorld("sendAll", {mediaName, attr.first, tmp});
-                            }
-                        }
-                    }
-                }
-
+                drawAttributes(mediaName, attributes);
 
                 // TODO: specific part for Queues. Need better Attributes definition to remove this
                 if (dynamic_pointer_cast<QueueSurrogate>(media))
@@ -725,126 +738,7 @@ void GuiControl::render()
         else
             attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
 
-        for (auto& attr : attributes)
-        {
-            if (attr.second.size() > 4 || attr.second.size() == 0)
-                continue;
-
-            if (attr.second[0].getType() == Value::Type::i
-                || attr.second[0].getType() == Value::Type::f)
-            {
-                int precision = 0;
-                if (attr.second[0].getType() == Value::Type::f)
-                    precision = 2;
-
-                if (attr.second.size() == 1)
-                {
-                    float tmp = attr.second[0].asFloat();
-                    float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
-                    if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                }
-                else if (attr.second.size() == 2)
-                {
-                    vector<float> tmp;
-                    tmp.push_back(attr.second[0].asFloat());
-                    tmp.push_back(attr.second[1].asFloat());
-                    if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1]});
-                }
-                else if (attr.second.size() == 3)
-                {
-                    vector<float> tmp;
-                    tmp.push_back(attr.second[0].asFloat());
-                    tmp.push_back(attr.second[1].asFloat());
-                    tmp.push_back(attr.second[2].asFloat());
-                    if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2]});
-                }
-                else if (attr.second.size() == 4)
-                {
-                    vector<float> tmp;
-                    tmp.push_back(attr.second[0].asFloat());
-                    tmp.push_back(attr.second[1].asFloat());
-                    tmp.push_back(attr.second[2].asFloat());
-                    tmp.push_back(attr.second[3].asFloat());
-                    if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
-                }
-            }
-            else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
-            {
-                // We skip anything that looks like a vector / matrix
-                // (for usefulness reasons...)
-                Values values = attr.second[0].asValues();
-                if (values.size() > 16)
-                {
-                    if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f)
-                    {
-                        float minValue = numeric_limits<float>::max();
-                        float maxValue = numeric_limits<float>::min();
-                        vector<float> samples;
-                        for (auto& v : values)
-                        {
-                            float value = v.asFloat();
-                            maxValue = std::max(value, maxValue);
-                            minValue = std::min(value, minValue);
-                            samples.push_back(value);
-                        }
-                        
-                        ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
-                    }
-                }
-            }
-            else if (attr.second[0].getType() == Value::Type::s)
-            {
-                for (auto& v : attr.second)
-                {
-                    // We have a special way to handle file paths
-                    if (attr.first == "file")
-                    {
-                        string tmp = v.asString();
-                        tmp.resize(512);
-                        ImGui::PushID((_targetObjectName + attr.first).c_str());
-                        if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-
-                        ImGui::SameLine();
-                        if (ImGui::Button("..."))
-                        {
-                            _fileSelectorTarget = _targetObjectName;
-                        }
-                        if (_fileSelectorTarget == _targetObjectName)
-                        {
-                            static string path = Utils::getPathFromFilePath("./");
-                            bool cancelled;
-                            vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"},
-                                                       {"avi"}, {"mov"}, {"mp4"},
-                                                       {"obj"}};
-                            if (SplashImGui::FileSelector(_targetObjectName, path, cancelled, extensions))
-                            {
-                                if (!cancelled)
-                                {
-                                    scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, path});
-                                    path = Utils::getPathFromFilePath("./");
-                                }
-                                _fileSelectorTarget = "";
-                            }
-                        }
-
-                        ImGui::PopID();
-                    }
-                    // For everything else ...
-                    else
-                    {
-                        string tmp = v.asString();
-                        tmp.resize(256);
-                        if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                            scene->sendMessageToWorld("sendAll", {_targetObjectName, attr.first, tmp});
-                    }
-                }
-            }
-        }
+        drawAttributes(_targetObjectName, attributes);
 
         ImGui::Spacing();
         ImGui::Separator();

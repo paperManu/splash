@@ -387,6 +387,7 @@ QueueSurrogate::QueueSurrogate(RootObjectWeakPtr root)
     : Texture(root)
 {
     _type = "queue";
+    _remoteType = "queue";
     _filter = make_shared<Filter>(root);
     _filter->setName("queueFilter" + to_string(_filterIndex++));
     _root.lock()->registerObject(_filter);

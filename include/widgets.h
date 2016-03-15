@@ -72,9 +72,18 @@ class GuiWidget
         virtual void render() {}
         virtual int updateWindowFlags() {return 0;}
         virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     protected:
         std::string _name {""};
+        SceneWeakPtr _scene;
+        std::string _fileSelectorTarget {""};
+
+        /**
+         * Draws the widgets for the attributes of the given object
+         * and sends the appriorate messages to the World
+         */
+        void drawAttributes(const std::string& objName, const std::unordered_map<std::string, Values>& attributes);
 };
 
 /*************/
@@ -152,10 +161,8 @@ class GuiMedia : public GuiWidget
         GuiMedia(std::string name);
         void render();
         int updateWindowFlags();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        SceneWeakPtr _scene;
         std::map<std::string, int> _mediaTypeIndex;
         std::map<std::string, std::string> _mediaTypes {{"image", "image"},
                                                         {"video", "image_ffmpeg"},
@@ -169,7 +176,6 @@ class GuiMedia : public GuiWidget
 #endif
                                                         };
         std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
-        std::string _fileSelectorTarget {""};
 
         Values _newMedia {"image", "", 0.f, 0.f};
         int _newMediaTypeIndex {0};
@@ -187,15 +193,11 @@ class GuiControl : public GuiWidget
         GuiControl(std::string name) : GuiWidget(name) {}
         void render();
         int updateWindowFlags();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        SceneWeakPtr _scene;
         std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
-
-        std::string _fileSelectorTarget {""};
         
         std::vector<std::string> getObjectNames();
         void sendValuesToObjectsOfType(std::string type, std::string attr, Values values);
@@ -220,10 +222,8 @@ class GuiTemplate : public GuiWidget
     public:
         GuiTemplate(std::string name) : GuiWidget(name) {}
         void render();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        SceneWeakPtr _scene;
         bool _templatesLoaded {false};
         std::vector<std::string> _names;
         std::map<std::string, Texture_ImagePtr> _textures;
@@ -239,11 +239,9 @@ class GuiNodeView : public GuiWidget
         GuiNodeView(std::string name) : GuiWidget(name) {}
         void render();
         std::string getClickedNode() {return _clickedNode;}
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
         int updateWindowFlags();
 
     private:
-        SceneWeakPtr _scene;
         bool _isHovered {false};
         std::string _clickedNode {""};
         std::string _sourceNode {""};
