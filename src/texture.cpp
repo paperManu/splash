@@ -66,14 +66,6 @@ bool Texture::linkTo(shared_ptr<BaseObject> obj)
 /*************/
 void Texture::registerAttributes()
 {
-    _attribFunctions["resizable"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _resizable = args[0].asInt() > 0 ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_resizable};
-    });
 }
 
 } // end of namespace

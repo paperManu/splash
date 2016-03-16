@@ -132,6 +132,7 @@ namespace SplashImGui
         {
             path = string(textBuffer);
         }
+        ImGui::PopItemWidth();
 
         if (filterExtension)
         {
@@ -385,6 +386,7 @@ void GuiMedia::render()
                 drawAttributes(mediaName, attributes);
 
                 // TODO: specific part for Queues. Need better Attributes definition to remove this
+                // Display the playlist if this is a queue
                 if (dynamic_pointer_cast<QueueSurrogate>(media))
                 {
                     if (ImGui::TreeNode("Playlist"))
@@ -419,6 +421,7 @@ void GuiMedia::render()
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media type");
                                 ImGui::PopID();
+                                ImGui::PopItemWidth();
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
@@ -432,6 +435,7 @@ void GuiMedia::render()
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Start time (s)");
                                 ImGui::PopID();
+                                ImGui::PopItemWidth();
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
@@ -445,6 +449,7 @@ void GuiMedia::render()
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Stop time (s)");
                                 ImGui::PopID();
+                                ImGui::PopItemWidth();
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(-0.01f);
@@ -487,6 +492,7 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media type");
                         ImGui::PopID();
+                        ImGui::PopItemWidth();
 
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
@@ -496,6 +502,7 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Start time (s)");
                         ImGui::PopID();
+                        ImGui::PopItemWidth();
 
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
@@ -507,6 +514,7 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Stop time (s)");
                         ImGui::PopID();
+                        ImGui::PopItemWidth();
 
                         string filepath = _newMedia[1].asString();
                         filepath.resize(512);
@@ -517,7 +525,6 @@ void GuiMedia::render()
                             _newMedia[1] = filepath;
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media path");
-
                         ImGui::PopItemWidth();
 
                         ImGui::SameLine();
@@ -552,6 +559,30 @@ void GuiMedia::render()
                         ImGui::TreePop();
                     }
 
+                    // Display the filters associated with this queue
+                    auto filter = dynamic_pointer_cast<QueueSurrogate>(media)->getFilter();
+                    auto filterName = filter->getName();
+                    if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
+                    {
+                        auto filterAttributes = filter->getAttributes(true);
+                        drawAttributes(filterName, filterAttributes);
+                        ImGui::TreePop();
+                    }
+                }
+                else
+                {
+                    // Display the filters associated with this media
+                    auto filters = getFiltersForImage(media);
+                    for (auto& filter : filters)
+                    {
+                        auto filterName = filter->getName();
+                        if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
+                        {
+                            auto filterAttributes = filter->getAttributes(true);
+                            drawAttributes(filterName, filterAttributes);
+                            ImGui::TreePop();
+                        }
+                    }
                 }
 
                 ImGui::TreePop();
@@ -634,6 +665,27 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
     }
 
     return mediaList;
+}
+
+/*************/
+list<shared_ptr<BaseObject>> GuiMedia::getFiltersForImage(const shared_ptr<BaseObject>& image)
+{
+    auto filterList = list<shared_ptr<BaseObject>>();
+    auto scene = _scene.lock();
+
+    for (auto& obj : scene->_objects)
+    {
+        if (obj.second->getType() != "filter")
+            continue;
+
+        auto linkedImages = obj.second->getLinkedObjects();
+        auto matchingImage = find(linkedImages.begin(), linkedImages.end(), image);
+
+        if (matchingImage != linkedImages.end())
+            filterList.push_back(obj.second);
+    }
+
+    return filterList;
 }
 
 /*************/

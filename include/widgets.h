@@ -183,6 +183,7 @@ class GuiMedia : public GuiWidget
         float _newMediaStop {0.f};
 
         std::list<std::shared_ptr<BaseObject>> getSceneMedia();
+        std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);
         void replaceMedia(std::string previousMedia, std::string type);
 };
 
