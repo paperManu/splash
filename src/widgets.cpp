@@ -132,6 +132,7 @@ namespace SplashImGui
         {
             path = string(textBuffer);
         }
+        ImGui::PopItemWidth();
 
         if (filterExtension)
         {
@@ -420,6 +421,7 @@ void GuiMedia::render()
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media type");
                                 ImGui::PopID();
+                                ImGui::PopItemWidth();
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
@@ -433,6 +435,7 @@ void GuiMedia::render()
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Start time (s)");
                                 ImGui::PopID();
+                                ImGui::PopItemWidth();
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
@@ -446,6 +449,7 @@ void GuiMedia::render()
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Stop time (s)");
                                 ImGui::PopID();
+                                ImGui::PopItemWidth();
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(-0.01f);
@@ -488,6 +492,7 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media type");
                         ImGui::PopID();
+                        ImGui::PopItemWidth();
 
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
@@ -497,6 +502,7 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Start time (s)");
                         ImGui::PopID();
+                        ImGui::PopItemWidth();
 
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
@@ -508,6 +514,7 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Stop time (s)");
                         ImGui::PopID();
+                        ImGui::PopItemWidth();
 
                         string filepath = _newMedia[1].asString();
                         filepath.resize(512);
@@ -518,7 +525,6 @@ void GuiMedia::render()
                             _newMedia[1] = filepath;
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Media path");
-
                         ImGui::PopItemWidth();
 
                         ImGui::SameLine();
