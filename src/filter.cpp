@@ -181,23 +181,29 @@ void Filter::update()
 /*************/
 void Filter::updateUniforms()
 {
+    auto shader = _screen->getShader();
+
     for (auto& weakObject : _linkedObjects)
     {
         auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-        auto shader = _screen->getShader();
 
         auto obj = weakObject.lock();
         if (obj)
         {
             if (obj->getType() == "image")
             {
-                Values remainingTime;
+                Values remainingTime, duration;
+                obj->getAttribute("duration", duration);
                 obj->getAttribute("remaining", remainingTime);
                 if (remainingTime.size() == 1)
                     shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
+                if (duration.size() == 1)
+                    shader->setAttribute("uniform", {"_filmDuration", duration[0].asFloat()});
             }
         }
     }
+
+    shader->setAttribute("uniform", {"_blackLevel", _blackLevel});
 }
 
 /*************/

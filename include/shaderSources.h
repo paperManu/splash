@@ -618,7 +618,7 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
         {
@@ -680,6 +680,9 @@ struct ShaderSources
         uniform float _filmDuration = 0.f;
         uniform float _filmRemaining = 0.f;
 
+        // Filter parameters
+        uniform float _blackLevel = 0.f;
+
         void main(void)
         {
             // Compute the real texture coordinates, according to flip / flop
@@ -706,6 +709,13 @@ struct ShaderSources
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
 
+            // Black level
+            if (_blackLevel != 0.0)
+            {
+                float blackCorrection = clamp(_blackLevel, 0.0, 1.0);
+                color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
+            }
+
             fragColor = color;
         }
     )"};
@@ -724,7 +734,7 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
         {
@@ -774,7 +784,7 @@ struct ShaderSources
 
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec3 _colorLUT[256];
@@ -797,8 +807,7 @@ struct ShaderSources
         void main(void)
         {
             float blendWidth = _cameraAttributes.x;
-            float blackLevel = _cameraAttributes.y;
-            float brightness = _cameraAttributes.z;
+            float brightness = _cameraAttributes.y;
 
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
@@ -812,10 +821,6 @@ struct ShaderSources
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _fovAndColorBalance.w / maxBalanceRatio;
-
-            // Black level
-            float blackCorrection = clamp(blackLevel, 0.0, 1.0);
-            color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
             
             // If there is a blending map
         #ifdef BLENDING
@@ -825,14 +830,9 @@ struct ShaderSources
             blendFactor = blendFactor - camNbr * 4096;
             float blendFactorFloat = 0.0;
 
-            // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
-            bool smoothBlend = false;
-            if (color.r > blackLevel * 2.0 || color.g > blackLevel * 2.0 || color.b > blackLevel * 2.0)
-                smoothBlend = true;
-
             if (blendFactor == 0)
                 blendFactorFloat = 0.05; // The non-visible part is kinda hidden
-            else if (blendWidth > 0.0 && smoothBlend == true)
+            else if (blendWidth > 0.0)
             {
                 vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
                 vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
@@ -957,7 +957,7 @@ struct ShaderSources
 
         out vec4 fragColor;
 
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
 
         void main(void)

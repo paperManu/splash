@@ -215,7 +215,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         {
             int precision = 0;
             if (attr.second[0].getType() == Value::Type::f)
-                precision = 2;
+                precision = 3;
     
             if (attr.second.size() == 1)
             {
@@ -737,10 +737,6 @@ void GuiControl::render()
         static auto blendPrecision = 0.1f;
         if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blendPrecision", {blendPrecision});
-
-        static auto blackLevel = 0.0f;
-        if (ImGui::InputFloat("Black level", &blackLevel, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
-            sendValuesToObjectsOfType("camera", "blackLevel", {blackLevel});
 
         ImGui::Spacing();
         ImGui::Separator();

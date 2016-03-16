@@ -753,7 +753,7 @@ bool Camera::render()
 
             obj->activate();
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
-            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
+            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
             //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
@@ -1553,15 +1553,6 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_blendPrecision};
-    });
-
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _blackLevel = args[0].asFloat();
-        return true;
-    }, [&]() -> Values {
-        return {_blackLevel};
     });
 
     _attribFunctions["clearColor"] = AttributeFunctor([&](const Values& args) {
