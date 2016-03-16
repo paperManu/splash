@@ -1062,15 +1062,15 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    _depthTexture->setAttribute("resizable", {1});
+    _depthTexture->setResizable(1);
     _depthTexture->setAttribute("size", {width, height});
-    _depthTexture->setAttribute("resizable", {_automaticResize});
+    _depthTexture->setResizable(_automaticResize);
 
     for (auto tex : _outTextures)
     {
-        tex->setAttribute("resizable", {1});
+        tex->setResizable(1);
         tex->setAttribute("size", {width, height});
-        tex->setAttribute("resizable", {_automaticResize});
+        tex->setResizable(_automaticResize);
     }
 
     _width = width;

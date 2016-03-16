@@ -100,6 +100,11 @@ class Texture : public BaseObject
         void unlock() const {_mutex.unlock();}
 
         /**
+         * Set whether the texture should be resizable
+         */
+        void setResizable(bool resizable) {_resizable = resizable;}
+
+        /**
          * Update the texture according to the owned Image
          */
         virtual void update() = 0;

@@ -203,7 +203,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     {
         auto tex = make_shared<Texture_Image>();
         tex->setName(getName() + "_" + obj->getName() + "_tex");
-        tex->setAttribute("resizable", {0});
+        tex->setResizable(0);
         if (tex->linkTo(obj))
         {
             _root.lock()->registerObject(tex);
@@ -389,9 +389,9 @@ void Window::setupRenderFBO()
     }
     else
     {
-        _depthTexture->setAttribute("resizable", {1});
+        _depthTexture->setResizable(1);
         _depthTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
-        _depthTexture->setAttribute("resizable", {0});
+        _depthTexture->setResizable(0);
     }
 
     if (!_colorTexture)
@@ -403,9 +403,9 @@ void Window::setupRenderFBO()
     }
     else
     {
-        _colorTexture->setAttribute("resizable", {1});
+        _colorTexture->setResizable(1);
         _colorTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
-        _colorTexture->setAttribute("resizable", {0});
+        _colorTexture->setResizable(0);
     }
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
