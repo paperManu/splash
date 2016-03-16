@@ -100,6 +100,9 @@ class Filter : public Texture
         std::shared_ptr<Object> _screen;
         ImageBufferSpec _outTextureSpec;
 
+        // Filter parameters
+        float _blackLevel {0.f};
+
         /**
          * Init function called in constructors
          */

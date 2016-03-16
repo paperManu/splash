@@ -168,6 +168,16 @@ class QueueSurrogate : public Texture
         std::unordered_map<std::string, Values> getShaderUniforms() const;
 
         /**
+         * Get the filter created by the queue
+         */
+        std::shared_ptr<Filter> getFilter() const {return _filter;}
+
+        /**
+         * Get the current source created by the queue
+         */
+        std::shared_ptr<BaseObject> getSource() const {return _source;}
+
+        /**
          * Get spec of the texture
          */
         ImageBufferSpec getSpec() const;

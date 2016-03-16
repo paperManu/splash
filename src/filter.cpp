@@ -221,6 +221,14 @@ void Filter::setOutput()
 /*************/
 void Filter::registerAttributes()
 {
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _blackLevel = args[0].asFloat();
+        return true;
+    }, [&]() -> Values {
+        return {_blackLevel};
+    });
 }
 
 } // end of namespace
