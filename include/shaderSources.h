@@ -682,6 +682,7 @@ struct ShaderSources
 
         // Filter parameters
         uniform float _blackLevel = 0.f;
+        uniform vec2 _colorBalance = vec2(1.f, 1.f);
 
         void main(void)
         {
@@ -715,6 +716,12 @@ struct ShaderSources
                 float blackCorrection = clamp(_blackLevel, 0.0, 1.0);
                 color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
             }
+
+            // Color balance
+            float maxBalanceRatio = max(_colorBalance.r, _colorBalance.g);
+            color.r *= _colorBalance.r / maxBalanceRatio;
+            color.g *= 1.0 / maxBalanceRatio;
+            color.b *= _colorBalance.g / maxBalanceRatio;
 
             fragColor = color;
         }

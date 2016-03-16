@@ -1,5 +1,6 @@
 #include "filter.h"
 
+#include "cgUtils.h"
 #include "log.h"
 #include "scene.h"
 #include "timer.h"
@@ -204,6 +205,9 @@ void Filter::updateUniforms()
     }
 
     shader->setAttribute("uniform", {"_blackLevel", _blackLevel});
+    
+    glm::vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
+    shader->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
 }
 
 /*************/
@@ -231,9 +235,20 @@ void Filter::registerAttributes()
         if (args.size() < 1)
             return false;
         _blackLevel = args[0].asFloat();
+        _blackLevel = std::max(0.f, std::min(1.f, _blackLevel));
         return true;
     }, [&]() -> Values {
         return {_blackLevel};
+    });
+
+    _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _colorTemperature = args[0].asFloat();
+        _colorTemperature = std::max(0.f, std::min(16000.f, _colorTemperature));
+        return true;
+    }, [&]() -> Values {
+        return {_colorTemperature};
     });
 }
 

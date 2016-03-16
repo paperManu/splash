@@ -25,8 +25,9 @@
 #ifndef SPLASH_CGUTILS_H
 #define SPLASH_CGUTILS_H
 
-#include <vector>
+#include <glm/glm.hpp>
 #include <hap.h>
+#include <vector>
 
 #include "config.h"
 #include "coretypes.h"
@@ -147,6 +148,61 @@ struct RgbValue
     float g {0.f};
     float b {0.f};
 };
+
+/**
+ * Get the color balance (r/g and b/g) from a black body temperature
+ */
+inline glm::vec2 colorBalanceFromTemperature(float temp)
+{
+    using glm::min;
+    using glm::max;
+    using glm::pow;
+    using glm::log;
+
+    glm::dvec3 c;
+    float t = temp / 100.0;
+    if (t <= 66.0)
+        c.r = 255.0;
+    else
+    {
+        c.r = t - 60.0;
+        c.r = 329.698727466 * pow(c.r, -0.1332047592);
+        c.r = max(0.0, min(c.r, 255.0));
+    }
+  
+    if (t <= 66)
+    {
+        c.g = t;
+        c.g = 99.4708025861 * log(c.g) - 161.1195681661;
+        c.g = max(0.0, min(c.g, 255.0));
+    }
+    else
+    {
+        c.g = t - 60.0;
+        c.g = 288.1221695283 * pow(c.g, -0.0755148492);
+        c.g = max(0.0, min(c.g, 255.0));
+    }
+  
+    if (t >= 66)
+        c.b = 255.0;
+    else
+    {
+        if (t <= 19)
+            c.b = 0.0;
+        else
+        {
+            c.b = t - 10.0;
+            c.b = 138.5177312231 * log(c.b) - 305.0447927307;
+            c.b = max(0.0, min(c.b, 255.0));
+        }
+    }
+  
+    glm::vec2 colorBalance;
+    colorBalance.x = c.r / c.g;
+    colorBalance.y = c.b / c.g;
+
+    return colorBalance;
+}
 
 /*************/
 // Hap chunk callback

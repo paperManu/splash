@@ -102,6 +102,7 @@ class Filter : public Texture
 
         // Filter parameters
         float _blackLevel {0.f};
+        float _colorTemperature {6500.f};
 
         /**
          * Init function called in constructors

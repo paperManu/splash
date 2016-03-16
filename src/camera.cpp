@@ -1,5 +1,6 @@
 #include "camera.h"
 
+#include "cgUtils.h"
 #include "image.h"
 #include "log.h"
 #include "mesh.h"
@@ -754,7 +755,6 @@ bool Camera::render()
             obj->activate();
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
-            //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
             {
@@ -1143,59 +1143,6 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #endif
 
     return summedDistance;
-}
-
-/*************/
-vec2 Camera::colorBalanceFromTemperature(float temp)
-{
-    using glm::min;
-    using glm::max;
-    using glm::pow;
-    using glm::log;
-
-    dvec3 c;
-    float t = temp / 100.0;
-    if (t <= 66.0)
-        c.r = 255.0;
-    else
-    {
-        c.r = t - 60.0;
-        c.r = 329.698727466 * pow(c.r, -0.1332047592);
-        c.r = max(0.0, min(c.r, 255.0));
-    }
-  
-    if (t <= 66)
-    {
-        c.g = t;
-        c.g = 99.4708025861 * log(c.g) - 161.1195681661;
-        c.g = max(0.0, min(c.g, 255.0));
-    }
-    else
-    {
-        c.g = t - 60.0;
-        c.g = 288.1221695283 * pow(c.g, -0.0755148492);
-        c.g = max(0.0, min(c.g, 255.0));
-    }
-  
-    if (t >= 66)
-        c.b = 255.0;
-    else
-    {
-        if (t <= 19)
-            c.b = 0.0;
-        else
-        {
-            c.b = t - 10.0;
-            c.b = 138.5177312231 * log(c.b) - 305.0447927307;
-            c.b = max(0.0, min(c.b, 255.0));
-        }
-    }
-  
-    vec2 colorBalance;
-    colorBalance.x = c.r / c.g;
-    colorBalance.y = c.b / c.g;
-
-    return colorBalance;
 }
 
 /*************/

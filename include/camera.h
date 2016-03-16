@@ -243,11 +243,6 @@ class Camera : public BaseObject
         static double cameraCalibration_f(const gsl_vector* v, void* params);
 
         /**
-         * Get the color balance (r/g and b/g) from a black body temperature
-         */
-        glm::vec2 colorBalanceFromTemperature(float temp);
-
-        /**
          * Init function called in constructors
          */
         void init();
