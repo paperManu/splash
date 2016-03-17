@@ -94,6 +94,71 @@ struct ShaderSources
                 
                 return weight;
             }
+        )"},
+        //
+        // RGB to HSV and HSV to RGB
+        {"hsv", R"(
+            vec3 rgb2hsv(vec3 rgb)
+            {
+                vec3 hsv;
+
+                float cmax = max(rgb.r, max(rgb.g, rgb.b));
+                float cmin = min(rgb.r, min(rgb.g, rgb.b));
+                float delta = cmax - cmin;
+
+                if (delta <= 0.0001)
+                {
+                    hsv.x = 0.f;
+                    hsv.y = 0.f;
+                }
+                else
+                {
+                    if (delta == 0)
+                        hsv.x = 0.f;
+                    else if (cmax == rgb.r)
+                        hsv.x = mod(60.f * ((rgb.g - rgb.b) / delta), 360.f);
+                    else if (cmax == rgb.g)
+                        hsv.x = 60.f * ((rgb.b - rgb.r) / delta + 2);
+                    else if (cmax == rgb.b)
+                        hsv.x = 60.f * ((rgb.r - rgb.g) / delta + 4);
+
+                    if (cmax == 0.f)
+                        hsv.y = 0.f;
+                    else
+                        hsv.y = delta / cmax;
+                }
+
+                hsv.z = cmax;
+
+                return hsv;
+            }
+
+            vec3 hsv2rgb(vec3 hsv)
+            {
+                vec3 rgb;
+
+                float c = hsv.y * hsv.z;
+                float x = c * (1.f - abs(mod(hsv.x / 60.f, 2.f) - 1.f));
+
+                float m = hsv.z - c;
+
+                if (0.f <= hsv.x && hsv.x < 60.f)
+                    rgb = vec3(c, x, 0.f);
+                else if (60.f <= hsv.x && hsv.x < 120.f)
+                    rgb = vec3(x, c, 0.f);
+                else if (120.f <= hsv.x && hsv.x < 180.f)
+                    rgb = vec3(0.f, c, x);
+                else if (180.f <= hsv.x && hsv.x < 240.f)
+                    rgb = vec3(0.f, x, c);
+                else if (240.f <= hsv.x && hsv.x < 300.f)
+                    rgb = vec3(x, 0.f, c);
+                else if (300.f <= hsv.x && hsv.x < 360.f)
+                    rgb = vec3(c, 0.f, x);
+
+                rgb += vec3(m);
+
+                return rgb;
+            }
         )"}
     };
 
@@ -658,6 +723,8 @@ struct ShaderSources
      * Fragment shader for filters
      */
     const std::string FRAGMENT_SHADER_FILTER {R"(
+        #include hsv
+
         #define PI 3.14159265359
 
     #ifdef TEXTURE_RECT
@@ -684,6 +751,7 @@ struct ShaderSources
         uniform float _blackLevel = 0.f;
         uniform float _brightness = 1.f;
         uniform float _contrast = 1.f;
+        uniform float _saturation = 1.f;
         uniform vec2 _colorBalance = vec2(1.f, 1.f);
 
         void main(void)
@@ -718,13 +786,16 @@ struct ShaderSources
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _colorBalance.g / maxBalanceRatio;
 
-            // Brightness correction
-            if (_brightness != 1.f)
-                color.rgb = color.rgb * _brightness;
+            vec3 hsv = rgb2hsv(color.rgb);
 
+            // Brightness correction
+            hsv.z *= _brightness;
+            // Saturation
+            hsv.y *= _saturation;
             // Contrast correction
-            if (_contrast != 1.f)
-                color.rgb = (color.rgb - vec3(0.5f)) * _contrast + vec3(0.5f);
+            hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
+
+            color.rgb = hsv2rgb(hsv);
 
             // Black level
             if (_blackLevel != 0.0)

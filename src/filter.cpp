@@ -208,6 +208,7 @@ void Filter::updateUniforms()
     shader->setAttribute("uniform", {"_brightness", _brightness});
     shader->setAttribute("uniform", {"_contrast", _contrast});
     shader->setAttribute("uniform", {"_colorBalance", _colorBalance.x, _colorBalance.y});
+    shader->setAttribute("uniform", {"_saturation", _saturation});
 }
 
 /*************/
@@ -270,6 +271,16 @@ void Filter::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_colorTemperature};
+    });
+
+    _attribFunctions["saturation"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _saturation = args[0].asFloat();
+        _saturation = std::max(0.f, std::min(2.f, _saturation));
+        return true;
+    }, [&]() -> Values {
+        return {_saturation};
     });
 }
 

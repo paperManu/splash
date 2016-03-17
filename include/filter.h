@@ -105,6 +105,7 @@ class Filter : public Texture
         float _brightness {1.f};
         float _colorTemperature {6500.f};
         float _contrast {1.f};
+        float _saturation {1.f};
 
         // Computed values
         glm::vec2 _colorBalance {1.f, 1.f};
