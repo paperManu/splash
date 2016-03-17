@@ -205,9 +205,9 @@ void Filter::updateUniforms()
     }
 
     shader->setAttribute("uniform", {"_blackLevel", _blackLevel});
-    
-    glm::vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
-    shader->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
+    shader->setAttribute("uniform", {"_brightness", _brightness});
+    shader->setAttribute("uniform", {"_contrast", _contrast});
+    shader->setAttribute("uniform", {"_colorBalance", _colorBalance.x, _colorBalance.y});
 }
 
 /*************/
@@ -241,11 +241,32 @@ void Filter::registerAttributes()
         return {_blackLevel};
     });
 
+    _attribFunctions["brightness"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _brightness = args[0].asFloat();
+        _brightness = std::max(0.f, std::min(2.f, _brightness));
+        return true;
+    }, [&]() -> Values {
+        return {_brightness};
+    });
+
+    _attribFunctions["contrast"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _contrast = args[0].asFloat();
+        _contrast = std::max(0.f, std::min(2.f, _contrast));
+        return true;
+    }, [&]() -> Values {
+        return {_contrast};
+    });
+
     _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
         _colorTemperature = args[0].asFloat();
         _colorTemperature = std::max(0.f, std::min(16000.f, _colorTemperature));
+        _colorBalance = colorBalanceFromTemperature(_colorTemperature);
         return true;
     }, [&]() -> Values {
         return {_colorTemperature};

@@ -102,7 +102,12 @@ class Filter : public Texture
 
         // Filter parameters
         float _blackLevel {0.f};
+        float _brightness {1.f};
         float _colorTemperature {6500.f};
+        float _contrast {1.f};
+
+        // Computed values
+        glm::vec2 _colorBalance {1.f, 1.f};
 
         /**
          * Init function called in constructors
