@@ -115,7 +115,7 @@ fi
 #
 
 # Shmdata
-PKG_CHECK_MODULES([SHMDATA], [shmdata-1.0],
+PKG_CHECK_MODULES([SHMDATA], [shmdata-1.2],
     [SHMDATA_BUILD=enabled AC_DEFINE([HAVE_SHMDATA], [1], [Defined to 1 if shmdata-1.0 is detected])],
     [SHMDATA_BUILD=disabled AC_DEFINE([HAVE_SHMDATA], [0], [Defined to 0 if shmdata-1.0 is detect])])
 AM_CONDITIONAL(HAVE_SHMDATA, test -n "$SHMDATA_LIBS")
