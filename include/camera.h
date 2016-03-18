@@ -210,6 +210,7 @@ class Camera : public BaseObject
         float _blendPrecision {0.1f}; // Controls the tessellation level for the blending
         float _brightness {1.f};
         float _colorTemperature {6500.f};
+        bool _weightedCalibrationPoints {true};
 
         // Calibration parameters
         bool _calibrationCalledOnce {false};
@@ -224,6 +225,7 @@ class Camera : public BaseObject
             glm::dvec3 world;
             glm::dvec2 screen;
             bool isSet {false};
+            float weight {1.f};
         };
         std::vector<CalibrationPoint> _calibrationPoints;
         int _selectedCalibrationPoint {-1};

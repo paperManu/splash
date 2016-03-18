@@ -935,6 +935,12 @@ void Camera::moveCalibrationPoint(float dx, float dy)
     _calibrationPoints[_selectedCalibrationPoint].screen.y += dy / _height;
     _calibrationPoints[_selectedCalibrationPoint].isSet = true;
 
+    float screenX = 0.5f + 0.5f * _calibrationPoints[_selectedCalibrationPoint].screen.x;
+    float screenY = 0.5f + 0.5f *_calibrationPoints[_selectedCalibrationPoint].screen.y;
+
+    auto distanceToBorder = std::min(screenX, std::min(screenY, std::min(1.f - screenX, 1.f - screenY)));
+    _calibrationPoints[_selectedCalibrationPoint].weight = 1.f - distanceToBorder;
+
     if (_calibrationCalledOnce)
         doCalibration();
 }
@@ -1108,6 +1114,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
+    vector<float> pointsWeight;
     for (auto& point : camera->_calibrationPoints)
     {
         if (!point.isSet)
@@ -1115,6 +1122,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
         objectPoints.emplace_back(dvec3(point.world.x, point.world.y, point.world.z));
         imagePoints.emplace_back(dvec3((point.screen.x + 1.0) / 2.0 * camera->_width, (point.screen.y + 1.0) / 2.0 * camera->_height, 0.0));
+        pointsWeight.push_back(point.weight);
     }
 
 #ifdef DEBUG
@@ -1134,7 +1142,10 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         projectedPoint = project(objectPoints[i], lookM, projM, viewport);
         projectedPoint.z = 0.0;
 
-        summedDistance += pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
+        if (camera->_weightedCalibrationPoints)
+            summedDistance += pointsWeight[i] * pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
+        else
+            summedDistance += pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
     }
     summedDistance /= imagePoints.size();
 
@@ -1303,6 +1314,15 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_cx, _cy};
+    });
+
+    _attribFunctions["weightedCalibrationPoints"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _weightedCalibrationPoints = args[0].asInt();
+        return true;
+    }, [&]() -> Values {
+        return {(int)_weightedCalibrationPoints};
     });
 
     // More advanced attributes
