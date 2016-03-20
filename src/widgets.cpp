@@ -601,7 +601,7 @@ void GuiMedia::replaceMedia(string previousMedia, string type)
     for (auto& objIt : scene->_objects)
     {
         auto& object = objIt.second;
-        if (!object->_savable)
+        if (!object->getSavable())
             continue;
         auto linkedObjects = object->getLinkedObjects();
         for (auto& linked : linkedObjects)
@@ -644,18 +644,20 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 
     for (auto& obj : scene->_objects)
     {
-        if (!obj.second->_savable)
+        if (!obj.second->getSavable())
             continue;
 
-        if (dynamic_pointer_cast<Image>(obj.second))
+        if (obj.second->getType().find("image") != string::npos
+            || obj.second->getType().find("queue") != string::npos
+            || obj.second->getType().find("texture") != string::npos)
+        {
             mediaList.push_back(obj.second);
-        else if (dynamic_pointer_cast<Texture>(obj.second))
-            mediaList.push_back(obj.second);
+        }
     }
 
     for (auto& obj : scene->_ghostObjects)
     {
-        if (!obj.second->_savable)
+        if (!obj.second->getSavable())
             continue;
 
         if (dynamic_pointer_cast<Image>(obj.second))
@@ -805,13 +807,13 @@ vector<string> GuiControl::getObjectNames()
 
     for (auto& o : scene->_objects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         objNames.push_back(o.first);
     }
     for (auto& o : scene->_ghostObjects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         objNames.push_back(o.first);
     }
@@ -1637,7 +1639,7 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
 
     for (auto& o : scene->_objects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
@@ -1646,7 +1648,7 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
     }
     for (auto& o : scene->_ghostObjects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
@@ -1666,13 +1668,13 @@ map<string, string> GuiNodeView::getObjectTypes()
 
     for (auto& o : scene->_objects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         types[o.first] = o.second->getType();
     }
     for (auto& o : scene->_ghostObjects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         types[o.first] = o.second->getType();
     }

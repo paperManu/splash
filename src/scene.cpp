@@ -129,6 +129,9 @@ BaseObjectPtr Scene::add(string type, string name)
     else if (type == string("texture_syphon"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>());
 #endif
+    else if (type == string("warp"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
+
     _mainWindow->releaseContext();
 
     // Add the object to the objects list
@@ -207,7 +210,7 @@ Json::Value Scene::getConfigurationAsJson()
 
     root[_name] = BaseObject::getConfigurationAsJson();
     for (auto& obj : _objects)
-        if (obj.second->_savable)
+        if (obj.second->getSavable())
             root[obj.first] = obj.second->getConfigurationAsJson();
 
     return root;
@@ -811,7 +814,7 @@ void Scene::activateBlendingMap(bool once)
                 pixBuffer[y * w + x] = maxValue;
             }
         swap(_blendingMap, buffer);
-        _blendingMap->_savable = false;
+        _blendingMap->setSavable(false);
         _blendingMap->updateTimestamp();
 
         // Small hack to handle the fact that texture transfer uses PBOs.

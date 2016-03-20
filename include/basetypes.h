@@ -164,25 +164,25 @@ class BaseObject
             return true;
         }
 
-        std::string getType() const {return _type;}
+        inline std::string getType() const {return _type;}
 
         /**
          * Set and get the id of the object
          */
-        unsigned long getId() const {return _id;}
-        void setId(unsigned long id) {_id = id;}
+        inline unsigned long getId() const {return _id;}
+        inline void setId(unsigned long id) {_id = id;}
 
         /**
          * Set and get the name of the object
          */
-        std::string getName() const {return _name;}
-        virtual std::string setName(const std::string& name) {_name = name; return _name;}
+        inline std::string getName() const {return _name;}
+        inline virtual std::string setName(const std::string& name) {_name = name; return _name;}
 
         /**
          * Set and get the remote type of the object
          */
-        std::string getRemoteType() const {return _remoteType;}
-        void setRemoteType(std::string type) {_remoteType = type;}
+        inline std::string getRemoteType() const {return _remoteType;}
+        inline void setRemoteType(std::string type) {_remoteType = type;}
 
         /**
          * Try to link / unlink the given BaseObject to this
@@ -335,15 +335,25 @@ class BaseObject
         }
 
         /**
+         * Get the savability for this object
+         */
+        inline bool getSavable() {return _savable;}
+
+        /**
          * Check whether the objects needs to be updated
          */
-        virtual bool wasUpdated() const {return _updatedParams;}
+        inline virtual bool wasUpdated() const {return _updatedParams;}
 
         /**
          * Reset the "was updated" status, if needed
          */
-        virtual void setNotUpdated() {_updatedParams = false;}
-        
+        inline virtual void setNotUpdated() {_updatedParams = false;}
+
+        /**
+         * Set the object savability
+         */
+        inline virtual void setSavable(bool savable) {_savable = savable;}
+       
         /**
          * Update the content of the object
          */
@@ -559,7 +569,7 @@ class RootObject : public BaseObject
                 auto name = object->getName();
 
                 std::unique_lock<std::recursive_mutex> registerLock(_objectsMutex);
-                object->_savable = false; // This object was created on the fly. Do not save it
+                object->setSavable(false); // This object was created on the fly. Do not save it
 
                 // We keep the previous object on the side, to prevent double free due to operator[] behavior
                 auto previousObject = std::shared_ptr<BaseObject>();

@@ -86,6 +86,11 @@ class Warp : public Texture
         bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
+         * Filters should always be saved as the hold user-modifiable parameters
+         */
+        void setSavable(bool savable) {_savable = true;}
+
+        /**
          * Update the texture according to the owned Image
          */
         void update();
