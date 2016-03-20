@@ -111,7 +111,7 @@ class Camera : public BaseObject
         /**
          * Get pointers to this camera textures
          */
-        std::vector<Texture_ImagePtr> getTextures() const {return _outTextures;}
+        std::vector<std::shared_ptr<Texture_Image>> getTextures() const {return _outTextures;}
 
         /**
          * Check wether it is initialized

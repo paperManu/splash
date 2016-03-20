@@ -129,7 +129,8 @@ bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
             return false;
 
         auto inTex = _inTexture.lock();
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+
         _screen->removeTexture(tex);
         if (tex->getName() == inTex->getName())
             _inTexture.reset();

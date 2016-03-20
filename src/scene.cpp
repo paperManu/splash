@@ -16,6 +16,7 @@
 #include "texture_image.h"
 #include "threadpool.h"
 #include "timer.h"
+#include "warp.h"
 #include "window.h"
 
 #if HAVE_GPHOTO
@@ -482,6 +483,12 @@ void Scene::render()
     Timer::get() >> "cameras";
 
     _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+    Timer::get() << "warps";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "warp")
+            dynamic_pointer_cast<Warp>(obj.second)->update();
+    Timer::get() >> "warps";
 
     lockTexture.unlock(); // Unlock _textureUploadMutex
 

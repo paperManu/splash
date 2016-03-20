@@ -11,6 +11,7 @@
 #include "texture.h"
 #include "texture_image.h"
 #include "timer.h"
+#include "warp.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
@@ -214,10 +215,17 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
-        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
-        for (auto& tex : cam->getTextures())
-            setTexture(tex);
-        return true;
+        auto warp = make_shared<Warp>(_root);
+        warp->setName(getName() + "_" + obj->getName() + "_warp");
+        if (warp->linkTo(obj))
+        {
+            _root.lock()->registerObject(warp);
+            return linkTo(warp);
+        }
+        else
+        {
+            return false;
+        }
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
