@@ -35,6 +35,7 @@
 #include "coretypes.h"
 #include "basetypes.h"
 #include "camera.h"
+#include "mesh_bezierPatch.h"
 #include "object.h"
 #include "texture.h"
 #include "texture_image.h"

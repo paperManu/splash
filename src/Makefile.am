@@ -58,6 +58,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	imageBuffer.cpp \
 	link.cpp \
 	mesh.cpp \
+	mesh_bezierPatch.cpp \
 	object.cpp \
 	queue.cpp \
 	scene.cpp \
@@ -300,6 +301,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/listener.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
+	$(top_srcdir)/include/mesh_bezierPatch.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
 	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \

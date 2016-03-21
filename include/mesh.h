@@ -35,7 +35,6 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
-#include "coretypes.h"
 
 namespace Splash {
 
@@ -66,29 +65,24 @@ class Mesh : public BufferObject
         bool operator==(Mesh& otherMesh) const;
 
         /**
-         * Create a plane mesh, subdivided according to the parameter
-         */
-        void createDefaultMesh(int subdiv = 0);
-
-        /**
          * Get a 1D vector of all points in the mesh, in normalized coordinates
          */
-        std::vector<float> getVertCoords() const;
+        virtual std::vector<float> getVertCoords() const;
 
         /**
          * Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
          */
-        std::vector<float> getUVCoords() const;
+        virtual std::vector<float> getUVCoords() const;
 
         /**
          * Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
          */
-        std::vector<float> getNormals() const;
+        virtual std::vector<float> getNormals() const;
 
         /**
          * Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
          */
-        std::vector<float> getAnnexe() const;
+        virtual std::vector<float> getAnnexe() const;
 
         /**
          * Read / update the mesh
@@ -130,14 +124,17 @@ class Mesh : public BufferObject
 
     private:
         void init();
+
+        /**
+         * Create a plane mesh, subdivided according to the parameter
+         */
+        void createDefaultMesh(int subdiv = 0);
         
         /**
          * Register new functors to modify attributes
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Mesh> MeshPtr;
 
 } // end of namespace
 
