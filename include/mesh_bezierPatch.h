@@ -79,7 +79,7 @@ class Mesh_BezierPatch : public Mesh
 
         Patch _patch {};
         glm::vec2 _size {3, 3};
-        int _patchResolution {32};
+        int _patchResolution {8};
 
         bool _patchUpdated {true};
         MeshContainer _bezierControl;

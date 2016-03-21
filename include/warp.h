@@ -103,7 +103,8 @@ class Warp : public Texture
 
         GLuint _fbo {0};
         std::shared_ptr<Texture_Image> _outTexture {nullptr};
-        std::shared_ptr<Object> _screen;
+        std::shared_ptr<Mesh_BezierPatch> _screenMesh {nullptr};
+        std::shared_ptr<Object> _screen {nullptr};
         ImageBufferSpec _outTextureSpec;
 
         /**

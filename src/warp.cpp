@@ -193,6 +193,8 @@ void Warp::setOutput()
     _screen = make_shared<Object>();
     _screen->setAttribute("fill", {"warp"});
     GeometryPtr virtualScreen = make_shared<Geometry>();
+    _screenMesh = make_shared<Mesh_BezierPatch>();
+    virtualScreen->linkTo(_screenMesh);
     _screen->addGeometry(virtualScreen);
 }
 

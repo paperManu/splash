@@ -186,7 +186,9 @@ void Mesh_BezierPatch::updatePatch()
 
     _bufferMesh = mesh;
     _bezierMesh = mesh;
+
     updateTimestamp();
+    _meshUpdated = true;
 }
 
 /*************/
