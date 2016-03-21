@@ -297,31 +297,63 @@ void Mesh::update()
 }
 
 /*************/
-void Mesh::createDefaultMesh()
+void Mesh::createDefaultMesh(int subdiv)
 {
+    if (subdiv < 0)
+        subdiv = 0;
+    _planeSubdivisions = subdiv;
+
     MeshContainer mesh;
 
-    // Create the vertices
-    mesh.vertices.push_back(glm::vec4(-1.0, -1.0, 0.0, 1.0));
-    mesh.vertices.push_back(glm::vec4(1.0, -1.0, 0.0, 1.0));
-    mesh.vertices.push_back(glm::vec4(1.0, 1.0, 0.0, 1.0));
-    mesh.vertices.push_back(glm::vec4(1.0, 1.0, 0.0, 1.0));
-    mesh.vertices.push_back(glm::vec4(-1.0, 1.0, 0.0, 1.0));
-    mesh.vertices.push_back(glm::vec4(-1.0, -1.0, 0.0, 1.0));
+    vector<glm::vec2> positions;
+    vector<glm::vec2> uvs;
 
-    mesh.uvs.push_back(glm::vec2(0.0, 0.0));
-    mesh.uvs.push_back(glm::vec2(1.0, 0.0));
-    mesh.uvs.push_back(glm::vec2(1.0, 1.0));
-    mesh.uvs.push_back(glm::vec2(1.0, 1.0));
-    mesh.uvs.push_back(glm::vec2(0.0, 1.0));
-    mesh.uvs.push_back(glm::vec2(0.0, 0.0));
+    for (int v = 0; v < subdiv + 2; ++v)
+    {
+        glm::vec2 position;
+        glm::vec2 uv;
 
-    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
-    mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+        uv.y = (float)v / ((float)(subdiv + 1));
+        position.y = uv.y * 2.f - 1.f;
+
+        for (int u = 0; u < subdiv + 2; ++u)
+        {
+            uv.x = (float)u / ((float)(subdiv + 1));
+            position.x = uv.x * 2.f - 1.f;
+
+            positions.push_back(position);
+            uvs.push_back(uv);
+        }
+    }
+
+    for (int v = 0; v < subdiv + 1; ++v)
+    {
+        for (int u = 0; u < subdiv + 1; ++u)
+        {
+            mesh.vertices.push_back(glm::vec4(positions[u + v * (subdiv + 2)], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(positions[u + 1 + v * (subdiv + 2)], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(positions[u + (v + 1) * (subdiv + 2)], 0.0, 1.0));
+
+            mesh.vertices.push_back(glm::vec4(positions[u + 1 + v * (subdiv + 2)], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(positions[u + 1 + (v + 1) * (subdiv + 2)], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(positions[u + (v + 1) * (subdiv + 2)], 0.0, 1.0));
+
+            mesh.uvs.push_back(uvs[u + v * (subdiv + 2)]);
+            mesh.uvs.push_back(uvs[u + 1 + v * (subdiv + 2)]);
+            mesh.uvs.push_back(uvs[u + (v + 1) * (subdiv + 2)]);
+
+            mesh.uvs.push_back(uvs[u + 1 + v * (subdiv + 2)]);
+            mesh.uvs.push_back(uvs[u + 1 + (v + 1) * (subdiv + 2)]);
+            mesh.uvs.push_back(uvs[u + (v + 1) * (subdiv + 2)]);
+
+            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+            mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
+        }
+    }
 
     unique_lock<mutex> lock(_writeMutex);
     _mesh = std::move(mesh);
@@ -348,6 +380,15 @@ void Mesh::registerAttributes()
         else
             _benchmark = false;
         return true;
+    });
+
+    _attribFunctions["setSubdividedPlane"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        createDefaultMesh(args[0].asInt());
+        return true;
+    }, [&]() -> Values {
+        return {_planeSubdivisions};
     });
 }
 

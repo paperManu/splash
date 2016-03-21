@@ -1693,11 +1693,12 @@ void GuiNodeView::render()
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
                                                                  {"window", {8, 32}},
-                                                                 {"camera", {32, 64}},
-                                                                 {"object", {8, 96}},
-                                                                 {"texture filter queue", {32, 128}},
-                                                                 {"image", {8, 160}},
-                                                                 {"mesh", {32, 192}}
+                                                                 {"warp", {32, 64}},
+                                                                 {"camera", {8, 96}},
+                                                                 {"object", {32, 128}},
+                                                                 {"texture filter queue", {8, 160}},
+                                                                 {"image", {32, 192}},
+                                                                 {"mesh", {8, 224}}
                                                                 });
         std::map<std::string, int> shiftByType;
 
@@ -1742,6 +1743,7 @@ void GuiNodeView::render()
             {
                 type = "default";
                 nodePosition = defaultPositionByType["default"];
+                nodePosition.x += shift;
             }
             else
             {

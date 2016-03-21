@@ -66,6 +66,11 @@ class Mesh : public BufferObject
         bool operator==(Mesh& otherMesh) const;
 
         /**
+         * Create a plane mesh, subdivided according to the parameter
+         */
+        void createDefaultMesh(int subdiv = 0);
+
+        /**
          * Get a 1D vector of all points in the mesh, in normalized coordinates
          */
         std::vector<float> getVertCoords() const;
@@ -121,11 +126,10 @@ class Mesh : public BufferObject
         MeshContainer _bufferMesh;
         bool _meshUpdated {false};
         bool _benchmark {false};
+        int _planeSubdivisions {0};
 
     private:
         void init();
-
-        void createDefaultMesh(); //< As indicated: creates a default mesh (a plane)
         
         /**
          * Register new functors to modify attributes
