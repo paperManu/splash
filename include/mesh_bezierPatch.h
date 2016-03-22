@@ -78,23 +78,23 @@ class Mesh_BezierPatch : public Mesh
         };
 
         Patch _patch {};
-        glm::vec2 _size {3, 3};
-        int _patchResolution {8};
+        glm::ivec2 _size {3, 3};
+        int _patchResolution {16};
 
         bool _patchUpdated {true};
         MeshContainer _bezierControl;
         MeshContainer _bezierMesh;
 
         // Factorial
-        inline uint32_t factorial(uint32_t i)
+        inline int32_t factorial(int32_t i)
         {
             return (i == 0 || i == 1) ? 1 : factorial(i - 1) * i;
         }
 
         // Binomial coefficient
-        inline uint32_t binomialCoeff(uint32_t n, uint32_t i)
+        inline int32_t binomialCoeff(int32_t n, int32_t i)
         {
-            if (n > i)
+            if (n < i)
                 return 0;
             return factorial(n) / (factorial(i) * factorial(n - i));
         }
