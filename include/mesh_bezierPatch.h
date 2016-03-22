@@ -73,12 +73,12 @@ class Mesh_BezierPatch : public Mesh
     private:
         struct Patch
         {
-            std::vector<glm::vec2> vertices;
-            std::vector<glm::vec2> uvs;
+            glm::ivec2 size {0, 0};
+            std::vector<glm::vec2> vertices {};
+            std::vector<glm::vec2> uvs {};
         };
 
         Patch _patch {};
-        glm::ivec2 _size {3, 3};
         int _patchResolution {16};
 
         bool _patchUpdated {true};
@@ -105,6 +105,7 @@ class Mesh_BezierPatch : public Mesh
          * Create a patch
          */
         void createPatch(int width = 4, int height = 4);
+        void createPatch(Patch& patch);
 
         /**
          * Update the underlying mesh from the patch control points

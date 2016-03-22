@@ -128,7 +128,7 @@ class Mesh : public BufferObject
         /**
          * Create a plane mesh, subdivided according to the parameter
          */
-        void createDefaultMesh(int subdiv = 0);
+        void createDefaultMesh(int subdiv = 8);
         
         /**
          * Register new functors to modify attributes

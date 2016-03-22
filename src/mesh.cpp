@@ -381,15 +381,6 @@ void Mesh::registerAttributes()
             _benchmark = false;
         return true;
     });
-
-    _attribFunctions["setSubdividedPlane"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-        createDefaultMesh(args[0].asInt());
-        return true;
-    }, [&]() -> Values {
-        return {_planeSubdivisions};
-    });
 }
 
 } // end of namespace

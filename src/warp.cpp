@@ -201,6 +201,19 @@ void Warp::setOutput()
 /*************/
 void Warp::registerAttributes()
 {
+    _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
+        if (!_screenMesh)
+            return false;
+
+        return _screenMesh->setAttribute("patchControl", args);
+    }, [&]() -> Values {
+        if (!_screenMesh)
+            return {};
+
+        Values v;
+        _screenMesh->getAttribute("patchControl", v);
+        return v;
+    });
 }
 
 } // end of namespace
