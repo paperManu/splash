@@ -44,6 +44,7 @@
 #include "basetypes.h"
 #include "image.h"
 #include "texture.h"
+#include "warp.h"
 
 namespace Splash
 {
@@ -96,6 +97,18 @@ class GuiTextBox : public GuiWidget
 
     private:
         std::function<std::string()> getText;
+};
+
+/*************/
+class GuiWarp : public GuiWidget
+{
+    public:
+        GuiWarp(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+
+    private:
+        std::vector<std::shared_ptr<Warp>> getWarps();
 };
 
 /*************/

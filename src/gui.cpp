@@ -908,6 +908,11 @@ void Gui::initImWidgets()
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
+    // Warp control
+    auto warpControl = make_shared<GuiWarp>("Warp");
+    warpControl->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
+
     // Performance graph
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {

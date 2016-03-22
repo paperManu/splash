@@ -139,6 +139,8 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
         }
     }
     _bezierControl = mesh;
+
+    updateTimestamp();
 }
 
 /*************/
@@ -215,15 +217,6 @@ void Mesh_BezierPatch::updatePatch()
 /*************/
 void Mesh_BezierPatch::registerAttributes()
 {
-    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 2)
-            return false;
-        createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
-        return true;
-    }, [&]() -> Values {
-        return {_patch.size.x, _patch.size.y};
-    });
-
     _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
@@ -236,9 +229,8 @@ void Mesh_BezierPatch::registerAttributes()
 
         Patch patch;
         patch.size = glm::ivec2(width, height);
-        for (int p = 2; p < args.size() - 2; ++p)
+        for (int p = 2; p < args.size(); ++p)
             patch.vertices.push_back(glm::vec2(args[p].asValues()[0].asFloat(), args[p].asValues()[1].asFloat()));
-
 
         createPatch(patch);
 
@@ -255,6 +247,26 @@ void Mesh_BezierPatch::registerAttributes()
         }
 
         return v;
+    });
+
+    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 2)
+            return false;
+        createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
+        return true;
+    }, [&]() -> Values {
+        return {_patch.size.x, _patch.size.y};
+    });
+
+    _attribFunctions["patchResolution"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _patchResolution = std::max(4, args[0].asInt());
+        _patchUpdated = true;
+        updateTimestamp();
+        return true;
+    }, [&]() -> Values {
+        return {_patchResolution};
     });
 }
 

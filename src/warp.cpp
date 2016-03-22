@@ -204,7 +204,6 @@ void Warp::registerAttributes()
     _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
         if (!_screenMesh)
             return false;
-
         return _screenMesh->setAttribute("patchControl", args);
     }, [&]() -> Values {
         if (!_screenMesh)
@@ -212,6 +211,32 @@ void Warp::registerAttributes()
 
         Values v;
         _screenMesh->getAttribute("patchControl", v);
+        return v;
+    });
+
+    _attribFunctions["patchResolution"] = AttributeFunctor([&](const Values& args) {
+        if (!_screenMesh)
+            return false;
+        return _screenMesh->setAttribute("patchResolution", args);
+    }, [&]() -> Values {
+        if (!_screenMesh)
+            return {};
+
+        Values v;
+        _screenMesh->getAttribute("patchResolution", v);
+        return v;
+    });
+
+    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
+        if (!_screenMesh)
+            return false;
+        return _screenMesh->setAttribute("patchSize", args);
+    }, [&]() -> Values {
+        if (!_screenMesh)
+            return {};
+
+        Values v;
+        _screenMesh->getAttribute("patchSize", v);
         return v;
     });
 }

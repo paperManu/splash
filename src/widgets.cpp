@@ -1891,4 +1891,76 @@ int GuiNodeView::updateWindowFlags()
     return flags;
 }
 
+/*************/
+void GuiWarp::render()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        auto warps = getWarps();
+
+        for (auto& warp : warps)
+        {
+            if (ImGui::TreeNode(warp->getName().c_str()))
+            {
+                Values points;
+                ImGui::PushID(warp->getName().c_str());
+
+                warp->getAttribute("patchControl", points);
+
+                bool updated = false;
+                for (int i = 2; i < points.size(); ++i)
+                {
+                    auto pointID = to_string(i - 1);
+                    ImGui::PushID(pointID.c_str());
+
+                    Values point = points[i].asValues();
+                    vector<float> tmp;
+                    tmp.push_back(point[0].asFloat());
+                    tmp.push_back(point[1].asFloat());
+
+                    if (ImGui::InputFloat2(("#" + pointID).c_str(), tmp.data(), 3, ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
+                        auto newPoint = Values({tmp[0], tmp[1]});
+                        points[i] = newPoint;
+                        updated = true;
+                    }
+
+                    ImGui::PopID();
+                }
+                    
+                if (updated)
+                {
+                    Values msg;
+                    msg.push_back(warp->getName());
+                    msg.push_back("patchControl");
+                    for (auto& point : points)
+                        msg.push_back(point);
+                    _scene.lock()->sendMessageToWorld("sendAll", msg);
+                }
+
+                ImGui::PopID();
+                ImGui::TreePop();
+            }
+        }
+    }
+}
+
+/*************/
+vector<shared_ptr<Warp>> GuiWarp::getWarps()
+{
+    auto warps = vector<shared_ptr<Warp>>();
+
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "warp")
+            warps.push_back(dynamic_pointer_cast<Warp>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "warp")
+            warps.push_back(dynamic_pointer_cast<Warp>(obj.second));
+
+    return warps;
+}
+
 } // end of namespace
