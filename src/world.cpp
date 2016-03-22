@@ -405,7 +405,7 @@ void World::applyConfig()
 
     // Configure each scenes
     // The first scene is the master one, and also receives some ghost objects
-    // Currently, only cameras are concerned
+    // First, we create the objects
     for (auto& s : _scenes)
     {
         if (!_config.isMember(s.first))
@@ -439,6 +439,62 @@ void World::applyConfig()
                 // Some objects are also created on this side, and linked with the distant one
                 addLocally(type, name, s.first);
             }
+
+            idx++;
+        }
+    }
+
+    // Then we link the objects together
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+        auto sceneMembers = jsScene.getMemberNames();
+
+        int idx = 0;
+        for (const auto& obj : jsScene)
+        {
+            if (sceneMembers[idx] != "links")
+            {
+                idx++;
+                continue;
+            }
+
+            for (auto& link : obj)
+            {
+                if (link.size() < 2)
+                    continue;
+                sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
+                if (s.first != _masterSceneName)
+                    sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
+            }
+            idx++;
+        }
+    }
+
+    // Lastly, we configure the objects
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+
+        // Create the objects
+        auto sceneMembers = jsScene.getMemberNames();
+        int idx {0};
+        for (const auto& obj : jsScene)
+        {
+            string name = sceneMembers[idx];
+            if (name == "links" || !obj.isMember("type"))
+            {
+                idx++;
+                continue;
+            }
+
+            string type = obj["type"].asString();
 
             // Before anything, all objects have the right to know what the current path is
             if (type != "scene")
@@ -490,36 +546,6 @@ void World::applyConfig()
                 idxAttr++;
             }
 
-            idx++;
-        }
-    }
-
-    // Link the objects together
-    for (auto& s : _scenes)
-    {
-        if (!_config.isMember(s.first))
-            continue;
-
-        const Json::Value jsScene = _config[s.first];
-        auto sceneMembers = jsScene.getMemberNames();
-
-        int idx = 0;
-        for (const auto& obj : jsScene)
-        {
-            if (sceneMembers[idx] != "links")
-            {
-                idx++;
-                continue;
-            }
-
-            for (auto& link : obj)
-            {
-                if (link.size() < 2)
-                    continue;
-                sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
-                if (s.first != _masterSceneName)
-                    sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
-            }
             idx++;
         }
     }
@@ -606,17 +632,24 @@ void World::saveConfig()
                 if (!_config[sceneName].isMember(m))
                     _config[sceneName][m] = Json::Value();
 
-                Json::Value::Members attributes = scene[m].getMemberNames();
-                for (const auto& a : attributes)
-                    _config[sceneName][m][a] = scene[m][a];
-
-                const auto& obj = _objects.find(m);
-                if (obj != _objects.end())
+                if (m != "links")
                 {
-                    Json::Value worldObjValue = obj->second->getConfigurationAsJson();
-                    attributes = worldObjValue.getMemberNames();
+                    Json::Value::Members attributes = scene[m].getMemberNames();
                     for (const auto& a : attributes)
-                        _config[sceneName][m][a] = worldObjValue[a];
+                        _config[sceneName][m][a] = scene[m][a];
+
+                    const auto& obj = _objects.find(m);
+                    if (obj != _objects.end())
+                    {
+                        Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                        attributes = worldObjValue.getMemberNames();
+                        for (const auto& a : attributes)
+                            _config[sceneName][m][a] = worldObjValue[a];
+                    }
+                }
+                else
+                {
+                    _config[sceneName][m] = scene[m];
                 }
             }
         }

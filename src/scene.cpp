@@ -209,9 +209,29 @@ Json::Value Scene::getConfigurationAsJson()
     Json::Value root;
 
     root[_name] = BaseObject::getConfigurationAsJson();
+    // Save objects attributes
     for (auto& obj : _objects)
         if (obj.second->getSavable())
             root[obj.first] = obj.second->getConfigurationAsJson();
+
+    // Save links
+    Values links;
+    for (auto& obj : _objects)
+    {
+        if (!obj.second->getSavable())
+            continue;
+
+        auto linkedObjects = obj.second->getLinkedObjects();
+        for (auto& linkedObj : linkedObjects)
+        {
+            if (!linkedObj->getSavable())
+                continue;
+
+            links.push_back(Values({linkedObj->getName(), obj.second->getName()}));
+        }
+    }
+
+    root["links"] = getValuesAsJson(links);
 
     return root;
 }
