@@ -345,9 +345,10 @@ void World::applyConfig()
                         cmd = _executionPath + "splash-scene";
                     string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
                     string timer = Timer::get().isDebug() ? "-t" : "";
+                    string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
                     char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
-                    char* env[] = {(char*)display.c_str(), NULL};
+                    char* env[] = {(char*)display.c_str(), (char*)xauth.c_str(), NULL};
                     int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                     if (status != 0)
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
@@ -746,7 +747,7 @@ void World::parseArguments(int argc, char** argv)
 
     // Get the executable directory
     string executable = argv[0];
-    _executionPath = Utils::getPathFromFilePath(executable);
+    _executionPath = Utils::getPathFromExecutablePath(executable);
 
     // Parse the other args
     int idx = 1;
@@ -941,6 +942,8 @@ void World::registerAttributes()
 
                     _link->disconnectFrom(s.first);
                 }
+
+                _masterSceneName = "";
 
                 _config = config;
                 applyConfig();

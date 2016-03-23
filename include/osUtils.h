@@ -31,6 +31,7 @@
 #if HAVE_SHMDATA
     #include <shmdata/abstract-logger.hpp>
 #endif
+#include <pwd.h>
 
 #include "log.h"
 
@@ -38,6 +39,16 @@ namespace Splash
 {
     namespace Utils
     {
+        /*****/
+        inline std::string getHomePath()
+        {
+            if (getenv("HOME"))
+                return std::string(getenv("HOME"));
+
+            struct passwd* pw = getpwuid(getuid());
+            return std::string(pw->pw_dir);
+        }
+
         /*****/
         inline std::string getPathFromFilePath(const std::string& filepath)
         {
@@ -52,6 +63,31 @@ namespace Splash
                 isRelative = true;
                 path = "./" + filepath;
             }
+
+            size_t slashPos = path.rfind("/");
+
+            if (isAbsolute)
+                fullPath = path.substr(0, slashPos) + "/";
+            else if (isRelative)
+            {
+                char workingPathChar[256];
+                auto workingPath = std::string(getcwd(workingPathChar, 255));
+                if (path.find("/") == 1)
+                    fullPath = workingPath + path.substr(1, slashPos) + "/";
+                else if (path.find("/") == 2)
+                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+            }
+
+            return fullPath;
+        }
+        /*****/
+        inline std::string getPathFromExecutablePath(const std::string& filepath)
+        {
+            auto path = filepath;
+
+            bool isRelative = path.find(".") == 0 ? true : false;
+            bool isAbsolute = path.find("/") == 0 ? true : false;
+            auto fullPath = std::string("");
 
             size_t slashPos = path.rfind("/");
 
