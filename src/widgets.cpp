@@ -660,10 +660,12 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
         if (!obj.second->getSavable())
             continue;
 
-        if (dynamic_pointer_cast<Image>(obj.second))
+        if (obj.second->getType().find("image") != string::npos
+            || obj.second->getType().find("queue") != string::npos
+            || obj.second->getType().find("texture") != string::npos)
+        {
             mediaList.push_back(obj.second);
-        else if (dynamic_pointer_cast<Texture>(obj.second))
-            mediaList.push_back(obj.second);
+        }
     }
 
     return mediaList;
@@ -1904,18 +1906,31 @@ void GuiWarp::render()
         {
             if (ImGui::TreeNode(warp->getName().c_str()))
             {
-                Values points;
+                Values values;
                 ImGui::PushID(warp->getName().c_str());
 
-                warp->getAttribute("patchControl", points);
+                warp->getAttribute("patchResolution", values);
+                if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
+                    _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchResolution", values[0].asInt()});
 
+                {
+                    warp->getAttribute("patchSize", values);
+                    vector<int> tmp;
+                    tmp.push_back(values[0].asInt());
+                    tmp.push_back(values[1].asInt());
+
+                    if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchSize", tmp[0],  tmp[1]});
+                }
+
+                warp->getAttribute("patchControl", values);
                 bool updated = false;
-                for (int i = 2; i < points.size(); ++i)
+                for (int i = 2; i < values.size(); ++i)
                 {
                     auto pointID = to_string(i - 1);
                     ImGui::PushID(pointID.c_str());
 
-                    Values point = points[i].asValues();
+                    Values point = values[i].asValues();
                     vector<float> tmp;
                     tmp.push_back(point[0].asFloat());
                     tmp.push_back(point[1].asFloat());
@@ -1923,7 +1938,7 @@ void GuiWarp::render()
                     if (ImGui::InputFloat2(("#" + pointID).c_str(), tmp.data(), 3, ImGuiInputTextFlags_EnterReturnsTrue))
                     {
                         auto newPoint = Values({tmp[0], tmp[1]});
-                        points[i] = newPoint;
+                        values[i] = newPoint;
                         updated = true;
                     }
 
@@ -1935,7 +1950,7 @@ void GuiWarp::render()
                     Values msg;
                     msg.push_back(warp->getName());
                     msg.push_back("patchControl");
-                    for (auto& point : points)
+                    for (auto& point : values)
                         msg.push_back(point);
                     _scene.lock()->sendMessageToWorld("sendAll", msg);
                 }
