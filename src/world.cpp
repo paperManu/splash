@@ -1009,6 +1009,18 @@ void World::registerAttributes()
         return true;
     });
 
+    _attribFunctions["sendToMasterScene"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+
+        auto attr = args[0].asString();
+        Values values = args;
+        values.erase(values.begin());
+        sendMessage(_masterSceneName, attr, values);
+
+        return true;
+    });
+
     _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;

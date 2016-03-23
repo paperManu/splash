@@ -215,17 +215,28 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
-        auto warp = make_shared<Warp>(_root);
-        warp->setName(getName() + "_" + obj->getName() + "_warp");
-        if (warp->linkTo(obj))
+        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+        // Warps need to be duplicated in the master scene, to be available in the gui
+        if (scene && !scene->isMaster())
         {
-            _root.lock()->registerObject(warp);
-            return linkTo(warp);
+            auto warpName = getName() + "_" + obj->getName() + "_warp";
+            scene->sendMessageToWorld("sendToMasterScene", {"addGhost", "warp", warpName});
+            scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", obj->getName(), warpName});
+            scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", warpName, _name});
+            return true;
         }
         else
         {
-            return false;
+            auto warp = make_shared<Warp>(_root);
+            warp->setName(getName() + "_" + obj->getName() + "_warp");
+            if (warp->linkTo(obj))
+            {
+                _root.lock()->registerObject(warp);
+                return linkTo(warp);
+            }
         }
+        
+        return false;
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
