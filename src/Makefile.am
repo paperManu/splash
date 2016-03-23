@@ -39,7 +39,7 @@ $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: M
 
 export LIBTOOL = glibtool --tag=CXX
 else
-export LIBTOOL = $(top_srcdir)/libtool --tag=CXX
+export LIBTOOL = $(top_builddir)/libtool --tag=CXX
 endif
 
 #*************#
