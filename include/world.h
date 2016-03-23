@@ -95,6 +95,7 @@ class World : public RootObject
 
         std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
+        bool _reloadingConfig {false}; // TODO: workaround to allow for correct reloading when an inner scene was used
 
         std::atomic_int _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;

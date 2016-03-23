@@ -123,7 +123,7 @@ void Link::disconnectFrom(const std::string& name)
         catch (const zmq::error_t& e)
         {
             if (errno != ETERM)
-                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
+                Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception while disconnecting from " << name << ": " << e.what() << Log::endl;
         }
     }
 }

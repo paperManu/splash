@@ -321,6 +321,8 @@ void World::applyConfig()
                     worldDisplay = getenv("DISPLAY");
                     if (worldDisplay.size() == 2)
                         worldDisplay += ".0";
+                    if (_reloadingConfig)
+                        worldDisplay = "none";
                 }
 #endif
 
@@ -946,6 +948,7 @@ void World::registerAttributes()
                 _masterSceneName = "";
 
                 _config = config;
+                _reloadingConfig = true;
                 applyConfig();
             }
         });
