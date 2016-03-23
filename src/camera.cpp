@@ -1222,7 +1222,7 @@ void Camera::loadDefaultModels()
             }
         }
 
-        MeshPtr mesh = make_shared<Mesh>();
+        shared_ptr<Mesh> mesh = make_shared<Mesh>();
         mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);

@@ -601,7 +601,7 @@ void GuiMedia::replaceMedia(string previousMedia, string type)
     for (auto& objIt : scene->_objects)
     {
         auto& object = objIt.second;
-        if (!object->_savable)
+        if (!object->getSavable())
             continue;
         auto linkedObjects = object->getLinkedObjects();
         for (auto& linked : linkedObjects)
@@ -644,24 +644,28 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 
     for (auto& obj : scene->_objects)
     {
-        if (!obj.second->_savable)
+        if (!obj.second->getSavable())
             continue;
 
-        if (dynamic_pointer_cast<Image>(obj.second))
+        if (obj.second->getType().find("image") != string::npos
+            || obj.second->getType().find("queue") != string::npos
+            || obj.second->getType().find("texture") != string::npos)
+        {
             mediaList.push_back(obj.second);
-        else if (dynamic_pointer_cast<Texture>(obj.second))
-            mediaList.push_back(obj.second);
+        }
     }
 
     for (auto& obj : scene->_ghostObjects)
     {
-        if (!obj.second->_savable)
+        if (!obj.second->getSavable())
             continue;
 
-        if (dynamic_pointer_cast<Image>(obj.second))
+        if (obj.second->getType().find("image") != string::npos
+            || obj.second->getType().find("queue") != string::npos
+            || obj.second->getType().find("texture") != string::npos)
+        {
             mediaList.push_back(obj.second);
-        else if (dynamic_pointer_cast<Texture>(obj.second))
-            mediaList.push_back(obj.second);
+        }
     }
 
     return mediaList;
@@ -805,13 +809,13 @@ vector<string> GuiControl::getObjectNames()
 
     for (auto& o : scene->_objects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         objNames.push_back(o.first);
     }
     for (auto& o : scene->_ghostObjects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         objNames.push_back(o.first);
     }
@@ -1637,7 +1641,7 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
 
     for (auto& o : scene->_objects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
@@ -1646,7 +1650,7 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
     }
     for (auto& o : scene->_ghostObjects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
@@ -1666,13 +1670,13 @@ map<string, string> GuiNodeView::getObjectTypes()
 
     for (auto& o : scene->_objects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         types[o.first] = o.second->getType();
     }
     for (auto& o : scene->_ghostObjects)
     {
-        if (!o.second->_savable)
+        if (!o.second->getSavable())
             continue;
         types[o.first] = o.second->getType();
     }
@@ -1691,11 +1695,12 @@ void GuiNodeView::render()
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
                                                                  {"window", {8, 32}},
-                                                                 {"camera", {32, 64}},
-                                                                 {"object", {8, 96}},
-                                                                 {"texture filter queue", {32, 128}},
-                                                                 {"image", {8, 160}},
-                                                                 {"mesh", {32, 192}}
+                                                                 {"warp", {32, 64}},
+                                                                 {"camera", {8, 96}},
+                                                                 {"object", {32, 128}},
+                                                                 {"texture filter queue", {8, 160}},
+                                                                 {"image", {32, 192}},
+                                                                 {"mesh", {8, 224}}
                                                                 });
         std::map<std::string, int> shiftByType;
 
@@ -1740,6 +1745,7 @@ void GuiNodeView::render()
             {
                 type = "default";
                 nodePosition = defaultPositionByType["default"];
+                nodePosition.x += shift;
             }
             else
             {
@@ -1885,6 +1891,91 @@ int GuiNodeView::updateWindowFlags()
         flags |= ImGuiWindowFlags_NoMove;
     }
     return flags;
+}
+
+/*************/
+void GuiWarp::render()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    if (ImGui::CollapsingHeader(_name.c_str()))
+    {
+        auto warps = getWarps();
+
+        for (auto& warp : warps)
+        {
+            if (ImGui::TreeNode(warp->getName().c_str()))
+            {
+                Values values;
+                ImGui::PushID(warp->getName().c_str());
+
+                warp->getAttribute("patchResolution", values);
+                if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
+                    _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchResolution", values[0].asInt()});
+
+                {
+                    warp->getAttribute("patchSize", values);
+                    vector<int> tmp;
+                    tmp.push_back(values[0].asInt());
+                    tmp.push_back(values[1].asInt());
+
+                    if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                        _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchSize", tmp[0],  tmp[1]});
+                }
+
+                warp->getAttribute("patchControl", values);
+                bool updated = false;
+                for (int i = 2; i < values.size(); ++i)
+                {
+                    auto pointID = to_string(i - 1);
+                    ImGui::PushID(pointID.c_str());
+
+                    Values point = values[i].asValues();
+                    vector<float> tmp;
+                    tmp.push_back(point[0].asFloat());
+                    tmp.push_back(point[1].asFloat());
+
+                    if (ImGui::InputFloat2(("#" + pointID).c_str(), tmp.data(), 3, ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
+                        auto newPoint = Values({tmp[0], tmp[1]});
+                        values[i] = newPoint;
+                        updated = true;
+                    }
+
+                    ImGui::PopID();
+                }
+                    
+                if (updated)
+                {
+                    Values msg;
+                    msg.push_back(warp->getName());
+                    msg.push_back("patchControl");
+                    for (auto& point : values)
+                        msg.push_back(point);
+                    _scene.lock()->sendMessageToWorld("sendAll", msg);
+                }
+
+                ImGui::PopID();
+                ImGui::TreePop();
+            }
+        }
+    }
+}
+
+/*************/
+vector<shared_ptr<Warp>> GuiWarp::getWarps()
+{
+    auto warps = vector<shared_ptr<Warp>>();
+
+    auto scene = _scene.lock();
+    for (auto& obj : scene->_objects)
+        if (obj.second->getType() == "warp")
+            warps.push_back(dynamic_pointer_cast<Warp>(obj.second));
+    for (auto& obj : scene->_ghostObjects)
+        if (obj.second->getType() == "warp")
+            warps.push_back(dynamic_pointer_cast<Warp>(obj.second));
+
+    return warps;
 }
 
 } // end of namespace

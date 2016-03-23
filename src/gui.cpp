@@ -824,6 +824,7 @@ void Gui::initImWidgets()
         static float ble {0.f};
         static float flt {0.f};
         static float cam {0.f};
+        static float wrp {0.f};
         static float gui {0.f};
         static float win {0.f};
         static float buf {0.f};
@@ -836,6 +837,7 @@ void Gui::initImWidgets()
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
         flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
         cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
+        wrp = wrp * 0.9 + Timer::get()["warps"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
         win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
@@ -859,6 +861,7 @@ void Gui::initImWidgets()
         stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
         stream << "Filters: " << setprecision(4) << flt << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
+        stream << "Warps: " << setprecision(4) << wrp << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
         stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
@@ -904,6 +907,11 @@ void Gui::initImWidgets()
     globalView->setCamera(_guiCamera);
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
+
+    // Warp control
+    auto warpControl = make_shared<GuiWarp>("Warp");
+    warpControl->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
 
     // Performance graph
     if (Log::get().getVerbosity() == Log::DEBUGGING)

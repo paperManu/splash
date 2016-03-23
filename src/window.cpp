@@ -11,6 +11,7 @@
 #include "texture.h"
 #include "texture_image.h"
 #include "timer.h"
+#include "warp.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
@@ -214,10 +215,25 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
-        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
-        for (auto& tex : cam->getTextures())
-            setTexture(tex);
-        return true;
+        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+        // Warps need to be duplicated in the master scene, to be available in the gui
+        if (scene && !scene->isMaster())
+        {
+            auto warpName = getName() + "_" + obj->getName() + "_warp";
+            scene->sendMessageToWorld("sendToMasterScene", {"addGhost", "warp", warpName});
+            scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", obj->getName(), warpName});
+            scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", warpName, _name});
+        }
+
+        auto warp = make_shared<Warp>(_root);
+        warp->setName(getName() + "_" + obj->getName() + "_warp");
+        if (warp->linkTo(obj))
+        {
+            _root.lock()->registerObject(warp);
+            return linkTo(warp);
+        }
+        
+        return false;
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {

@@ -16,6 +16,7 @@
 #include "texture_image.h"
 #include "threadpool.h"
 #include "timer.h"
+#include "warp.h"
 #include "window.h"
 
 #if HAVE_GPHOTO
@@ -128,6 +129,9 @@ BaseObjectPtr Scene::add(string type, string name)
     else if (type == string("texture_syphon"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>());
 #endif
+    else if (type == string("warp"))
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
+
     _mainWindow->releaseContext();
 
     // Add the object to the objects list
@@ -160,7 +164,7 @@ BaseObjectPtr Scene::add(string type, string name)
 void Scene::addGhost(string type, string name)
 {
     // Currently, only Cameras can be ghosts
-    if (type != string("camera"))
+    if (type != string("camera") && type != string("warp"))
         return;
 
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
@@ -205,9 +209,29 @@ Json::Value Scene::getConfigurationAsJson()
     Json::Value root;
 
     root[_name] = BaseObject::getConfigurationAsJson();
+    // Save objects attributes
     for (auto& obj : _objects)
-        if (obj.second->_savable)
+        if (obj.second->getSavable())
             root[obj.first] = obj.second->getConfigurationAsJson();
+
+    // Save links
+    Values links;
+    for (auto& obj : _objects)
+    {
+        if (!obj.second->getSavable())
+            continue;
+
+        auto linkedObjects = obj.second->getLinkedObjects();
+        for (auto& linkedObj : linkedObjects)
+        {
+            if (!linkedObj->getSavable())
+                continue;
+
+            links.push_back(Values({linkedObj->getName(), obj.second->getName()}));
+        }
+    }
+
+    root["links"] = getValuesAsJson(links);
 
     return root;
 }
@@ -482,6 +506,12 @@ void Scene::render()
     Timer::get() >> "cameras";
 
     _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+
+    Timer::get() << "warps";
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "warp")
+            dynamic_pointer_cast<Warp>(obj.second)->update();
+    Timer::get() >> "warps";
 
     lockTexture.unlock(); // Unlock _textureUploadMutex
 
@@ -804,7 +834,7 @@ void Scene::activateBlendingMap(bool once)
                 pixBuffer[y * w + x] = maxValue;
             }
         swap(_blendingMap, buffer);
-        _blendingMap->_savable = false;
+        _blendingMap->setSavable(false);
         _blendingMap->updateTimestamp();
 
         // Small hack to handle the fact that texture transfer uses PBOs.

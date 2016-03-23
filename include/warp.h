@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Emmanuel Durand
+ * Copyright (C) 2016 Emmanuel Durand
  *
  * This file is part of Splash.
  *
@@ -18,12 +18,12 @@
  */
 
 /*
- * @filter.h
- * The Filter class
+ * @warp.h
+ * The Warp class, designed to allow for projection warping
  */
 
-#ifndef SPLASH_FILTER_H
-#define SPLASH_FILTER_H
+#ifndef SPLASH_WARP_H
+#define SPLASH_WARP_H
 
 #include <memory>
 #include <string>
@@ -34,7 +34,8 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
-#include "image.h"
+#include "camera.h"
+#include "mesh_bezierPatch.h"
 #include "object.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -42,28 +43,28 @@
 namespace Splash {
 
 /*************/
-class Filter : public Texture
+class Warp : public Texture
 {
     public:
         /**
          * Constructor
          */
-        Filter(RootObjectWeakPtr root);
+        Warp(RootObjectWeakPtr root);
 
         /**
          * Destructor
          */
-        ~Filter();
+        ~Warp();
 
         /**
          * No copy constructor, but a move one
          */
-        Filter(const Filter&) = delete;
-        Filter(Filter&&) = default;
-        Filter& operator=(const Filter&) = delete;
+        Warp(const Warp&) = delete;
+        Warp(Warp&&) = default;
+        Warp& operator=(const Warp&) = delete;
 
         /**
-         * Bind / unbind this texture of this filter
+         * Bind / unbind this texture of this warp
          */
         void bind();
         void unbind();
@@ -86,7 +87,7 @@ class Filter : public Texture
         bool unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Filters should always be saved as the hold user-modifiable parameters
+         * Warps should always be saved as the hold user-modifiable parameters
          */
         void setSavable(bool savable) {_savable = true;}
 
@@ -98,22 +99,13 @@ class Filter : public Texture
     private:
         bool _isInitialized {false};
         GlWindowPtr _window;
-        std::weak_ptr<Texture> _inTexture;
+        std::weak_ptr<Camera> _inCamera;
 
         GLuint _fbo {0};
         std::shared_ptr<Texture_Image> _outTexture {nullptr};
-        std::shared_ptr<Object> _screen;
+        std::shared_ptr<Mesh_BezierPatch> _screenMesh {nullptr};
+        std::shared_ptr<Object> _screen {nullptr};
         ImageBufferSpec _outTextureSpec;
-
-        // Filter parameters
-        float _blackLevel {0.f};
-        float _brightness {1.f};
-        float _colorTemperature {6500.f};
-        float _contrast {1.f};
-        float _saturation {1.f};
-
-        // Computed values
-        glm::vec2 _colorBalance {1.f, 1.f};
 
         /**
          * Init function called in constructors
@@ -127,7 +119,7 @@ class Filter : public Texture
 
         /**
          * Updates the shader uniforms according to the textures and images
-         * the filter is connected to.
+         * the warp is connected to.
          */
         void updateUniforms();
 
@@ -139,4 +131,4 @@ class Filter : public Texture
 
 } // end of namespace
 
-#endif // SPLASH_FILTER_H
+#endif // SPLASH_WARP_H

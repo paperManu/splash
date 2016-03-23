@@ -216,25 +216,25 @@ AC_DEFUN([AX_EXT],
         fi
       fi
 
-      if test "$ax_cv_have_sse42_ext" = yes; then
-        AX_CHECK_COMPILE_FLAG(-msse4.2, ax_cv_support_sse42_ext=yes, [])
-        if test x"$ax_cv_support_sse42_ext" = x"yes"; then
-          SIMD_FLAGS="$SIMD_FLAGS -msse4.2"
-          AC_DEFINE(HAVE_SSE4_2,,[Support SSSE4.2 (Streaming SIMD Extensions 4.2) instructions])
-        else
-          AC_MSG_WARN([Your processor supports sse4.2 instructions but not your compiler, can you try another compiler?])
-        fi
-      fi
+#      if test "$ax_cv_have_sse42_ext" = yes; then
+#        AX_CHECK_COMPILE_FLAG(-msse4.2, ax_cv_support_sse42_ext=yes, [])
+#        if test x"$ax_cv_support_sse42_ext" = x"yes"; then
+#          SIMD_FLAGS="$SIMD_FLAGS -msse4.2"
+#          AC_DEFINE(HAVE_SSE4_2,,[Support SSSE4.2 (Streaming SIMD Extensions 4.2) instructions])
+#        else
+#          AC_MSG_WARN([Your processor supports sse4.2 instructions but not your compiler, can you try another compiler?])
+#        fi
+#      fi
 
-      if test "$ax_cv_have_avx_ext" = yes; then
-        AX_CHECK_COMPILE_FLAG(-mavx, ax_cv_support_avx_ext=yes, [])
-        if test x"$ax_cv_support_avx_ext" = x"yes"; then
-          SIMD_FLAGS="$SIMD_FLAGS -mavx"
-          AC_DEFINE(HAVE_AVX,,[Support AVX (Advanced Vector Extensions) instructions])
-        else
-          AC_MSG_WARN([Your processor supports avx instructions but not your compiler, can you try another compiler?])
-        fi
-      fi
+#      if test "$ax_cv_have_avx_ext" = yes; then
+#        AX_CHECK_COMPILE_FLAG(-mavx, ax_cv_support_avx_ext=yes, [])
+#        if test x"$ax_cv_support_avx_ext" = x"yes"; then
+#          SIMD_FLAGS="$SIMD_FLAGS -mavx"
+#          AC_DEFINE(HAVE_AVX,,[Support AVX (Advanced Vector Extensions) instructions])
+#        else
+#          AC_MSG_WARN([Your processor supports avx instructions but not your compiler, can you try another compiler?])
+#        fi
+#      fi
 
   ;;
   esac

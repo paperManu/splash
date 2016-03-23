@@ -58,6 +58,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	imageBuffer.cpp \
 	link.cpp \
 	mesh.cpp \
+	mesh_bezierPatch.cpp \
 	object.cpp \
 	queue.cpp \
 	scene.cpp \
@@ -65,6 +66,7 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	texture.cpp \
 	texture_image.cpp \
 	threadpool.cpp \
+	warp.cpp \
 	window.cpp \
 	widgets.cpp \
 	world.cpp
@@ -299,6 +301,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/listener.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
+	$(top_srcdir)/include/mesh_bezierPatch.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
 	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \
@@ -315,9 +318,11 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/texture_syphon_client.h \
 	$(top_srcdir)/include/threadpool.h \
 	$(top_srcdir)/include/timer.h \
+	$(top_srcdir)/include/warp.h \
 	$(top_srcdir)/include/widgets.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
+	\
 	$(top_srcdir)/external/cppzmq/zmq.hpp \
 	\
 	$(top_srcdir)/external/glad/core/include/glad/glad.h \
