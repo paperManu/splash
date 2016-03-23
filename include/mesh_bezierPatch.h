@@ -79,7 +79,7 @@ class Mesh_BezierPatch : public Mesh
         };
 
         Patch _patch {};
-        int _patchResolution {16};
+        int _patchResolution {64};
 
         bool _patchUpdated {true};
         MeshContainer _bezierControl;

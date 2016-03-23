@@ -164,7 +164,7 @@ BaseObjectPtr Scene::add(string type, string name)
 void Scene::addGhost(string type, string name)
 {
     // Currently, only Cameras can be ghosts
-    if (type != string("camera"))
+    if (type != string("camera") && type != string("warp"))
         return;
 
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;

@@ -223,17 +223,14 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
             scene->sendMessageToWorld("sendToMasterScene", {"addGhost", "warp", warpName});
             scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", obj->getName(), warpName});
             scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", warpName, _name});
-            return true;
         }
-        else
+
+        auto warp = make_shared<Warp>(_root);
+        warp->setName(getName() + "_" + obj->getName() + "_warp");
+        if (warp->linkTo(obj))
         {
-            auto warp = make_shared<Warp>(_root);
-            warp->setName(getName() + "_" + obj->getName() + "_warp");
-            if (warp->linkTo(obj))
-            {
-                _root.lock()->registerObject(warp);
-                return linkTo(warp);
-            }
+            _root.lock()->registerObject(warp);
+            return linkTo(warp);
         }
         
         return false;
