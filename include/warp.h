@@ -76,6 +76,11 @@ class Warp : public Texture
         std::unordered_map<std::string, Values> getShaderUniforms() const;
 
         /**
+         * Get the rendered texture
+         */
+        std::shared_ptr<Texture_Image> getTexture() const {return _outTexture;}
+
+        /**
          * Get spec of the texture
          */
         ImageBufferSpec getSpec() const {return _outTextureSpec;}
@@ -85,6 +90,12 @@ class Warp : public Texture
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
         bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * Get the coordinates of the closest vertex to the given point
+         * Returns its index in the bezier patch
+         */
+        int pickControlPoint(glm::vec2 p, glm::vec2& v);
 
         /**
          * Warps should always be saved as the hold user-modifiable parameters
@@ -106,6 +117,9 @@ class Warp : public Texture
         std::shared_ptr<Mesh_BezierPatch> _screenMesh {nullptr};
         std::shared_ptr<Object> _screen {nullptr};
         ImageBufferSpec _outTextureSpec;
+
+        // Render options
+        bool _showControlPoints {false};
 
         /**
          * Init function called in constructors

@@ -1220,6 +1220,86 @@ struct ShaderSources
     )"};
 
     /**
+     * Wireframe rendering for Warps
+     */
+    const std::string VERTEX_SHADER_WARP_WIREFRAME {R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+
+        out VertexData
+        {
+            vec4 vertex;
+            vec2 texcoord;
+        } vertexOut;
+
+        void main()
+        {
+            vertexOut.vertex = _vertex;
+            vertexOut.texcoord = _texcoord;
+        }
+    )"};
+
+    const std::string GEOMETRY_SHADER_WARP_WIREFRAME {R"(
+        layout(triangles) in;
+        layout(triangle_strip, max_vertices = 3) out;
+
+        in VertexData
+        {
+            vec4 vertex;
+            vec2 texcoord;
+        } vertexIn[];
+
+        out VertexData
+        {
+            vec3 bcoord;
+        } vertexOut;
+
+        void main()
+        {
+            vec4 v = vec4(vertexIn[0].vertex.xyz, 1.0);
+            gl_Position = v;
+            vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
+            EmitVertex();
+
+            v = vec4(vertexIn[1].vertex.xyz, 1.0);
+            gl_Position = v;
+            vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
+            EmitVertex();
+
+            v = vec4(vertexIn[2].vertex.xyz, 1.0);
+            gl_Position = v;
+            vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
+            EmitVertex();
+
+            EndPrimitive();
+        }
+    )"};
+
+    const std::string FRAGMENT_SHADER_WARP_WIREFRAME {R"(
+        #define PI 3.14159265359
+
+        in VertexData
+        {
+            vec3 bcoord;
+        } vertexIn;
+
+        uniform int _sideness = 0;
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            vec3 b = vertexIn.bcoord;
+            float minDist = min(min(b[0], b[1]), b[2]);
+            vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
+            if (minDist < 0.01)
+                fragColor.rgba = mix(vec4(vec3(0.5), 1.0), matColor, (minDist - 0.005) / 0.005);
+            else
+                discard;
+        }
+    )"};
+
+    /**
      * Rendering of the output windows
      */
     const std::string VERTEX_SHADER_WINDOW {R"(

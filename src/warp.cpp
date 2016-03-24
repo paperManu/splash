@@ -166,6 +166,20 @@ void Warp::update()
     _screen->draw();
     _screen->deactivate();
 
+    if (_showControlPoints)
+    {
+        _screen->setAttribute("fill", {"warpControl"});
+        _screenMesh->switchMeshes(true);
+
+        _screen->activate();
+        updateUniforms();
+        _screen->draw();
+        _screen->deactivate();
+
+        _screen->setAttribute("fill", {"warp"});
+        _screenMesh->switchMeshes(false);
+    }
+
     glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
@@ -177,6 +191,35 @@ void Warp::updateUniforms()
 {
     auto shader = _screen->getShader();
 }
+/*************/
+int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
+{
+    float distance = numeric_limits<float>::max();
+    glm::vec2 closestVertex;
+
+    _screenMesh->switchMeshes(true);
+    _screenMesh->update();
+
+    auto vertices = _screenMesh->getControlPoints();
+    int index = -1;
+    for (int i = 0; i < vertices.size(); ++i)
+    {
+        float dist = glm::length(p - vertices[i]);
+        if (dist < distance)
+        {
+            closestVertex = vertices[i];
+            distance = dist;
+            index = i;
+        }
+    }
+
+    v = closestVertex;
+
+    _screenMesh->switchMeshes(false);
+
+    return index;
+}
+
 
 /*************/
 void Warp::setOutput()
@@ -238,6 +281,13 @@ void Warp::registerAttributes()
         Values v;
         _screenMesh->getAttribute("patchSize", v);
         return v;
+    });
+
+    _attribFunctions["showControlPoints"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _showControlPoints = args[0].asInt();
+        return true;
     });
 }
 

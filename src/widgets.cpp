@@ -1923,36 +1923,27 @@ void GuiWarp::render()
                         _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchSize", tmp[0],  tmp[1]});
                 }
 
-                warp->getAttribute("patchControl", values);
-                bool updated = false;
-                for (int i = 2; i < values.size(); ++i)
+                if (auto texture = warp->getTexture())
                 {
-                    auto pointID = to_string(i - 1);
-                    ImGui::PushID(pointID.c_str());
+                    auto warpSpec = warp->getSpec();
+                    double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+                    int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+                    int h = w * warpSpec.height / warpSpec.width;
 
-                    Values point = values[i].asValues();
-                    vector<float> tmp;
-                    tmp.push_back(point[0].asFloat());
-                    tmp.push_back(point[1].asFloat());
+                    warp->setAttribute("showControlPoints", {1});
+                    warp->update();
+                    ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+                    warp->setAttribute("showControlPoints", {0});
 
-                    if (ImGui::InputFloat2(("#" + pointID).c_str(), tmp.data(), 3, ImGuiInputTextFlags_EnterReturnsTrue))
+                    if (ImGui::IsItemHoveredRect())
                     {
-                        auto newPoint = Values({tmp[0], tmp[1]});
-                        values[i] = newPoint;
-                        updated = true;
+                        _noMove = true;
+                        processMouseEvents(warp, w, h);
                     }
-
-                    ImGui::PopID();
-                }
-                    
-                if (updated)
-                {
-                    Values msg;
-                    msg.push_back(warp->getName());
-                    msg.push_back("patchControl");
-                    for (auto& point : values)
-                        msg.push_back(point);
-                    _scene.lock()->sendMessageToWorld("sendAll", msg);
+                    else
+                    {
+                        _noMove = false;
+                    }
                 }
 
                 ImGui::PopID();
@@ -1977,5 +1968,59 @@ vector<shared_ptr<Warp>> GuiWarp::getWarps()
 
     return warps;
 }
+
+/*************/
+int GuiWarp::updateWindowFlags()
+{
+    ImGuiWindowFlags flags = 0;
+    if (_noMove)
+    {
+        flags |= ImGuiWindowFlags_NoMove;
+        flags |= ImGuiWindowFlags_NoScrollWithMouse;
+    }
+    return flags;
+}
+/*************/
+void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, int warpHeight)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Get mouse pos
+    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / warpWidth,
+                             -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / warpHeight);
+
+    if (io.MouseDownDuration[0] == 0.0)
+    {
+        // Select a control point
+        glm::vec2 picked;
+        _currentControlPointIndex = warp->pickControlPoint(glm::vec2(mousePos.x * 2.0 - 1.0, mousePos.y * 2.0 - 1.0), picked);
+        _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
+    }
+    else if (io.MouseDownDuration[0] > 0.0)
+    {
+        Values controlPoints;
+        warp->getAttribute("patchControl", controlPoints);
+        if (controlPoints.size() < _currentControlPointIndex)
+            return;
+
+        Values point = controlPoints[_currentControlPointIndex + 2].asValues();
+        glm::vec2 delta = glm::vec2(mousePos.x, mousePos.y) - _previousMousePos;
+        _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
+
+        point[0] = point[0].asFloat() + delta.x;
+        point[1] = point[1].asFloat() + delta.y;
+        controlPoints[_currentControlPointIndex + 2] = point;
+
+        Values msg;
+        msg.push_back(warp->getName());
+        msg.push_back("patchControl");
+        for (auto& point : controlPoints)
+            msg.push_back(point);
+
+        auto scene = _scene.lock();
+        scene->sendMessageToWorld("sendAll", msg);
+    }
+}
+
 
 } // end of namespace

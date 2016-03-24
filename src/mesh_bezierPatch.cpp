@@ -35,6 +35,7 @@ void Mesh_BezierPatch::switchMeshes(bool control)
         _bufferMesh = _bezierMesh;
 
     updateTimestamp();
+    _meshUpdated = true;
 }
 
 /*************/
@@ -114,21 +115,21 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
     {
         for (int u = 0; u < width - 1; ++u)
         {
-            mesh.vertices.push_back(glm::vec4(patch.vertices[u + v * (width + 1)], 0.0, 1.0));
-            mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + v * (width + 1)], 0.0, 1.0));
-            mesh.vertices.push_back(glm::vec4(patch.vertices[u + (v + 1) * (width + 1)], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(patch.vertices[u + v * width], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + v * width], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(patch.vertices[u + (v + 1) * width], 0.0, 1.0));
 
-            mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + v * (width + 1)], 0.0, 1.0));
-            mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + (v + 1) * (width + 1)], 0.0, 1.0));
-            mesh.vertices.push_back(glm::vec4(patch.vertices[u + (v + 1) * (width + 1)], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + v * width], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(patch.vertices[u + 1 + (v + 1) * width], 0.0, 1.0));
+            mesh.vertices.push_back(glm::vec4(patch.vertices[u + (v + 1) * width], 0.0, 1.0));
 
-            mesh.uvs.push_back(patch.uvs[u + v * (width + 1)]);
-            mesh.uvs.push_back(patch.uvs[u + 1 + v * (width + 1)]);
-            mesh.uvs.push_back(patch.uvs[u + (v + 1) * (width + 1)]);
+            mesh.uvs.push_back(patch.uvs[u + v * width]);
+            mesh.uvs.push_back(patch.uvs[u + 1 + v * width]);
+            mesh.uvs.push_back(patch.uvs[u + (v + 1) * width]);
 
-            mesh.uvs.push_back(patch.uvs[u + 1 + v * (width + 1)]);
-            mesh.uvs.push_back(patch.uvs[u + 1 + (v + 1) * (width + 1)]);
-            mesh.uvs.push_back(patch.uvs[u + (v + 1) * (width + 1)]);
+            mesh.uvs.push_back(patch.uvs[u + 1 + v * width]);
+            mesh.uvs.push_back(patch.uvs[u + 1 + (v + 1) * width]);
+            mesh.uvs.push_back(patch.uvs[u + (v + 1) * width]);
 
             mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));
             mesh.normals.push_back(glm::vec3(0.0, 0.0, 1.0));

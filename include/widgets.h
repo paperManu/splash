@@ -100,18 +100,6 @@ class GuiTextBox : public GuiWidget
 };
 
 /*************/
-class GuiWarp : public GuiWidget
-{
-    public:
-        GuiWarp(std::string name) : GuiWidget(name) {}
-        void render();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
-
-    private:
-        std::vector<std::shared_ptr<Warp>> getWarps();
-};
-
-/*************/
 class GuiGlobalView : public GuiWidget
 {
     public:
@@ -269,6 +257,25 @@ class GuiNodeView : public GuiWidget
         std::map<std::string, std::vector<std::string>> getObjectLinks();
         std::map<std::string, std::string> getObjectTypes();
         void renderNode(std::string name);
+};
+
+/*************/
+class GuiWarp : public GuiWidget
+{
+    public:
+        GuiWarp(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        int updateWindowFlags();
+
+    private:
+        std::vector<std::shared_ptr<Warp>> getWarps();
+        bool _noMove {false};
+
+        int _currentControlPointIndex {0};
+        glm::vec2 _previousMousePos;
+
+        void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
 };
 
 } // end of namespace

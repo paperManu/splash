@@ -61,6 +61,11 @@ class Mesh_BezierPatch : public Mesh
         Mesh_BezierPatch& operator=(Mesh_BezierPatch&&) = default;
 
         /**
+         * Get the list of the control points
+         */
+        std::vector<glm::vec2> getControlPoints() const {return _patch.vertices;}
+
+        /**
          * Select the bezier mesh or the control points as the mesh to output
          */
         void switchMeshes(bool control);
