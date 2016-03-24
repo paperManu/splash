@@ -96,12 +96,21 @@ class Mesh_BezierPatch : public Mesh
             return (i == 0 || i == 1) ? 1 : factorial(i - 1) * i;
         }
 
+        // "Semi" factorial
+        inline int32_t factorial(int32_t n, int32_t k)
+        {
+            int32_t res = 1;
+            for (int32_t i = n - k + 1; i <= n; ++i)
+                res *= i;
+            return res;
+        }
+
         // Binomial coefficient
         inline int32_t binomialCoeff(int32_t n, int32_t i)
         {
             if (n < i)
                 return 0;
-            return factorial(n) / (factorial(i) * factorial(n - i));
+            return factorial(n, i) / factorial(i);
         }
 
         void init();

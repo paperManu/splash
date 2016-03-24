@@ -2007,8 +2007,8 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
         glm::vec2 delta = glm::vec2(mousePos.x, mousePos.y) - _previousMousePos;
         _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
 
-        point[0] = point[0].asFloat() + delta.x;
-        point[1] = point[1].asFloat() + delta.y;
+        point[0] = point[0].asFloat() + delta.x * 2.0;
+        point[1] = point[1].asFloat() + delta.y * 2.0;
         controlPoints[_currentControlPointIndex + 2] = point;
 
         Values msg;
