@@ -1,8 +1,25 @@
 Splash release notes
 ===================
 
-Splash 0.3.11 (201x-xx-xx)
+Splash 0.3.12 (2016-03-25)
 -------------------------
+New features:
+* Added warp to take care of thoses cases where camera calibration is not sufficient
+* Added per-media filter, to control brightness, contrast, saturation and black level
+* Added support for threaded HapQ decoding
+
+Improvements:
+* Improved performances by reducing the number of buffer copies
+* Improved queues
+* Improved LTC support
+* Added a file selector for media and configurations
+* Overall GUI improvements
+* Removed dependency to OpenImageIO, now using stb_image
+* JsonCpp, libltc and cppzmq are now included as submodules
+
+Bug fixed:
+* Fixed some crashes related to $DISPLAY
+* Fixed a crash specific to OSX
 
 Splash 0.3.10 (2015-12-08)
 -------------------------
