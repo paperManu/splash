@@ -90,6 +90,10 @@ class Mesh_BezierPatch : public Mesh
         MeshContainer _bezierControl;
         MeshContainer _bezierMesh;
 
+        std::vector<float> _binomialCoeffsX {};
+        std::vector<float> _binomialCoeffsY {};
+        glm::ivec2 _binomialDimensions {0, 0};
+
         // Factorial
         inline int32_t factorial(int32_t i)
         {

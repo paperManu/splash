@@ -150,6 +150,21 @@ void Mesh_BezierPatch::updatePatch()
     vector<glm::vec2> vertices;
     vector<glm::vec2> uvs;
 
+    // Update the binomial coefficients if needed
+    if (_patch.size != _binomialDimensions)
+    {
+        _binomialCoeffsX.clear();
+        _binomialCoeffsY.clear();
+
+        for (int i = 0; i < _patch.size.x; ++i)
+            _binomialCoeffsX.push_back((float)binomialCoeff(_patch.size.x - 1, i));
+
+        for (int i = 0; i < _patch.size.y; ++i)
+            _binomialCoeffsY.push_back((float)binomialCoeff(_patch.size.y - 1, i));
+
+        _binomialDimensions = _patch.size;
+    }
+
     // Compute the vertices positions
     for (int v = 0; v < _patchResolution; ++v)
     {
@@ -166,8 +181,8 @@ void Mesh_BezierPatch::updatePatch()
             {
                 for (int i = 0; i < _patch.size.x ; ++i)
                 {
-                    float factor = (float)binomialCoeff(_patch.size.y - 1, j) * pow(uv.y, (float)j) * pow(1.f - uv.y, (float)_patch.size.y - 1.f - (float)j)
-                                 * (float)binomialCoeff(_patch.size.x - 1, i) * pow(uv.x, (float)i) * pow(1.f - uv.x, (float)_patch.size.x - 1.f - (float)i);
+                    float factor = _binomialCoeffsY[j] * pow(uv.y, (float)j) * pow(1.f - uv.y, (float)_patch.size.y - 1.f - (float)j)
+                                 * _binomialCoeffsX[i] * pow(uv.x, (float)i) * pow(1.f - uv.x, (float)_patch.size.x - 1.f - (float)i);
                     vertex += factor * _patch.vertices[i + j * _patch.size.x];
                 }
             }
