@@ -272,6 +272,7 @@ class GuiWarp : public GuiWidget
         std::vector<std::shared_ptr<Warp>> getWarps();
         bool _noMove {false};
 
+        int _currentWarp {0};
         int _currentControlPointIndex {0};
         glm::vec2 _previousMousePos;
 

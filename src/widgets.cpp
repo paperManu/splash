@@ -1898,58 +1898,92 @@ void GuiWarp::render()
 {
     ImGuiIO& io = ImGui::GetIO();
 
+    auto warps = getWarps();
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto warps = getWarps();
+        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 
-        for (auto& warp : warps)
+        ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
+        ImGui::Text("Select a warp:");
+        for (int i = 0; i < warps.size(); ++i)
         {
-            if (ImGui::TreeNode(warp->getName().c_str()))
-            {
-                Values values;
-                ImGui::PushID(warp->getName().c_str());
+            auto& warp = warps[i];
+            
+            // We need to update the underlying camera
+            auto linkedObj = warp->getLinkedObjects();
+            for (auto& obj : linkedObj)
+                if (obj->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj)->render();
 
-                warp->getAttribute("patchResolution", values);
-                if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
-                    _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchResolution", values[0].asInt()});
+            auto scene = _scene.lock();
+            if (_currentWarp == i)
+                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoints", 1});
+            else
+                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoints", 0});
 
-                {
-                    warp->getAttribute("patchSize", values);
-                    vector<int> tmp;
-                    tmp.push_back(values[0].asInt());
-                    tmp.push_back(values[1].asInt());
+            warp->update();
 
-                    if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchSize", tmp[0],  tmp[1]});
-                }
+            auto warpSpec = warp->getSpec();
+            int w = ImGui::GetWindowWidth() - 4 * leftMargin;
+            int h = w * warpSpec.height / warpSpec.width;
 
-                if (auto texture = warp->getTexture())
-                {
-                    auto warpSpec = warp->getSpec();
-                    double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
-                    int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-                    int h = w * warpSpec.height / warpSpec.width;
+            if(ImGui::ImageButton((void*)(intptr_t)warp->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+                _currentWarp = i;
 
-                    warp->setAttribute("showControlPoints", {1});
-                    warp->update();
-                    ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
-                    warp->setAttribute("showControlPoints", {0});
-
-                    if (ImGui::IsItemHoveredRect())
-                    {
-                        _noMove = true;
-                        processMouseEvents(warp, w, h);
-                    }
-                    else
-                    {
-                        _noMove = false;
-                    }
-                }
-
-                ImGui::PopID();
-                ImGui::TreePop();
-            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip(warp->getName().c_str());
         }
+        ImGui::EndChild();
+
+        ImGui::SameLine();
+        ImGui::BeginChild("Configure warp", ImVec2(0, ImGui::GetWindowWidth() * 0.67), false);
+        if (_currentWarp < warps.size())
+        {
+            auto& warp = warps[_currentWarp];
+
+            Values values;
+            ImGui::PushID(warp->getName().c_str());
+
+            warp->getAttribute("patchResolution", values);
+            if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
+                _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchResolution", values[0].asInt()});
+            {
+                warp->getAttribute("patchSize", values);
+                vector<int> tmp;
+                tmp.push_back(values[0].asInt());
+                tmp.push_back(values[1].asInt());
+
+                if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                    _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchSize", tmp[0],  tmp[1]});
+            }
+
+            if (auto texture = warp->getTexture())
+            {
+                auto warpSpec = warp->getSpec();
+                int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+                int h = w * warpSpec.height / warpSpec.width;
+
+                ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+
+                if (ImGui::IsItemHoveredRect())
+                {
+                    _noMove = true;
+                    processMouseEvents(warp, w, h);
+                }
+                else
+                {
+                    _noMove = false;
+                }
+            }
+            ImGui::PopID();
+        }
+        ImGui::EndChild();
+    }
+    else
+    {
+        auto scene = _scene.lock();
+        if (_currentWarp < warps.size())
+            scene->sendMessageToWorld("sendAll", {warps[_currentWarp]->getName(), "showControlPoints", 0});
     }
 }
 
