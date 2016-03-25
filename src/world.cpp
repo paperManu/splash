@@ -4,8 +4,6 @@
 #include <fstream>
 #include <unistd.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <json/reader.h>
-#include <json/writer.h>
 #include <spawn.h>
 #include <sys/wait.h>
 
@@ -71,9 +69,10 @@ void World::run()
     while (true)
     {
         Timer::get() << "worldLoop";
+        unique_lock<mutex> lockConfiguration(_configurationMutex);
 
         {
-            unique_lock<mutex> lock(_configurationMutex);
+            unique_lock<recursive_mutex> lockObjects(_objectsMutex);
 
             Timer::get() << "upload";
             vector<unsigned int> threadIds;
@@ -260,7 +259,26 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-    unique_lock<mutex> lock(_configurationMutex);
+
+    // Helper function to read arrays
+    std::function<Values(Json::Value)> processArray;
+    processArray = [&processArray](Json::Value values) {
+        Values outValues;
+        for (auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt());
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat());
+            else if (v.isArray())
+                outValues.emplace_back(processArray(v));
+            else
+                outValues.emplace_back(v.asString());
+        }
+        return outValues;
+    };
+
+    unique_lock<mutex> lockConfiguration(_configurationMutex);
 
     // We first destroy all scene and objects
     _scenes.clear();
@@ -284,20 +302,32 @@ void World::applyConfig()
                 spawn = jsScenes[i]["spawn"].asInt();
 
             string display = "DISPLAY=:0.";
+#if HAVE_LINUX
             if (jsScenes[i].isMember("display"))
                 display += to_string(jsScenes[i]["display"].asInt());
             else
                 display += to_string(0);
+#endif
 
             string name = jsScenes[i]["name"].asString();
             int pid = -1;
             if (spawn > 0)
             {
                 _sceneLaunched = false;
-                string worldDisplay = getenv("DISPLAY");
+                string worldDisplay = "none";
+#if HAVE_LINUX
+                if (getenv("DISPLAY"))
+                {
+                    worldDisplay = getenv("DISPLAY");
+                    if (worldDisplay.size() == 2)
+                        worldDisplay += ".0";
+                    if (_reloadingConfig)
+                        worldDisplay = "none";
+                }
+#endif
 
                 // If the current process is on the correct display, we use an inner Scene
-                if (display.find(worldDisplay) != string::npos && !_innerScene)
+                if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
                 {
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
                     _innerScene = make_shared<Scene>(name, false);
@@ -317,19 +347,20 @@ void World::applyConfig()
                         cmd = _executionPath + "splash-scene";
                     string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
                     string timer = Timer::get().isDebug() ? "-t" : "";
+                    string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
                     char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
-                    char* env[] = {(char*)display.c_str(), NULL};
+                    char* env[] = {(char*)display.c_str(), (char*)xauth.c_str(), NULL};
                     int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
                     if (status != 0)
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
                 }
 
                 // We wait for the child process to be launched
-                unique_lock<mutex> lock(_childProcessMutex);
+                unique_lock<mutex> lockChildProcess(_childProcessMutex);
                 while (!_sceneLaunched)
                 {
-                    if (cv_status::timeout == _childProcessConditionVariable.wait_for(lock, chrono::seconds(4)))
+                    if (cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, chrono::seconds(5)))
                     {
                         Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << name << "\". Exiting." << Log::endl;
                         _quit = true;
@@ -356,17 +387,15 @@ void World::applyConfig()
                 string paramName = sceneMembers[idx];
 
                 Values values;
-                for (auto& p : param)
-                {
-                    Value v;
-                    if (p.isInt())
-                        v = p.asInt();
-                    else if (p.isDouble())
-                        v = p.asFloat();
-                    else
-                        v = p.asString();
-                    values.push_back(v);
-                }
+                if (param.isArray())
+                    values = processArray(param);
+                else if (param.isInt())
+                    values.emplace_back(param.asInt());
+                else if (param.isDouble())
+                    values.emplace_back(param.asFloat());
+                else if (param.isString())
+                    values.emplace_back(param.asString());
+
                 sendMessage(name, paramName, values);
                 idx++;
             }
@@ -379,7 +408,7 @@ void World::applyConfig()
 
     // Configure each scenes
     // The first scene is the master one, and also receives some ghost objects
-    // Currently, only cameras are concerned
+    // First, we create the objects
     for (auto& s : _scenes)
     {
         if (!_config.isMember(s.first))
@@ -414,6 +443,62 @@ void World::applyConfig()
                 addLocally(type, name, s.first);
             }
 
+            idx++;
+        }
+    }
+
+    // Then we link the objects together
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+        auto sceneMembers = jsScene.getMemberNames();
+
+        int idx = 0;
+        for (const auto& obj : jsScene)
+        {
+            if (sceneMembers[idx] != "links")
+            {
+                idx++;
+                continue;
+            }
+
+            for (auto& link : obj)
+            {
+                if (link.size() < 2)
+                    continue;
+                sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
+                if (s.first != _masterSceneName)
+                    sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
+            }
+            idx++;
+        }
+    }
+
+    // Lastly, we configure the objects
+    for (auto& s : _scenes)
+    {
+        if (!_config.isMember(s.first))
+            continue;
+
+        const Json::Value jsScene = _config[s.first];
+
+        // Create the objects
+        auto sceneMembers = jsScene.getMemberNames();
+        int idx {0};
+        for (const auto& obj : jsScene)
+        {
+            string name = sceneMembers[idx];
+            if (name == "links" || !obj.isMember("type"))
+            {
+                idx++;
+                continue;
+            }
+
+            string type = obj["type"].asString();
+
             // Before anything, all objects have the right to know what the current path is
             if (type != "scene")
             {
@@ -434,24 +519,6 @@ void World::applyConfig()
                     idxAttr++;
                     continue;
                 }
-
-                // Helper function to read arrays
-                std::function<Values(Json::Value)> processArray;
-                processArray = [&processArray](Json::Value values) {
-                    Values outValues;
-                    for (auto& v : values)
-                    {
-                        if (v.isInt())
-                            outValues.emplace_back(v.asInt());
-                        else if (v.isDouble())
-                            outValues.emplace_back(v.asFloat());
-                        else if (v.isArray())
-                            outValues.emplace_back(processArray(v));
-                        else
-                            outValues.emplace_back(v.asString());
-                    }
-                    return outValues;
-                };
 
                 Values values;
                 if (attr.isArray())
@@ -486,36 +553,6 @@ void World::applyConfig()
         }
     }
 
-    // Link the objects together
-    for (auto& s : _scenes)
-    {
-        if (!_config.isMember(s.first))
-            continue;
-
-        const Json::Value jsScene = _config[s.first];
-        auto sceneMembers = jsScene.getMemberNames();
-
-        int idx = 0;
-        for (const auto& obj : jsScene)
-        {
-            if (sceneMembers[idx] != "links")
-            {
-                idx++;
-                continue;
-            }
-
-            for (auto& link : obj)
-            {
-                if (link.size() < 2)
-                    continue;
-                sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
-                if (s.first != _masterSceneName)
-                    sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
-            }
-            idx++;
-        }
-    }
-
     // Lastly, configure this very World
     // This happens last as some parameters are sent to Scenes (like blending computation)
     if (_config.isMember("world"))
@@ -537,6 +574,11 @@ void World::applyConfig()
             idx++;
         }
     }
+
+    // Also, enable the master clock
+#if HAVE_PORTAUDIO
+    _clock = unique_ptr<LtcClock>(new LtcClock(true));
+#endif
 
     // Send the start message for all scenes
     for (auto& s : _scenes)
@@ -593,9 +635,25 @@ void World::saveConfig()
                 if (!_config[sceneName].isMember(m))
                     _config[sceneName][m] = Json::Value();
 
-                Json::Value::Members attributes = scene[m].getMemberNames();
-                for (auto& a : attributes)
-                    _config[sceneName][m][a] = scene[m][a];
+                if (m != "links")
+                {
+                    Json::Value::Members attributes = scene[m].getMemberNames();
+                    for (const auto& a : attributes)
+                        _config[sceneName][m][a] = scene[m][a];
+
+                    const auto& obj = _objects.find(m);
+                    if (obj != _objects.end())
+                    {
+                        Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                        attributes = worldObjValue.getMemberNames();
+                        for (const auto& a : attributes)
+                            _config[sceneName][m][a] = worldObjValue[a];
+                    }
+                }
+                else
+                {
+                    _config[sceneName][m] = scene[m];
+                }
             }
         }
     }
@@ -691,7 +749,7 @@ void World::parseArguments(int argc, char** argv)
 
     // Get the executable directory
     string executable = argv[0];
-    _executionPath = Utils::getPathFromFilePath(executable);
+    _executionPath = Utils::getPathFromExecutablePath(executable);
 
     // Parse the other args
     int idx = 1;
@@ -773,7 +831,7 @@ void World::registerAttributes()
         else if (args.size() == 2)
             name = args[1].asString();
 
-        unique_lock<mutex> lock(_configurationMutex);
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
         for (auto& s : _scenes)
         {
@@ -788,7 +846,7 @@ void World::registerAttributes()
     });
 
     _attribFunctions["sceneLaunched"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lock(_childProcessMutex);
+        unique_lock<mutex> lockChildProcess(_childProcessMutex);
         _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
@@ -803,7 +861,7 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<mutex> lock(_configurationMutex);
+        unique_lock<recursive_mutex> lockObjects(_objectsMutex);
         auto objectName = args[0].asString();
 
         // Delete the object here
@@ -887,7 +945,10 @@ void World::registerAttributes()
                     _link->disconnectFrom(s.first);
                 }
 
+                _masterSceneName = "";
+
                 _config = config;
+                _reloadingConfig = true;
                 applyConfig();
             }
         });
@@ -950,6 +1011,18 @@ void World::registerAttributes()
             values.push_back(args[i]);
         for (auto& scene : _scenes)
             sendMessage(scene.first, attr, values);
+
+        return true;
+    });
+
+    _attribFunctions["sendToMasterScene"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+
+        auto attr = args[0].asString();
+        Values values = args;
+        values.erase(values.begin());
+        sendMessage(_masterSceneName, attr, values);
 
         return true;
     });

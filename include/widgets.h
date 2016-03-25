@@ -44,12 +44,25 @@
 #include "basetypes.h"
 #include "image.h"
 #include "texture.h"
+#include "warp.h"
 
 namespace Splash
 {
 class Gui;
 class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
+
+namespace SplashImGui
+{
+    struct FilesystemFile
+    {
+        std::string filename {""};
+        bool isDir {false};
+    };
+
+    bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
+    bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
+}
 
 /*************/
 class GuiWidget
@@ -60,9 +73,18 @@ class GuiWidget
         virtual void render() {}
         virtual int updateWindowFlags() {return 0;}
         virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     protected:
         std::string _name {""};
+        SceneWeakPtr _scene;
+        std::string _fileSelectorTarget {""};
+
+        /**
+         * Draws the widgets for the attributes of the given object
+         * and sends the appriorate messages to the World
+         */
+        void drawAttributes(const std::string& objName, const std::unordered_map<std::string, Values>& attributes);
 };
 
 /*************/
@@ -140,20 +162,20 @@ class GuiMedia : public GuiWidget
         GuiMedia(std::string name);
         void render();
         int updateWindowFlags();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        SceneWeakPtr _scene;
         std::map<std::string, int> _mediaTypeIndex;
         std::map<std::string, std::string> _mediaTypes {{"image", "image"},
                                                         {"video", "image_ffmpeg"},
                                                         {"shared memory", "image_shmdata"},
                                                         {"queue", "queue"},
-#if HAVE_OSX
-                                                        {"syphon", "texture_syphon"}};
-#else
-                                                        };
+#if HAVE_OPENCV
+                                                        {"video grabber", "image_opencv"},
 #endif
+#if HAVE_OSX
+                                                        {"syphon", "texture_syphon"},
+#endif
+                                                        };
         std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
 
         Values _newMedia {"image", "", 0.f, 0.f};
@@ -162,6 +184,7 @@ class GuiMedia : public GuiWidget
         float _newMediaStop {0.f};
 
         std::list<std::shared_ptr<BaseObject>> getSceneMedia();
+        std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);
         void replaceMedia(std::string previousMedia, std::string type);
 };
 
@@ -172,10 +195,8 @@ class GuiControl : public GuiWidget
         GuiControl(std::string name) : GuiWidget(name) {}
         void render();
         int updateWindowFlags();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        SceneWeakPtr _scene;
         std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
@@ -203,10 +224,8 @@ class GuiTemplate : public GuiWidget
     public:
         GuiTemplate(std::string name) : GuiWidget(name) {}
         void render();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
 
     private:
-        SceneWeakPtr _scene;
         bool _templatesLoaded {false};
         std::vector<std::string> _names;
         std::map<std::string, Texture_ImagePtr> _textures;
@@ -222,24 +241,42 @@ class GuiNodeView : public GuiWidget
         GuiNodeView(std::string name) : GuiWidget(name) {}
         void render();
         std::string getClickedNode() {return _clickedNode;}
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
         int updateWindowFlags();
 
     private:
-        SceneWeakPtr _scene;
         bool _isHovered {false};
         std::string _clickedNode {""};
         std::string _sourceNode {""};
 
         // Node render settings
-        std::vector<int> _nodeSize {160, 60};
-        std::vector<int> _viewSize {640, 240};
+        std::vector<int> _nodeSize {160, 30};
+        std::vector<int> _viewSize {640, 320};
         std::vector<int> _viewShift {0, 0};
         std::map<std::string, std::vector<float>> _nodePositions;
         
         std::map<std::string, std::vector<std::string>> getObjectLinks();
         std::map<std::string, std::string> getObjectTypes();
         void renderNode(std::string name);
+};
+
+/*************/
+class GuiWarp : public GuiWidget
+{
+    public:
+        GuiWarp(std::string name) : GuiWidget(name) {}
+        void render();
+        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        int updateWindowFlags();
+
+    private:
+        std::vector<std::shared_ptr<Warp>> getWarps();
+        bool _noMove {false};
+
+        int _currentWarp {0};
+        int _currentControlPointIndex {0};
+        glm::vec2 _previousMousePos;
+
+        void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
 };
 
 } // end of namespace

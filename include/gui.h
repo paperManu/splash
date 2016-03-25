@@ -146,7 +146,7 @@ class Gui : public BaseObject
         static GLint _imGuiPositionLocation;
         static GLint _imGuiUVLocation;
         static GLint _imGuiColorLocation;
-        static GLuint _imGuiVboHandle, _imGuiVaoHandle;
+        static GLuint _imGuiVboHandle, _imGuiElementsHandle, _imGuiVaoHandle;
         static size_t _imGuiVboMaxSize;
 
         // ImGUI objects
@@ -168,7 +168,7 @@ class Gui : public BaseObject
         /**
          * ImGui render function
          */
-        static void imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count);
+        static void imGuiRenderDrawLists(ImDrawData* draw_data);
 
         /**
          * Actions

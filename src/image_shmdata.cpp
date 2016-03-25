@@ -19,7 +19,7 @@
 #include "timer.h"
 #include "threadpool.h"
 
-#define SPLASH_SHMDATA_THREADS 16
+#define SPLASH_SHMDATA_THREADS 2
 
 using namespace std;
 
@@ -271,7 +271,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
     unique_lock<mutex> lock(ctx->_writeMutex);
 
-    // We are using kind of a hack to store a DXT compressed image in an oiio::ImageBuf
+    // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
     auto textureFormat = string("");
     if (!hapDecodeFrame(data, data_size, nullptr, 0, textureFormat))
@@ -279,32 +279,32 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 
     // Check if we need to resize the reader buffer
     // We set the size so as to have just enough place for the given texture format
-    oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();
+    auto bufSpec = ctx->_readerBuffer.getSpec();
     if (bufSpec.width != ctx->_width || (bufSpec.height != ctx->_height && textureFormat != ctx->_textureFormat))
     {
         ctx->_textureFormat = textureFormat;
 
-        oiio::ImageSpec spec;
+        ImageBufferSpec spec;
         if (textureFormat == "RGB_DXT1")
-            spec = oiio::ImageSpec(ctx->_width, (int)(ceil((float)ctx->_height / 2.f)), 1, oiio::TypeDesc::UINT8);
+            spec = ImageBufferSpec(ctx->_width, (int)(ceil((float)ctx->_height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
         else if (textureFormat == "RGBA_DXT5")
-            spec = oiio::ImageSpec(ctx->_width, ctx->_height, 1, oiio::TypeDesc::UINT8);
+            spec = ImageBufferSpec(ctx->_width, ctx->_height, 1, ImageBufferSpec::Type::UINT8);
         else if (textureFormat == "YCoCg_DXT5")
-            spec = oiio::ImageSpec(ctx->_width, ctx->_height, 1, oiio::TypeDesc::UINT8);
+            spec = ImageBufferSpec(ctx->_width, ctx->_height, 1, ImageBufferSpec::Type::UINT8);
         else
             return;
 
-        spec.channelnames = {textureFormat};
-        ctx->_readerBuffer.reset(spec);
+        spec.format = {textureFormat};
+        ctx->_readerBuffer = ImageBuffer(spec);
     }
 
-    unsigned long outputBufferBytes = bufSpec.width * bufSpec.height * bufSpec.nchannels;
-    if (!hapDecodeFrame(data, data_size, ctx->_readerBuffer.localpixels(), outputBufferBytes, textureFormat))
+    unsigned long outputBufferBytes = bufSpec.width * bufSpec.height * bufSpec.channels;
+    if (!hapDecodeFrame(data, data_size, ctx->_readerBuffer.data(), outputBufferBytes, textureFormat))
         return;
     
     if (!ctx->_bufferImage)
-        ctx->_bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-    ctx->_bufferImage->swap(ctx->_readerBuffer);
+        ctx->_bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*(ctx->_bufferImage), ctx->_readerBuffer);
     ctx->_imageUpdated = true;
     ctx->updateTimestamp();
 }
@@ -315,23 +315,23 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
     unique_lock<mutex> lock(ctx->_writeMutex);
 
     // Check if we need to resize the reader buffer
-    oiio::ImageSpec bufSpec = ctx->_readerBuffer.spec();
-    if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height || bufSpec.nchannels != ctx->_channels)
+    auto bufSpec = ctx->_readerBuffer.getSpec();
+    if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height || bufSpec.channels != ctx->_channels)
     {
-        oiio::ImageSpec spec(ctx->_width, ctx->_height, ctx->_channels, oiio::TypeDesc::UINT8);
+        ImageBufferSpec spec(ctx->_width, ctx->_height, ctx->_channels, ImageBufferSpec::Type::UINT8);
         if (ctx->_green < ctx->_blue)
-            spec.channelnames = {"B", "G", "R"};
+            spec.format = {"B", "G", "R"};
         else
-            spec.channelnames = {"R", "G", "B"};
+            spec.format = {"R", "G", "B"};
         if (ctx->_channels == 4)
-            spec.channelnames.push_back("A");
+            spec.format.push_back("A");
 
-        ctx->_readerBuffer.reset(spec);
+        ctx->_readerBuffer = ImageBuffer(spec);
     }
 
     if (!ctx->_isYUV && (ctx->_channels == 3 || ctx->_channels == 4))
     {
-        char* pixels = (char*)(ctx->_readerBuffer).localpixels();
+        char* pixels = (char*)(ctx->_readerBuffer).data();
         vector<unsigned int> threadIds;
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
@@ -354,7 +354,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
         const unsigned char* U = (const unsigned char*)data + ctx->_width * ctx->_height;
         const unsigned char* V = (const unsigned char*)data + ctx->_width * ctx->_height * 5 / 4;
 
-        char* pixels = (char*)(ctx->_readerBuffer).localpixels();
+        char* pixels = (char*)(ctx->_readerBuffer).data();
         vector<unsigned int> threadIds;
 #ifdef HAVE_SSE2
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
@@ -455,7 +455,7 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
     {
         const unsigned char* YUV = (const unsigned char*)data;
 
-        char* pixels = (char*)(ctx->_readerBuffer).localpixels();
+        char* pixels = (char*)(ctx->_readerBuffer).data();
         vector<unsigned int> threadIds;
 #ifdef HAVE_SSE2
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
@@ -551,8 +551,8 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
         return;
 
     if (!ctx->_bufferImage)
-        ctx->_bufferImage = unique_ptr<oiio::ImageBuf>(new oiio::ImageBuf());
-    ctx->_bufferImage->swap(ctx->_readerBuffer);
+        ctx->_bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*(ctx->_bufferImage), ctx->_readerBuffer);
     ctx->_imageUpdated = true;
     ctx->updateTimestamp();
 

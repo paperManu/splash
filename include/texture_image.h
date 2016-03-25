@@ -29,7 +29,6 @@
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
-#include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
 
@@ -37,8 +36,6 @@
 #include "basetypes.h"
 #include "image.h"
 #include "texture.h"
-
-namespace oiio = OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -102,7 +99,7 @@ class Texture_Image : public Texture
         /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const {return _spec;}
+        ImageBufferSpec getSpec() const {return _spec;}
 
         /**
          * Try to link the given BaseObject to this
@@ -142,6 +139,9 @@ class Texture_Image : public Texture
         void update();
 
     private:
+        GLint _glVersionMajor {0};
+        GLint _glVersionMinor {0};
+
         GLuint _glTex {0};
         GLuint _pbos[2];
         int _pboReadIndex {0};
@@ -164,6 +164,11 @@ class Texture_Image : public Texture
          * As says its name
          */
         void init();
+
+        /**
+         * Get GL channel order according to spec.format
+         */
+        GLenum getChannelOrder(const ImageBufferSpec& spec);
 
         /**
          * Update the pbos according to the parameters

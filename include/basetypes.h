@@ -25,13 +25,15 @@
 #ifndef SPLASH_BASETYPES_H
 #define SPLASH_BASETYPES_H
 
+#include <atomic>
 #include <condition_variable>
 #include <map>
 #include <unordered_map>
-#include <json/reader.h>
+#include <json/json.h>
 
 #include "coretypes.h"
 #include "link.h"
+#include "timer.h"
 
 namespace Splash
 {
@@ -58,28 +60,56 @@ struct AttributeFunctor
         }
 
         AttributeFunctor(const AttributeFunctor&) = delete;
-        AttributeFunctor(AttributeFunctor&&) = default;
         AttributeFunctor& operator=(const AttributeFunctor&) = delete;
-        AttributeFunctor& operator=(AttributeFunctor&&) = default;
+
+        AttributeFunctor(AttributeFunctor&& a)
+        {
+            operator=(std::move(a));
+        }
+
+        AttributeFunctor& operator=(AttributeFunctor&& a)
+        {
+            if (this != &a)
+            {
+                _setFunc = std::move(a._setFunc);
+                _getFunc = std::move(a._getFunc);
+                _defaultSetAndGet = std::move(a._defaultSetAndGet);
+                _values = std::move(a._values);
+                _doUpdateDistant = std::move(a._doUpdateDistant);
+                _savable = std::move(a._savable);
+            }
+
+            return *this;
+        }
 
         bool operator()(const Values& args)
         {
             if (!_setFunc && _defaultSetAndGet)
             {
+                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
                 _values = args;
                 return true;
             }
             else if (!_setFunc)
+            {
                 return false;
+            }
+
             return _setFunc(std::forward<const Values&>(args));
         }
 
         Values operator()() const
         {
             if (!_getFunc && _defaultSetAndGet)
+            {
+                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
                 return _values;
+            }
             else if (!_getFunc)
+            {
                 return Values();
+            }
+
             return _getFunc();
         }
 
@@ -91,7 +121,11 @@ struct AttributeFunctor
         bool doUpdateDistant() const {return _doUpdateDistant;}
         void doUpdateDistant(bool update) {_doUpdateDistant = update;}
 
+        bool savable() const {return _savable;}
+        void savable(bool save) {_savable = save;}
+
     private:
+        mutable std::mutex _defaultFuncMutex {};
         std::function<bool(const Values&)> _setFunc {};
         std::function<const Values()> _getFunc {};
 
@@ -99,6 +133,7 @@ struct AttributeFunctor
         Values _values; // Holds the values for the default set and get functions
 
         bool _doUpdateDistant {false}; // True if the World should send this attr values to Scenes
+        bool _savable {true}; // True if this attribute should be saved
 };
 
 class BaseObject;
@@ -129,25 +164,25 @@ class BaseObject
             return true;
         }
 
-        std::string getType() const {return _type;}
+        inline std::string getType() const {return _type;}
 
         /**
          * Set and get the id of the object
          */
-        unsigned long getId() const {return _id;}
-        void setId(unsigned long id) {_id = id;}
+        inline unsigned long getId() const {return _id;}
+        inline void setId(unsigned long id) {_id = id;}
 
         /**
          * Set and get the name of the object
          */
-        std::string getName() const {return _name;}
-        virtual std::string setName(const std::string& name) {_name = name; return _name;}
+        inline std::string getName() const {return _name;}
+        inline virtual std::string setName(const std::string& name) {_name = name; return _name;}
 
         /**
          * Set and get the remote type of the object
          */
-        std::string getRemoteType() const {return _remoteType;}
-        void setRemoteType(std::string type) {_remoteType = type;}
+        inline std::string getRemoteType() const {return _remoteType;}
+        inline void setRemoteType(std::string type) {_remoteType = type;}
 
         /**
          * Try to link / unlink the given BaseObject to this
@@ -223,7 +258,7 @@ class BaseObject
 
             if (attribNotPresent)
             {
-                auto result = _attribFunctions.emplace(std::make_pair(attrib, AttributeFunctor()));
+                auto result = _attribFunctions.emplace(attrib, AttributeFunctor());
                 if (!result.second)
                     return false;
 
@@ -242,8 +277,9 @@ class BaseObject
          * \params attrib Attribute name
          * \params args Values object which will hold the attribute values
          * \params includeDistant Return true even if the attribute is distant
+         * \params includeNonSavable Return true even if the attribute is not savable
          */
-        bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false) const
+        bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false, bool includeNonSavable = false) const
         {
             auto attribFunction = _attribFunctions.find(attrib);
             if (attribFunction == _attribFunctions.end())
@@ -251,7 +287,8 @@ class BaseObject
 
             args = attribFunction->second();
 
-            if (attribFunction->second.isDefault() && !includeDistant)
+            if ((!attribFunction->second.savable() && !includeNonSavable)
+             || (attribFunction->second.isDefault() && !includeDistant))
                 return false;
 
             return true;
@@ -267,7 +304,7 @@ class BaseObject
             for (auto& attr : _attribFunctions)
             {
                 Values values;
-                if (getAttribute(attr.first, values, includeDistant) == false || values.size() == 0)
+                if (getAttribute(attr.first, values, includeDistant, true) == false || values.size() == 0)
                     continue;
                 attribs[attr.first] = values;
             }
@@ -288,7 +325,7 @@ class BaseObject
                     continue;
 
                 Values values;
-                if (getAttribute(attr.first, values) == false || values.size() == 0)
+                if (getAttribute(attr.first, values, false, true) == false || values.size() == 0)
                     continue;
 
                 attribs[attr.first] = values;
@@ -298,15 +335,25 @@ class BaseObject
         }
 
         /**
+         * Get the savability for this object
+         */
+        inline bool getSavable() {return _savable;}
+
+        /**
          * Check whether the objects needs to be updated
          */
-        virtual bool wasUpdated() const {return _updatedParams;}
+        inline virtual bool wasUpdated() const {return _updatedParams;}
 
         /**
          * Reset the "was updated" status, if needed
          */
-        virtual void setNotUpdated() {_updatedParams = false;}
-        
+        inline virtual void setNotUpdated() {_updatedParams = false;}
+
+        /**
+         * Set the object savability
+         */
+        inline virtual void setSavable(bool savable) {_savable = savable;}
+       
         /**
          * Update the content of the object
          */
@@ -446,6 +493,11 @@ class BufferObject : public BaseObject
         virtual std::string getDistantName() const {return _name;}
 
         /**
+         * Get the timestamp for the current buffer object
+         */
+        int64_t getTimestamp() const {return _timestamp;}
+
+        /**
          * Serialize the image
          */
         virtual std::shared_ptr<SerializedObject> serialize() const = 0;
@@ -472,14 +524,14 @@ class BufferObject : public BaseObject
          */
         void updateTimestamp()
         {
-            _timestamp = std::chrono::high_resolution_clock::now();
+            _timestamp = Timer::getTime();
             _updatedBuffer = true;
         }
 
     protected:
         mutable std::mutex _readMutex;
         mutable std::mutex _writeMutex;
-        std::chrono::high_resolution_clock::time_point _timestamp;
+        int64_t _timestamp;
         bool _updatedBuffer {false};
 
         std::shared_ptr<SerializedObject> _serializedObject;
@@ -517,7 +569,7 @@ class RootObject : public BaseObject
                 auto name = object->getName();
 
                 std::unique_lock<std::recursive_mutex> registerLock(_objectsMutex);
-                object->_savable = false; // This object was created on the fly. Do not save it
+                object->setSavable(false); // This object was created on the fly. Do not save it
 
                 // We keep the previous object on the side, to prevent double free due to operator[] behavior
                 auto previousObject = std::shared_ptr<BaseObject>();
@@ -589,6 +641,7 @@ class RootObject : public BaseObject
     protected:
         std::shared_ptr<Link> _link;
         mutable std::recursive_mutex _objectsMutex; // Used in registration and unregistration of objects
+        std::atomic_bool _objectsCurrentlyUpdated {false};
         mutable std::recursive_mutex _setMutex;
         std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects;
 

@@ -1,5 +1,6 @@
 #include "filter.h"
 
+#include "cgUtils.h"
 #include "log.h"
 #include "scene.h"
 #include "timer.h"
@@ -128,7 +129,8 @@ bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
             return false;
 
         auto inTex = _inTexture.lock();
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+
         _screen->removeTexture(tex);
         if (tex->getName() == inTex->getName())
             _inTexture.reset();
@@ -181,23 +183,33 @@ void Filter::update()
 /*************/
 void Filter::updateUniforms()
 {
+    auto shader = _screen->getShader();
+
     for (auto& weakObject : _linkedObjects)
     {
         auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-        auto shader = _screen->getShader();
 
         auto obj = weakObject.lock();
         if (obj)
         {
             if (obj->getType() == "image")
             {
-                Values remainingTime;
+                Values remainingTime, duration;
+                obj->getAttribute("duration", duration);
                 obj->getAttribute("remaining", remainingTime);
                 if (remainingTime.size() == 1)
                     shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
+                if (duration.size() == 1)
+                    shader->setAttribute("uniform", {"_filmDuration", duration[0].asFloat()});
             }
         }
     }
+
+    shader->setAttribute("uniform", {"_blackLevel", _blackLevel});
+    shader->setAttribute("uniform", {"_brightness", _brightness});
+    shader->setAttribute("uniform", {"_contrast", _contrast});
+    shader->setAttribute("uniform", {"_colorBalance", _colorBalance.x, _colorBalance.y});
+    shader->setAttribute("uniform", {"_saturation", _saturation});
 }
 
 /*************/
@@ -221,6 +233,56 @@ void Filter::setOutput()
 /*************/
 void Filter::registerAttributes()
 {
+    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _blackLevel = args[0].asFloat();
+        _blackLevel = std::max(0.f, std::min(1.f, _blackLevel));
+        return true;
+    }, [&]() -> Values {
+        return {_blackLevel};
+    });
+
+    _attribFunctions["brightness"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _brightness = args[0].asFloat();
+        _brightness = std::max(0.f, std::min(2.f, _brightness));
+        return true;
+    }, [&]() -> Values {
+        return {_brightness};
+    });
+
+    _attribFunctions["contrast"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _contrast = args[0].asFloat();
+        _contrast = std::max(0.f, std::min(2.f, _contrast));
+        return true;
+    }, [&]() -> Values {
+        return {_contrast};
+    });
+
+    _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _colorTemperature = args[0].asFloat();
+        _colorTemperature = std::max(0.f, std::min(16000.f, _colorTemperature));
+        _colorBalance = colorBalanceFromTemperature(_colorTemperature);
+        return true;
+    }, [&]() -> Values {
+        return {_colorTemperature};
+    });
+
+    _attribFunctions["saturation"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 1)
+            return false;
+        _saturation = args[0].asFloat();
+        _saturation = std::max(0.f, std::min(2.f, _saturation));
+        return true;
+    }, [&]() -> Values {
+        return {_saturation};
+    });
 }
 
 } // end of namespace

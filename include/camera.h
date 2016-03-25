@@ -111,7 +111,7 @@ class Camera : public BaseObject
         /**
          * Get pointers to this camera textures
          */
-        std::vector<Texture_ImagePtr> getTextures() const {return _outTextures;}
+        std::vector<std::shared_ptr<Texture_Image>> getTextures() const {return _outTextures;}
 
         /**
          * Check wether it is initialized
@@ -208,9 +208,9 @@ class Camera : public BaseObject
         glm::dvec3 _up {0.0, 0.0, 1.0};
         float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
         float _blendPrecision {0.1f}; // Controls the tessellation level for the blending
-        float _blackLevel {0.f};
         float _brightness {1.f};
         float _colorTemperature {6500.f};
+        bool _weightedCalibrationPoints {true};
 
         // Calibration parameters
         bool _calibrationCalledOnce {false};
@@ -225,6 +225,7 @@ class Camera : public BaseObject
             glm::dvec3 world;
             glm::dvec2 screen;
             bool isSet {false};
+            float weight {1.f};
         };
         std::vector<CalibrationPoint> _calibrationPoints;
         int _selectedCalibrationPoint {-1};
@@ -242,11 +243,6 @@ class Camera : public BaseObject
         
         // Function used for the calibration (camera parameters optimization)
         static double cameraCalibration_f(const gsl_vector* v, void* params);
-
-        /**
-         * Get the color balance (r/g and b/g) from a black body temperature
-         */
-        glm::vec2 colorBalanceFromTemperature(float temp);
 
         /**
          * Init function called in constructors

@@ -75,6 +75,8 @@ class Shader : public BaseObject
             filter,
             primitiveId,
             uv,
+            warp,
+            warpControl,
             wireframe,
             window
         };

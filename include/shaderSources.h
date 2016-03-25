@@ -94,6 +94,71 @@ struct ShaderSources
                 
                 return weight;
             }
+        )"},
+        //
+        // RGB to HSV and HSV to RGB
+        {"hsv", R"(
+            vec3 rgb2hsv(vec3 rgb)
+            {
+                vec3 hsv;
+
+                float cmax = max(rgb.r, max(rgb.g, rgb.b));
+                float cmin = min(rgb.r, min(rgb.g, rgb.b));
+                float delta = cmax - cmin;
+
+                if (delta <= 0.0001)
+                {
+                    hsv.x = 0.f;
+                    hsv.y = 0.f;
+                }
+                else
+                {
+                    if (delta == 0)
+                        hsv.x = 0.f;
+                    else if (cmax == rgb.r)
+                        hsv.x = mod(60.f * ((rgb.g - rgb.b) / delta), 360.f);
+                    else if (cmax == rgb.g)
+                        hsv.x = 60.f * ((rgb.b - rgb.r) / delta + 2);
+                    else if (cmax == rgb.b)
+                        hsv.x = 60.f * ((rgb.r - rgb.g) / delta + 4);
+
+                    if (cmax == 0.f)
+                        hsv.y = 0.f;
+                    else
+                        hsv.y = delta / cmax;
+                }
+
+                hsv.z = cmax;
+
+                return hsv;
+            }
+
+            vec3 hsv2rgb(vec3 hsv)
+            {
+                vec3 rgb;
+
+                float c = hsv.y * hsv.z;
+                float x = c * (1.f - abs(mod(hsv.x / 60.f, 2.f) - 1.f));
+
+                float m = hsv.z - c;
+
+                if (0.f <= hsv.x && hsv.x < 60.f)
+                    rgb = vec3(c, x, 0.f);
+                else if (60.f <= hsv.x && hsv.x < 120.f)
+                    rgb = vec3(x, c, 0.f);
+                else if (120.f <= hsv.x && hsv.x < 180.f)
+                    rgb = vec3(0.f, c, x);
+                else if (180.f <= hsv.x && hsv.x < 240.f)
+                    rgb = vec3(0.f, x, c);
+                else if (240.f <= hsv.x && hsv.x < 300.f)
+                    rgb = vec3(x, 0.f, c);
+                else if (300.f <= hsv.x && hsv.x < 360.f)
+                    rgb = vec3(c, 0.f, x);
+
+                rgb += vec3(m);
+
+                return rgb;
+            }
         )"}
     };
 
@@ -618,7 +683,7 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
         {
@@ -658,6 +723,8 @@ struct ShaderSources
      * Fragment shader for filters
      */
     const std::string FRAGMENT_SHADER_FILTER {R"(
+        #include hsv
+
         #define PI 3.14159265359
 
     #ifdef TEXTURE_RECT
@@ -679,6 +746,105 @@ struct ShaderSources
         // Film uniforms
         uniform float _filmDuration = 0.f;
         uniform float _filmRemaining = 0.f;
+
+        // Filter parameters
+        uniform float _blackLevel = 0.f;
+        uniform float _brightness = 1.f;
+        uniform float _contrast = 1.f;
+        uniform float _saturation = 1.f;
+        uniform vec2 _colorBalance = vec2(1.f, 1.f);
+
+        void main(void)
+        {
+            // Compute the real texture coordinates, according to flip / flop
+            vec2 realCoords;
+            if (_tex0_flip == 1 && _tex0_flop == 0)
+                realCoords = vec2(texCoord.x, 1.0 - texCoord.y);
+            else if (_tex0_flip == 0 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, texCoord.y);
+            else if (_tex0_flip == 1 && _tex0_flop == 1)
+                realCoords = vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
+            else
+                realCoords = texCoord;
+
+            vec4 color = texture(_tex0, realCoords * _tex0_size);
+
+            // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
+            if (_tex0_YCoCg == 1)
+            {
+                float scale = (color.z * (255.0 / 8.0)) + 1.0;
+                float Co = (color.x - (0.5 * 256.0 / 255.0)) / scale;
+                float Cg = (color.y - (0.5 * 256.0 / 255.0)) / scale;
+                float Y = color.w;
+                color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
+                color.rgb = pow(color.rgb, vec3(2.2));
+            }
+
+            // Color balance
+            float maxBalanceRatio = max(_colorBalance.r, _colorBalance.g);
+            color.r *= _colorBalance.r / maxBalanceRatio;
+            color.g *= 1.0 / maxBalanceRatio;
+            color.b *= _colorBalance.g / maxBalanceRatio;
+
+            vec3 hsv = rgb2hsv(color.rgb);
+
+            // Brightness correction
+            hsv.z *= _brightness;
+            // Saturation
+            hsv.y *= _saturation;
+            // Contrast correction
+            hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
+
+            color.rgb = hsv2rgb(hsv);
+
+            // Black level
+            if (_blackLevel != 0.0)
+            {
+                float blackCorrection = clamp(_blackLevel, 0.0, 1.0);
+                color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
+            }
+
+            fragColor = color;
+        }
+    )"};
+
+    /**
+     * Warp vertex shader
+     */
+    const std::string VERTEX_SHADER_WARP {R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        out vec2 texCoord;
+
+        void main(void)
+        {
+            gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
+            texCoord = _texcoord;
+        }
+    )"};
+
+    /**
+     * Fragment shader for warp
+     */
+    const std::string FRAGMENT_SHADER_WARP {R"(
+
+        #define PI 3.14159265359
+
+    #ifdef TEXTURE_RECT
+        uniform sampler2DRect _tex0;
+    #else
+        uniform sampler2D _tex0;
+    #endif
+
+        in vec2 texCoord;
+        out vec4 fragColor;
+
+        uniform vec2 _tex0_size = vec2(1.0);
+        // Texture transformation
+        uniform int _tex0_flip = 0;
+        uniform int _tex0_flop = 0;
+        // HapQ specific parameters
+        uniform int _tex0_YCoCg = 0;
 
         void main(void)
         {
@@ -724,7 +890,7 @@ struct ShaderSources
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
         uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
         {
@@ -774,7 +940,7 @@ struct ShaderSources
 
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
         uniform vec3 _colorLUT[256];
@@ -797,8 +963,7 @@ struct ShaderSources
         void main(void)
         {
             float blendWidth = _cameraAttributes.x;
-            float blackLevel = _cameraAttributes.y;
-            float brightness = _cameraAttributes.z;
+            float brightness = _cameraAttributes.y;
 
             vec4 position = vertexIn.position;
             vec2 texCoord = vertexIn.texCoord;
@@ -812,10 +977,6 @@ struct ShaderSources
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _fovAndColorBalance.w / maxBalanceRatio;
-
-            // Black level
-            float blackCorrection = clamp(blackLevel, 0.0, 1.0);
-            color.rgb = color.rgb * (1.0 - blackLevel) + blackLevel;
             
             // If there is a blending map
         #ifdef BLENDING
@@ -825,14 +986,9 @@ struct ShaderSources
             blendFactor = blendFactor - camNbr * 4096;
             float blendFactorFloat = 0.0;
 
-            // If the max channel value is higher than 2*blacklevel, we smooth the blending edges
-            bool smoothBlend = false;
-            if (color.r > blackLevel * 2.0 || color.g > blackLevel * 2.0 || color.b > blackLevel * 2.0)
-                smoothBlend = true;
-
             if (blendFactor == 0)
                 blendFactorFloat = 0.05; // The non-visible part is kinda hidden
-            else if (blendWidth > 0.0 && smoothBlend == true)
+            else if (blendWidth > 0.0)
             {
                 vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
                 vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
@@ -957,7 +1113,7 @@ struct ShaderSources
 
         out vec4 fragColor;
 
-        uniform vec3 _cameraAttributes = vec3(0.05, 0.0, 1.0); // blendWidth, blackLevel and brightness
+        uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
 
         void main(void)
@@ -1060,6 +1216,86 @@ struct ShaderSources
                 fragColor.rgba = mix(vec4(1.0), matColor, (minDist - 0.0125) / 0.0125);
             else
                 fragColor.rgba = matColor;
+        }
+    )"};
+
+    /**
+     * Wireframe rendering for Warps
+     */
+    const std::string VERTEX_SHADER_WARP_WIREFRAME {R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+
+        out VertexData
+        {
+            vec4 vertex;
+            vec2 texcoord;
+        } vertexOut;
+
+        void main()
+        {
+            vertexOut.vertex = _vertex;
+            vertexOut.texcoord = _texcoord;
+        }
+    )"};
+
+    const std::string GEOMETRY_SHADER_WARP_WIREFRAME {R"(
+        layout(triangles) in;
+        layout(triangle_strip, max_vertices = 3) out;
+
+        in VertexData
+        {
+            vec4 vertex;
+            vec2 texcoord;
+        } vertexIn[];
+
+        out VertexData
+        {
+            vec3 bcoord;
+        } vertexOut;
+
+        void main()
+        {
+            vec4 v = vec4(vertexIn[0].vertex.xyz, 1.0);
+            gl_Position = v;
+            vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
+            EmitVertex();
+
+            v = vec4(vertexIn[1].vertex.xyz, 1.0);
+            gl_Position = v;
+            vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
+            EmitVertex();
+
+            v = vec4(vertexIn[2].vertex.xyz, 1.0);
+            gl_Position = v;
+            vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
+            EmitVertex();
+
+            EndPrimitive();
+        }
+    )"};
+
+    const std::string FRAGMENT_SHADER_WARP_WIREFRAME {R"(
+        #define PI 3.14159265359
+
+        in VertexData
+        {
+            vec3 bcoord;
+        } vertexIn;
+
+        uniform int _sideness = 0;
+        uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            vec3 b = vertexIn.bcoord;
+            float minDist = min(b[1], b[2]);
+            vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
+            if (minDist < 0.005)
+                fragColor.rgba = mix(vec4(vec3(0.5), 1.0), matColor, (minDist - 0.0025) / 0.0025);
+            else
+                discard;
         }
     )"};
 

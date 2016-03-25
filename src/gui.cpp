@@ -3,6 +3,7 @@
 #include "camera.h"
 #include "log.h"
 #include "object.h"
+#include "osUtils.h"
 #include "scene.h"
 #include "texture.h"
 #include "texture_image.h"
@@ -11,7 +12,6 @@
 #include "window.h"
 
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash
 {
@@ -24,7 +24,7 @@ GLint Gui::_imGuiProjMatrixLocation;
 GLint Gui::_imGuiPositionLocation;
 GLint Gui::_imGuiUVLocation;
 GLint Gui::_imGuiColorLocation;
-GLuint Gui::_imGuiVboHandle, Gui::_imGuiVaoHandle;
+GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
@@ -47,7 +47,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     {
         Texture_ImagePtr texture = make_shared<Texture_Image>();
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-        texture->setAttribute("resizable", {1});
+        texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
         _depthTexture = move(texture);
     }
@@ -55,7 +55,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     {
         Texture_ImagePtr texture = make_shared<Texture_Image>();
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-        texture->setAttribute("resizable", {1});
+        texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
         _outTexture = move(texture);
     }
@@ -98,6 +98,7 @@ Gui::~Gui()
     glDeleteTextures(1, &_imFontTextureId);
     glDeleteProgram(_imGuiShaderHandle);
     glDeleteBuffers(1, &_imGuiVboHandle);
+    glDeleteBuffers(1, &_imGuiElementsHandle);
     glDeleteVertexArrays(1, &_imGuiVaoHandle);
 }
 
@@ -392,7 +393,7 @@ bool Gui::render()
     if (!_isInitialized)
         return false;
 
-    ImageSpec spec = _outTexture->getSpec();
+    ImageBufferSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
@@ -466,8 +467,29 @@ bool Gui::render()
             ImGui::Text("Configuration file");
             char configurationPath[512];
             strcpy(configurationPath, _configurationPath.data());
-            ImGui::InputText("Path", configurationPath, 512);
+            ImGui::InputText("##Path", configurationPath, 512);
             _configurationPath = string(configurationPath);
+
+            ImGui::SameLine();
+            static bool showFileSelector {false};
+            if (ImGui::Button("..."))
+            {
+                showFileSelector = true;
+            }
+            if (showFileSelector)
+            {
+                static string path = Utils::getPathFromFilePath("./");
+                bool cancelled;
+                if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
+                {
+                    if (!cancelled)
+                    {
+                        _configurationPath = path;
+                        path = Utils::getPathFromFilePath("./");
+                    }
+                    showFileSelector = false;
+                }
+            }
 
             if (ImGui::Button("Save configuration"))
                 saveConfiguration();
@@ -633,8 +655,9 @@ void Gui::initImGui(int width, int height)
     _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
 
     glGenBuffers(1, &_imGuiVboHandle);
-    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-    glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
+    glGenBuffers(1, &_imGuiElementsHandle);
+    //glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+    //glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
 
     glGenVertexArrays(1, &_imGuiVaoHandle);
     glBindVertexArray(_imGuiVaoHandle);
@@ -682,7 +705,7 @@ void Gui::initImGui(int width, int height)
     ImGuiStyle& style = ImGui::GetStyle();
     style.ChildWindowRounding = 2.f;
     style.FrameRounding = 2.f;
-    style.ScrollbarWidth = 12.f;
+    style.ScrollbarSize = 12.f;
     style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -691,6 +714,7 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
     style.Colors[ImGuiCol_TitleBg]               = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
     style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.81f, 0.40f, 0.25f, 0.45f);
+    style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
     style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.79f, 0.40f, 0.25f, 0.15f);
     style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
     style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
@@ -722,6 +746,7 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
     style.Colors[ImGuiCol_TooltipBg]             = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
+    style.AntiAliasedLines = false;
 
     unsigned char* pixels;
     int w, h;
@@ -750,44 +775,42 @@ void Gui::initImWidgets()
     }
 
     // Some help regarding keyboard shortcuts
-    if (Log::get().getVerbosity() == Log::DEBUGGING)
+    auto helpBox = make_shared<GuiTextBox>("Shortcuts");
+    helpBox->setTextFunc([]()
     {
-        auto helpBox = make_shared<GuiTextBox>("Shortcuts");
-        helpBox->setTextFunc([]()
-        {
-            string text;
-            text += "Tab: show / hide this GUI\n";
-            text += "General shortcuts:\n";
-            text += " Ctrl+F: white background instead of black\n";
-            text += " Ctrl+B: compute the blending between all cameras\n";
-            text += " Ctrl+Alt+B: compute the blending between all cameras at every frame\n";
-            text += " Ctrl+M: hide/show the OS cursor\n";
-            text += " Ctrl+T: textured draw mode\n";
-            text += " Ctrl+W: wireframe draw mode\n";
+        string text;
+        text += "Tab: show / hide this GUI\n";
+        text += "General shortcuts:\n";
+        text += " Ctrl+F: white background instead of black\n";
+        text += " Ctrl+B: compute the blending between all projectors\n";
+        text += " Ctrl+Alt+B: compute the blending between all projectors at every frame\n";
+        text += " Ctrl+M: hide/show the OS cursor\n";
+        text += " Ctrl+T: textured draw mode\n";
+        text += " Ctrl+W: wireframe draw mode\n";
 #if HAVE_GPHOTO
-            text += "\n";
-            text += " Ctrl+O: launch camera calibration\n";
-            text += " Ctrl+P: launch projectors calibration\n";
-            text += " Ctrl+L: activate color LUT (if calibrated)\n";
+        text += "\n";
+        text += " Ctrl+O: launch camera color calibration\n";
+        text += " Ctrl+P: launch projectors color calibration\n";
+        text += " Ctrl+L: activate color LUT (if calibrated)\n";
 #endif
-            text += "\n";
-            text += "Views panel:\n";
-            text += " Space: switch between cameras\n";
-            text += " A: show / hide the target calibration point\n";
-            text += " C: calibrate the selected camera\n";
-            text += " R: revert camera to previous calibration\n";
-            text += " H: hide all but the selected camera\n";
-            text += " O: show calibration points from all cameras\n";
+        text += "\n";
+        text += "Views panel:\n";
+        text += " Ctrl + left click on a camera thumbnail: hide / show the given camera\n";
+        text += " Space: switch between projectors\n";
+        text += " A: show / hide the target calibration point\n";
+        text += " C: calibrate the selected camera\n";
+        text += " H: hide all but the selected camera\n";
+        text += " O: show calibration points from all cameras\n";
+        text += " Ctrl+Z: revert camera to previous calibration\n";
 
-            text += "\n";
-            text += "Node view (inside Control panel):\n";
-            text += " Shift + left click: link the clicked node to the selected one\n";
-            text += " Ctrl + left click: unlink the clicked node from the selected one\n";
+        text += "\n";
+        text += "Node view (inside Control panel):\n";
+        text += " Shift + left click: link the clicked node to the selected one\n";
+        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
 
-            return text;
-        });
-        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
-    }
+        return text;
+    });
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
 
     // FPS and timings
     auto timingBox = make_shared<GuiTextBox>("Timings");
@@ -801,6 +824,7 @@ void Gui::initImWidgets()
         static float ble {0.f};
         static float flt {0.f};
         static float cam {0.f};
+        static float wrp {0.f};
         static float gui {0.f};
         static float win {0.f};
         static float buf {0.f};
@@ -813,6 +837,7 @@ void Gui::initImWidgets()
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
         flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
         cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
+        wrp = wrp * 0.9 + Timer::get()["warps"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
         win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
@@ -823,7 +848,12 @@ void Gui::initImWidgets()
         ostringstream stream;
         Values clock;
         if (Timer::get().getMasterClock(clock))
-            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":" << clock[5].asInt() << ":" << clock[6].asInt() << "\n";
+        {
+            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":" << clock[5].asInt() << ":" << clock[6].asInt();
+            if (clock[7].asInt() == 1)
+                stream << " - Paused";
+            stream << "\n";
+        }
         stream << "Framerate: " << setprecision(4) << fps << " fps\n";
         stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
         stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
@@ -831,6 +861,7 @@ void Gui::initImWidgets()
         stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
         stream << "Filters: " << setprecision(4) << flt << " ms\n";
         stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
+        stream << "Warps: " << setprecision(4) << wrp << " ms\n";
         stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
         stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
         stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
@@ -877,6 +908,11 @@ void Gui::initImWidgets()
     globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
+    // Warp control
+    auto warpControl = make_shared<GuiWarp>("Warp");
+    warpControl->setScene(_scene);
+    _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
+
     // Performance graph
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
@@ -886,9 +922,9 @@ void Gui::initImWidgets()
 }
 
 /*************/
-void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
+void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 {
-    if (!cmd_lists_count)
+    if (!draw_data->CmdListsCount)
         return;
 
     glEnable(GL_BLEND);
@@ -912,49 +948,55 @@ void Gui::imGuiRenderDrawLists(ImDrawList** cmd_lists, int cmd_lists_count)
     glUseProgram(_imGuiShaderHandle);
     glUniform1i(_imGuiTextureLocation, 0);
     glUniformMatrix4fv(_imGuiProjMatrixLocation, 1, GL_FALSE, (float*)orthoProjection);
-
-    size_t totalVertexCount = 0;
-    for (int n = 0; n < cmd_lists_count; ++n)
-        totalVertexCount += cmd_lists[n]->vtx_buffer.size();
-    glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-
-    size_t neededBufferSize = totalVertexCount * sizeof(ImDrawVert);
-    if (neededBufferSize > _imGuiVboMaxSize)
-    {
-        _imGuiVboMaxSize = neededBufferSize + 5000;
-        glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
-    }
-
-    unsigned char* bufferData = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, _imGuiVboMaxSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-    if (!bufferData)
-        return;
-    for (int n = 0; n < cmd_lists_count; ++n)
-    {
-        const ImDrawList* cmdList = cmd_lists[n];
-        memcpy(bufferData, &cmdList->vtx_buffer[0], cmdList->vtx_buffer.size() * sizeof(ImDrawVert));
-        bufferData += cmdList->vtx_buffer.size() * sizeof(ImDrawVert);
-    }
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(_imGuiVaoHandle);
 
-    int cmd_offset = 0;
-    for (int n = 0; n < cmd_lists_count; ++n)
+    for (int n = 0; n < draw_data->CmdListsCount; ++n)
     {
-        const ImDrawList* cmd_list = cmd_lists[n];
-        int vtx_offset = cmd_offset;
-        for (auto& pcmd : cmd_list->commands)
+        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+        //const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
+        const ImDrawIdx* idx_buffer_offset = 0;
+
+        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+        //glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
+
+        int needed_vtx_size = cmd_list->VtxBuffer.size() * sizeof(ImDrawVert);
+        if (_imGuiVboMaxSize < needed_vtx_size)
         {
-            glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd.texture_id);
-            glScissor((int)pcmd.clip_rect.x, (int)(height - pcmd.clip_rect.w),
-                      (int)(pcmd.clip_rect.z - pcmd.clip_rect.x), (int)(pcmd.clip_rect.w - pcmd.clip_rect.y));
-            glDrawArrays(GL_TRIANGLES, vtx_offset, pcmd.vtx_count);
-            vtx_offset += pcmd.vtx_count;
+            _imGuiVboMaxSize = needed_vtx_size + 2000 * sizeof(ImDrawVert);
+            glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)_imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
         }
-        cmd_offset = vtx_offset;
+
+        unsigned char* vtx_data = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, needed_vtx_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        if (!vtx_data)
+            continue;
+        memcpy(vtx_data, &cmd_list->VtxBuffer[0], cmd_list->VtxBuffer.size() * sizeof(ImDrawVert));
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imGuiElementsHandle);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
+
+        for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); ++pcmd)
+        {
+            if (pcmd->UserCallback)
+            {
+                pcmd->UserCallback(cmd_list, pcmd);
+            }
+            else
+            {
+                glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
+                glScissor((int)pcmd->ClipRect.x, (int)(height - pcmd->ClipRect.w),
+                          (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
+                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
+            }
+
+            idx_buffer_offset += pcmd->ElemCount;
+        }
+
     }
 
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glUseProgram(0);
     glBindTexture(GL_TEXTURE_2D, 0);
 

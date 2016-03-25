@@ -26,10 +26,12 @@
 #define SPLASH_OSUTILS_H
 
 #include <string>
+#include <vector>
 #include <unistd.h>
 #if HAVE_SHMDATA
     #include <shmdata/abstract-logger.hpp>
 #endif
+#include <pwd.h>
 
 #include "log.h"
 
@@ -38,27 +40,70 @@ namespace Splash
     namespace Utils
     {
         /*****/
+        inline std::string getHomePath()
+        {
+            if (getenv("HOME"))
+                return std::string(getenv("HOME"));
+
+            struct passwd* pw = getpwuid(getuid());
+            return std::string(pw->pw_dir);
+        }
+
+        /*****/
         inline std::string getPathFromFilePath(const std::string& filepath)
         {
-            size_t slashPos = filepath.rfind("/");
-            bool isRelative = filepath.find(".") == 0 ? true : false;
-            bool isAbsolute = filepath.find("/") == 0 ? true : false;
-            auto filePath = std::string("");
-            if (slashPos != std::string::npos)
+            auto path = filepath;
+
+            bool isRelative = path.find(".") == 0 ? true : false;
+            bool isAbsolute = path.find("/") == 0 ? true : false;
+            auto fullPath = std::string("");
+
+            if (!isRelative && !isAbsolute)
             {
-                if (isAbsolute)
-                    filePath = filepath.substr(0, slashPos) + "/";
-                else if (isRelative)
-                {
-                    char workingPathChar[256];
-                    auto workingPath = std::string(getcwd(workingPathChar, 255));
-                    if (filepath.find("/") == 1)
-                        filePath = workingPath + filepath.substr(1, slashPos) + "/";
-                    else if (filepath.find("/") == 2)
-                        filePath = workingPath + "/" + filepath.substr(0, slashPos) + "/";
-                }
+                isRelative = true;
+                path = "./" + filepath;
             }
-            return filePath;
+
+            size_t slashPos = path.rfind("/");
+
+            if (isAbsolute)
+                fullPath = path.substr(0, slashPos) + "/";
+            else if (isRelative)
+            {
+                char workingPathChar[256];
+                auto workingPath = std::string(getcwd(workingPathChar, 255));
+                if (path.find("/") == 1)
+                    fullPath = workingPath + path.substr(1, slashPos) + "/";
+                else if (path.find("/") == 2)
+                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+            }
+
+            return fullPath;
+        }
+        /*****/
+        inline std::string getPathFromExecutablePath(const std::string& filepath)
+        {
+            auto path = filepath;
+
+            bool isRelative = path.find(".") == 0 ? true : false;
+            bool isAbsolute = path.find("/") == 0 ? true : false;
+            auto fullPath = std::string("");
+
+            size_t slashPos = path.rfind("/");
+
+            if (isAbsolute)
+                fullPath = path.substr(0, slashPos) + "/";
+            else if (isRelative)
+            {
+                char workingPathChar[256];
+                auto workingPath = std::string(getcwd(workingPathChar, 255));
+                if (path.find("/") == 1)
+                    fullPath = workingPath + path.substr(1, slashPos) + "/";
+                else if (path.find("/") == 2)
+                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+            }
+
+            return fullPath;
         }
 
         /*****/
@@ -71,6 +116,63 @@ namespace Splash
             else
                 filename = filepath.substr(slashPos);
             return filename;
+        }
+
+        /*****/
+        inline std::string cleanPath(const std::string& filepath)
+        {
+            std::vector<std::string> links;
+
+            auto remain = filepath;
+            while (remain.size() != 0)
+            {
+                auto nextSlashPos = remain.find("/");
+                if (nextSlashPos == 0)
+                {
+                    remain = remain.substr(1, std::string::npos);
+                    continue;
+                }
+                
+                auto link = remain.substr(0, nextSlashPos);
+                links.push_back(link);
+
+                if (nextSlashPos == std::string::npos)
+                    remain.clear();
+                else
+                    remain = remain.substr(nextSlashPos + 1, std::string::npos);
+            }
+
+            for (int i = 0; i < links.size();)
+            {
+                if (links[i] == "..")
+                {
+                    links.erase(links.begin() + i);
+                    if (i > 0)
+                        links.erase(links.begin() + i - 1);
+                    i -= 1;
+                    continue;
+                }
+
+                if (links[i] == ".")
+                {
+                    links.erase(links.begin() + i);
+                    continue;
+                }
+
+                ++i;
+            }
+
+            auto path = std::string("");
+            for (auto& link : links)
+            {
+                path += "/";
+                path += link;
+            }
+
+            if (path.size() == 0)
+                path = "/";
+
+            return path;
         }
     
 #if HAVE_SHMDATA

@@ -119,7 +119,7 @@ class Geometry : public BufferObject
         /**
          * Set the mesh for this object
          */
-        void setMesh(MeshPtr mesh) {_mesh = std::weak_ptr<Mesh>(mesh);}
+        void setMesh(std::shared_ptr<Mesh> mesh) {_mesh = std::weak_ptr<Mesh>(mesh);}
 
         /**
          * Swap between temporary and alternative buffers
@@ -142,7 +142,6 @@ class Geometry : public BufferObject
 
         std::shared_ptr<Mesh> _defaultMesh;
         std::weak_ptr<Mesh> _mesh;
-        std::chrono::high_resolution_clock::time_point _timestamp;
 
         std::map<GLFWwindow*, GLuint> _vertexArray;
         std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};

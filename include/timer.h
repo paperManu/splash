@@ -66,8 +66,7 @@ class Timer
             if (!_enabled)
                 return;
 
-            std::unique_lock<std::mutex> lock(_mutex);
-            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
             auto timeIt = _timeMap.find(name);
             if (timeIt == _timeMap.end())
                 _timeMap[name] = currentTime;
@@ -83,9 +82,8 @@ class Timer
             auto timeIt = _timeMap.find(name);
             if (timeIt != _timeMap.end())
             {
-                auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+                auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-                std::unique_lock<std::mutex> lock(_mutex);
                 auto durationIt = _durationMap.find(name);
                 if (durationIt == _durationMap.end())
                     _durationMap[name] = currentTime - timeIt->second;
@@ -105,15 +103,12 @@ class Timer
            if (_timeMap.find(name) == _timeMap.end())
                return false;
         
-           auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+           auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
            auto timeIt = _timeMap.find(name);
            auto durationIt = _durationMap.find(name);
            unsigned long long elapsed;
-           {
-               std::unique_lock<std::mutex> lock(_mutex);
-               elapsed = currentTime - timeIt->second;
-               _timeMap.erase(timeIt);
-           }
+
+           elapsed = currentTime - timeIt->second;
         
            timespec nap;
            nap.tv_sec = 0;
@@ -127,10 +122,7 @@ class Timer
            }
         
            if (durationIt == _durationMap.end())
-           {
-               std::unique_lock<std::mutex> lock(_mutex);
                _durationMap[name] = std::max(duration, elapsed);
-           }
            else
                durationIt->second = std::max(duration, elapsed);
         
@@ -163,7 +155,6 @@ class Timer
          */
         void setDuration(const std::string& name, unsigned long long value)
         {
-           std::unique_lock<std::mutex> lock(_mutex);
            auto durationIt = _durationMap.find(name);
            if (durationIt == _durationMap.end())
                _durationMap[name] = value;
@@ -201,7 +192,7 @@ class Timer
         
         Timer& operator>>(unsigned long long duration)
         {
-           _mutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
+           _timerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
            _currentDuration = duration;
            _durationThreadId = std::this_thread::get_id();
            _isDurationSet = true;
@@ -216,7 +207,7 @@ class Timer
                _isDurationSet = false;
                duration = _currentDuration;
                _currentDuration = 0;
-               _mutex.unlock();
+               _timerMutex.unlock();
            }
         
            bool overtime = false;
@@ -239,40 +230,55 @@ class Timer
          */
         void setMasterClock(const Values& clock)
         {
-           if (clock.size() == 7)
-               _clock = clock;
+            if (clock.size() == 8)
+            {
+                std::unique_lock<std::mutex> lockClock(_clockMutex);
+                _clock = clock;
+            }
         }
         
         bool getMasterClock(Values& clock) const
         {
-           if (_clock.size() > 0)
-           {
-               clock = _clock;
-               return true;
-           }
-           else
-           {
-               return false;
-           }
+            if (_clock.size() > 0)
+            {
+                std::unique_lock<std::mutex> lockClock(_clockMutex);
+                clock = _clock;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         template <typename T>
-        bool getMasterClock(int64_t& time) const
+        bool getMasterClock(int64_t& time, bool& paused) const
         {
             if (_clock.size() == 0)
+            {
+                paused = true;
                 return false;
+            }
 
+            std::unique_lock<std::mutex> lockClock(_clockMutex);
             auto clock = _clock;
+            lockClock.unlock();
+
             int64_t frames = clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt()) * 24) * 60) * 120;
             std::chrono::microseconds useconds((frames * 1000000) / 120);
             time = std::chrono::duration_cast<T>(useconds).count();
+
+            paused = clock[7].asInt();
+
             return true;
         }
 
-        template <typename T>
+        /**
+         * Get the current time in microseconds from epoch
+         */
         static inline int64_t getTime()
         {
-            return std::chrono::duration_cast<T>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+            return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         }
 
     private:
@@ -287,7 +293,8 @@ class Timer
         std::atomic_ullong _currentDuration {0};
         bool _isDurationSet {false};
 		std::thread::id _durationThreadId;
-        mutable std::mutex _mutex;
+        mutable std::mutex _timerMutex;
+        mutable std::mutex _clockMutex;
         bool _enabled {true};
         bool _isDebug {false};
         Values _clock;

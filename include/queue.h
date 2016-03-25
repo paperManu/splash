@@ -95,11 +95,11 @@ class Queue : public BufferObject
 
         struct Source
         {
-            std::string type;
-            std::string filename;
-            int64_t start; // in useconds
-            int64_t stop; // in useconds
-            Values args;
+            std::string type {"image"};
+            std::string filename {""};
+            int64_t start {0}; // in useconds
+            int64_t stop {0}; // in useconds
+            Values args {};
         };
         std::vector<Source> _playlist {}; // Holds a vector of [type, filename, start, stop, args], which is also a Values
         std::mutex _playlistMutex;
@@ -117,6 +117,11 @@ class Queue : public BufferObject
         bool _seeked {false};
         int64_t _startTime {-1}; // Beginning of the current loop, in us
         int64_t _currentTime {-1}; // Elapsed time since _startTime
+
+        /**
+         * Clean the playlist for holes and overlaps
+         */
+        void cleanPlaylist(std::vector<Source>& playlist);
 
         /**
          * Create a source object from the given type
@@ -163,9 +168,19 @@ class QueueSurrogate : public Texture
         std::unordered_map<std::string, Values> getShaderUniforms() const;
 
         /**
+         * Get the filter created by the queue
+         */
+        std::shared_ptr<Filter> getFilter() const {return _filter;}
+
+        /**
+         * Get the current source created by the queue
+         */
+        std::shared_ptr<BaseObject> getSource() const {return _source;}
+
+        /**
          * Get spec of the texture
          */
-        oiio::ImageSpec getSpec() const;
+        ImageBufferSpec getSpec() const;
 
         /**
          * Update the texture according to the owned Image

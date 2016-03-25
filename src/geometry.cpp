@@ -168,7 +168,7 @@ bool Geometry::linkTo(shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Mesh>(obj).get() != nullptr)
     {
-        MeshPtr mesh = dynamic_pointer_cast<Mesh>(obj);
+        shared_ptr<Mesh> mesh = dynamic_pointer_cast<Mesh>(obj);
         setMesh(mesh);
         return true;
     }

@@ -1,5 +1,6 @@
 #include "camera.h"
 
+#include "cgUtils.h"
 #include "image.h"
 #include "log.h"
 #include "mesh.h"
@@ -36,7 +37,6 @@
 
 using namespace std;
 using namespace glm;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -101,7 +101,7 @@ Camera::~Camera()
 /*************/
 void Camera::computeBlendingMap(ImagePtr& map)
 {
-    if (map->getSpec().format != oiio::TypeDesc::UINT16)
+    if (map->getSpec().type != ImageBufferSpec::Type::UINT16)
     {
         Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Input map is not of type UINT16." << Log::endl;
         return;
@@ -149,8 +149,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
     GLenum error = glGetError();
 #endif
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
-    ImageBuf img(_outTextures[0]->getSpec());
-    glReadPixels(0, 0, img.spec().width, img.spec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.localpixels());
+    ImageBuffer img(_outTextures[0]->getSpec());
+    glReadPixels(0, 0, img.getSpec().width, img.getSpec().height, GL_RGBA, GL_UNSIGNED_SHORT, img.data());
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
     // Reset the objects to their initial shader
@@ -173,46 +173,47 @@ void Camera::computeBlendingMap(ImagePtr& map)
     setOutputSize(width, height);
 
     // Go through the rendered image, fill the map with the "used" pixels from the original texture
-    oiio::ImageSpec mapSpec = map->getSpec();
+    ImageBufferSpec mapSpec = map->getSpec();
     vector<unsigned short> camMap(mapSpec.width * mapSpec.height, 0);
     vector<bool> isSet(mapSpec.width * mapSpec.height); // If a pixel is detected for this camera, only note it once
-    unsigned short* imageMap = (unsigned short*)map->data();
+
+    uint16_t* imgPtr = reinterpret_cast<uint16_t*>(img.data());
+    uint16_t* imageMap = (uint16_t*)map->data();
     
-    for (ImageBuf::ConstIterator<unsigned short> p(img); !p.done(); ++p)
-    {
-        if (!p.exists())
-            continue;
-
-        // UV coordinates are mapped on 2 uchar each
-        int x = (int)floor((p[0] * 65536.0 + p[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
-        int y = (int)floor((p[2] * 65536.0 + p[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
-
-        if (isSet[y * mapSpec.width + x] || (x == 0 && y == 0))
-            continue;
-        isSet[y * mapSpec.width + x] = true;
-
-        // Blending is computed as by Lancelle et al. 2011, "Soft Edge and Soft Corner Blending"
-        double distX = (double)std::min(p.x(), img.spec().width - 1 - p.x()) / (double)img.spec().width / _blendWidth;
-        double distY = (double)std::min(p.y(), img.spec().height - 1 - p.y()) / (double)img.spec().height / _blendWidth;
-        distX = glm::clamp(distX, 0.0, 1.0);
-        distY = glm::clamp(distY, 0.0, 1.0);
-        
-        unsigned short blendAddition = 0;
-        if (_blendWidth > 0.f)
+    for (int y = 0; y < img.getSpec().height; ++y)
+        for (int x = 0; x < img.getSpec().width; ++x)
         {
-            // Add some smoothness to the transition
-            double weight = 1.0 / (1.0 / distX + 1.0 / distY);
-            double smoothDist = pow(std::min(std::max(weight, 0.0), 1.0), 2.0) * 256.0;
-            int blendValue = smoothDist;
-            blendAddition += blendValue; // One more camera displaying this pixel
-        }
-        else
-            blendAddition += 256; // One more camera displaying this pixel
+            uint16_t* pixel = &imgPtr[(x + y * img.getSpec().width) * 4];
+            // UV coordinates are mapped on 2 uchar each
+            int destX = (int)floor((pixel[0] * 65536.0 + pixel[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
+            int destY = (int)floor((pixel[2] * 65536.0 + pixel[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
-        // We keep the real number of projectors, hidden higher in the shorts
-        blendAddition += 4096;
-        camMap[y * mapSpec.width + x] = blendAddition;
-    }
+            if (isSet[destY * mapSpec.width + destX] || (destX == 0 && destY == 0))
+                continue;
+            isSet[destY * mapSpec.width + destX] = true;
+
+            // Blending is computed as by Lancelle et al. 2011, "Soft Edge and Soft Corner Blending"
+            double distX = (double)std::min((double)x, (double)img.getSpec().width - 1 - x) / (double)img.getSpec().width / _blendWidth;
+            double distY = (double)std::min((double)y, (double)img.getSpec().height - 1 - y) / (double)img.getSpec().height / _blendWidth;
+            distX = glm::clamp(distX, 0.0, 1.0);
+            distY = glm::clamp(distY, 0.0, 1.0);
+            
+            unsigned short blendAddition = 0;
+            if (_blendWidth > 0.f)
+            {
+                // Add some smoothness to the transition
+                double weight = 1.0 / (1.0 / distX + 1.0 / distY);
+                double smoothDist = pow(std::min(std::max(weight, 0.0), 1.0), 2.0) * 256.0;
+                int blendValue = smoothDist;
+                blendAddition += blendValue; // One more camera displaying this pixel
+            }
+            else
+                blendAddition += 256; // One more camera displaying this pixel
+
+            // We keep the real number of projectors, hidden higher in the shorts
+            blendAddition += 4096;
+            camMap[destY * mapSpec.width + destX] = blendAddition;
+        }
 
     // Fill the holes
     for (unsigned int y = 0; y < mapSpec.height; ++y)
@@ -709,7 +710,7 @@ bool Camera::render()
         _newHeight = 0;
     }
 
-    ImageSpec spec = _outTextures[0]->getSpec();
+    ImageBufferSpec spec = _outTextures[0]->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
@@ -753,8 +754,7 @@ bool Camera::render()
 
             obj->activate();
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
-            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _blackLevel, _brightness});
-            //obj->getShader()->setAttribute("uniform", {"_colorBalance", colorBalance.x, colorBalance.y});
+            obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
             {
@@ -935,6 +935,12 @@ void Camera::moveCalibrationPoint(float dx, float dy)
     _calibrationPoints[_selectedCalibrationPoint].screen.y += dy / _height;
     _calibrationPoints[_selectedCalibrationPoint].isSet = true;
 
+    float screenX = 0.5f + 0.5f * _calibrationPoints[_selectedCalibrationPoint].screen.x;
+    float screenY = 0.5f + 0.5f *_calibrationPoints[_selectedCalibrationPoint].screen.y;
+
+    auto distanceToBorder = std::min(screenX, std::min(screenY, std::min(1.f - screenX, 1.f - screenY)));
+    _calibrationPoints[_selectedCalibrationPoint].weight = 1.f - distanceToBorder;
+
     if (_calibrationCalledOnce)
         doCalibration();
 }
@@ -1062,15 +1068,15 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    _depthTexture->setAttribute("resizable", {1});
+    _depthTexture->setResizable(1);
     _depthTexture->setAttribute("size", {width, height});
-    _depthTexture->setAttribute("resizable", {_automaticResize});
+    _depthTexture->setResizable(_automaticResize);
 
     for (auto tex : _outTextures)
     {
-        tex->setAttribute("resizable", {1});
+        tex->setResizable(1);
         tex->setAttribute("size", {width, height});
-        tex->setAttribute("resizable", {_automaticResize});
+        tex->setResizable(_automaticResize);
     }
 
     _width = width;
@@ -1108,6 +1114,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
+    vector<float> pointsWeight;
     for (auto& point : camera->_calibrationPoints)
     {
         if (!point.isSet)
@@ -1115,6 +1122,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
         objectPoints.emplace_back(dvec3(point.world.x, point.world.y, point.world.z));
         imagePoints.emplace_back(dvec3((point.screen.x + 1.0) / 2.0 * camera->_width, (point.screen.y + 1.0) / 2.0 * camera->_height, 0.0));
+        pointsWeight.push_back(point.weight);
     }
 
 #ifdef DEBUG
@@ -1134,7 +1142,10 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         projectedPoint = project(objectPoints[i], lookM, projM, viewport);
         projectedPoint.z = 0.0;
 
-        summedDistance += pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
+        if (camera->_weightedCalibrationPoints)
+            summedDistance += pointsWeight[i] * pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
+        else
+            summedDistance += pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
     }
     summedDistance /= imagePoints.size();
 
@@ -1143,59 +1154,6 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #endif
 
     return summedDistance;
-}
-
-/*************/
-vec2 Camera::colorBalanceFromTemperature(float temp)
-{
-    using glm::min;
-    using glm::max;
-    using glm::pow;
-    using glm::log;
-
-    dvec3 c;
-    float t = temp / 100.0;
-    if (t <= 66.0)
-        c.r = 255.0;
-    else
-    {
-        c.r = t - 60.0;
-        c.r = 329.698727466 * pow(c.r, -0.1332047592);
-        c.r = max(0.0, min(c.r, 255.0));
-    }
-  
-    if (t <= 66)
-    {
-        c.g = t;
-        c.g = 99.4708025861 * log(c.g) - 161.1195681661;
-        c.g = max(0.0, min(c.g, 255.0));
-    }
-    else
-    {
-        c.g = t - 60.0;
-        c.g = 288.1221695283 * pow(c.g, -0.0755148492);
-        c.g = max(0.0, min(c.g, 255.0));
-    }
-  
-    if (t >= 66)
-        c.b = 255.0;
-    else
-    {
-        if (t <= 19)
-            c.b = 0.0;
-        else
-        {
-            c.b = t - 10.0;
-            c.b = 138.5177312231 * log(c.b) - 305.0447927307;
-            c.b = max(0.0, min(c.b, 255.0));
-        }
-    }
-  
-    vec2 colorBalance;
-    colorBalance.x = c.r / c.g;
-    colorBalance.y = c.b / c.g;
-
-    return colorBalance;
 }
 
 /*************/
@@ -1264,7 +1222,7 @@ void Camera::loadDefaultModels()
             }
         }
 
-        MeshPtr mesh = make_shared<Mesh>();
+        shared_ptr<Mesh> mesh = make_shared<Mesh>();
         mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);
@@ -1356,6 +1314,15 @@ void Camera::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_cx, _cy};
+    });
+
+    _attribFunctions["weightedCalibrationPoints"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        _weightedCalibrationPoints = args[0].asInt();
+        return true;
+    }, [&]() -> Values {
+        return {(int)_weightedCalibrationPoints};
     });
 
     // More advanced attributes
@@ -1555,15 +1522,6 @@ void Camera::registerAttributes()
         return {_blendPrecision};
     });
 
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _blackLevel = args[0].asFloat();
-        return true;
-    }, [&]() -> Values {
-        return {_blackLevel};
-    });
-
     _attribFunctions["clearColor"] = AttributeFunctor([&](const Values& args) {
         if (args.size() == 0)
             _clearColor = SPLASH_CAMERA_FLASH_COLOR;
@@ -1667,8 +1625,10 @@ void Camera::registerAttributes()
             return false;
         if (args[0].asInt() > 0)
             _hidden = true;
-        else
+        else if (args[0].asInt() == 0)
             _hidden = false;
+        else
+            _hidden = !_hidden;
         return true;
     });
 

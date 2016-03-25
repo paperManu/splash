@@ -348,7 +348,7 @@ class SplashMeshNode(SplashBaseNode):
             bpy.ops.export_scene.obj(filepath=path, check_existing=False, use_selection=True, use_mesh_modifiers=True, use_materials=False,
                                      use_uvs=True, axis_forward='Y', axis_up='Z')
 
-            values['file'] = "\"" + path + "\""
+            values['file'] = "\"" + "splash_" + objectName + ".obj" + "\""
         else:
             values['file'] = "\"" + self.inputs['File'].default_value + "\""
 

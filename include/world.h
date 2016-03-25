@@ -37,7 +37,7 @@
 
 #include "coretypes.h"
 #include "basetypes.h"
-#if HAVE_PORTAUDIO && HAVE_LTC
+#if HAVE_PORTAUDIO
     #include "ltcclock.h"
 #endif
 #include "queue.h"
@@ -76,8 +76,8 @@ class World : public RootObject
 
     private:
         WorldPtr _self;
-#if HAVE_PORTAUDIO && HAVE_LTC
-        LtcClock _clock {true};
+#if HAVE_PORTAUDIO
+        std::unique_ptr<LtcClock> _clock {nullptr};
 #endif
 
         std::shared_ptr<Scene> _innerScene {};
@@ -95,6 +95,7 @@ class World : public RootObject
 
         std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
+        bool _reloadingConfig {false}; // TODO: workaround to allow for correct reloading when an inner scene was used
 
         std::atomic_int _nextId {0};
         std::map<std::string, std::vector<std::string>> _objectDest;

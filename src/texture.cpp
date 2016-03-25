@@ -7,10 +7,7 @@
 
 #include <string>
 
-#define SPLASH_TEXTURE_COPY_THREADS 4
-
 using namespace std;
-using namespace OIIO_NAMESPACE;
 
 namespace Splash {
 
@@ -56,7 +53,7 @@ void Texture::init()
     registerAttributes();
 
     _type = "texture";
-    _timestamp = chrono::high_resolution_clock::now();
+    _timestamp = Timer::getTime();
 }
 
 /*************/
@@ -69,14 +66,6 @@ bool Texture::linkTo(shared_ptr<BaseObject> obj)
 /*************/
 void Texture::registerAttributes()
 {
-    _attribFunctions["resizable"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _resizable = args[0].asInt() > 0 ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_resizable};
-    });
 }
 
 } // end of namespace

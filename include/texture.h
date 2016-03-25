@@ -29,14 +29,12 @@
 #include <memory>
 #include <vector>
 #include <glm/glm.hpp>
-#include <OpenImageIO/imagebuf.h>
 
 #include "config.h"
 
 #include "coretypes.h"
 #include "basetypes.h"
-
-namespace oiio = OIIO_NAMESPACE;
+#include "imageBuffer.h"
 
 namespace Splash {
 
@@ -79,7 +77,7 @@ class Texture : public BaseObject
         /**
          * Get spec of the texture
          */
-        virtual oiio::ImageSpec getSpec() const = 0;
+        virtual ImageBufferSpec getSpec() const = 0;
 
         /**
          * Get the prefix for the glsl sampler name
@@ -102,18 +100,23 @@ class Texture : public BaseObject
         void unlock() const {_mutex.unlock();}
 
         /**
+         * Set whether the texture should be resizable
+         */
+        void setResizable(bool resizable) {_resizable = resizable;}
+
+        /**
          * Update the texture according to the owned Image
          */
         virtual void update() = 0;
 
     protected:
         mutable std::mutex _mutex;
-        oiio::ImageSpec _spec;
+        ImageBufferSpec _spec;
 
         // Store some texture parameters
         bool _resizable {true};
 
-        std::chrono::high_resolution_clock::time_point _timestamp;
+        int64_t _timestamp;
 
     private:
         /**

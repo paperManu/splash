@@ -1,9 +1,13 @@
 AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/external/cppzmq \
 	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/jsoncpp \
+	-I$(top_srcdir)/external/libltc/src \
 	-I$(top_srcdir)/external/piccante/include \
+	-I$(top_srcdir)/external/stb \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \
 	-DSPLASHPREFIX=\"$(prefix)\"
@@ -35,7 +39,7 @@ $(top_srcdir)/external/syphon/build/Release/Syphon.framework/Headers/Syphon.h: M
 
 export LIBTOOL = glibtool --tag=CXX
 else
-export LIBTOOL = libtool --tag=CXX
+export LIBTOOL = $(top_builddir)/libtool --tag=CXX
 endif
 
 #*************#
@@ -51,8 +55,10 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	gui.cpp \
 	httpServer.cpp \
 	image.cpp \
+	imageBuffer.cpp \
 	link.cpp \
 	mesh.cpp \
+	mesh_bezierPatch.cpp \
 	object.cpp \
 	queue.cpp \
 	scene.cpp \
@@ -60,9 +66,14 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	texture.cpp \
 	texture_image.cpp \
 	threadpool.cpp \
+	warp.cpp \
 	window.cpp \
 	widgets.cpp \
 	world.cpp
+
+# ImGui sources
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/imgui/imgui_draw.cpp
 
 # GLAD, a GL loader
 if HAVE_OSX
@@ -72,6 +83,10 @@ else
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	$(top_srcdir)/external/glad/core/src/glad_core.c
 endif
+
+# JsonCpp sources
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+	$(top_srcdir)/external/jsoncpp/jsoncpp.cpp
 
 # GUI related sources
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
@@ -94,8 +109,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	$(ZMQ_CFLAGS)
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS = \
-	-lOpenImageIO \
-	-ljsoncpp \
 	-lsnappy \
 	$(BOOST_SYSTEM_LIBS) \
 	$(GLFW_LIBS) \
@@ -121,7 +134,14 @@ endif
 
 ## PortAudio related
 if HAVE_PORTAUDIO
-libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += speaker.cpp listener.cpp
+libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
+    speaker.cpp \
+    listener.cpp \
+    ltcclock.cpp \
+    $(top_srcdir)/external/libltc/src/decoder.c \
+    $(top_srcdir)/external/libltc/src/encoder.c \
+    $(top_srcdir)/external/libltc/src/ltc.c \
+    $(top_srcdir)/external/libltc/src/timecode.c
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(PORTAUDIO_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(PORTAUDIO_LIBS)
 endif
@@ -138,15 +158,6 @@ if HAVE_SHMDATA
 libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += image_shmdata.cpp mesh_shmdata.cpp
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(SHMDATA_CFLAGS)
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(SHMDATA_LIBS)
-endif
-
-## LTC related
-if HAVE_LTC
-if HAVE_PORTAUDIO
-libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += ltcclock.cpp
-libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += $(LTC_CFLAGS)
-libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += $(LTC_LIBS)
-endif
 endif
 
 # OSX
@@ -280,6 +291,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/gui.h \
 	$(top_srcdir)/include/httpServer.h \
 	$(top_srcdir)/include/image.h \
+	$(top_srcdir)/include/imageBuffer.h \
 	$(top_srcdir)/include/image_ffmpeg.h \
 	$(top_srcdir)/include/image_gphoto.h \
 	$(top_srcdir)/include/image_opencv.h \
@@ -289,6 +301,7 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/listener.h \
 	$(top_srcdir)/include/log.h \
 	$(top_srcdir)/include/mesh.h \
+	$(top_srcdir)/include/mesh_bezierPatch.h \
 	$(top_srcdir)/include/mesh_shmdata.h \
 	$(top_srcdir)/include/meshLoader.h \
 	$(top_srcdir)/include/object.h \
@@ -305,9 +318,12 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/texture_syphon_client.h \
 	$(top_srcdir)/include/threadpool.h \
 	$(top_srcdir)/include/timer.h \
+	$(top_srcdir)/include/warp.h \
 	$(top_srcdir)/include/widgets.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
+	\
+	$(top_srcdir)/external/cppzmq/zmq.hpp \
 	\
 	$(top_srcdir)/external/glad/core/include/glad/glad.h \
 	$(top_srcdir)/external/glad/core/include/KHR/khrplatform.h \
@@ -315,12 +331,22 @@ noinst_HEADERS = \
 	$(top_srcdir)/external/glad/compatibility/include/KHR/khrplatform.h \
 	\
 	$(top_srcdir)/external/imgui/imgui.h \
+	$(top_srcdir)/external/imgui/imgui_internal.h \
 	$(top_srcdir)/external/imgui/imconfig.h \
 	$(top_srcdir)/external/imgui/stb_rect_pack.h \
 	$(top_srcdir)/external/imgui/stb_textedit.h \
 	$(top_srcdir)/external/imgui/stb_truetype.h \
 	\
 	$(top_srcdir)/external/hap/source/hap.h \
+	\
+	$(top_srcdir)/external/jsoncpp/json/json.h \
+    \
+    $(top_srcdir)/external/libltc/src/decoder.h \
+    $(top_srcdir)/external/libltc/src/encoder.h \
+    $(top_srcdir)/external/libltc/src/ltc.h \
+	\
+	$(top_srcdir)/external/stb/stb_image.h \
+	$(top_srcdir)/external/stb/stb_image_write.h \
 	\
 	$(top_srcdir)/external/piccante/include/image_samplers/image_sampler.hpp \
 	$(top_srcdir)/external/piccante/include/image_samplers/image_sampler_gaussian.hpp \

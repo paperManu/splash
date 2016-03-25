@@ -768,6 +768,24 @@ void Shader::registerGraphicAttributes()
             setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
             compileProgram();
         }
+        else if (args[0].asString() == "warp" && (_fill != warp || _shaderOptions != options))
+        {
+            _fill = warp;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_WARP, vertex);
+            resetShader(geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_WARP, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "warpControl" && (_fill != warp || _shaderOptions != options))
+        {
+            _fill = warpControl;
+            _shaderOptions = options;
+            setSource(options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME, vertex);
+            setSource(options + ShaderSources.GEOMETRY_SHADER_WARP_WIREFRAME, geometry);
+            setSource(options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME, fragment);
+            compileProgram();
+        }
         else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
         {
             _fill = wireframe;

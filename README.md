@@ -68,13 +68,13 @@ Installation
 Splash relies on a few libraries to get the job done. These libraries are:
 
 - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
+- [FFmpeg](http://ffmpeg.org/) to read video files,
 - [GLFW](http://glfw.org) to handle the GL context creation,
 - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-- [OpenImageIO](http://www.openimageio.org) to load and manipulate image buffers,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
-- [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
 - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
+- [portaudio](http://portaudio.com/) to read and output audio,
 - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
 - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
 
@@ -82,18 +82,20 @@ A few more libraries are used as submodules in the git repository:
 
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
 - [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
-- [Piccante](https://github.com/banterle/piccante) to create HDR images.
+- [Piccante](https://github.com/banterle/piccante) to create HDR images,
+- [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
+- [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
+- [stb_image](https://github.com/nothings/stb) to read images.
 
 ### Compilation and installation
 
 #### Linux
 
-Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3 and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
 Here are some step by step commands to add these repositories on Ubuntu 13.10:
 
     sudo apt-add-repository ppa:andrewrk/rucksack
-    sudo apt-add-repository ppa:thomas-schiex/blender
 
     sudo sh -c 'echo "deb http://ppa.launchpad.net/sat-metalab/metalab/ubuntu trusty main" > /etc/apt/sources.list.d/sat-metalab-metalab-trusty.list'
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 27D9A33279DF04BB
@@ -111,9 +113,9 @@ And you should be ready to go!
 If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
 
     sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-system-dev
-    sudo apt-get install libglm-dev libopenimageio-dev libshmdata-1.0-dev libjsoncpp-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
+    sudo apt-get install libglm-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
     sudo apt-get install libglfw3-dev libxinerama-dev libxcursor-dev
-    sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev libltc-dev
+    sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
@@ -141,17 +143,6 @@ You can now install the command line tools we will need to download and compile 
 
     sudo port install automake autoconf libtool cmake git pkgconfig
 
-Grab and install OpenImageIO, the only library needed by Splash which is not packaged in MacPorts:
-
-    sudo port install tiff openexr libpng boost
-    git clone https://github.com/OpenImageIO/oiio
-    cd oiio
-    git checkout RB-1.6
-    mkdir build && cd build
-    cmake ..
-    make && sudo make install
-    cd ..
-
 We then install Shmdata, which depends on GStreamer. Note that Shmdata is only needed if you want Splash to communicate with other Shmdata-compatible softwares. If you want to read video files or feed Splash through Syphon, you can skip this step.
 
     sudo port install gstreamer1 python34
@@ -163,8 +154,8 @@ We then install Shmdata, which depends on GStreamer. Note that Shmdata is only n
 
 Install all the other dependencies:
 
-    sudo port install jsoncpp snappy
-    sudo port install gsl zmq cppzmq
+    sudo port install snappy
+    sudo port install gsl zmq
     sudo port install glfw glm
     sudo port install ffmpeg
 
