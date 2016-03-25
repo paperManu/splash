@@ -25,6 +25,9 @@
 #include "colorcalibrator.h"
 #endif
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wformat-security"
+
 using namespace std;
 
 namespace Splash
@@ -2056,5 +2059,6 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
     }
 }
 
+#pragma clang diagnostic pop
 
 } // end of namespace
