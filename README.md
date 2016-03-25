@@ -91,26 +91,25 @@ A few more libraries are used as submodules in the git repository:
 
 #### Linux
 
-Splash has currently only been compiled and tested on Ubuntu (version 13.10 and higher) and Mint 15 and higher. GLFW3 and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+Splash has currently only been compiled and tested on Ubuntu (version 14.04 and higher) and Mint 17 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
-Here are some step by step commands to add these repositories on Ubuntu 13.10:
+Here are some step by step commands to add these repositories on Ubuntu 14.04:
 
     sudo apt-add-repository ppa:andrewrk/rucksack
+    sudo apt-add-repository ppa:thomas-schiex/blender
 
     sudo sh -c 'echo "deb http://ppa.launchpad.net/sat-metalab/metalab/ubuntu trusty main" > /etc/apt/sources.list.d/sat-metalab-metalab-trusty.list'
     sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 27D9A33279DF04BB
 
     sudo apt-get update
 
-And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being...
-
-Your can now install Splash using the packaged version:
+And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being... To install Splash from the PPA, type:
 
     sudo apt-get install splash
 
-And you should be ready to go!
+And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
 
-If you want to get a more up to date version, you can try compiling and installing the latest version from the develop branch of this repository. Note that these version are more likely to contain bugs alongside new features / optimizations.
+You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
     sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-system-dev
     sudo apt-get install libglm-dev libgsl0-dev libzmq3-dev libsnappy-dev libgphoto2-dev
