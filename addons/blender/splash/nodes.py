@@ -476,6 +476,15 @@ class SplashWindowNode(SplashBaseNode):
         values['size'] = [self.inputs['Width'].default_value, self.inputs['Height'].default_value]
         values['srgb'] = int(self.inputs['sRGB'].default_value)
 
+        inputCounts = 0
+        for input in self.inputs:
+            if input.name == "Input link" and input.is_linked:
+                inputCounts += 1
+
+        values['layout'] = []
+        for i in range(0, inputCounts):
+            values['layout'].append(i)
+
         return values
 
     def update(self):

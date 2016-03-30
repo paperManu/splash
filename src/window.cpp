@@ -794,7 +794,17 @@ void Window::registerAttributes()
     _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        _layout = args;
+
+        _layout.clear();
+        for (auto& arg : args)
+            _layout.push_back(arg.asInt());
+
+        for (int i = _layout.size(); i < 4; ++i)
+            _layout.push_back(0);
+
+        if (_layout.size() > 4)
+            _layout.resize(4);
+
         return true;
     }, [&]() {
         return _layout;
