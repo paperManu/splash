@@ -518,7 +518,7 @@ bool Camera::doCalibration()
         _target[i] = target[i];
         _up[i] = up[i];
     }
-    _target = normalize(_target);
+    _target += _eye;
     _up = normalize(_up);
 
     Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
@@ -1111,6 +1111,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         target[i] = targetTmp[i];
         up[i] = upTmp[i];
     }
+    target += eye;
 
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
