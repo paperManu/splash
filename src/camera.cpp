@@ -411,7 +411,7 @@ bool Camera::doCalibration()
                 for (int i = 0; i < 3; ++i)
                 {
                     gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                    gsl_vector_set(x, i + 6, 0.0);
+                    gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * 360.f);
                 }
 
                 gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
@@ -499,33 +499,42 @@ bool Camera::doCalibration()
         gsl_multimin_fminimizer_free(minimizer);
     }
 
-    // Third step: convert the values to camera parameters
-    _fov = selectedValues[0];
-    _cx = selectedValues[1];
-    _cy = selectedValues[2];
-
-    dvec3 euler;
-    for (int i = 0; i < 3; ++i)
+    if (minValue > 1000.0)
     {
-        _eye[i] = selectedValues[i + 3];
-        euler[i] = selectedValues[i + 6];
+        Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << selectedValues[0] << " " << selectedValues[1] << " " << selectedValues[2] << Log::endl;
+        Log::get() << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
+        Log::get() << "Camera::" << __FUNCTION__ << " - Calibration not set because the found parameters are not good enough." << Log::endl;
     }
-    dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
-    dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
-    dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
-    for (int i = 0; i < 3; ++i)
+    else
     {
-        _target[i] = target[i];
-        _up[i] = up[i];
+        // Third step: convert the values to camera parameters
+        _fov = selectedValues[0];
+        _cx = selectedValues[1];
+        _cy = selectedValues[2];
+
+        dvec3 euler;
+        for (int i = 0; i < 3; ++i)
+        {
+            _eye[i] = selectedValues[i + 3];
+            euler[i] = selectedValues[i + 6];
+        }
+        dmat4 rotateMat = yawPitchRoll(euler[0], euler[1], euler[2]);
+        dvec4 target = rotateMat * dvec4(1.0, 0.0, 0.0, 0.0);
+        dvec4 up = rotateMat * dvec4(0.0, 0.0, 1.0, 0.0);
+        for (int i = 0; i < 3; ++i)
+        {
+            _target[i] = target[i];
+            _up[i] = up[i];
+        }
+        _target += _eye;
+        _up = normalize(_up);
+
+        Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
+        Log::get() << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
+
+        // Force camera update with the new parameters
+        _updatedParams = true;
     }
-    _target += _eye;
-    _up = normalize(_up);
-
-    Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << _fov << " " << _cx << " " << _cy << Log::endl;
-    Log::get() << "Camera::" << __FUNCTION__ << " - Minimum value: " << minValue << Log::endl;
-
-    // Force camera update with the new parameters
-    _updatedParams = true;
 
     return true;
 }
@@ -1094,6 +1103,11 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     double fov = gsl_vector_get(v, 0);
     double cx = gsl_vector_get(v, 1);
     double cy = gsl_vector_get(v, 2);
+
+    // Some limits for the calibration parameters
+    if (fov > 120.0 || abs(cx - 0.5) > 1.0 || abs(cy - 0.5) > 1.0)
+        return numeric_limits<double>::max();
+
     dvec3 eye;
     dvec3 target;
     dvec3 up;
