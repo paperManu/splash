@@ -78,16 +78,6 @@ if test "x${have_glfw}" = "xfalse" ; then
 	AC_MSG_ERROR([Missing glfw])
 fi
 
-# GLM
-AC_LANG_PUSH([C++])
-AC_CHECK_HEADER([glm/glm.hpp],
-	[HAVE_GLM=true],
-	[HAVE_GLM=false])
-AC_LANG_POP
-if test "$HAVE_GLM" = "false" ; then
-	AC_MSG_ERROR([Missing glm])
-fi
-
 # GNU Scientific Library, also used for calibration
 PKG_CHECK_MODULES([GSL], [gsl])
 if test "x${have_gsl}" = "xfalse" ; then

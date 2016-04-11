@@ -2,8 +2,9 @@ AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/external/cppzmq \
-	-I$(top_srcdir)/external/imgui \
+	-I$(top_srcdir)/external/glm \
 	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/imgui \
 	-I$(top_srcdir)/external/jsoncpp \
 	-I$(top_srcdir)/external/libltc/src \
 	-I$(top_srcdir)/external/piccante/include \
@@ -101,7 +102,6 @@ libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS = \
 	$(BOOST_CPPFLAGS) \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
-	$(GLM_CFLAGS) \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(SIMD_FLAGS) \
@@ -193,7 +193,6 @@ splash_SOURCES = \
 splash_CXXFLAGS = \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
-	$(GLM_CFLAGS) \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \
@@ -240,7 +239,6 @@ splash_scene_SOURCES = \
 splash_scene_CXXFLAGS = \
 	$(GLFW_CFLAGS) \
 	$(GL_CFLAGS) \
-	$(GLM_CFLAGS) \
 	$(GSL_CFLAGS) \
 	$(JSONCPP_CFLAGS) \
 	$(OPENIMAGEIO_CFLAGS) \

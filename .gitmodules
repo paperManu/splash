@@ -20,3 +20,6 @@
 [submodule "external/libltc"]
 	path = external/libltc
 	url = https://github.com/x42/libltc.git
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm.git
