@@ -25,7 +25,6 @@ set(SRC
     geometry.cpp
     gpuBuffer.cpp
     gui.cpp
-    httpServer.cpp
     imageBuffer.cpp
     image.cpp
     link.cpp
@@ -57,6 +56,10 @@ set(SRC
     ../external/libltc/src/timecode.c
 )
 
+if (Boost_FOUND)
+    list(APPEND SRC httpServer.cpp)
+endif()
+
 if (FFMPEG_FOUND)
     list(APPEND SRC image_ffmpeg.cpp)
 endif()
@@ -73,6 +76,11 @@ if (SHMDATA_FOUND)
     list(APPEND SRC image_shmdata.cpp)
 endif()
 
+if (HAVE_OSX)
+    list(APPEND SRC texture_syphon.cpp texture_syphon_client.mm)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F$(top_srcdir)/external/syphon/build/Release -framework Syphon")
+endif()
+
 include_directories(../include)
 include_directories(../external/ccpzmq)
 include_directories(../external/glm)
@@ -83,6 +91,7 @@ include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
 include_directories(../external/piccante/include)
 include_directories(../external/stb)
+include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${GLFW_INCLUDE_DIRS})
@@ -114,3 +123,7 @@ target_link_libraries(splash splash-${API_VERSION})
 
 add_executable(splash-scene splash-scene.cpp)
 target_link_libraries(splash-scene splash-${API_VERSION})
+
+install(TARGETS splash-${API_VERSION} DESTINATION "lib/")
+install(TARGETS splash DESTINATION "bin/")
+install(TARGETS splash-scene DESTINATION "bin/")

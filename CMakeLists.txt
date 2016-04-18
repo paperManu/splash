@@ -21,14 +21,16 @@ cmake_minimum_required(VERSION 2.8)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
+# Set default build type to Release
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 #
 # Package information
 #
 set(API_VERSION 0.3)
 set(PACKAGE_VERSION 0.3.13)
-
-# We compile using clang
-set(CMAKE_CXX_COMPILER "clang++")
 
 #
 # Detect if we have a C++11 compiler
@@ -47,7 +49,6 @@ endif()
 #
 # Find the various libraries
 #
-find_package(Boost REQUIRED COMPONENTS system)
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
@@ -57,6 +58,7 @@ pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 
 # Optional dependencies
+find_package(Boost COMPONENTS system)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
@@ -70,14 +72,65 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
 
-set(HAVE_SHMDATA ${SHMDATA_FOUND})
 set(HAVE_GPHOTO ${GPHOTO_FOUND})
 set(HAVE_FFMPEG ${FFMPEG_FOUND})
-set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})
+set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
+set(HAVE_SHMDATA ${SHMDATA_FOUND})
+
+if(UNIX AND NOT APPLE)
+    set(HAVE_LINUX 1)
+    set(HAVE_OSX 0)
+elseif(APPLE)
+    set(HAVE_LINUX 0)
+    set(HAVE_OSX 1)
+endif()
+
 configure_file("${CMAKE_HOME_DIRECTORY}/include/config.h.cmake" "${CMAKE_HOME_DIRECTORY}/include/config.h")
 
 #
 # Sources
 #
+add_subdirectory(external)
+add_subdirectory(data)
 add_subdirectory(src)
+
+#
+# Summary
+#
+
+set(_config_msg "\nSplash Configuration\n=====================")
+
+function(info_cfg_option
+    _setting
+    )
+    
+    set(_msg "  - ${_setting}")
+    string(LENGTH "${_msg}" _len)
+    while("32" GREATER "${_len}")
+        set(_msg "${_msg} ")
+         math(EXPR _len "${_len} + 1")
+    endwhile()
+    
+    set(_config_msg "${_config_msg}\n${_msg}${${_setting}}" PARENT_SCOPE)
+endfunction()
+
+function(info_cfg_text
+    _text
+    )
+    
+    set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
+endfunction()
+
+info_cfg_option(Boost_VERSION)
+info_cfg_option(GPHOTO_VERSION)
+info_cfg_option(FFMPEG_libavformat_VERSION)
+info_cfg_option(FFMPEG_libavcodec_VERSION)
+info_cfg_option(FFMPEG_libavutil_VERSION)
+info_cfg_option(FFMPEG_libswscale_VERSION)
+info_cfg_option(OPENCV_VERSION)
+info_cfg_option(PORTAUDIO_VERSION)
+info_cfg_option(SHMDATA_VERSION)
+
+info_cfg_text("")
+message("${_config_msg}")
