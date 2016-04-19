@@ -17,9 +17,15 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-if(APPLE)
-    execute_process(
-        COMMAND cd syphon
-        COMMAND xcodebuild -project Syphon.xcodeproj -configuration Release $@ SYMROOT=./build DSTROOT=/
-    )
-endif()
+add_custom_command(
+    OUTPUT blenderSplash.zip
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash ./splash
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/templates ./templates
+    COMMAND zip blenderSplash.zip -r splash/* -x *.swp splash/Makefile*
+    COMMAND ${CMAKE_COMMAND} -E remove -f templates/*.blend1
+    COMMAND tar cvjf blender_splash_addon.tar.bz2 --exclude='Makefile*' --exclude='*.swp' blenderSplash.zip templates
+    COMMAND ${CMAKE_COMMAND} -E remove_directory splash
+    COMMAND ${CMAKE_COMMAND} -E remove_directory templates
+)
+
+add_custom_target(blenderSplash DEPENDS blenderSplash.zip)

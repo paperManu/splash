@@ -17,70 +17,16 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-set(SRC
-    camera.cpp
-    cgUtils.cpp
-    colorcalibrator.cpp
-    filter.cpp
-    geometry.cpp
-    gpuBuffer.cpp
-    gui.cpp
-    imageBuffer.cpp
-    image.cpp
-    link.cpp
-    listener.cpp
-    ltcclock.cpp
-    mesh_bezierPatch.cpp
-    mesh.cpp
-    mesh_shmdata.cpp
-    object.cpp
-    queue.cpp
-    scene.cpp
-    shader.cpp
-    speaker.cpp
-    texture.cpp
-    texture_image.cpp
-    threadpool.cpp
-    warp.cpp
-    widgets.cpp
-    window.cpp
-    world.cpp
-    ../external/imgui/imgui_draw.cpp
-    ../external/imgui/imgui.cpp
-	../external/glad/core/src/glad_core.c
-	../external/jsoncpp/jsoncpp.cpp
-	../external/hap/source/hap.c
-    ../external/libltc/src/decoder.c
-    ../external/libltc/src/encoder.c
-    ../external/libltc/src/ltc.c
-    ../external/libltc/src/timecode.c
-)
+#
+# Targets
+#
+add_library(splash-${API_VERSION} STATIC world.cpp)
+add_executable(splash splash-app.cpp)
+add_executable(splash-scene splash-scene.cpp)
 
-if (Boost_FOUND)
-    list(APPEND SRC httpServer.cpp)
-endif()
-
-if (FFMPEG_FOUND)
-    list(APPEND SRC image_ffmpeg.cpp)
-endif()
-
-if (GPHOTO_FOUND)
-    list(APPEND SRC image_gphoto.cpp)
-endif()
-
-if (OPENCV_FOUND)
-    list(APPEND SRC image_opencv.cpp)
-endif()
-
-if (SHMDATA_FOUND)
-    list(APPEND SRC image_shmdata.cpp)
-endif()
-
-if (HAVE_OSX)
-    list(APPEND SRC texture_syphon.cpp texture_syphon_client.mm)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F$(top_srcdir)/external/syphon/build/Release -framework Syphon")
-endif()
-
+#
+# Includes
+#
 include_directories(../include)
 include_directories(../external/ccpzmq)
 include_directories(../external/glm)
@@ -104,9 +50,75 @@ include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 
-link_directories(${Boost_LIBRARY_DIRS})
+#
+# Splash library
+#
+target_compile_features(splash-${API_VERSION} PRIVATE cxx_variadic_templates)
+target_sources(splash-${API_VERSION} PRIVATE
+               camera.cpp
+               cgUtils.cpp
+               colorcalibrator.cpp
+               filter.cpp
+               geometry.cpp
+               gpuBuffer.cpp
+               gui.cpp
+               imageBuffer.cpp
+               image.cpp
+               link.cpp
+               listener.cpp
+               ltcclock.cpp
+               mesh_bezierPatch.cpp
+               mesh.cpp
+               mesh_shmdata.cpp
+               object.cpp
+               queue.cpp
+               scene.cpp
+               shader.cpp
+               speaker.cpp
+               texture.cpp
+               texture_image.cpp
+               threadpool.cpp
+               warp.cpp
+               widgets.cpp
+               window.cpp
+               ../external/imgui/imgui_draw.cpp
+               ../external/imgui/imgui.cpp
+	           ../external/glad/core/src/glad_core.c
+	           ../external/jsoncpp/jsoncpp.cpp
+	           ../external/hap/source/hap.c
+               ../external/libltc/src/decoder.c
+               ../external/libltc/src/encoder.c
+               ../external/libltc/src/ltc.c
+               ../external/libltc/src/timecode.c
+)
 
-add_library(splash-${API_VERSION} SHARED ${SRC})
+if (Boost_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE httpServer.cpp)
+endif()
+
+if (FFMPEG_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE image_ffmpeg.cpp)
+endif()
+
+if (GPHOTO_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE image_gphoto.cpp)
+endif()
+
+if (OPENCV_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE image_opencv.cpp)
+endif()
+
+if (SHMDATA_FOUND)
+    target_sources(splash-${API_VERSION} PRIVATE image_shmdata.cpp)
+endif()
+
+if (APPLE)
+    target_sources(splash-${API_VERSION} PRIVATE
+                   texture_syphon.cpp
+                   texture_syphon_client.mm)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F$(top_srcdir)/external/syphon/build/Release -framework Syphon")
+endif()
+
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GLFW_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
@@ -118,12 +130,18 @@ target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SNAPPY_LIBRARIES})
 
-add_executable(splash splash-app.cpp)
+#
+# splash and splash-scene executables
+#
+target_compile_features(splash PRIVATE cxx_variadic_templates)
 target_link_libraries(splash splash-${API_VERSION})
 
-add_executable(splash-scene splash-scene.cpp)
+target_compile_features(splash-scene PRIVATE cxx_variadic_templates)
 target_link_libraries(splash-scene splash-${API_VERSION})
 
+#
+# Installation
+#
 install(TARGETS splash-${API_VERSION} DESTINATION "lib/")
 install(TARGETS splash DESTINATION "bin/")
 install(TARGETS splash-scene DESTINATION "bin/")

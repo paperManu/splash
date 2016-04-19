@@ -17,9 +17,4 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-if(APPLE)
-    execute_process(
-        COMMAND cd syphon
-        COMMAND xcodebuild -project Syphon.xcodeproj -configuration Release $@ SYMROOT=./build DSTROOT=/
-    )
-endif()
+add_subdirectory(blender)

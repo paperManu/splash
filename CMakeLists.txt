@@ -17,9 +17,14 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.2)
+project(
+    splash 
+    VERSION 0.3.13
+    LANGUAGES C CXX
+)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # Set default build type to Release
 if(NOT CMAKE_BUILD_TYPE)
@@ -31,20 +36,6 @@ endif(NOT CMAKE_BUILD_TYPE)
 #
 set(API_VERSION 0.3)
 set(PACKAGE_VERSION 0.3.13)
-
-#
-# Detect if we have a C++11 compiler
-#
-include(CheckCXXCompilerFlag)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-else()
-        message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
-endif()
 
 #
 # Find the various libraries
@@ -86,11 +77,12 @@ elseif(APPLE)
     set(HAVE_OSX 1)
 endif()
 
-configure_file("${CMAKE_HOME_DIRECTORY}/include/config.h.cmake" "${CMAKE_HOME_DIRECTORY}/include/config.h")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h")
 
 #
 # Sources
 #
+add_subdirectory(addons)
 add_subdirectory(external)
 add_subdirectory(data)
 add_subdirectory(src)
