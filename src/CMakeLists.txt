@@ -54,42 +54,43 @@ include_directories(${SNAPPY_INCLUDE_DIRS})
 # Splash library
 #
 target_compile_features(splash-${API_VERSION} PRIVATE cxx_variadic_templates)
-target_sources(splash-${API_VERSION} PRIVATE
-               camera.cpp
-               cgUtils.cpp
-               colorcalibrator.cpp
-               filter.cpp
-               geometry.cpp
-               gpuBuffer.cpp
-               gui.cpp
-               imageBuffer.cpp
-               image.cpp
-               link.cpp
-               listener.cpp
-               ltcclock.cpp
-               mesh_bezierPatch.cpp
-               mesh.cpp
-               mesh_shmdata.cpp
-               object.cpp
-               queue.cpp
-               scene.cpp
-               shader.cpp
-               speaker.cpp
-               texture.cpp
-               texture_image.cpp
-               threadpool.cpp
-               warp.cpp
-               widgets.cpp
-               window.cpp
-               ../external/imgui/imgui_draw.cpp
-               ../external/imgui/imgui.cpp
-	           ../external/glad/core/src/glad_core.c
-	           ../external/jsoncpp/jsoncpp.cpp
-	           ../external/hap/source/hap.c
-               ../external/libltc/src/decoder.c
-               ../external/libltc/src/encoder.c
-               ../external/libltc/src/ltc.c
-               ../external/libltc/src/timecode.c
+target_sources(
+    splash-${API_VERSION} PRIVATE
+    camera.cpp
+    cgUtils.cpp
+    colorcalibrator.cpp
+    filter.cpp
+    geometry.cpp
+    gpuBuffer.cpp
+    gui.cpp
+    imageBuffer.cpp
+    image.cpp
+    link.cpp
+    listener.cpp
+    ltcclock.cpp
+    mesh_bezierPatch.cpp
+    mesh.cpp
+    mesh_shmdata.cpp
+    object.cpp
+    queue.cpp
+    scene.cpp
+    shader.cpp
+    speaker.cpp
+    texture.cpp
+    texture_image.cpp
+    threadpool.cpp
+    warp.cpp
+    widgets.cpp
+    window.cpp
+    ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui.cpp
+	../external/glad/core/src/glad_core.c
+	../external/jsoncpp/jsoncpp.cpp
+	../external/hap/source/hap.c
+    ../external/libltc/src/decoder.c
+    ../external/libltc/src/encoder.c
+    ../external/libltc/src/ltc.c
+    ../external/libltc/src/timecode.c
 )
 
 if (Boost_FOUND)
@@ -113,9 +114,11 @@ if (SHMDATA_FOUND)
 endif()
 
 if (APPLE)
-    target_sources(splash-${API_VERSION} PRIVATE
-                   texture_syphon.cpp
-                   texture_syphon_client.mm)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+        texture_syphon.cpp
+        texture_syphon_client.mm
+    )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F$(top_srcdir)/external/syphon/build/Release -framework Syphon")
 endif()
 
@@ -142,6 +145,5 @@ target_link_libraries(splash-scene splash-${API_VERSION})
 #
 # Installation
 #
-install(TARGETS splash-${API_VERSION} DESTINATION "lib/")
 install(TARGETS splash DESTINATION "bin/")
 install(TARGETS splash-scene DESTINATION "bin/")
