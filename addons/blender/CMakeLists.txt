@@ -28,4 +28,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E remove_directory templates
 )
 
-add_custom_target(blenderSplash DEPENDS blenderSplash.zip)
+add_custom_target(blenderSplash ALL DEPENDS blenderSplash.zip)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/blenderSplash.zip DESTINATION "share/splash")

@@ -28,3 +28,16 @@ install(FILES
     splash.json
     templates.txt
     DESTINATION "share/splash/")
+
+install(FILES 
+    templates/single_plane.json
+    templates/single_plane.png
+    templates/single_dome.json
+    templates/single_dome.png
+    templates/four_plane.json
+    templates/four_plane.png
+    templates/dual_dome.json
+    templates/dual_dome.png
+    templates/two_scenes_four_cameras.json
+    templates/two_scenes_four_cameras.png
+    DESTINATION "share/splash/templates")
