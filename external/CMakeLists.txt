@@ -19,7 +19,7 @@
 
 if(APPLE)
     execute_process(
-        COMMAND cd syphon
+        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/syphon
         COMMAND xcodebuild -project Syphon.xcodeproj -configuration Release $@ SYMROOT=./build DSTROOT=/
     )
 endif()

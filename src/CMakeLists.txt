@@ -28,7 +28,7 @@ add_executable(splash-scene splash-scene.cpp)
 # Includes
 #
 include_directories(../include)
-include_directories(../external/ccpzmq)
+include_directories(../external/cppzmq)
 include_directories(../external/glm)
 include_directories(../external/glad/core/include)
 include_directories(../external/hap/source)
@@ -58,7 +58,6 @@ target_sources(
     splash-${API_VERSION} PRIVATE
     camera.cpp
     cgUtils.cpp
-    colorcalibrator.cpp
     filter.cpp
     geometry.cpp
     gpuBuffer.cpp
@@ -66,16 +65,12 @@ target_sources(
     imageBuffer.cpp
     image.cpp
     link.cpp
-    listener.cpp
-    ltcclock.cpp
     mesh_bezierPatch.cpp
     mesh.cpp
-    mesh_shmdata.cpp
     object.cpp
     queue.cpp
     scene.cpp
     shader.cpp
-    speaker.cpp
     texture.cpp
     texture_image.cpp
     threadpool.cpp
@@ -87,10 +82,6 @@ target_sources(
 	../external/glad/core/src/glad_core.c
 	../external/jsoncpp/jsoncpp.cpp
 	../external/hap/source/hap.c
-    ../external/libltc/src/decoder.c
-    ../external/libltc/src/encoder.c
-    ../external/libltc/src/ltc.c
-    ../external/libltc/src/timecode.c
 )
 
 if (Boost_FOUND)
@@ -102,15 +93,36 @@ if (FFMPEG_FOUND)
 endif()
 
 if (GPHOTO_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE image_gphoto.cpp)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+        colorcalibrator.cpp 
+        image_gphoto.cpp
+    )
 endif()
 
 if (OPENCV_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE image_opencv.cpp)
 endif()
 
+if (PORTAUDIO_FOUND)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+        listener.cpp
+        ltcclock.cpp
+        speaker.cpp
+        ../external/libltc/src/decoder.c
+        ../external/libltc/src/encoder.c
+        ../external/libltc/src/ltc.c
+        ../external/libltc/src/timecode.c
+    )
+endif()
+
 if (SHMDATA_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE image_shmdata.cpp)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+        image_shmdata.cpp
+        mesh_shmdata.cpp
+    )
 endif()
 
 if (APPLE)

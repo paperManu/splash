@@ -49,7 +49,7 @@ pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 
 # Optional dependencies
-find_package(Boost COMPONENTS system)
+find_package(Boost COMPONENTS system thread)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
