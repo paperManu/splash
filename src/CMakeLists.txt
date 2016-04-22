@@ -18,13 +18,6 @@
 #
 
 #
-# Targets
-#
-add_library(splash-${API_VERSION} STATIC world.cpp)
-add_executable(splash splash-app.cpp)
-add_executable(splash-scene splash-scene.cpp)
-
-#
 # Includes
 #
 include_directories(../include)
@@ -49,6 +42,24 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
+
+link_directories(${Boost_LIBRARY_DIRS})
+link_directories(${GLFW_LIBRARY_DIRS})
+link_directories(${GSL_LIBRARY_DIRS})
+link_directories(${ZMQ_LIBRARY_DIRS})
+link_directories(${SHMDATA_LIBRARY_DIRS})
+link_directories(${GPHOTO_LIBRARY_DIRS})
+link_directories(${FFMPEG_LIBRARY_DIRS})
+link_directories(${PORTAUDIO_LIBRARY_DIRS})
+link_directories(${OPENCV_LIBRARY_DIRS})
+link_directories(${SNAPPY_LIBRARY_DIRS})
+
+#
+# Targets
+#
+add_library(splash-${API_VERSION} STATIC world.cpp)
+add_executable(splash splash-app.cpp)
+add_executable(splash-scene splash-scene.cpp)
 
 #
 # Splash library
@@ -131,7 +142,7 @@ if (APPLE)
         texture_syphon.cpp
         texture_syphon_client.mm
     )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F$(top_srcdir)/external/syphon/build/Release -framework Syphon")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 endif()
 
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
@@ -159,3 +170,8 @@ target_link_libraries(splash-scene splash-${API_VERSION})
 #
 install(TARGETS splash DESTINATION "bin/")
 install(TARGETS splash-scene DESTINATION "bin/")
+
+if (APPLE)
+    target_link_libraries(splash "-undefined dynamic_lookup")
+    target_link_libraries(splash-scene "-undefined dynamic_lookup")
+endif()

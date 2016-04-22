@@ -18,8 +18,10 @@
 #
 
 if(APPLE)
-    execute_process(
-        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/syphon
-        COMMAND xcodebuild -project Syphon.xcodeproj -configuration Release $@ SYMROOT=./build DSTROOT=/
+    add_custom_command(
+        OUTPUT SyphonBuild
+        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/syphon && xcodebuild -project Syphon.xcodeproj -configuration Release SYMROOT=./build DSTROOT=/
     )
+
+    add_custom_target(Syphon ALL DEPENDS SyphonBuild)
 endif()
