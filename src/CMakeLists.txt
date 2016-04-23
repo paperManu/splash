@@ -23,7 +23,6 @@
 include_directories(../include)
 include_directories(../external/cppzmq)
 include_directories(../external/glm)
-include_directories(../external/glad/core/include)
 include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/jsoncpp)
@@ -31,6 +30,12 @@ include_directories(../external/libltc/src)
 include_directories(../external/piccante/include)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
+
+if (APPLE)
+    include_directories(../external/glad/compatibility/include)
+else()
+    include_directories(../external/glad/core/include)
+endif()
 
 include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${GLFW_INCLUDE_DIRS})
@@ -90,10 +95,21 @@ target_sources(
     window.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp
-	../external/glad/core/src/glad_core.c
 	../external/jsoncpp/jsoncpp.cpp
 	../external/hap/source/hap.c
 )
+
+if (APPLE)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+	    ../external/glad/compatibility/src/glad_compatibility.c
+    )
+else()
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+	    ../external/glad/core/src/glad_core.c
+    )
+endif()
 
 if (Boost_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE httpServer.cpp)
