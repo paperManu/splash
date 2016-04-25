@@ -69,6 +69,10 @@ add_executable(splash-scene splash-scene.cpp)
 #
 # Splash library
 #
+if (APPLE)
+    add_dependencies(splash-${API_VERSION} Syphon)
+endif()
+
 target_compile_features(splash-${API_VERSION} PRIVATE cxx_variadic_templates)
 target_sources(
     splash-${API_VERSION} PRIVATE

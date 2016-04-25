@@ -23,5 +23,5 @@ if(APPLE)
         COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/syphon && xcodebuild -project Syphon.xcodeproj -configuration Release SYMROOT=./build DSTROOT=/
     )
 
-    add_custom_target(Syphon ALL DEPENDS SyphonBuild)
+    add_custom_target(Syphon DEPENDS SyphonBuild)
 endif()
