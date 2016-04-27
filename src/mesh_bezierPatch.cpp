@@ -1,5 +1,7 @@
 #include "mesh_bezierPatch.h"
 
+#include "log.h"
+
 using namespace std;
 
 namespace Splash
