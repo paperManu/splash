@@ -934,14 +934,19 @@ void Shader::registerFeedbackAttributes()
         if (args.size() < 1)
             return false;
 
-        const GLchar* feedbackVaryings[args.size()];
+        GLchar* feedbackVaryings[args.size()];
         vector<string> varyingNames;
         for (int i = 0; i < args.size(); ++i)
         {
             varyingNames.push_back(args[i].asString());
-            feedbackVaryings[i] = varyingNames[i].c_str();
+            feedbackVaryings[i] = new GLchar[256];
+            strcpy(feedbackVaryings[i], varyingNames[i].c_str());
         }
-        glTransformFeedbackVaryings(_program, args.size(), feedbackVaryings, GL_SEPARATE_ATTRIBS);
+
+        glTransformFeedbackVaryings(_program, args.size(), const_cast<const GLchar**>(feedbackVaryings), GL_SEPARATE_ATTRIBS);
+
+        for (int i = 0; i < args.size(); ++i)
+            delete feedbackVaryings[i];
 
         return true;
     });
