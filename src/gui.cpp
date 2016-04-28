@@ -571,7 +571,10 @@ void Gui::setOutputSize(int width, int height)
     _width = width;
     _height = height;
 
-    initImGui(width, height);
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = width;
+    io.DisplaySize.y = height;
+
     _window->releaseContext();
 }
 
