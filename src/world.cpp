@@ -575,9 +575,10 @@ void World::applyConfig()
         }
     }
 
-    // Also, enable the master clock
+    // Also, enable the master clock if it was not enabled
 #if HAVE_PORTAUDIO
-    _clock = unique_ptr<LtcClock>(new LtcClock(true));
+    if (!_clock)
+        _clock = unique_ptr<LtcClock>(new LtcClock(true));
 #endif
 
     // Send the start message for all scenes
@@ -954,6 +955,16 @@ void World::registerAttributes()
         });
         return true;
     });
+
+#if HAVE_PORTAUDIO
+    _attribFunctions["clockDeviceName"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        _clock = unique_ptr<LtcClock>(new LtcClock(true, args[0].asString()));
+        return true;
+    });
+#endif
 
     _attribFunctions["pong"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)

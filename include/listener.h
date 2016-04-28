@@ -87,13 +87,16 @@ class Listener : public BaseObject
         /**
          * Set the audio parameters
          */
-        void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);
+        void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const std::string& deviceName = "");
 
     private:
         bool _ready {false};
         unsigned int _channels {2};
-        unsigned int _sampleRate {44100};
+        unsigned int _sampleRate {0};
         SampleFormat _sampleFormat {SAMPLE_FMT_FLT};
+        std::string _deviceName {""};
+
+        bool _useJack {false};
         size_t _sampleSize {2};
 
         PaStream* _portAudioStream {nullptr};

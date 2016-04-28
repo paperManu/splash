@@ -78,6 +78,7 @@ class World : public RootObject
         WorldPtr _self;
 #if HAVE_PORTAUDIO
         std::unique_ptr<LtcClock> _clock {nullptr};
+        std::string _clockDeviceName {""};
 #endif
 
         std::shared_ptr<Scene> _innerScene {};

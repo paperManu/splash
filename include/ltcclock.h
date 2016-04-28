@@ -56,7 +56,7 @@ class LtcClock : public BaseObject
             bool paused {false};
         };
 
-        LtcClock(bool masterClock = false);
+        LtcClock(bool masterClock = false, const std::string& deviceName = "");
         ~LtcClock();
 
         /**

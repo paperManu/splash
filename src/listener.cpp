@@ -4,6 +4,8 @@
 #include "timer.h"
 #include "threadpool.h"
 
+#include "pa_jack.h"
+
 using namespace std;
 
 namespace Splash
@@ -22,11 +24,12 @@ Listener::~Listener()
 }
 
 /*************/
-void Listener::setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format)
+void Listener::setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const string& deviceName)
 {
     _channels = std::max((uint32_t)1, channels);
-    _sampleRate = std::max((uint32_t)1, sampleRate);
+    _sampleRate = sampleRate;
     _sampleFormat = format;
+    _deviceName = deviceName;
 
     initResources();
 }
@@ -54,6 +57,7 @@ void Listener::initResources()
     if (_ready)
         freeResources();
 
+    PaJack_SetClientName("splash");
     auto error = Pa_Initialize();
     if (error != paNoError)
     {
@@ -63,16 +67,42 @@ void Listener::initResources()
     }
 
     PaStreamParameters inputParams;
-    inputParams.device = Pa_GetDefaultInputDevice();
-    if (inputParams.device == paNoDevice)
+    inputParams.device = -1;
+    // If a JACK device name is set, we try to connect to it
+    if (_deviceName != "")
     {
-        Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Could not find default audio input device" << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return;
+        auto numDevices = Pa_GetDeviceCount();
+        for (int i = 0; i < numDevices; ++i)
+        {
+            auto deviceInfo = Pa_GetDeviceInfo(i);
+            if (string(deviceInfo->name) == _deviceName)
+            {
+                inputParams.device = i;
+                if (deviceInfo->hostApi == Pa_HostApiTypeIdToHostApiIndex(paJACK))
+                    _useJack = true;
+            }
+        }
+
+        if (inputParams.device >= 0)
+            Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Connecting to device " << _deviceName << Log::endl;
+    }
+
+    if (inputParams.device < 0)
+    {
+        inputParams.device = Pa_GetDefaultInputDevice();
+        if (inputParams.device == paNoDevice)
+        {
+            Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Could not find default audio input device" << Pa_GetErrorText(error) << Log::endl;
+            Pa_Terminate();
+            return;
+        }
     }
 
     auto deviceInfo = Pa_GetDeviceInfo(inputParams.device);
     Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Connected to device: " << deviceInfo->name << Log::endl;
+
+    if (_sampleRate == 0)
+        _sampleRate = deviceInfo->defaultSampleRate;
 
     inputParams.channelCount = _channels;
     switch (_sampleFormat)
