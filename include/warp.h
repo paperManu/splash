@@ -98,7 +98,7 @@ class Warp : public Texture
         int pickControlPoint(glm::vec2 p, glm::vec2& v);
 
         /**
-         * Warps should always be saved as the hold user-modifiable parameters
+         * Warps should always be saved as it hold user-modifiable parameters
          */
         void setSavable(bool savable) {_savable = true;}
 

@@ -391,6 +391,7 @@ QueueSurrogate::QueueSurrogate(RootObjectWeakPtr root)
     _filter = make_shared<Filter>(root);
     _filter->setName("queueFilter" + to_string(_filterIndex++));
     _root.lock()->registerObject(_filter);
+    _filter->_savable = false;
 
     registerAttributes();
 }
