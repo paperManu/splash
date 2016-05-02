@@ -537,7 +537,7 @@ void Image_FFmpeg::videoDisplayLoop()
                     if (!_timeJump) // We do not want more than one jump at a time...
                     {
                         _timeJump = true;
-                        _elapsedTime = _currentTime / 1e6 + _shiftTime;
+                        _elapsedTime = _currentTime / 1e6;
                         localQueue.clear();
                         SThread::pool.enqueueWithoutId([=]() {
                             seek(_elapsedTime);
