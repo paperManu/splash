@@ -121,6 +121,10 @@ PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale],
     [FFMPEG_BUILD=enabled AC_DEFINE([HAVE_FFMPEG], [1], [Defined to 1 if ffmpeg is detected])],
     [FFMPEG_BUILD=disabled AC_DEFINE([HAVE_FFMPEG], [0], [Defined to 1 if ffmpeg is detected])])
 AM_CONDITIONAL(HAVE_FFMPEG, test -n "$FFMPEG_LIBS")
+# Also check the version, to handle API change
+PKG_CHECK_MODULES([FFMPEG_3], [libavformat >= 57],
+    [FFMPEG_3=true AC_DEFINE([HAVE_FFMPEG_3], [1], [Defined to 1 if ffmpeg 3.x is detected])],
+    [FFMPEG_3=false AC_DEFINE([HAVE_FFMPEG_3], [0], [Defined to 1 if ffmpeg 3.x is detected])])
 
 # PortAudio, to play sound
 PKG_CHECK_MODULES([PORTAUDIO], [portaudio-2.0],
@@ -178,6 +182,7 @@ AC_OUTPUT
 [echo "Optional dependencies"]
 [echo ""]
 [echo "FFmpeg (video reading)           ${FFMPEG_BUILD}"]
+[echo "        -> version 3.x           ${FFMPEG_3}"]
 [echo "Shmdata (shared memory)          ${SHMDATA_BUILD}"]
 [echo "PortAudio (audio playing)        ${PORTAUDIO_BUILD}"]
 [echo "OpenCV (video camera support)    ${OPENCV_BUILD}"]
