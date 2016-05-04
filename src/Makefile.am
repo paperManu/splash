@@ -167,12 +167,10 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES += \
 	texture_syphon_client.mm
 
 libsplash_@LIBSPLASH_API_VERSION@_la_CXXFLAGS += \
-	$(GLEW_CFLAGS) \
 	-F$(top_srcdir)/external/syphon/build/Release \
 	-framework Syphon
 
 libsplash_@LIBSPLASH_API_VERSION@_la_LDFLAGS += \
-	$(GLEW_LIBS) \
 	-F$(top_srcdir)/external/syphon/build/Release\
 	-framework Syphon
 
