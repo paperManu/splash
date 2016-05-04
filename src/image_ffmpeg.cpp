@@ -8,6 +8,10 @@
 #include "timer.h"
 #include "threadpool.h"
 
+#if HAVE_FFMPEG_3
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#endif
+
 using namespace std;
 
 namespace Splash
@@ -234,11 +238,14 @@ void Image_FFmpeg::readLoop()
 #endif
 
     // Start reading frames
-    AVFrame* frame;
+    AVFrame *frame, *rgbFrame;
+#if HAVE_FFMPEG_3
+    frame = av_frame_alloc();
+    rgbFrame = av_frame_alloc();
+#else
     frame = avcodec_alloc_frame();
-
-    AVFrame* rgbFrame;
     rgbFrame = avcodec_alloc_frame();
+#endif
 
     if (!frame || !rgbFrame)
     {
@@ -413,8 +420,14 @@ void Image_FFmpeg::readLoop()
 
     } while (_loopOnVideo && _continueRead);
 
+#if HAVE_FFMPEG_3
+    av_frame_free(&rgbFrame);
+    av_frame_free(&frame);
+#else
     av_free(rgbFrame);
     av_free(frame);
+#endif
+
     if (!isHap)
         avcodec_close(_videoCodecContext);
     _videoStreamIndex = -1;
