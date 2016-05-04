@@ -8,6 +8,10 @@
 #include "timer.h"
 #include "threadpool.h"
 
+#if HAVE_FFMPEG_3
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#endif
+
 using namespace std;
 
 namespace Splash
@@ -234,11 +238,14 @@ void Image_FFmpeg::readLoop()
 #endif
 
     // Start reading frames
-    AVFrame* frame;
+    AVFrame *frame, *rgbFrame;
+#if HAVE_FFMPEG_3
+    frame = av_frame_alloc();
+    rgbFrame = av_frame_alloc();
+#else
     frame = avcodec_alloc_frame();
-
-    AVFrame* rgbFrame;
     rgbFrame = avcodec_alloc_frame();
+#endif
 
     if (!frame || !rgbFrame)
     {
@@ -246,7 +253,11 @@ void Image_FFmpeg::readLoop()
         return;
     }
 
+#if HAVE_FFMPEG_3
+    int numBytes = av_image_get_buffer_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
+#else
     int numBytes = avpicture_get_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
+#endif
     vector<unsigned char> buffer(numBytes);
 
     struct SwsContext* swsContext;
@@ -255,7 +266,18 @@ void Image_FFmpeg::readLoop()
         swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
                                     PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
     
+#if HAVE_FFMPEG_3
+        
+        av_image_fill_arrays(rgbFrame->data,
+                             rgbFrame->linesize,
+                             buffer.data(), 
+                             PIX_FMT_RGB24, 
+                             _videoCodecContext->width, 
+                             _videoCodecContext->height,
+                             1);
+#else
         avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
+#endif
     }
 
     AVPacket packet;
@@ -340,7 +362,11 @@ void Image_FFmpeg::readLoop()
                         }
                         else
                         {
+#if HAVE_FFMPEG_3
+                            av_packet_unref(&packet);
+#else
                             av_free_packet(&packet);
+#endif
                             return;
                         }
 
@@ -371,8 +397,12 @@ void Image_FFmpeg::readLoop()
 
                 int timedFramesBuffered = _timedFrames.size();
 
-               _videoSeekMutex.unlock();
+                _videoSeekMutex.unlock();
+#if HAVE_FFMPEG_3
+                av_packet_unref(&packet);
+#else
                 av_free_packet(&packet);
+#endif
 
                 // Do not store more than a few frames in memory
                 while (timedFramesBuffered > 30 && _continueRead)
@@ -400,12 +430,20 @@ void Image_FFmpeg::readLoop()
                     _speaker->addToQueue(buffer);
                 }
 
+#if HAVE_FFMPEG_3
+                av_packet_unref(&packet);
+#else
                 av_free_packet(&packet);
+#endif
             }
 #endif
             else
             {
+#if HAVE_FFMPEG_3
+                av_packet_unref(&packet);
+#else
                 av_free_packet(&packet);
+#endif
             }
         }
 
@@ -413,8 +451,14 @@ void Image_FFmpeg::readLoop()
 
     } while (_loopOnVideo && _continueRead);
 
+#if HAVE_FFMPEG_3
+    av_frame_free(&rgbFrame);
+    av_frame_free(&frame);
+#else
     av_free(rgbFrame);
     av_free(frame);
+#endif
+
     if (!isHap)
         avcodec_close(_videoCodecContext);
     _videoStreamIndex = -1;
