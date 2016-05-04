@@ -10,6 +10,9 @@
 /* Defined to 1 if ffmpeg is detected */
 #cmakedefine01 HAVE_FFMPEG
 
+/* Defined to 1 if ffmpeg 3.x is detected */
+#cmakedefine01 HAVE_FFMPEG_3
+
 /* Defined to 1 if libgphoto2 is detected */
 #cmakedefine01 HAVE_GPHOTO
 
