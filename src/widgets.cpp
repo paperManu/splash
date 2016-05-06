@@ -510,8 +510,6 @@ void GuiMedia::render()
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
                         ImGui::PushID("newMediaStop");
-                        if (_newMediaStop < _newMediaStart)
-                            _newMediaStop = _newMediaStart;
                         if (ImGui::InputFloat("", &_newMediaStop, 0.1f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                             _newMedia[3] = _newMediaStop;
                         if (ImGui::IsItemHovered())

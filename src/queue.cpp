@@ -166,7 +166,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
     // Clean each individual source
     for (auto it = playlist.begin(); it != playlist.end();)
     {
-        if (it->start >= it->stop)
+        if (it->start >= it->stop && it->stop != 0l)
         {
             if (it->stop > 1000000l)
                 it->start = it->stop - 1000000l;
@@ -175,6 +175,20 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         {
             it++;
         }
+    }
+
+    // Find duration for videos with stop == 0
+    for (auto& source : playlist)
+    {
+        if (source.stop > source.start)
+            continue;
+
+        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg());
+        videoSrc->setAttribute("file", {source.filename});
+        Values duration;
+        videoSrc->getAttribute("duration", duration);
+        if (duration.size() > 0)
+            source.stop = duration[0].asLong() * 1e6 + source.start;
     }
 
     // Clean the queue, add black intermediate images, ...
