@@ -742,16 +742,17 @@ struct ShaderSources
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _colorBalance.g / maxBalanceRatio;
 
-            vec3 hsv = rgb2hsv(color.rgb);
-
-            // Brightness correction
-            hsv.z *= _brightness;
-            // Saturation
-            hsv.y *= _saturation;
-            // Contrast correction
-            hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
-
-            color.rgb = hsv2rgb(hsv);
+            if (_brightness != 1.f || _saturation != 1.f || _contrast != 1.f)
+            {
+                vec3 hsv = rgb2hsv(color.rgb);
+                // Brightness correction
+                hsv.z *= _brightness;
+                // Saturation
+                hsv.y *= _saturation;
+                // Contrast correction
+                hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
+                color.rgb = hsv2rgb(hsv);
+            }
 
             // Black level
             if (_blackLevel != 0.0)
