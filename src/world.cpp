@@ -74,16 +74,21 @@ void World::run()
         {
             unique_lock<recursive_mutex> lockObjects(_objectsMutex);
 
-            Timer::get() << "upload";
+            // Read and serialize new buffers
+            Timer::get() << "serialize";
             vector<unsigned int> threadIds;
+            map<string, shared_ptr<SerializedObject>> serializedObjects;
             for (auto& o : _objects)
             {
-                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                // This prevents the map structure to be modified in the threads
+                serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
+
+                threadIds.push_back(SThread::pool.enqueue([=, &serializedObjects, &o]() {
                     // Update the local objects
                     o.second->update();
 
                     // Send them the their destinations
-                    BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                     if (bufferObj.get() != nullptr)
                     {
                         if (bufferObj->wasUpdated()) // if the buffer has been updated
@@ -91,19 +96,27 @@ void World::run()
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
                             if (obj)
-                                _link->sendBuffer(bufferObj->getDistantName(), std::move(obj));
+                                serializedObjects[bufferObj->getDistantName()] = obj;
                         }
                         else
+                        {
                             return; // if not, exit this thread
+                        }
                     }
                 }));
             }
             SThread::pool.waitThreads(threadIds);
+            Timer::get() >> "serialize";
 
-            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 60))); // Maximum time to wait for frames to arrive
+            // Wait for previous buffers to be uploaded
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 30))); // Maximum time to wait for frames to arrive
             sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
-
             Timer::get() >> "upload";
+
+            // Ask for the upload of the new buffers, during the next world loop
+            Timer::get() << "upload";
+            for (auto& o : serializedObjects)
+                _link->sendBuffer(o.first, std::move(o.second));
         }
 
         // Update the distant attributes
