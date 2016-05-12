@@ -855,6 +855,8 @@ HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr s
 
     Log::get() << Log::MESSAGE << "HttpServer::" << __FUNCTION__ << " - Http server opened at " << address << ":" << port << Log::endl;
     _ready = true;
+    _address = address;
+    _port = port;
 
     doAccept();
 }

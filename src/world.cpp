@@ -635,13 +635,17 @@ void World::saveConfig()
         root[s.first] = config;
     }
 
-    // Complete with the local objects configuration
-    // This can differ from the scenes objects, as their type is not
-    // necessarily identical
-    const Json::Value jsScenes = _config["scenes"];
+    // Local objects configuration can differ from the scenes objects, 
+    // as their type is not necessarily identical
+    Json::Value& jsScenes = _config["scenes"];
     for (int i = 0; i < jsScenes.size(); ++i)
     {
         string sceneName = jsScenes[i]["name"].asString();
+
+        // Set the scene configuration from what was received in the previous loop
+        Json::Value::Members attributes = root[sceneName][sceneName].getMemberNames();
+        for (const auto& attr : attributes)
+            jsScenes[i][attr] = root[sceneName][sceneName][attr];
 
         if (root.isMember(sceneName))
         {
@@ -650,12 +654,18 @@ void World::saveConfig()
 
             for (auto& m : members)
             {
+                // The root objects contains configuration for the scenes as if they
+                // were Objects themselves, although they are RootObjects. We should not
+                // include them here
+                if (m == sceneName)
+                    continue;
+
                 if (!_config[sceneName].isMember(m))
                     _config[sceneName][m] = Json::Value();
 
                 if (m != "links")
                 {
-                    Json::Value::Members attributes = scene[m].getMemberNames();
+                    attributes = scene[m].getMemberNames();
                     for (const auto& a : attributes)
                         _config[sceneName][m][a] = scene[m][a];
 
