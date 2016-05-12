@@ -272,7 +272,6 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-
     // Helper function to read arrays
     std::function<Values(Json::Value)> processArray;
     processArray = [&processArray](Json::Value values) {
@@ -490,7 +489,7 @@ void World::applyConfig()
         }
     }
 
-    // Lastly, we configure the objects
+    // Configure the objects
     for (auto& s : _scenes)
     {
         if (!_config.isMember(s.first))
@@ -573,17 +572,20 @@ void World::applyConfig()
         const Json::Value jsWorld = _config["world"];
         auto worldMember = jsWorld.getMemberNames();
         int idx {0};
-        for (const auto& param : jsWorld)
+        for (const auto& attr : jsWorld)
         {
+            Values values;
+            if (attr.isArray())
+                values = processArray(attr);
+            else if (attr.isInt())
+                values.emplace_back(attr.asInt());
+            else if (attr.isDouble())
+                values.emplace_back(attr.asFloat());
+            else if (attr.isString())
+                values.emplace_back(attr.asString());
+
             string paramName = worldMember[idx];
-            Value v;
-            if (param.isInt())
-                v = param.asInt();
-            else if (param.isDouble())
-                v = param.asFloat();
-            else
-                v = param.asString();
-            setAttribute(paramName, {v});
+            setAttribute(paramName, values);
             idx++;
         }
     }
@@ -633,7 +635,9 @@ void World::saveConfig()
         root[s.first] = config;
     }
 
-    // Complete with the configuration from the world
+    // Complete with the local objects configuration
+    // This can differ from the scenes objects, as their type is not
+    // necessarily identical
     const Json::Value jsScenes = _config["scenes"];
     for (int i = 0; i < jsScenes.size(); ++i)
     {
@@ -670,6 +674,14 @@ void World::saveConfig()
                 }
             }
         }
+    }
+
+    // Configuration from the world
+    auto worldConfiguration = BaseObject::getConfigurationAsJson();
+    auto attributes = worldConfiguration.getMemberNames();
+    for (const auto& attr : attributes)
+    {
+        _config["world"][attr] = worldConfiguration[attr];
     }
     
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -907,6 +919,8 @@ void World::registerAttributes()
             return false;
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
+    }, [&]() -> Values {
+        return {(int)_worldFramerate};
     });
 
     _attribFunctions["getAttribute"] = AttributeFunctor([&](const Values& args) {
@@ -974,8 +988,15 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        _clock = unique_ptr<LtcClock>(new LtcClock(true, args[0].asString()));
+        _clockDeviceName = args[0].asString();
+        if (_clockDeviceName != "")
+            _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+        else if (_clock)
+            _clock.reset();
+
         return true;
+    }, [&]() -> Values {
+        return {_clockDeviceName};
     });
 #endif
 
