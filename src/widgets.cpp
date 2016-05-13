@@ -700,7 +700,7 @@ void GuiControl::render()
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
         // World control
-        ImGui::Text("World configuration (not saved!)");
+        ImGui::Text("World configuration");
         static auto worldFramerate = 60;
         if (ImGui::InputInt("World framerate", &worldFramerate, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
@@ -734,7 +734,7 @@ void GuiControl::render()
         ImGui::Spacing();
 
         // Configuration applied to multiple objects
-        ImGui::Text("Global configuration (saved!)");
+        ImGui::Text("Global configuration");
         static auto blendWidth = 0.05f;
         if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             sendValuesToObjectsOfType("camera", "blendWidth", {blendWidth});
@@ -748,7 +748,7 @@ void GuiControl::render()
         ImGui::Spacing();
 
         // Node configuration
-        ImGui::Text("Objects configuration (saved!)");
+        ImGui::Text("Objects configuration");
         // Select the object the control
         {
             vector<string> objectNames = getObjectNames();

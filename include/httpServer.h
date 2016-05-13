@@ -248,9 +248,14 @@ class HttpServer : public BaseObject
         void run();
         void stop();
 
+        std::string getAddress() const {return _address;}
+        std::string getPort() const {return _port;}
+
     private:
         SceneWeakPtr _scene;
         bool _ready {false};
+        std::string _address {""};
+        std::string _port {""};
 
         boost::asio::io_service _ioService;
         boost::asio::ip::tcp::acceptor _acceptor;

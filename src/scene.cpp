@@ -1329,6 +1329,11 @@ void Scene::registerAttributes()
         }
 
         return true;
+    }, [&]() -> Values {
+        if (_httpServer)
+            return {_httpServer->getAddress(), _httpServer->getPort()};
+        else
+            return {};
     });
    
     _attribFunctions["link"] = AttributeFunctor([&](const Values& args) {
@@ -1408,6 +1413,8 @@ void Scene::registerAttributes()
             return false;
         _swapInterval = max(-1, args[0].asInt());
         return true;
+    }, [&]() -> Values {
+        return {(int)_swapInterval};
     });
 
     _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
