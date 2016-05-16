@@ -420,16 +420,27 @@ void Scene::renderBlending()
 
                 // If there are some other scenes, send them the blending
                 if (_ghostObjects.size() != 0)
+                {
                     for (auto& obj : _objects)
                         if (obj.second->getType() == "geometry")
                         {
                             auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
                             _link->sendBuffer(obj.first, std::move(serializedGeometry));
                         }
+                    
+                    // Notify the other scenes that the blending has been updated
+                    sendMessageToWorld("sendAll", {SPLASH_ALL_PAIRS, "blendingUpdated"});
+                }
             }
             // The non-master scenes only need to activate blending
             else
             {
+                // Wait for the master scene to notify us that the blending was updated
+                unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
+                while (!_vertexBlendingReceptionStatus)
+                    _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
+                _vertexBlendingReceptionStatus = false;
+                    
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "object")
                         obj.second->setAttribute("activateVertexBlending", {1});
@@ -437,6 +448,7 @@ void Scene::renderBlending()
                         dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
             }
         }
+        // This deactivates the blending
         else if (blendComputedInPreviousFrame)
         {
             blendComputedInPreviousFrame = false;
@@ -1204,6 +1216,12 @@ void Scene::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_blendingResolution};
+    });
+
+    _attribFunctions["blendingUpdated"] = AttributeFunctor([&](const Values& args) {
+        _vertexBlendingReceptionStatus = true;
+        _vertexBlendingCondition.notify_one();
+        return true;
     });
 
     _attribFunctions["bufferUploaded"] = AttributeFunctor([&](const Values& args) {
