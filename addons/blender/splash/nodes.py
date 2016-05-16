@@ -375,7 +375,7 @@ class SplashObjectNode(SplashBaseNode):
         self.inputs.new('NodeSocketColor', 'Color').default_value = [1.0, 1.0, 1.0, 1.0]
         self.inputs.new('NodeSocketVector', 'Position').default_value = [0.0, 0.0, 0.0]
         self.inputs.new('NodeSocketVector', 'Scale').default_value = [1.0, 1.0, 1.0]
-        self.inputs.new('NodeSocketInt', 'Side').default_value = 0
+        self.inputs.new('NodeSocketInt', 'Sideness').default_value = 0
 
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
@@ -392,7 +392,7 @@ class SplashObjectNode(SplashBaseNode):
         values['scale'] = [self.inputs['Scale'].default_value[0],
                            self.inputs['Scale'].default_value[1],
                            self.inputs['Scale'].default_value[2]]
-        values['side'] = self.inputs['Side'].default_value
+        values['sideness'] = self.inputs['Sideness'].default_value
 
         return values
 
