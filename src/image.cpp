@@ -159,7 +159,7 @@ shared_ptr<SerializedObject> Image::serialize() const
 }
 
 /*************/
-bool Image::deserialize(shared_ptr<SerializedObject> obj)
+bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 {
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
@@ -177,8 +177,6 @@ bool Image::deserialize(shared_ptr<SerializedObject> obj)
 
     try
     {
-        unique_lock<mutex> lockWrite(_writeMutex);
-
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);

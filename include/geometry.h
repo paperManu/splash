@@ -94,7 +94,7 @@ class Geometry : public BufferObject
         /**
          * Deserialize the geometry
          */
-        bool deserialize(std::shared_ptr<SerializedObject> obj);
+        bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
         /**
          * Get whether the alternative buffers have been resized during the last feedback call

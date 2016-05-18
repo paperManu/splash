@@ -474,16 +474,16 @@ class BufferObject : public BaseObject
          * Update the BufferObject from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(std::shared_ptr<SerializedObject> obj) = 0;
+        virtual bool deserialize(const std::shared_ptr<SerializedObject>& obj) = 0;
         bool deserialize()
         {
-            if (_newSerializedObject == false)
-                return true;
+            if (!_newSerializedObject)
+                return false;
 
-            bool _returnValue = deserialize(std::move(_serializedObject));
+            bool returnValue = deserialize(_serializedObject);
             _newSerializedObject = false;
 
-            return _returnValue;
+            return returnValue;
         }
 
         /**
@@ -515,7 +515,11 @@ class BufferObject : public BaseObject
 
             // Deserialize it right away, in a separate thread
             SThread::pool.enqueueWithoutId([&]() {
-                deserialize();
+                if (_writeMutex.try_lock())
+                {
+                    deserialize();
+                    _writeMutex.unlock();
+                }
             });
         }
 

@@ -179,12 +179,10 @@ shared_ptr<SerializedObject> Mesh::serialize() const
 }
 
 /*************/
-bool Mesh::deserialize(shared_ptr<SerializedObject> obj)
+bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
 {
     if (obj.get() == nullptr || obj->size() == 0)
         return false;
-
-    unique_lock<mutex> lock(_writeMutex);
 
     if (Timer::get().isDebug())
         Timer::get() << "deserialize " + _name;
