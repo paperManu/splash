@@ -231,6 +231,11 @@ class Scene : public RootObject
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
         GLsync _textureUploadFence, _cameraDrawnFence;
+        
+        // Vertex blending variables
+        std::mutex _vertexBlendingMutex;
+        std::condition_variable _vertexBlendingCondition;
+        std::atomic_bool _vertexBlendingReceptionStatus {false};
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};

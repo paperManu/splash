@@ -97,7 +97,7 @@ class Mesh : public BufferObject
         /**
          * Set the mesh from a serialized representation
          */
-        bool deserialize(std::shared_ptr<SerializedObject> obj);
+        bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
         /**
          * Update the content of the mesh

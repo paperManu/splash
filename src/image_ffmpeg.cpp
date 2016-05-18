@@ -426,6 +426,7 @@ void Image_FFmpeg::readLoop()
                 if (gotFrame)
                 {
                     size_t dataSize = av_samples_get_buffer_size(nullptr, _audioCodecContext->channels, frame->nb_samples, _audioCodecContext->sample_fmt, 1);
+                    // TODO: replace this vector with a ResizableArray
                     vector<uint8_t> buffer((uint8_t*)frame->data[0], (uint8_t*)frame->data[0] + dataSize);
                     _speaker->addToQueue(buffer);
                 }
