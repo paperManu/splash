@@ -185,8 +185,8 @@ void Camera::computeBlendingMap(ImagePtr& map)
         {
             uint16_t* pixel = &imgPtr[(x + y * img.getSpec().width) * 4];
             // UV coordinates are mapped on 2 uchar each
-            int destX = (int)floor((pixel[0] * 65536.0 + pixel[1] * 256.0) * 0.00001525878906250 * (double)mapSpec.width);
-            int destY = (int)floor((pixel[2] * 65536.0 + pixel[3] * 256.0) * 0.00001525878906250 * (double)mapSpec.height);
+            int destX = (int)floor((pixel[0] + pixel[1] / 256.0) * 0.00001525878906250 * (double)mapSpec.width);
+            int destY = (int)floor((pixel[2] + pixel[3] / 256.0) * 0.00001525878906250 * (double)mapSpec.height);
 
             if (isSet[destY * mapSpec.width + destX] || (destX == 0 && destY == 0))
                 continue;
@@ -208,7 +208,9 @@ void Camera::computeBlendingMap(ImagePtr& map)
                 blendAddition += blendValue; // One more camera displaying this pixel
             }
             else
+            {
                 blendAddition += 256; // One more camera displaying this pixel
+            }
 
             // We keep the real number of projectors, hidden higher in the shorts
             blendAddition += 4096;
