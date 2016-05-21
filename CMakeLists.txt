@@ -94,6 +94,20 @@ add_subdirectory(data)
 add_subdirectory(src)
 
 #
+# CPack related info
+#
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
+set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} emmanueldurand@gmail.com")
+set(CPACK_GENERATOR "DEB")
+include(CPack)
+
+#
 # Summary
 #
 
