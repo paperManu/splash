@@ -63,8 +63,13 @@ link_directories(${SNAPPY_LIBRARY_DIRS})
 # Targets
 #
 add_library(splash-${API_VERSION} STATIC world.cpp)
-add_executable(splash splash-app.cpp)
-add_executable(splash-scene splash-scene.cpp)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    add_executable(splash MACOSX_BUNDLE splash-app.cpp)
+    add_executable(splash-scene MACOSX_BUNDLE splash-scene.cpp)
+else()
+    add_executable(splash splash-app.cpp)
+    add_executable(splash-scene splash-scene.cpp)
+endif()
 
 #
 # Splash library

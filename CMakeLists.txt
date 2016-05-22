@@ -103,8 +103,49 @@ set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
 set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} emmanueldurand@gmail.com")
-set(CPACK_GENERATOR "DEB")
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") # OSX case
+    set(CPACK_BINARY_DRAGNDROP ON)
+    set(CPACK_DMG_VOLUME_NAME "${CPACK_PACKAGE_NAME}")
+else() # Linux case
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
+    set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
+    set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://github.com/paperManu/splash/wiki")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "automake,
+                                      cdbs,
+                                      debhelper,
+                                      gettext,
+                                      libavformat-dev,
+                                      libavcodec-dev,
+                                      libavutil-dev,
+                                      libswscale-dev,
+                                      libboost-system-dev,
+                                      libglfw3-dev,
+                                      libgphoto2-dev,
+                                      libgsl0-dev,
+                                      libshmdata-1.2-dev,
+                                      libsnappy-dev,
+                                      libtool,
+                                      libxrandr-dev,
+                                      libxi-dev,
+                                      libxinerama-dev,
+                                      libxcursor-dev,
+                                      libzmq3-dev,
+                                      portaudio19-dev,
+                                      mesa-common-dev,
+                                      pkg-config,
+                                      bzip2,
+                                      tar,
+                                      zip")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} emmanueldurand@gmail.com")
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "video")
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+endif()
+
 include(CPack)
 
 #
