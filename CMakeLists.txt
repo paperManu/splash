@@ -89,9 +89,63 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CUR
 # Sources
 #
 add_subdirectory(addons)
-add_subdirectory(external)
 add_subdirectory(data)
+add_subdirectory(external)
+add_subdirectory(osx)
 add_subdirectory(src)
+
+#
+# CPack related info
+# Creates package on Linux. On Linux, it is handled separately (see ./osx/CMakeLists.txt)
+#
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
+set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_VERSION_MAJOR "${PROJECT_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${PROJECT_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
+
+if(UNIX AND NOT APPLE) # Package creation on Linux
+    set(CPACK_GENERATOR "DEB")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+    set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
+    set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
+    set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://github.com/paperManu/splash/wiki")
+    set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "automake,
+                                      cdbs,
+                                      debhelper,
+                                      gettext,
+                                      libavformat-dev,
+                                      libavcodec-dev,
+                                      libavutil-dev,
+                                      libswscale-dev,
+                                      libboost-system-dev,
+                                      libglfw3-dev,
+                                      libgphoto2-dev,
+                                      libgsl0-dev,
+                                      libshmdata-1.2-dev,
+                                      libsnappy-dev,
+                                      libtool,
+                                      libxrandr-dev,
+                                      libxi-dev,
+                                      libxinerama-dev,
+                                      libxcursor-dev,
+                                      libzmq3-dev,
+                                      portaudio19-dev,
+                                      mesa-common-dev,
+                                      pkg-config,
+                                      bzip2,
+                                      tar,
+                                      zip")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@gmail.com>")
+    set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
+    set(CPACK_DEBIAN_PACKAGE_SECTION "video")
+    set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
+endif()
+
+include(CPack)
 
 #
 # Summary
