@@ -23,7 +23,7 @@ if(APPLE)
     
     set(DYLD_LIBRARY_PATH "/usr/local/lib:/opt/local/lib:$(prefix)/lib:${DYLD_LIBRARY_PATH}")
     add_custom_command(
-        OUTPUT splash.app
+        OUTPUT splashApp
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash.app ./splash.app
         COMMAND cp ../src/splash ../src/splash-scene ./splash.app/Contents/MacOS/
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../data/2d_marker.obj ${CMAKE_CURRENT_SOURCE_DIR}/../data/3d_marker.obj ./splash.app/Contents/Resources/
@@ -35,5 +35,5 @@ if(APPLE)
         COMMAND dylibbundler -cd -od -b -x ./splash.app/Contents/MacOS/splash -x ./splash.app/Contents/MacOS/splash-scene -d ./splash.app/Contents/libs/
     )
     
-    add_custom_target(osx_app ALL DEPENDS splash.app)
+    add_custom_target(package_osx DEPENDS splashApp)
 endif()
