@@ -4,7 +4,9 @@
 #include "timer.h"
 #include "threadpool.h"
 
-#include "pa_jack.h"
+#if not HAVE_OSX
+    #include "pa_jack.h"
+#endif
 
 using namespace std;
 
@@ -57,7 +59,9 @@ void Listener::initResources()
     if (_ready)
         freeResources();
 
+#if not HAVE_OSX
     PaJack_SetClientName("splash");
+#endif
     auto error = Pa_Initialize();
     if (error != paNoError)
     {
@@ -68,6 +72,7 @@ void Listener::initResources()
 
     PaStreamParameters inputParams;
     inputParams.device = -1;
+#if not HAVE_OSX
     // If a JACK device name is set, we try to connect to it
     if (_deviceName != "")
     {
@@ -86,6 +91,7 @@ void Listener::initResources()
         if (inputParams.device >= 0)
             Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Connecting to device " << _deviceName << Log::endl;
     }
+#endif
 
     if (inputParams.device < 0)
     {
