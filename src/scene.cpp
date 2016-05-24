@@ -429,7 +429,7 @@ void Scene::renderBlending()
                         }
                     
                     // Notify the other scenes that the blending has been updated
-                    sendMessageToWorld("sendAll", {SPLASH_ALL_PAIRS, "blendingUpdated"});
+                    sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
                 }
             }
             // The non-master scenes only need to activate blending

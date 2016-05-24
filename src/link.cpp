@@ -293,7 +293,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
 
     // We don't display broadcast messages, for visibility
 #ifdef DEBUG
-    if (name != SPLASH_ALL_PAIRS)
+    if (name != SPLASH_ALL_PEERS)
         Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
 #endif
 
@@ -375,7 +375,7 @@ void Link::handleInputMessages()
                 root->set(name, attribute, values);
             // We don't display broadcast messages, for visibility
 #ifdef DEBUG
-            if (name != SPLASH_ALL_PAIRS)
+            if (name != SPLASH_ALL_PEERS)
                 Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
         }

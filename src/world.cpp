@@ -110,7 +110,7 @@ void World::run()
 
             // Wait for previous buffers to be uploaded
             _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 30))); // Maximum time to wait for frames to arrive
-            sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
+            sendMessage(SPLASH_ALL_PEERS, "bufferUploaded", {});
             Timer::get() >> "upload";
 
             // Ask for the upload of the new buffers, during the next world loop
@@ -132,7 +132,7 @@ void World::run()
         // If swap synchronization test is enabled
         if (_swapSynchronizationTesting)
         {
-            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {1});
+            sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
 
             static auto frameNbr = 0;
             static auto frameStatus = 0;
@@ -150,13 +150,13 @@ void World::run()
             }
 
             if (frameNbr == 0)
-                sendMessage(SPLASH_ALL_PAIRS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+                sendMessage(SPLASH_ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
 
             frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
         }
         else
         {
-            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
+            sendMessage(SPLASH_ALL_PEERS, "swapTest", {0});
         }
 
         // If the master scene is not an inner scene, we have to send it some information
@@ -889,7 +889,7 @@ void World::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", args);
+        sendMessage(SPLASH_ALL_PEERS, "computeBlending", args);
         return true;
     });
 
@@ -911,7 +911,7 @@ void World::registerAttributes()
 
         // Ask for Scenes to delete the object
         SThread::pool.enqueueWithoutId([=]() {
-            sendMessage(SPLASH_ALL_PAIRS, "deleteObject", args);
+            sendMessage(SPLASH_ALL_PEERS, "deleteObject", args);
         });
 
         return true;
@@ -920,7 +920,7 @@ void World::registerAttributes()
     _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
+        sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].asInt()});
         return true;
     });
 
@@ -951,7 +951,7 @@ void World::registerAttributes()
                 Values sentValues {"getAttribute"};
                 for (auto& v : values)
                     sentValues.push_back(v);
-                sendMessage(SPLASH_ALL_PAIRS, "answerMessage", sentValues);
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", sentValues);
             });
         }
 
@@ -1092,7 +1092,7 @@ void World::registerAttributes()
     _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});
+        sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].asInt()});
         return true;
     });
 }

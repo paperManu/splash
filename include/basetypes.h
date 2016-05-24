@@ -611,7 +611,7 @@ class RootObject : public BaseObject
         {
             std::unique_lock<std::recursive_mutex> lock(_setMutex);
 
-            if (name == _name || name == SPLASH_ALL_PAIRS)
+            if (name == _name || name == SPLASH_ALL_PEERS)
                 return setAttribute(attrib, args);
 
             auto objectIt = _objects.find(name);
