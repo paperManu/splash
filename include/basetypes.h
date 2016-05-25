@@ -607,7 +607,7 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(const std::string& name, const std::string& attrib, const Values& args)
+        virtual bool set(const std::string& name, const std::string& attrib, const Values& args)
         {
             std::unique_lock<std::recursive_mutex> lock(_setMutex);
 
