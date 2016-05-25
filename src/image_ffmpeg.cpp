@@ -254,7 +254,7 @@ void Image_FFmpeg::readLoop()
     }
 
 #if HAVE_FFMPEG_3
-    int numBytes = av_image_get_buffer_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
 #else
     int numBytes = avpicture_get_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
 #endif
@@ -263,19 +263,21 @@ void Image_FFmpeg::readLoop()
     struct SwsContext* swsContext;
     if (!isHap)
     {
-        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
-                                    PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
-    
 #if HAVE_FFMPEG_3
+        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
+                                    AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
         
         av_image_fill_arrays(rgbFrame->data,
                              rgbFrame->linesize,
                              buffer.data(), 
-                             PIX_FMT_RGB24, 
+                             AV_PIX_FMT_RGB24, 
                              _videoCodecContext->width, 
                              _videoCodecContext->height,
                              1);
 #else
+        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
+                                    PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+    
         avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
 #endif
     }
