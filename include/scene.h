@@ -169,26 +169,6 @@ class Scene : public RootObject
         void setAsWorldScene();
 
         /**
-         * Set the attribute of the named object with the given args
-         * Overrides the RootObject definition
-         */
-        bool set(const std::string& name, const std::string& attrib, const Values& args) final
-        {
-            std::unique_lock<std::recursive_mutex> lock(_setMutex);
-
-            if (name == _name || name == SPLASH_ALL_PEERS)
-                return setAttribute(attrib, args);
-
-            addTask([=]() {
-                auto objectIt = _objects.find(name);
-                if (objectIt != _objects.end())
-                    objectIt->second->setAttribute(attrib, args);
-            });
-
-            return true;
-        }
-
-        /**
          * Set a message to be sent to the world
          */
         void sendMessageToWorld(const std::string& message, const Values& value = {});
@@ -262,10 +242,6 @@ class Scene : public RootObject
         GLuint _maxSwapBarriers {0};
 
         unsigned long _nextId {0};
-        
-        // Tasks queue
-        std::mutex _taskMutex;
-        std::list<std::function<void()>> _taskQueue;
 
         // Blending attributes
         bool _isBlendingComputed {false};
@@ -274,11 +250,6 @@ class Scene : public RootObject
         unsigned int _blendingResolution {2048};
         Texture_ImagePtr _blendingTexture;
         ImagePtr _blendingMap;
-
-        /**
-         * Add a new task to the queue
-         */
-        void addTask(const std::function<void()>& task);
 
         /**
          * Find which OpenGL version is available

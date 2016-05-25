@@ -977,13 +977,6 @@ Values Scene::getObjectsNameByType(string type)
 }
 
 /*************/
-void Scene::addTask(const function<void()>& task)
-{
-    unique_lock<mutex> lock(_taskMutex);
-    _taskQueue.push_back(task);
-}
-
-/*************/
 vector<int> Scene::findGLVersion()
 {
     vector<vector<int>> glVersionList {{4, 3}, {3, 3}, {3, 2}};
