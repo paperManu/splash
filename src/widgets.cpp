@@ -1899,9 +1899,11 @@ void GuiWarp::render()
 {
     ImGuiIO& io = ImGui::GetIO();
 
-    auto warps = getWarps();
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        auto warps = getWarps();
+        _currentWarpName = warps[_currentWarp]->getName();
+
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 
         ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
@@ -1983,8 +1985,11 @@ void GuiWarp::render()
     else
     {
         auto scene = _scene.lock();
-        if (_currentWarp < warps.size())
-            scene->sendMessageToWorld("sendAll", {warps[_currentWarp]->getName(), "showControlPoints", 0});
+        if (_currentWarpName != "")
+        {
+            scene->sendMessageToWorld("sendAll", {_currentWarpName, "showControlPoints", 0});
+            _currentWarpName = "";
+        }
     }
 }
 
