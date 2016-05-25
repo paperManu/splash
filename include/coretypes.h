@@ -31,7 +31,7 @@
 #define SPLASH_GL_DEBUG true
 #define SPLASH_SAMPLES 0
 
-#define SPLASH_ALL_PAIRS "__ALL__"
+#define SPLASH_ALL_PEERS "__ALL__"
 
 #include <algorithm>
 #include <atomic>

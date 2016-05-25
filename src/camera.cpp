@@ -1060,7 +1060,7 @@ void Camera::setOutputNbr(int nbr)
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
             Texture_ImagePtr texture = make_shared<Texture_Image>();
-            texture->setClampToEdge(true);
+            texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);

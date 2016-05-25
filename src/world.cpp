@@ -72,6 +72,14 @@ void World::run()
         unique_lock<mutex> lockConfiguration(_configurationMutex);
 
         {
+            // Execute waiting tasks
+            unique_lock<mutex> lockTask(_taskMutex);
+            for (auto& task : _taskQueue)
+                task();
+            _taskQueue.clear();
+        }
+
+        {
             unique_lock<recursive_mutex> lockObjects(_objectsMutex);
 
             // Read and serialize new buffers
@@ -110,7 +118,7 @@ void World::run()
 
             // Wait for previous buffers to be uploaded
             _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 30))); // Maximum time to wait for frames to arrive
-            sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
+            sendMessage(SPLASH_ALL_PEERS, "bufferUploaded", {});
             Timer::get() >> "upload";
 
             // Ask for the upload of the new buffers, during the next world loop
@@ -132,7 +140,7 @@ void World::run()
         // If swap synchronization test is enabled
         if (_swapSynchronizationTesting)
         {
-            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {1});
+            sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
 
             static auto frameNbr = 0;
             static auto frameStatus = 0;
@@ -150,13 +158,13 @@ void World::run()
             }
 
             if (frameNbr == 0)
-                sendMessage(SPLASH_ALL_PAIRS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+                sendMessage(SPLASH_ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
 
             frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
         }
         else
         {
-            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
+            sendMessage(SPLASH_ALL_PEERS, "swapTest", {0});
         }
 
         // If the master scene is not an inner scene, we have to send it some information
@@ -518,7 +526,7 @@ void World::applyConfig()
                 sendMessage(name, "configFilePath", {path});
                 if (s.first != _masterSceneName)
                     sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
-                set(name, "configFilePath", {path});
+                set(name, "configFilePath", {path}, false);
             }
 
             // Set their attributes
@@ -555,7 +563,7 @@ void World::applyConfig()
                         sendMessage(_masterSceneName, "setGhost", ghostValues);
                     }
                     // We also set the attribute locally, if the object exists
-                    set(name, objMembers[idxAttr], values);
+                    set(name, objMembers[idxAttr], values, false);
                 }
 
                 idxAttr++;
@@ -859,24 +867,26 @@ void World::registerAttributes()
         if (args.size() == 0 || args.size() > 2)
             return false;
 
-        auto type = args[0].asString();
-        auto name = string();
+        addTask([=]() {
+            auto type = args[0].asString();
+            auto name = string();
 
-        if (args.size() == 1)
-            name = type + "_" + to_string(getId());
-        else if (args.size() == 2)
-            name = args[1].asString();
+            if (args.size() == 1)
+                name = type + "_" + to_string(getId());
+            else if (args.size() == 2)
+                name = args[1].asString();
 
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-        for (auto& s : _scenes)
-        {
-            sendMessage(s.first, "add", {type, name});
-            addLocally(type, name, s.first);
-        }
+            for (auto& s : _scenes)
+            {
+                sendMessage(s.first, "add", {type, name});
+                addLocally(type, name, s.first);
+            }
 
-        auto path = Utils::getPathFromFilePath(_configFilename);
-        set(name, "configFilePath", {path});
+            auto path = Utils::getPathFromFilePath(_configFilename);
+            set(name, "configFilePath", {path}, false);
+        });
 
         return true;
     });
@@ -893,7 +903,7 @@ void World::registerAttributes()
             return false;
 
         _blendingMode = args[0].asString();
-        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {_blendingMode});
+        sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode});
 
         return true;
     }, [&]() -> Values {
@@ -904,21 +914,21 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<recursive_mutex> lockObjects(_objectsMutex);
-        auto objectName = args[0].asString();
+        addTask([=]() {
+            unique_lock<recursive_mutex> lockObjects(_objectsMutex);
+            auto objectName = args[0].asString();
 
-        // Delete the object here
-        auto objectDestIt = _objectDest.find(objectName);
-        if (objectDestIt != _objectDest.end())
-            _objectDest.erase(objectDestIt);
+            // Delete the object here
+            auto objectDestIt = _objectDest.find(objectName);
+            if (objectDestIt != _objectDest.end())
+                _objectDest.erase(objectDestIt);
 
-        auto objectIt = _objects.find(objectName);
-        if (objectIt != _objects.end())
-            _objects.erase(objectIt);
+            auto objectIt = _objects.find(objectName);
+            if (objectIt != _objects.end())
+                _objects.erase(objectIt);
 
-        // Ask for Scenes to delete the object
-        SThread::pool.enqueueWithoutId([=]() {
-            sendMessage(SPLASH_ALL_PAIRS, "deleteObject", args);
+            // Ask for Scenes to delete the object
+            sendMessage(SPLASH_ALL_PEERS, "deleteObject", args);
         });
 
         return true;
@@ -927,7 +937,11 @@ void World::registerAttributes()
     _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
+
+        addTask([=]() {
+            sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].asInt()});
+        });
+
         return true;
     });
 
@@ -944,23 +958,25 @@ void World::registerAttributes()
         if (args.size() != 2)
             return false;
 
-        auto objectName = args[0].asString();
-        auto attrName = args[1].asString();
+        addTask([=]() {
+            auto objectName = args[0].asString();
+            auto attrName = args[1].asString();
 
-        auto objectIt = _objects.find(objectName);
-        if (objectIt != _objects.end())
-        {
-            auto& object = objectIt->second;
-            Values values {};
-            object->getAttribute(attrName, values);
+            auto objectIt = _objects.find(objectName);
+            if (objectIt != _objects.end())
+            {
+                auto& object = objectIt->second;
+                Values values {};
+                object->getAttribute(attrName, values);
 
-            SThread::pool.enqueueWithoutId([=]() {
-                Values sentValues {"getAttribute"};
-                for (auto& v : values)
-                    sentValues.push_back(v);
-                sendMessage(SPLASH_ALL_PAIRS, "answerMessage", sentValues);
-            });
-        }
+                SThread::pool.enqueueWithoutId([=]() {
+                    Values sentValues {"getAttribute"};
+                    for (auto& v : values)
+                        sentValues.push_back(v);
+                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", sentValues);
+                });
+            }
+        });
 
         return true;
     });
@@ -1005,11 +1021,13 @@ void World::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        _clockDeviceName = args[0].asString();
-        if (_clockDeviceName != "")
-            _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
-        else if (_clock)
-            _clock.reset();
+        addTask([=]() {
+            _clockDeviceName = args[0].asString();
+            if (_clockDeviceName != "")
+                _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+            else if (_clock)
+                _clock.reset();
+        });
 
         return true;
     }, [&]() -> Values {
@@ -1033,8 +1051,8 @@ void World::registerAttributes()
         if (args.size() != 0)
             _configFilename = args[0].asString();
 
-        Log::get() << "Saving configuration" << Log::endl;
-        SThread::pool.enqueueWithoutId([&]() {
+        addTask([=]() {
+            Log::get() << "Saving configuration" << Log::endl;
             saveConfig();
         });
         return true;
@@ -1043,23 +1061,26 @@ void World::registerAttributes()
     _attribFunctions["sendAll"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string name = args[0].asString();
-        string attr = args[1].asString();
-        Values values {name, attr};
-        for (int i = 2; i < args.size(); ++i)
-            values.push_back(args[i]);
 
-        // Ask for update of the ghost object if needed
-        sendMessage(_masterSceneName, "setGhost", values);
-        
-        // Send the updated values to all scenes
-        values.erase(values.begin());
-        values.erase(values.begin());
-        sendMessage(name, attr, values);
+        addTask([=]() {
+            string name = args[0].asString();
+            string attr = args[1].asString();
+            Values values {name, attr};
+            for (int i = 2; i < args.size(); ++i)
+                values.push_back(args[i]);
 
-        // Also update local version
-        if (_objects.find(name) != _objects.end())
-            _objects[name]->setAttribute(attr, values);
+            // Ask for update of the ghost object if needed
+            sendMessage(_masterSceneName, "setGhost", values);
+            
+            // Send the updated values to all scenes
+            values.erase(values.begin());
+            values.erase(values.begin());
+            sendMessage(name, attr, values);
+
+            // Also update local version
+            if (_objects.find(name) != _objects.end())
+                _objects[name]->setAttribute(attr, values);
+        });
 
         return true;
     });
@@ -1067,12 +1088,15 @@ void World::registerAttributes()
     _attribFunctions["sendAllScenes"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string attr = args[0].asString();
-        Values values;
-        for (int i = 1; i < args.size(); ++i)
-            values.push_back(args[i]);
-        for (auto& scene : _scenes)
-            sendMessage(scene.first, attr, values);
+
+        addTask([=]() {
+            string attr = args[0].asString();
+            Values values;
+            for (int i = 1; i < args.size(); ++i)
+                values.push_back(args[i]);
+            for (auto& scene : _scenes)
+                sendMessage(scene.first, attr, values);
+        });
 
         return true;
     });
@@ -1081,10 +1105,12 @@ void World::registerAttributes()
         if (args.size() < 2)
             return false;
 
-        auto attr = args[0].asString();
-        Values values = args;
-        values.erase(values.begin());
-        sendMessage(_masterSceneName, attr, values);
+        addTask([=]() {
+            auto attr = args[0].asString();
+            Values values = args;
+            values.erase(values.begin());
+            sendMessage(_masterSceneName, attr, values);
+        });
 
         return true;
     });
@@ -1092,14 +1118,22 @@ void World::registerAttributes()
     _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
-        _swapSynchronizationTesting = args[0].asInt();
+
+        addTask([=]() {
+            _swapSynchronizationTesting = args[0].asInt();
+        });
+
         return true;
     });
 
     _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});
+
+        addTask([=]() {
+            sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].asInt()});
+        });
+
         return true;
     });
 }

@@ -538,6 +538,13 @@ void Texture_Image::registerAttributes()
         return {_filtering};
     });
 
+    _attribFunctions["clampToEdge"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 0)
+            return false;
+        _glTextureWrap = args[0].asInt() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+        return true;
+    });
+
     _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;

@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <list>
 #include <map>
 #include <unordered_map>
 #include <json/json.h>
@@ -607,18 +608,31 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(const std::string& name, const std::string& attrib, const Values& args)
+        bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true)
         {
             std::unique_lock<std::recursive_mutex> lock(_setMutex);
 
-            if (name == _name || name == SPLASH_ALL_PAIRS)
+            if (name == _name || name == SPLASH_ALL_PEERS)
                 return setAttribute(attrib, args);
 
-            auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end())
-                return objectIt->second->setAttribute(attrib, args);
+            if (async)
+            {
+                addTask([=]() {
+                    auto objectIt = _objects.find(name);
+                    if (objectIt != _objects.end())
+                        objectIt->second->setAttribute(attrib, args);
+                });
+            }
             else
-                return false;
+            {
+                auto objectIt = _objects.find(name);
+                if (objectIt != _objects.end())
+                    return objectIt->second->setAttribute(attrib, args);
+                else
+                    return false;
+            }
+
+            return true;
         }
 
         /**
@@ -654,8 +668,21 @@ class RootObject : public BaseObject
         std::mutex conditionMutex;
         std::mutex _answerMutex;
         std::string _answerExpected {""};
+        
+        // Tasks queue
+        std::mutex _taskMutex;
+        std::list<std::function<void()>> _taskQueue;
 
         virtual void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj) {}
+
+        /**
+         * Add a new task to the queue
+         */
+        void addTask(const std::function<void()>& task)
+        {
+            std::unique_lock<std::mutex> lock(_taskMutex);
+            _taskQueue.push_back(task);
+        }
 
         /**
          * Send a message to the target specified by its name

@@ -242,10 +242,6 @@ class Scene : public RootObject
         GLuint _maxSwapBarriers {0};
 
         unsigned long _nextId {0};
-        
-        // Tasks queue
-        std::mutex _taskMutex;
-        std::list<std::function<void()>> _taskQueue;
 
         // Blending attributes
         bool _isBlendingComputed {false};

@@ -429,7 +429,7 @@ void Scene::renderBlending()
                         }
                     
                     // Notify the other scenes that the blending has been updated
-                    sendMessageToWorld("sendAll", {SPLASH_ALL_PAIRS, "blendingUpdated"});
+                    sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
                 }
             }
             // The non-master scenes only need to activate blending
@@ -1192,29 +1192,39 @@ void Scene::registerAttributes()
     _attribFunctions["add"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string type = args[0].asString();
-        string name = args[1].asString();
 
-        add(type, name);
+        addTask([=]() {
+            string type = args[0].asString();
+            string name = args[1].asString();
+            add(type, name);
+        });
+
         return true;
     });
 
     _attribFunctions["addGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string type = args[0].asString();
-        string name = args[1].asString();
 
-        addGhost(type, name);
+        addTask([=]() {
+            string type = args[0].asString();
+            string name = args[1].asString();
+            addGhost(type, name);
+        });
+
         return true;
     });
 
     _attribFunctions["blendingResolution"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        int resolution = args[0].asInt();
-        if (resolution >= 64)
-            _blendingResolution = resolution;
+
+        addTask([=]() {
+            int resolution = args[0].asInt();
+            if (resolution >= 64)
+                _blendingResolution = resolution;
+        });
+
         return true;
     }, [&]() -> Values {
         return {(int)_blendingResolution};
@@ -1245,7 +1255,7 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["activateBlendingMap"] = AttributeFunctor([&](const Values& args) {
-        _taskQueue.push_back([=]() -> void {
+        addTask([=]() -> void {
             activateBlendingMap();
         });
 
@@ -1253,7 +1263,7 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["deactivateBlendingMap"] = AttributeFunctor([&](const Values& args) {
-        _taskQueue.push_back([=]() -> void {
+        addTask([=]() -> void {
             deactivateBlendingMap();
         });
 
@@ -1261,8 +1271,7 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lockTask(_taskMutex);
-        _taskQueue.push_back([&]() -> void {
+        addTask([&]() -> void {
             setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
             Json::Value config = getConfigurationAsJson();
             string configStr = config.toStyledString();
@@ -1275,8 +1284,7 @@ void Scene::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<mutex> lockTask(_taskMutex);
-        _taskQueue.push_back([=]() -> void {
+        addTask([=]() -> void {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             _objectsCurrentlyUpdated = true;
             auto objectName = args[0].asString();
@@ -1319,18 +1327,26 @@ void Scene::registerAttributes()
     _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        for (auto& obj : _objects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+
+        addTask([=]() {
+            for (auto& obj : _objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+        });
+
         return true;
     });
 
     _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        string type = args[0].asString();
-        Values list = getObjectsNameByType(type);
-        sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+
+        addTask([=]() {
+            string type = args[0].asString();
+            Values list = getObjectsNameByType(type);
+            sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        });
+
         return true;
     });
 
@@ -1359,17 +1375,27 @@ void Scene::registerAttributes()
     _attribFunctions["link"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return link(src, dst);
+
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            link(src, dst);
+        });
+
+        return true;
     });
 
     _attribFunctions["linkGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return linkGhost(src, dst);
+
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            linkGhost(src, dst);
+        });
+
+        return true;
     });
 
     _attribFunctions["log"] = AttributeFunctor([&](const Values& args) {
@@ -1388,23 +1414,29 @@ void Scene::registerAttributes()
     _attribFunctions["remove"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        string name = args[1].asString();
 
-        remove(name);
+        addTask([=]() {
+            string name = args[1].asString();
+            remove(name);
+        });
+
         return true;
     });
 
     _attribFunctions["setGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string name = args[0].asString();
-        string attr = args[1].asString();
-        Values values;
-        for (int i = 2; i < args.size(); ++i)
-            values.push_back(args[i]);
 
-        if (_ghostObjects.find(name) != _ghostObjects.end())
-            _ghostObjects[name]->setAttribute(attr, values);
+        addTask([=]() {
+            string name = args[0].asString();
+            string attr = args[1].asString();
+            Values values;
+            for (int i = 2; i < args.size(); ++i)
+                values.push_back(args[i]);
+
+            if (_ghostObjects.find(name) != _ghostObjects.end())
+                _ghostObjects[name]->setAttribute(attr, values);
+        });
 
         return true;
     });
@@ -1452,36 +1484,52 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
-        _started = false;
-        _isRunning = false;
+        addTask([=]() {
+            _started = false;
+            _isRunning = false;
+        });
         return true;
     });
    
     _attribFunctions["unlink"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return unlink(src, dst);
+
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            unlink(src, dst);
+        });
+
+        return true;
     });
 
     _attribFunctions["unlinkGhost"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return unlinkGhost(src, dst);
+
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            unlinkGhost(src, dst);
+        });
+
+        return true;
     });
  
     _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
         if (args.size() < 1)
             return false;
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+
+        addTask([=]() {
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+            for (auto& obj : _ghostObjects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+        });
+
         return true;
     });
 
