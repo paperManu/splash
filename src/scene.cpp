@@ -1242,13 +1242,11 @@ void Scene::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lockTask(_taskMutex);
+        if (args.size() == 0)
+            return false;
 
-        std::string blendingMode;
-        if (args.size() != 0)
-            blendingMode = args[0].asString();
-
-        _taskQueue.push_back([=]() -> void {
+        std::string blendingMode = args[0].asString();
+        addTask([=]() -> void {
             computeBlendingMap(blendingMode);
         });
         return true;
