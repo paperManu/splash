@@ -150,7 +150,7 @@ void Image_FFmpeg::readLoop()
         _intraOnly = false; // We don't know, so we consider it's not
 
     auto fourcc = tagToFourCC(_videoCodecContext->codec_tag);
-    if (videoCodec == nullptr && fourcc.find("Hap") != string::npos)
+    if (fourcc.find("Hap") != string::npos)
     {
         isHap = true;
         _intraOnly = true; // Hap is necessarily intra only
