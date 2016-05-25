@@ -889,8 +889,15 @@ void World::registerAttributes()
     });
 
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", args);
+        if (args.size() == 0)
+            return false;
+
+        _blendingMode = args[0].asString();
+        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", {_blendingMode});
+
         return true;
+    }, [&]() -> Values {
+        return {_blendingMode};
     });
 
     _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {

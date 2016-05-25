@@ -115,7 +115,21 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 void Gui::computeBlending(bool once)
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("computeBlending", {(int)once});
+    if (_blendingActive)
+    {
+        scene->sendMessageToWorld("computeBlending", {"none"});
+        _blendingActive = false;
+    }
+    else if (once)
+    {
+        scene->sendMessageToWorld("computeBlending", {"once"});
+        _blendingActive = true;
+    }
+    else 
+    {
+        scene->sendMessageToWorld("computeBlending", {"continuous"});
+        _blendingActive = true;
+    }
 }
 
 /*************/

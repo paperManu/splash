@@ -203,7 +203,7 @@ class Scene : public RootObject
         /**
          * Creates the blending map from the current calibration of the cameras
          */
-        void computeBlendingMap(bool once = true);
+        void computeBlendingMap(const std::string& mode = "once");
         void activateBlendingMap(bool once = true);
         void deactivateBlendingMap();
 

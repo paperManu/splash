@@ -93,6 +93,7 @@ class World : public RootObject
 
         // World parameters
         unsigned int _worldFramerate {60};
+        std::string _blendingMode {};
 
         std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};

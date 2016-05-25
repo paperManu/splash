@@ -900,12 +900,14 @@ void Scene::deactivateBlendingMap()
 }
 
 /*************/
-void Scene::computeBlendingMap(bool once)
+void Scene::computeBlendingMap(const std::string& mode)
 {
-    if (_isBlendingComputed)
-        deactivateBlendingMap();
+    if (mode == "once")
+        activateBlendingMap(true);
+    else if (mode == "continuous")
+        activateBlendingMap(false);
     else
-        activateBlendingMap(once);
+        deactivateBlendingMap();
 }
 
 /*************/
@@ -1232,12 +1234,12 @@ void Scene::registerAttributes()
     _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
         unique_lock<mutex> lockTask(_taskMutex);
 
-        bool once = false;
+        std::string blendingMode;
         if (args.size() != 0)
-            once = args[0].asInt();
+            blendingMode = args[0].asString();
 
         _taskQueue.push_back([=]() -> void {
-            computeBlendingMap(once);
+            computeBlendingMap(blendingMode);
         });
         return true;
     });
