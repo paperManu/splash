@@ -32,8 +32,8 @@ if(APPLE)
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist ./splash.app/Contents/Info.plist
         COMMAND mkdir -p ./splash.app/Contents/Frameworks
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release/Syphon.framework ./splash.app/Contents/Frameworks/Syphon.framework
-        COMMAND dylibbundler -cd -od -b -x ./splash.app/Contents/MacOS/splash -x ./splash.app/Contents/MacOS/splash-scene -d ./splash.app/Contents/libs/
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../external/macdylibbundler/dylibbundler -cd -od -b -x ./splash.app/Contents/MacOS/splash -x ./splash.app/Contents/MacOS/splash-scene -d ./splash.app/Contents/libs/
     )
     
-    add_custom_target(package_osx DEPENDS splashApp)
+    add_custom_target(package_osx DEPENDS macdylibbundler splashApp)
 endif()

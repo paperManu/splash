@@ -24,4 +24,11 @@ if(APPLE)
     )
 
     add_custom_target(Syphon DEPENDS SyphonBuild)
+
+    add_custom_command(
+        OUTPUT macdylibbundlerBuild
+        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/macdylibbundler && make
+    )
+
+    add_custom_target(macdylibbundler DEPENDS macdylibbundlerBuild)
 endif()
