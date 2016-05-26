@@ -1062,21 +1062,21 @@ void World::registerAttributes()
         if (args.size() < 2)
             return false;
 
+        string name = args[0].asString();
+        string attr = args[1].asString();
+        Values values {name, attr};
+        for (int i = 2; i < args.size(); ++i)
+            values.push_back(args[i]);
+
+        // Ask for update of the ghost object if needed
+        sendMessage(_masterSceneName, "setGhost", values);
+        
+        // Send the updated values to all scenes
+        values.erase(values.begin());
+        values.erase(values.begin());
+        sendMessage(name, attr, values);
+
         addTask([=]() {
-            string name = args[0].asString();
-            string attr = args[1].asString();
-            Values values {name, attr};
-            for (int i = 2; i < args.size(); ++i)
-                values.push_back(args[i]);
-
-            // Ask for update of the ghost object if needed
-            sendMessage(_masterSceneName, "setGhost", values);
-            
-            // Send the updated values to all scenes
-            values.erase(values.begin());
-            values.erase(values.begin());
-            sendMessage(name, attr, values);
-
             // Also update local version
             if (_objects.find(name) != _objects.end())
                 _objects[name]->setAttribute(attr, values);
@@ -1089,14 +1089,12 @@ void World::registerAttributes()
         if (args.size() < 2)
             return false;
 
-        addTask([=]() {
-            string attr = args[0].asString();
-            Values values;
-            for (int i = 1; i < args.size(); ++i)
-                values.push_back(args[i]);
-            for (auto& scene : _scenes)
-                sendMessage(scene.first, attr, values);
-        });
+        string attr = args[0].asString();
+        Values values;
+        for (int i = 1; i < args.size(); ++i)
+            values.push_back(args[i]);
+        for (auto& scene : _scenes)
+            sendMessage(scene.first, attr, values);
 
         return true;
     });
