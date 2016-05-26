@@ -277,7 +277,10 @@ class GuiWarp : public GuiWidget
         int _currentControlPointIndex {0};
         glm::vec2 _previousMousePos;
 
+        void processKeyEvents(const std::shared_ptr<Warp>& warp);
         void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
+
+        void updateControlPoints(const std::string& warpName, const Values& controlPoints);
 };
 
 } // end of namespace

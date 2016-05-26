@@ -1,10 +1,16 @@
 #include "warp.h"
 
+#include <fstream>
+
 #include "cgUtils.h"
 #include "log.h"
 #include "scene.h"
 #include "timer.h"
 #include "texture_image.h"
+
+#define CONTROL_POINT_SCALE 0.02
+#define WORLDMARKER_SCALE 0.0003
+#define MARKER_SET {1.0, 0.5, 0.0, 1.0}
 
 using namespace std;
 
@@ -52,6 +58,7 @@ void Warp::init()
         _isInitialized = true;
     }
 
+    loadDefaultModels();
     registerAttributes();
 }
 
@@ -178,6 +185,22 @@ void Warp::update()
 
         _screen->setAttribute("fill", {"warp"});
         _screenMesh->switchMeshes(false);
+
+        if (_selectedControlPointIndex != -1)
+        {
+            auto& pointModel = _models["3d_marker"];
+
+            auto controlPoints = _screenMesh->getControlPoints();
+            auto point = controlPoints[_selectedControlPointIndex];
+
+            pointModel->setAttribute("position", {point.x, point.y, 0.f});
+            pointModel->setAttribute("rotation", {0.f, 90.f, 0.f});
+            pointModel->setAttribute("scale", {CONTROL_POINT_SCALE});
+            pointModel->activate();
+            pointModel->setViewProjectionMatrix(glm::dmat4(1.f), glm::dmat4(1.f));
+            pointModel->draw();
+            pointModel->deactivate();
+        }
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -220,6 +243,48 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
     return index;
 }
 
+/*************/
+void Warp::loadDefaultModels()
+{
+    map<string, string> files {{"3d_marker", "3d_marker.obj"}};
+    
+    for (auto& file : files)
+    {
+        if (!ifstream(file.second, ios::in | ios::binary))
+        {
+            if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
+                file.second = string(DATADIR) + file.second;
+#if HAVE_OSX
+            else if (ifstream("../Resources/" + file.second, ios::in | ios::binary))
+                file.second = "../Resources/" + file.second;
+#endif
+            else
+            {
+                Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
+                continue;
+            }
+        }
+
+        shared_ptr<Mesh> mesh = make_shared<Mesh>();
+        mesh->setName(file.first);
+        mesh->setAttribute("file", {file.second});
+        _modelMeshes.push_back(mesh);
+
+        GeometryPtr geom = make_shared<Geometry>();
+        geom->setName(file.first);
+        geom->linkTo(mesh);
+        _modelGeometries.push_back(geom);
+
+        shared_ptr<Object> obj = make_shared<Object>();
+        obj->setName(file.first);
+        obj->setAttribute("scale", {WORLDMARKER_SCALE});
+        obj->setAttribute("fill", {"color"});
+        obj->setAttribute("color", MARKER_SET);
+        obj->linkTo(geom);
+
+        _models[file.first] = obj;
+    }
+}
 
 /*************/
 void Warp::setOutput()
@@ -283,11 +348,26 @@ void Warp::registerAttributes()
         return v;
     });
 
-    _attribFunctions["showControlPoints"] = AttributeFunctor([&](const Values& args) {
+    // Show the Bezier patch describing the warp
+    // Also resets the selected control point if hidden
+    _attribFunctions["showControlLattice"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 1)
             return false;
         _showControlPoints = args[0].asInt();
+        if (!_showControlPoints)
+            _selectedControlPointIndex = -1;
         return true;
+    });
+
+    // Show a single control point
+    _attribFunctions["showControlPoint"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+        auto index = args[0].asInt();
+        if (index < 0 || index >= _screenMesh->getControlPoints().size())
+            _selectedControlPointIndex = -1;
+        else
+            _selectedControlPointIndex = index;
     });
 }
 

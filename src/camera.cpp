@@ -23,17 +23,17 @@
 #include <glm/gtx/simd_vec4.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#define SPLASH_SCISSOR_WIDTH 8
-#define SPLASH_WORLDMARKER_SCALE 0.0003
-#define SPLASH_SCREENMARKER_SCALE 0.05
-#define SPLASH_MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
-#define SPLASH_SCREEN_MARKER_SELECTED {0.9, 0.3, 0.1, 1.0}
-#define SPLASH_MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
-#define SPLASH_MARKER_SET {1.0, 0.5, 0.0, 1.0}
-#define SPLASH_SCREEN_MARKER_SET {1.0, 0.7, 0.0, 1.0}
-#define SPLASH_OBJECT_MARKER {0.1, 1.0, 0.2, 1.0}
-#define SPLASH_CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
-#define SPLASH_DEFAULT_COLOR {0.2, 0.2, 1.0, 1.0}
+#define SCISSOR_WIDTH 8
+#define WORLDMARKER_SCALE 0.0003
+#define SCREENMARKER_SCALE 0.05
+#define MARKER_SELECTED {0.9, 0.1, 0.1, 1.0}
+#define SCREEN_MARKER_SELECTED {0.9, 0.3, 0.1, 1.0}
+#define MARKER_ADDED {0.0, 0.5, 1.0, 1.0}
+#define MARKER_SET {1.0, 0.5, 0.0, 1.0}
+#define SCREEN_MARKER_SET {1.0, 0.7, 0.0, 1.0}
+#define OBJECT_MARKER {0.1, 1.0, 0.2, 1.0}
+#define CAMERA_FLASH_COLOR {0.6, 0.6, 0.6, 1.0}
+#define DEFAULT_COLOR {0.2, 0.2, 1.0, 1.0}
 
 using namespace std;
 using namespace glm;
@@ -745,7 +745,7 @@ bool Camera::render()
         glClearColor(1.0, 0.5, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         glEnable(GL_SCISSOR_TEST);
-        glScissor(SPLASH_SCISSOR_WIDTH, SPLASH_SCISSOR_WIDTH, _width - SPLASH_SCISSOR_WIDTH * 2, _height - SPLASH_SCISSOR_WIDTH * 2);
+        glScissor(SCISSOR_WIDTH, SCISSOR_WIDTH, _width - SCISSOR_WIDTH * 2, _height - SCISSOR_WIDTH * 2);
     }
 
     if (_flashBG)
@@ -806,9 +806,9 @@ bool Camera::render()
                 for (auto& point : points)
                 {
                     glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
-                    worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
+                    worldMarker->setAttribute("scale", {WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
                     worldMarker->setAttribute("position", {point.x, point.y, point.z});
-                    worldMarker->setAttribute("color", SPLASH_OBJECT_MARKER);
+                    worldMarker->setAttribute("color", OBJECT_MARKER);
 
                     worldMarker->activate();
                     worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
@@ -830,13 +830,13 @@ bool Camera::render()
 
                 worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                 glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
-                worldMarker->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
+                worldMarker->setAttribute("scale", {WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
                 if (_selectedCalibrationPoint == i)
-                    worldMarker->setAttribute("color", SPLASH_MARKER_SELECTED);
+                    worldMarker->setAttribute("color", MARKER_SELECTED);
                 else if (point.isSet)
-                    worldMarker->setAttribute("color", SPLASH_MARKER_SET);
+                    worldMarker->setAttribute("color", MARKER_SET);
                 else
-                    worldMarker->setAttribute("color", SPLASH_MARKER_ADDED);
+                    worldMarker->setAttribute("color", MARKER_ADDED);
 
                 worldMarker->activate();
                 worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
@@ -847,11 +847,11 @@ bool Camera::render()
                 {
 
                     screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
-                    screenMarker->setAttribute("scale", {SPLASH_SCREENMARKER_SCALE});
+                    screenMarker->setAttribute("scale", {SCREENMARKER_SCALE});
                     if (_selectedCalibrationPoint == i)
-                        screenMarker->setAttribute("color", SPLASH_SCREEN_MARKER_SELECTED);
+                        screenMarker->setAttribute("color", SCREEN_MARKER_SELECTED);
                     else
-                        screenMarker->setAttribute("color", SPLASH_SCREEN_MARKER_SET);
+                        screenMarker->setAttribute("color", SCREEN_MARKER_SET);
 
                     screenMarker->activate();
                     screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
@@ -874,7 +874,7 @@ bool Camera::render()
                 glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * position;
 
                 model->setAttribute("scale", {0.01 * std::max(transformedPoint.z, 1.0) * _fov});
-                model->setAttribute("color", SPLASH_DEFAULT_COLOR);
+                model->setAttribute("color", DEFAULT_COLOR);
                 model->setModelMatrix(rtMatrix);
 
                 model->activate();
@@ -1252,9 +1252,9 @@ void Camera::loadDefaultModels()
 
         shared_ptr<Object> obj = make_shared<Object>();
         obj->setName(file.first);
-        obj->setAttribute("scale", {SPLASH_WORLDMARKER_SCALE});
+        obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
-        obj->setAttribute("color", SPLASH_MARKER_SET);
+        obj->setAttribute("color", MARKER_SET);
         obj->linkTo(geom);
 
         _models[file.first] = obj;
@@ -1542,7 +1542,7 @@ void Camera::registerAttributes()
 
     _attribFunctions["clearColor"] = AttributeFunctor([&](const Values& args) {
         if (args.size() == 0)
-            _clearColor = SPLASH_CAMERA_FLASH_COLOR;
+            _clearColor = CAMERA_FLASH_COLOR;
         else if (args.size() == 4)
             _clearColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         else

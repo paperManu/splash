@@ -1916,9 +1916,9 @@ void GuiWarp::render()
 
             auto scene = _scene.lock();
             if (_currentWarp == i)
-                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoints", 1});
+                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlLattice", 1});
             else
-                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoints", 0});
+                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlLattice", 0});
 
             warp->update();
 
@@ -1967,6 +1967,7 @@ void GuiWarp::render()
                 if (ImGui::IsItemHoveredRect())
                 {
                     _noMove = true;
+                    processKeyEvents(warp);
                     processMouseEvents(warp, w, h);
                 }
                 else
@@ -1983,7 +1984,7 @@ void GuiWarp::render()
         auto scene = _scene.lock();
         if (_currentWarpName != "")
         {
-            scene->sendMessageToWorld("sendAll", {_currentWarpName, "showControlPoints", 0});
+            scene->sendMessageToWorld("sendAll", {_currentWarpName, "showControlLattice", 0});
             _currentWarpName = "";
         }
     }
@@ -2016,6 +2017,81 @@ int GuiWarp::updateWindowFlags()
     }
     return flags;
 }
+
+/*************/
+void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    // Tabulation key
+    if (io.KeysDown[258] && io.KeysDownDuration[258] == 0.0)
+    {
+        Values controlPoints;
+        warp->getAttribute("patchControl", controlPoints);
+
+        if (io.KeyShift)
+        {
+            _currentControlPointIndex--;
+            if (_currentControlPointIndex < 0)
+                _currentControlPointIndex = controlPoints.size() - 3;
+        }
+        else
+        {
+            _currentControlPointIndex++;
+            if (_currentControlPointIndex + 2 >= controlPoints.size())
+                _currentControlPointIndex = 0;
+        }
+
+        auto scene = _scene.lock();
+        scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoint", _currentControlPointIndex});
+    }
+    // Arrow keys
+    {
+        auto scene = _scene.lock();
+
+        Values controlPoints;
+        warp->getAttribute("patchControl", controlPoints);
+        if (controlPoints.size() < _currentControlPointIndex + 2)
+            return;
+
+        float delta = 0.001f;
+        if (io.KeyShift)
+            delta = 0.0001f;
+        else if (io.KeyCtrl)
+            delta = 0.01f;
+            
+        if (io.KeysDown[262])
+        {
+            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
+            point[0] = point[0].asFloat() + delta;
+            controlPoints[_currentControlPointIndex + 2] = point;
+            updateControlPoints(warp->getName(), controlPoints);
+        }
+        if (io.KeysDown[263])
+        {
+            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
+            point[0] = point[0].asFloat() - delta;
+            controlPoints[_currentControlPointIndex + 2] = point;
+            updateControlPoints(warp->getName(), controlPoints);
+        }
+        if (io.KeysDown[264])
+        {
+            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
+            point[1] = point[1].asFloat() - delta;
+            controlPoints[_currentControlPointIndex + 2] = point;
+            updateControlPoints(warp->getName(), controlPoints);
+        }
+        if (io.KeysDown[265])
+        {
+            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
+            point[1] = point[1].asFloat() + delta;
+            controlPoints[_currentControlPointIndex + 2] = point;
+            updateControlPoints(warp->getName(), controlPoints);
+        }
+
+        return;
+    }
+}
+
 /*************/
 void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, int warpHeight)
 {
@@ -2025,11 +2101,16 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
     ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / warpWidth,
                              -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / warpHeight);
 
+    auto scene = _scene.lock();
+    if (!scene)
+        return;
+
     if (io.MouseDownDuration[0] == 0.0)
     {
         // Select a control point
         glm::vec2 picked;
         _currentControlPointIndex = warp->pickControlPoint(glm::vec2(mousePos.x * 2.0 - 1.0, mousePos.y * 2.0 - 1.0), picked);
+        scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoint", _currentControlPointIndex});
         _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
     }
     else if (io.MouseDownDuration[0] > 0.0)
@@ -2047,15 +2128,21 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
         point[1] = point[1].asFloat() + delta.y * 2.0;
         controlPoints[_currentControlPointIndex + 2] = point;
 
-        Values msg;
-        msg.push_back(warp->getName());
-        msg.push_back("patchControl");
-        for (auto& point : controlPoints)
-            msg.push_back(point);
-
-        auto scene = _scene.lock();
-        scene->sendMessageToWorld("sendAll", msg);
+        updateControlPoints(warp->getName(), controlPoints);
     }
+}
+
+/*************/
+void GuiWarp::updateControlPoints(const string& warpName, const Values& controlPoints)
+{
+    Values msg;
+    msg.push_back(warpName);
+    msg.push_back("patchControl");
+    for (auto& point : controlPoints)
+        msg.push_back(point);
+    
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("sendAll", msg);
 }
 
 #pragma clang diagnostic pop
