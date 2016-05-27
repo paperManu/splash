@@ -1162,6 +1162,13 @@ struct ShaderSources
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
+        float edgeFactor()
+        {
+            vec3 d = fwidth(vertexIn.bcoord);
+            vec3 a3 = smoothstep(vec3(0.0), d * 1.5, vertexIn.bcoord);
+            return min(min(a3.x, a3.y), a3.z);
+        }
+
         void main(void)
         {
             vec4 position = vertexIn.position;
@@ -1169,10 +1176,7 @@ struct ShaderSources
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
             vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
-            if (minDist < 0.025)
-                fragColor.rgba = mix(vec4(1.0), matColor, (minDist - 0.0125) / 0.0125);
-            else
-                fragColor.rgba = matColor;
+            fragColor.rgba = mix(vec4(1.0), matColor, edgeFactor());
         }
     )"};
 
