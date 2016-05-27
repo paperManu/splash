@@ -280,24 +280,6 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-    // Helper function to read arrays
-    std::function<Values(Json::Value)> processArray;
-    processArray = [&processArray](Json::Value values) {
-        Values outValues;
-        for (auto& v : values)
-        {
-            if (v.isInt())
-                outValues.emplace_back(v.asInt());
-            else if (v.isDouble())
-                outValues.emplace_back(v.asFloat());
-            else if (v.isArray())
-                outValues.emplace_back(processArray(v));
-            else
-                outValues.emplace_back(v.asString());
-        }
-        return outValues;
-    };
-
     unique_lock<mutex> lockConfiguration(_configurationMutex);
 
     // We first destroy all scene and objects
@@ -442,7 +424,7 @@ void World::applyConfig()
 
         // Create the objects
         auto sceneMembers = jsScene.getMemberNames();
-        int idx {0};
+        int idx = 0;
         for (const auto& obj : jsScene)
         {
             string name = sceneMembers[idx];
@@ -531,7 +513,7 @@ void World::applyConfig()
 
             // Set their attributes
             auto objMembers = obj.getMemberNames();
-            int idxAttr {0};
+            int idxAttr = 0;
             for (const auto& attr : obj)
             {
                 if (objMembers[idxAttr] == "type")
@@ -745,6 +727,124 @@ void World::leave(int signal_value)
 {
     Log::get() << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
     _that->_quit = true;
+}
+
+/*************/
+bool World::copyCameraParameters(std::string filename)
+{
+    ifstream in(filename, ios::in | ios::binary);
+    string contents;
+    if (in)
+    {
+        in.seekg(0, ios::end);
+        contents.resize(in.tellg());
+        in.seekg(0, ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
+        return false;
+    }
+
+    Json::Value config;
+    Json::Reader reader;
+
+    bool success = reader.parse(contents, config);
+    if (!success)
+    {
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
+        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+        return false;
+    }
+
+    // Get the scene names from this other configuration file
+    const Json::Value jsScenes = config["scenes"];
+    vector<string> sceneNames;
+    for (int i = 0; i < jsScenes.size(); ++i)
+        if (jsScenes[i].isMember("name"))
+            sceneNames.push_back(jsScenes[i]["name"].asString());
+
+    for (const auto& s : sceneNames)
+    {
+        if (!config.isMember(s))
+            continue;
+
+        const Json::Value jsScene = config[s];
+        auto sceneMembers = jsScene.getMemberNames();
+        int idx = 0;
+        // Look for the cameras in the configuration file
+        for (const auto& obj : jsScene)
+        {
+            string name = sceneMembers[idx];
+            if (name == "links" || !obj.isMember("type"))
+            {
+                idx++;
+                continue;
+            }
+
+            if (obj["type"].asString() != "camera")
+            {
+                idx++;
+                continue;
+            }
+
+            // Go through the camera attributes
+            auto objMembers = obj.getMemberNames();
+            int idxAttr = 0;
+            for (const auto& attr : obj)
+            {
+                if (objMembers[idxAttr] == "type")
+                {
+                    idxAttr++;
+                    continue;
+                }
+
+                Values values;
+                if (attr.isArray())
+                    values = processArray(attr);
+                else if (attr.isInt())
+                    values.emplace_back(attr.asInt());
+                else if (attr.isDouble())
+                    values.emplace_back(attr.asFloat());
+                else if (attr.isString())
+                    values.emplace_back(attr.asString());
+
+                // Send the new values for this attribute
+                sendMessage(name, objMembers[idxAttr], values);
+
+                // Also send it to a ghost if it exists
+                values.push_front(objMembers[idxAttr]);
+                values.push_front(name);
+                sendMessage(_masterSceneName, "setGhost", values);
+
+                idxAttr++;
+            }
+
+            idx++;
+        }
+    }
+
+    return true;
+}
+
+/*************/
+Values World::processArray(Json::Value values)
+{
+    Values outValues;
+    for (const auto& v : values)
+    {
+        if (v.isInt())
+            outValues.emplace_back(v.asInt());
+        else if (v.isDouble())
+            outValues.emplace_back(v.asFloat());
+        else if (v.isArray())
+            outValues.emplace_back(processArray(v));
+        else
+            outValues.emplace_back(v.asString());
+    }
+    return outValues;
 }
 
 /*************/
@@ -1014,6 +1114,16 @@ void World::registerAttributes()
             }
         });
         return true;
+    });
+
+    _attribFunctions["copyCameraParameters"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() != 1)
+            return false;
+
+        string filename = args[0].asString();
+        addTask([=]() {
+            copyCameraParameters(filename);
+        });
     });
 
 #if HAVE_PORTAUDIO

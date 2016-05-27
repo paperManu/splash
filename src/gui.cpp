@@ -172,6 +172,13 @@ void Gui::loadConfiguration()
 }
 
 /*************/
+void Gui::copyCameraParameters()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("copyCameraParameters", {_configurationPath});
+}
+
+/*************/
 void Gui::saveConfiguration()
 {
     auto scene = _scene.lock();
@@ -515,6 +522,12 @@ bool Gui::render()
                 loadConfiguration();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Load the given path");
+
+            ImGui::SameLine();
+            if (ImGui::Button("Copy camera calibration"))
+                copyCameraParameters();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Copy the camera parameters from the given file");
         }
 
         // Specific widgets

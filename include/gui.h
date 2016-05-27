@@ -179,6 +179,7 @@ class Gui : public BaseObject
         void calibrateColors();
         void computeBlending(bool once = false);
         void flashBackground();
+        void copyCameraParameters();
         void loadConfiguration();
         void saveConfiguration();
 

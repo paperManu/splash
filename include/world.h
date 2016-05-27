@@ -123,6 +123,11 @@ class World : public RootObject
         void applyConfig();
 
         /**
+         * Copies the camera calibration from the given file to the current configuration
+         */
+        bool copyCameraParameters(std::string filename);
+
+        /**
          * Save the configuration
          */
         void saveConfig();
@@ -162,6 +167,11 @@ class World : public RootObject
          * Parse the given arguments
          */
         void parseArguments(int argc, char** argv);
+
+        /**
+         * Helper function to read Json arrays
+         */
+        Values processArray(Json::Value values);
 
         /**
          * Set a parameter for an object, given its id
