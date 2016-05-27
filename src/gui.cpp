@@ -1,15 +1,15 @@
-#include "gui.h"
+#include "./gui.h"
 
-#include "camera.h"
-#include "log.h"
-#include "object.h"
-#include "osUtils.h"
-#include "scene.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "timer.h"
-#include "threadpool.h"
-#include "window.h"
+#include "./camera.h"
+#include "./log.h"
+#include "./object.h"
+#include "./osUtils.h"
+#include "./scene.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./timer.h"
+#include "./threadpool.h"
+#include "./window.h"
 
 using namespace std;
 

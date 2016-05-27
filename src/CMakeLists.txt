@@ -96,6 +96,14 @@ target_sources(
     threadpool.cpp
     warp.cpp
     widgets.cpp
+    widget_control.cpp
+    widget_global_view.cpp
+    widget_graph.cpp
+    widget_node_view.cpp
+    widget_media.cpp
+    widget_template.cpp
+    widget_text_box.cpp
+    widget_warp.cpp
     window.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp

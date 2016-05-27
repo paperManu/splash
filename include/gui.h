@@ -41,11 +41,19 @@
 #include "config.h"
 
 #if HAVE_GPHOTO
-    #include "colorcalibrator.h"
+    #include "./colorcalibrator.h"
 #endif
-#include "coretypes.h"
-#include "basetypes.h"
-#include "widgets.h"
+#include "./coretypes.h"
+#include "./basetypes.h"
+#include "./widgets.h"
+#include "./widget_control.h"
+#include "./widget_global_view.h"
+#include "./widget_graph.h"
+#include "./widget_media.h"
+#include "./widget_node_view.h"
+#include "./widget_template.h"
+#include "./widget_text_box.h"
+#include "./widget_warp.h"
 
 namespace Splash {
 
