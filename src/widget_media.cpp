@@ -273,24 +273,18 @@ void GuiMedia::replaceMedia(string previousMedia, string type)
                 targetObjects.push_back(object);
     }
 
-    // Delete the media
-    scene->sendMessageToWorld("deleteObject", {previousMedia});
-    
-    // Replace the current Image with the new one
-    // TODO: this has to be done in a thread because "deleteObject" is asynched and "addObject" is synched...
-    SThread::pool.enqueueWithoutId([=]() {
-        this_thread::sleep_for(chrono::milliseconds(100));
-        scene->sendMessageToWorld("addObject", {_mediaTypes[type], previousMedia});
+    Values msg;
+    msg.push_back(previousMedia);
+    msg.push_back(_mediaTypes[type]);
+    for (const auto& weakObject : targetObjects)
+    {
+        if (weakObject.expired())
+            continue;
+        auto object = weakObject.lock();
+        msg.push_back(object->getName());
+    }
 
-        for (auto& weakObject : targetObjects)
-        {
-            if (weakObject.expired())
-                continue;
-            auto object = weakObject.lock();
-            scene->sendMessageToWorld("sendAllScenes", {"link", previousMedia, object->getName()});
-            scene->sendMessageToWorld("sendAllScenes", {"linkGhost", previousMedia, object->getName()});
-        }
-    });
+    scene->sendMessageToWorld("replaceObject", msg);
 }
 
 /*************/

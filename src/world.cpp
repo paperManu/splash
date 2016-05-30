@@ -1157,6 +1157,27 @@ void World::registerAttributes()
         return true;
     });
 
+    _attribFunctions["replaceObject"] = AttributeFunctor([&](const Values& args) {
+        if (args.size() < 2)
+            return false;
+
+        auto objName = args[0].asString();
+        auto objType = args[1].asString();
+        vector<string> targets;
+        for (int i = 2; i < args.size(); ++i)
+            targets.push_back(args[i].asString());
+
+        setAttribute("deleteObject", {objName});
+        setAttribute("addObject", {objType, objName});
+        addTask([=]() {
+            for (const auto& t : targets)
+            {
+                setAttribute("sendAllScenes", {"link", objName, t});
+                setAttribute("sendAllScenes", {"linkGhots", objName, t});
+            }
+        });
+    });
+
     _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
         if (args.size() != 0)
             _configFilename = args[0].asString();

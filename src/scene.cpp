@@ -727,7 +727,8 @@ void Scene::textureUploadRun()
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lockTexture.unlock();
 
-        if (!_objectsCurrentlyUpdated)
+        bool expectedAtomicValue = false;
+        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
         {
             for (auto& obj : _objects)
                 if (obj.second->getType().find("texture") != string::npos)
@@ -736,6 +737,7 @@ void Scene::textureUploadRun()
                     if (texImage)
                         texImage->flushPbo();
                 }
+            _objectsCurrentlyUpdated = false;
         }
 
         _textureUploadWindow->releaseContext();
@@ -1284,7 +1286,12 @@ void Scene::registerAttributes()
 
         addTask([=]() -> void {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-            _objectsCurrentlyUpdated = true;
+
+            // We wait until we can indeed deleted the object
+            bool expectedAtomicValue = false;
+            while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+                this_thread::sleep_for(chrono::milliseconds(1));
+
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);
