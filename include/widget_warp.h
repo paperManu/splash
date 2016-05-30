@@ -25,7 +25,7 @@
 #ifndef SPLASH_WIDGET_WARP_H
 #define SPLASH_WIDGET_WARP_H
 
-#include "./widgets.h"
+#include "./widget.h"
 
 namespace Splash
 {

@@ -25,7 +25,7 @@
 #ifndef SPLASH_WIDGET_TEXT_BOX_H
 #define SPLASH_WIDGET_TEXT_BOX_H
 
-#include "./widgets.h"
+#include "./widget.h"
 
 namespace Splash
 {

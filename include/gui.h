@@ -45,7 +45,6 @@
 #endif
 #include "./coretypes.h"
 #include "./basetypes.h"
-#include "./widgets.h"
 #include "./widget_control.h"
 #include "./widget_global_view.h"
 #include "./widget_graph.h"

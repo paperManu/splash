@@ -40,7 +40,6 @@
 #include "basetypes.h"
 #include "gui.h"
 #include "httpServer.h"
-#include "widgets.h"
 
 namespace Splash {
 

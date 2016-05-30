@@ -18,8 +18,8 @@
  */
 
 /*
- * @widgets.h
- * The splash widgets
+ * @widget.h
+ * The splash main widget class
  */
 
 #ifndef SPLASH_WIDGETS_H

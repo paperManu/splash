@@ -1,4 +1,4 @@
-#include "widgets.h"
+#include "widget.h"
 
 #include <dirent.h>
 

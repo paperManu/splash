@@ -25,7 +25,7 @@
 #ifndef SPLASH_WIDGET_MEDIA_H
 #define SPLASH_WIDGET_MEDIA_H
 
-#include "./widgets.h"
+#include "./widget.h"
 
 namespace Splash
 {

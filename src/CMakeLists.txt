@@ -95,7 +95,7 @@ target_sources(
     texture_image.cpp
     threadpool.cpp
     warp.cpp
-    widgets.cpp
+    widget.cpp
     widget_control.cpp
     widget_global_view.cpp
     widget_graph.cpp
