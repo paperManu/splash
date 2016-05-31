@@ -141,10 +141,15 @@ class ResizableArray
             return *this;
         }
 
+        T* operator[](unsigned int i) const
+        {
+            return data() + i;
+        }
+
         /**
          * Get a pointer to the data
          */
-        inline T* data() {return _buffer.get() + _shift;}
+        inline T* data() const {return _buffer.get() + _shift;}
 
         /**
          * Shift the data, for example to get rid of a header without copying
@@ -161,7 +166,7 @@ class ResizableArray
         /**
          * Get the size of the buffer
          */
-        inline size_t size() {return _size - _shift;}
+        inline size_t size() const {return _size - _shift;}
 
         /**
          * Resize the buffer
