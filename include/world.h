@@ -67,7 +67,7 @@ class World : public RootObject
         /**
          * Get the status of the world
          */
-        bool getStatus() const {return _status;}
+        bool getStatus() const {return !_status;}
 
         /**
          * Run the world
