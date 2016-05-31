@@ -536,16 +536,16 @@ void World::applyConfig()
                 sendMessage(name, objMembers[idxAttr], values);
                 if (type != "scene")
                 {
+                    // We also the attribute locally, if the object exists
+                    set(name, objMembers[idxAttr], values, false);
+
                     // The attribute is also sent to the master scene
                     if (s.first != _masterSceneName)
                     {
-                        Values ghostValues {name, objMembers[idxAttr]};
-                        for (auto& v : values)
-                            ghostValues.push_back(v);
-                        sendMessage(_masterSceneName, "setGhost", ghostValues);
+                        values.push_front(objMembers[idxAttr]);
+                        values.push_front(name);
+                        sendMessage(_masterSceneName, "setGhost", values);
                     }
-                    // We also set the attribute locally, if the object exists
-                    set(name, objMembers[idxAttr], values, false);
                 }
 
                 idxAttr++;

@@ -93,6 +93,11 @@ BaseObjectPtr Scene::add(string type, string name)
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
+    // Check whether an object of this name already exists
+    auto objectIt = _objects.find(name);
+    if (objectIt != _objects.end())
+        return {};
+
     BaseObjectPtr obj;
     // Create the wanted object
     if(!_mainWindow->setAsCurrentContext())
@@ -165,6 +170,11 @@ void Scene::addGhost(string type, string name)
 {
     // Currently, only Cameras can be ghosts
     if (type != string("camera") && type != string("warp"))
+        return;
+
+    // Check whether an object of this name already exists
+    auto objectIt = _ghostObjects.find(name);
+    if (objectIt != _ghostObjects.end())
         return;
 
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
