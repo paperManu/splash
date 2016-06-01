@@ -415,6 +415,18 @@ class BaseObject
             return root;
         }
 
+        /**
+         * Get the description for the given attribute, if it exists
+         */
+        std::string getAttributeDescription(const std::string& name)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+                return attr->second.getDescription();
+            else
+                return {};
+        }
+
     // Pubic attributes
     public:
         bool _savable {true};
@@ -467,7 +479,7 @@ class BaseObject
         }
 
         /**
-         * Set and get the description for the given attribute, if it exists
+         * Set and the description for the given attribute, if it exists
          */
         void setAttributeDescription(const std::string& name, const std::string& description)
         {
@@ -476,15 +488,6 @@ class BaseObject
             {
                 attr->second.setDescription(description);
             }
-        }
-
-        std::string getAttributeDescription(const std::string& name)
-        {
-            auto attr = _attribFunctions.find(name);
-            if (attr != _attribFunctions.end())
-                return attr->second.getDescription();
-            else
-                return {};
         }
 
         /**

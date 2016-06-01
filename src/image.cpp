@@ -371,6 +371,7 @@ void Image::registerAttributes()
     }, [&]() -> Values {
         return {_flip};
     });
+    setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
     addAttribute("flop", [&](const Values& args) {
         if (args.size() < 1)
@@ -380,6 +381,7 @@ void Image::registerAttributes()
     }, [&]() -> Values {
         return {_flop};
     });
+    setAttributeDescription("flip", "Mirrors the image on the X axis");
 
     addAttribute("file", [&](const Values& args) {
         if (args.size() < 1)

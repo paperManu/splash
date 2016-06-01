@@ -199,13 +199,35 @@ Values Scene::getAttributeFromObject(string name, string attribute)
         auto& object = objectIt->second;
         object->getAttribute(attribute, values);
     }
-    
     // Ask the World if it knows more about this object
-    if (values.size() == 0)
+    else
     {
         auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute});
         for (unsigned int i = 1; i < answer.size(); ++i)
             values.push_back(answer[i]);
+    }
+
+    return values;
+}
+
+/*************/
+Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
+{
+    auto objectIt = _objects.find(name);
+    
+    Values values;
+    if (objectIt != _objects.end())
+    {
+        auto& object = objectIt->second;
+        values.push_back(object->getAttributeDescription(attribute));
+    }
+
+    // Ask the World if it knows more about this object
+    if (values.size() == 0 || values[0].asString() == "")
+    {
+        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute});
+        values.clear();
+        values.push_back(answer[1]);
     }
 
     return values;

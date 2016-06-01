@@ -1069,16 +1069,37 @@ void World::registerAttributes()
                 Values values {};
                 object->getAttribute(attrName, values);
 
-                SThread::pool.enqueueWithoutId([=]() {
-                    Values sentValues {"getAttribute"};
-                    for (auto& v : values)
-                        sentValues.push_back(v);
-                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", sentValues);
-                });
+                values.push_front("getAttribute");
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
             }
         });
 
         return true;
+    });
+
+    addAttribute("getAttributeDescription", [&](const Values& args) {
+        if (args.size() != 2)
+            return false;
+
+        addTask([=]() {
+            auto objectName = args[0].asString();
+            auto attrName = args[1].asString();
+
+            auto objectIt = _objects.find(objectName);
+            // If the object exists locally
+            if (objectIt != _objects.end())
+            {
+                auto& object = objectIt->second;
+                Values values {"getAttributeDescription"};
+                values.push_back(object->getAttributeDescription(attrName));
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
+            }
+            // Else, ask the Scenes for some info
+            else
+            {
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
+            }
+        });
     });
 
     addAttribute("loadConfig", [&](const Values& args) {

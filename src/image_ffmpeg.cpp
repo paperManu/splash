@@ -675,6 +675,7 @@ void Image_FFmpeg::registerAttributes()
         return {_seekTime};
     });
     setAttributeParameter("seek", false, true);
+    setAttributeDescription("seek", "Change the read position in the video file");
 
     addAttribute("useClock", [&](const Values& args) {
         if (args.size() != 1)

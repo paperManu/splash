@@ -89,6 +89,12 @@ class Scene : public RootObject
         Values getAttributeFromObject(std::string name, std::string attribute);
 
         /**
+         * Get an attribute description
+         * Trie locally and to the World
+         */
+        Values getAttributeDescriptionFromObject(std::string name, std::string attribute);
+
+        /**
          * Get the current configuration of the scene as a json object
          */
         Json::Value getConfigurationAsJson();

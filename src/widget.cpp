@@ -326,6 +326,13 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 }
             }
         }
+
+        if (ImGui::IsItemHovered())
+        {
+            auto answer = scene->getAttributeDescriptionFromObject(objName, attr.first);
+            if (answer.size() != 0)
+                ImGui::SetTooltip(answer[0].asString().c_str());
+        }
     }
 }
 
