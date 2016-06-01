@@ -1038,7 +1038,7 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("size", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         setOutputSize(args[0].asInt(), args[1].asInt());

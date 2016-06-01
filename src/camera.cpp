@@ -1277,7 +1277,7 @@ void Camera::sendCalibrationPointsToObjects()
 /*************/
 void Camera::registerAttributes()
 {
-    _attribFunctions["eye"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("eye", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -1286,7 +1286,7 @@ void Camera::registerAttributes()
         return {_eye.x, _eye.y, _eye.z};
     });
 
-    _attribFunctions["target"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("target", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -1295,7 +1295,7 @@ void Camera::registerAttributes()
         return {_target.x, _target.y, _target.z};
     });
 
-    _attribFunctions["fov"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("fov", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _fov = args[0].asFloat();
@@ -1304,7 +1304,7 @@ void Camera::registerAttributes()
         return {_fov};
     });
 
-    _attribFunctions["up"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("up", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -1313,7 +1313,7 @@ void Camera::registerAttributes()
         return {_up.x, _up.y, _up.z};
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("size", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         _newWidth = args[0].asInt();
@@ -1324,7 +1324,7 @@ void Camera::registerAttributes()
         return {_width, _height};
     });
 
-    _attribFunctions["principalPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("principalPoint", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         _cx = args[0].asFloat();
@@ -1334,7 +1334,7 @@ void Camera::registerAttributes()
         return {_cx, _cy};
     });
 
-    _attribFunctions["weightedCalibrationPoints"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("weightedCalibrationPoints", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _weightedCalibrationPoints = args[0].asInt();
@@ -1344,7 +1344,7 @@ void Camera::registerAttributes()
     });
 
     // More advanced attributes
-    _attribFunctions["moveEye"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("moveEye", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _eye.x = _eye.x + args[0].asFloat();
@@ -1353,7 +1353,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["moveTarget"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("moveTarget", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _target.x = _target.x + args[0].asFloat();
@@ -1362,7 +1362,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["rotateAroundTarget"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("rotateAroundTarget", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         dvec3 direction = _target - _eye;
@@ -1379,7 +1379,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["rotateAroundPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("rotateAroundPoint", [&](const Values& args) {
         if (args.size() < 6)
             return false;
         dvec3 point(args[3].asFloat(), args[4].asFloat(), args[5].asFloat());
@@ -1414,7 +1414,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["pan"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("pan", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         dvec4 panV(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), 0.f);
@@ -1429,7 +1429,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["forward"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("forward", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1441,26 +1441,26 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["addCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("addCalibrationPoint", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         addCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
         return true;
     });
 
-    _attribFunctions["deselectedCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("deselectedCalibrationPoint", [&](const Values& args) {
         deselectCalibrationPoint();
         return true;
     });
 
-    _attribFunctions["moveCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("moveCalibrationPoint", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         moveCalibrationPoint(args[0].asFloat(), args[1].asFloat());
         return true;
     });
 
-    _attribFunctions["removeCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("removeCalibrationPoint", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         else if (args.size() == 3)
@@ -1470,18 +1470,18 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["setCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("setCalibrationPoint", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()});
     });
 
-    _attribFunctions["selectNextCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("selectNextCalibrationPoint", [&](const Values& args) {
         _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
         return true;
     });
 
-    _attribFunctions["selectPreviousCalibrationPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("selectPreviousCalibrationPoint", [&](const Values& args) {
         if (_selectedCalibrationPoint == 0)
             _selectedCalibrationPoint = _calibrationPoints.size() - 1;
         else
@@ -1490,7 +1490,7 @@ void Camera::registerAttributes()
     });
 
     // Store / restore calibration points
-    _attribFunctions["calibrationPoints"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("calibrationPoints", [&](const Values& args) {
         for (auto& arg : args)
         {
             if (arg.getType() != Value::Type::v)
@@ -1522,7 +1522,7 @@ void Camera::registerAttributes()
     });
 
     // Rendering options
-    _attribFunctions["blendWidth"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("blendWidth", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _blendWidth = args[0].asFloat();
@@ -1531,7 +1531,7 @@ void Camera::registerAttributes()
         return {_blendWidth};
     });
 
-    _attribFunctions["blendPrecision"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("blendPrecision", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _blendPrecision = args[0].asFloat();
@@ -1540,7 +1540,7 @@ void Camera::registerAttributes()
         return {_blendPrecision};
     });
 
-    _attribFunctions["clearColor"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("clearColor", [&](const Values& args) {
         if (args.size() == 0)
             _clearColor = CAMERA_FLASH_COLOR;
         else if (args.size() == 4)
@@ -1551,7 +1551,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("colorTemperature", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _colorTemperature = args[0].asFloat();
@@ -1561,7 +1561,7 @@ void Camera::registerAttributes()
         return {_colorTemperature};
     });
 
-    _attribFunctions["colorLUT"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("colorLUT", [&](const Values& args) {
         if (args.size() < 1 || args[0].getType() != Value::Type::v )
             return false;
         if (args[0].asValues().size() != 768)
@@ -1580,7 +1580,7 @@ void Camera::registerAttributes()
             return {};
     });
 
-    _attribFunctions["activateColorLUT"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("activateColorLUT", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -1601,7 +1601,7 @@ void Camera::registerAttributes()
         return {(int)_isColorLUTActivated};
     });
 
-    _attribFunctions["colorMixMatrix"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("colorMixMatrix", [&](const Values& args) {
         if (args.size() != 1 || args[0].getType() != Value::Type::v)
             return false;
         if (args[0].asValues().size() != 9)
@@ -1619,7 +1619,7 @@ void Camera::registerAttributes()
         return {m};
     });
 
-    _attribFunctions["brightness"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("brightness", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _brightness = args[0].asFloat();
@@ -1628,7 +1628,7 @@ void Camera::registerAttributes()
         return {_brightness};
     });
 
-    _attribFunctions["frame"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("frame", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1638,7 +1638,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["hide"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("hide", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1650,7 +1650,7 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("wireframe", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -1672,7 +1672,7 @@ void Camera::registerAttributes()
 
     //
     // Various options
-    _attribFunctions["displayCalibration"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("displayCalibration", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)
@@ -1683,7 +1683,7 @@ void Camera::registerAttributes()
     });
 
     // Shows all calibration points for all cameras linked to the same objects
-    _attribFunctions["displayAllCalibrations"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("displayAllCalibrations", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1691,17 +1691,17 @@ void Camera::registerAttributes()
         return true;
     });
 
-    _attribFunctions["switchShowAllCalibrationPoints"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("switchShowAllCalibrationPoints", [&](const Values& args) {
         _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
     });
 
-    _attribFunctions["switchDisplayAllCalibration"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("switchDisplayAllCalibration", [&](const Values& args) {
         _displayAllCalibrations = !_displayAllCalibrations;
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("flashBG", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _flashBG = args[0].asInt();

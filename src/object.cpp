@@ -569,14 +569,14 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    _attribFunctions["activateVertexBlending"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("activateVertexBlending", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _vertexBlendingActive = args[0].asInt();
         return true;
     });
     
-    _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("position", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
@@ -585,7 +585,7 @@ void Object::registerAttributes()
         return {_position.x, _position.y, _position.z};
     });
 
-    _attribFunctions["rotation"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("rotation", [&](const Values& args) {
         if (args.size() < 3)
             return false;
         _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
@@ -594,7 +594,7 @@ void Object::registerAttributes()
         return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("scale", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -608,7 +608,7 @@ void Object::registerAttributes()
         return {_scale.x, _scale.y, _scale.z};
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sideness", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -618,7 +618,7 @@ void Object::registerAttributes()
         return {_sideness};
     });
 
-    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("fill", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _fill = args[0].asString();
@@ -627,14 +627,14 @@ void Object::registerAttributes()
         return {_fill};
     });
 
-    _attribFunctions["color"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("color", [&](const Values& args) {
         if (args.size() < 4)
             return false;
         _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
     });
 
-    _attribFunctions["normalExponent"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("normalExponent", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 

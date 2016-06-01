@@ -60,7 +60,7 @@ void Texture_Syphon::unbind()
 /**************/
 void Texture_Syphon::registerAttributes()
 {
-    _attribFunctions["connect"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("connect", [&](const Values& args) {
         if (args.size() == 0)
         {
             _serverName = "";

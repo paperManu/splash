@@ -365,7 +365,7 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 /*************/
 void Image_GPhoto::registerAttributes()
 {
-    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("srgb", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _srgb = (args[0].asInt() > 0) ? true : false;
@@ -374,7 +374,7 @@ void Image_GPhoto::registerAttributes()
         return {_srgb};
     });
 
-    _attribFunctions["aperture"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("aperture", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         return doSetProperty("aperture", args[0].asString());
@@ -386,7 +386,7 @@ void Image_GPhoto::registerAttributes()
             return {};
     });
 
-    _attribFunctions["isospeed"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("isospeed", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         return doSetProperty("iso", args[0].asString());
@@ -397,7 +397,7 @@ void Image_GPhoto::registerAttributes()
         else
             return {};
     });
-    _attribFunctions["shutterspeed"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("shutterspeed", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
@@ -410,14 +410,14 @@ void Image_GPhoto::registerAttributes()
     });
 
     // Actions
-    _attribFunctions["capture"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("capture", [&](const Values& args) {
         SThread::pool.enqueue([&]() {
             capture();
         });
         return true;
     });
 
-    _attribFunctions["detect"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("detect", [&](const Values& args) {
         SThread::pool.enqueue([&]() {
             detectCameras();
         });
@@ -425,7 +425,7 @@ void Image_GPhoto::registerAttributes()
     });
 
     // Status
-    _attribFunctions["ready"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("ready", [&](const Values& args) {
         return false;
     }, [&]() -> Values {
         lock_guard<recursive_mutex> lock(_gpMutex);

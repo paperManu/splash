@@ -825,7 +825,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 /*************/
 void ColorCalibrator::registerAttributes()
 {
-    _attribFunctions["colorSamples"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("colorSamples", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _colorCurveSamples = std::max(3, args[0].asInt());
@@ -834,7 +834,7 @@ void ColorCalibrator::registerAttributes()
         return {(int)_colorCurveSamples};
     });
 
-    _attribFunctions["detectionThresholdFactor"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("detectionThresholdFactor", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _displayDetectionThreshold = std::max(0.5f, args[0].asFloat());
@@ -843,7 +843,7 @@ void ColorCalibrator::registerAttributes()
         return {_displayDetectionThreshold};
     });
 
-    _attribFunctions["imagePerHDR"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("imagePerHDR", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _imagePerHDR = std::max(1, args[0].asInt());
@@ -852,7 +852,7 @@ void ColorCalibrator::registerAttributes()
         return {_imagePerHDR};
     });
 
-    _attribFunctions["hdrStep"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("hdrStep", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _hdrStep = std::max(0.3f, args[0].asFloat());
@@ -861,7 +861,7 @@ void ColorCalibrator::registerAttributes()
         return {_hdrStep};
     });
 
-    _attribFunctions["equalizeMethod"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("equalizeMethod", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _equalizationMethod = std::max(0, std::min(2, args[0].asInt()));

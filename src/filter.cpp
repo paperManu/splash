@@ -233,7 +233,7 @@ void Filter::setOutput()
 /*************/
 void Filter::registerAttributes()
 {
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("blackLevel", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _blackLevel = args[0].asFloat();
@@ -243,7 +243,7 @@ void Filter::registerAttributes()
         return {_blackLevel};
     });
 
-    _attribFunctions["brightness"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("brightness", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _brightness = args[0].asFloat();
@@ -253,7 +253,7 @@ void Filter::registerAttributes()
         return {_brightness};
     });
 
-    _attribFunctions["contrast"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("contrast", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _contrast = args[0].asFloat();
@@ -263,7 +263,7 @@ void Filter::registerAttributes()
         return {_contrast};
     });
 
-    _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("colorTemperature", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _colorTemperature = args[0].asFloat();
@@ -274,7 +274,7 @@ void Filter::registerAttributes()
         return {_colorTemperature};
     });
 
-    _attribFunctions["saturation"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("saturation", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _saturation = args[0].asFloat();

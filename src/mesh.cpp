@@ -362,7 +362,7 @@ void Mesh::createDefaultMesh(int subdiv)
 /*************/
 void Mesh::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("file", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         return read(args[0].asString());
@@ -370,7 +370,7 @@ void Mesh::registerAttributes()
         return {_filepath};
     });
     
-    _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("benchmark", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         if (args[0].asInt() > 0)

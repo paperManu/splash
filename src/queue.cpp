@@ -294,7 +294,7 @@ shared_ptr<BufferObject> Queue::createSource(string type)
 /*************/
 void Queue::registerAttributes()
 {
-    _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("loop", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -303,9 +303,9 @@ void Queue::registerAttributes()
     }, [&]() -> Values {
         return {_loop};
     });
-    _attribFunctions["loop"].doUpdateDistant(true);
+    setAttributeParameter("loop", true, true);
 
-    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("pause", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -315,10 +315,9 @@ void Queue::registerAttributes()
     }, [&]() -> Values {
         return {_paused};
     });
-    _attribFunctions["pause"].doUpdateDistant(true);
-    _attribFunctions["pause"].savable(false);
+    setAttributeParameter("pause", false, true);
 
-    _attribFunctions["playlist"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("playlist", [&](const Values& args) {
         unique_lock<mutex> lock(_playlistMutex);
         _playlist.clear();
 
@@ -362,9 +361,9 @@ void Queue::registerAttributes()
 
         return playlist;
     });
-    _attribFunctions["playlist"].doUpdateDistant(true);
+    setAttributeParameter("playlist", true, true);
 
-    _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("seek", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -375,10 +374,9 @@ void Queue::registerAttributes()
     }, [&]() -> Values {
         return {(float)_currentTime / 1e6};
     });
-    _attribFunctions["seek"].doUpdateDistant(true);
-    _attribFunctions["seek"].savable(false);
+    setAttributeParameter("seek", false, true);
 
-    _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("useClock", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -390,7 +388,7 @@ void Queue::registerAttributes()
     }, [&]() -> Values {
         return {(int)_useClock};
     });
-    _attribFunctions["useClock"].doUpdateDistant(true);
+    setAttributeParameter("useClock", true, true);
 }
 
 /*************/
@@ -457,7 +455,7 @@ void QueueSurrogate::registerAttributes()
      * Create the object for the current source type
      * Args holds the object type (Image, Texture...)
      */
-    _attribFunctions["source"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("source", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 

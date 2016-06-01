@@ -746,7 +746,7 @@ void Window::updateWindowShape()
 /*************/
 void Window::registerAttributes()
 {
-    _attribFunctions["fullscreen"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("fullscreen", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         switchFullscreen(args[0].asInt());
@@ -755,7 +755,7 @@ void Window::registerAttributes()
         return {_screenId};
     });
 
-    _attribFunctions["decorated"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("decorated", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _withDecoration = args[0].asInt() == 0 ? false : true;
@@ -769,7 +769,7 @@ void Window::registerAttributes()
             return {(int)_withDecoration};
     });
 
-    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("srgb", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         if (args[0].asInt() != 0)
@@ -781,7 +781,7 @@ void Window::registerAttributes()
         return {_srgb};
     });
 
-    _attribFunctions["gamma"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("gamma", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _gammaCorrection = args[0].asFloat();
@@ -791,7 +791,7 @@ void Window::registerAttributes()
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("layout", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -810,7 +810,7 @@ void Window::registerAttributes()
         return _layout;
     });
 
-    _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("position", [&](const Values& args) {
         if (args.size() != 2)
             return false;
         _windowRect[0] = args[0].asInt();
@@ -824,7 +824,7 @@ void Window::registerAttributes()
             return {_windowRect[0], _windowRect[1]};
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("size", [&](const Values& args) {
         if (args.size() != 2)
             return false;
         _windowRect[2] = args[0].asInt();
@@ -838,7 +838,7 @@ void Window::registerAttributes()
             return {_windowRect[2], _windowRect[3]};
     });
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("swapInterval", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _swapInterval = max(-1, args[0].asInt());
@@ -846,14 +846,14 @@ void Window::registerAttributes()
         return true;
     });
 
-    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("swapTest", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _swapSynchronizationTesting = args[0].asInt();
         return true;
     });
 
-    _attribFunctions["swapTestColor"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("swapTestColor", [&](const Values& args) {
         if (args.size() != 4)
             return false;
         _swapSynchronizationColor = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());

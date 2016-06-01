@@ -235,7 +235,7 @@ void Mesh_BezierPatch::updatePatch()
 /*************/
 void Mesh_BezierPatch::registerAttributes()
 {
-    _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchControl", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -267,7 +267,7 @@ void Mesh_BezierPatch::registerAttributes()
         return v;
     });
 
-    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchSize", [&](const Values& args) {
         if (args.size() != 2)
             return false;
         createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
@@ -276,7 +276,7 @@ void Mesh_BezierPatch::registerAttributes()
         return {_patch.size.x, _patch.size.y};
     });
 
-    _attribFunctions["patchResolution"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchResolution", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _patchResolution = std::max(4, args[0].asInt());

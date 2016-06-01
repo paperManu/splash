@@ -309,7 +309,7 @@ void Warp::setOutput()
 /*************/
 void Warp::registerAttributes()
 {
-    _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchControl", [&](const Values& args) {
         if (!_screenMesh)
             return false;
         return _screenMesh->setAttribute("patchControl", args);
@@ -322,7 +322,7 @@ void Warp::registerAttributes()
         return v;
     });
 
-    _attribFunctions["patchResolution"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchResolution", [&](const Values& args) {
         if (!_screenMesh)
             return false;
         return _screenMesh->setAttribute("patchResolution", args);
@@ -335,7 +335,7 @@ void Warp::registerAttributes()
         return v;
     });
 
-    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchSize", [&](const Values& args) {
         if (!_screenMesh)
             return false;
         return _screenMesh->setAttribute("patchSize", args);
@@ -350,7 +350,7 @@ void Warp::registerAttributes()
 
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
-    _attribFunctions["showControlLattice"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("showControlLattice", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         _showControlPoints = args[0].asInt();
@@ -360,7 +360,7 @@ void Warp::registerAttributes()
     });
 
     // Show a single control point
-    _attribFunctions["showControlPoint"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("showControlPoint", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         auto index = args[0].asInt();

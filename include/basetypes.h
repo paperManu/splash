@@ -125,10 +125,15 @@ struct AttributeFunctor
         bool savable() const {return _savable;}
         void savable(bool save) {_savable = save;}
 
+        void setDescription(const std::string& desc) {_description = desc;}
+        std::string getDescription() {return _description;}
+
     private:
         mutable std::mutex _defaultFuncMutex {};
         std::function<bool(const Values&)> _setFunc {};
         std::function<const Values()> _getFunc {};
+
+        std::string _description {};
 
         bool _defaultSetAndGet {true};
         Values _values; // Holds the values for the default set and get functions
@@ -431,14 +436,14 @@ class BaseObject
         // Initialize generic attributes
         void init()
         {
-            _attribFunctions["configFilePath"] = AttributeFunctor([&](const Values& args) {
+            addAttribute("configFilePath", [&](const Values& args) {
                 if (args.size() == 0)
                     return false;
                 _configFilePath = args[0].asString();
                 return true;
             });
 
-            _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
+            addAttribute("setName", [&](const Values& args) {
                 if (args.size() == 0)
                     return false;
                 setName(args[0].asString());
@@ -447,7 +452,56 @@ class BaseObject
         }
 
         /**
-         * Register new functors to modify attributes
+         * Add a new attribute to this object
+         */
+        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set)
+        {
+            _attribFunctions[name] = AttributeFunctor(set);
+            return _attribFunctions[name];
+        }
+
+        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get)
+        {
+            _attribFunctions[name] = AttributeFunctor(set, get);
+            return _attribFunctions[name];
+        }
+
+        /**
+         * Set and get the description for the given attribute, if it exists
+         */
+        void setAttributeDescription(const std::string& name, const std::string& description)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+            {
+                attr->second.setDescription(description);
+            }
+        }
+
+        std::string getAttributeDescription(const std::string& name)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+                return attr->second.getDescription();
+            else
+                return {};
+        }
+
+        /**
+         * Set parameters for a given attribute
+         */
+        void setAttributeParameter(const std::string& name, bool savable, bool updateDistant)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+            {
+                attr->second.savable(savable);
+                attr->second.doUpdateDistant(updateDistant);
+            }
+        }
+
+        /**
+         * Register new attributes
          */
         virtual void registerAttributes() = 0;
 };
@@ -551,7 +605,7 @@ class RootObject : public BaseObject
     public:
         RootObject()
         {
-            _attribFunctions["answerMessage"] = AttributeFunctor([&](const Values& args) {
+            addAttribute("answerMessage", [&](const Values& args) {
                 if (args.size() == 0 || args[0].asString() != _answerExpected)
                     return false;
                 std::unique_lock<std::mutex> conditionLock(conditionMutex);

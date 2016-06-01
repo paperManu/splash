@@ -529,7 +529,7 @@ void Texture_Image::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture_Image::registerAttributes()
 {
-    _attribFunctions["filtering"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("filtering", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _filtering = args[0].asInt() > 0 ? true : false;
@@ -538,14 +538,14 @@ void Texture_Image::registerAttributes()
         return {_filtering};
     });
 
-    _attribFunctions["clampToEdge"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("clampToEdge", [&](const Values& args) {
         if (args.size() != 0)
             return false;
         _glTextureWrap = args[0].asInt() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
         return true;
     });
 
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("size", [&](const Values& args) {
         if (args.size() < 2)
             return false;
         resize(args[0].asInt(), args[1].asInt());

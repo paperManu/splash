@@ -681,7 +681,7 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("uniform", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -714,7 +714,7 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("fill", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -822,7 +822,7 @@ void Shader::registerGraphicAttributes()
         return {fill};
     });
 
-    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("scale", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         else if (args.size() < 3)
@@ -842,7 +842,7 @@ void Shader::registerGraphicAttributes()
         return true;
     });
 
-    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sideness", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -853,7 +853,7 @@ void Shader::registerGraphicAttributes()
     });
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("layout", [&](const Values& args) {
         if (args.size() < 1 || args.size() > 4)
             return false;
 
@@ -877,7 +877,7 @@ void Shader::registerGraphicAttributes()
 /*************/
 void Shader::registerComputeAttributes()
 {
-    _attribFunctions["computePhase"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("computePhase", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -909,7 +909,7 @@ void Shader::registerComputeAttributes()
 /*************/
 void Shader::registerFeedbackAttributes()
 {
-    _attribFunctions["feedbackPhase"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("feedbackPhase", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -930,7 +930,7 @@ void Shader::registerFeedbackAttributes()
         return true;
     });
 
-    _attribFunctions["feedbackVaryings"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("feedbackVaryings", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 

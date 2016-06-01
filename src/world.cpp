@@ -963,7 +963,7 @@ void World::setAttribute(string name, string attrib, const Values& args)
 /*************/
 void World::registerAttributes()
 {
-    _attribFunctions["addObject"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("addObject", [&](const Values& args) {
         if (args.size() == 0 || args.size() > 2)
             return false;
 
@@ -991,14 +991,14 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sceneLaunched"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sceneLaunched", [&](const Values& args) {
         unique_lock<mutex> lockChildProcess(_childProcessMutex);
         _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
     });
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("computeBlending", [&](const Values& args) {
         if (args.size() == 0)
             return false;
 
@@ -1010,7 +1010,7 @@ void World::registerAttributes()
         return {_blendingMode};
     });
 
-    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("deleteObject", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1034,7 +1034,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("flashBG", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -1045,7 +1045,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("framerate", [&](const Values& args) {
         if (args.size() < 1)
             return false;
         _worldFramerate = std::max(1, args[0].asInt());
@@ -1054,7 +1054,7 @@ void World::registerAttributes()
         return {(int)_worldFramerate};
     });
 
-    _attribFunctions["getAttribute"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("getAttribute", [&](const Values& args) {
         if (args.size() != 2)
             return false;
 
@@ -1081,7 +1081,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["loadConfig"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("loadConfig", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         string filename = args[0].asString();
@@ -1116,7 +1116,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["copyCameraParameters"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("copyCameraParameters", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1127,7 +1127,7 @@ void World::registerAttributes()
     });
 
 #if HAVE_PORTAUDIO
-    _attribFunctions["clockDeviceName"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("clockDeviceName", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1145,19 +1145,19 @@ void World::registerAttributes()
     });
 #endif
 
-    _attribFunctions["pong"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("pong", [&](const Values& args) {
         if (args.size() != 1)
             return false;
         Timer::get() >> "pingScene " + args[0].asString();
         return true;
     });
 
-    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("quit", [&](const Values& args) {
         _quit = true;
         return true;
     });
 
-    _attribFunctions["replaceObject"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("replaceObject", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -1178,7 +1178,7 @@ void World::registerAttributes()
         });
     });
 
-    _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)
             _configFilename = args[0].asString();
 
@@ -1189,7 +1189,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sendAll"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sendAll", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -1216,7 +1216,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sendAllScenes"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sendAllScenes", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -1230,7 +1230,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["sendToMasterScene"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sendToMasterScene", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -1244,7 +1244,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("swapTest", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 
@@ -1255,7 +1255,7 @@ void World::registerAttributes()
         return true;
     });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("wireframe", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
