@@ -364,63 +364,53 @@ void Image::createPattern()
 void Image::registerAttributes()
 {
     addAttribute("flip", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _flip = (args[0].asInt() > 0) ? true : false;
         return true;
     }, [&]() -> Values {
         return {_flip};
-    });
+    }, {'i'});
     setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
     addAttribute("flop", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _flop = (args[0].asInt() > 0) ? true : false;
         return true;
     }, [&]() -> Values {
         return {_flop};
-    });
-    setAttributeDescription("flip", "Mirrors the image on the X axis");
+    }, {'i'});
+    setAttributeDescription("flop", "Mirrors the image on the X axis");
 
     addAttribute("file", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         return read(args[0].asString());
     }, [&]() -> Values {
         return {_filepath};
-    });
+    }, {'s'});
+    setAttributeDescription("file", "Image file to load");
 
     addAttribute("srgb", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _srgb = (args[0].asInt() > 0) ? true : false;     
         return true;
     }, [&]() -> Values {
         return {_srgb};
-    });
+    }, {'i'});
+    setAttributeDescription("srgb", "Set to 1 if the image file is stored as sRGB");
 
     addAttribute("benchmark", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         if (args[0].asInt() > 0)
             _benchmark = true;
         else
             _benchmark = false;
         return true;
-    });
+    }, {'i'});
+    setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
 
     addAttribute("pattern", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         if (args[0].asInt() == 1)
             createPattern();
-
         return true;
     }, [&]() -> Values {
         return {false};
-    });
+    }, {'i'});
+    setAttributeDescription("pattern", "Set to 1 to replace the image with a pattern");
 }
 
 } // end of namespace

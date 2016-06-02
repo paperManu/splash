@@ -45,19 +45,22 @@ struct AttributeFunctor
     public:
         AttributeFunctor() {};
 
-        AttributeFunctor(std::function<bool(const Values&)> setFunc)
+        AttributeFunctor(std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {})
         {
             _setFunc = setFunc;
             _getFunc = std::function<const Values()>();
             _defaultSetAndGet = false;
+            _valuesTypes = types;
         }
         
         AttributeFunctor(std::function<bool(const Values&)> setFunc,
-                            std::function<const Values()> getFunc)
+                            std::function<const Values()> getFunc,
+                            const std::vector<char>& types = {})
         {
             _setFunc = setFunc;
             _getFunc = getFunc;
             _defaultSetAndGet = false;
+            _valuesTypes = types;
         }
 
         AttributeFunctor(const AttributeFunctor&) = delete;
@@ -74,8 +77,10 @@ struct AttributeFunctor
             {
                 _setFunc = std::move(a._setFunc);
                 _getFunc = std::move(a._getFunc);
-                _defaultSetAndGet = std::move(a._defaultSetAndGet);
+                _description = std::move(a._description);
                 _values = std::move(a._values);
+                _valuesTypes = std::move(a._valuesTypes);
+                _defaultSetAndGet = std::move(a._defaultSetAndGet);
                 _doUpdateDistant = std::move(a._doUpdateDistant);
                 _savable = std::move(a._savable);
             }
@@ -89,12 +94,26 @@ struct AttributeFunctor
             {
                 std::unique_lock<std::mutex> lock(_defaultFuncMutex);
                 _values = args;
+
+                _valuesTypes.clear();
+                for (const auto& a : args)
+                    _valuesTypes.push_back(a.getTypeAsChar());
+
                 return true;
             }
             else if (!_setFunc)
             {
                 return false;
             }
+
+            // Check for arguments correctness
+            // Some attributes may have an unlimited number of arguments, so we do not test for equality
+            if (args.size() < _valuesTypes.size())
+                return false;
+
+            for (int i = 0; i < _valuesTypes.size(); ++i)
+                if (args[i].getTypeAsChar() != _valuesTypes[i])
+                    return false;
 
             return _setFunc(std::forward<const Values&>(args));
         }
@@ -133,11 +152,11 @@ struct AttributeFunctor
         std::function<bool(const Values&)> _setFunc {};
         std::function<const Values()> _getFunc {};
 
-        std::string _description {};
+        std::string _description {}; // Attribute description
+        Values _values; // Holds the values for the default set and get functions
+        std::vector<char> _valuesTypes; // List of the types held in _values
 
         bool _defaultSetAndGet {true};
-        Values _values; // Holds the values for the default set and get functions
-
         bool _doUpdateDistant {false}; // True if the World should send this attr values to Scenes
         bool _savable {true}; // True if this attribute should be saved
 };
@@ -466,15 +485,15 @@ class BaseObject
         /**
          * Add a new attribute to this object
          */
-        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set)
+        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {})
         {
-            _attribFunctions[name] = AttributeFunctor(set);
+            _attribFunctions[name] = AttributeFunctor(set, types);
             return _attribFunctions[name];
         }
 
-        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get)
+        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {})
         {
-            _attribFunctions[name] = AttributeFunctor(set, get);
+            _attribFunctions[name] = AttributeFunctor(set, get, types);
             return _attribFunctions[name];
         }
 

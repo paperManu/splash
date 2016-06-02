@@ -510,6 +510,22 @@ struct Value
         }
 
         Type getType() const {return _type;}
+        char getTypeAsChar() const 
+        {
+            switch (_type)
+            {
+            case i:
+                return 'i';
+            case l:
+                return 'l';
+            case f:
+                return 'f';
+            case s:
+                return 's';
+            case v:
+                return 'v';
+            }
+        }
         
         int size()
         {
