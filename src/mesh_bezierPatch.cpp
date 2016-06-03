@@ -270,19 +270,18 @@ void Mesh_BezierPatch::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_patch.size.x, _patch.size.y};
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     addAttribute("patchResolution", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         _patchResolution = std::max(4, args[0].asInt());
         _patchUpdated = true;
         updateTimestamp();
         return true;
     }, [&]() -> Values {
         return {_patchResolution};
-    }, {'n', 'n'});
-    setAttributeDescription("patchResolution", "Set the Bezier patch dimensions");
+    }, {'n'});
+    setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 }
 
 } // end of namespace

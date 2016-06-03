@@ -509,14 +509,14 @@ class BaseObject
         AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {})
         {
             _attribFunctions[name] = AttributeFunctor(name, set, types);
-            _attribFunctions[name].setObjectName(_name);
+            _attribFunctions[name].setObjectName(_type);
             return _attribFunctions[name];
         }
 
         AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {})
         {
             _attribFunctions[name] = AttributeFunctor(name, set, get, types);
-            _attribFunctions[name].setObjectName(_name);
+            _attribFunctions[name].setObjectName(_type);
             return _attribFunctions[name];
         }
 

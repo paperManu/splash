@@ -570,34 +570,28 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 void Object::registerAttributes()
 {
     addAttribute("activateVertexBlending", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         _vertexBlendingActive = args[0].asInt();
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("activateVertexBlending", "If set to 1, activate vertex blending");
     
     addAttribute("position", [&](const Values& args) {
-        if (args.size() < 3)
-            return false;
         _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
         return true;
     }, [&]() -> Values {
         return {_position.x, _position.y, _position.z};
-    });
+    }, {'n', 'n', 'n'});
+    setAttributeDescription("position", "Set the object position");
 
     addAttribute("rotation", [&](const Values& args) {
-        if (args.size() < 3)
-            return false;
         _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
         return true;
     }, [&]() -> Values {
         return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
-    });
+    }, {'n', 'n', 'n'});
+    setAttributeDescription("rotation", "Set the object rotation");
 
     addAttribute("scale", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         if (args.size() < 3)
             _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
         else
@@ -606,43 +600,38 @@ void Object::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_scale.x, _scale.y, _scale.z};
-    });
+    }, {'n'});
+    setAttributeDescription("scale", "Set the object scale");
 
     addAttribute("sideness", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         _sideness = args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_sideness};
-    });
+    }, {'n'});
+    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 
     addAttribute("fill", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _fill = args[0].asString();
         return true;
     }, [&]() -> Values {
         return {_fill};
-    });
+    }, {'s'});
+    setAttributeDescription("fill", "Set the fill type (texture, wireframe or color)");
 
     addAttribute("color", [&](const Values& args) {
-        if (args.size() < 4)
-            return false;
         _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
-    });
+    }, {'n', 'n', 'n', 'n'});
+    setAttributeDescription("color", "Set the object color, if the fill setting is set accordingly");
 
     addAttribute("normalExponent", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         _normalExponent = args[0].asFloat();
         return true;
     }, [&]() -> Values {
         return {_normalExponent};
-    });
+    }, {'n'});
+    setAttributeDescription("normalExponent", "If set to anything but 0.0, set the exponent applied to the normal factor for blending computation");
 }
 
 } // end of namespace

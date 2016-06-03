@@ -826,44 +826,38 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 void ColorCalibrator::registerAttributes()
 {
     addAttribute("colorSamples", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _colorCurveSamples = std::max(3, args[0].asInt());
         return true;
     }, [&]() -> Values {
         return {(int)_colorCurveSamples};
-    });
+    }, {'n'});
+    setAttributeDescription("colorSamples", "Set the number of color samples");
 
     addAttribute("detectionThresholdFactor", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _displayDetectionThreshold = std::max(0.5f, args[0].asFloat());
         return true;
     }, [&]() -> Values {
         return {_displayDetectionThreshold};
-    });
+    }, {'n'});
+    setAttributeDescription("detectionThresholdFactor", "Set the threshold for projection detection");
 
     addAttribute("imagePerHDR", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _imagePerHDR = std::max(1, args[0].asInt());
         return true;
     }, [&]() -> Values {
         return {_imagePerHDR};
-    });
+    }, {'n'});
+    setAttributeDescription("imagePerHDR", "Set the number of image per HDRI to shoot");
 
     addAttribute("hdrStep", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _hdrStep = std::max(0.3f, args[0].asFloat());
         return true;
     }, [&]() -> Values {
         return {_hdrStep};
-    });
+    }, {'n'});
+    setAttributeDescription("hdrStep", "Set the step between two images for HDRI");
 
     addAttribute("equalizeMethod", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _equalizationMethod = std::max(0, std::min(2, args[0].asInt()));
         if (_equalizationMethod == 0)
             equalizeWhiteBalances = std::bind(&ColorCalibrator::equalizeWhiteBalancesOnly, this);
@@ -874,7 +868,8 @@ void ColorCalibrator::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_equalizationMethod};
-    });
+    }, {'n'});
+    setAttributeDescription("equalizeMethod", "Set the color calibration method (0: WB only, 1: WB from weakest projector, 2: WB maximizing minimum luminance");
 }
 
 } // end of namespace
