@@ -34,6 +34,7 @@
 
 #include "coretypes.h"
 #include "link.h"
+#include "log.h"
 #include "timer.h"
 
 namespace Splash
@@ -45,18 +46,21 @@ struct AttributeFunctor
     public:
         AttributeFunctor() {};
 
-        AttributeFunctor(std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {})
+        AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {})
         {
+            _name = name;
             _setFunc = setFunc;
             _getFunc = std::function<const Values()>();
             _defaultSetAndGet = false;
             _valuesTypes = types;
         }
         
-        AttributeFunctor(std::function<bool(const Values&)> setFunc,
-                            std::function<const Values()> getFunc,
-                            const std::vector<char>& types = {})
+        AttributeFunctor(const std::string& name,
+                         std::function<bool(const Values&)> setFunc,
+                         std::function<const Values()> getFunc,
+                         const std::vector<char>& types = {})
         {
+            _name = name;
             _setFunc = setFunc;
             _getFunc = getFunc;
             _defaultSetAndGet = false;
@@ -75,6 +79,8 @@ struct AttributeFunctor
         {
             if (this != &a)
             {
+                _name = std::move(a._name);
+                _objectName = std::move(a._objectName);
                 _setFunc = std::move(a._setFunc);
                 _getFunc = std::move(a._getFunc);
                 _description = std::move(a._description);
@@ -109,11 +115,19 @@ struct AttributeFunctor
             // Check for arguments correctness
             // Some attributes may have an unlimited number of arguments, so we do not test for equality
             if (args.size() < _valuesTypes.size())
+            {
+                Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Wrong number of arguments (" << args.size() << " instead of " << _valuesTypes.size() << ")" << Log::endl;
                 return false;
+            }
 
             for (int i = 0; i < _valuesTypes.size(); ++i)
                 if (args[i].getTypeAsChar() != _valuesTypes[i])
+                {
+                    auto argChar = args[i].getTypeAsChar();
+                    auto expChar = _valuesTypes[i];
+                    Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&argChar, &argChar + 1) << ", expected " << std::string(&expChar, &expChar + 1) << Log::endl;
                     return false;
+                }
 
             return _setFunc(std::forward<const Values&>(args));
         }
@@ -145,13 +159,17 @@ struct AttributeFunctor
         void savable(bool save) {_savable = save;}
 
         void setDescription(const std::string& desc) {_description = desc;}
-        std::string getDescription() {return _description;}
+        std::string getDescription() const {return _description;}
+
+        void setObjectName(const std::string& objectName) {_objectName = objectName;}
 
     private:
         mutable std::mutex _defaultFuncMutex {};
         std::function<bool(const Values&)> _setFunc {};
         std::function<const Values()> _getFunc {};
 
+        std::string _objectName; // Name of the object holding this attribute
+        std::string _name; // Name of the attribute
         std::string _description {}; // Attribute description
         Values _values; // Holds the values for the default set and get functions
         std::vector<char> _valuesTypes; // List of the types held in _values
@@ -487,13 +505,15 @@ class BaseObject
          */
         AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {})
         {
-            _attribFunctions[name] = AttributeFunctor(set, types);
+            _attribFunctions[name] = AttributeFunctor(name, set, types);
+            _attribFunctions[name].setObjectName(_name);
             return _attribFunctions[name];
         }
 
         AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {})
         {
-            _attribFunctions[name] = AttributeFunctor(set, get, types);
+            _attribFunctions[name] = AttributeFunctor(name, set, get, types);
+            _attribFunctions[name].setObjectName(_name);
             return _attribFunctions[name];
         }
 
