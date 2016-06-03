@@ -368,7 +368,7 @@ void Image::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_flip};
-    }, {'i'});
+    }, {'n'});
     setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
     addAttribute("flop", [&](const Values& args) {
@@ -376,7 +376,7 @@ void Image::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_flop};
-    }, {'i'});
+    }, {'n'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
     addAttribute("file", [&](const Values& args) {
@@ -391,7 +391,7 @@ void Image::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_srgb};
-    }, {'i'});
+    }, {'n'});
     setAttributeDescription("srgb", "Set to 1 if the image file is stored as sRGB");
 
     addAttribute("benchmark", [&](const Values& args) {
@@ -400,7 +400,7 @@ void Image::registerAttributes()
         else
             _benchmark = false;
         return true;
-    }, {'i'});
+    }, {'n'});
     setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
 
     addAttribute("pattern", [&](const Values& args) {
@@ -409,7 +409,7 @@ void Image::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {false};
-    }, {'i'});
+    }, {'n'});
     setAttributeDescription("pattern", "Set to 1 to replace the image with a pattern");
 }
 

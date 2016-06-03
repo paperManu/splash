@@ -515,11 +515,11 @@ struct Value
             switch (_type)
             {
             case i:
-                return 'i';
+                return 'n';
             case l:
-                return 'l';
+                return 'n';
             case f:
-                return 'f';
+                return 'n';
             case s:
                 return 's';
             case v:

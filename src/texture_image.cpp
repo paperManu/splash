@@ -530,27 +530,24 @@ void Texture_Image::updatePbos(int width, int height, int bytes)
 void Texture_Image::registerAttributes()
 {
     addAttribute("filtering", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _filtering = args[0].asInt() > 0 ? true : false;
         return true;
     }, [&]() -> Values {
         return {_filtering};
-    });
+    }, {'n'});
+    setAttributeDescription("filtering", "Activate the mipmaps for this texture");
 
     addAttribute("clampToEdge", [&](const Values& args) {
-        if (args.size() != 0)
-            return false;
         _glTextureWrap = args[0].asInt() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("clampToEdge", "If set to 1, clamp the texture to the edge");
 
     addAttribute("size", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
         resize(args[0].asInt(), args[1].asInt());
         return true;
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("size", "Change the texture size");
 }
 
 } // end of namespace

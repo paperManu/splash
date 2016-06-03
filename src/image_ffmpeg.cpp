@@ -627,15 +627,12 @@ void Image_FFmpeg::registerAttributes()
     setAttributeParameter("duration", false, true);
 
     addAttribute("loop", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _loopOnVideo = (bool)args[0].asInt();
         return true;
     }, [&]() -> Values {
         int loop = _loopOnVideo;
         return {loop};
-    });
+    }, {'n'});
     setAttributeParameter("loop", true, true);
 
     addAttribute("remaining", [&](const Values& args) {
@@ -650,20 +647,14 @@ void Image_FFmpeg::registerAttributes()
     setAttributeParameter("remaining", false, true);
 
     addAttribute("pause", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _paused = args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_paused};
-    });
+    }, {'n'});
     setAttributeParameter("pause", false, true);
 
     addAttribute("seek", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         float seconds = args[0].asFloat();
         SThread::pool.enqueueWithoutId([=]() {
             seek(seconds);
@@ -673,14 +664,11 @@ void Image_FFmpeg::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_seekTime};
-    });
+    }, {'n'});
     setAttributeParameter("seek", false, true);
     setAttributeDescription("seek", "Change the read position in the video file");
 
     addAttribute("useClock", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _useClock = args[0].asInt();
         if (!_useClock)
             _clockTime = -1;
@@ -690,17 +678,14 @@ void Image_FFmpeg::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};
-    });
+    }, {'n'});
     setAttributeParameter("useClock", true, true);
 
     addAttribute("timeShift", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _shiftTime = args[0].asFloat();
 
         return true;
-    });
+    }, {'n'});
 }
 
 } // end of namespace

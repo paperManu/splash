@@ -365,18 +365,7 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 /*************/
 void Image_GPhoto::registerAttributes()
 {
-    addAttribute("srgb", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _srgb = (args[0].asInt() > 0) ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_srgb};
-    });
-
     addAttribute("aperture", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         return doSetProperty("aperture", args[0].asString());
     }, [&]() -> Values {
         string value;
@@ -384,11 +373,10 @@ void Image_GPhoto::registerAttributes()
             return {value};
         else
             return {};
-    });
+    }, {'n'});
+    setAttributeDescription("aperture", "Set the aperture of the lens");
 
     addAttribute("isospeed", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         return doSetProperty("iso", args[0].asString());
     }, [&]() -> Values {
         string value;
@@ -396,10 +384,10 @@ void Image_GPhoto::registerAttributes()
             return {value};
         else
             return {};
-    });
+    }, {'n'});
+    setAttributeDescription("isospeed", "Set the ISO value of the camera");
+
     addAttribute("shutterspeed", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
         return true;
     }, [&]() -> Values {
@@ -407,7 +395,8 @@ void Image_GPhoto::registerAttributes()
         doGetProperty("shutterspeed", value);
         float duration = getFloatFromShutterspeedString(value);
         return {duration};
-    });
+    }, {'n'});
+    setAttributeDescription("shutterspeed", "Set the camera shutter speed");
 
     // Actions
     addAttribute("capture", [&](const Values& args) {
@@ -416,6 +405,7 @@ void Image_GPhoto::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("capture", "Ask for the camera to shoot");
 
     addAttribute("detect", [&](const Values& args) {
         SThread::pool.enqueue([&]() {
@@ -423,6 +413,7 @@ void Image_GPhoto::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("detect", "Ask for camera detection");
 
     // Status
     addAttribute("ready", [&](const Values& args) {
@@ -434,6 +425,7 @@ void Image_GPhoto::registerAttributes()
         else
             return {1};
     });
+    setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
 }
 
 } // end of namespace

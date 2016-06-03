@@ -236,9 +236,6 @@ void Mesh_BezierPatch::updatePatch()
 void Mesh_BezierPatch::registerAttributes()
 {
     addAttribute("patchControl", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         auto width = args[0].asInt();
         auto height = args[1].asInt();
         
@@ -265,11 +262,10 @@ void Mesh_BezierPatch::registerAttributes()
         }
 
         return v;
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("patchControl", "Set the control points positions");
 
     addAttribute("patchSize", [&](const Values& args) {
-        if (args.size() != 2)
-            return false;
         createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
         return true;
     }, [&]() -> Values {
@@ -285,7 +281,8 @@ void Mesh_BezierPatch::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_patchResolution};
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("patchResolution", "Set the Bezier patch dimensions");
 }
 
 } // end of namespace

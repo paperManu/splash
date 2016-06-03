@@ -98,6 +98,7 @@ void Texture_Syphon::registerAttributes()
         v.push_back(Values({"appname", _appName}));
         return v;
     });
+    setAttributeDescription("connect", "Try to connect to the Syphon server, given its server name and application name");
 }
 
 } // end of namespace

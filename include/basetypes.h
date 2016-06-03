@@ -121,13 +121,16 @@ struct AttributeFunctor
             }
 
             for (int i = 0; i < _valuesTypes.size(); ++i)
-                if (args[i].getTypeAsChar() != _valuesTypes[i])
+            {
+                auto type = args[i].getTypeAsChar();
+                auto expected = _valuesTypes[i];
+
+                if (type != expected)
                 {
-                    auto argChar = args[i].getTypeAsChar();
-                    auto expChar = _valuesTypes[i];
-                    Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&argChar, &argChar + 1) << ", expected " << std::string(&expChar, &expChar + 1) << Log::endl;
+                    Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&type, &type + 1) << ", expected " << std::string(&expected, &expected + 1) << Log::endl;
                     return false;
                 }
+            }
 
             return _setFunc(std::forward<const Values&>(args));
         }

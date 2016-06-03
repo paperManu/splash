@@ -225,9 +225,12 @@ Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
     // Ask the World if it knows more about this object
     if (values.size() == 0 || values[0].asString() == "")
     {
-        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute});
-        values.clear();
-        values.push_back(answer[1]);
+        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 1000);
+        if (answer.size() != 0)
+        {
+            values.clear();
+            values.push_back(answer[1]);
+        }
     }
 
     return values;
@@ -814,9 +817,9 @@ void Scene::sendMessageToWorld(const string& message, const Values& value)
 }
 
 /*************/
-Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value)
+Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value, const unsigned long long timeout)
 {
-    return sendMessageWithAnswer("world", message, value);
+    return sendMessageWithAnswer("world", message, value, timeout);
 }
 
 /*************/
