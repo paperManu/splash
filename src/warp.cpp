@@ -321,6 +321,7 @@ void Warp::registerAttributes()
         _screenMesh->getAttribute("patchControl", v);
         return v;
     });
+    setAttributeDescription("patchControl", "Set the control points positions");
 
     addAttribute("patchResolution", [&](const Values& args) {
         if (!_screenMesh)
@@ -334,6 +335,7 @@ void Warp::registerAttributes()
         _screenMesh->getAttribute("patchResolution", v);
         return v;
     });
+    setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
     addAttribute("patchSize", [&](const Values& args) {
         if (!_screenMesh)
@@ -347,28 +349,28 @@ void Warp::registerAttributes()
         _screenMesh->getAttribute("patchSize", v);
         return v;
     });
+    setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
     addAttribute("showControlLattice", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         _showControlPoints = args[0].asInt();
         if (!_showControlPoints)
             _selectedControlPointIndex = -1;
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("showControlLattice", "If set to 1, show the control lattice");
 
     // Show a single control point
     addAttribute("showControlPoint", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         auto index = args[0].asInt();
         if (index < 0 || index >= _screenMesh->getControlPoints().size())
             _selectedControlPointIndex = -1;
         else
             _selectedControlPointIndex = index;
-    });
+        return true;
+    }, {'n'});
+    setAttributeDescription("showControlPoint", "Show the control point given its index");
 }
 
 } // end of namespace

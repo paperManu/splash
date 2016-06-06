@@ -964,9 +964,6 @@ void World::setAttribute(string name, string attrib, const Values& args)
 void World::registerAttributes()
 {
     addAttribute("addObject", [&](const Values& args) {
-        if (args.size() == 0 || args.size() > 2)
-            return false;
-
         addTask([=]() {
             auto type = args[0].asString();
             auto name = string();
@@ -989,7 +986,8 @@ void World::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("addObject", "Add an object to the scenes");
 
     addAttribute("sceneLaunched", [&](const Values& args) {
         unique_lock<mutex> lockChildProcess(_childProcessMutex);
@@ -997,23 +995,19 @@ void World::registerAttributes()
         _childProcessConditionVariable.notify_all();
         return true;
     });
+    setAttributeDescription("sceneLaunched", "Message sent by Scenes to confirm they are running");
 
     addAttribute("computeBlending", [&](const Values& args) {
-        if (args.size() == 0)
-            return false;
-
         _blendingMode = args[0].asString();
         sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode});
 
         return true;
     }, [&]() -> Values {
         return {_blendingMode};
-    });
+    }, {'n'});
+    setAttributeDescription("computeBlending", "Ask all Scenes to compute the blending");
 
     addAttribute("deleteObject", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         addTask([=]() {
             unique_lock<recursive_mutex> lockObjects(_objectsMutex);
             auto objectName = args[0].asString();
@@ -1032,32 +1026,27 @@ void World::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("deleteObject", "Delete an object given its name");
 
     addAttribute("flashBG", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].asInt()});
         });
 
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
     addAttribute("framerate", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
     }, [&]() -> Values {
         return {(int)_worldFramerate};
-    });
+    }, {'n'});
+    setAttributeDescription("framerate", "Set the refresh rate for the world (no relation to video framerate)");
 
     addAttribute("getAttribute", [&](const Values& args) {
-        if (args.size() != 2)
-            return false;
-
         addTask([=]() {
             auto objectName = args[0].asString();
             auto attrName = args[1].asString();
@@ -1075,12 +1064,10 @@ void World::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("getAttribute", "Ask the given object for the given attribute");
 
     addAttribute("getAttributeDescription", [&](const Values& args) {
-        if (args.size() != 2)
-            return false;
-
         addTask([=]() {
             auto objectName = args[0].asString();
             auto attrName = args[1].asString();
@@ -1100,11 +1087,12 @@ void World::registerAttributes()
                 sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
             }
         });
-    });
+
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("getAttributeDescription", "Ask the given object for the description of the given attribute");
 
     addAttribute("loadConfig", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         string filename = args[0].asString();
         SThread::pool.enqueueWithoutId([=]() {
             Json::Value config;
@@ -1135,23 +1123,20 @@ void World::registerAttributes()
             }
         });
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("loadConfig", "Load the given configuration file");
 
     addAttribute("copyCameraParameters", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         string filename = args[0].asString();
         addTask([=]() {
             copyCameraParameters(filename);
         });
-    });
+        return true;
+    }, {'s'});
+    setAttributeDescription("copyCameraParameters", "Copy the camera parameters from the given configuration file (based on camera names)");
 
 #if HAVE_PORTAUDIO
     addAttribute("clockDeviceName", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         addTask([=]() {
             _clockDeviceName = args[0].asString();
             if (_clockDeviceName != "")
@@ -1163,25 +1148,23 @@ void World::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_clockDeviceName};
-    });
+    }, {'s'});
+    setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
 #endif
 
     addAttribute("pong", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
         Timer::get() >> "pingScene " + args[0].asString();
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("pong", "Answer to ping");
 
     addAttribute("quit", [&](const Values& args) {
         _quit = true;
         return true;
     });
+    setAttributeDescription("quit", "Ask the world to quit");
 
     addAttribute("replaceObject", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         auto objName = args[0].asString();
         auto objType = args[1].asString();
         vector<string> targets;
@@ -1197,7 +1180,9 @@ void World::registerAttributes()
                 setAttribute("sendAllScenes", {"linkGhots", objName, t});
             }
         });
-    });
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type");
 
     addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)
@@ -1209,11 +1194,9 @@ void World::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("save", "Save the configuration to the current file (or a new one if a name is given as parameter)");
 
     addAttribute("sendAll", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         string name = args[0].asString();
         string attr = args[1].asString();
         Values values {name, attr};
@@ -1235,26 +1218,21 @@ void World::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("sendAll", "Send to the given object in all Scenes the given message (all following arguments)");
 
     addAttribute("sendAllScenes", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         string attr = args[0].asString();
-        Values values;
-        for (int i = 1; i < args.size(); ++i)
-            values.push_back(args[i]);
+        Values values = args;
+        values.erase(values.begin());
         for (auto& scene : _scenes)
             sendMessage(scene.first, attr, values);
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("sendAllScenes", "Send the given message to all Scenes");
 
     addAttribute("sendToMasterScene", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             auto attr = args[0].asString();
             Values values = args;
@@ -1263,29 +1241,26 @@ void World::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("sendToMasterScene", "Send the given message to the master Scene");
 
     addAttribute("swapTest", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         addTask([=]() {
             _swapSynchronizationTesting = args[0].asInt();
         });
 
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
     addAttribute("wireframe", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].asInt()});
         });
 
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 }
 
 }

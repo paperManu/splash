@@ -715,9 +715,6 @@ void Shader::registerAttributes()
 void Shader::registerGraphicAttributes()
 {
     addAttribute("fill", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         // Get additionnal shading options
         string options = ShaderSources.VERSION_DIRECTIVE_330;
         for (int i = 1; i < args.size(); ++i)
@@ -820,58 +817,16 @@ void Shader::registerGraphicAttributes()
         else if (_fill == window)
             fill = "window";
         return {fill};
-    });
-
-    addAttribute("scale", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        else if (args.size() < 3)
-        {
-            _uniforms["_scale"].values.resize(3);
-            _uniforms["_scale"].values[0] = args[0];
-            _uniforms["_scale"].values[1] = args[0];
-            _uniforms["_scale"].values[2] = args[0];
-        }
-        else if (args.size() == 3)
-            _uniforms["_scale"].values = args;
-        else
-            return false;
-
-        _uniformsToUpdate.push_back("_scale");
-
-        return true;
-    });
+    }, {'s'});
+    setAttributeDescription("fill", "Set the filling mode");
 
     addAttribute("sideness", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _sideness = (Shader::Sideness)args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_sideness};
-    });
-
-    // Attribute to configure the placement of the various texture input
-    addAttribute("layout", [&](const Values& args) {
-        if (args.size() < 1 || args.size() > 4)
-            return false;
-
-        _uniforms["_layout"].values = {0, 0, 0, 0};
-        for (int i = 0; i < args.size() && i < 4; ++i)
-        {
-            _layout[i] = args[i].asInt();
-            _uniforms["_layout"].values[i] = args[i];
-        }
-        _uniformsToUpdate.push_back("_layout");
-
-        return true;
-    }, [&]() {
-        Values out;
-        for (auto& v : _layout)
-            out.push_back(v);
-        return out;
-    });
+    }, {'n'});
+    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 }
 
 /*************/

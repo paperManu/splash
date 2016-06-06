@@ -1227,9 +1227,6 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 void Scene::registerAttributes()
 {
     addAttribute("add", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             string type = args[0].asString();
             string name = args[1].asString();
@@ -1237,12 +1234,10 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("add", "Add an object of the given name and type");
 
     addAttribute("addGhost", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             string type = args[0].asString();
             string name = args[1].asString();
@@ -1250,12 +1245,10 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("addGhost", "Add a ghost object of the given name and type. Only useful in the master Scene");
 
     addAttribute("blendingResolution", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             int resolution = args[0].asInt();
             if (resolution >= 64)
@@ -1265,29 +1258,30 @@ void Scene::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_blendingResolution};
-    });
+    }, {'n'});
+    setAttributeDescription("blendingResolution", "Set the resolution of the blending map");
 
     addAttribute("blendingUpdated", [&](const Values& args) {
         _vertexBlendingReceptionStatus = true;
         _vertexBlendingCondition.notify_one();
         return true;
     });
+    setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
 
     addAttribute("bufferUploaded", [&](const Values& args) {
         _textureUploadCondition.notify_all();
         return true;
     });
+    setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
 
     addAttribute("computeBlending", [&](const Values& args) {
-        if (args.size() == 0)
-            return false;
-
         std::string blendingMode = args[0].asString();
         addTask([=]() -> void {
             computeBlendingMap(blendingMode);
         });
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
     addAttribute("activateBlendingMap", [&](const Values& args) {
         addTask([=]() -> void {
@@ -1296,6 +1290,7 @@ void Scene::registerAttributes()
 
         return true;
     });
+    setAttributeDescription("activateBlendingMap", "Activate the blending map");
 
     addAttribute("deactivateBlendingMap", [&](const Values& args) {
         addTask([=]() -> void {
@@ -1304,6 +1299,7 @@ void Scene::registerAttributes()
 
         return true;
     });
+    setAttributeDescription("deactivateBlendingMap", "Deactivate the blending map");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {
@@ -1314,11 +1310,9 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("config", "Ask the Scene for a JSON describing its configuration");
 
     addAttribute("deleteObject", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         addTask([=]() -> void {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -1347,27 +1341,22 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("deleteObject", "Delete an object given its name");
 
     addAttribute("duration", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
         Timer::get().setDuration(args[0].asString(), args[1].asInt());
         return true;
-    });
+    }, {'s', 'n'});
+    setAttributeDescription("duration", "Set the duration of the given timer");
 
     addAttribute("masterClock", [&](const Values& args) {
-        if (args.size() != 7)
-            return false;
-
         Timer::get().setMasterClock(args);
         return true;
-    });
+    }, {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
+    setAttributeDescription("masterClock", "Set the timing of the master clock");
  
     addAttribute("flashBG", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             for (auto& obj : _objects)
                 if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
@@ -1375,12 +1364,10 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
     addAttribute("getObjectsNameByType", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             string type = args[0].asString();
             Values list = getObjectsNameByType(type);
@@ -1388,11 +1375,10 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
 
     addAttribute("httpServer", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
         string address = args[0].asString();
         string port = args[1].asString();
 
@@ -1410,12 +1396,10 @@ void Scene::registerAttributes()
             return {_httpServer->getAddress(), _httpServer->getPort()};
         else
             return {};
-    });
+    }, {'s', 's'});
+    setAttributeDescription("httpServer", "Create an HTTP server given its address and port");
    
     addAttribute("link", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             string src = args[0].asString();
             string dst = args[1].asString();
@@ -1423,12 +1407,10 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("link", "Link the two given objects");
 
     addAttribute("linkGhost", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             string src = args[0].asString();
             string dst = args[1].asString();
@@ -1436,37 +1418,33 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("linkGhost", "Link the two given ghost objects");
 
     addAttribute("log", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
         Log::get().setLog(args[0].asString(), (Log::Priority)args[1].asInt());
         return true;
-    });
+    }, {'s', 'n'});
+    setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
     addAttribute("ping", [&](const Values& args) {
         _textureUploadCondition.notify_all();
         sendMessageToWorld("pong", {_name});
         return true;
     });
+    setAttributeDescription("ping", "Ping the World");
 
     addAttribute("remove", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             string name = args[1].asString();
             remove(name);
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("remove", "Remove the object of the given name");
 
     addAttribute("setGhost", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             string name = args[0].asString();
             string attr = args[1].asString();
@@ -1479,7 +1457,8 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("setGhost", "Set a given object the given attribute");
 
     addAttribute("setMaster", [&](const Values& args) {
         if (args.size() == 0)
@@ -1488,26 +1467,28 @@ void Scene::registerAttributes()
             setAsMaster(args[0].asString());
         return true;
     });
+    setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
 
     addAttribute("start", [&](const Values& args) {
         _started = true;
         sendMessageToWorld("answerMessage", {"start", _name});
         return true;
     });
+    setAttributeDescription("start", "Start the Scene main loop");
 
     addAttribute("stop", [&](const Values& args) {
         _started = false;
         return true;
     });
+    setAttributeDescription("stop", "Stop the Scene main loop");
 
     addAttribute("swapInterval", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
         _swapInterval = max(-1, args[0].asInt());
         return true;
     }, [&]() -> Values {
         return {(int)_swapInterval};
-    });
+    }, {'n'});
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
 
     addAttribute("swapTest", [&](const Values& args) {
         for (auto& obj : _objects)
@@ -1515,6 +1496,7 @@ void Scene::registerAttributes()
                 dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
         return true;
     });
+    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
     addAttribute("swapTestColor", [&](const Values& args) {
         for (auto& obj : _objects)
@@ -1522,6 +1504,7 @@ void Scene::registerAttributes()
                 dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
         return true;
     });
+    setAttributeDescription("swapTestColor", "Set the swap test color");
 
     addAttribute("quit", [&](const Values& args) {
         addTask([=]() {
@@ -1530,11 +1513,9 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("quit", "Ask the Scene to quit");
    
     addAttribute("unlink", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
         addTask([=]() {
             string src = args[0].asString();
             string dst = args[1].asString();
@@ -1542,7 +1523,8 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("unlink", "Unlink the two given objects");
 
     addAttribute("unlinkGhost", [&](const Values& args) {
         if (args.size() < 2)
@@ -1555,12 +1537,10 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("unlinkGhost", "Unlink the two given ghost objects");
  
     addAttribute("wireframe", [&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
         addTask([=]() {
             for (auto& obj : _objects)
                 if (obj.second->getType() == "camera")
@@ -1571,7 +1551,8 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
 #if HAVE_GPHOTO
     addAttribute("calibrateColor", [&](const Values& args) {
@@ -1584,6 +1565,7 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
     addAttribute("calibrateColorResponseFunction", [&](const Values& args) {
         if (_colorCalibrator == nullptr)
@@ -1595,6 +1577,7 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
 }

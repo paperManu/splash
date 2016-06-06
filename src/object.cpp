@@ -129,7 +129,7 @@ void Object::activate()
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
-    _shader->setAttribute("scale", {_scale.x, _scale.y, _scale.z});
+    _shader->setAttribute("uniform", {"_scale", _scale.x, _scale.y, _scale.z});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
 
     _geometries[0]->update();

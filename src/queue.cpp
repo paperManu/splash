@@ -295,27 +295,23 @@ shared_ptr<BufferObject> Queue::createSource(string type)
 void Queue::registerAttributes()
 {
     addAttribute("loop", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _loop = (bool)args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_loop};
-    });
+    }, {'n'});
     setAttributeParameter("loop", true, true);
+    setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
     addAttribute("pause", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _paused = args[0].asInt();
 
         return true;
     }, [&]() -> Values {
         return {_paused};
-    });
+    }, {'n'});
     setAttributeParameter("pause", false, true);
+    setAttributeDescription("pause", "Pause the queue if set to 1");
 
     addAttribute("playlist", [&](const Values& args) {
         unique_lock<mutex> lock(_playlistMutex);
@@ -362,24 +358,20 @@ void Queue::registerAttributes()
         return playlist;
     });
     setAttributeParameter("playlist", true, true);
+    setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
     addAttribute("seek", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         int64_t seekTime = args[0].asFloat() * 1e6;
         _startTime = Timer::getTime() - seekTime;
         _seeked = true;
         return true;
     }, [&]() -> Values {
         return {(float)_currentTime / 1e6};
-    });
+    }, {'n'});
     setAttributeParameter("seek", false, true);
+    setAttributeDescription("seek", "Seek through the playlist");
 
     addAttribute("useClock", [&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
         _useClock = args[0].asInt();
         if (_currentSource)
             _currentSource->setAttribute("useClock", {_useClock});
@@ -387,8 +379,9 @@ void Queue::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};
-    });
+    }, {'n'});
     setAttributeParameter("useClock", true, true);
+    setAttributeDescription("useClock", "Use the master clock if set to 1");
 }
 
 /*************/
