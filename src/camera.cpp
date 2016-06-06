@@ -510,9 +510,13 @@ bool Camera::doCalibration()
     else
     {
         // Third step: convert the values to camera parameters
-        _fov = selectedValues[0];
-        _cx = selectedValues[1];
-        _cy = selectedValues[2];
+        if (!operator[]("fov").isLocked())
+            _fov = selectedValues[0];
+        if (!operator[]("principalPoint").isLocked())
+        {
+            _cx = selectedValues[1];
+            _cy = selectedValues[2];
+        }
 
         dvec3 euler;
         for (int i = 0; i < 3; ++i)
@@ -1101,11 +1105,20 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     if (params == NULL)
         return 0.0;
 
-    Camera* camera = (Camera*)params;
+    Camera& camera = *(Camera*)params;
 
     double fov = gsl_vector_get(v, 0);
     double cx = gsl_vector_get(v, 1);
     double cy = gsl_vector_get(v, 2);
+
+    // Check whether the camera parameters are locked
+    if (camera["fov"].isLocked())
+        fov = camera["fov"]()[0].asFloat();
+    if (camera["principalPoint"].isLocked())
+    {
+        cx = camera["principalPoint"]()[0].asFloat();
+        cy = camera["principalPoint"]()[1].asFloat();
+    }
 
     // Some limits for the calibration parameters
     if (fov > 120.0 || abs(cx - 0.5) > 1.0 || abs(cy - 0.5) > 1.0)
@@ -1133,24 +1146,24 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     vector<dvec3> objectPoints;
     vector<dvec3> imagePoints;
     vector<float> pointsWeight;
-    for (auto& point : camera->_calibrationPoints)
+    for (auto& point : camera._calibrationPoints)
     {
         if (!point.isSet)
             continue;
 
         objectPoints.emplace_back(dvec3(point.world.x, point.world.y, point.world.z));
-        imagePoints.emplace_back(dvec3((point.screen.x + 1.0) / 2.0 * camera->_width, (point.screen.y + 1.0) / 2.0 * camera->_height, 0.0));
+        imagePoints.emplace_back(dvec3((point.screen.x + 1.0) / 2.0 * camera._width, (point.screen.y + 1.0) / 2.0 * camera._height, 0.0));
         pointsWeight.push_back(point.weight);
     }
 
 #ifdef DEBUG
-    Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << camera->_width - cx << " " << camera->_height - cy << Log::endl;
+    Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Values for the current iteration (fov, cx, cy): " << fov << " " << camera._width - cx << " " << camera._height - cy << Log::endl;
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
-    dmat4 projM = dmat4(camera->computeProjectionMatrix(fov, cx, cy));
+    dmat4 projM = dmat4(camera.computeProjectionMatrix(fov, cx, cy));
     dmat4 modelM(1.0);
-    dvec4 viewport(0, 0, camera->_width, camera->_height);
+    dvec4 viewport(0, 0, camera._width, camera._height);
 
     // Project all the object points, and measure the distance between them and the image points
     double summedDistance = 0.0;
@@ -1160,7 +1173,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
         projectedPoint = project(objectPoints[i], lookM, projM, viewport);
         projectedPoint.z = 0.0;
 
-        if (camera->_weightedCalibrationPoints)
+        if (camera._weightedCalibrationPoints)
             summedDistance += pointsWeight[i] * pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);
         else
             summedDistance += pow(imagePoints[i].x - projectedPoint.x, 2.0) + pow(imagePoints[i].y - projectedPoint.y, 2.0);

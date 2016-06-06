@@ -96,6 +96,9 @@ struct AttributeFunctor
 
         bool operator()(const Values& args)
         {
+            if (_isLocked)
+                return false;
+
             if (!_setFunc && _defaultSetAndGet)
             {
                 std::unique_lock<std::mutex> lock(_defaultFuncMutex);
@@ -155,15 +158,31 @@ struct AttributeFunctor
             return _defaultSetAndGet;
         }
 
+        // Set whether to update the Scene object (if this attribute is hosted by a World object)
         bool doUpdateDistant() const {return _doUpdateDistant;}
         void doUpdateDistant(bool update) {_doUpdateDistant = update;}
 
+        // Lock the attribute to the given value
+        bool isLocked() const {return _isLocked;}
+        bool lock(Values v = {})
+        {
+            if (v.size() != 0)
+                if (!operator()(v))
+                    return false;
+
+            _isLocked = true;
+        }
+        void unlock() {_isLocked = false;}
+
+        // Savability (as JSON) of this attribute
         bool savable() const {return _savable;}
         void savable(bool save) {_savable = save;}
 
+        // Description
         void setDescription(const std::string& desc) {_description = desc;}
         std::string getDescription() const {return _description;}
 
+        // Name of the host object
         void setObjectName(const std::string& objectName) {_objectName = objectName;}
 
     private:
@@ -176,6 +195,8 @@ struct AttributeFunctor
         std::string _description {}; // Attribute description
         Values _values; // Holds the values for the default set and get functions
         std::vector<char> _valuesTypes; // List of the types held in _values
+
+        bool _isLocked {false};
 
         bool _defaultSetAndGet {true};
         bool _doUpdateDistant {false}; // True if the World should send this attr values to Scenes
@@ -208,6 +229,15 @@ class BaseObject
         virtual explicit operator bool() const
         {
             return true;
+        }
+
+        /**
+         * Access the attributes through operator[]
+         */
+        AttributeFunctor& operator[](const std::string& attr)
+        {
+            auto attribFunction = _attribFunctions.find(attr);
+            return attribFunction->second;
         }
 
         inline std::string getType() const {return _type;}
@@ -489,18 +519,36 @@ class BaseObject
         void init()
         {
             addAttribute("configFilePath", [&](const Values& args) {
-                if (args.size() == 0)
-                    return false;
                 _configFilePath = args[0].asString();
                 return true;
-            });
+            }, {'s'});
 
             addAttribute("setName", [&](const Values& args) {
-                if (args.size() == 0)
-                    return false;
                 setName(args[0].asString());
                 return true;
-            });
+            }, {'s'});
+
+            addAttribute("switchLock", [&](const Values& args) {
+                auto attribIterator = _attribFunctions.find(args[0].asString());
+                if (attribIterator == _attribFunctions.end())
+                    return false;
+
+                std::string status;
+                auto& attribFunctor = attribIterator->second;
+                if (attribFunctor.isLocked())
+                {
+                    status = "Unlocked";
+                    attribFunctor.unlock();
+                }
+                else
+                {
+                    status = "Locked";
+                    attribFunctor.lock();
+                }
+
+                Log::get() << Log::MESSAGE << _name << "~~" << args[0].asString() << " - " << status << Log::endl;
+                return true;
+            }, {'s'});
         }
 
         /**

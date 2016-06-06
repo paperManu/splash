@@ -215,6 +215,14 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         if (attr.second[0].getType() == Value::Type::i
             || attr.second[0].getType() == Value::Type::f)
         {
+            ImGui::PushID(attr.first.c_str());
+            if (ImGui::Button("L"))
+                scene->sendMessageToWorld("sendAll", {objName, "switchLock", attr.first});
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Lock / Unlock this attribute");
+            ImGui::PopID();
+            ImGui::SameLine();
+
             int precision = 0;
             if (attr.second[0].getType() == Value::Type::f)
                 precision = 3;
