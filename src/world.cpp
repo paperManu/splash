@@ -1068,25 +1068,25 @@ void World::registerAttributes()
     setAttributeDescription("getAttribute", "Ask the given object for the given attribute");
 
     addAttribute("getAttributeDescription", [&](const Values& args) {
-        addTask([=]() {
-            auto objectName = args[0].asString();
-            auto attrName = args[1].asString();
+        lock_guard<recursive_mutex> lock(_objectsMutex);
 
-            auto objectIt = _objects.find(objectName);
-            // If the object exists locally
-            if (objectIt != _objects.end())
-            {
-                auto& object = objectIt->second;
-                Values values {"getAttributeDescription"};
-                values.push_back(object->getAttributeDescription(attrName));
-                sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
-            }
-            // Else, ask the Scenes for some info
-            else
-            {
-                sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
-            }
-        });
+        auto objectName = args[0].asString();
+        auto attrName = args[1].asString();
+
+        auto objectIt = _objects.find(objectName);
+        // If the object exists locally
+        if (objectIt != _objects.end())
+        {
+            auto& object = objectIt->second;
+            Values values {"getAttributeDescription"};
+            values.push_back(object->getAttributeDescription(attrName));
+            sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
+        }
+        // Else, ask the Scenes for some info
+        else
+        {
+            sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
+        }
 
         return true;
     }, {'s', 's'});

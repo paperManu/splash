@@ -225,7 +225,7 @@ Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
     // Ask the World if it knows more about this object
     if (values.size() == 0 || values[0].asString() == "")
     {
-        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 1000);
+        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
         if (answer.size() != 0)
         {
             values.clear();
