@@ -233,56 +233,51 @@ void Filter::setOutput()
 /*************/
 void Filter::registerAttributes()
 {
-    _attribFunctions["blackLevel"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("blackLevel", [&](const Values& args) {
         _blackLevel = args[0].asFloat();
         _blackLevel = std::max(0.f, std::min(1.f, _blackLevel));
         return true;
     }, [&]() -> Values {
         return {_blackLevel};
-    });
+    }, {'n'});
+    setAttributeDescription("blackLevel", "Set the black level for the linked texture");
 
-    _attribFunctions["brightness"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("brightness", [&](const Values& args) {
         _brightness = args[0].asFloat();
         _brightness = std::max(0.f, std::min(2.f, _brightness));
         return true;
     }, [&]() -> Values {
         return {_brightness};
-    });
+    }, {'n'});
+    setAttributeDescription("brightness", "Set the brightness for the linked texture");
 
-    _attribFunctions["contrast"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("contrast", [&](const Values& args) {
         _contrast = args[0].asFloat();
         _contrast = std::max(0.f, std::min(2.f, _contrast));
         return true;
     }, [&]() -> Values {
         return {_contrast};
-    });
+    }, {'n'});
+    setAttributeDescription("contrast", "Set the contrast for the linked texture");
 
-    _attribFunctions["colorTemperature"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("colorTemperature", [&](const Values& args) {
         _colorTemperature = args[0].asFloat();
         _colorTemperature = std::max(0.f, std::min(16000.f, _colorTemperature));
         _colorBalance = colorBalanceFromTemperature(_colorTemperature);
         return true;
     }, [&]() -> Values {
         return {_colorTemperature};
-    });
+    }, {'n'});
+    setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
-    _attribFunctions["saturation"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("saturation", [&](const Values& args) {
         _saturation = args[0].asFloat();
         _saturation = std::max(0.f, std::min(2.f, _saturation));
         return true;
     }, [&]() -> Values {
         return {_saturation};
-    });
+    }, {'n'});
+    setAttributeDescription("saturation", "Set the saturation for the linked texture");
 }
 
 } // end of namespace

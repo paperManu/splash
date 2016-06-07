@@ -309,7 +309,7 @@ void Warp::setOutput()
 /*************/
 void Warp::registerAttributes()
 {
-    _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchControl", [&](const Values& args) {
         if (!_screenMesh)
             return false;
         return _screenMesh->setAttribute("patchControl", args);
@@ -321,8 +321,9 @@ void Warp::registerAttributes()
         _screenMesh->getAttribute("patchControl", v);
         return v;
     });
+    setAttributeDescription("patchControl", "Set the control points positions");
 
-    _attribFunctions["patchResolution"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchResolution", [&](const Values& args) {
         if (!_screenMesh)
             return false;
         return _screenMesh->setAttribute("patchResolution", args);
@@ -334,8 +335,9 @@ void Warp::registerAttributes()
         _screenMesh->getAttribute("patchResolution", v);
         return v;
     });
+    setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
-    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("patchSize", [&](const Values& args) {
         if (!_screenMesh)
             return false;
         return _screenMesh->setAttribute("patchSize", args);
@@ -347,28 +349,28 @@ void Warp::registerAttributes()
         _screenMesh->getAttribute("patchSize", v);
         return v;
     });
+    setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
-    _attribFunctions["showControlLattice"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("showControlLattice", [&](const Values& args) {
         _showControlPoints = args[0].asInt();
         if (!_showControlPoints)
             _selectedControlPointIndex = -1;
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("showControlLattice", "If set to 1, show the control lattice");
 
     // Show a single control point
-    _attribFunctions["showControlPoint"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("showControlPoint", [&](const Values& args) {
         auto index = args[0].asInt();
         if (index < 0 || index >= _screenMesh->getControlPoints().size())
             _selectedControlPointIndex = -1;
         else
             _selectedControlPointIndex = index;
-    });
+        return true;
+    }, {'n'});
+    setAttributeDescription("showControlPoint", "Show the control point given its index");
 }
 
 } // end of namespace

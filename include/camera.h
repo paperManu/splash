@@ -198,11 +198,11 @@ class Camera : public BaseObject
         std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
         // Camera parameters
-        float _fov {35}; // This is the vertical FOV
-        float _width {512}, _height {512};
-        float _newWidth {0}, _newHeight {0};
-        float _near {0.1}, _far {100.0};
-        float _cx {0.5}, _cy {0.5};
+        float _fov {35.f}; // This is the vertical FOV
+        float _width {512.f}, _height {512.f};
+        float _newWidth {0.f}, _newHeight {0.f};
+        float _near {0.1f}, _far {100.0f};
+        float _cx {0.5f}, _cy {0.5f};
         glm::dvec3 _eye {1.0, 0.0, 5.0};
         glm::dvec3 _target {0.0, 0.0, 0.0};
         glm::dvec3 _up {0.0, 0.0, 1.0};

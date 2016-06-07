@@ -362,23 +362,21 @@ void Mesh::createDefaultMesh(int subdiv)
 /*************/
 void Mesh::registerAttributes()
 {
-    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("file", [&](const Values& args) {
         return read(args[0].asString());
     }, [&]() -> Values {
         return {_filepath};
-    });
+    }, {'s'});
+    setAttributeDescription("file", "Mesh file to load");
     
-    _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("benchmark", [&](const Values& args) {
         if (args[0].asInt() > 0)
             _benchmark = true;
         else
             _benchmark = false;
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
 }
 
 } // end of namespace

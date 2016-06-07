@@ -363,62 +363,54 @@ void Image::createPattern()
 /*************/
 void Image::registerAttributes()
 {
-    _attribFunctions["flip"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("flip", [&](const Values& args) {
         _flip = (args[0].asInt() > 0) ? true : false;
         return true;
     }, [&]() -> Values {
         return {_flip};
-    });
+    }, {'n'});
+    setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
-    _attribFunctions["flop"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("flop", [&](const Values& args) {
         _flop = (args[0].asInt() > 0) ? true : false;
         return true;
     }, [&]() -> Values {
         return {_flop};
-    });
+    }, {'n'});
+    setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    _attribFunctions["file"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("file", [&](const Values& args) {
         return read(args[0].asString());
     }, [&]() -> Values {
         return {_filepath};
-    });
+    }, {'s'});
+    setAttributeDescription("file", "Image file to load");
 
-    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("srgb", [&](const Values& args) {
         _srgb = (args[0].asInt() > 0) ? true : false;     
         return true;
     }, [&]() -> Values {
         return {_srgb};
-    });
+    }, {'n'});
+    setAttributeDescription("srgb", "Set to 1 if the image file is stored as sRGB");
 
-    _attribFunctions["benchmark"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("benchmark", [&](const Values& args) {
         if (args[0].asInt() > 0)
             _benchmark = true;
         else
             _benchmark = false;
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
 
-    _attribFunctions["pattern"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("pattern", [&](const Values& args) {
         if (args[0].asInt() == 1)
             createPattern();
-
         return true;
     }, [&]() -> Values {
         return {false};
-    });
+    }, {'n'});
+    setAttributeDescription("pattern", "Set to 1 to replace the image with a pattern");
 }
 
 } // end of namespace

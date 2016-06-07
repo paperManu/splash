@@ -615,7 +615,7 @@ void Image_FFmpeg::videoDisplayLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
-    _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("duration", [&](const Values& args) {
         return false;
     }, [&]() -> Values {
         if (_avContext == nullptr)
@@ -624,22 +624,18 @@ void Image_FFmpeg::registerAttributes()
         float duration = _avContext->duration / AV_TIME_BASE;
         return {duration};
     });
-    _attribFunctions["duration"].doUpdateDistant(true);
-    _attribFunctions["duration"].savable(false);
+    setAttributeParameter("duration", false, true);
 
-    _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("loop", [&](const Values& args) {
         _loopOnVideo = (bool)args[0].asInt();
         return true;
     }, [&]() -> Values {
         int loop = _loopOnVideo;
         return {loop};
-    });
-    _attribFunctions["loop"].doUpdateDistant(true);
+    }, {'n'});
+    setAttributeParameter("loop", true, true);
 
-    _attribFunctions["remaining"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("remaining", [&](const Values& args) {
         return false;
     }, [&]() -> Values {
         if (_avContext == nullptr)
@@ -648,25 +644,17 @@ void Image_FFmpeg::registerAttributes()
         float duration = std::max(0.0, (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6);
         return {duration};
     });
-    _attribFunctions["remaining"].doUpdateDistant(true);
-    _attribFunctions["remaining"].savable(false);
+    setAttributeParameter("remaining", false, true);
 
-    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("pause", [&](const Values& args) {
         _paused = args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_paused};
-    });
-    _attribFunctions["pause"].doUpdateDistant(true);
-    _attribFunctions["pause"].savable(false);
+    }, {'n'});
+    setAttributeParameter("pause", false, true);
 
-    _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("seek", [&](const Values& args) {
         float seconds = args[0].asFloat();
         SThread::pool.enqueueWithoutId([=]() {
             seek(seconds);
@@ -676,14 +664,11 @@ void Image_FFmpeg::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_seekTime};
-    });
-    _attribFunctions["seek"].doUpdateDistant(true);
-    _attribFunctions["seek"].savable(false);
+    }, {'n'});
+    setAttributeParameter("seek", false, true);
+    setAttributeDescription("seek", "Change the read position in the video file");
 
-    _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("useClock", [&](const Values& args) {
         _useClock = args[0].asInt();
         if (!_useClock)
             _clockTime = -1;
@@ -693,17 +678,14 @@ void Image_FFmpeg::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};
-    });
-    _attribFunctions["useClock"].doUpdateDistant(true);
+    }, {'n'});
+    setAttributeParameter("useClock", true, true);
 
-    _attribFunctions["timeShift"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("timeShift", [&](const Values& args) {
         _shiftTime = args[0].asFloat();
 
         return true;
-    });
+    }, {'n'});
 }
 
 } // end of namespace

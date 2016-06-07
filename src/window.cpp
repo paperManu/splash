@@ -331,7 +331,9 @@ bool Window::render()
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        _screen->getShader()->setAttribute("layout", _layout);
+        auto layout = _layout;
+        layout.push_front("layout");
+        _screen->getShader()->setAttribute("uniform", layout);
         _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
         _screen->activate();
         _screen->draw();
@@ -746,18 +748,15 @@ void Window::updateWindowShape()
 /*************/
 void Window::registerAttributes()
 {
-    _attribFunctions["fullscreen"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("fullscreen", [&](const Values& args) {
         switchFullscreen(args[0].asInt());
         return true;
     }, [&]() -> Values {
         return {_screenId};
-    });
+    }, {'n'});
+    setAttributeDescription("fullscreen", "Set the window as fullscreen given the screen index");
 
-    _attribFunctions["decorated"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("decorated", [&](const Values& args) {
         _withDecoration = args[0].asInt() == 0 ? false : true;
         setWindowDecoration(_withDecoration);
         updateWindowShape();
@@ -767,11 +766,10 @@ void Window::registerAttributes()
             return Values();
         else
             return {(int)_withDecoration};
-    });
+    }, {'n'});
+    setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
-    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("srgb", [&](const Values& args) {
         if (args[0].asInt() != 0)
             _srgb = true;
         else
@@ -779,22 +777,19 @@ void Window::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_srgb};
-    });
+    }, {'n'});
+    setAttributeDescription("srgb", "If set to 1, the window is drawn in the sRGB color space");
 
-    _attribFunctions["gamma"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("gamma", [&](const Values& args) {
         _gammaCorrection = args[0].asFloat();
         return true;
     }, [&]() -> Values {
         return {_gammaCorrection};
-    });
+    }, {'n'});
+    setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
+    addAttribute("layout", [&](const Values& args) {
         _layout.clear();
         for (auto& arg : args)
             _layout.push_back(arg.asInt());
@@ -808,11 +803,10 @@ void Window::registerAttributes()
         return true;
     }, [&]() {
         return _layout;
-    });
+    }, {'n'});
+    setAttributeDescription("layout", "Set the placement of the various input textures");
 
-    _attribFunctions["position"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 2)
-            return false;
+    addAttribute("position", [&](const Values& args) {
         _windowRect[0] = args[0].asInt();
         _windowRect[1] = args[1].asInt();
         updateWindowShape();
@@ -822,11 +816,10 @@ void Window::registerAttributes()
             return {};
         else
             return {_windowRect[0], _windowRect[1]};
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("position", "Set the window position");
 
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 2)
-            return false;
+    addAttribute("size", [&](const Values& args) {
         _windowRect[2] = args[0].asInt();
         _windowRect[3] = args[1].asInt();
         updateWindowShape();
@@ -836,29 +829,27 @@ void Window::registerAttributes()
             return {};
         else
             return {_windowRect[2], _windowRect[3]};
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("size", "Set the window dimensions");
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("swapInterval", [&](const Values& args) {
         _swapInterval = max(-1, args[0].asInt());
         updateSwapInterval();
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("swapInterval", "Set the window swap interval");
 
-    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("swapTest", [&](const Values& args) {
         _swapSynchronizationTesting = args[0].asInt();
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
-    _attribFunctions["swapTestColor"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 4)
-            return false;
+    addAttribute("swapTestColor", [&](const Values& args) {
         _swapSynchronizationColor = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
         return true;
-    });
+    }, {'n', 'n', 'n', 'n'});
+    setAttributeDescription("swapTestColor", "Set the swap test color");
 }
 
 } // end of namespace

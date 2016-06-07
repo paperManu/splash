@@ -235,10 +235,7 @@ void Mesh_BezierPatch::updatePatch()
 /*************/
 void Mesh_BezierPatch::registerAttributes()
 {
-    _attribFunctions["patchControl"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
+    addAttribute("patchControl", [&](const Values& args) {
         auto width = args[0].asInt();
         auto height = args[1].asInt();
         
@@ -265,27 +262,26 @@ void Mesh_BezierPatch::registerAttributes()
         }
 
         return v;
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("patchControl", "Set the control points positions");
 
-    _attribFunctions["patchSize"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 2)
-            return false;
+    addAttribute("patchSize", [&](const Values& args) {
         createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
         return true;
     }, [&]() -> Values {
         return {_patch.size.x, _patch.size.y};
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
-    _attribFunctions["patchResolution"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("patchResolution", [&](const Values& args) {
         _patchResolution = std::max(4, args[0].asInt());
         _patchUpdated = true;
         updateTimestamp();
         return true;
     }, [&]() -> Values {
         return {_patchResolution};
-    });
+    }, {'n'});
+    setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 }
 
 } // end of namespace

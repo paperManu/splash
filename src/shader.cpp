@@ -681,7 +681,7 @@ void Shader::resetShader(ShaderType type)
 /*************/
 void Shader::registerAttributes()
 {
-    _attribFunctions["uniform"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("uniform", [&](const Values& args) {
         if (args.size() < 2)
             return false;
 
@@ -714,10 +714,7 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    _attribFunctions["fill"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-
+    addAttribute("fill", [&](const Values& args) {
         // Get additionnal shading options
         string options = ShaderSources.VERSION_DIRECTIVE_330;
         for (int i = 1; i < args.size(); ++i)
@@ -820,64 +817,22 @@ void Shader::registerGraphicAttributes()
         else if (_fill == window)
             fill = "window";
         return {fill};
-    });
+    }, {'s'});
+    setAttributeDescription("fill", "Set the filling mode");
 
-    _attribFunctions["scale"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        else if (args.size() < 3)
-        {
-            _uniforms["_scale"].values.resize(3);
-            _uniforms["_scale"].values[0] = args[0];
-            _uniforms["_scale"].values[1] = args[0];
-            _uniforms["_scale"].values[2] = args[0];
-        }
-        else if (args.size() == 3)
-            _uniforms["_scale"].values = args;
-        else
-            return false;
-
-        _uniformsToUpdate.push_back("_scale");
-
-        return true;
-    });
-
-    _attribFunctions["sideness"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("sideness", [&](const Values& args) {
         _sideness = (Shader::Sideness)args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_sideness};
-    });
-
-    // Attribute to configure the placement of the various texture input
-    _attribFunctions["layout"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1 || args.size() > 4)
-            return false;
-
-        _uniforms["_layout"].values = {0, 0, 0, 0};
-        for (int i = 0; i < args.size() && i < 4; ++i)
-        {
-            _layout[i] = args[i].asInt();
-            _uniforms["_layout"].values[i] = args[i];
-        }
-        _uniformsToUpdate.push_back("_layout");
-
-        return true;
-    }, [&]() {
-        Values out;
-        for (auto& v : _layout)
-            out.push_back(v);
-        return out;
-    });
+    }, {'n'});
+    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 }
 
 /*************/
 void Shader::registerComputeAttributes()
 {
-    _attribFunctions["computePhase"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("computePhase", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -909,7 +864,7 @@ void Shader::registerComputeAttributes()
 /*************/
 void Shader::registerFeedbackAttributes()
 {
-    _attribFunctions["feedbackPhase"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("feedbackPhase", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 
@@ -930,7 +885,7 @@ void Shader::registerFeedbackAttributes()
         return true;
     });
 
-    _attribFunctions["feedbackVaryings"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("feedbackVaryings", [&](const Values& args) {
         if (args.size() < 1)
             return false;
 

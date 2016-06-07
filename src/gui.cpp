@@ -1038,12 +1038,11 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("size", [&](const Values& args) {
         setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("size", "Set the GUI render resolution");
 }
 
 } // end of namespace

@@ -89,6 +89,12 @@ class Scene : public RootObject
         Values getAttributeFromObject(std::string name, std::string attribute);
 
         /**
+         * Get an attribute description
+         * Trie locally and to the World
+         */
+        Values getAttributeDescriptionFromObject(std::string name, std::string attribute);
+
+        /**
          * Get the current configuration of the scene as a json object
          */
         Json::Value getConfigurationAsJson();
@@ -171,7 +177,7 @@ class Scene : public RootObject
          * Set a message to be sent to the world
          */
         void sendMessageToWorld(const std::string& message, const Values& value = {});
-        Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {});
+        Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
         /**
          * Wait for synchronization with texture upload
