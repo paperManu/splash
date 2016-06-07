@@ -27,12 +27,14 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <list>
 #include <map>
 #include <unordered_map>
 #include <json/json.h>
 
 #include "coretypes.h"
 #include "link.h"
+#include "log.h"
 #include "timer.h"
 
 namespace Splash
@@ -44,19 +46,25 @@ struct AttributeFunctor
     public:
         AttributeFunctor() {};
 
-        AttributeFunctor(std::function<bool(const Values&)> setFunc)
+        AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {})
         {
+            _name = name;
             _setFunc = setFunc;
             _getFunc = std::function<const Values()>();
             _defaultSetAndGet = false;
+            _valuesTypes = types;
         }
         
-        AttributeFunctor(std::function<bool(const Values&)> setFunc,
-                            std::function<const Values()> getFunc)
+        AttributeFunctor(const std::string& name,
+                         std::function<bool(const Values&)> setFunc,
+                         std::function<const Values()> getFunc,
+                         const std::vector<char>& types = {})
         {
+            _name = name;
             _setFunc = setFunc;
             _getFunc = getFunc;
             _defaultSetAndGet = false;
+            _valuesTypes = types;
         }
 
         AttributeFunctor(const AttributeFunctor&) = delete;
@@ -71,10 +79,14 @@ struct AttributeFunctor
         {
             if (this != &a)
             {
+                _name = std::move(a._name);
+                _objectName = std::move(a._objectName);
                 _setFunc = std::move(a._setFunc);
                 _getFunc = std::move(a._getFunc);
-                _defaultSetAndGet = std::move(a._defaultSetAndGet);
+                _description = std::move(a._description);
                 _values = std::move(a._values);
+                _valuesTypes = std::move(a._valuesTypes);
+                _defaultSetAndGet = std::move(a._defaultSetAndGet);
                 _doUpdateDistant = std::move(a._doUpdateDistant);
                 _savable = std::move(a._savable);
             }
@@ -84,15 +96,43 @@ struct AttributeFunctor
 
         bool operator()(const Values& args)
         {
+            if (_isLocked)
+                return false;
+
             if (!_setFunc && _defaultSetAndGet)
             {
                 std::unique_lock<std::mutex> lock(_defaultFuncMutex);
                 _values = args;
+
+                _valuesTypes.clear();
+                for (const auto& a : args)
+                    _valuesTypes.push_back(a.getTypeAsChar());
+
                 return true;
             }
             else if (!_setFunc)
             {
                 return false;
+            }
+
+            // Check for arguments correctness
+            // Some attributes may have an unlimited number of arguments, so we do not test for equality
+            if (args.size() < _valuesTypes.size())
+            {
+                Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Wrong number of arguments (" << args.size() << " instead of " << _valuesTypes.size() << ")" << Log::endl;
+                return false;
+            }
+
+            for (int i = 0; i < _valuesTypes.size(); ++i)
+            {
+                auto type = args[i].getTypeAsChar();
+                auto expected = _valuesTypes[i];
+
+                if (type != expected)
+                {
+                    Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&type, &type + 1) << ", expected " << std::string(&expected, &expected + 1) << Log::endl;
+                    return false;
+                }
             }
 
             return _setFunc(std::forward<const Values&>(args));
@@ -118,20 +158,48 @@ struct AttributeFunctor
             return _defaultSetAndGet;
         }
 
+        // Set whether to update the Scene object (if this attribute is hosted by a World object)
         bool doUpdateDistant() const {return _doUpdateDistant;}
         void doUpdateDistant(bool update) {_doUpdateDistant = update;}
 
+        // Lock the attribute to the given value
+        bool isLocked() const {return _isLocked;}
+        bool lock(Values v = {})
+        {
+            if (v.size() != 0)
+                if (!operator()(v))
+                    return false;
+
+            _isLocked = true;
+            return true;
+        }
+        void unlock() {_isLocked = false;}
+
+        // Savability (as JSON) of this attribute
         bool savable() const {return _savable;}
         void savable(bool save) {_savable = save;}
+
+        // Description
+        void setDescription(const std::string& desc) {_description = desc;}
+        std::string getDescription() const {return _description;}
+
+        // Name of the host object
+        void setObjectName(const std::string& objectName) {_objectName = objectName;}
 
     private:
         mutable std::mutex _defaultFuncMutex {};
         std::function<bool(const Values&)> _setFunc {};
         std::function<const Values()> _getFunc {};
 
-        bool _defaultSetAndGet {true};
+        std::string _objectName; // Name of the object holding this attribute
+        std::string _name; // Name of the attribute
+        std::string _description {}; // Attribute description
         Values _values; // Holds the values for the default set and get functions
+        std::vector<char> _valuesTypes; // List of the types held in _values
 
+        bool _isLocked {false};
+
+        bool _defaultSetAndGet {true};
         bool _doUpdateDistant {false}; // True if the World should send this attr values to Scenes
         bool _savable {true}; // True if this attribute should be saved
 };
@@ -162,6 +230,15 @@ class BaseObject
         virtual explicit operator bool() const
         {
             return true;
+        }
+
+        /**
+         * Access the attributes through operator[]
+         */
+        AttributeFunctor& operator[](const std::string& attr)
+        {
+            auto attribFunction = _attribFunctions.find(attr);
+            return attribFunction->second;
         }
 
         inline std::string getType() const {return _type;}
@@ -409,6 +486,18 @@ class BaseObject
             return root;
         }
 
+        /**
+         * Get the description for the given attribute, if it exists
+         */
+        std::string getAttributeDescription(const std::string& name)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+                return attr->second.getDescription();
+            else
+                return {};
+        }
+
     // Pubic attributes
     public:
         bool _savable {true};
@@ -430,23 +519,83 @@ class BaseObject
         // Initialize generic attributes
         void init()
         {
-            _attribFunctions["configFilePath"] = AttributeFunctor([&](const Values& args) {
-                if (args.size() == 0)
-                    return false;
+            addAttribute("configFilePath", [&](const Values& args) {
                 _configFilePath = args[0].asString();
                 return true;
-            });
+            }, {'s'});
 
-            _attribFunctions["setName"] = AttributeFunctor([&](const Values& args) {
-                if (args.size() == 0)
-                    return false;
+            addAttribute("setName", [&](const Values& args) {
                 setName(args[0].asString());
                 return true;
-            });
+            }, {'s'});
+
+            addAttribute("switchLock", [&](const Values& args) {
+                auto attribIterator = _attribFunctions.find(args[0].asString());
+                if (attribIterator == _attribFunctions.end())
+                    return false;
+
+                std::string status;
+                auto& attribFunctor = attribIterator->second;
+                if (attribFunctor.isLocked())
+                {
+                    status = "Unlocked";
+                    attribFunctor.unlock();
+                }
+                else
+                {
+                    status = "Locked";
+                    attribFunctor.lock();
+                }
+
+                Log::get() << Log::MESSAGE << _name << "~~" << args[0].asString() << " - " << status << Log::endl;
+                return true;
+            }, {'s'});
         }
 
         /**
-         * Register new functors to modify attributes
+         * Add a new attribute to this object
+         */
+        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {})
+        {
+            _attribFunctions[name] = AttributeFunctor(name, set, types);
+            _attribFunctions[name].setObjectName(_type);
+            return _attribFunctions[name];
+        }
+
+        AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {})
+        {
+            _attribFunctions[name] = AttributeFunctor(name, set, get, types);
+            _attribFunctions[name].setObjectName(_type);
+            return _attribFunctions[name];
+        }
+
+        /**
+         * Set and the description for the given attribute, if it exists
+         */
+        void setAttributeDescription(const std::string& name, const std::string& description)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+            {
+                attr->second.setDescription(description);
+            }
+        }
+
+        /**
+         * Set parameters for a given attribute
+         */
+        void setAttributeParameter(const std::string& name, bool savable, bool updateDistant)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+            {
+                attr->second.savable(savable);
+                attr->second.doUpdateDistant(updateDistant);
+            }
+        }
+
+        /**
+         * Register new attributes
          */
         virtual void registerAttributes() = 0;
 };
@@ -474,16 +623,16 @@ class BufferObject : public BaseObject
          * Update the BufferObject from a serialized representation
          * The second definition updates from the inner serialized object
          */
-        virtual bool deserialize(std::shared_ptr<SerializedObject> obj) = 0;
+        virtual bool deserialize(const std::shared_ptr<SerializedObject>& obj) = 0;
         bool deserialize()
         {
-            if (_newSerializedObject == false)
-                return true;
+            if (!_newSerializedObject)
+                return false;
 
-            bool _returnValue = deserialize(std::move(_serializedObject));
+            bool returnValue = deserialize(_serializedObject);
             _newSerializedObject = false;
 
-            return _returnValue;
+            return returnValue;
         }
 
         /**
@@ -515,7 +664,11 @@ class BufferObject : public BaseObject
 
             // Deserialize it right away, in a separate thread
             SThread::pool.enqueueWithoutId([&]() {
-                deserialize();
+                if (_writeMutex.try_lock())
+                {
+                    deserialize();
+                    _writeMutex.unlock();
+                }
             });
         }
 
@@ -546,7 +699,7 @@ class RootObject : public BaseObject
     public:
         RootObject()
         {
-            _attribFunctions["answerMessage"] = AttributeFunctor([&](const Values& args) {
+            addAttribute("answerMessage", [&](const Values& args) {
                 if (args.size() == 0 || args[0].asString() != _answerExpected)
                     return false;
                 std::unique_lock<std::mutex> conditionLock(conditionMutex);
@@ -603,18 +756,31 @@ class RootObject : public BaseObject
         /**
          * Set the attribute of the named object with the given args
          */
-        bool set(const std::string& name, const std::string& attrib, const Values& args)
+        bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true)
         {
             std::unique_lock<std::recursive_mutex> lock(_setMutex);
 
-            if (name == _name || name == SPLASH_ALL_PAIRS)
+            if (name == _name || name == SPLASH_ALL_PEERS)
                 return setAttribute(attrib, args);
 
-            auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end())
-                return objectIt->second->setAttribute(attrib, args);
+            if (async)
+            {
+                addTask([=]() {
+                    auto objectIt = _objects.find(name);
+                    if (objectIt != _objects.end())
+                        objectIt->second->setAttribute(attrib, args);
+                });
+            }
             else
-                return false;
+            {
+                auto objectIt = _objects.find(name);
+                if (objectIt != _objects.end())
+                    return objectIt->second->setAttribute(attrib, args);
+                else
+                    return false;
+            }
+
+            return true;
         }
 
         /**
@@ -650,8 +816,21 @@ class RootObject : public BaseObject
         std::mutex conditionMutex;
         std::mutex _answerMutex;
         std::string _answerExpected {""};
+        
+        // Tasks queue
+        std::mutex _taskMutex;
+        std::list<std::function<void()>> _taskQueue;
 
         virtual void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj) {}
+
+        /**
+         * Add a new task to the queue
+         */
+        void addTask(const std::function<void()>& task)
+        {
+            std::unique_lock<std::mutex> lock(_taskMutex);
+            _taskQueue.push_back(task);
+        }
 
         /**
          * Send a message to the target specified by its name

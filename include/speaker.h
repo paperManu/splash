@@ -86,7 +86,7 @@ class Speaker : public BaseObject
          * Returns false if there was an error
          */
         template<typename T>
-        bool addToQueue(const std::vector<T>& buffer);
+        bool addToQueue(const ResizableArray<T>& buffer);
 
         /**
          * Clear the queue
@@ -138,12 +138,12 @@ class Speaker : public BaseObject
 
 /*************/
 template<typename T>
-bool Speaker::addToQueue(const std::vector<T>& buffer)
+bool Speaker::addToQueue(const ResizableArray<T>& buffer)
 {
     std::unique_lock<std::mutex> lock(_ringWriteMutex);
 
     // If the input buffer is planar, we need to interlace it
-    std::vector<T> interleavedBuffer(buffer.size());
+    ResizableArray<T> interleavedBuffer(buffer.size());
     if (_planar)
     {
         int sampleNbr = (buffer.size() / _sampleSize) / _channels;
@@ -151,7 +151,7 @@ bool Speaker::addToQueue(const std::vector<T>& buffer)
         {
             int channel = (i / _sampleSize) / sampleNbr;
             int sample = (i / _sampleSize) % sampleNbr;
-            std::copy(&buffer[i], &buffer[i + _sampleSize], &interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
+            std::copy(buffer[i], buffer[i + _sampleSize], interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
         }
     }
 

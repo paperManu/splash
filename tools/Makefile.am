@@ -1,9 +1,14 @@
 AM_CPPFLAGS = \
 	-funroll-loops -ftree-vectorize \
 	-I$(top_srcdir)/include \
-	-I$(top_srcdir)/external/GLV/GLV \
+	-I$(top_srcdir)/external/cppzmq \
+	-I$(top_srcdir)/external/glm \
 	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/imgui \
+	-I$(top_srcdir)/external/jsoncpp \
+	-I$(top_srcdir)/external/libltc/src \
 	-I$(top_srcdir)/external/piccante/include \
+	-I$(top_srcdir)/external/stb \
 	-DGLV_GLFW \
 	-DGLM_FORCE_RADIANS \
 	-DDATADIR=\"$(datadir)/splash/\" \

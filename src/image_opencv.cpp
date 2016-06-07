@@ -131,9 +131,7 @@ void Image_OpenCV::readLoop()
 /*************/
 void Image_OpenCV::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("size", [&](const Values& args) {
         _width = args[0].asInt();
         _height = args[1].asInt();
         
@@ -143,16 +141,16 @@ void Image_OpenCV::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_width, (int)_height};
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("size", "Set the desired capture resolution")
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("framerate", [&](const Values& args) {
         _framerate = (args[0].asFloat() == 0) ? 60 : args[0].asFloat();
         return true;
     }, [&]() -> Values {
         return {_framerate};
-    });
+    }, {'n'});
+    setAttributeDescription("framerate", "Set the desired capture framerate")
 }
 
 } // end of namespace

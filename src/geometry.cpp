@@ -152,10 +152,8 @@ shared_ptr<SerializedObject> Geometry::serialize() const
 }
 
 /*************/
-bool Geometry::deserialize(shared_ptr<SerializedObject> obj)
+bool Geometry::deserialize(const shared_ptr<SerializedObject>& obj)
 {
-    unique_lock<mutex> lock(_writeMutex);
-    _serializedObject = std::move(obj);
     return true;
 }
 
@@ -283,8 +281,6 @@ void Geometry::update()
         if (_glTemporaryBuffers.size() != 4)
             _glTemporaryBuffers.resize(4);
 
-        unique_lock<mutex> lock(_writeMutex);
-
         _temporaryVerticesNumber = *(int*)(_serializedObject->data());
         _temporaryBufferSize = _temporaryVerticesNumber;
 
@@ -315,11 +311,7 @@ void Geometry::update()
 
         swapBuffers();
         _buffersDirty = true;
-
-        _serializedObject.reset();
     }
-    else if (_onMasterScene)
-        _serializedObject.reset();
 
     GLFWwindow* context = glfwGetCurrentContext();
     auto vertexArrayIt = _vertexArray.find(context);

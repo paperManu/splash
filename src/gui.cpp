@@ -1,15 +1,15 @@
-#include "gui.h"
+#include "./gui.h"
 
-#include "camera.h"
-#include "log.h"
-#include "object.h"
-#include "osUtils.h"
-#include "scene.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "timer.h"
-#include "threadpool.h"
-#include "window.h"
+#include "./camera.h"
+#include "./log.h"
+#include "./object.h"
+#include "./osUtils.h"
+#include "./scene.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./timer.h"
+#include "./threadpool.h"
+#include "./window.h"
 
 using namespace std;
 
@@ -115,7 +115,21 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 void Gui::computeBlending(bool once)
 {
     auto scene = _scene.lock();
-    scene->sendMessageToWorld("computeBlending", {(int)once});
+    if (_blendingActive)
+    {
+        scene->sendMessageToWorld("computeBlending", {"none"});
+        _blendingActive = false;
+    }
+    else if (once)
+    {
+        scene->sendMessageToWorld("computeBlending", {"once"});
+        _blendingActive = true;
+    }
+    else 
+    {
+        scene->sendMessageToWorld("computeBlending", {"continuous"});
+        _blendingActive = true;
+    }
 }
 
 /*************/
@@ -155,6 +169,13 @@ void Gui::loadConfiguration()
 {
     auto scene = _scene.lock();
     scene->sendMessageToWorld("loadConfig", {_configurationPath});
+}
+
+/*************/
+void Gui::copyCameraParameters()
+{
+    auto scene = _scene.lock();
+    scene->sendMessageToWorld("copyCameraParameters", {_configurationPath});
 }
 
 /*************/
@@ -501,6 +522,12 @@ bool Gui::render()
                 loadConfiguration();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Load the given path");
+
+            ImGui::SameLine();
+            if (ImGui::Button("Copy camera calibration"))
+                copyCameraParameters();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Copy the camera parameters from the given file");
         }
 
         // Specific widgets
@@ -571,7 +598,10 @@ void Gui::setOutputSize(int width, int height)
     _width = width;
     _height = height;
 
-    initImGui(width, height);
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize.x = width;
+    io.DisplaySize.y = height;
+
     _window->releaseContext();
 }
 
@@ -1008,12 +1038,11 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 /*************/
 void Gui::registerAttributes()
 {
-    _attribFunctions["size"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("size", [&](const Values& args) {
         setOutputSize(args[0].asInt(), args[1].asInt());
         return true;
-    });
+    }, {'n', 'n'});
+    setAttributeDescription("size", "Set the GUI render resolution");
 }
 
 } // end of namespace

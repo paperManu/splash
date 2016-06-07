@@ -98,7 +98,7 @@ class Warp : public Texture
         int pickControlPoint(glm::vec2 p, glm::vec2& v);
 
         /**
-         * Warps should always be saved as the hold user-modifiable parameters
+         * Warps should always be saved as it hold user-modifiable parameters
          */
         void setSavable(bool savable) {_savable = true;}
 
@@ -118,13 +118,24 @@ class Warp : public Texture
         std::shared_ptr<Object> _screen {nullptr};
         ImageBufferSpec _outTextureSpec;
 
+        // Some default models use in various situations
+        std::list<std::shared_ptr<Mesh>> _modelMeshes;
+        std::list<std::shared_ptr<Geometry>> _modelGeometries;
+        std::unordered_map<std::string, std::shared_ptr<Object>> _models;
+
         // Render options
         bool _showControlPoints {false};
+        int _selectedControlPointIndex {-1};
 
         /**
          * Init function called in constructors
          */
         void init();
+
+        /**
+         * Load some defaults models
+         */
+        void loadDefaultModels();
 
         /**
          * Setup the output texture

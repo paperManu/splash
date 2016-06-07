@@ -31,7 +31,7 @@
 #define SPLASH_GL_DEBUG true
 #define SPLASH_SAMPLES 0
 
-#define SPLASH_ALL_PAIRS "__ALL__"
+#define SPLASH_ALL_PEERS "__ALL__"
 
 #include <algorithm>
 #include <atomic>
@@ -141,10 +141,15 @@ class ResizableArray
             return *this;
         }
 
+        T* operator[](unsigned int i) const
+        {
+            return data() + i;
+        }
+
         /**
          * Get a pointer to the data
          */
-        inline T* data() {return _buffer.get() + _shift;}
+        inline T* data() const {return _buffer.get() + _shift;}
 
         /**
          * Shift the data, for example to get rid of a header without copying
@@ -161,7 +166,7 @@ class ResizableArray
         /**
          * Get the size of the buffer
          */
-        inline size_t size() {return _size - _shift;}
+        inline size_t size() const {return _size - _shift;}
 
         /**
          * Resize the buffer
@@ -505,6 +510,22 @@ struct Value
         }
 
         Type getType() const {return _type;}
+        char getTypeAsChar() const 
+        {
+            switch (_type)
+            {
+            case i:
+                return 'n';
+            case l:
+                return 'n';
+            case f:
+                return 'n';
+            case s:
+                return 's';
+            case v:
+                return 'v';
+            }
+        }
         
         int size()
         {

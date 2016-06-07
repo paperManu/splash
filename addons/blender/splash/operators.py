@@ -62,6 +62,11 @@ class Splash:
     
         for name, target in Splash._targets.items():
             currentTime = time.clock_gettime(time.CLOCK_REALTIME) - target._startTime
+            worldMatrix = target._object.matrix_world;
+
+            normalMatrix = worldMatrix.copy()
+            normalMatrix.invert()
+            normalMatrix.transpose()
     
             if currentObject == name and bpy.context.edit_object is not None:
                 if currentTime - target._frameTimeMesh < target._updatePeriodEdit:
@@ -86,8 +91,17 @@ class Splash:
                     bufferPoly += struct.pack("i", len(face.verts))
                     for loop in face.loops:
                         bufferPoly += struct.pack("i", vertNbr)
+
                         v = loop.vert.co
+                        tmpVector = Vector((v[0], v[1], v[2], 1.0))
+                        tmpVector = worldMatrix * tmpVector;
+                        v = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
+
                         n = loop.vert.normal
+                        tmpVector = Vector((n[0], n[1], n[2], 0.0))
+                        tmpVector = normalMatrix * tmpVector;
+                        n = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
+
                         if uv_layer is None:
                             uv = Vector((0, 0))
                         else:
@@ -105,6 +119,7 @@ class Splash:
                 target._frameTimeMesh = currentTime
     
                 if type(target._object.data) is bpy.types.Mesh:
+
                     # Look for UV coords, create them if needed
                     if len(target._object.data.uv_layers) == 0:
                         bpy.ops.object.editmode_toggle()
@@ -126,8 +141,17 @@ class Splash:
                         bufferPoly += struct.pack("i", len(poly.loop_indices))
                         for idx in poly.loop_indices:
                             bufferPoly += struct.pack("i", vertNbr)
+
                             v = mesh.vertices[mesh.loops[idx].vertex_index].co
+                            tmpVector = Vector((v[0], v[1], v[2], 1.0))
+                            tmpVector = worldMatrix * tmpVector;
+                            v = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
+
                             n = mesh.vertices[mesh.loops[idx].vertex_index].normal
+                            tmpVector = Vector((n[0], n[1], n[2], 0.0))
+                            tmpVector = normalMatrix * tmpVector;
+                            n = Vector((tmpVector[0], tmpVector[1], tmpVector[2]))
+
                             if len(mesh.uv_layers) != 0:
                                 uv = mesh.uv_layers[0].data[idx].uv
                             else:

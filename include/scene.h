@@ -40,7 +40,6 @@
 #include "basetypes.h"
 #include "gui.h"
 #include "httpServer.h"
-#include "widgets.h"
 
 namespace Splash {
 
@@ -88,6 +87,12 @@ class Scene : public RootObject
          * Trie locally and to the World
          */
         Values getAttributeFromObject(std::string name, std::string attribute);
+
+        /**
+         * Get an attribute description
+         * Trie locally and to the World
+         */
+        Values getAttributeDescriptionFromObject(std::string name, std::string attribute);
 
         /**
          * Get the current configuration of the scene as a json object
@@ -172,7 +177,7 @@ class Scene : public RootObject
          * Set a message to be sent to the world
          */
         void sendMessageToWorld(const std::string& message, const Values& value = {});
-        Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {});
+        Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
         /**
          * Wait for synchronization with texture upload
@@ -203,7 +208,7 @@ class Scene : public RootObject
         /**
          * Creates the blending map from the current calibration of the cameras
          */
-        void computeBlendingMap(bool once = true);
+        void computeBlendingMap(const std::string& mode = "once");
         void activateBlendingMap(bool once = true);
         void deactivateBlendingMap();
 
@@ -231,16 +236,17 @@ class Scene : public RootObject
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
         GLsync _textureUploadFence, _cameraDrawnFence;
+        
+        // Vertex blending variables
+        std::mutex _vertexBlendingMutex;
+        std::condition_variable _vertexBlendingCondition;
+        std::atomic_bool _vertexBlendingReceptionStatus {false};
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
         GLuint _maxSwapBarriers {0};
 
         unsigned long _nextId {0};
-        
-        // Tasks queue
-        std::mutex _taskMutex;
-        std::list<std::function<void()>> _taskQueue;
 
         // Blending attributes
         bool _isBlendingComputed {false};

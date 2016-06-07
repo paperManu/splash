@@ -129,6 +129,11 @@ class Texture_Image : public Texture
         void resize(int width, int height);
 
         /**
+         * Enable / disable clamp to edge
+         */
+        void setClampToEdge(bool active) {_glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT;}
+
+        /**
          * Unlock the texture for read / write operations
          */
         void unlock() const {_mutex.unlock();}
@@ -151,6 +156,7 @@ class Texture_Image : public Texture
         bool _filtering {true};
         GLenum _texTarget, _texFormat, _texType;
         GLint _texLevel, _texInternalFormat, _texBorder;
+        GLint _glTextureWrap {GL_REPEAT};
 
         // And some temporary attributes
         GLint _activeTexture; // Texture unit to which the texture is bound

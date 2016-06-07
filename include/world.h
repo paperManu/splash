@@ -67,7 +67,7 @@ class World : public RootObject
         /**
          * Get the status of the world
          */
-        bool getStatus() const {return _status;}
+        bool getStatus() const {return !_status;}
 
         /**
          * Run the world
@@ -78,6 +78,7 @@ class World : public RootObject
         WorldPtr _self;
 #if HAVE_PORTAUDIO
         std::unique_ptr<LtcClock> _clock {nullptr};
+        std::string _clockDeviceName {""};
 #endif
 
         std::shared_ptr<Scene> _innerScene {};
@@ -92,6 +93,7 @@ class World : public RootObject
 
         // World parameters
         unsigned int _worldFramerate {60};
+        std::string _blendingMode {};
 
         std::map<std::string, int> _scenes;
         std::string _masterSceneName {""};
@@ -119,6 +121,11 @@ class World : public RootObject
          * Apply the configuration
          */
         void applyConfig();
+
+        /**
+         * Copies the camera calibration from the given file to the current configuration
+         */
+        bool copyCameraParameters(std::string filename);
 
         /**
          * Save the configuration
@@ -160,6 +167,11 @@ class World : public RootObject
          * Parse the given arguments
          */
         void parseArguments(int argc, char** argv);
+
+        /**
+         * Helper function to read Json arrays
+         */
+        Values processArray(Json::Value values);
 
         /**
          * Set a parameter for an object, given its id

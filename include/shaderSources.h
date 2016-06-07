@@ -98,66 +98,22 @@ struct ShaderSources
         //
         // RGB to HSV and HSV to RGB
         {"hsv", R"(
-            vec3 rgb2hsv(vec3 rgb)
+            vec3 rgb2hsv(vec3 c)
             {
-                vec3 hsv;
+                vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+                vec4 p = c.g < c.b ? vec4(c.bg, K.wz) : vec4(c.gb, K.xy);
+                vec4 q = c.r < p.x ? vec4(p.xyw, c.r) : vec4(c.r, p.yzx);
 
-                float cmax = max(rgb.r, max(rgb.g, rgb.b));
-                float cmin = min(rgb.r, min(rgb.g, rgb.b));
-                float delta = cmax - cmin;
-
-                if (delta <= 0.0001)
-                {
-                    hsv.x = 0.f;
-                    hsv.y = 0.f;
-                }
-                else
-                {
-                    if (delta == 0)
-                        hsv.x = 0.f;
-                    else if (cmax == rgb.r)
-                        hsv.x = mod(60.f * ((rgb.g - rgb.b) / delta), 360.f);
-                    else if (cmax == rgb.g)
-                        hsv.x = 60.f * ((rgb.b - rgb.r) / delta + 2);
-                    else if (cmax == rgb.b)
-                        hsv.x = 60.f * ((rgb.r - rgb.g) / delta + 4);
-
-                    if (cmax == 0.f)
-                        hsv.y = 0.f;
-                    else
-                        hsv.y = delta / cmax;
-                }
-
-                hsv.z = cmax;
-
-                return hsv;
+                float d = q.x - min(q.w, q.y);
+                float e = 1.0e-10;
+                return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
             }
 
-            vec3 hsv2rgb(vec3 hsv)
+            vec3 hsv2rgb(vec3 c)
             {
-                vec3 rgb;
-
-                float c = hsv.y * hsv.z;
-                float x = c * (1.f - abs(mod(hsv.x / 60.f, 2.f) - 1.f));
-
-                float m = hsv.z - c;
-
-                if (0.f <= hsv.x && hsv.x < 60.f)
-                    rgb = vec3(c, x, 0.f);
-                else if (60.f <= hsv.x && hsv.x < 120.f)
-                    rgb = vec3(x, c, 0.f);
-                else if (120.f <= hsv.x && hsv.x < 180.f)
-                    rgb = vec3(0.f, c, x);
-                else if (180.f <= hsv.x && hsv.x < 240.f)
-                    rgb = vec3(0.f, x, c);
-                else if (240.f <= hsv.x && hsv.x < 300.f)
-                    rgb = vec3(x, 0.f, c);
-                else if (300.f <= hsv.x && hsv.x < 360.f)
-                    rgb = vec3(c, 0.f, x);
-
-                rgb += vec3(m);
-
-                return rgb;
+                vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
             }
         )"}
     };
@@ -786,16 +742,17 @@ struct ShaderSources
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _colorBalance.g / maxBalanceRatio;
 
-            vec3 hsv = rgb2hsv(color.rgb);
-
-            // Brightness correction
-            hsv.z *= _brightness;
-            // Saturation
-            hsv.y *= _saturation;
-            // Contrast correction
-            hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
-
-            color.rgb = hsv2rgb(hsv);
+            if (_brightness != 1.f || _saturation != 1.f || _contrast != 1.f)
+            {
+                vec3 hsv = rgb2hsv(color.rgb);
+                // Brightness correction
+                hsv.z *= _brightness;
+                // Saturation
+                hsv.y *= _saturation;
+                // Contrast correction
+                hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
+                color.rgb = hsv2rgb(hsv);
+            }
 
             // Black level
             if (_blackLevel != 0.0)
@@ -1205,6 +1162,13 @@ struct ShaderSources
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         out vec4 fragColor;
 
+        float edgeFactor()
+        {
+            vec3 d = fwidth(vertexIn.bcoord);
+            vec3 a3 = smoothstep(vec3(0.0), d * 1.5, vertexIn.bcoord);
+            return min(min(a3.x, a3.y), a3.z);
+        }
+
         void main(void)
         {
             vec4 position = vertexIn.position;
@@ -1212,10 +1176,7 @@ struct ShaderSources
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
             vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
-            if (minDist < 0.025)
-                fragColor.rgba = mix(vec4(1.0), matColor, (minDist - 0.0125) / 0.0125);
-            else
-                fragColor.rgba = matColor;
+            fragColor.rgba = mix(vec4(1.0), matColor, edgeFactor());
         }
     )"};
 

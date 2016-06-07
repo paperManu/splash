@@ -166,7 +166,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
     // Clean each individual source
     for (auto it = playlist.begin(); it != playlist.end();)
     {
-        if (it->start >= it->stop)
+        if (it->start >= it->stop && it->stop != 0l)
         {
             if (it->stop > 1000000l)
                 it->start = it->stop - 1000000l;
@@ -175,6 +175,20 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         {
             it++;
         }
+    }
+
+    // Find duration for videos with stop == 0
+    for (auto& source : playlist)
+    {
+        if (source.stop > source.start)
+            continue;
+
+        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg());
+        videoSrc->setAttribute("file", {source.filename});
+        Values duration;
+        videoSrc->getAttribute("duration", duration);
+        if (duration.size() > 0)
+            source.stop = duration[0].asLong() * 1e6 + source.start;
     }
 
     // Clean the queue, add black intermediate images, ...
@@ -280,31 +294,26 @@ shared_ptr<BufferObject> Queue::createSource(string type)
 /*************/
 void Queue::registerAttributes()
 {
-    _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("loop", [&](const Values& args) {
         _loop = (bool)args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_loop};
-    });
-    _attribFunctions["loop"].doUpdateDistant(true);
+    }, {'n'});
+    setAttributeParameter("loop", true, true);
+    setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
-    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("pause", [&](const Values& args) {
         _paused = args[0].asInt();
 
         return true;
     }, [&]() -> Values {
         return {_paused};
-    });
-    _attribFunctions["pause"].doUpdateDistant(true);
-    _attribFunctions["pause"].savable(false);
+    }, {'n'});
+    setAttributeParameter("pause", false, true);
+    setAttributeDescription("pause", "Pause the queue if set to 1");
 
-    _attribFunctions["playlist"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("playlist", [&](const Values& args) {
         unique_lock<mutex> lock(_playlistMutex);
         _playlist.clear();
 
@@ -348,26 +357,21 @@ void Queue::registerAttributes()
 
         return playlist;
     });
-    _attribFunctions["playlist"].doUpdateDistant(true);
+    setAttributeParameter("playlist", true, true);
+    setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
-    _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("seek", [&](const Values& args) {
         int64_t seekTime = args[0].asFloat() * 1e6;
         _startTime = Timer::getTime() - seekTime;
         _seeked = true;
         return true;
     }, [&]() -> Values {
         return {(float)_currentTime / 1e6};
-    });
-    _attribFunctions["seek"].doUpdateDistant(true);
-    _attribFunctions["seek"].savable(false);
+    }, {'n'});
+    setAttributeParameter("seek", false, true);
+    setAttributeDescription("seek", "Seek through the playlist");
 
-    _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("useClock", [&](const Values& args) {
         _useClock = args[0].asInt();
         if (_currentSource)
             _currentSource->setAttribute("useClock", {_useClock});
@@ -375,8 +379,9 @@ void Queue::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};
-    });
-    _attribFunctions["useClock"].doUpdateDistant(true);
+    }, {'n'});
+    setAttributeParameter("useClock", true, true);
+    setAttributeDescription("useClock", "Use the master clock if set to 1");
 }
 
 /*************/
@@ -391,6 +396,7 @@ QueueSurrogate::QueueSurrogate(RootObjectWeakPtr root)
     _filter = make_shared<Filter>(root);
     _filter->setName("queueFilter" + to_string(_filterIndex++));
     _root.lock()->registerObject(_filter);
+    _filter->_savable = false;
 
     registerAttributes();
 }
@@ -442,7 +448,7 @@ void QueueSurrogate::registerAttributes()
      * Create the object for the current source type
      * Args holds the object type (Image, Texture...)
      */
-    _attribFunctions["source"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("source", [&](const Values& args) {
         if (args.size() != 1)
             return false;
 

@@ -365,18 +365,7 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 /*************/
 void Image_GPhoto::registerAttributes()
 {
-    _attribFunctions["srgb"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        _srgb = (args[0].asInt() > 0) ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_srgb};
-    });
-
-    _attribFunctions["aperture"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("aperture", [&](const Values& args) {
         return doSetProperty("aperture", args[0].asString());
     }, [&]() -> Values {
         string value;
@@ -384,11 +373,10 @@ void Image_GPhoto::registerAttributes()
             return {value};
         else
             return {};
-    });
+    }, {'n'});
+    setAttributeDescription("aperture", "Set the aperture of the lens");
 
-    _attribFunctions["isospeed"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("isospeed", [&](const Values& args) {
         return doSetProperty("iso", args[0].asString());
     }, [&]() -> Values {
         string value;
@@ -396,10 +384,10 @@ void Image_GPhoto::registerAttributes()
             return {value};
         else
             return {};
-    });
-    _attribFunctions["shutterspeed"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    }, {'n'});
+    setAttributeDescription("isospeed", "Set the ISO value of the camera");
+
+    addAttribute("shutterspeed", [&](const Values& args) {
         doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
         return true;
     }, [&]() -> Values {
@@ -407,25 +395,28 @@ void Image_GPhoto::registerAttributes()
         doGetProperty("shutterspeed", value);
         float duration = getFloatFromShutterspeedString(value);
         return {duration};
-    });
+    }, {'n'});
+    setAttributeDescription("shutterspeed", "Set the camera shutter speed");
 
     // Actions
-    _attribFunctions["capture"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("capture", [&](const Values& args) {
         SThread::pool.enqueue([&]() {
             capture();
         });
         return true;
     });
+    setAttributeDescription("capture", "Ask for the camera to shoot");
 
-    _attribFunctions["detect"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("detect", [&](const Values& args) {
         SThread::pool.enqueue([&]() {
             detectCameras();
         });
         return true;
     });
+    setAttributeDescription("detect", "Ask for camera detection");
 
     // Status
-    _attribFunctions["ready"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("ready", [&](const Values& args) {
         return false;
     }, [&]() -> Values {
         lock_guard<recursive_mutex> lock(_gpMutex);
@@ -434,6 +425,7 @@ void Image_GPhoto::registerAttributes()
         else
             return {1};
     });
+    setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
 }
 
 } // end of namespace

@@ -60,7 +60,7 @@ void Texture_Syphon::unbind()
 /**************/
 void Texture_Syphon::registerAttributes()
 {
-    _attribFunctions["connect"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("connect", [&](const Values& args) {
         if (args.size() == 0)
         {
             _serverName = "";
@@ -98,6 +98,7 @@ void Texture_Syphon::registerAttributes()
         v.push_back(Values({"appname", _appName}));
         return v;
     });
+    setAttributeDescription("connect", "Try to connect to the Syphon server, given its server name and application name");
 }
 
 } // end of namespace

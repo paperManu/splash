@@ -72,18 +72,31 @@ void World::run()
         unique_lock<mutex> lockConfiguration(_configurationMutex);
 
         {
+            // Execute waiting tasks
+            unique_lock<mutex> lockTask(_taskMutex);
+            for (auto& task : _taskQueue)
+                task();
+            _taskQueue.clear();
+        }
+
+        {
             unique_lock<recursive_mutex> lockObjects(_objectsMutex);
 
-            Timer::get() << "upload";
+            // Read and serialize new buffers
+            Timer::get() << "serialize";
             vector<unsigned int> threadIds;
+            map<string, shared_ptr<SerializedObject>> serializedObjects;
             for (auto& o : _objects)
             {
-                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
+                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                // This prevents the map structure to be modified in the threads
+                serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
+
+                threadIds.push_back(SThread::pool.enqueue([=, &serializedObjects, &o]() {
                     // Update the local objects
                     o.second->update();
 
                     // Send them the their destinations
-                    BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                     if (bufferObj.get() != nullptr)
                     {
                         if (bufferObj->wasUpdated()) // if the buffer has been updated
@@ -91,19 +104,27 @@ void World::run()
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
                             if (obj)
-                                _link->sendBuffer(bufferObj->getDistantName(), std::move(obj));
+                                serializedObjects[bufferObj->getDistantName()] = obj;
                         }
                         else
+                        {
                             return; // if not, exit this thread
+                        }
                     }
                 }));
             }
             SThread::pool.waitThreads(threadIds);
+            Timer::get() >> "serialize";
 
-            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 60))); // Maximum time to wait for frames to arrive
-            sendMessage(SPLASH_ALL_PAIRS, "bufferUploaded", {});
-
+            // Wait for previous buffers to be uploaded
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 30))); // Maximum time to wait for frames to arrive
+            sendMessage(SPLASH_ALL_PEERS, "bufferUploaded", {});
             Timer::get() >> "upload";
+
+            // Ask for the upload of the new buffers, during the next world loop
+            Timer::get() << "upload";
+            for (auto& o : serializedObjects)
+                _link->sendBuffer(o.first, std::move(o.second));
         }
 
         // Update the distant attributes
@@ -119,7 +140,7 @@ void World::run()
         // If swap synchronization test is enabled
         if (_swapSynchronizationTesting)
         {
-            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {1});
+            sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
 
             static auto frameNbr = 0;
             static auto frameStatus = 0;
@@ -137,13 +158,13 @@ void World::run()
             }
 
             if (frameNbr == 0)
-                sendMessage(SPLASH_ALL_PAIRS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+                sendMessage(SPLASH_ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
 
             frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
         }
         else
         {
-            sendMessage(SPLASH_ALL_PAIRS, "swapTest", {0});
+            sendMessage(SPLASH_ALL_PEERS, "swapTest", {0});
         }
 
         // If the master scene is not an inner scene, we have to send it some information
@@ -259,25 +280,6 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-
-    // Helper function to read arrays
-    std::function<Values(Json::Value)> processArray;
-    processArray = [&processArray](Json::Value values) {
-        Values outValues;
-        for (auto& v : values)
-        {
-            if (v.isInt())
-                outValues.emplace_back(v.asInt());
-            else if (v.isDouble())
-                outValues.emplace_back(v.asFloat());
-            else if (v.isArray())
-                outValues.emplace_back(processArray(v));
-            else
-                outValues.emplace_back(v.asString());
-        }
-        return outValues;
-    };
-
     unique_lock<mutex> lockConfiguration(_configurationMutex);
 
     // We first destroy all scene and objects
@@ -422,7 +424,7 @@ void World::applyConfig()
 
         // Create the objects
         auto sceneMembers = jsScene.getMemberNames();
-        int idx {0};
+        int idx = 0;
         for (const auto& obj : jsScene)
         {
             string name = sceneMembers[idx];
@@ -477,7 +479,7 @@ void World::applyConfig()
         }
     }
 
-    // Lastly, we configure the objects
+    // Configure the objects
     for (auto& s : _scenes)
     {
         if (!_config.isMember(s.first))
@@ -506,12 +508,12 @@ void World::applyConfig()
                 sendMessage(name, "configFilePath", {path});
                 if (s.first != _masterSceneName)
                     sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
-                set(name, "configFilePath", {path});
+                set(name, "configFilePath", {path}, false);
             }
 
             // Set their attributes
             auto objMembers = obj.getMemberNames();
-            int idxAttr {0};
+            int idxAttr = 0;
             for (const auto& attr : obj)
             {
                 if (objMembers[idxAttr] == "type")
@@ -534,16 +536,16 @@ void World::applyConfig()
                 sendMessage(name, objMembers[idxAttr], values);
                 if (type != "scene")
                 {
+                    // We also the attribute locally, if the object exists
+                    set(name, objMembers[idxAttr], values, false);
+
                     // The attribute is also sent to the master scene
                     if (s.first != _masterSceneName)
                     {
-                        Values ghostValues {name, objMembers[idxAttr]};
-                        for (auto& v : values)
-                            ghostValues.push_back(v);
-                        sendMessage(_masterSceneName, "setGhost", ghostValues);
+                        values.push_front(objMembers[idxAttr]);
+                        values.push_front(name);
+                        sendMessage(_masterSceneName, "setGhost", values);
                     }
-                    // We also set the attribute locally, if the object exists
-                    set(name, objMembers[idxAttr], values);
                 }
 
                 idxAttr++;
@@ -560,24 +562,28 @@ void World::applyConfig()
         const Json::Value jsWorld = _config["world"];
         auto worldMember = jsWorld.getMemberNames();
         int idx {0};
-        for (const auto& param : jsWorld)
+        for (const auto& attr : jsWorld)
         {
+            Values values;
+            if (attr.isArray())
+                values = processArray(attr);
+            else if (attr.isInt())
+                values.emplace_back(attr.asInt());
+            else if (attr.isDouble())
+                values.emplace_back(attr.asFloat());
+            else if (attr.isString())
+                values.emplace_back(attr.asString());
+
             string paramName = worldMember[idx];
-            Value v;
-            if (param.isInt())
-                v = param.asInt();
-            else if (param.isDouble())
-                v = param.asFloat();
-            else
-                v = param.asString();
-            setAttribute(paramName, {v});
+            setAttribute(paramName, values);
             idx++;
         }
     }
 
-    // Also, enable the master clock
+    // Also, enable the master clock if it was not enabled
 #if HAVE_PORTAUDIO
-    _clock = unique_ptr<LtcClock>(new LtcClock(true));
+    if (!_clock)
+        _clock = unique_ptr<LtcClock>(new LtcClock(true));
 #endif
 
     // Send the start message for all scenes
@@ -619,11 +625,17 @@ void World::saveConfig()
         root[s.first] = config;
     }
 
-    // Complete with the configuration from the world
-    const Json::Value jsScenes = _config["scenes"];
+    // Local objects configuration can differ from the scenes objects, 
+    // as their type is not necessarily identical
+    Json::Value& jsScenes = _config["scenes"];
     for (int i = 0; i < jsScenes.size(); ++i)
     {
         string sceneName = jsScenes[i]["name"].asString();
+
+        // Set the scene configuration from what was received in the previous loop
+        Json::Value::Members attributes = root[sceneName][sceneName].getMemberNames();
+        for (const auto& attr : attributes)
+            jsScenes[i][attr] = root[sceneName][sceneName][attr];
 
         if (root.isMember(sceneName))
         {
@@ -632,12 +644,18 @@ void World::saveConfig()
 
             for (auto& m : members)
             {
+                // The root objects contains configuration for the scenes as if they
+                // were Objects themselves, although they are RootObjects. We should not
+                // include them here
+                if (m == sceneName)
+                    continue;
+
                 if (!_config[sceneName].isMember(m))
                     _config[sceneName][m] = Json::Value();
 
                 if (m != "links")
                 {
-                    Json::Value::Members attributes = scene[m].getMemberNames();
+                    attributes = scene[m].getMemberNames();
                     for (const auto& a : attributes)
                         _config[sceneName][m][a] = scene[m][a];
 
@@ -656,6 +674,14 @@ void World::saveConfig()
                 }
             }
         }
+    }
+
+    // Configuration from the world
+    auto worldConfiguration = BaseObject::getConfigurationAsJson();
+    auto attributes = worldConfiguration.getMemberNames();
+    for (const auto& attr : attributes)
+    {
+        _config["world"][attr] = worldConfiguration[attr];
     }
     
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -701,6 +727,124 @@ void World::leave(int signal_value)
 {
     Log::get() << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
     _that->_quit = true;
+}
+
+/*************/
+bool World::copyCameraParameters(std::string filename)
+{
+    ifstream in(filename, ios::in | ios::binary);
+    string contents;
+    if (in)
+    {
+        in.seekg(0, ios::end);
+        contents.resize(in.tellg());
+        in.seekg(0, ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
+        return false;
+    }
+
+    Json::Value config;
+    Json::Reader reader;
+
+    bool success = reader.parse(contents, config);
+    if (!success)
+    {
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
+        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+        return false;
+    }
+
+    // Get the scene names from this other configuration file
+    const Json::Value jsScenes = config["scenes"];
+    vector<string> sceneNames;
+    for (int i = 0; i < jsScenes.size(); ++i)
+        if (jsScenes[i].isMember("name"))
+            sceneNames.push_back(jsScenes[i]["name"].asString());
+
+    for (const auto& s : sceneNames)
+    {
+        if (!config.isMember(s))
+            continue;
+
+        const Json::Value jsScene = config[s];
+        auto sceneMembers = jsScene.getMemberNames();
+        int idx = 0;
+        // Look for the cameras in the configuration file
+        for (const auto& obj : jsScene)
+        {
+            string name = sceneMembers[idx];
+            if (name == "links" || !obj.isMember("type"))
+            {
+                idx++;
+                continue;
+            }
+
+            if (obj["type"].asString() != "camera")
+            {
+                idx++;
+                continue;
+            }
+
+            // Go through the camera attributes
+            auto objMembers = obj.getMemberNames();
+            int idxAttr = 0;
+            for (const auto& attr : obj)
+            {
+                if (objMembers[idxAttr] == "type")
+                {
+                    idxAttr++;
+                    continue;
+                }
+
+                Values values;
+                if (attr.isArray())
+                    values = processArray(attr);
+                else if (attr.isInt())
+                    values.emplace_back(attr.asInt());
+                else if (attr.isDouble())
+                    values.emplace_back(attr.asFloat());
+                else if (attr.isString())
+                    values.emplace_back(attr.asString());
+
+                // Send the new values for this attribute
+                sendMessage(name, objMembers[idxAttr], values);
+
+                // Also send it to a ghost if it exists
+                values.push_front(objMembers[idxAttr]);
+                values.push_front(name);
+                sendMessage(_masterSceneName, "setGhost", values);
+
+                idxAttr++;
+            }
+
+            idx++;
+        }
+    }
+
+    return true;
+}
+
+/*************/
+Values World::processArray(Json::Value values)
+{
+    Values outValues;
+    for (const auto& v : values)
+    {
+        if (v.isInt())
+            outValues.emplace_back(v.asInt());
+        else if (v.isDouble())
+            outValues.emplace_back(v.asFloat());
+        else if (v.isArray())
+            outValues.emplace_back(processArray(v));
+        else
+            outValues.emplace_back(v.asString());
+    }
+    return outValues;
 }
 
 /*************/
@@ -819,110 +963,136 @@ void World::setAttribute(string name, string attrib, const Values& args)
 /*************/
 void World::registerAttributes()
 {
-    _attribFunctions["addObject"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() == 0 || args.size() > 2)
-            return false;
+    addAttribute("addObject", [&](const Values& args) {
+        addTask([=]() {
+            auto type = args[0].asString();
+            auto name = string();
 
-        auto type = args[0].asString();
-        auto name = string();
+            if (args.size() == 1)
+                name = type + "_" + to_string(getId());
+            else if (args.size() == 2)
+                name = args[1].asString();
 
-        if (args.size() == 1)
-            name = type + "_" + to_string(getId());
-        else if (args.size() == 2)
-            name = args[1].asString();
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+            for (auto& s : _scenes)
+            {
+                sendMessage(s.first, "add", {type, name});
+                addLocally(type, name, s.first);
+            }
 
-        for (auto& s : _scenes)
-        {
-            sendMessage(s.first, "add", {type, name});
-            addLocally(type, name, s.first);
-        }
-
-        auto path = Utils::getPathFromFilePath(_configFilename);
-        set(name, "configFilePath", {path});
+            auto path = Utils::getPathFromFilePath(_configFilename);
+            set(name, "configFilePath", {path}, false);
+        });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("addObject", "Add an object to the scenes");
 
-    _attribFunctions["sceneLaunched"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("sceneLaunched", [&](const Values& args) {
         unique_lock<mutex> lockChildProcess(_childProcessMutex);
         _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
     });
+    setAttributeDescription("sceneLaunched", "Message sent by Scenes to confirm they are running");
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        sendMessage(SPLASH_ALL_PAIRS, "computeBlending", args);
+    addAttribute("computeBlending", [&](const Values& args) {
+        _blendingMode = args[0].asString();
+        sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode});
+
         return true;
-    });
+    }, [&]() -> Values {
+        return {_blendingMode};
+    }, {'n'});
+    setAttributeDescription("computeBlending", "Ask all Scenes to compute the blending");
 
-    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("deleteObject", [&](const Values& args) {
+        addTask([=]() {
+            unique_lock<recursive_mutex> lockObjects(_objectsMutex);
+            auto objectName = args[0].asString();
 
-        unique_lock<recursive_mutex> lockObjects(_objectsMutex);
-        auto objectName = args[0].asString();
+            // Delete the object here
+            auto objectDestIt = _objectDest.find(objectName);
+            if (objectDestIt != _objectDest.end())
+                _objectDest.erase(objectDestIt);
 
-        // Delete the object here
-        auto objectDestIt = _objectDest.find(objectName);
-        if (objectDestIt != _objectDest.end())
-            _objectDest.erase(objectDestIt);
+            auto objectIt = _objects.find(objectName);
+            if (objectIt != _objects.end())
+                _objects.erase(objectIt);
 
-        auto objectIt = _objects.find(objectName);
-        if (objectIt != _objects.end())
-            _objects.erase(objectIt);
-
-        // Ask for Scenes to delete the object
-        SThread::pool.enqueueWithoutId([=]() {
-            sendMessage(SPLASH_ALL_PAIRS, "deleteObject", args);
+            // Ask for Scenes to delete the object
+            sendMessage(SPLASH_ALL_PEERS, "deleteObject", args);
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("deleteObject", "Delete an object given its name");
 
-    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        sendMessage(SPLASH_ALL_PAIRS, "flashBG", {args[0].asInt()});
+    addAttribute("flashBG", [&](const Values& args) {
+        addTask([=]() {
+            sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].asInt()});
+        });
+
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
-    _attribFunctions["framerate"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("framerate", [&](const Values& args) {
         _worldFramerate = std::max(1, args[0].asInt());
         return true;
-    });
+    }, [&]() -> Values {
+        return {(int)_worldFramerate};
+    }, {'n'});
+    setAttributeDescription("framerate", "Set the refresh rate for the world (no relation to video framerate)");
 
-    _attribFunctions["getAttribute"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 2)
-            return false;
+    addAttribute("getAttribute", [&](const Values& args) {
+        addTask([=]() {
+            auto objectName = args[0].asString();
+            auto attrName = args[1].asString();
+
+            auto objectIt = _objects.find(objectName);
+            if (objectIt != _objects.end())
+            {
+                auto& object = objectIt->second;
+                Values values {};
+                object->getAttribute(attrName, values);
+
+                values.push_front("getAttribute");
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
+            }
+        });
+
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("getAttribute", "Ask the given object for the given attribute");
+
+    addAttribute("getAttributeDescription", [&](const Values& args) {
+        lock_guard<recursive_mutex> lock(_objectsMutex);
 
         auto objectName = args[0].asString();
         auto attrName = args[1].asString();
 
         auto objectIt = _objects.find(objectName);
+        // If the object exists locally
         if (objectIt != _objects.end())
         {
             auto& object = objectIt->second;
-            Values values {};
-            object->getAttribute(attrName, values);
-
-            SThread::pool.enqueueWithoutId([=]() {
-                Values sentValues {"getAttribute"};
-                for (auto& v : values)
-                    sentValues.push_back(v);
-                sendMessage(SPLASH_ALL_PAIRS, "answerMessage", sentValues);
-            });
+            Values values {"getAttributeDescription"};
+            values.push_back(object->getAttributeDescription(attrName));
+            sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
+        }
+        // Else, ask the Scenes for some info
+        else
+        {
+            sendMessage(SPLASH_ALL_PEERS, "answerMessage", {""});
         }
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("getAttributeDescription", "Ask the given object for the description of the given attribute");
 
-    _attribFunctions["loadConfig"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("loadConfig", [&](const Values& args) {
         string filename = args[0].asString();
         SThread::pool.enqueueWithoutId([=]() {
             Json::Value config;
@@ -953,34 +1123,80 @@ void World::registerAttributes()
             }
         });
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("loadConfig", "Load the given configuration file");
 
-    _attribFunctions["pong"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
+    addAttribute("copyCameraParameters", [&](const Values& args) {
+        string filename = args[0].asString();
+        addTask([=]() {
+            copyCameraParameters(filename);
+        });
+        return true;
+    }, {'s'});
+    setAttributeDescription("copyCameraParameters", "Copy the camera parameters from the given configuration file (based on camera names)");
+
+#if HAVE_PORTAUDIO
+    addAttribute("clockDeviceName", [&](const Values& args) {
+        addTask([=]() {
+            _clockDeviceName = args[0].asString();
+            if (_clockDeviceName != "")
+                _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+            else if (_clock)
+                _clock.reset();
+        });
+
+        return true;
+    }, [&]() -> Values {
+        return {_clockDeviceName};
+    }, {'s'});
+    setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
+#endif
+
+    addAttribute("pong", [&](const Values& args) {
         Timer::get() >> "pingScene " + args[0].asString();
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("pong", "Answer to ping");
 
-    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("quit", [&](const Values& args) {
         _quit = true;
         return true;
     });
+    setAttributeDescription("quit", "Ask the world to quit");
 
-    _attribFunctions["save"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("replaceObject", [&](const Values& args) {
+        auto objName = args[0].asString();
+        auto objType = args[1].asString();
+        vector<string> targets;
+        for (int i = 2; i < args.size(); ++i)
+            targets.push_back(args[i].asString());
+
+        setAttribute("deleteObject", {objName});
+        setAttribute("addObject", {objType, objName});
+        addTask([=]() {
+            for (const auto& t : targets)
+            {
+                setAttribute("sendAllScenes", {"link", objName, t});
+                setAttribute("sendAllScenes", {"linkGhots", objName, t});
+            }
+        });
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type");
+
+    addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)
             _configFilename = args[0].asString();
 
-        Log::get() << "Saving configuration" << Log::endl;
-        SThread::pool.enqueueWithoutId([&]() {
+        addTask([=]() {
+            Log::get() << "Saving configuration" << Log::endl;
             saveConfig();
         });
         return true;
     });
+    setAttributeDescription("save", "Save the configuration to the current file (or a new one if a name is given as parameter)");
 
-    _attribFunctions["sendAll"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("sendAll", [&](const Values& args) {
         string name = args[0].asString();
         string attr = args[1].asString();
         Values values {name, attr};
@@ -995,51 +1211,56 @@ void World::registerAttributes()
         values.erase(values.begin());
         sendMessage(name, attr, values);
 
-        // Also update local version
-        if (_objects.find(name) != _objects.end())
-            _objects[name]->setAttribute(attr, values);
+        addTask([=]() {
+            // Also update local version
+            if (_objects.find(name) != _objects.end())
+                _objects[name]->setAttribute(attr, values);
+        });
 
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("sendAll", "Send to the given object in all Scenes the given message (all following arguments)");
 
-    _attribFunctions["sendAllScenes"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("sendAllScenes", [&](const Values& args) {
         string attr = args[0].asString();
-        Values values;
-        for (int i = 1; i < args.size(); ++i)
-            values.push_back(args[i]);
+        Values values = args;
+        values.erase(values.begin());
         for (auto& scene : _scenes)
             sendMessage(scene.first, attr, values);
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("sendAllScenes", "Send the given message to all Scenes");
 
-    _attribFunctions["sendToMasterScene"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-
-        auto attr = args[0].asString();
-        Values values = args;
-        values.erase(values.begin());
-        sendMessage(_masterSceneName, attr, values);
+    addAttribute("sendToMasterScene", [&](const Values& args) {
+        addTask([=]() {
+            auto attr = args[0].asString();
+            Values values = args;
+            values.erase(values.begin());
+            sendMessage(_masterSceneName, attr, values);
+        });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("sendToMasterScene", "Send the given message to the master Scene");
 
-    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-        _swapSynchronizationTesting = args[0].asInt();
-        return true;
-    });
+    addAttribute("swapTest", [&](const Values& args) {
+        addTask([=]() {
+            _swapSynchronizationTesting = args[0].asInt();
+        });
 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        sendMessage(SPLASH_ALL_PAIRS, "wireframe", {args[0].asInt()});
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
+
+    addAttribute("wireframe", [&](const Values& args) {
+        addTask([=]() {
+            sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].asInt()});
+        });
+
+        return true;
+    }, {'n'});
+    setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 }
 
 }

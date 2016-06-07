@@ -1,6 +1,28 @@
 Splash release notes
 ===================
 
+Splash 0.4.0 (2016-06-07)
+-------------------------
+New features:
+* Added CMake as a possible build system. Keeping autotools for now.
+
+Improvements:
+* Improved warp GUI
+* Improved wireframe rendering
+* Improved attributes: added attribute description, can now lock them temporarily
+* Messages can now be handling asynchronously in world and scene
+* Added GLM as a submodule
+* Added limits to calibration
+* Queue: auto-complete media duration
+* Improve configuration save, now saving world parameters
+
+Bug fixed:
+* Fixed a bug in camera calibration
+* Fixed issues with window layout
+* Fixed an issue with FFmpeg 3.x
+* Fixed an sync issue with vertex blending on multiple GPUs
+* Fixed application exit code
+
 Splash 0.3.12 (2016-03-25)
 -------------------------
 New features:

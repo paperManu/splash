@@ -8,6 +8,10 @@
 #include "timer.h"
 #include "threadpool.h"
 
+#if HAVE_FFMPEG_3
+#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
+#endif
+
 using namespace std;
 
 namespace Splash
@@ -146,7 +150,7 @@ void Image_FFmpeg::readLoop()
         _intraOnly = false; // We don't know, so we consider it's not
 
     auto fourcc = tagToFourCC(_videoCodecContext->codec_tag);
-    if (videoCodec == nullptr && fourcc.find("Hap") != string::npos)
+    if (fourcc.find("Hap") != string::npos)
     {
         isHap = true;
         _intraOnly = true; // Hap is necessarily intra only
@@ -234,11 +238,14 @@ void Image_FFmpeg::readLoop()
 #endif
 
     // Start reading frames
-    AVFrame* frame;
+    AVFrame *frame, *rgbFrame;
+#if HAVE_FFMPEG_3
+    frame = av_frame_alloc();
+    rgbFrame = av_frame_alloc();
+#else
     frame = avcodec_alloc_frame();
-
-    AVFrame* rgbFrame;
     rgbFrame = avcodec_alloc_frame();
+#endif
 
     if (!frame || !rgbFrame)
     {
@@ -246,16 +253,33 @@ void Image_FFmpeg::readLoop()
         return;
     }
 
+#if HAVE_FFMPEG_3
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
+#else
     int numBytes = avpicture_get_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
+#endif
     vector<unsigned char> buffer(numBytes);
 
     struct SwsContext* swsContext;
     if (!isHap)
     {
+#if HAVE_FFMPEG_3
+        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
+                                    AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
+        
+        av_image_fill_arrays(rgbFrame->data,
+                             rgbFrame->linesize,
+                             buffer.data(), 
+                             AV_PIX_FMT_RGB24, 
+                             _videoCodecContext->width, 
+                             _videoCodecContext->height,
+                             1);
+#else
         swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
                                     PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
     
         avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
+#endif
     }
 
     AVPacket packet;
@@ -340,7 +364,11 @@ void Image_FFmpeg::readLoop()
                         }
                         else
                         {
+#if HAVE_FFMPEG_3
+                            av_packet_unref(&packet);
+#else
                             av_free_packet(&packet);
+#endif
                             return;
                         }
 
@@ -371,8 +399,12 @@ void Image_FFmpeg::readLoop()
 
                 int timedFramesBuffered = _timedFrames.size();
 
-               _videoSeekMutex.unlock();
+                _videoSeekMutex.unlock();
+#if HAVE_FFMPEG_3
+                av_packet_unref(&packet);
+#else
                 av_free_packet(&packet);
+#endif
 
                 // Do not store more than a few frames in memory
                 while (timedFramesBuffered > 30 && _continueRead)
@@ -396,16 +428,24 @@ void Image_FFmpeg::readLoop()
                 if (gotFrame)
                 {
                     size_t dataSize = av_samples_get_buffer_size(nullptr, _audioCodecContext->channels, frame->nb_samples, _audioCodecContext->sample_fmt, 1);
-                    vector<uint8_t> buffer((uint8_t*)frame->data[0], (uint8_t*)frame->data[0] + dataSize);
+                    auto buffer = ResizableArray<uint8_t>((uint8_t*)frame->data[0], (uint8_t*)frame->data[0] + dataSize);
                     _speaker->addToQueue(buffer);
                 }
 
+#if HAVE_FFMPEG_3
+                av_packet_unref(&packet);
+#else
                 av_free_packet(&packet);
+#endif
             }
 #endif
             else
             {
+#if HAVE_FFMPEG_3
+                av_packet_unref(&packet);
+#else
                 av_free_packet(&packet);
+#endif
             }
         }
 
@@ -413,8 +453,14 @@ void Image_FFmpeg::readLoop()
 
     } while (_loopOnVideo && _continueRead);
 
+#if HAVE_FFMPEG_3
+    av_frame_free(&rgbFrame);
+    av_frame_free(&frame);
+#else
     av_free(rgbFrame);
     av_free(frame);
+#endif
+
     if (!isHap)
         avcodec_close(_videoCodecContext);
     _videoStreamIndex = -1;
@@ -537,7 +583,7 @@ void Image_FFmpeg::videoDisplayLoop()
                     if (!_timeJump) // We do not want more than one jump at a time...
                     {
                         _timeJump = true;
-                        _elapsedTime = _currentTime / 1e6 + _shiftTime;
+                        _elapsedTime = _currentTime / 1e6;
                         localQueue.clear();
                         SThread::pool.enqueueWithoutId([=]() {
                             seek(_elapsedTime);
@@ -569,7 +615,7 @@ void Image_FFmpeg::videoDisplayLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
-    _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("duration", [&](const Values& args) {
         return false;
     }, [&]() -> Values {
         if (_avContext == nullptr)
@@ -578,22 +624,18 @@ void Image_FFmpeg::registerAttributes()
         float duration = _avContext->duration / AV_TIME_BASE;
         return {duration};
     });
-    _attribFunctions["duration"].doUpdateDistant(true);
-    _attribFunctions["duration"].savable(false);
+    setAttributeParameter("duration", false, true);
 
-    _attribFunctions["loop"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("loop", [&](const Values& args) {
         _loopOnVideo = (bool)args[0].asInt();
         return true;
     }, [&]() -> Values {
         int loop = _loopOnVideo;
         return {loop};
-    });
-    _attribFunctions["loop"].doUpdateDistant(true);
+    }, {'n'});
+    setAttributeParameter("loop", true, true);
 
-    _attribFunctions["remaining"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("remaining", [&](const Values& args) {
         return false;
     }, [&]() -> Values {
         if (_avContext == nullptr)
@@ -602,25 +644,17 @@ void Image_FFmpeg::registerAttributes()
         float duration = std::max(0.0, (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6);
         return {duration};
     });
-    _attribFunctions["remaining"].doUpdateDistant(true);
-    _attribFunctions["remaining"].savable(false);
+    setAttributeParameter("remaining", false, true);
 
-    _attribFunctions["pause"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("pause", [&](const Values& args) {
         _paused = args[0].asInt();
         return true;
     }, [&]() -> Values {
         return {_paused};
-    });
-    _attribFunctions["pause"].doUpdateDistant(true);
-    _attribFunctions["pause"].savable(false);
+    }, {'n'});
+    setAttributeParameter("pause", false, true);
 
-    _attribFunctions["seek"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("seek", [&](const Values& args) {
         float seconds = args[0].asFloat();
         SThread::pool.enqueueWithoutId([=]() {
             seek(seconds);
@@ -630,14 +664,11 @@ void Image_FFmpeg::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_seekTime};
-    });
-    _attribFunctions["seek"].doUpdateDistant(true);
-    _attribFunctions["seek"].savable(false);
+    }, {'n'});
+    setAttributeParameter("seek", false, true);
+    setAttributeDescription("seek", "Change the read position in the video file");
 
-    _attribFunctions["useClock"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("useClock", [&](const Values& args) {
         _useClock = args[0].asInt();
         if (!_useClock)
             _clockTime = -1;
@@ -647,17 +678,14 @@ void Image_FFmpeg::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {(int)_useClock};
-    });
-    _attribFunctions["useClock"].doUpdateDistant(true);
+    }, {'n'});
+    setAttributeParameter("useClock", true, true);
 
-    _attribFunctions["timeShift"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
+    addAttribute("timeShift", [&](const Values& args) {
         _shiftTime = args[0].asFloat();
 
         return true;
-    });
+    }, {'n'});
 }
 
 } // end of namespace

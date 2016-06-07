@@ -93,6 +93,11 @@ BaseObjectPtr Scene::add(string type, string name)
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
+    // Check whether an object of this name already exists
+    auto objectIt = _objects.find(name);
+    if (objectIt != _objects.end())
+        return {};
+
     BaseObjectPtr obj;
     // Create the wanted object
     if(!_mainWindow->setAsCurrentContext())
@@ -167,6 +172,11 @@ void Scene::addGhost(string type, string name)
     if (type != string("camera") && type != string("warp"))
         return;
 
+    // Check whether an object of this name already exists
+    auto objectIt = _ghostObjects.find(name);
+    if (objectIt != _ghostObjects.end())
+        return;
+
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
 
     // Add the object for real ...
@@ -189,13 +199,38 @@ Values Scene::getAttributeFromObject(string name, string attribute)
         auto& object = objectIt->second;
         object->getAttribute(attribute, values);
     }
-    
     // Ask the World if it knows more about this object
-    if (values.size() == 0)
+    else
     {
         auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute});
         for (unsigned int i = 1; i < answer.size(); ++i)
             values.push_back(answer[i]);
+    }
+
+    return values;
+}
+
+/*************/
+Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
+{
+    auto objectIt = _objects.find(name);
+    
+    Values values;
+    if (objectIt != _objects.end())
+    {
+        auto& object = objectIt->second;
+        values.push_back(object->getAttributeDescription(attribute));
+    }
+
+    // Ask the World if it knows more about this object
+    if (values.size() == 0 || values[0].asString() == "")
+    {
+        auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
+        if (answer.size() != 0)
+        {
+            values.clear();
+            values.push_back(answer[1]);
+        }
     }
 
     return values;
@@ -420,16 +455,27 @@ void Scene::renderBlending()
 
                 // If there are some other scenes, send them the blending
                 if (_ghostObjects.size() != 0)
+                {
                     for (auto& obj : _objects)
                         if (obj.second->getType() == "geometry")
                         {
                             auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
                             _link->sendBuffer(obj.first, std::move(serializedGeometry));
                         }
+                    
+                    // Notify the other scenes that the blending has been updated
+                    sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
+                }
             }
             // The non-master scenes only need to activate blending
             else
             {
+                // Wait for the master scene to notify us that the blending was updated
+                unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
+                while (!_vertexBlendingReceptionStatus)
+                    _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
+                _vertexBlendingReceptionStatus = false;
+                    
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "object")
                         obj.second->setAttribute("activateVertexBlending", {1});
@@ -437,6 +483,7 @@ void Scene::renderBlending()
                         dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
             }
         }
+        // This deactivates the blending
         else if (blendComputedInPreviousFrame)
         {
             blendComputedInPreviousFrame = false;
@@ -715,7 +762,8 @@ void Scene::textureUploadRun()
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lockTexture.unlock();
 
-        if (!_objectsCurrentlyUpdated)
+        bool expectedAtomicValue = false;
+        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
         {
             for (auto& obj : _objects)
                 if (obj.second->getType().find("texture") != string::npos)
@@ -724,6 +772,7 @@ void Scene::textureUploadRun()
                     if (texImage)
                         texImage->flushPbo();
                 }
+            _objectsCurrentlyUpdated = false;
         }
 
         _textureUploadWindow->releaseContext();
@@ -768,9 +817,9 @@ void Scene::sendMessageToWorld(const string& message, const Values& value)
 }
 
 /*************/
-Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value)
+Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value, const unsigned long long timeout)
 {
-    return sendMessageWithAnswer("world", message, value);
+    return sendMessageWithAnswer("world", message, value, timeout);
 }
 
 /*************/
@@ -888,12 +937,14 @@ void Scene::deactivateBlendingMap()
 }
 
 /*************/
-void Scene::computeBlendingMap(bool once)
+void Scene::computeBlendingMap(const std::string& mode)
 {
-    if (_isBlendingComputed)
-        deactivateBlendingMap();
+    if (mode == "once")
+        activateBlendingMap(true);
+    else if (mode == "continuous")
+        activateBlendingMap(false);
     else
-        activateBlendingMap(once);
+        deactivateBlendingMap();
 }
 
 /*************/
@@ -1175,74 +1226,83 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 /*************/
 void Scene::registerAttributes()
 {
-    _attribFunctions["add"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-        string type = args[0].asString();
-        string name = args[1].asString();
+    addAttribute("add", [&](const Values& args) {
+        addTask([=]() {
+            string type = args[0].asString();
+            string name = args[1].asString();
+            add(type, name);
+        });
 
-        add(type, name);
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("add", "Add an object of the given name and type");
 
-    _attribFunctions["addGhost"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-        string type = args[0].asString();
-        string name = args[1].asString();
+    addAttribute("addGhost", [&](const Values& args) {
+        addTask([=]() {
+            string type = args[0].asString();
+            string name = args[1].asString();
+            addGhost(type, name);
+        });
 
-        addGhost(type, name);
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("addGhost", "Add a ghost object of the given name and type. Only useful in the master Scene");
 
-    _attribFunctions["blendingResolution"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        int resolution = args[0].asInt();
-        if (resolution >= 64)
-            _blendingResolution = resolution;
+    addAttribute("blendingResolution", [&](const Values& args) {
+        addTask([=]() {
+            int resolution = args[0].asInt();
+            if (resolution >= 64)
+                _blendingResolution = resolution;
+        });
+
         return true;
     }, [&]() -> Values {
         return {(int)_blendingResolution};
-    });
+    }, {'n'});
+    setAttributeDescription("blendingResolution", "Set the resolution of the blending map");
 
-    _attribFunctions["bufferUploaded"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("blendingUpdated", [&](const Values& args) {
+        _vertexBlendingReceptionStatus = true;
+        _vertexBlendingCondition.notify_one();
+        return true;
+    });
+    setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
+
+    addAttribute("bufferUploaded", [&](const Values& args) {
         _textureUploadCondition.notify_all();
         return true;
     });
+    setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
 
-    _attribFunctions["computeBlending"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lockTask(_taskMutex);
-
-        bool once = false;
-        if (args.size() != 0)
-            once = args[0].asInt();
-
-        _taskQueue.push_back([=]() -> void {
-            computeBlendingMap(once);
+    addAttribute("computeBlending", [&](const Values& args) {
+        std::string blendingMode = args[0].asString();
+        addTask([=]() -> void {
+            computeBlendingMap(blendingMode);
         });
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
-    _attribFunctions["activateBlendingMap"] = AttributeFunctor([&](const Values& args) {
-        _taskQueue.push_back([=]() -> void {
+    addAttribute("activateBlendingMap", [&](const Values& args) {
+        addTask([=]() -> void {
             activateBlendingMap();
         });
 
         return true;
     });
+    setAttributeDescription("activateBlendingMap", "Activate the blending map");
 
-    _attribFunctions["deactivateBlendingMap"] = AttributeFunctor([&](const Values& args) {
-        _taskQueue.push_back([=]() -> void {
+    addAttribute("deactivateBlendingMap", [&](const Values& args) {
+        addTask([=]() -> void {
             deactivateBlendingMap();
         });
 
         return true;
     });
+    setAttributeDescription("deactivateBlendingMap", "Deactivate the blending map");
 
-    _attribFunctions["config"] = AttributeFunctor([&](const Values& args) {
-        unique_lock<mutex> lockTask(_taskMutex);
-        _taskQueue.push_back([&]() -> void {
+    addAttribute("config", [&](const Values& args) {
+        addTask([&]() -> void {
             setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
             Json::Value config = getConfigurationAsJson();
             string configStr = config.toStyledString();
@@ -1250,15 +1310,17 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("config", "Ask the Scene for a JSON describing its configuration");
 
-    _attribFunctions["deleteObject"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 1)
-            return false;
-
-        unique_lock<mutex> lockTask(_taskMutex);
-        _taskQueue.push_back([=]() -> void {
+    addAttribute("deleteObject", [&](const Values& args) {
+        addTask([=]() -> void {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-            _objectsCurrentlyUpdated = true;
+
+            // We wait until we can indeed deleted the object
+            bool expectedAtomicValue = false;
+            while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+                this_thread::sleep_for(chrono::milliseconds(1));
+
             auto objectName = args[0].asString();
 
             auto objectIt = _objects.find(objectName);
@@ -1279,44 +1341,44 @@ void Scene::registerAttributes()
         });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("deleteObject", "Delete an object given its name");
 
-    _attribFunctions["duration"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("duration", [&](const Values& args) {
         Timer::get().setDuration(args[0].asString(), args[1].asInt());
         return true;
-    });
+    }, {'s', 'n'});
+    setAttributeDescription("duration", "Set the duration of the given timer");
 
-    _attribFunctions["masterClock"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() != 7)
-            return false;
-
+    addAttribute("masterClock", [&](const Values& args) {
         Timer::get().setMasterClock(args);
         return true;
-    });
+    }, {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
+    setAttributeDescription("masterClock", "Set the timing of the master clock");
  
-    _attribFunctions["flashBG"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        for (auto& obj : _objects)
-            if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
-        return true;
-    });
+    addAttribute("flashBG", [&](const Values& args) {
+        addTask([=]() {
+            for (auto& obj : _objects)
+                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+        });
 
-    _attribFunctions["getObjectsNameByType"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        string type = args[0].asString();
-        Values list = getObjectsNameByType(type);
-        sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
         return true;
-    });
+    }, {'n'});
+    setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
-    _attribFunctions["httpServer"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("getObjectsNameByType", [&](const Values& args) {
+        addTask([=]() {
+            string type = args[0].asString();
+            Values list = getObjectsNameByType(type);
+            sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+        });
+
+        return true;
+    }, {'s'});
+    setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
+
+    addAttribute("httpServer", [&](const Values& args) {
         string address = args[0].asString();
         string port = args[1].asString();
 
@@ -1329,137 +1391,171 @@ void Scene::registerAttributes()
         }
 
         return true;
-    });
+    }, [&]() -> Values {
+        if (_httpServer)
+            return {_httpServer->getAddress(), _httpServer->getPort()};
+        else
+            return {};
+    }, {'s', 's'});
+    setAttributeDescription("httpServer", "Create an HTTP server given its address and port");
    
-    _attribFunctions["link"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return link(src, dst);
-    });
+    addAttribute("link", [&](const Values& args) {
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            link(src, dst);
+        });
 
-    _attribFunctions["linkGhost"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return linkGhost(src, dst);
-    });
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("link", "Link the two given objects");
 
-    _attribFunctions["log"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("linkGhost", [&](const Values& args) {
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            linkGhost(src, dst);
+        });
+
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("linkGhost", "Link the two given ghost objects");
+
+    addAttribute("log", [&](const Values& args) {
         Log::get().setLog(args[0].asString(), (Log::Priority)args[1].asInt());
         return true;
-    });
+    }, {'s', 'n'});
+    setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
-    _attribFunctions["ping"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("ping", [&](const Values& args) {
         _textureUploadCondition.notify_all();
         sendMessageToWorld("pong", {_name});
         return true;
     });
+    setAttributeDescription("ping", "Ping the World");
 
-    _attribFunctions["remove"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        string name = args[1].asString();
-
-        remove(name);
-        return true;
-    });
-
-    _attribFunctions["setGhost"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-        string name = args[0].asString();
-        string attr = args[1].asString();
-        Values values;
-        for (int i = 2; i < args.size(); ++i)
-            values.push_back(args[i]);
-
-        if (_ghostObjects.find(name) != _ghostObjects.end())
-            _ghostObjects[name]->setAttribute(attr, values);
+    addAttribute("remove", [&](const Values& args) {
+        addTask([=]() {
+            string name = args[1].asString();
+            remove(name);
+        });
 
         return true;
-    });
+    }, {'s'});
+    setAttributeDescription("remove", "Remove the object of the given name");
 
-    _attribFunctions["setMaster"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("setGhost", [&](const Values& args) {
+        addTask([=]() {
+            string name = args[0].asString();
+            string attr = args[1].asString();
+            Values values;
+            for (int i = 2; i < args.size(); ++i)
+                values.push_back(args[i]);
+
+            if (_ghostObjects.find(name) != _ghostObjects.end())
+                _ghostObjects[name]->setAttribute(attr, values);
+        });
+
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("setGhost", "Set a given object the given attribute");
+
+    addAttribute("setMaster", [&](const Values& args) {
         if (args.size() == 0)
             setAsMaster();
         else
             setAsMaster(args[0].asString());
         return true;
     });
+    setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
 
-    _attribFunctions["start"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("start", [&](const Values& args) {
         _started = true;
         sendMessageToWorld("answerMessage", {"start", _name});
         return true;
     });
+    setAttributeDescription("start", "Start the Scene main loop");
 
-    _attribFunctions["stop"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("stop", [&](const Values& args) {
         _started = false;
         return true;
     });
+    setAttributeDescription("stop", "Stop the Scene main loop");
 
-    _attribFunctions["swapInterval"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
+    addAttribute("swapInterval", [&](const Values& args) {
         _swapInterval = max(-1, args[0].asInt());
         return true;
-    });
+    }, [&]() -> Values {
+        return {(int)_swapInterval};
+    }, {'n'});
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
 
-    _attribFunctions["swapTest"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("swapTest", [&](const Values& args) {
         for (auto& obj : _objects)
             if (obj.second->getType() == "window")
                 dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
         return true;
     });
+    setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
-    _attribFunctions["swapTestColor"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("swapTestColor", [&](const Values& args) {
         for (auto& obj : _objects)
             if (obj.second->getType() == "window")
                 dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
         return true;
     });
+    setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    _attribFunctions["quit"] = AttributeFunctor([&](const Values& args) {
-        _started = false;
-        _isRunning = false;
+    addAttribute("quit", [&](const Values& args) {
+        addTask([=]() {
+            _started = false;
+            _isRunning = false;
+        });
         return true;
     });
+    setAttributeDescription("quit", "Ask the Scene to quit");
    
-    _attribFunctions["unlink"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 2)
-            return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return unlink(src, dst);
-    });
+    addAttribute("unlink", [&](const Values& args) {
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            unlink(src, dst);
+        });
 
-    _attribFunctions["unlinkGhost"] = AttributeFunctor([&](const Values& args) {
+        return true;
+    }, {'s', 's'});
+    setAttributeDescription("unlink", "Unlink the two given objects");
+
+    addAttribute("unlinkGhost", [&](const Values& args) {
         if (args.size() < 2)
             return false;
-        string src = args[0].asString();
-        string dst = args[1].asString();
-        return unlinkGhost(src, dst);
-    });
- 
-    _attribFunctions["wireframe"] = AttributeFunctor([&](const Values& args) {
-        if (args.size() < 1)
-            return false;
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+
+        addTask([=]() {
+            string src = args[0].asString();
+            string dst = args[1].asString();
+            unlinkGhost(src, dst);
+        });
+
         return true;
-    });
+    }, {'s', 's'});
+    setAttributeDescription("unlinkGhost", "Unlink the two given ghost objects");
+ 
+    addAttribute("wireframe", [&](const Values& args) {
+        addTask([=]() {
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+            for (auto& obj : _ghostObjects)
+                if (obj.second->getType() == "camera")
+                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+        });
+
+        return true;
+    }, {'n'});
+    setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
 #if HAVE_GPHOTO
-    _attribFunctions["calibrateColor"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("calibrateColor", [&](const Values& args) {
         if (_colorCalibrator == nullptr)
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
@@ -1469,8 +1565,9 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
-    _attribFunctions["calibrateColorResponseFunction"] = AttributeFunctor([&](const Values& args) {
+    addAttribute("calibrateColorResponseFunction", [&](const Values& args) {
         if (_colorCalibrator == nullptr)
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
@@ -1480,6 +1577,7 @@ void Scene::registerAttributes()
         });
         return true;
     });
+    setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
 }

@@ -1,7 +1,13 @@
 AM_CPPFLAGS = \
-    -I$(top_srcdir)/include \
-    -I$(top_srcdir)/external/GLV/GLV \
-    -I$(top_srcdir)/external/bandit \
+	-I$(top_srcdir)/include \
+	-I$(top_srcdir)/external/cppzmq \
+	-I$(top_srcdir)/external/glm \
+	-I$(top_srcdir)/external/hap/source \
+	-I$(top_srcdir)/external/imgui \
+	-I$(top_srcdir)/external/jsoncpp \
+	-I$(top_srcdir)/external/libltc/src \
+	-I$(top_srcdir)/external/piccante/include \
+	-I$(top_srcdir)/external/stb \
     $(JSONCPP_CFLAGS) \
     $(SHMDATA_CFLAGS) \
     -DGLV_GLFW
