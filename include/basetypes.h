@@ -171,6 +171,7 @@ struct AttributeFunctor
                     return false;
 
             _isLocked = true;
+            return true;
         }
         void unlock() {_isLocked = false;}
 

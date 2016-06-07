@@ -69,7 +69,15 @@ libsplash_@LIBSPLASH_API_VERSION@_la_SOURCES = \
 	threadpool.cpp \
 	warp.cpp \
 	window.cpp \
-	widgets.cpp \
+    widget.cpp \
+    widget_control.cpp \
+    widget_global_view.cpp \
+    widget_graph.cpp \
+    widget_node_view.cpp \
+    widget_media.cpp \
+    widget_template.cpp \
+    widget_text_box.cpp \
+    widget_warp.cpp \
 	world.cpp
 
 # ImGui sources
@@ -315,7 +323,15 @@ noinst_HEADERS = \
 	$(top_srcdir)/include/threadpool.h \
 	$(top_srcdir)/include/timer.h \
 	$(top_srcdir)/include/warp.h \
-	$(top_srcdir)/include/widgets.h \
+    $(top_srcdir)/include/widget.h \
+    $(top_srcdir)/include/widget_control.h \
+    $(top_srcdir)/include/widget_global_view.h \
+    $(top_srcdir)/include/widget_graph.h \
+    $(top_srcdir)/include/widget_node_view.h \
+    $(top_srcdir)/include/widget_media.h \
+    $(top_srcdir)/include/widget_template.h \
+    $(top_srcdir)/include/widget_text_box.h \
+    $(top_srcdir)/include/widget_warp.h \
 	$(top_srcdir)/include/window.h \
 	$(top_srcdir)/include/world.h \
 	\
