@@ -1004,7 +1004,7 @@ void World::registerAttributes()
         return true;
     }, [&]() -> Values {
         return {_blendingMode};
-    }, {'n'});
+    }, {'s'});
     setAttributeDescription("computeBlending", "Ask all Scenes to compute the blending");
 
     addAttribute("deleteObject", [&](const Values& args) {
