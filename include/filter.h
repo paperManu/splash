@@ -106,6 +106,8 @@ class Filter : public Texture
         ImageBufferSpec _outTextureSpec;
 
         // Filter parameters
+        bool _render16bits {false};
+        bool _updateColorDepth {false}; // Set to true if the _render16bits has been updated
         float _blackLevel {0.f};
         float _brightness {1.f};
         float _colorTemperature {6500.f};
@@ -124,6 +126,11 @@ class Filter : public Texture
          * Setup the output texture
          */
         void setOutput();
+
+        /**
+         * Update the color depth for all textures
+         */
+        void updateColorDepth();
 
         /**
          * Updates the shader uniforms according to the textures and images

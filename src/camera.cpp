@@ -718,6 +718,9 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 /*************/
 bool Camera::render()
 {
+    if (_updateColorDepth)
+        updateColorDepth();
+
     if (_newWidth != 0 && _newHeight != 0)
     {
         setOutputSize(_newWidth, _newHeight);
@@ -1066,7 +1069,7 @@ void Camera::setOutputNbr(int nbr)
             Texture_ImagePtr texture = make_shared<Texture_Image>();
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
             _outTextures.push_back(texture);
         }
@@ -1076,6 +1079,26 @@ void Camera::setOutputNbr(int nbr)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
+
+/*************/
+void Camera::updateColorDepth()
+{
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+
+    for (int i = 0; i < _outTextures.size(); ++i)
+    {
+        auto spec = _outTextures[i]->getSpec();
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+        if (_render16bits)
+            _outTextures[i]->reset(GL_TEXTURE_2D, 0, GL_RGBA16, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+        else
+            _outTextures[i]->reset(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures[i]->getTexId(), 0);
+    }
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _updateColorDepth = false;
 }
 
 /*************/
@@ -1521,6 +1544,19 @@ void Camera::registerAttributes()
     setAttributeDescription("calibrationPoints", "Set multiple calibration points, as an array of 6D vector (position, projection and status)");
 
     // Rendering options
+    addAttribute("16bits", [&](const Values& args) {
+        bool render16bits = args[0].asInt();
+        if (render16bits != _render16bits)
+        {
+            _render16bits = render16bits;
+            _updateColorDepth = true;
+        }
+        return true;
+    }, [&]() -> Values {
+        return {(int)_render16bits};
+    }, {'n'});
+    setAttributeDescription("16bits", "Set to 1 for the camera to render in 16bits per component (otherwise 8bpc)");
+
     addAttribute("blendWidth", [&](const Values& args) {
         _blendWidth = args[0].asFloat();
         return true;

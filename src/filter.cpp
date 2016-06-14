@@ -156,6 +156,9 @@ void Filter::update()
     if (_inTexture.expired())
         return;
 
+    if (_updateColorDepth)
+        updateColorDepth();
+
     auto input = _inTexture.lock();
     _outTextureSpec = input->getSpec();
     _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
@@ -218,7 +221,7 @@ void Filter::setOutput()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     _outTexture = make_shared<Texture_Image>();
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -231,8 +234,36 @@ void Filter::setOutput()
 }
 
 /*************/
+void Filter::updateColorDepth()
+{
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+    auto spec = _outTexture->getSpec();
+    if (_render16bits)
+        _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+    else
+        _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _updateColorDepth = false;
+}
+
+/*************/
 void Filter::registerAttributes()
 {
+    addAttribute("16bits", [&](const Values& args) {
+        bool render16bits = args[0].asInt();
+        if (render16bits != _render16bits)
+        {
+            _render16bits = render16bits;
+            _updateColorDepth = true;
+        }
+        return true;
+    }, [&]() -> Values {
+        return {(int)_render16bits};
+    }, {'n'});
+    setAttributeDescription("16bits", "Set to 1 for the filter to be rendered in 16bits per component (otherwise 8bpc)");
+
     addAttribute("blackLevel", [&](const Values& args) {
         _blackLevel = args[0].asFloat();
         _blackLevel = std::max(0.f, std::min(1.f, _blackLevel));

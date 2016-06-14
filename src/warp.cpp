@@ -292,7 +292,7 @@ void Warp::setOutput()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
     _outTexture = make_shared<Texture_Image>();
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
