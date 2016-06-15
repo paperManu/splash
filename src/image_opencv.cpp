@@ -116,7 +116,7 @@ void Image_OpenCV::readLoop()
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
         copy(capture.data, capture.data + imageSize, pixels);
 
-        unique_lock<mutex> lockWrite(_writeMutex);
+        lock_guard<mutex> lockWrite(_writeMutex);
         if (!_bufferImage)
             _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
         std::swap(*_bufferImage, _readBuffer);

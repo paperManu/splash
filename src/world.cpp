@@ -69,18 +69,18 @@ void World::run()
     while (true)
     {
         Timer::get() << "worldLoop";
-        unique_lock<mutex> lockConfiguration(_configurationMutex);
+        lock_guard<mutex> lockConfiguration(_configurationMutex);
 
         {
             // Execute waiting tasks
-            unique_lock<mutex> lockTask(_taskMutex);
+            lock_guard<mutex> lockTask(_taskMutex);
             for (auto& task : _taskQueue)
                 task();
             _taskQueue.clear();
         }
 
         {
-            unique_lock<recursive_mutex> lockObjects(_objectsMutex);
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
@@ -280,7 +280,7 @@ void World::addLocally(string type, string name, string destination)
 /*************/
 void World::applyConfig()
 {
-    unique_lock<mutex> lockConfiguration(_configurationMutex);
+    lock_guard<mutex> lockConfiguration(_configurationMutex);
 
     // We first destroy all scene and objects
     _scenes.clear();
@@ -990,7 +990,7 @@ void World::registerAttributes()
     setAttributeDescription("addObject", "Add an object to the scenes");
 
     addAttribute("sceneLaunched", [&](const Values& args) {
-        unique_lock<mutex> lockChildProcess(_childProcessMutex);
+        lock_guard<mutex> lockChildProcess(_childProcessMutex);
         _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
         return true;
@@ -1009,7 +1009,7 @@ void World::registerAttributes()
 
     addAttribute("deleteObject", [&](const Values& args) {
         addTask([=]() {
-            unique_lock<recursive_mutex> lockObjects(_objectsMutex);
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             auto objectName = args[0].asString();
 
             // Delete the object here

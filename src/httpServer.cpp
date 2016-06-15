@@ -733,7 +733,7 @@ namespace Http {
     /*************/
     pair<RequestHandler::Command, RequestHandler::ReturnFunction> RequestHandler::getNextCommand()
     {
-        unique_lock<mutex> lock(_queueMutex);
+        lock_guard<mutex> lock(_queueMutex);
         if (_commandQueue.size() == 0)
             return make_pair(Command(CommandId::nop, Values()), ReturnFunction());
     

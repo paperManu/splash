@@ -232,7 +232,7 @@ class Timer
         {
             if (clock.size() == 8)
             {
-                std::unique_lock<std::mutex> lockClock(_clockMutex);
+                std::lock_guard<std::mutex> lockClock(_clockMutex);
                 _clock = clock;
             }
         }
@@ -241,7 +241,7 @@ class Timer
         {
             if (_clock.size() > 0)
             {
-                std::unique_lock<std::mutex> lockClock(_clockMutex);
+                std::lock_guard<std::mutex> lockClock(_clockMutex);
                 clock = _clock;
                 return true;
             }

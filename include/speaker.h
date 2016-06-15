@@ -140,7 +140,7 @@ class Speaker : public BaseObject
 template<typename T>
 bool Speaker::addToQueue(const ResizableArray<T>& buffer)
 {
-    std::unique_lock<std::mutex> lock(_ringWriteMutex);
+    std::lock_guard<std::mutex> lock(_ringWriteMutex);
 
     // If the input buffer is planar, we need to interlace it
     ResizableArray<T> interleavedBuffer(buffer.size());

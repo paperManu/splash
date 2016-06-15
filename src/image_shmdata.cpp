@@ -269,7 +269,7 @@ void Image_Shmdata::onData(void* data, int data_size, void* user_data)
 /*************/
 void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    unique_lock<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(ctx->_writeMutex);
 
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
@@ -312,7 +312,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 /*************/
 void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    unique_lock<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(ctx->_writeMutex);
 
     // Check if we need to resize the reader buffer
     auto bufSpec = ctx->_readerBuffer.getSpec();

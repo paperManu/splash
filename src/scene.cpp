@@ -78,7 +78,7 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    unique_lock<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
+    lock_guard<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
@@ -591,7 +591,7 @@ void Scene::run()
     {
         {
             // Execute waiting tasks
-            unique_lock<mutex> lockTask(_taskMutex);
+            lock_guard<mutex> lockTask(_taskMutex);
             for (auto& task : _taskQueue)
                 task();
             _taskQueue.clear();
@@ -714,7 +714,7 @@ void Scene::updateInputs()
     // Joystick state
     if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
     {
-        unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
+        lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
         _gui->setJoystick(_joystickAxes, _joystickButtons);
         _joystickAxes.clear();
     }
@@ -825,7 +825,7 @@ Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& 
 /*************/
 void Scene::waitTextureUpload()
 {
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
+    lock_guard<mutex> lockTexture(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
@@ -1163,7 +1163,7 @@ void Scene::joystickUpdateLoop()
             const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
             auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
 
-            unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
+            lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
 
             // We accumulate values until they are used by the render loop
             _joystickAxes.swap(axes);

@@ -247,7 +247,7 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
 /*************/
 void Texture_Image::update()
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     // If _img is nullptr, this texture is not set from an Image
     if (_img.expired())

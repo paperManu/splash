@@ -101,7 +101,7 @@ struct AttributeFunctor
 
             if (!_setFunc && _defaultSetAndGet)
             {
-                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
+                std::lock_guard<std::mutex> lock(_defaultFuncMutex);
                 _values = args;
 
                 _valuesTypes.clear();
@@ -142,7 +142,7 @@ struct AttributeFunctor
         {
             if (!_getFunc && _defaultSetAndGet)
             {
-                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
+                std::lock_guard<std::mutex> lock(_defaultFuncMutex);
                 return _values;
             }
             else if (!_getFunc)
@@ -657,7 +657,7 @@ class BufferObject : public BaseObject
         void setSerializedObject(std::shared_ptr<SerializedObject> obj)
         {
             {
-                std::unique_lock<std::mutex> lock(_writeMutex);
+                std::lock_guard<std::mutex> lock(_writeMutex);
                 _serializedObject = std::move(obj);
                 _newSerializedObject = true;
             }
@@ -721,7 +721,7 @@ class RootObject : public BaseObject
             {
                 auto name = object->getName();
 
-                std::unique_lock<std::recursive_mutex> registerLock(_objectsMutex);
+                std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
                 object->setSavable(false); // This object was created on the fly. Do not save it
 
                 // We keep the previous object on the side, to prevent double free due to operator[] behavior
@@ -740,7 +740,7 @@ class RootObject : public BaseObject
          */
         std::shared_ptr<BaseObject> unregisterObject(const std::string& name)
         {
-            std::unique_lock<std::recursive_mutex> lock(_objectsMutex);
+            std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
 
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
@@ -758,7 +758,7 @@ class RootObject : public BaseObject
          */
         bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true)
         {
-            std::unique_lock<std::recursive_mutex> lock(_setMutex);
+            std::lock_guard<std::recursive_mutex> lock(_setMutex);
 
             if (name == _name || name == SPLASH_ALL_PEERS)
                 return setAttribute(attrib, args);
@@ -789,7 +789,7 @@ class RootObject : public BaseObject
          */
         void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
         {
-            std::unique_lock<std::recursive_mutex> lock(_setMutex);
+            std::lock_guard<std::recursive_mutex> lock(_setMutex);
 
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
@@ -828,7 +828,7 @@ class RootObject : public BaseObject
          */
         void addTask(const std::function<void()>& task)
         {
-            std::unique_lock<std::mutex> lock(_taskMutex);
+            std::lock_guard<std::mutex> lock(_taskMutex);
             _taskQueue.push_back(task);
         }
 
@@ -849,7 +849,7 @@ class RootObject : public BaseObject
             if (_link == nullptr)
                 return {};
 
-            std::unique_lock<std::mutex> lock(_answerMutex);
+            std::lock_guard<std::mutex> lock(_answerMutex);
             _answerExpected = attribute;
 
             std::unique_lock<std::mutex> conditionLock(conditionMutex);

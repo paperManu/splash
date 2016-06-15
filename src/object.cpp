@@ -408,7 +408,7 @@ void Object::resetBlendingMap()
 /*************/
 void Object::resetVisibility()
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderResetBlending)
     {
@@ -434,7 +434,7 @@ void Object::resetVisibility()
 /*************/
 void Object::resetTessellation()
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     for (auto& geom : _geometries)
     {
@@ -445,7 +445,7 @@ void Object::resetTessellation()
 /*************/
 void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision)
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_feedbackShaderSubdivideCamera)
     {
@@ -496,7 +496,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 /*************/
 void Object::transferVisibilityFromTexToAttr(int width, int height)
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderTransferVisibilityToAttr)
     {
@@ -517,7 +517,7 @@ void Object::transferVisibilityFromTexToAttr(int width, int height)
 /*************/
 void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderComputeBlending)
     {

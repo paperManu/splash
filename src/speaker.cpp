@@ -24,7 +24,7 @@ Speaker::~Speaker()
 /*************/
 void Speaker::clearQueue()
 {
-    std::unique_lock<std::mutex> lock(_ringWriteMutex);
+    std::lock_guard<std::mutex> lock(_ringWriteMutex);
     _ringReadPosition = 0;
     _ringWritePosition = 0;
     _ringUnusedSpace = 0;

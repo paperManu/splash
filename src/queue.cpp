@@ -53,7 +53,7 @@ string Queue::getDistantName() const
 /*************/
 void Queue::update()
 {
-    unique_lock<mutex> lock(_playlistMutex);
+    lock_guard<mutex> lock(_playlistMutex);
 
     if (_playlist.size() == 0)
         return;
@@ -314,7 +314,7 @@ void Queue::registerAttributes()
     setAttributeDescription("pause", "Pause the queue if set to 1");
 
     addAttribute("playlist", [&](const Values& args) {
-        unique_lock<mutex> lock(_playlistMutex);
+        lock_guard<mutex> lock(_playlistMutex);
         _playlist.clear();
 
         for (auto& it : args)
@@ -339,7 +339,7 @@ void Queue::registerAttributes()
 
         return true;
     }, [&]() -> Values {
-        unique_lock<mutex> lock(_playlistMutex);
+        lock_guard<mutex> lock(_playlistMutex);
         Values playlist;
 
         for (auto& src : _playlist)
@@ -452,7 +452,7 @@ void QueueSurrogate::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<mutex> lock(_taskMutex);
+        lock_guard<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() {
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
             auto type = args[0].asString();

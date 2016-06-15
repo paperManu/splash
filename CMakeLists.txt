@@ -96,7 +96,7 @@ add_subdirectory(src)
 
 #
 # CPack related info
-# Creates package on Linux. On Linux, it is handled separately (see ./osx/CMakeLists.txt)
+# Creates package on Linux. On OSX, it is handled separately (see ./osx/CMakeLists.txt)
 #
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
 set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")

@@ -435,7 +435,7 @@ bool Camera::doCalibration()
                     localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
                 }
 
-                unique_lock<mutex> lock(gslMutex);
+                lock_guard<mutex> lock(gslMutex);
                 if (localMinimum < minValue)
                 {
                     minValue = localMinimum;
@@ -488,7 +488,7 @@ bool Camera::doCalibration()
             localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
         }
 
-        unique_lock<mutex> lock(gslMutex);
+        lock_guard<mutex> lock(gslMutex);
         if (localMinimum < minValue)
         {
             minValue = localMinimum;
