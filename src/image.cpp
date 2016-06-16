@@ -27,10 +27,13 @@ Image::Image()
 }
 
 /*************/
-Image::Image(bool linked)
+Image::Image(weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     init();
-    _linkedToWorldObject = linked;
+
+    if (root.lock()->getType() == "World")
+        _worldObject = true;
 }
 
 /*************/
@@ -44,9 +47,15 @@ Image::Image(ImageBufferSpec spec)
 void Image::init()
 {
     _type = "image";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     createDefaultImage();
-    registerAttributes();
 }
 
 /*************/
@@ -217,7 +226,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 bool Image::read(const string& filename)
 {
     _filepath = filename;
-    if (!_linkedToWorldObject)
+    if (_worldObject)
         return readFile(filename);
     else
         return true;

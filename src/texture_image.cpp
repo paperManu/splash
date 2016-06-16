@@ -28,15 +28,6 @@ Texture_Image::Texture_Image(RootObjectWeakPtr root)
 }
 
 /*************/
-Texture_Image::Texture_Image(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                 GLint border, GLenum format, GLenum type, const GLvoid* data)
-    : Texture()
-{
-    init();
-    reset(target, level, internalFormat, width, height, border, format, type, data); 
-}
-
-/*************/
 Texture_Image::Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                  GLint border, GLenum format, GLenum type, const GLvoid* data)
     : Texture(root)
@@ -503,12 +494,18 @@ void Texture_Image::flushPbo()
 /*************/
 void Texture_Image::init()
 {
+    _type = "texture_image";
     registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     glGetIntegerv(GL_MAJOR_VERSION, &_glVersionMajor);
     glGetIntegerv(GL_MINOR_VERSION, &_glVersionMinor);
 
-    _type = "texture_image";
     _timestamp = Timer::getTime();
 
     _texTarget = GL_TEXTURE_2D;

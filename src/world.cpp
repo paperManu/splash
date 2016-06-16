@@ -225,27 +225,27 @@ void World::addLocally(string type, string name, string destination)
     if (_objects.find(name) == _objects.end())
     {
         if (type == string("image"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_self));
 #if HAVE_SHMDATA
         else if (type == string("image_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_self));
         else if (type == string("mesh_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_self));
 #endif
 #if HAVE_FFMPEG
         else if (type == string("image_ffmpeg"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_self));
 #endif
 #if HAVE_OPENCV
         else if (type == string("image_opencv"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_self));
 #endif
 #if HAVE_GPHOTO
         else if (type == string("image_gphoto"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_self));
 #endif
         else if (type == string("mesh"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_self));
         else if (type == string("queue"))
             object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
     }

@@ -43,7 +43,7 @@ class Image : public BufferObject
          * Constructor
          */
         Image();
-        Image(bool linked); //< This constructor is used if the object is linked to a World counterpart
+        Image(std::weak_ptr<RootObject> root);
         Image(ImageBufferSpec spec);
 
         /**
@@ -134,7 +134,7 @@ class Image : public BufferObject
         bool _imageUpdated {false};
         bool _srgb {true};
         bool _benchmark {false};
-        bool _linkedToWorldObject {false};
+        bool _worldObject {false};
 
         void createDefaultImage(); //< Create a default black image
         void createPattern(); //< Create a default pattern

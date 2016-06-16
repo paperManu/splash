@@ -16,10 +16,12 @@ Mesh::Mesh()
 }
 
 /*************/
-Mesh::Mesh(bool linkedToWorld)
+Mesh::Mesh(weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     init();
-    _linkedToWorldObject = true;
+    if (root.lock()->getType() == "World")
+        _worldObject = true;
 }
 
 /*************/
@@ -34,10 +36,15 @@ Mesh::~Mesh()
 void Mesh::init()
 {
     _type = "mesh";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     createDefaultMesh();
-
-    registerAttributes();
 }
 
 /*************/
@@ -115,7 +122,7 @@ bool Mesh::read(const string& filename)
 
     _filepath = filepath;
 
-    if (!_linkedToWorldObject)
+    if (_worldObject)
     {
         Loader::Obj objLoader;
         if (!objLoader.load(filepath))

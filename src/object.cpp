@@ -38,11 +38,16 @@ Object::Object(RootObjectWeakPtr root)
 void Object::init()
 {
     _type = "object";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     _shader = make_shared<Shader>();
     _modelMatrix = glm::dmat4(0.0);
-
-    registerAttributes();
 }
 
 /*************/

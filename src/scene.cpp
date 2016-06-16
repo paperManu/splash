@@ -113,15 +113,15 @@ BaseObjectPtr Scene::add(string type, string name)
     else if (type == string("filter"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
     else if (type == string("geometry"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_self));
     else if (type.find("image") == 0)
     {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>(true));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_self));
         obj->setRemoteType(type);
     }
-    else if (type == string("mesh") || type == string("mesh_shmdata"))
+    else if (type.find("mesh") == 0)
     {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(true));
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_self));
         obj->setRemoteType(type);
     }
     else if (type == string("object"))
@@ -129,10 +129,10 @@ BaseObjectPtr Scene::add(string type, string name)
     else if (type == string("queue"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_self));
     else if (type == string("texture_image"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>());
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_self));
 #if HAVE_OSX
     else if (type == string("texture_syphon"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>());
+        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_self));
 #endif
     else if (type == string("warp"))
         obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
@@ -1136,7 +1136,7 @@ void Scene::init(std::string name)
 /*************/
 void Scene::initBlendingMap()
 {
-    _blendingMap = make_shared<Image>();
+    _blendingMap = make_shared<Image>(_self);
     _blendingMap->set(_blendingResolution, _blendingResolution, 1, ImageBufferSpec::Type::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
@@ -1366,6 +1366,13 @@ void Scene::registerAttributes()
         return true;
     }, {'n'});
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
+
+    addAttribute("getAttributeDescription", [&](const Values& args) {
+        return true;
+    }, [&]() -> Values {
+        return {};
+    });
+    setAttributeDescription("getAttributesDescriptions", "Get the description for all of the available object types attributes");
 
     addAttribute("getObjectsNameByType", [&](const Values& args) {
         addTask([=]() {

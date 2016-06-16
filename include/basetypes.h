@@ -498,6 +498,17 @@ class BaseObject
                 return {};
         }
 
+        /**
+         * Get a Values holding the description of all of this object's attributes
+         */
+        Values getAttributesDescriptions()
+        {
+            Values descriptions;
+            for (const auto& attr : _attribFunctions)
+                descriptions.push_back(Values({attr.first, attr.second.getDescription()}));
+            return descriptions;
+        }
+
     // Pubic attributes
     public:
         bool _savable {true};
