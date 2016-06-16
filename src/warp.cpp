@@ -27,6 +27,13 @@ Warp::Warp(RootObjectWeakPtr root)
 void Warp::init()
 {
     _type = "warp";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
@@ -59,13 +66,14 @@ void Warp::init()
     }
 
     loadDefaultModels();
-
-    registerAttributes();
 }
 
 /*************/
 Warp::~Warp()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get()<< Log::DEBUGGING << "Warp::~Warp - Destructor" << Log::endl;
 #endif

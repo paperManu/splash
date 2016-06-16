@@ -20,7 +20,7 @@ Mesh::Mesh(weak_ptr<RootObject> root)
     : BufferObject(root)
 {
     init();
-    if (root.lock()->getType() == "World")
+    if (!root.expired() && root.lock()->getType() == "World")
         _worldObject = true;
 }
 

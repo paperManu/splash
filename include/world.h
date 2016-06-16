@@ -65,6 +65,11 @@ class World : public RootObject
         ~World();
 
         /**
+         * Get a JSon string describing the attributes of all object types
+         */
+        std::string getObjectsAttributesDescriptions();
+
+        /**
          * Get the status of the world
          */
         bool getStatus() const {return !_status;}

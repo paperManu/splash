@@ -63,6 +63,9 @@ void Filter::init()
 /*************/
 Filter::~Filter()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get()<< Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
 #endif

@@ -1367,13 +1367,6 @@ void Scene::registerAttributes()
     }, {'n'});
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
-    addAttribute("getAttributeDescription", [&](const Values& args) {
-        return true;
-    }, [&]() -> Values {
-        return {};
-    });
-    setAttributeDescription("getAttributesDescriptions", "Get the description for all of the available object types attributes");
-
     addAttribute("getObjectsNameByType", [&](const Values& args) {
         addTask([=]() {
             string type = args[0].asString();

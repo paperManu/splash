@@ -7,28 +7,32 @@
 #include <spawn.h>
 #include <sys/wait.h>
 
-#include "image.h"
+#include "./image.h"
 #if HAVE_GPHOTO
-    #include "image_gphoto.h"
+    #include "./image_gphoto.h"
 #endif
 #if HAVE_FFMPEG
-    #include "image_ffmpeg.h"
+    #include "./image_ffmpeg.h"
 #endif
 #if HAVE_OPENCV
-    #include "image_opencv.h"
+    #include "./image_opencv.h"
 #endif
 #if HAVE_SHMDATA
-    #include "image_shmdata.h"
-    #include "mesh_shmdata.h"
+    #include "./image_shmdata.h"
+    #include "./mesh_shmdata.h"
 #endif
-#include "link.h"
-#include "log.h"
-#include "mesh.h"
-#include "osUtils.h"
-#include "queue.h"
-#include "scene.h"
-#include "timer.h"
-#include "threadpool.h"
+#include "./link.h"
+#include "./log.h"
+#include "./mesh.h"
+#include "./osUtils.h"
+#include "./queue.h"
+#include "./scene.h"
+#include "./timer.h"
+#include "./threadpool.h"
+
+// Included only for creating the documentation through the --info flag
+#include "./geometry.h"
+#include "./window.h"
 
 using namespace glm;
 using namespace std;
@@ -600,6 +604,104 @@ void World::applyConfig()
 }
 
 /*************/
+string World::getObjectsAttributesDescriptions()
+{
+    Json::Value root;
+
+    // We create "fake" objects and ask then for their attributes
+    // TODO: this should be made with a loop, but we need an object factory for this
+    auto obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
+    auto description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+#if HAVE_FFMPEG
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+#endif
+
+#if HAVE_SHMDATA
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+#endif
+
+#if HAVE_OPENCV
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+#endif
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
+    description = obj->getAttributesDescriptions();
+    root[obj->getType()] = Json::Value();
+    for (auto& d : description)
+        root[obj->getType()][d[0].asString()] = d[1].asString();
+
+    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+    string jsonString;
+    jsonString = root.toStyledString();
+
+    return jsonString;
+}
+
+/*************/
 void World::saveConfig()
 {
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -930,6 +1032,13 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
+            cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            exit(0);
+        }
+        else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
+        {
+            auto descriptions = getObjectsAttributesDescriptions();
+            cout << descriptions << endl;
             exit(0);
         }
         else

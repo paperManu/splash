@@ -100,7 +100,8 @@ Camera::~Camera()
     Log::get()<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
 
-    glDeleteFramebuffers(1, &_fbo);
+    if (!_root.expired())
+        glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/

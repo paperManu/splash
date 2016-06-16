@@ -87,6 +87,9 @@ Window::Window(RootObjectWeakPtr root)
 /*************/
 Window::~Window()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif

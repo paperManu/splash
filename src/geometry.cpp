@@ -49,6 +49,9 @@ void Geometry::init()
 /*************/
 Geometry::~Geometry()
 {
+    if (_root.expired())
+        return;
+
     for (auto v : _vertexArray)
         glDeleteVertexArrays(1, &(v.second));
 
