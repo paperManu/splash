@@ -33,14 +33,15 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "config.h"
+#include "./config.h"
 
-#include "coretypes.h"
-#include "basetypes.h"
+#include "./coretypes.h"
+#include "./basetypes.h"
+#include "./factory.h"
 #if HAVE_PORTAUDIO
-    #include "ltcclock.h"
+    #include "./ltcclock.h"
 #endif
-#include "queue.h"
+#include "./queue.h"
 
 namespace Splash {
 
@@ -85,6 +86,8 @@ class World : public RootObject
         std::unique_ptr<LtcClock> _clock {nullptr};
         std::string _clockDeviceName {""};
 #endif
+
+        std::unique_ptr<Factory> _factory {nullptr};
 
         std::shared_ptr<Scene> _innerScene {};
         std::thread _innerSceneThread;

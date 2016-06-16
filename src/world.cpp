@@ -225,34 +225,7 @@ void World::addLocally(string type, string name, string destination)
         type.find("queue") == string::npos)
         return;
 
-    BaseObjectPtr object;
-    if (_objects.find(name) == _objects.end())
-    {
-        if (type == string("image"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_self));
-#if HAVE_SHMDATA
-        else if (type == string("image_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_self));
-        else if (type == string("mesh_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_self));
-#endif
-#if HAVE_FFMPEG
-        else if (type == string("image_ffmpeg"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_self));
-#endif
-#if HAVE_OPENCV
-        else if (type == string("image_opencv"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_self));
-#endif
-#if HAVE_GPHOTO
-        else if (type == string("image_gphoto"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_self));
-#endif
-        else if (type == string("mesh"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_self));
-        else if (type == string("queue"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
-    }
+    auto object = _factory->create(type);
     if (object.get() != nullptr)
     {
         object->setId(getId());
@@ -609,90 +582,16 @@ string World::getObjectsAttributesDescriptions()
     Json::Value root;
 
     // We create "fake" objects and ask then for their attributes
-    // TODO: this should be made with a loop, but we need an object factory for this
-    auto obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
-    auto description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-#if HAVE_FFMPEG
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-#endif
-
-#if HAVE_SHMDATA
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-#endif
-
-#if HAVE_OPENCV
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-#endif
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
-
-    obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
-    description = obj->getAttributesDescriptions();
-    root[obj->getType()] = Json::Value();
-    for (auto& d : description)
-        root[obj->getType()][d[0].asString()] = d[1].asString();
+    auto localFactory = Factory();
+    auto types = localFactory.getObjectTypes();
+    for (auto& type : types)
+    {
+        auto obj = localFactory.create(type);
+        auto description = obj->getAttributesDescriptions();
+        root[obj->getType()] = Json::Value();
+        for (auto& d : description)
+            root[obj->getType()][d[0].asString()] = d[1].asString();
+    }
 
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
     string jsonString;
@@ -810,7 +709,7 @@ void World::init()
 {
     _self = WorldPtr(this, [](World*){}); // A shared pointer with no deleter, how convenient
 
-    _type = "World";
+    _type = "world";
     _name = "world";
 
     _that = this;
@@ -820,6 +719,7 @@ void World::init()
     sigaction(SIGTERM, &_signals, NULL);
 
     _link = make_shared<Link>(weak_ptr<World>(_self), _name);
+    _factory = unique_ptr<Factory>(new Factory(_self));
 
     registerAttributes();
 }

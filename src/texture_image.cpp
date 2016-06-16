@@ -39,6 +39,9 @@ Texture_Image::Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level,
 /*************/
 Texture_Image::~Texture_Image()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif

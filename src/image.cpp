@@ -32,7 +32,7 @@ Image::Image(weak_ptr<RootObject> root)
 {
     init();
 
-    if (!root.expired() && root.lock()->getType() == "World")
+    if (!root.expired() && root.lock()->getType() == "world")
         _worldObject = true;
 }
 

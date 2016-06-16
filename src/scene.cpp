@@ -2,29 +2,29 @@
 
 #include <utility>
 
-#include "camera.h"
-#include "filter.h"
-#include "geometry.h"
-#include "gui.h"
-#include "image.h"
-#include "link.h"
-#include "log.h"
-#include "mesh.h"
-#include "object.h"
-#include "queue.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "threadpool.h"
-#include "timer.h"
-#include "warp.h"
-#include "window.h"
+#include "./camera.h"
+#include "./filter.h"
+#include "./geometry.h"
+#include "./gui.h"
+#include "./image.h"
+#include "./link.h"
+#include "./log.h"
+#include "./mesh.h"
+#include "./object.h"
+#include "./queue.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./threadpool.h"
+#include "./timer.h"
+#include "./warp.h"
+#include "./window.h"
 
 #if HAVE_GPHOTO
-    #include "colorcalibrator.h"
+    #include "./colorcalibrator.h"
 #endif
 
 #if HAVE_OSX
-    #include "texture_syphon.h"
+    #include "./texture_syphon.h"
 #else
     #define GLFW_EXPOSE_NATIVE_X11
     #define GLFW_EXPOSE_NATIVE_GLX
@@ -48,6 +48,7 @@ Scene::Scene(std::string name, bool autoRun)
     _type = "scene";
     _isRunning = true;
     _name = name;
+    _factory = unique_ptr<Factory>(new Factory(_self));
 
     registerAttributes();
 
@@ -98,44 +99,11 @@ BaseObjectPtr Scene::add(string type, string name)
     if (objectIt != _objects.end())
         return {};
 
-    BaseObjectPtr obj;
     // Create the wanted object
     if(!_mainWindow->setAsCurrentContext())
         Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-    if (type == string("window"))
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
-        obj->setAttribute("swapInterval", {_swapInterval});
-    }
-    else if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
-    else if (type == string("filter"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
-    else if (type == string("geometry"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_self));
-    else if (type.find("image") == 0)
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_self));
-        obj->setRemoteType(type);
-    }
-    else if (type.find("mesh") == 0)
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_self));
-        obj->setRemoteType(type);
-    }
-    else if (type == string("object"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
-    else if (type == string("queue"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_self));
-    else if (type == string("texture_image"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_self));
-#if HAVE_OSX
-    else if (type == string("texture_syphon"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_self));
-#endif
-    else if (type == string("warp"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
+    auto obj = _factory->create(type);
 
     _mainWindow->releaseContext();
 
@@ -160,6 +128,10 @@ BaseObjectPtr Scene::add(string type, string name)
                 _guiLinkedToWindow = true;
             }
         }
+
+        // Special treatment for the windows
+        if (type == "window")
+            obj->setAttribute("swapInterval", {_swapInterval});
     }
 
     return obj;
