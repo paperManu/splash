@@ -257,9 +257,14 @@ class BaseObject
 
         /**
          * Set and get the remote type of the object
+         * This implies that this object gets data streamed from a World object
          */
         inline std::string getRemoteType() const {return _remoteType;}
-        inline void setRemoteType(std::string type) {_remoteType = type;}
+        inline void setRemoteType(std::string type)
+        {
+            _remoteType = type;
+            _isConnectedToRemote = true;
+        }
 
         /**
          * Try to link / unlink the given BaseObject to this
@@ -519,6 +524,7 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
 
+        bool _isConnectedToRemote {false}; // True if the object gets data from a World object
         std::string _configFilePath {""}; // All objects know about their location
 
         RootObjectWeakPtr _root;

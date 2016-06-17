@@ -122,7 +122,7 @@ bool Mesh::read(const string& filename)
 
     _filepath = filepath;
 
-    if (_worldObject)
+    if (!_isConnectedToRemote)
     {
         Loader::Obj objLoader;
         if (!objLoader.load(filepath))

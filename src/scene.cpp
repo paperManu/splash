@@ -104,6 +104,7 @@ BaseObjectPtr Scene::add(string type, string name)
         Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
     auto obj = _factory->create(type);
+    obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
 
     _mainWindow->releaseContext();
 

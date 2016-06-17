@@ -226,7 +226,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 bool Image::read(const string& filename)
 {
     _filepath = filename;
-    if (_worldObject)
+    if (!_isConnectedToRemote)
         return readFile(filename);
     else
         return true;

@@ -1287,17 +1287,12 @@ void Camera::loadDefaultModels()
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);
 
-        GeometryPtr geom = make_shared<Geometry>(_root);
-        geom->setName(file.first);
-        geom->linkTo(mesh);
-        _modelGeometries.push_back(geom);
-
         shared_ptr<Object> obj = make_shared<Object>(_root);
         obj->setName(file.first);
         obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(geom);
+        obj->linkTo(mesh);
 
         _models[file.first] = obj;
     }

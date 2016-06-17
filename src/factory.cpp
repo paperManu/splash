@@ -106,10 +106,7 @@ void Factory::registerObjects()
         if (!_isScene)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_root));
         else
-        {
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-            object->setRemoteType("image_ffmpeg");
-        }
         return object;
      };
 #endif
@@ -120,10 +117,7 @@ void Factory::registerObjects()
         if (!_isScene)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_root));
         else
-        {
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-            object->setRemoteType("image_gphoto");
-        }
         return object;
      };
 #endif
@@ -134,10 +128,7 @@ void Factory::registerObjects()
         if (!_isScene)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_root));
         else
-        {
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-            object->setRemoteType("image_shmdata");
-        }
         return object;
      };
 #endif
@@ -148,10 +139,7 @@ void Factory::registerObjects()
         if (!_isScene)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_root));
         else
-        {
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-            object->setRemoteType("image_opencv");
-        }
         return object;
      };
 #endif
@@ -166,10 +154,7 @@ void Factory::registerObjects()
         if (!_isScene)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_root));
         else
-        {
             object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-            object->setRemoteType("mesh_shmdata");
-        }
         return object;
      };
 #endif
