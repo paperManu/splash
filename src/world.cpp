@@ -588,9 +588,38 @@ string World::getObjectsAttributesDescriptions()
     {
         auto obj = localFactory.create(type);
         auto description = obj->getAttributesDescriptions();
+
+        int addedAttribute = 0;
         root[obj->getType()] = Json::Value();
         for (auto& d : description)
-            root[obj->getType()][d[0].asString()] = d[1].asString();
+        {
+            // We only keep attributes with a valid documentation
+            // The other ones are inner attributes
+            if (d[1].asString().size() == 0)
+                continue;
+
+            // We also don't keep attributes with no argument types
+            if (d[2].asValues().size() == 0)
+                continue;
+
+            string descriptionStr = "[";
+            auto type = d[2].asValues();
+            for (int i = 0; i < type.size(); ++i)
+            {
+                descriptionStr += type[i].asString();
+                if (i < type.size() - 1)
+                    descriptionStr += ", ";
+            }
+            descriptionStr += "] " + d[1].asString();
+                
+            root[obj->getType()][d[0].asString()] = descriptionStr;
+            
+            addedAttribute++;
+        }
+
+        // If the object has no documented attribute
+        if (addedAttribute == 0)
+            root.removeMember(obj->getType());
     }
 
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas

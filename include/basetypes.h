@@ -162,6 +162,15 @@ struct AttributeFunctor
         bool doUpdateDistant() const {return _doUpdateDistant;}
         void doUpdateDistant(bool update) {_doUpdateDistant = update;}
 
+        // Get the types of the wanted arguments
+        Values getArgsTypes() const
+        {
+            Values types {};
+            for (const auto& type : _valuesTypes)
+                types.push_back(Value(std::string(&type, 1)));
+            return types;
+        }
+
         // Lock the attribute to the given value
         bool isLocked() const {return _isLocked;}
         bool lock(Values v = {})
@@ -510,7 +519,7 @@ class BaseObject
         {
             Values descriptions;
             for (const auto& attr : _attribFunctions)
-                descriptions.push_back(Values({attr.first, attr.second.getDescription()}));
+                descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
             return descriptions;
         }
 
