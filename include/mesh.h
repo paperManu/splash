@@ -45,7 +45,7 @@ class Mesh : public BufferObject
          * Constructor
          */
         Mesh();
-        Mesh(bool linkedToWorld); //< This constructor is used if the object is linked to a World counterpart
+        Mesh(std::weak_ptr<RootObject> root); 
 
         /**
          * Destructor
@@ -105,7 +105,7 @@ class Mesh : public BufferObject
         virtual void update();
 
     protected:
-        bool _linkedToWorldObject {false};
+        bool _worldObject {false};
 
         struct MeshContainer
         {

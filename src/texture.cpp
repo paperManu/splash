@@ -25,21 +25,6 @@ Texture::Texture(RootObjectWeakPtr root)
 }
 
 /*************/
-Texture::Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                 GLint border, GLenum format, GLenum type, const GLvoid* data)
-{
-    init();
-}
-
-/*************/
-Texture::Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                 GLint border, GLenum format, GLenum type, const GLvoid* data)
-        : BaseObject(root)
-{
-    init();
-}
-
-/*************/
 Texture::~Texture()
 {
 #ifdef DEBUG
@@ -50,9 +35,15 @@ Texture::~Texture()
 /*************/
 void Texture::init()
 {
+    _type = "texture";
     registerAttributes();
 
-    _type = "texture";
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
+
     _timestamp = Timer::getTime();
 }
 

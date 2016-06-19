@@ -38,6 +38,13 @@ Window::Window(RootObjectWeakPtr root)
        : BaseObject(root)
 {
     _type = "window";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     ScenePtr scene = dynamic_pointer_cast<Scene>(root.lock());
     GlWindowPtr w = scene->getNewSharedWindow();
@@ -54,7 +61,6 @@ Window::Window(RootObjectWeakPtr root)
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
     setEventsCallbacks();
-    registerAttributes();
     showCursor(false);
 
     // Get the default window size and position
@@ -81,6 +87,9 @@ Window::Window(RootObjectWeakPtr root)
 /*************/
 Window::~Window()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif
@@ -202,7 +211,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = make_shared<Texture_Image>();
+        auto tex = make_shared<Texture_Image>(_root);
         tex->setName(getName() + "_" + obj->getName() + "_tex");
         tex->setResizable(0);
         if (tex->linkTo(obj))
@@ -402,7 +411,7 @@ void Window::setupRenderFBO()
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(_root, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
     else
@@ -414,7 +423,7 @@ void Window::setupRenderFBO()
 
     if (!_colorTexture)
     {
-        _colorTexture = make_shared<Texture_Image>();
+        _colorTexture = make_shared<Texture_Image>(_root);
         _colorTexture->setAttribute("filtering", {0});
         _colorTexture->reset(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, _windowRect[2], _windowRect[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
@@ -666,14 +675,14 @@ bool Window::setProjectionSurface()
     glGetError();
 #endif
 
-    _screen = make_shared<Object>();
+    _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
-    GeometryPtr virtualScreen = make_shared<Geometry>();
+    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
 
-    _screenGui = make_shared<Object>();
+    _screenGui = make_shared<Object>(_root);
     _screenGui->setAttribute("fill", {"window"});
-    virtualScreen = make_shared<Geometry>();
+    virtualScreen = make_shared<Geometry>(_root);
     _screenGui->addGeometry(virtualScreen);
 
 #ifdef DEBUG

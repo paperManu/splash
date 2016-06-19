@@ -51,6 +51,13 @@ Camera::Camera(RootObjectWeakPtr root)
 void Camera::init()
 {
     _type = "camera";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
@@ -84,8 +91,6 @@ void Camera::init()
 
     // Load some models
     loadDefaultModels();
-
-    registerAttributes();
 }
 
 /*************/
@@ -95,7 +100,8 @@ Camera::~Camera()
     Log::get()<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
 
-    glDeleteFramebuffers(1, &_fbo);
+    if (!_root.expired())
+        glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
@@ -1051,7 +1057,7 @@ void Camera::setOutputNbr(int nbr)
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(_root, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -1066,7 +1072,7 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            Texture_ImagePtr texture = make_shared<Texture_Image>();
+            Texture_ImagePtr texture = make_shared<Texture_Image>(_root);
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
@@ -1276,22 +1282,17 @@ void Camera::loadDefaultModels()
             }
         }
 
-        shared_ptr<Mesh> mesh = make_shared<Mesh>();
+        shared_ptr<Mesh> mesh = make_shared<Mesh>(_root);
         mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);
 
-        GeometryPtr geom = make_shared<Geometry>();
-        geom->setName(file.first);
-        geom->linkTo(mesh);
-        _modelGeometries.push_back(geom);
-
-        shared_ptr<Object> obj = make_shared<Object>();
+        shared_ptr<Object> obj = make_shared<Object>(_root);
         obj->setName(file.first);
         obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(geom);
+        obj->linkTo(mesh);
 
         _models[file.first] = obj;
     }

@@ -20,16 +20,35 @@ namespace Splash
 /*************/
 Image_FFmpeg::Image_FFmpeg()
 {
-    _type = "image_ffmpeg";
-    registerAttributes();
+    init();
+}
 
-    av_register_all();
+/*************/
+Image_FFmpeg::Image_FFmpeg(weak_ptr<RootObject> root)
+    : Image(root)
+{
+    init();
 }
 
 /*************/
 Image_FFmpeg::~Image_FFmpeg()
 {
     freeFFmpegObjects();
+}
+
+/*************/
+void Image_FFmpeg::init()
+{
+    _type = "image_ffmpeg";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
+
+    av_register_all();
 }
 
 /*************/

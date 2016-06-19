@@ -46,6 +46,7 @@ class Mesh_Shmdata : public Mesh
          * Constructor
          */
         Mesh_Shmdata();
+        Mesh_Shmdata(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -67,6 +68,11 @@ class Mesh_Shmdata : public Mesh
         std::string _caps {""};
         Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};
+
+        /**
+         * Base init for the class
+         */
+        void init();
 
         /**
          * Shmdata callback

@@ -27,6 +27,13 @@ Warp::Warp(RootObjectWeakPtr root)
 void Warp::init()
 {
     _type = "warp";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
@@ -59,12 +66,14 @@ void Warp::init()
     }
 
     loadDefaultModels();
-    registerAttributes();
 }
 
 /*************/
 Warp::~Warp()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get()<< Log::DEBUGGING << "Warp::~Warp - Destructor" << Log::endl;
 #endif
@@ -265,17 +274,17 @@ void Warp::loadDefaultModels()
             }
         }
 
-        shared_ptr<Mesh> mesh = make_shared<Mesh>();
+        shared_ptr<Mesh> mesh = make_shared<Mesh>(_root);
         mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);
 
-        GeometryPtr geom = make_shared<Geometry>();
+        GeometryPtr geom = make_shared<Geometry>(_root);
         geom->setName(file.first);
         geom->linkTo(mesh);
         _modelGeometries.push_back(geom);
 
-        shared_ptr<Object> obj = make_shared<Object>();
+        shared_ptr<Object> obj = make_shared<Object>(_root);
         obj->setName(file.first);
         obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
@@ -291,17 +300,17 @@ void Warp::setOutput()
 {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
-    _outTexture = make_shared<Texture_Image>();
+    _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     // Setup the virtual screen
-    _screen = make_shared<Object>();
+    _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"warp"});
-    GeometryPtr virtualScreen = make_shared<Geometry>();
-    _screenMesh = make_shared<Mesh_BezierPatch>();
+    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
+    _screenMesh = make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
     _screen->addGeometry(virtualScreen);
 }

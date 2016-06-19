@@ -7,28 +7,32 @@
 #include <spawn.h>
 #include <sys/wait.h>
 
-#include "image.h"
+#include "./image.h"
 #if HAVE_GPHOTO
-    #include "image_gphoto.h"
+    #include "./image_gphoto.h"
 #endif
 #if HAVE_FFMPEG
-    #include "image_ffmpeg.h"
+    #include "./image_ffmpeg.h"
 #endif
 #if HAVE_OPENCV
-    #include "image_opencv.h"
+    #include "./image_opencv.h"
 #endif
 #if HAVE_SHMDATA
-    #include "image_shmdata.h"
-    #include "mesh_shmdata.h"
+    #include "./image_shmdata.h"
+    #include "./mesh_shmdata.h"
 #endif
-#include "link.h"
-#include "log.h"
-#include "mesh.h"
-#include "osUtils.h"
-#include "queue.h"
-#include "scene.h"
-#include "timer.h"
-#include "threadpool.h"
+#include "./link.h"
+#include "./log.h"
+#include "./mesh.h"
+#include "./osUtils.h"
+#include "./queue.h"
+#include "./scene.h"
+#include "./timer.h"
+#include "./threadpool.h"
+
+// Included only for creating the documentation through the --info flag
+#include "./geometry.h"
+#include "./window.h"
 
 using namespace glm;
 using namespace std;
@@ -221,34 +225,7 @@ void World::addLocally(string type, string name, string destination)
         type.find("queue") == string::npos)
         return;
 
-    BaseObjectPtr object;
-    if (_objects.find(name) == _objects.end())
-    {
-        if (type == string("image"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>());
-#if HAVE_SHMDATA
-        else if (type == string("image_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>());
-        else if (type == string("mesh_shmdata"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>());
-#endif
-#if HAVE_FFMPEG
-        else if (type == string("image_ffmpeg"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>());
-#endif
-#if HAVE_OPENCV
-        else if (type == string("image_opencv"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>());
-#endif
-#if HAVE_GPHOTO
-        else if (type == string("image_gphoto"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>());
-#endif
-        else if (type == string("mesh"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>());
-        else if (type == string("queue"))
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(weak_ptr<RootObject>(_self)));
-    }
+    auto object = _factory->create(type);
     if (object.get() != nullptr)
     {
         object->setId(getId());
@@ -600,6 +577,59 @@ void World::applyConfig()
 }
 
 /*************/
+string World::getObjectsAttributesDescriptions()
+{
+    Json::Value root;
+
+    // We create "fake" objects and ask then for their attributes
+    auto localFactory = Factory();
+    auto types = localFactory.getObjectTypes();
+    for (auto& type : types)
+    {
+        auto obj = localFactory.create(type);
+        auto description = obj->getAttributesDescriptions();
+
+        int addedAttribute = 0;
+        root[obj->getType()] = Json::Value();
+        for (auto& d : description)
+        {
+            // We only keep attributes with a valid documentation
+            // The other ones are inner attributes
+            if (d[1].asString().size() == 0)
+                continue;
+
+            // We also don't keep attributes with no argument types
+            if (d[2].asValues().size() == 0)
+                continue;
+
+            string descriptionStr = "[";
+            auto type = d[2].asValues();
+            for (int i = 0; i < type.size(); ++i)
+            {
+                descriptionStr += type[i].asString();
+                if (i < type.size() - 1)
+                    descriptionStr += ", ";
+            }
+            descriptionStr += "] " + d[1].asString();
+                
+            root[obj->getType()][d[0].asString()] = descriptionStr;
+            
+            addedAttribute++;
+        }
+
+        // If the object has no documented attribute
+        if (addedAttribute == 0)
+            root.removeMember(obj->getType());
+    }
+
+    setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
+    string jsonString;
+    jsonString = root.toStyledString();
+
+    return jsonString;
+}
+
+/*************/
 void World::saveConfig()
 {
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -708,7 +738,7 @@ void World::init()
 {
     _self = WorldPtr(this, [](World*){}); // A shared pointer with no deleter, how convenient
 
-    _type = "World";
+    _type = "world";
     _name = "world";
 
     _that = this;
@@ -718,6 +748,7 @@ void World::init()
     sigaction(SIGTERM, &_signals, NULL);
 
     _link = make_shared<Link>(weak_ptr<World>(_self), _name);
+    _factory = unique_ptr<Factory>(new Factory(_self));
 
     registerAttributes();
 }
@@ -930,6 +961,13 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
+            cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            exit(0);
+        }
+        else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
+        {
+            auto descriptions = getObjectsAttributesDescriptions();
+            cout << descriptions << endl;
             exit(0);
         }
         else

@@ -162,6 +162,15 @@ struct AttributeFunctor
         bool doUpdateDistant() const {return _doUpdateDistant;}
         void doUpdateDistant(bool update) {_doUpdateDistant = update;}
 
+        // Get the types of the wanted arguments
+        Values getArgsTypes() const
+        {
+            Values types {};
+            for (const auto& type : _valuesTypes)
+                types.push_back(Value(std::string(&type, 1)));
+            return types;
+        }
+
         // Lock the attribute to the given value
         bool isLocked() const {return _isLocked;}
         bool lock(Values v = {})
@@ -257,9 +266,14 @@ class BaseObject
 
         /**
          * Set and get the remote type of the object
+         * This implies that this object gets data streamed from a World object
          */
         inline std::string getRemoteType() const {return _remoteType;}
-        inline void setRemoteType(std::string type) {_remoteType = type;}
+        inline void setRemoteType(std::string type)
+        {
+            _remoteType = type;
+            _isConnectedToRemote = true;
+        }
 
         /**
          * Try to link / unlink the given BaseObject to this
@@ -498,6 +512,17 @@ class BaseObject
                 return {};
         }
 
+        /**
+         * Get a Values holding the description of all of this object's attributes
+         */
+        Values getAttributesDescriptions()
+        {
+            Values descriptions;
+            for (const auto& attr : _attribFunctions)
+                descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
+            return descriptions;
+        }
+
     // Pubic attributes
     public:
         bool _savable {true};
@@ -508,6 +533,7 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
 
+        bool _isConnectedToRemote {false}; // True if the object gets data from a World object
         std::string _configFilePath {""}; // All objects know about their location
 
         RootObjectWeakPtr _root;

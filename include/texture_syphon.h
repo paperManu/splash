@@ -45,6 +45,7 @@ class Texture_Syphon : public Texture
          * Constructor
          */
         Texture_Syphon();
+        Texture_Syphon(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -93,6 +94,11 @@ class Texture_Syphon : public Texture
 
         // Parameters to send to the shader
         std::unordered_map<std::string, Values> _shaderUniforms;
+
+        /**
+         * Initialization
+         */
+        void init();
 
         /**
          * Register new functors to modify attributes

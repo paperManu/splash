@@ -48,6 +48,7 @@ class Image_OpenCV : public Image
          * Constructor
          */
         Image_OpenCV();
+        Image_OpenCV(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -75,6 +76,11 @@ class Image_OpenCV : public Image
         std::thread _readLoopThread;
         std::atomic_bool _continueReading {false};
         ImageBuffer _readBuffer;
+
+        /**
+         * Base init for the class
+         */
+        void init();
 
         /**
          * Input read loop

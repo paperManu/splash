@@ -31,15 +31,16 @@
 #include <list>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
 #if HAVE_GPHOTO
-    #include "colorcalibrator.h"
+    #include "./colorcalibrator.h"
 #endif
-#include "coretypes.h"
-#include "basetypes.h"
-#include "gui.h"
-#include "httpServer.h"
+#include "./coretypes.h"
+#include "./basetypes.h"
+#include "./factory.h"
+#include "./gui.h"
+#include "./httpServer.h"
 
 namespace Splash {
 
@@ -186,6 +187,7 @@ class Scene : public RootObject
         void waitTextureUpload();
 
     protected:
+        std::unique_ptr<Factory> _factory {nullptr};
         GlWindowPtr _mainWindow;
         std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};

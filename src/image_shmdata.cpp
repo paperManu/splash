@@ -29,9 +29,14 @@ namespace Splash
 /*************/
 Image_Shmdata::Image_Shmdata()
 {
-    _type = "image_shmdata";
+    init();
+}
 
-    registerAttributes();
+/*************/
+Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
+    : Image(root)
+{
+    init();
 }
 
 /*************/
@@ -69,6 +74,19 @@ void removeExtraParenthesis(string& str)
 {
     if (str.find(")") == 0)
         str = str.substr(1);
+}
+
+/*************/
+void Image_Shmdata::init()
+{
+    _type = "image_shmdata";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 }
 
 /*************/
