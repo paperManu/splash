@@ -2,12 +2,21 @@
 
 #include <imgui.h>
 
+#include "./factory.h"
 #include "./scene.h"
 
 using namespace std;
 
 namespace Splash
 {
+
+/*************/
+GuiNodeView::GuiNodeView(string name)
+    : GuiWidget(name)
+{
+    auto factory = Factory();
+    _objectTypes = factory.getObjectTypes();
+}
 
 /*************/
 map<string, vector<string>> GuiNodeView::getObjectLinks()
@@ -181,17 +190,13 @@ void GuiNodeView::render()
 
     // Combo box for adding objects
     {
-        vector<string> typeNames = {"image", "image_ffmpeg", "image_shmdata",
-                                    "texture_syphon",
-                                    "mesh", "mesh_shmdata",
-                                    "camera", "window"};
         vector<const char*> items;
-        for (auto& typeName : typeNames)
+        for (auto& typeName : _objectTypes)
             items.push_back(typeName.c_str());
         static int itemIndex = 0;
         if (ImGui::Combo("Add an object", &itemIndex, items.data(), items.size()))
         {
-            _scene.lock()->sendMessageToWorld("addObject", {typeNames[itemIndex]});
+            _scene.lock()->sendMessageToWorld("addObject", {_objectTypes[itemIndex]});
         }
     }
 }

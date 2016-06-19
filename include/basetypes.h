@@ -553,6 +553,8 @@ class BaseObject
             addAttribute("setName", [&](const Values& args) {
                 setName(args[0].asString());
                 return true;
+            }, [&]() -> Values {
+                return {_name};
             }, {'s'});
 
             addAttribute("switchLock", [&](const Values& args) {
