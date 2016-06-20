@@ -137,8 +137,11 @@ void Object::activate()
     _shader->setAttribute("uniform", {"_scale", _scale.x, _scale.y, _scale.z});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
 
-    _geometries[0]->update();
-    _geometries[0]->activate();
+    if (_geometries.size() > 0)
+    {
+        _geometries[0]->update();
+        _geometries[0]->activate();
+    }
     _shader->activate();
 
     GLuint texUnit = 0;
@@ -191,7 +194,8 @@ void Object::deactivate()
     }
 
     _shader->deactivate();
-    _geometries[0]->deactivate();
+    if (_geometries.size() > 0)
+        _geometries[0]->deactivate();
     _mutex.unlock();
 }
 
