@@ -110,10 +110,6 @@ void World::run()
                             if (obj)
                                 serializedObjects[bufferObj->getDistantName()] = obj;
                         }
-                        else
-                        {
-                            return; // if not, exit this thread
-                        }
                     }
                 }));
             }

@@ -680,20 +680,19 @@ class BufferObject : public BaseObject
          */
         void setSerializedObject(std::shared_ptr<SerializedObject> obj)
         {
+            bool expectedAtomicValue = false;
+            if (_serializedObjectWaiting.compare_exchange_strong(expectedAtomicValue, true))
             {
-                std::lock_guard<std::mutex> lock(_writeMutex);
                 _serializedObject = std::move(obj);
                 _newSerializedObject = true;
-            }
 
-            // Deserialize it right away, in a separate thread
-            SThread::pool.enqueueWithoutId([&]() {
-                if (_writeMutex.try_lock())
-                {
+                // Deserialize it right away, in a separate thread
+                SThread::pool.enqueueWithoutId([this]() {
+                    std::lock_guard<std::mutex> lock(_writeMutex);
                     deserialize();
-                    _writeMutex.unlock();
-                }
-            });
+                    _serializedObjectWaiting = false;
+                });
+            }
         }
 
         /**
@@ -708,6 +707,7 @@ class BufferObject : public BaseObject
     protected:
         mutable std::mutex _readMutex;
         mutable std::mutex _writeMutex;
+        std::atomic_bool _serializedObjectWaiting {false};
         int64_t _timestamp;
         bool _updatedBuffer {false};
 

@@ -148,7 +148,7 @@ void Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
         auto textureName = getName() + "_" + obj->getName() + "_tex";
         auto tex = _root.lock()->unregisterObject(textureName);
 
-        if (!tex)
+        if (tex)
         {
             tex->unlinkFrom(obj);
             unlinkFrom(tex);
