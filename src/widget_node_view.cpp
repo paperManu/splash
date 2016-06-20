@@ -78,6 +78,8 @@ void GuiNodeView::render()
     //if (ImGui::CollapsingHeader(_name.c_str()))
     if (true)
     {
+        ImGui::Text("Click: select / Shift + click: link / Ctrl + click: unlink");
+
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
                                                                  {"window", {8, 32}},
@@ -194,10 +196,13 @@ void GuiNodeView::render()
         for (auto& typeName : _objectTypes)
             items.push_back(typeName.c_str());
         static int itemIndex = 0;
-        if (ImGui::Combo("Add an object", &itemIndex, items.data(), items.size()))
+        ImGui::Text("Select a type to add an object:");
+        ImGui::PushID("addObject");
+        if (ImGui::Combo("", &itemIndex, items.data(), items.size()))
         {
             _scene.lock()->sendMessageToWorld("addObject", {_objectTypes[itemIndex]});
         }
+        ImGui::PopID();
     }
 }
 
@@ -219,6 +224,14 @@ void GuiNodeView::renderNode(string name)
     }
 
     // Beginning of node rendering
+    bool coloredSelectedNode = false;
+    if (name == _sourceNode)
+    {
+        ImGui::PushStyleColor(ImGuiCol_Header, ImColor(0.2f, 0.2f, 0.2f, 0.99f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImColor(0.2f, 0.2f, 0.2f, 0.99f));
+        coloredSelectedNode = true;
+    }
+
     ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
 
     ImGui::SetCursorPos(ImVec2(0, 2));
@@ -262,6 +275,9 @@ void GuiNodeView::renderNode(string name)
     
     // End of node rendering
     ImGui::EndChild();
+
+    if (coloredSelectedNode)
+        ImGui::PopStyleColor(2);
 }
 
 /*************/
