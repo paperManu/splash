@@ -130,30 +130,28 @@ void Warp::unbind()
 }
 
 /*************/
-bool Warp::unlinkFrom(std::shared_ptr<BaseObject> obj)
+void Warp::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
-        if (_inCamera.expired())
-            return false;
+        if (!_inCamera.expired())
+        {
+            auto inCamera = _inCamera.lock();
+            auto camera = dynamic_pointer_cast<Camera>(obj);
 
-        auto inCamera = _inCamera.lock();
-        auto camera = dynamic_pointer_cast<Camera>(obj);
+            if (inCamera == camera)
+            {
+                auto textures = camera->getTextures();
+                for (auto& tex : textures)
+                    _screen->removeTexture(tex);
 
-        if (inCamera != camera)
-            return false;
-
-        auto textures = camera->getTextures();
-        for (auto& tex : textures)
-            _screen->removeTexture(tex);
-
-        if (camera->getName() == inCamera->getName())
-            _inCamera.reset();
-
-        return true;
+                if (camera->getName() == inCamera->getName())
+                    _inCamera.reset();
+            }
+        }
     }
 
-    return Texture::unlinkFrom(obj);
+    Texture::unlinkFrom(obj);
 }
 
 /*************/

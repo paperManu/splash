@@ -135,14 +135,14 @@ class Scene : public RootObject
          */
         bool link(std::string first, std::string second);
         bool link(BaseObjectPtr first, BaseObjectPtr second);
-        bool unlink(std::string first, std::string second);
-        bool unlink(BaseObjectPtr first, BaseObjectPtr second);
+        void unlink(std::string first, std::string second);
+        void unlink(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
          * Link / unlink objects, at least one of them being a ghost
          */
         bool linkGhost(std::string first, std::string second);
-        bool unlinkGhost(std::string first, std::string second);
+        void unlinkGhost(std::string first, std::string second);
 
         /**
          * Remove an object

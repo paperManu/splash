@@ -300,7 +300,7 @@ class BaseObject
         /**
          * Unlink a given object
          */
-        virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
+        virtual void unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
             auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
                 auto object = o.lock();
@@ -312,11 +312,7 @@ class BaseObject
             });
 
             if (objectIt != _linkedObjects.end())
-            {
                 _linkedObjects.erase(objectIt);
-                return true;
-            }
-            return false;
         }
 
         /**
@@ -553,6 +549,8 @@ class BaseObject
             addAttribute("setName", [&](const Values& args) {
                 setName(args[0].asString());
                 return true;
+            }, [&]() -> Values {
+                return {_name};
             }, {'s'});
 
             addAttribute("switchLock", [&](const Values& args) {

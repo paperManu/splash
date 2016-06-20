@@ -274,7 +274,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 }
 
 /*************/
-bool Scene::unlink(string first, string second)
+void Scene::unlink(string first, string second)
 {
     BaseObjectPtr source(nullptr);
     BaseObjectPtr sink(nullptr);
@@ -285,21 +285,17 @@ bool Scene::unlink(string first, string second)
         sink = _objects[second];
 
     if (source.get() != nullptr && sink.get() != nullptr)
-        return unlink(source, sink);
-    else
-        return false;
+        unlink(source, sink);
 }
 
 /*************/
-bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
+void Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
-    bool result = second->unlinkFrom(first);
+    second->unlinkFrom(first);
     glfwMakeContextCurrent(NULL);
-
-    return result;
 }
 
 /*************/
@@ -326,7 +322,7 @@ bool Scene::linkGhost(string first, string second)
 }
 
 /*************/
-bool Scene::unlinkGhost(string first, string second)
+void Scene::unlinkGhost(string first, string second)
 {
     BaseObjectPtr source(nullptr);
     BaseObjectPtr sink(nullptr);
@@ -336,16 +332,16 @@ bool Scene::unlinkGhost(string first, string second)
     else if (_objects.find(first) != _objects.end())
         source = _objects[first];
     else
-        return false;
+        return;
 
     if (_ghostObjects.find(second) != _ghostObjects.end())
         sink = _ghostObjects[second];
     else if (_objects.find(second) != _objects.end())
         sink = _objects[second];
     else
-        return false;
+        return;
 
-    return unlink(source, sink);
+    unlink(source, sink);
 }
 
 /*************/

@@ -114,7 +114,7 @@ class Window : public BaseObject
          * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
-        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+        void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Render this window to screen

@@ -83,7 +83,7 @@ class Filter : public Texture
          * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
-        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+        void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Filters should always be saved as it holds user-modifiable parameters

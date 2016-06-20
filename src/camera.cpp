@@ -577,7 +577,7 @@ bool Camera::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Camera::unlinkFrom(shared_ptr<BaseObject> obj)
+void Camera::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -591,7 +591,7 @@ bool Camera::unlinkFrom(shared_ptr<BaseObject> obj)
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
-    return BaseObject::unlinkFrom(obj);
+    BaseObject::unlinkFrom(obj);
 }
 
 /*************/

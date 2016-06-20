@@ -398,14 +398,12 @@ bool Gui::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Gui::unlinkFrom(shared_ptr<BaseObject> obj)
+void Gui::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
-    {
         _guiCamera->unlinkFrom(obj);
-    }
 
-    return BaseObject::unlinkFrom(obj);
+    BaseObject::unlinkFrom(obj);
 }
 
 /*************/

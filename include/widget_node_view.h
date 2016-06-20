@@ -34,7 +34,7 @@ namespace Splash
 class GuiNodeView : public GuiWidget
 {
     public:
-        GuiNodeView(std::string name) : GuiWidget(name) {}
+        GuiNodeView(std::string name);
         void render();
         std::string getClickedNode() {return _clickedNode;}
         int updateWindowFlags();
@@ -43,6 +43,7 @@ class GuiNodeView : public GuiWidget
         bool _isHovered {false};
         std::string _clickedNode {""};
         std::string _sourceNode {""};
+        std::vector<std::string> _objectTypes {};
 
         // Node render settings
         std::vector<int> _nodeSize {160, 30};
