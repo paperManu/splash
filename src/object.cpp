@@ -300,7 +300,7 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
+void Object::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
@@ -308,20 +308,22 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
         auto filterName = getName() + "_" + obj->getName() + "_filter";
         auto filter = _root.lock()->unregisterObject(filterName);
 
-        if (!filter)
-            return false;
-        filter->unlinkFrom(obj);
-        return unlinkFrom(filter);
+        if (filter)
+        {
+            filter->unlinkFrom(obj);
+            unlinkFrom(filter);
+        }
     }
     else if (type.find("image") != string::npos)
     {
         auto filterName = getName() + "_" + obj->getName() + "_filter";
         auto filter = _root.lock()->unregisterObject(filterName);
 
-        if (!filter)
-            return false;
-        filter->unlinkFrom(obj);
-        return unlinkFrom(filter);
+        if (filter)
+        {
+            filter->unlinkFrom(obj);
+            unlinkFrom(filter);
+        }
     }
     else if (type.find("filter") != string::npos)
     {
@@ -333,25 +335,24 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
         auto geomName = getName() + "_" + obj->getName() + "_geom";
         auto geom = _root.lock()->unregisterObject(geomName);
 
-        if (!geom)
-            return false;
-        geom->unlinkFrom(obj);
-        return unlinkFrom(geom);
+        if (geom)
+        {
+            geom->unlinkFrom(obj);
+            unlinkFrom(geom);
+        }
     }
     else if (type.find("geometry") != string::npos)
     {
         auto geom = dynamic_pointer_cast<Geometry>(obj);
         removeGeometry(geom);
-        return true;
     }
     else if (obj->getType().find("queue") != string::npos)
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
-        return true;
     }
 
-    return BaseObject::unlinkFrom(obj);
+    BaseObject::unlinkFrom(obj);
 }
 
 /*************/

@@ -258,7 +258,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Window::unlinkFrom(shared_ptr<BaseObject> obj)
+void Window::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -286,6 +286,15 @@ bool Window::unlinkFrom(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
+        auto warpName = getName() + "_" + obj->getName() + "_warp";
+        auto warp = _root.lock()->unregisterObject(warpName);
+
+        if (warp)
+        {
+            warp->unlinkFrom(obj);
+            unlinkFrom(warp);
+        }
+
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
         for (auto& tex : cam->getTextures())
             unsetTexture(tex);

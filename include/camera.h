@@ -122,7 +122,7 @@ class Camera : public BaseObject
          * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
-        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+        void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
