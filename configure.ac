@@ -2,12 +2,12 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.68)
-AC_INIT(SPLASH, 0.4.2, emmanueldurand@gmail.com)
+AC_INIT(SPLASH, 0.4.3, emmanueldurand@gmail.com)
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([1.10 tar-ustar])
 AC_CONFIG_HEADERS([include/config.h])
 
-AC_SUBST([LIBSPLASH_SO_VERSION], [0:4:2])
+AC_SUBST([LIBSPLASH_SO_VERSION], [0:4:3])
 AC_SUBST([LIBSPLASH_API_VERSION], [0.4])
 AC_DEFINE(LIBSPLASH_API_VERSION, ["0.4"], [API version])
 
