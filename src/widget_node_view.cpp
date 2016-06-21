@@ -32,7 +32,9 @@ map<string, vector<string>> GuiNodeView::getObjectLinks()
         links[o.first] = vector<string>();
         auto linkedObjects = o.second->getLinkedObjects();
         for (auto& link : linkedObjects)
+        {
             links[o.first].push_back(link->getName());
+        }
     }
     for (auto& o : scene->_ghostObjects)
     {

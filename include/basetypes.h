@@ -262,7 +262,11 @@ class BaseObject
          * Set and get the name of the object
          */
         inline std::string getName() const {return _name;}
-        inline virtual std::string setName(const std::string& name) {_name = name; return _name;}
+        inline virtual std::string setName(const std::string& name)
+        {
+            _name = name;
+            return _name;
+        }
 
         /**
          * Set and get the remote type of the object
@@ -549,8 +553,6 @@ class BaseObject
             addAttribute("setName", [&](const Values& args) {
                 setName(args[0].asString());
                 return true;
-            }, [&]() -> Values {
-                return {_name};
             }, {'s'});
 
             addAttribute("switchLock", [&](const Values& args) {
@@ -720,6 +722,8 @@ typedef std::shared_ptr<BufferObject> BufferObjectPtr;
 /*************/
 class RootObject : public BaseObject
 {
+    friend BaseObject;
+
     public:
         RootObject()
         {

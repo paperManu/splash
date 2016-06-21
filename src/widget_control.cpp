@@ -111,6 +111,15 @@ void GuiControl::render()
             ImGui::Separator();
             ImGui::Spacing();
 
+            string newName = _targetObjectName;
+            newName.resize(256);
+            if (ImGui::InputText("Rename", const_cast<char*>(newName.c_str()), newName.size(), ImGuiInputTextFlags_EnterReturnsTrue))
+                scene->sendMessageToWorld("renameObject", {_targetObjectName, newName});
+
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
             if (ImGui::Button("Delete selected object"))
             {
                 scene->sendMessageToWorld("deleteObject", {_targetObjectName});

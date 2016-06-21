@@ -1198,6 +1198,38 @@ void World::registerAttributes()
     });
     setAttributeDescription("quit", "Ask the world to quit");
 
+    addAttribute("renameObject", [&](const Values& args) {
+        auto name = args[0].asString();
+        auto newName = args[1].asString();
+
+        addTask([=]() {
+            lock_guard<recursive_mutex> lock(_objectsMutex);
+
+            // Update the name in the World
+            auto objIt = _objects.find(name);
+            if (objIt != _objects.end())
+            {
+                auto object = objIt->second;
+                object->setName(newName);
+                _objects[newName] = object;
+                _objects.erase(objIt);
+
+                auto objDestIt = _objectDest.find(name);
+                if (objDestIt != _objectDest.end())
+                {
+                    _objectDest.erase(objDestIt);
+                    _objectDest[newName] = {newName};
+                }
+            }
+
+            // Update the name in the Scenes
+            for (const auto& scene : _scenes)
+                sendMessage(scene.first, "renameObject", {name, newName});
+        });
+
+        return true;
+    }, {'s', 's'});
+
     addAttribute("replaceObject", [&](const Values& args) {
         auto objName = args[0].asString();
         auto objType = args[1].asString();

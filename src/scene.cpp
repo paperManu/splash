@@ -1413,6 +1413,26 @@ void Scene::registerAttributes()
     }, {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
 
+    addAttribute("renameObject", [&](const Values& args) {
+        auto name = args[0].asString();
+        auto newName = args[1].asString();
+
+        addTask([=]() {
+            lock_guard<recursive_mutex> lock(_objectsMutex);
+
+            auto objIt = _objects.find(name);
+            if (objIt != _objects.end())
+            {
+                auto object = objIt->second;
+                object->setName(newName);
+                _objects[newName] = object;
+                _objects.erase(objIt);
+            }
+        });
+
+        return true;
+    }, {'s', 's'});
+
     addAttribute("setGhost", [&](const Values& args) {
         addTask([=]() {
             string name = args[0].asString();
