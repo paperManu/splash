@@ -91,9 +91,9 @@ A few more libraries are used as submodules in the git repository:
 
 #### Linux
 
-Splash has currently only been compiled and tested on Ubuntu (version 14.04 and higher) and Mint 17 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+Splash has currently only been compiled and tested on Ubuntu (version 16.04 and higher) and Mint 18 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
 
-Here are some step by step commands to add these repositories on Ubuntu 14.04:
+Here are some step by step commands to add these repositories on Ubuntu 16.04:
 
     sudo apt-add-repository ppa:andrewrk/rucksack
 
@@ -119,9 +119,9 @@ You can also compile Splash by hand, especially if you are curious about its int
     cd splash
     git checkout develop
     git submodule update --init
-    ./autogen.sh && ./configure
+    mkdir -p build && cd build
+    cmake ..
     make && sudo make install
-    sudo ldconfig
 
 You can now try launching Splash:
 
@@ -162,23 +162,22 @@ And then grab and install Splash:
     git clone https://github.com/paperManu/splash
     cd splash
     git submodule update --init
-    ./autogen.sh && ./configure
+    mkdir -p build && cd build
+    cmake ..
     make && sudo make install
 
 You should now be able to launch Splash:
 
     splash --help
 
-It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory. You need to install a small tool which will take care of bundling the necessary libraries:
+It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory:
 
-    git clone https://github.com/auriamg/macdylibbundler
-    cd macdylibbundler
-    make && sudo make install
-    cd ..
     git clone https://github.com/paperManu/splash
     cd splash
     git submodule update --init
-    ./build_osx.sh
+    mkdir -p build && cd build
+    cmake ..
+    make && make package_osx
 
 Remember that it is a very early port to OSX. Please report any issue you encounter!
 
