@@ -413,7 +413,6 @@ bool Window::render()
 /*************/
 void Window::setupRenderFBO()
 {
-    glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
     glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 
     glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
