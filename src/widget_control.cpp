@@ -91,29 +91,33 @@ void GuiControl::render()
             _targetObjectName = objectNames[_targetIndex];
         }
 
-        if (_targetObjectName == "")
-            return;
+        if (_targetObjectName != "")
+        {
+            auto scene = _scene.lock();
 
-        auto scene = _scene.lock();
+            bool isDistant = false;
+            if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
+                isDistant = true;
 
-        bool isDistant = false;
-        if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
-            isDistant = true;
+            unordered_map<string, Values> attributes;
+            if (!isDistant)
+                attributes = scene->_objects[_targetObjectName]->getAttributes(true);
+            else
+                attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
 
-        unordered_map<string, Values> attributes;
-        if (!isDistant)
-            attributes = scene->_objects[_targetObjectName]->getAttributes(true);
-        else
-            attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
+            drawAttributes(_targetObjectName, attributes);
 
-        drawAttributes(_targetObjectName, attributes);
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
 
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
-        if (ImGui::Button("Delete selected object"))
-            scene->sendMessageToWorld("deleteObject", {_targetObjectName});
+            if (ImGui::Button("Delete selected object"))
+            {
+                scene->sendMessageToWorld("deleteObject", {_targetObjectName});
+                _targetObjectName = "";
+                _targetIndex = -1;
+            }
+        }
     }
 }
 
