@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.1
+    VERSION 0.4.3
     LANGUAGES C CXX
 )
 
@@ -35,7 +35,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 # Package information
 #
 set(API_VERSION 0.4)
-set(PACKAGE_VERSION 0.4.1)
+set(PACKAGE_VERSION 0.4.3)
 
 #
 # Find the various libraries
