@@ -46,7 +46,7 @@ class Mesh_BezierPatch : public Mesh
          * Constructor
          */
         Mesh_BezierPatch();
-        Mesh_BezierPatch(bool linkedToWorld); //< This constructor is used if the object is linked to a World counterpart
+        Mesh_BezierPatch(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

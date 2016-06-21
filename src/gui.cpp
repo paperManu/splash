@@ -45,7 +45,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     {
-        Texture_ImagePtr texture = make_shared<Texture_Image>();
+        Texture_ImagePtr texture = make_shared<Texture_Image>(s);
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
@@ -53,7 +53,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     }
 
     {
-        Texture_ImagePtr texture = make_shared<Texture_Image>();
+        Texture_ImagePtr texture = make_shared<Texture_Image>(s);
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
@@ -398,14 +398,12 @@ bool Gui::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Gui::unlinkFrom(shared_ptr<BaseObject> obj)
+void Gui::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
-    {
         _guiCamera->unlinkFrom(obj);
-    }
 
-    return BaseObject::unlinkFrom(obj);
+    BaseObject::unlinkFrom(obj);
 }
 
 /*************/

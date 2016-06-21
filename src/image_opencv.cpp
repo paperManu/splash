@@ -18,10 +18,14 @@ namespace Splash
 /*************/
 Image_OpenCV::Image_OpenCV()
 {
-    _type = "image_opencv";
-    registerAttributes();
+    init();
+}
 
-    _videoCapture = unique_ptr<cv::VideoCapture>(new cv::VideoCapture());
+/*************/
+Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root)
+    : Image(root)
+{
+    init();
 }
 
 /*************/
@@ -60,6 +64,21 @@ bool Image_OpenCV::read(const string& filename)
     });
 
     return true;
+}
+
+/*************/
+void Image_OpenCV::init()
+{
+    _type = "image_opencv";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
+
+    _videoCapture = unique_ptr<cv::VideoCapture>(new cv::VideoCapture());
 }
 
 /*************/
@@ -116,7 +135,7 @@ void Image_OpenCV::readLoop()
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
         copy(capture.data, capture.data + imageSize, pixels);
 
-        unique_lock<mutex> lockWrite(_writeMutex);
+        lock_guard<mutex> lockWrite(_writeMutex);
         if (!_bufferImage)
             _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
         std::swap(*_bufferImage, _readBuffer);

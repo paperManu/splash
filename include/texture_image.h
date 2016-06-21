@@ -47,8 +47,6 @@ class Texture_Image : public Texture
          */
         Texture_Image();
         Texture_Image(RootObjectWeakPtr root);
-        Texture_Image(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                GLint border, GLenum format, GLenum type, const GLvoid* data);
         Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                 GLint border, GLenum format, GLenum type, const GLvoid* data);
 

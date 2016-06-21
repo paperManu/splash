@@ -120,12 +120,12 @@ void GuiTemplate::loadTemplates()
         auto& description = descriptions[i];
 
         glGetError();
-        auto image = make_shared<Image>();
+        auto image = make_shared<Image>(_scene);
         image->setName("template_" + example);
         if (!image->read(templatePath + "templates/" + example + ".png"))
             continue;
 
-        auto texture = make_shared<Texture_Image>();
+        auto texture = make_shared<Texture_Image>(_scene);
         texture->linkTo(image);
         texture->update();
         texture->flushPbo();

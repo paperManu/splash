@@ -2,29 +2,29 @@
 
 #include <utility>
 
-#include "camera.h"
-#include "filter.h"
-#include "geometry.h"
-#include "gui.h"
-#include "image.h"
-#include "link.h"
-#include "log.h"
-#include "mesh.h"
-#include "object.h"
-#include "queue.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "threadpool.h"
-#include "timer.h"
-#include "warp.h"
-#include "window.h"
+#include "./camera.h"
+#include "./filter.h"
+#include "./geometry.h"
+#include "./gui.h"
+#include "./image.h"
+#include "./link.h"
+#include "./log.h"
+#include "./mesh.h"
+#include "./object.h"
+#include "./queue.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./threadpool.h"
+#include "./timer.h"
+#include "./warp.h"
+#include "./window.h"
 
 #if HAVE_GPHOTO
-    #include "colorcalibrator.h"
+    #include "./colorcalibrator.h"
 #endif
 
 #if HAVE_OSX
-    #include "texture_syphon.h"
+    #include "./texture_syphon.h"
 #else
     #define GLFW_EXPOSE_NATIVE_X11
     #define GLFW_EXPOSE_NATIVE_GLX
@@ -48,6 +48,7 @@ Scene::Scene(std::string name, bool autoRun)
     _type = "scene";
     _isRunning = true;
     _name = name;
+    _factory = unique_ptr<Factory>(new Factory(_self));
 
     registerAttributes();
 
@@ -78,7 +79,7 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    unique_lock<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
+    lock_guard<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
@@ -98,44 +99,12 @@ BaseObjectPtr Scene::add(string type, string name)
     if (objectIt != _objects.end())
         return {};
 
-    BaseObjectPtr obj;
     // Create the wanted object
     if(!_mainWindow->setAsCurrentContext())
         Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-    if (type == string("window"))
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Window>(_self));
-        obj->setAttribute("swapInterval", {_swapInterval});
-    }
-    else if (type == string("camera"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_self));
-    else if (type == string("filter"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_self));
-    else if (type == string("geometry"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Geometry>());
-    else if (type.find("image") == 0)
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Image>(true));
-        obj->setRemoteType(type);
-    }
-    else if (type == string("mesh") || type == string("mesh_shmdata"))
-    {
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(true));
-        obj->setRemoteType(type);
-    }
-    else if (type == string("object"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Object>(_self));
-    else if (type == string("queue"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_self));
-    else if (type == string("texture_image"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>());
-#if HAVE_OSX
-    else if (type == string("texture_syphon"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>());
-#endif
-    else if (type == string("warp"))
-        obj = dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_self));
+    auto obj = _factory->create(type);
+    obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
 
     _mainWindow->releaseContext();
 
@@ -160,6 +129,10 @@ BaseObjectPtr Scene::add(string type, string name)
                 _guiLinkedToWindow = true;
             }
         }
+
+        // Special treatment for the windows
+        if (type == "window")
+            obj->setAttribute("swapInterval", {_swapInterval});
     }
 
     return obj;
@@ -301,7 +274,7 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 }
 
 /*************/
-bool Scene::unlink(string first, string second)
+void Scene::unlink(string first, string second)
 {
     BaseObjectPtr source(nullptr);
     BaseObjectPtr sink(nullptr);
@@ -312,21 +285,17 @@ bool Scene::unlink(string first, string second)
         sink = _objects[second];
 
     if (source.get() != nullptr && sink.get() != nullptr)
-        return unlink(source, sink);
-    else
-        return false;
+        unlink(source, sink);
 }
 
 /*************/
-bool Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
+void Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     glfwMakeContextCurrent(_mainWindow->get());
-    bool result = second->unlinkFrom(first);
+    second->unlinkFrom(first);
     glfwMakeContextCurrent(NULL);
-
-    return result;
 }
 
 /*************/
@@ -353,7 +322,7 @@ bool Scene::linkGhost(string first, string second)
 }
 
 /*************/
-bool Scene::unlinkGhost(string first, string second)
+void Scene::unlinkGhost(string first, string second)
 {
     BaseObjectPtr source(nullptr);
     BaseObjectPtr sink(nullptr);
@@ -363,16 +332,16 @@ bool Scene::unlinkGhost(string first, string second)
     else if (_objects.find(first) != _objects.end())
         source = _objects[first];
     else
-        return false;
+        return;
 
     if (_ghostObjects.find(second) != _ghostObjects.end())
         sink = _ghostObjects[second];
     else if (_objects.find(second) != _objects.end())
         sink = _objects[second];
     else
-        return false;
+        return;
 
-    return unlink(source, sink);
+    unlink(source, sink);
 }
 
 /*************/
@@ -591,7 +560,7 @@ void Scene::run()
     {
         {
             // Execute waiting tasks
-            unique_lock<mutex> lockTask(_taskMutex);
+            lock_guard<mutex> lockTask(_taskMutex);
             for (auto& task : _taskQueue)
                 task();
             _taskQueue.clear();
@@ -714,7 +683,7 @@ void Scene::updateInputs()
     // Joystick state
     if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
     {
-        unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
+        lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
         _gui->setJoystick(_joystickAxes, _joystickButtons);
         _joystickAxes.clear();
     }
@@ -825,7 +794,7 @@ Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& 
 /*************/
 void Scene::waitTextureUpload()
 {
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
+    lock_guard<mutex> lockTexture(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
@@ -1136,7 +1105,7 @@ void Scene::init(std::string name)
 /*************/
 void Scene::initBlendingMap()
 {
-    _blendingMap = make_shared<Image>();
+    _blendingMap = make_shared<Image>(_self);
     _blendingMap->set(_blendingResolution, _blendingResolution, 1, ImageBufferSpec::Type::UINT16);
     _objects["blendingMap"] = _blendingMap;
 
@@ -1163,7 +1132,7 @@ void Scene::joystickUpdateLoop()
             const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
             auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
 
-            unique_lock<mutex> lockJoystick(_joystickUpdateMutex);
+            lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
 
             // We accumulate values until they are used by the render loop
             _joystickAxes.swap(axes);
@@ -1443,6 +1412,26 @@ void Scene::registerAttributes()
         return true;
     }, {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
+
+    addAttribute("renameObject", [&](const Values& args) {
+        auto name = args[0].asString();
+        auto newName = args[1].asString();
+
+        addTask([=]() {
+            lock_guard<recursive_mutex> lock(_objectsMutex);
+
+            auto objIt = _objects.find(name);
+            if (objIt != _objects.end())
+            {
+                auto object = objIt->second;
+                object->setName(newName);
+                _objects[newName] = object;
+                _objects.erase(objIt);
+            }
+        });
+
+        return true;
+    }, {'s', 's'});
 
     addAttribute("setGhost", [&](const Values& args) {
         addTask([=]() {

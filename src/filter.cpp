@@ -21,6 +21,13 @@ Filter::Filter(RootObjectWeakPtr root)
 void Filter::init()
 {
     _type = "filter";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
@@ -51,13 +58,14 @@ void Filter::init()
         Log::get() << Log::MESSAGE << "Filter::" << __FUNCTION__ << " - Filter correctly initialized" << Log::endl;
         _isInitialized = true;
     }
-
-    registerAttributes();
 }
 
 /*************/
 Filter::~Filter()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get()<< Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
 #endif
@@ -121,12 +129,12 @@ void Filter::unbind()
 }
 
 /*************/
-bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
+void Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
         if (_inTexture.expired())
-            return false;
+            return;
 
         auto inTex = _inTexture.lock();
         auto tex = dynamic_pointer_cast<Texture>(obj);
@@ -134,20 +142,20 @@ bool Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
         _screen->removeTexture(tex);
         if (tex->getName() == inTex->getName())
             _inTexture.reset();
-        return true;
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
         auto tex = _root.lock()->unregisterObject(textureName);
 
-        if (!tex)
-            return false;
-        tex->unlinkFrom(obj);
-        return unlinkFrom(tex);
+        if (tex)
+        {
+            tex->unlinkFrom(obj);
+            unlinkFrom(tex);
+        }
     }
 
-    return Texture::unlinkFrom(obj);
+    Texture::unlinkFrom(obj);
 }
 
 /*************/
@@ -155,6 +163,9 @@ void Filter::update()
 {
     if (_inTexture.expired())
         return;
+
+    if (_updateColorDepth)
+        updateColorDepth();
 
     auto input = _inTexture.lock();
     _outTextureSpec = input->getSpec();
@@ -217,22 +228,50 @@ void Filter::setOutput()
 {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
 
-    _outTexture = make_shared<Texture_Image>();
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+    _outTexture = make_shared<Texture_Image>(_root);
+    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     // Setup the virtual screen
-    _screen = make_shared<Object>();
+    _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"filter"});
-    GeometryPtr virtualScreen = make_shared<Geometry>();
+    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
+}
+
+/*************/
+void Filter::updateColorDepth()
+{
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
+    auto spec = _outTexture->getSpec();
+    if (_render16bits)
+        _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+    else
+        _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _updateColorDepth = false;
 }
 
 /*************/
 void Filter::registerAttributes()
 {
+    addAttribute("16bits", [&](const Values& args) {
+        bool render16bits = args[0].asInt();
+        if (render16bits != _render16bits)
+        {
+            _render16bits = render16bits;
+            _updateColorDepth = true;
+        }
+        return true;
+    }, [&]() -> Values {
+        return {(int)_render16bits};
+    }, {'n'});
+    setAttributeDescription("16bits", "Set to 1 for the filter to be rendered in 16bits per component (otherwise 8bpc)");
+
     addAttribute("blackLevel", [&](const Values& args) {
         _blackLevel = args[0].asFloat();
         _blackLevel = std::max(0.f, std::min(1.f, _blackLevel));

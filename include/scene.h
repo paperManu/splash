@@ -31,15 +31,16 @@
 #include <list>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
 #if HAVE_GPHOTO
-    #include "colorcalibrator.h"
+    #include "./colorcalibrator.h"
 #endif
-#include "coretypes.h"
-#include "basetypes.h"
-#include "gui.h"
-#include "httpServer.h"
+#include "./coretypes.h"
+#include "./basetypes.h"
+#include "./factory.h"
+#include "./gui.h"
+#include "./httpServer.h"
 
 namespace Splash {
 
@@ -134,14 +135,14 @@ class Scene : public RootObject
          */
         bool link(std::string first, std::string second);
         bool link(BaseObjectPtr first, BaseObjectPtr second);
-        bool unlink(std::string first, std::string second);
-        bool unlink(BaseObjectPtr first, BaseObjectPtr second);
+        void unlink(std::string first, std::string second);
+        void unlink(BaseObjectPtr first, BaseObjectPtr second);
 
         /**
          * Link / unlink objects, at least one of them being a ghost
          */
         bool linkGhost(std::string first, std::string second);
-        bool unlinkGhost(std::string first, std::string second);
+        void unlinkGhost(std::string first, std::string second);
 
         /**
          * Remove an object
@@ -186,6 +187,7 @@ class Scene : public RootObject
         void waitTextureUpload();
 
     protected:
+        std::unique_ptr<Factory> _factory {nullptr};
         GlWindowPtr _mainWindow;
         std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};

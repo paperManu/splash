@@ -38,11 +38,16 @@ Object::Object(RootObjectWeakPtr root)
 void Object::init()
 {
     _type = "object";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     _shader = make_shared<Shader>();
     _modelMatrix = glm::dmat4(0.0);
-
-    registerAttributes();
 }
 
 /*************/
@@ -132,8 +137,11 @@ void Object::activate()
     _shader->setAttribute("uniform", {"_scale", _scale.x, _scale.y, _scale.z});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
 
-    _geometries[0]->update();
-    _geometries[0]->activate();
+    if (_geometries.size() > 0)
+    {
+        _geometries[0]->update();
+        _geometries[0]->activate();
+    }
     _shader->activate();
 
     GLuint texUnit = 0;
@@ -186,7 +194,8 @@ void Object::deactivate()
     }
 
     _shader->deactivate();
-    _geometries[0]->deactivate();
+    if (_geometries.size() > 0)
+        _geometries[0]->deactivate();
     _mutex.unlock();
 }
 
@@ -295,7 +304,7 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
+void Object::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
@@ -303,20 +312,22 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
         auto filterName = getName() + "_" + obj->getName() + "_filter";
         auto filter = _root.lock()->unregisterObject(filterName);
 
-        if (!filter)
-            return false;
-        filter->unlinkFrom(obj);
-        return unlinkFrom(filter);
+        if (filter)
+        {
+            filter->unlinkFrom(obj);
+            unlinkFrom(filter);
+        }
     }
     else if (type.find("image") != string::npos)
     {
         auto filterName = getName() + "_" + obj->getName() + "_filter";
         auto filter = _root.lock()->unregisterObject(filterName);
 
-        if (!filter)
-            return false;
-        filter->unlinkFrom(obj);
-        return unlinkFrom(filter);
+        if (filter)
+        {
+            filter->unlinkFrom(obj);
+            unlinkFrom(filter);
+        }
     }
     else if (type.find("filter") != string::npos)
     {
@@ -328,25 +339,24 @@ bool Object::unlinkFrom(shared_ptr<BaseObject> obj)
         auto geomName = getName() + "_" + obj->getName() + "_geom";
         auto geom = _root.lock()->unregisterObject(geomName);
 
-        if (!geom)
-            return false;
-        geom->unlinkFrom(obj);
-        return unlinkFrom(geom);
+        if (geom)
+        {
+            geom->unlinkFrom(obj);
+            unlinkFrom(geom);
+        }
     }
     else if (type.find("geometry") != string::npos)
     {
         auto geom = dynamic_pointer_cast<Geometry>(obj);
         removeGeometry(geom);
-        return true;
     }
     else if (obj->getType().find("queue") != string::npos)
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);
-        return true;
     }
 
-    return BaseObject::unlinkFrom(obj);
+    BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -408,7 +418,7 @@ void Object::resetBlendingMap()
 /*************/
 void Object::resetVisibility()
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderResetBlending)
     {
@@ -434,7 +444,7 @@ void Object::resetVisibility()
 /*************/
 void Object::resetTessellation()
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     for (auto& geom : _geometries)
     {
@@ -445,7 +455,7 @@ void Object::resetTessellation()
 /*************/
 void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision)
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_feedbackShaderSubdivideCamera)
     {
@@ -496,7 +506,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 /*************/
 void Object::transferVisibilityFromTexToAttr(int width, int height)
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderTransferVisibilityToAttr)
     {
@@ -517,7 +527,7 @@ void Object::transferVisibilityFromTexToAttr(int width, int height)
 /*************/
 void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
-    unique_lock<mutex> lock(_mutex);
+    lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderComputeBlending)
     {

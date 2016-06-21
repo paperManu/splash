@@ -25,9 +25,15 @@ Queue::Queue(RootObjectWeakPtr root)
     : BufferObject(root)
 {
     _type = "queue";
-    _world = dynamic_pointer_cast<World>(root.lock());
-
     registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
+
+    _world = dynamic_pointer_cast<World>(root.lock());
 }
 
 /*************/
@@ -53,7 +59,7 @@ string Queue::getDistantName() const
 /*************/
 void Queue::update()
 {
-    unique_lock<mutex> lock(_playlistMutex);
+    lock_guard<mutex> lock(_playlistMutex);
 
     if (_playlist.size() == 0)
         return;
@@ -115,7 +121,7 @@ void Queue::update()
         
         if (sourceIndex >= _playlist.size())
         {
-            _currentSource = make_shared<Image>();
+            _currentSource = make_shared<Image>(_root);
             _world.lock()->sendMessage(_name, "source", {"image"});
         }
         else
@@ -125,7 +131,7 @@ void Queue::update()
             if (_currentSource)
                 _playing = true;
             else
-                _currentSource = make_shared<Image>();
+                _currentSource = make_shared<Image>(_root);
 
             _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
 
@@ -265,20 +271,20 @@ shared_ptr<BufferObject> Queue::createSource(string type)
 
     if (type == "image")
     {
-        source = make_shared<Image>();
+        source = make_shared<Image>(_root);
         dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #if HAVE_FFMPEG
     else if (type == "image_ffmpeg")
     {
-        source = make_shared<Image_FFmpeg>();
+        source = make_shared<Image_FFmpeg>(_root);
         dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #endif
 #if HAVE_SHMDATA
     else if (type == "image_shmdata")
     {
-        source = make_shared<Image_Shmdata>();
+        source = make_shared<Image_Shmdata>(_root);
         dynamic_pointer_cast<Image>(source)->setTo(0.f);
     }
 #endif
@@ -314,7 +320,7 @@ void Queue::registerAttributes()
     setAttributeDescription("pause", "Pause the queue if set to 1");
 
     addAttribute("playlist", [&](const Values& args) {
-        unique_lock<mutex> lock(_playlistMutex);
+        lock_guard<mutex> lock(_playlistMutex);
         _playlist.clear();
 
         for (auto& it : args)
@@ -339,7 +345,7 @@ void Queue::registerAttributes()
 
         return true;
     }, [&]() -> Values {
-        unique_lock<mutex> lock(_playlistMutex);
+        lock_guard<mutex> lock(_playlistMutex);
         Values playlist;
 
         for (auto& src : _playlist)
@@ -452,7 +458,7 @@ void QueueSurrogate::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        unique_lock<mutex> lock(_taskMutex);
+        lock_guard<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() {
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
             auto type = args[0].asString();
@@ -472,7 +478,7 @@ void QueueSurrogate::registerAttributes()
 
             if (type.find("image") != string::npos)
             {
-                auto image = make_shared<Image>();
+                auto image = make_shared<Image>(_root);
                 image->setTo(0.f);
                 image->setRemoteType(type);
 

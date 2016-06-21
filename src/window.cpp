@@ -38,6 +38,13 @@ Window::Window(RootObjectWeakPtr root)
        : BaseObject(root)
 {
     _type = "window";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     ScenePtr scene = dynamic_pointer_cast<Scene>(root.lock());
     GlWindowPtr w = scene->getNewSharedWindow();
@@ -54,7 +61,6 @@ Window::Window(RootObjectWeakPtr root)
     _viewProjectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f);
 
     setEventsCallbacks();
-    registerAttributes();
     showCursor(false);
 
     // Get the default window size and position
@@ -81,6 +87,9 @@ Window::Window(RootObjectWeakPtr root)
 /*************/
 Window::~Window()
 {
+    if (_root.expired())
+        return;
+
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Window::~Window - Destructor" << Log::endl;
 #endif
@@ -92,7 +101,7 @@ Window::~Window()
 /*************/
 int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     if (_chars.size() == 0)
         return 0;
 
@@ -115,7 +124,7 @@ bool Window::getKey(int key)
 /*************/
 int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     if (_keys.size() == 0)
         return 0;
 
@@ -134,7 +143,7 @@ int Window::getKeys(GLFWwindow*& win, int& key, int& action, int& mods)
 /*************/
 int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     if (_mouseBtn.size() == 0)
         return 0;
 
@@ -153,7 +162,7 @@ int Window::getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods)
 /*************/
 void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     if (_mousePos.second.size() != 2)
         return;
 
@@ -165,7 +174,7 @@ void Window::getMousePos(GLFWwindow*& win, int& xpos, int& ypos)
 /*************/
 int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     if (_scroll.size() == 0)
         return 0;
 
@@ -181,7 +190,7 @@ int Window::getScroll(GLFWwindow*& win, double& xoffset, double& yoffset)
 /*************/
 vector<string> Window::getPathDropped()
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     auto paths = _pathDropped;
     _pathDropped.clear();
     return paths;
@@ -202,7 +211,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = make_shared<Texture_Image>();
+        auto tex = make_shared<Texture_Image>(_root);
         tex->setName(getName() + "_" + obj->getName() + "_tex");
         tex->setResizable(0);
         if (tex->linkTo(obj))
@@ -249,7 +258,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Window::unlinkFrom(shared_ptr<BaseObject> obj)
+void Window::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -277,6 +286,15 @@ bool Window::unlinkFrom(shared_ptr<BaseObject> obj)
     }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
+        auto warpName = getName() + "_" + obj->getName() + "_warp";
+        auto warp = _root.lock()->unregisterObject(warpName);
+
+        if (warp)
+        {
+            warp->unlinkFrom(obj);
+            unlinkFrom(warp);
+        }
+
         CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
         for (auto& tex : cam->getTextures())
             unsetTexture(tex);
@@ -395,14 +413,13 @@ bool Window::render()
 /*************/
 void Window::setupRenderFBO()
 {
-    glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
     glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
 
     glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(_root, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
     else
@@ -414,7 +431,7 @@ void Window::setupRenderFBO()
 
     if (!_colorTexture)
     {
-        _colorTexture = make_shared<Texture_Image>();
+        _colorTexture = make_shared<Texture_Image>(_root);
         _colorTexture->setAttribute("filtering", {0});
         _colorTexture->reset(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, _windowRect[2], _windowRect[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
@@ -589,7 +606,7 @@ void Window::unsetTexture(TexturePtr tex)
 /*************/
 void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     vector<int> keys {key, scancode, action, mods};
     _keys.push_back(pair<GLFWwindow*, vector<int>>(win, keys));
 }
@@ -597,14 +614,14 @@ void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int
 /*************/
 void Window::charCallback(GLFWwindow* win, unsigned int codepoint)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     _chars.push_back(pair<GLFWwindow*, unsigned int>(win, codepoint));
 }
 
 /*************/
 void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     vector<int> btn {button, action, mods};
     _mouseBtn.push_back(pair<GLFWwindow*, vector<int>>(win,btn));
 }
@@ -612,7 +629,7 @@ void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 /*************/
 void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     vector<double> pos {xpos, ypos};
     _mousePos.first = win;
     _mousePos.second = move(pos);
@@ -621,7 +638,7 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 /*************/
 void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     vector<double> scroll {xoffset, yoffset};
     _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
 }
@@ -629,7 +646,7 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 /*************/
 void Window::pathdropCallback(GLFWwindow* win, int count, const char** paths)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     for (int i = 0; i < count; ++i)
         _pathDropped.push_back(string(paths[i]));
 }
@@ -637,7 +654,7 @@ void Window::pathdropCallback(GLFWwindow* win, int count, const char** paths)
 /*************/
 void Window::closeCallback(GLFWwindow* win)
 {
-    unique_lock<mutex> lock(_callbackMutex);
+    lock_guard<mutex> lock(_callbackMutex);
     _quitFlag = true;
 }
 
@@ -666,14 +683,14 @@ bool Window::setProjectionSurface()
     glGetError();
 #endif
 
-    _screen = make_shared<Object>();
+    _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
-    GeometryPtr virtualScreen = make_shared<Geometry>();
+    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
 
-    _screenGui = make_shared<Object>();
+    _screenGui = make_shared<Object>(_root);
     _screenGui->setAttribute("fill", {"window"});
-    virtualScreen = make_shared<Geometry>();
+    virtualScreen = make_shared<Geometry>(_root);
     _screenGui->addGeometry(virtualScreen);
 
 #ifdef DEBUG

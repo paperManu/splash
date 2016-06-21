@@ -10,9 +10,27 @@ namespace Splash
 /**************/
 Texture_Syphon::Texture_Syphon()
 {
-    _type = "texture_syphon";
+    init();
+}
 
+/**************/
+Texture_Syphon::Texture_Syphon(weak_ptr<RootObject> root)
+    : Texture(root)
+{
+    init();
+}
+
+/**************/
+void Texture_Syphon::init()
+{
+    _type = "texture_syphon";
     registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 }
 
 /**************/

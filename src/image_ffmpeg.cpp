@@ -20,16 +20,35 @@ namespace Splash
 /*************/
 Image_FFmpeg::Image_FFmpeg()
 {
-    _type = "image_ffmpeg";
-    registerAttributes();
+    init();
+}
 
-    av_register_all();
+/*************/
+Image_FFmpeg::Image_FFmpeg(weak_ptr<RootObject> root)
+    : Image(root)
+{
+    init();
 }
 
 /*************/
 Image_FFmpeg::~Image_FFmpeg()
 {
     freeFFmpegObjects();
+}
+
+/*************/
+void Image_FFmpeg::init()
+{
+    _type = "image_ffmpeg";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
+
+    av_register_all();
 }
 
 /*************/
@@ -294,7 +313,7 @@ void Image_FFmpeg::readLoop()
         auto previousTime = 0ull;
         
         auto shouldContinueLoop = [&]() -> bool {
-            unique_lock<mutex> lock(_videoSeekMutex);
+            lock_guard<mutex> lock(_videoSeekMutex);
             return _continueRead && av_read_frame(_avContext, &packet) >= 0;
         };
 
@@ -391,7 +410,7 @@ void Image_FFmpeg::readLoop()
 
                 if (hasFrame)
                 {
-                    unique_lock<mutex> lockFrames(_videoQueueMutex);
+                    lock_guard<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
                     std::swap(_timedFrames[_timedFrames.size() - 1].frame, img);
                     _timedFrames[_timedFrames.size() - 1].timing = timing;
@@ -410,8 +429,8 @@ void Image_FFmpeg::readLoop()
                 while (timedFramesBuffered > 30 && _continueRead)
                 {
                     this_thread::sleep_for(chrono::milliseconds(5));
-                    unique_lock<mutex> lockSeek(_videoSeekMutex);
-                    unique_lock<mutex> lockQueue(_videoQueueMutex);
+                    lock_guard<mutex> lockSeek(_videoSeekMutex);
+                    lock_guard<mutex> lockQueue(_videoQueueMutex);
                     timedFramesBuffered = _timedFrames.size();
                 }
             }
@@ -478,7 +497,7 @@ void Image_FFmpeg::readLoop()
 /*************/
 void Image_FFmpeg::seek(float seconds)
 {
-    unique_lock<mutex> lock(_videoSeekMutex);
+    lock_guard<mutex> lock(_videoSeekMutex);
 
     int seekFlag = 0;
     if (_elapsedTime > seconds)
@@ -498,7 +517,7 @@ void Image_FFmpeg::seek(float seconds)
     }
     else
     {
-        unique_lock<mutex> lockQueue(_videoQueueMutex);
+        lock_guard<mutex> lockQueue(_videoQueueMutex);
         // As seeking will no necessarily go to the desired timestamp, but to the closest i-frame,
         // we will set _startTime at the next frame in the videoDisplayLoop
         _startTime = -1;
@@ -519,7 +538,7 @@ void Image_FFmpeg::videoDisplayLoop()
     {
         auto localQueue = deque<TimedFrame>();
         {
-            unique_lock<mutex> lockFrames(_videoQueueMutex);
+            lock_guard<mutex> lockFrames(_videoQueueMutex);
             std::swap(localQueue, _timedFrames);
         }
 
@@ -599,7 +618,7 @@ void Image_FFmpeg::videoDisplayLoop()
 
                 _elapsedTime = timedFrame.timing;
 
-                unique_lock<mutex> lock(_writeMutex);
+                lock_guard<mutex> lock(_writeMutex);
                 if (!_bufferImage)
                     _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
                 std::swap(_bufferImage, timedFrame.frame);

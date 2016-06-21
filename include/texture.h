@@ -46,10 +46,6 @@ class Texture : public BaseObject
          */
         Texture();
         Texture(RootObjectWeakPtr root);
-        Texture(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                GLint border, GLenum format, GLenum type, const GLvoid* data);
-        Texture(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
          * Destructor

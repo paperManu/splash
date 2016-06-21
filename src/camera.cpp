@@ -51,6 +51,13 @@ Camera::Camera(RootObjectWeakPtr root)
 void Camera::init()
 {
     _type = "camera";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
@@ -84,8 +91,6 @@ void Camera::init()
 
     // Load some models
     loadDefaultModels();
-
-    registerAttributes();
 }
 
 /*************/
@@ -95,7 +100,8 @@ Camera::~Camera()
     Log::get()<< Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
 
-    glDeleteFramebuffers(1, &_fbo);
+    if (!_root.expired())
+        glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
@@ -435,7 +441,7 @@ bool Camera::doCalibration()
                     localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
                 }
 
-                unique_lock<mutex> lock(gslMutex);
+                lock_guard<mutex> lock(gslMutex);
                 if (localMinimum < minValue)
                 {
                     minValue = localMinimum;
@@ -488,7 +494,7 @@ bool Camera::doCalibration()
             localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
         }
 
-        unique_lock<mutex> lock(gslMutex);
+        lock_guard<mutex> lock(gslMutex);
         if (localMinimum < minValue)
         {
             minValue = localMinimum;
@@ -571,7 +577,7 @@ bool Camera::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Camera::unlinkFrom(shared_ptr<BaseObject> obj)
+void Camera::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -585,7 +591,7 @@ bool Camera::unlinkFrom(shared_ptr<BaseObject> obj)
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
-    return BaseObject::unlinkFrom(obj);
+    BaseObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -718,6 +724,9 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 /*************/
 bool Camera::render()
 {
+    if (_updateColorDepth)
+        updateColorDepth();
+
     if (_newWidth != 0 && _newHeight != 0)
     {
         setOutputSize(_newWidth, _newHeight);
@@ -1048,7 +1057,7 @@ void Camera::setOutputNbr(int nbr)
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(_root, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -1063,10 +1072,10 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            Texture_ImagePtr texture = make_shared<Texture_Image>();
+            Texture_ImagePtr texture = make_shared<Texture_Image>(_root);
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, 512, 512, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
             _outTextures.push_back(texture);
         }
@@ -1076,6 +1085,26 @@ void Camera::setOutputNbr(int nbr)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+}
+
+/*************/
+void Camera::updateColorDepth()
+{
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+
+    for (int i = 0; i < _outTextures.size(); ++i)
+    {
+        auto spec = _outTextures[i]->getSpec();
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+        if (_render16bits)
+            _outTextures[i]->reset(GL_TEXTURE_2D, 0, GL_RGBA16, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+        else
+            _outTextures[i]->reset(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures[i]->getTexId(), 0);
+    }
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _updateColorDepth = false;
 }
 
 /*************/
@@ -1253,22 +1282,17 @@ void Camera::loadDefaultModels()
             }
         }
 
-        shared_ptr<Mesh> mesh = make_shared<Mesh>();
+        shared_ptr<Mesh> mesh = make_shared<Mesh>(_root);
         mesh->setName(file.first);
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);
 
-        GeometryPtr geom = make_shared<Geometry>();
-        geom->setName(file.first);
-        geom->linkTo(mesh);
-        _modelGeometries.push_back(geom);
-
-        shared_ptr<Object> obj = make_shared<Object>();
+        shared_ptr<Object> obj = make_shared<Object>(_root);
         obj->setName(file.first);
         obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(geom);
+        obj->linkTo(mesh);
 
         _models[file.first] = obj;
     }
@@ -1521,6 +1545,19 @@ void Camera::registerAttributes()
     setAttributeDescription("calibrationPoints", "Set multiple calibration points, as an array of 6D vector (position, projection and status)");
 
     // Rendering options
+    addAttribute("16bits", [&](const Values& args) {
+        bool render16bits = args[0].asInt();
+        if (render16bits != _render16bits)
+        {
+            _render16bits = render16bits;
+            _updateColorDepth = true;
+        }
+        return true;
+    }, [&]() -> Values {
+        return {(int)_render16bits};
+    }, {'n'});
+    setAttributeDescription("16bits", "Set to 1 for the camera to render in 16bits per component (otherwise 8bpc)");
+
     addAttribute("blendWidth", [&](const Values& args) {
         _blendWidth = args[0].asFloat();
         return true;

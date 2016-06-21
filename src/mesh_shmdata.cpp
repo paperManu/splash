@@ -11,9 +11,14 @@ namespace Splash {
 /*************/
 Mesh_Shmdata::Mesh_Shmdata()
 {
-    _type = "mesh_shmdata";
+    init();
+}
 
-    registerAttributes();
+/*************/
+Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root)
+    : Mesh(root)
+{
+    init();
 }
 
 /*************/
@@ -41,6 +46,19 @@ bool Mesh_Shmdata::read(const string& filename)
     _filepath = filepath;
 
     return true;
+}
+
+/*************/
+void Mesh_Shmdata::init()
+{
+    _type = "mesh_shmdata";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 }
 
 /*************/
@@ -98,7 +116,7 @@ void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
     }
 
     Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
-    unique_lock<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(ctx->_writeMutex);
     if (Timer::get().isDebug())
         Timer::get() << "mesh_shmdata " + ctx->_name;
 

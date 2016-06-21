@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.0
+    VERSION 0.4.2
     LANGUAGES C CXX
 )
 
@@ -34,8 +34,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 #
 # Package information
 #
-set(API_VERSION 0.3)
-set(PACKAGE_VERSION 0.4.0)
+set(API_VERSION 0.4)
+set(PACKAGE_VERSION 0.4.2)
 
 #
 # Find the various libraries
@@ -96,7 +96,7 @@ add_subdirectory(src)
 
 #
 # CPack related info
-# Creates package on Linux. On Linux, it is handled separately (see ./osx/CMakeLists.txt)
+# Creates package on Linux. On OSX, it is handled separately (see ./osx/CMakeLists.txt)
 #
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
 set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")

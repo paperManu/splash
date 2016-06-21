@@ -16,10 +16,12 @@ Mesh::Mesh()
 }
 
 /*************/
-Mesh::Mesh(bool linkedToWorld)
+Mesh::Mesh(weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     init();
-    _linkedToWorldObject = true;
+    if (!root.expired() && root.lock()->getType() == "world")
+        _worldObject = true;
 }
 
 /*************/
@@ -34,10 +36,15 @@ Mesh::~Mesh()
 void Mesh::init()
 {
     _type = "mesh";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 
     createDefaultMesh();
-
-    registerAttributes();
 }
 
 /*************/
@@ -51,7 +58,7 @@ bool Mesh::operator==(Mesh& otherMesh) const
 /*************/
 vector<float> Mesh::getVertCoords() const
 {
-    unique_lock<mutex> lock(_readMutex);
+    lock_guard<mutex> lock(_readMutex);
     vector<float> coords;
     for (auto& v : _mesh.vertices)
     {
@@ -66,7 +73,7 @@ vector<float> Mesh::getVertCoords() const
 /*************/
 vector<float> Mesh::getUVCoords() const
 {
-    unique_lock<mutex> lock(_readMutex);
+    lock_guard<mutex> lock(_readMutex);
     vector<float> coords;
     for (auto& u : _mesh.uvs)
     {
@@ -79,7 +86,7 @@ vector<float> Mesh::getUVCoords() const
 /*************/
 vector<float> Mesh::getNormals() const
 {
-    unique_lock<mutex> lock(_readMutex);
+    lock_guard<mutex> lock(_readMutex);
     vector<float> normals;
     for (auto& n : _mesh.normals)
     {
@@ -94,7 +101,7 @@ vector<float> Mesh::getNormals() const
 /*************/
 vector<float> Mesh::getAnnexe() const
 {
-    unique_lock<mutex> lock(_readMutex);
+    lock_guard<mutex> lock(_readMutex);
     vector<float> annexe;
     for (auto& a : _mesh.annexe)
     {
@@ -115,7 +122,7 @@ bool Mesh::read(const string& filename)
 
     _filepath = filepath;
 
-    if (!_linkedToWorldObject)
+    if (!_isConnectedToRemote)
     {
         Loader::Obj objLoader;
         if (!objLoader.load(filepath))
@@ -130,7 +137,7 @@ bool Mesh::read(const string& filename)
         mesh.uvs = objLoader.getUVs();
         mesh.normals = objLoader.getNormals();
 
-        unique_lock<mutex> lock(_writeMutex);
+        lock_guard<mutex> lock(_writeMutex);
         _mesh = mesh;
         updateTimestamp();
     }
@@ -153,7 +160,7 @@ shared_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(getNormals());
     data.push_back(getAnnexe());    
 
-    unique_lock<mutex> lock(_readMutex);
+    lock_guard<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
@@ -283,8 +290,8 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 void Mesh::update()
 {
-    unique_lock<mutex> lockRead(_readMutex);
-    unique_lock<mutex> lockWrite(_writeMutex);
+    lock_guard<mutex> lockRead(_readMutex);
+    lock_guard<mutex> lockWrite(_writeMutex);
     if (_meshUpdated)
     {
         _mesh = _bufferMesh;
@@ -353,7 +360,7 @@ void Mesh::createDefaultMesh(int subdiv)
         }
     }
 
-    unique_lock<mutex> lock(_writeMutex);
+    lock_guard<mutex> lock(_writeMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();

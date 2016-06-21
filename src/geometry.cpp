@@ -32,18 +32,26 @@ void Geometry::init()
     _type = "geometry";
     registerAttributes();
 
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
+
     glGenQueries(1, &_feedbackQuery);
 
-    _defaultMesh = make_shared<Mesh>();
+    _defaultMesh = make_shared<Mesh>(_root);
     _mesh = weak_ptr<Mesh>(_defaultMesh);
     update();
     _timestamp = _defaultMesh->getTimestamp();
-
 }
 
 /*************/
 Geometry::~Geometry()
 {
+    if (_root.expired())
+        return;
+
     for (auto v : _vertexArray)
         glDeleteVertexArrays(1, &(v.second));
 

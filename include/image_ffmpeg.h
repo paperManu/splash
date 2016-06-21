@@ -57,6 +57,7 @@ class Image_FFmpeg : public Image
          * Constructor
          */
         Image_FFmpeg();
+        Image_FFmpeg(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -124,6 +125,11 @@ class Image_FFmpeg : public Image
          * Free everything related to FFmpeg
          */
         void freeFFmpegObjects();
+
+        /**
+         * Base init for the class
+         */
+        void init();
 
         /**
          * File read loop

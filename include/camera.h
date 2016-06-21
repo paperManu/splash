@@ -122,7 +122,7 @@ class Camera : public BaseObject
          * Try to link / unlink the given BaseObject to this
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
-        bool unlinkFrom(std::shared_ptr<BaseObject> obj);
+        void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
          * Get the coordinates of the closest vertex to the given point
@@ -185,6 +185,8 @@ class Camera : public BaseObject
         bool _hidden {false};
         bool _flashBG {false};
         bool _automaticResize {true};
+        bool _render16bits {false};
+        bool _updateColorDepth {false}; // Set to true if the _render16bits has been updated
         glm::dvec4 _clearColor {0.6, 0.6, 0.6, 1.0};
 
         // Color correction
@@ -194,7 +196,6 @@ class Camera : public BaseObject
 
         // Some default models use in various situations
         std::list<std::shared_ptr<Mesh>> _modelMeshes;
-        std::list<std::shared_ptr<Geometry>> _modelGeometries;
         std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
         // Camera parameters
@@ -258,6 +259,11 @@ class Camera : public BaseObject
          * Send calibration points to the model
          */
         void sendCalibrationPointsToObjects();
+
+        /**
+         * Update the color depth for all textures
+         */
+        void updateColorDepth();
 
         /**
          * Register new functors to modify attributes

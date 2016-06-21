@@ -101,7 +101,7 @@ struct AttributeFunctor
 
             if (!_setFunc && _defaultSetAndGet)
             {
-                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
+                std::lock_guard<std::mutex> lock(_defaultFuncMutex);
                 _values = args;
 
                 _valuesTypes.clear();
@@ -142,7 +142,7 @@ struct AttributeFunctor
         {
             if (!_getFunc && _defaultSetAndGet)
             {
-                std::unique_lock<std::mutex> lock(_defaultFuncMutex);
+                std::lock_guard<std::mutex> lock(_defaultFuncMutex);
                 return _values;
             }
             else if (!_getFunc)
@@ -161,6 +161,15 @@ struct AttributeFunctor
         // Set whether to update the Scene object (if this attribute is hosted by a World object)
         bool doUpdateDistant() const {return _doUpdateDistant;}
         void doUpdateDistant(bool update) {_doUpdateDistant = update;}
+
+        // Get the types of the wanted arguments
+        Values getArgsTypes() const
+        {
+            Values types {};
+            for (const auto& type : _valuesTypes)
+                types.push_back(Value(std::string(&type, 1)));
+            return types;
+        }
 
         // Lock the attribute to the given value
         bool isLocked() const {return _isLocked;}
@@ -253,13 +262,22 @@ class BaseObject
          * Set and get the name of the object
          */
         inline std::string getName() const {return _name;}
-        inline virtual std::string setName(const std::string& name) {_name = name; return _name;}
+        inline virtual std::string setName(const std::string& name)
+        {
+            _name = name;
+            return _name;
+        }
 
         /**
          * Set and get the remote type of the object
+         * This implies that this object gets data streamed from a World object
          */
         inline std::string getRemoteType() const {return _remoteType;}
-        inline void setRemoteType(std::string type) {_remoteType = type;}
+        inline void setRemoteType(std::string type)
+        {
+            _remoteType = type;
+            _isConnectedToRemote = true;
+        }
 
         /**
          * Try to link / unlink the given BaseObject to this
@@ -286,7 +304,7 @@ class BaseObject
         /**
          * Unlink a given object
          */
-        virtual bool unlinkFrom(std::shared_ptr<BaseObject> obj)
+        virtual void unlinkFrom(std::shared_ptr<BaseObject> obj)
         {
             auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
                 auto object = o.lock();
@@ -298,11 +316,7 @@ class BaseObject
             });
 
             if (objectIt != _linkedObjects.end())
-            {
                 _linkedObjects.erase(objectIt);
-                return true;
-            }
-            return false;
         }
 
         /**
@@ -498,6 +512,17 @@ class BaseObject
                 return {};
         }
 
+        /**
+         * Get a Values holding the description of all of this object's attributes
+         */
+        Values getAttributesDescriptions()
+        {
+            Values descriptions;
+            for (const auto& attr : _attribFunctions)
+                descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
+            return descriptions;
+        }
+
     // Pubic attributes
     public:
         bool _savable {true};
@@ -508,6 +533,7 @@ class BaseObject
         std::string _remoteType {""};
         std::string _name {""};
 
+        bool _isConnectedToRemote {false}; // True if the object gets data from a World object
         std::string _configFilePath {""}; // All objects know about their location
 
         RootObjectWeakPtr _root;
@@ -656,20 +682,19 @@ class BufferObject : public BaseObject
          */
         void setSerializedObject(std::shared_ptr<SerializedObject> obj)
         {
+            bool expectedAtomicValue = false;
+            if (_serializedObjectWaiting.compare_exchange_strong(expectedAtomicValue, true))
             {
-                std::unique_lock<std::mutex> lock(_writeMutex);
                 _serializedObject = std::move(obj);
                 _newSerializedObject = true;
-            }
 
-            // Deserialize it right away, in a separate thread
-            SThread::pool.enqueueWithoutId([&]() {
-                if (_writeMutex.try_lock())
-                {
+                // Deserialize it right away, in a separate thread
+                SThread::pool.enqueueWithoutId([this]() {
+                    std::lock_guard<std::mutex> lock(_writeMutex);
                     deserialize();
-                    _writeMutex.unlock();
-                }
-            });
+                    _serializedObjectWaiting = false;
+                });
+            }
         }
 
         /**
@@ -684,6 +709,7 @@ class BufferObject : public BaseObject
     protected:
         mutable std::mutex _readMutex;
         mutable std::mutex _writeMutex;
+        std::atomic_bool _serializedObjectWaiting {false};
         int64_t _timestamp;
         bool _updatedBuffer {false};
 
@@ -696,6 +722,8 @@ typedef std::shared_ptr<BufferObject> BufferObjectPtr;
 /*************/
 class RootObject : public BaseObject
 {
+    friend BaseObject;
+
     public:
         RootObject()
         {
@@ -721,7 +749,7 @@ class RootObject : public BaseObject
             {
                 auto name = object->getName();
 
-                std::unique_lock<std::recursive_mutex> registerLock(_objectsMutex);
+                std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
                 object->setSavable(false); // This object was created on the fly. Do not save it
 
                 // We keep the previous object on the side, to prevent double free due to operator[] behavior
@@ -740,7 +768,7 @@ class RootObject : public BaseObject
          */
         std::shared_ptr<BaseObject> unregisterObject(const std::string& name)
         {
-            std::unique_lock<std::recursive_mutex> lock(_objectsMutex);
+            std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
 
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
@@ -758,7 +786,7 @@ class RootObject : public BaseObject
          */
         bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true)
         {
-            std::unique_lock<std::recursive_mutex> lock(_setMutex);
+            std::lock_guard<std::recursive_mutex> lock(_setMutex);
 
             if (name == _name || name == SPLASH_ALL_PEERS)
                 return setAttribute(attrib, args);
@@ -789,7 +817,7 @@ class RootObject : public BaseObject
          */
         void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
         {
-            std::unique_lock<std::recursive_mutex> lock(_setMutex);
+            std::lock_guard<std::recursive_mutex> lock(_setMutex);
 
             auto objectIt = _objects.find(name);
             if (objectIt != _objects.end())
@@ -828,7 +856,7 @@ class RootObject : public BaseObject
          */
         void addTask(const std::function<void()>& task)
         {
-            std::unique_lock<std::mutex> lock(_taskMutex);
+            std::lock_guard<std::mutex> lock(_taskMutex);
             _taskQueue.push_back(task);
         }
 
@@ -849,7 +877,7 @@ class RootObject : public BaseObject
             if (_link == nullptr)
                 return {};
 
-            std::unique_lock<std::mutex> lock(_answerMutex);
+            std::lock_guard<std::mutex> lock(_answerMutex);
             _answerExpected = attribute;
 
             std::unique_lock<std::mutex> conditionLock(conditionMutex);

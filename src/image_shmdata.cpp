@@ -29,9 +29,14 @@ namespace Splash
 /*************/
 Image_Shmdata::Image_Shmdata()
 {
-    _type = "image_shmdata";
+    init();
+}
 
-    registerAttributes();
+/*************/
+Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
+    : Image(root)
+{
+    init();
 }
 
 /*************/
@@ -69,6 +74,19 @@ void removeExtraParenthesis(string& str)
 {
     if (str.find(")") == 0)
         str = str.substr(1);
+}
+
+/*************/
+void Image_Shmdata::init()
+{
+    _type = "image_shmdata";
+    registerAttributes();
+
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
+    // This is used for getting documentation "offline"
+    if (_root.expired())
+        return;
 }
 
 /*************/
@@ -171,17 +189,17 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
                 {
                     ctx->_bpp = 24;
                     ctx->_channels = 3;
-                    ctx->_red = 0;
+                    ctx->_red = 2;
                     ctx->_green = 1;
-                    ctx->_blue = 2;
+                    ctx->_blue = 0;
                 }
                 else if ("BGR" == substr)
                 {
                     ctx->_bpp = 24;
                     ctx->_channels = 3;
-                    ctx->_red = 2;
+                    ctx->_red = 0;
                     ctx->_green = 1;
-                    ctx->_blue = 0;
+                    ctx->_blue = 2;
                 }
                 else if ("RGBA" == substr)
                 {
@@ -269,7 +287,7 @@ void Image_Shmdata::onData(void* data, int data_size, void* user_data)
 /*************/
 void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    unique_lock<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(ctx->_writeMutex);
 
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
@@ -312,7 +330,7 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 /*************/
 void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size)
 {
-    unique_lock<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(ctx->_writeMutex);
 
     // Check if we need to resize the reader buffer
     auto bufSpec = ctx->_readerBuffer.getSpec();
