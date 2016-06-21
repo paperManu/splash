@@ -189,17 +189,17 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
                 {
                     ctx->_bpp = 24;
                     ctx->_channels = 3;
-                    ctx->_red = 0;
+                    ctx->_red = 2;
                     ctx->_green = 1;
-                    ctx->_blue = 2;
+                    ctx->_blue = 0;
                 }
                 else if ("BGR" == substr)
                 {
                     ctx->_bpp = 24;
                     ctx->_channels = 3;
-                    ctx->_red = 2;
+                    ctx->_red = 0;
                     ctx->_green = 1;
-                    ctx->_blue = 0;
+                    ctx->_blue = 2;
                 }
                 else if ("RGBA" == substr)
                 {
