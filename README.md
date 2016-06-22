@@ -506,24 +506,37 @@ Links to:
 
 Attributes:
 
-- activateColorLUT [int]: if set to true, the color look up table will used if present
-- blendWidth [float]: width of the blending zone, along the camera borders
-- blendPrecision [float]: when using vertex blending (activated with OpenGL >= 4.3), this sets the subdivision level hence blending precision
-- blackLevel [float]: minimum value outputted by the camera
-- brightness [float]: modify the global brightness of the rendering
-- colorTemperature [float]: white point for this camera, in Kelvin (default to 6500.0)
-- eye [float, float, float]: position of the camera in the 3D space
-- fov [float]: field of view of the camera, in degrees
-- principalPoint [float, float]: optical center of the camera, in image coordinates
-- size [int, int]: rendering size of the offscreen buffer. Will be updated when connected to a window
-- target [float, float, float]: vector indicating the direction of the camera view
-- up [float, float, float]: vector of the up direction (used to tilt the view)
-
-The following attributes should not be edited manually:
-
-- calibrationPoints [float array]: list of the calibration points
-- colorLUT [float array]: look up table created by the color calibration
-- colorMixMatrix [float array]: color mixing matrix created by the color calibration
+- displayCalibration: [n] If set to 1, display the calibration points
+- forward: [n] Move the camera forward along its Z axis
+- size: [n, n] Set the render size
+- flashBG: [n] If set to 1, switch background to light gray
+- addCalibrationPoint: [n, n, n] Add a calibration point at the given position
+- removeCalibrationPoint: [n, n, n] Remove the calibration point given its 3D coordinates
+- activateColorLUT: [n] Activate the color lookup table. If set to 2, switches its status
+- colorTemperature: [n] Set the color temperature correction
+- colorLUT: [v] Set the color lookup table
+- moveTarget: [n, n, n] Move the target by the specified vector
+- fov: [n] Set the camera field of view
+- brightness: [n] Set the camera brightness
+- frame: [n] If set to 1, draws a frame around the camera
+- blendPrecision: [n] Set the blending precision
+- rotateAroundTarget: [n, n, n] Rotate around the target point by the given Euler angles
+- colorMixMatrix: [v] Set the color correction matrix
+- up: [n, n, n] Set the camera up vector
+- displayAllCalibrations: [n] If set to 1, display all calibration points from other cameras
+- pan: [n, n, n] Move the camera in its focal plane
+- blendWidth: [n] Set the projectors blending width
+- principalPoint: [n, n] Set the principal point of the lens (for lens shifting)
+- moveEye: [n, n, n] Move the eye by the specified vector
+- target: [n, n, n] Set the camera target position
+- hide: [n] If set to 1, prevent from drawing this camera
+- weightedCalibrationPoints: [n] If set to 1, calibration points located near the edges are more weight in the calibration
+- wireframe: [n] If set to 1, draws all linked objects as wireframes
+- moveCalibrationPoint: [n, n] Move the target calibration point in the 2D projection space
+- 16bits: [n] Set to 1 for the camera to render in 16bits per component (otherwise 8bpc)
+- rotateAroundPoint: [n, n, n, n, n, n] Rotate around a given point by the given Euler angles
+- setCalibrationPoint: [n, n] Set the 2D projection of a calibration point
+- eye: [n, n, n] Set the camera position
 
 ### image
 This class reads a single image from a given file.
@@ -537,32 +550,45 @@ Links to:
 
 Attributes:
 
-- benchmark [int]: if set to anything but 0, the *World* will send the image at every iteration even if the image has not been updated
-- file [string]: path to the image file to open
-- flip [int]: if set to 1, the image will be mirrored vertically
-- flop [int]: if set to 1, the image will be mirrored horizontally
-- srgb [int]: if set to anything but 0, the image will be considered to be represented in the sRGB color space
+- file: [s] Image file to load
+- pattern: [n] Set to 1 to replace the image with a pattern
+- benchmark: [n] Set to 1 to resend the image even when not updated
+- srgb: [n] Set to 1 if the image file is stored as sRGB
+- flip: [n] Mirrors the image on the Y axis
+- flop: [n] Mirrors the image on the X axis
 
 ### image_ffmpeg
 This class reads a video file. As it derives from the image class, it shares all its attributes and behaviors.
 
 Attributes:
 
-- loop [int]: set whether the video should loop
-- pause [int]: set whether the queue should be paused (mostly useful at runtime)
-- seek [float]: go to a specific timing in the queue (mostly useful at runtime)
-- useClock [int]: set whether the queue should be controled by the synchronization clock
+- file: [s] Image file to load
+- seek: [n] Change the read position in the video file
+- pattern: [n] Set to 1 to replace the image with a pattern
+- benchmark: [n] Set to 1 to resend the image even when not updated
+- srgb: [n] Set to 1 if the image file is stored as sRGB
+- flip: [n] Mirrors the image on the Y axis
+- flop: [n] Mirrors the image on the X axis
 
 ### image_opencv
 This class reads a video capture input, using OpenCV capabilities. As it derives from the image class, it shares all its attributes and behaviors.
 
 Attributes:
 
-- size [int, int]: desired capture size (real size may differ)
-- framerate [float]: desired capture framerate (may also differ)
+- size: [n, n] desired capture size (real size may differ)
+- framerate: [n] desired capture framerate (may also differ)
 
 ### image_shmdata
 This class reads a video stream from a shmdata socket. As it derives from the image class, it shares all its attributes and behaviors.
+
+Attributes:
+
+- file: [s] Image file to load
+- pattern: [n] Set to 1 to replace the image with a pattern
+- benchmark: [n] Set to 1 to resend the image even when not updated
+- srgb: [n] Set to 1 if the image file is stored as sRGB
+- flip: [n] Mirrors the image on the Y axis
+- flop: [n] Mirrors the image on the X axis
 
 ### mesh
 Links from: None
@@ -574,8 +600,8 @@ Links to:
 
 Attributes:
 
-- benchmark [int]: if set to anything but 0, the *World* will send the mesh at every iteration even if the mesh has not been updated
-- file [string]: path to the mesh file to read from
+- benchmark: [n] Set to 1 to resend the image even when not updated
+- file: [s] Mesh file to load
 
 ### mesh_shmdata
 As this class derives from the class mesh, it shares all its attributes and behaviors
@@ -589,7 +615,8 @@ Links to:
 
 Attributes:
 
-- file [string]: path to the shared memory to read from
+- benchmark: [n] Set to 1 to resend the image even when not updated
+- file: [s] Mesh file to load
 
 ### object
 Links from:
@@ -606,42 +633,14 @@ Links to:
 
 Attributes:
 
-- color [float, float, float, float]: set the color of the object if "fill" is set to "color"
-- fill [string]: if set to:
-    - "texture", the object is textured with the linked texture / image
-    - "color", the object is colored with the one given by the color attribute
-    - "uv", the object is colored according to its texture coordinates
-    - "wireframe", the object is displayed as wireframe
-    - "window", the object is considered as a window object, with multiple texture input. There is no known reason to use this.
-- position [float, float, float]: position of the object in 3D space
-- scale [float, float, float]: scale of the object along all three axis
-- sideness [int]: if set to:
-    - 0, the object is double sided
-    - 1, the object is single sided
-    - 2, the object is single sided with sides inverted
-
-### queue
-A *Queue* holds a list of media and timings, activating each media at a time. It derives class texture, and shares all its attributes and behaviors.
-
-Links from: None
-
-Links to:
-
-- object
-- window
-
-Attributes:
-
-- loop [int]: set if the queue should loop at the end
-- pause [int]: set whether the queue should be paused (mostly useful at runtime)
-- playlist [array]: holds the list of media to play, with their start and end timings. This looks as follows (basic form followed by examples):
-    "playlist" : [
-        [type (string), file (string), start time (float), end time (float)],
-        ["image", "color_map.png", 0.0, 10.0],
-        ["image_ffmpeg", "video.avi", 10.0, 30.0]
-    ]
-- seek [float]: go to a specific timing in the queue (mostly useful at runtime)
-- useClock [int]: set whether the queue should be controled by the synchronization clock
+- sideness: [n] If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided
+- rotation: [n, n, n] Set the object rotation
+- activateVertexBlending: [n] If set to 1, activate vertex blending
+- position: [n, n, n] Set the object position
+- color: [n, n, n, n] Set the object color, if the fill setting is set accordingly
+- normalExponent: [n] If set to anything but 0.0, set the exponent applied to the normal factor for blending computation
+- scale: [n] Set the object scale
+- fill: [s] Set the fill type (texture, wireframe or color)
 
 ### scene
 A *Scene* is contained in a process and linked to a given GPU. It handles the objects configured in its context, as well as the render loop.
@@ -652,12 +651,12 @@ Links to: None
 
 Attributes:
 
-- address [string]: ip address of the scene. Currently only "localhost" is accepted
-- blendingResolution [int]: when using blending map (activated for OpenGL < 4.3), this sets its resolution (in pixels)
-- display [int]: index of the display for the scene. Usually corresponds to the GPU number.
-- spawn [int]: if set to one, the main splash process will spawn the process containing this scene. Otherwise it has to be launched by hand with splash-scene [name]
-- name [string]: name of the scene
-- swapInterval [int]: if set to:
+- address: [s] ip address of the scene. Currently only "localhost" is accepted
+- blendingResolution: [n] when using blending map (activated for OpenGL < 4.3), this sets its resolution (in pixels)
+- display: [n] index of the display for the scene. Usually corresponds to the GPU number.
+- spawn: [n] if set to one, the main splash process will spawn the process containing this scene. Otherwise it has to be launched by hand with splash-scene [name]
+- name: [s] name of the scene
+- swapInterval: [n] if set to:
     - 0: disables any vSync
     - any positive integer: will wait for as many frames between each window update.
     - any negative integer: tries to use vSync except if render is too slow.
@@ -673,7 +672,7 @@ Links to:
 
 Attributes:
 
-- connect [["servername" : "name"], ["appname" : name]]: sets the servename, appname or both names of the Syphon source to use. If set to an empty array, it will connect to the first source available. This has to be set otherwise it won't connect to anything.
+- connect \[\["servername" : "name"\], \["appname" : name\]\]: sets the servename, appname or both names of the Syphon source to use. If set to an empty array, it will connect to the first source available. This has to be set otherwise it won't connect to anything.
 
 ### window
 A window is an output to a screen.
@@ -690,18 +689,16 @@ Links to: None
 
 Attributes:
 
-- decorated [int]: if set to anything but 0, the window will be decorated.
-- fullscreen [int]: if set to:
-    - -1: disables fullscreen for this window
-    - any positive or null integer: tries to set the window to fullscreen on the given screen number
-- gamma [float]: exponent to use for the gamma curve.
-- layout [int, int, int, int]: specifies how the input textures are ordered. This field is only needed if multiple cameras are connected to a single window, e.g. in the case of a window spanning through multiple projectors.
-- position [int, int]: window position in the current display
-- size [int, int]: window size
-- srgb [int]: if set to anything but 0, sRGB support will be enabled for the window.
-- swapInterval [int]: By default, the window swap interval is the same as the scene. If set to:
-    - 0: disables any vSync
-    - any positive integer: will wait for as many frames between each window update.
+- gamma: [n] Set the gamma correction for this window
+- size: [n, n] Set the window dimensions
+- swapInterval: [n] Set the window swap interval
+- layout: [n] Set the placement of the various input textures
+- position: [n, n] Set the window position
+- fullscreen: [n] Set the window as fullscreen given the screen index
+- swapTestColor: [n, n, n, n] Set the swap test color
+- decorated: [n] If set to 0, the window is drawn without decoration
+- srgb: [n] If set to 1, the window is drawn in the sRGB color space
+- swapTest: [n] Activate video swap test if set to 1
 
 ### world
 The *World* is a single object created at launch by Splash. It handles all the inputs and configuration read / write, and dispatches messages and various buffers to all *Scenes*. It is not possible to add another *World* to a Splash session, although it is possible to specify a few attributes in the configuration file.
@@ -712,8 +709,8 @@ Links to: None
 
 Attributes:
 
-- computeBlending [int]: if set to anything but 0, blending will be computed at launch.
-- framerate [int]: refresh rate of the *World* main loop. Setting a value higher than the display refresh rate may help reduce latency between video input and output.
+- computeBlending [s]: can be set to "once", "continuous", or anything else to not compute the blending
+- framerate [n]: refresh rate of the *World* main loop. Setting a value higher than the display refresh rate may help reduce latency between video input and output.
 
 
 <a name="gui"/></a>
