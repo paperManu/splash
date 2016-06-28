@@ -288,7 +288,7 @@ void Camera::computeBlendingContribution()
             continue;
         auto obj = o.lock();
 
-        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
+        obj->computeCameraContribution(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
 }
 
@@ -302,6 +302,7 @@ void Camera::computeVertexVisibility()
         if (o.expired())
             continue;
         auto obj = o.lock();
+        obj->resetVisibility();
 
         Values fill;
         obj->getAttribute("fill", fill);

@@ -420,22 +420,46 @@ void Object::resetVisibility()
 {
     lock_guard<mutex> lock(_mutex);
 
-    if (!_computeShaderResetBlending)
+    if (!_computeShaderResetVisibility)
     {
-        _computeShaderResetBlending = make_shared<Shader>(Shader::prgCompute);
-        _computeShaderResetBlending->setAttribute("computePhase", {"resetVisibility"});
+        _computeShaderResetVisibility = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetVisibility->setAttribute("computePhase", {"resetVisibility"});
     }
 
-    if (_computeShaderResetBlending)
+    if (_computeShaderResetVisibility)
     {
         for (auto& geom : _geometries)
         {
             geom->update();
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderResetBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
-            unsigned int groupCountX = verticesNbr / 3 / 128;
-            _computeShaderResetBlending->doCompute(groupCountX, 128);
+            _computeShaderResetVisibility->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1);
+            geom->deactivate();
+        }
+    }
+}
+
+/*************/
+void Object::resetBlendingAttribute()
+{
+    lock_guard<mutex> lock(_mutex);
+
+    if (!_computeShaderResetBlendingAttributes)
+    {
+        _computeShaderResetBlendingAttributes = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetBlendingAttributes->setAttribute("computePhase", {"resetBlending"});
+    }
+
+    if (_computeShaderResetBlendingAttributes)
+    {
+        for (auto& geom : _geometries)
+        {
+            geom->update();
+            geom->activateAsSharedBuffer();
+            auto verticesNbr = geom->getVerticesNumber();
+            _computeShaderResetBlendingAttributes->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderResetBlendingAttributes->doCompute(verticesNbr / 3 / 128 + 1);
             geom->deactivate();
         }
     }
@@ -525,14 +549,14 @@ void Object::transferVisibilityFromTexToAttr(int width, int height)
 }
 
 /*************/
-void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
+void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
     lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderComputeBlending)
     {
         _computeShaderComputeBlending = make_shared<Shader>(Shader::prgCompute);
-        _computeShaderComputeBlending->setAttribute("computePhase", {"computeVisibility"});
+        _computeShaderComputeBlending->setAttribute("computePhase", {"computeCameraContribution"});
     }
 
     if (_computeShaderComputeBlending)
@@ -556,8 +580,7 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            unsigned int groupCountX = verticesNbr / 3 / (32 * 32) + 1;
-            _computeShaderComputeBlending->doCompute(groupCountX, 32);
+            _computeShaderComputeBlending->doCompute(verticesNbr / 3);
             geom->deactivate();
         }
     }

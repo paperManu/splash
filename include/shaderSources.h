@@ -48,7 +48,7 @@ struct ShaderSources
                     projected = abs(projected);
                     dist = projected.xy;
                     bvec4 isVisible = lessThanEqual(projected, vec4(1.0 + margin));
-                    if (isVisible.x && isVisible.y && isVisible.z)
+                    if (all(isVisible.xyz))
                         return true;
                 }
 
@@ -56,7 +56,7 @@ struct ShaderSources
             }
         )"},
         //
-        // Compute a normal vector from three vectors
+        // Compute a normal vector from three points
         {"normalVector", R"(
             uniform int _sideness;
 
@@ -179,13 +179,13 @@ struct ShaderSources
     )"};
 
     /**
-     * Compute shader to reset all camera contribution to zero
+     * Compute shader to reset all camera visibility attributes
      */
     const std::string COMPUTE_SHADER_RESET_VISIBILITY {R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
-        layout(local_size_x = 32, local_size_y = 32) in;
+        layout(local_size_x = 128) in;
 
         layout (std430, binding = 3) buffer annexeBuffer
         {
@@ -196,9 +196,7 @@ struct ShaderSources
 
         void main(void)
         {
-            int globalID = int(gl_WorkGroupID.x * 32 * 32
-                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
-                               + gl_LocalInvocationIndex);
+            int globalID = int(gl_GlobalInvocationID.x);
 
             if (globalID < _vertexNbr / 3)
             {
@@ -207,6 +205,38 @@ struct ShaderSources
                     int vertexId = globalID * 3 + idx;
                     // the W coordinates holds the primitive ID, for use in the first visibility test
                     annexe[vertexId].zw = vec2(0.0, float(globalID));
+                }
+            }
+        }
+    )"};
+
+    /**
+     * Compute shader to reset all camera contribution to zero
+     */
+    const std::string COMPUTE_SHADER_RESET_BLENDING {R"(
+        #extension GL_ARB_compute_shader : enable
+        #extension GL_ARB_shader_storage_buffer_object : enable
+
+        layout(local_size_x = 128) in;
+
+        layout (std430, binding = 3) buffer annexeBuffer
+        {
+            vec4 annexe[];
+        };
+
+        uniform int _vertexNbr;
+
+        void main(void)
+        {
+            int globalID = int(gl_GlobalInvocationID.x);
+
+            if (globalID < _vertexNbr / 3)
+            {
+                for (int idx = 0; idx < 3; ++idx)
+                {
+                    int vertexId = globalID * 3 + idx;
+                    // The x coordinate holds the number of camera, y the blending value
+                    annexe[vertexId].xy = vec2(0.0, 0.0);
                 }
             }
         }
@@ -231,13 +261,13 @@ struct ShaderSources
 
         void main(void)
         {
-            vec2 pixCoords = gl_WorkGroupID.xy * vec2(32.0) + gl_LocalInvocationID.xy;
+            vec2 pixCoords = vec2(gl_GlobalInvocationID.xy);
             vec2 texCoords = pixCoords / _texSize;
-            vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
 
             if (all(lessThan(pixCoords.xy, _texSize.xy)))
             {
-                int primitiveID = int(round(visibility.r * 65536 + visibility.g * 256.0 + visibility.b));
+                vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
+                int primitiveID = int(round(visibility.r * 65025.0 + visibility.g * 255.0 + visibility.b));
                 // Mark the primitive found as visible
                 for (int idx = primitiveID * 3; idx < primitiveID * 3 + 3; ++idx)
                     annexe[idx].z = 1.0;
@@ -248,7 +278,7 @@ struct ShaderSources
     /**
      * Compute shader to compute the contribution of a specific camera
      */
-    const std::string COMPUTE_SHADER_COMPUTE_VISIBILITY {R"(
+    const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION {R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -256,7 +286,7 @@ struct ShaderSources
         #include normalVector
         #include projectAndCheckVisibility
 
-        layout(local_size_x = 32, local_size_y = 32) in;
+        layout(local_size_x = 128) in;
 
         layout (std430, binding = 0) buffer vertexBuffer
         {
@@ -280,9 +310,7 @@ struct ShaderSources
 
         void main(void)
         {
-            int globalID = int(gl_WorkGroupID.x * 32 * 32
-                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
-                               + gl_LocalInvocationIndex);
+            int globalID = int(gl_GlobalInvocationID.x);
             vec4 screenVertex[3];
             bvec3 vertexVisible;
 
@@ -1076,7 +1104,9 @@ struct ShaderSources
         void main(void)
         {
             int index = int(round(vertexIn.annexe.w));
-            fragColor = vec4(float(index / 65536) / 255.0, float(index / 256) / 255.0, float(index % 256) / 255.0, 1.0);
+            ivec2 components = ivec2(index) / ivec2(65025, 255);
+            components.y -= components.x * 255;
+            fragColor = vec4(float(components.x) / 255.0, float(components.y) / 255.0, float(index % 255) / 255.0, 1.0);
         }
     )"};
 

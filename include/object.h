@@ -68,7 +68,7 @@ class Object : public BaseObject
         /**
          * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
          */
-        void computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
+        void computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
         /**
          * Deactivate this object for rendering
@@ -143,9 +143,14 @@ class Object : public BaseObject
         void resetTessellation();
 
         /**
-         * Reset computed visibility from any camera
+         * Reset the visibility flag, as well as the faces ID
          */
         void resetVisibility();
+
+        /**
+         * Reset the attribute holding the number of camera and the blending value
+         */
+        void resetBlendingAttribute();
 
         /**
          * Set the blending map for the object
@@ -180,11 +185,12 @@ class Object : public BaseObject
     private:
         mutable std::mutex _mutex;
 
-        std::shared_ptr<Shader> _shader {};
-        std::shared_ptr<Shader> _computeShaderResetBlending {};
-        std::shared_ptr<Shader> _computeShaderComputeBlending {};
-        std::shared_ptr<Shader> _computeShaderTransferVisibilityToAttr {};
-        std::shared_ptr<Shader> _feedbackShaderSubdivideCamera {};
+        ShaderPtr _shader {};
+        ShaderPtr _computeShaderResetVisibility {};
+        ShaderPtr _computeShaderResetBlendingAttributes {};
+        ShaderPtr _computeShaderComputeBlending {};
+        ShaderPtr _computeShaderTransferVisibilityToAttr {};
+        ShaderPtr _feedbackShaderSubdivideCamera {};
 
         // A map for previously used graphics shaders
         std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;
