@@ -385,14 +385,15 @@ class SplashObjectNode(SplashBaseNode):
         values['type'] = "\"object\""
         values['color'] = [self.inputs['Color'].default_value[0],
                            self.inputs['Color'].default_value[1],
-                           self.inputs['Color'].default_value[2]]
+                           self.inputs['Color'].default_value[2],
+                           self.inputs['Color'].default_value[3]]
         values['position'] = [self.inputs['Position'].default_value[0],
                               self.inputs['Position'].default_value[1],
                               self.inputs['Position'].default_value[2]]
         values['scale'] = [self.inputs['Scale'].default_value[0],
                            self.inputs['Scale'].default_value[1],
                            self.inputs['Scale'].default_value[2]]
-        values['sideness'] = self.inputs['Sideness'].default_value
+        values['sideness'] = self.inputs['Side'].default_value
 
         return values
 
