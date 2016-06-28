@@ -154,7 +154,7 @@ void Factory::registerObjects()
         if (!_isScene)
             object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_root));
         else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
+            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root));
         return object;
      };
 #endif
