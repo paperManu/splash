@@ -477,7 +477,7 @@ void Object::resetTessellation()
 }
 
 /*************/
-void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision)
+void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision)
 {
     lock_guard<mutex> lock(_mutex);
 
@@ -503,10 +503,19 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_fov", fovX, fovY});
+
+                auto mv = viewMatrix * computeModelMatrix();
+                auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mv", mvAsValues});
 
                 auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
                 auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+
+                auto ip = glm::inverse(projectionMatrix);
+                auto ipAsValues = Values(glm::value_ptr(ip), glm::value_ptr(ip) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_ip", ipAsValues});
 
                 auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
                 auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
@@ -581,6 +590,7 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
             _computeShaderComputeBlending->doCompute(verticesNbr / 3);
+
             geom->deactivate();
         }
     }

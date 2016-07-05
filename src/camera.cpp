@@ -353,7 +353,7 @@ void Camera::blendingTessellateForCurrentCamera()
             continue;
         auto obj = o.lock();
 
-        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), glm::radians(_fov * _width / _height), glm::radians(_fov), _blendWidth, _blendPrecision);
     }
 }
 

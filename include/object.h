@@ -175,7 +175,7 @@ class Object : public BaseObject
         /**
          * Subdivide the objects wrt the given camera limits (for blending purposes)
          */
-        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision);
+        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
         /**
          * This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
@@ -185,12 +185,12 @@ class Object : public BaseObject
     private:
         mutable std::mutex _mutex;
 
-        ShaderPtr _shader {};
-        ShaderPtr _computeShaderResetVisibility {};
-        ShaderPtr _computeShaderResetBlendingAttributes {};
-        ShaderPtr _computeShaderComputeBlending {};
-        ShaderPtr _computeShaderTransferVisibilityToAttr {};
-        ShaderPtr _feedbackShaderSubdivideCamera {};
+        std::shared_ptr<Shader> _shader {};
+        std::shared_ptr<Shader> _computeShaderResetVisibility {};
+        std::shared_ptr<Shader> _computeShaderResetBlendingAttributes {};
+        std::shared_ptr<Shader> _computeShaderComputeBlending {};
+        std::shared_ptr<Shader> _computeShaderTransferVisibilityToAttr {};
+        std::shared_ptr<Shader> _feedbackShaderSubdivideCamera {};
 
         // A map for previously used graphics shaders
         std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;

@@ -35,9 +35,10 @@ struct ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES {
         //
-        // Project a point wrt a mvp matrix, and check if it is in the view frustum
+        // Project a point wrt a mvp matrix, and check if it is in the view frustum.
+        // Returns the distance on X and Y in the distToCenter parameter
         {"projectAndCheckVisibility", R"(
-            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 dist)
+            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 distToCenter)
             {
                 vec4 projected = mvp * vec4(p.xyz, 1.0);
                 projected /= projected.w;
@@ -46,7 +47,7 @@ struct ShaderSources
                 if (projected.z >= 0.0)
                 {
                     projected = abs(projected);
-                    dist = projected.xy;
+                    distToCenter = projected.xy;
                     bvec4 isVisible = lessThanEqual(projected, vec4(1.0 + margin));
                     if (all(isVisible.xyz))
                         return true;
@@ -324,9 +325,9 @@ struct ShaderSources
                     if (annexe[vertexId].z == 0.0)
                         return;
 
-                    vec2 dist;
+                    vec2 distToCenter;
                     vec4 normalizedSpaceVertex = vertex[vertexId];
-                    vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, dist);
+                    vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, distToCenter);
                     screenVertex[idx] = normalizedSpaceVertex;
                 }
 
@@ -415,7 +416,7 @@ struct ShaderSources
                 bvec3 vertexVisibility;
                 vec4 projectedVertices[3];
                 float maxDist = 0.0;
-                int nearestBorder = 0; // 0 is nearest border is horizontal, 1 otherwise
+                float nearestBorder = 0.0; // 0 is nearest border is horizontal, 1 otherwise
 
                 gl_TessLevelInner[0] = 1.0;
                 gl_TessLevelOuter[0] = 1.0;
@@ -426,14 +427,14 @@ struct ShaderSources
                 {
                     for (int i = 0; i < 3; ++i)
                     {
-                        vec2 dist;
+                        vec2 distToCenter;
                         projectedVertices[i] = tcs_in[i].vertex;
-                        vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
-                        float localMax = max(dist.x, dist.y);
+                        vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, distToCenter);
+                        float localMax = max(distToCenter.x, distToCenter.y);
                         if (localMax > maxDist)
                         {
                             maxDist = localMax;
-                            nearestBorder = int(dist.y > dist.x);
+                            nearestBorder = float(distToCenter.y > distToCenter.x);
                         }
                     }
 
@@ -442,7 +443,7 @@ struct ShaderSources
                     {
                         if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
                         {
-                            vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1 - nearestBorder) * vec2(0.0, 1.0);
+                            vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1.0 - nearestBorder) * vec2(0.0, 1.0);
                             float maxTessLevel = 1.0;
                             for (int idx = 0; idx < 3; idx++)
                             {
@@ -510,7 +511,7 @@ struct ShaderSources
     )"};
 
     /**
-     * Default feedback geometry shader
+     * Feedback geometry shader for handling camera borders
      */
     const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
         #include normalVector
@@ -544,21 +545,66 @@ struct ShaderSources
             0, 3, 4, 3, 1, 4, 1, 2, 4
         };
 
+        uniform vec2 _fov;
+        uniform mat4 _mv;
         uniform mat4 _mvp;
+        uniform mat4 _ip;
+
+        vec4 pointToCameraBase(in vec4 p)
+        {
+            vec4 coords = _mv * vec4(p.xyz, 1.0);
+            coords /= coords.w;
+            return coords;
+        }
+
+        // Compute the ratio of the camera border projected onto the [pq] segment
+        vec2 computeRatios(in vec4 p, in vec4 q)
+        {
+            vec2 r = vec2(0.5, 0.5);
+            for (int dir = 0; dir < 2; ++dir)
+            {
+                vec4 borderPoint = vec4(1.0, 1.0, 0.5, 1.0);
+                borderPoint = _ip * borderPoint;
+                borderPoint /= borderPoint.w;
+
+                vec2 mm = vec2(borderPoint[dir], borderPoint.z);
+                vec2 p1 = vec2(abs(p[dir]), p.z);
+                vec2 p2 = vec2(abs(q[dir]), q.z);
+                vec2 D = normalize(mm);
+                vec2 d = normalize(p2 - p1);
+                
+                vec2 m;
+                if (abs(p1.y - p2.y) < 0.0001)
+                {
+                    m.y = p1.y;
+                    m.x = m.y / D.y * D.x;
+                }
+                else
+                {
+                    m.y = (-p1.y * d.x / d.y + p1.x) / (D.x / D.y - d.x / d.y);
+                    m.x = m.y / D.y * D.x;
+                }
+                r[dir] = length(m - p1) / length(p2 - p1);
+            }
+
+            return r;
+        }
 
         void main(void)
         {
             vec4 projectedVertices[3];
             bvec3 side; // true = inside, false = outside
             vec2 distToBoundary[3];
+            vec4 pointsCameraBase[3];
             int cutCase = 0;
             for (int i = 0; i < 3; ++i)
             {
-                vec2 dist;
+                vec2 distToCenter;
                 projectedVertices[i] = geom_in[i].vertex;
-                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
+                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, distToCenter);
                 side[i] = isVisible;
-                distToBoundary[i] = dist - vec2(1.0);
+                distToBoundary[i] = distToCenter - vec2(1.0);
+                pointsCameraBase[i] = pointToCameraBase(geom_in[i].vertex);
                 if (side[i])
                     cutCase += 1 << i;
             }
@@ -602,10 +648,9 @@ struct ShaderSources
                     int nextId = (i + 1) % 3;
                     if (side[i] != side[nextId])
                     {
-                        float ratios[2];
-                        ratios[0] = abs(distToBoundary[i].x) / (abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x));
-                        ratios[1] = abs(distToBoundary[i].y) / (abs(distToBoundary[i].y) + abs(distToBoundary[nextId].y));
-                        
+                        // We first need to find the ratio in projected space, to find the cut direction
+                        vec2 ratios = computeRatios(pointsCameraBase[i], pointsCameraBase[nextId]);
+
                         vec2 signs[2];
                         signs[0] = sign(distToBoundary[i]);
                         signs[1] = sign(distToBoundary[nextId]);
@@ -620,7 +665,8 @@ struct ShaderSources
                         // Second edge case: a point is above the horizontal edges
                         else
                             ratio = ratios[1];
-                        
+
+                        i = i % 3;
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
                         texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
