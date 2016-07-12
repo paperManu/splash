@@ -54,7 +54,7 @@ class Camera : public BaseObject
         /**
          * Constructor
          */
-        Camera(RootObjectWeakPtr root);
+        Camera(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

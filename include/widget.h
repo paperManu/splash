@@ -37,14 +37,12 @@
 #include <memory>
 #include <unordered_map>
 
-#include "config.h"
+#include "./config.h"
 
-#include "camera.h"
-#include "coretypes.h"
-#include "basetypes.h"
-#include "image.h"
-#include "texture.h"
-#include "warp.h"
+#include "./coretypes.h"
+#include "./controller.h"
+#include "./basetypes.h"
+#include "./image.h"
 
 namespace Splash
 {
@@ -65,10 +63,10 @@ namespace SplashImGui
 }
 
 /*************/
-class GuiWidget
+class GuiWidget : public ControllerObject
 {
     public:
-        GuiWidget(std::string name = "");
+        GuiWidget(std::weak_ptr<Scene> scene, std::string name = "");
         virtual ~GuiWidget() {}
         virtual void render() {}
         virtual int updateWindowFlags() {return 0;}

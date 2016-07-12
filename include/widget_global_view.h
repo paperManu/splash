@@ -25,6 +25,7 @@
 #ifndef SPLASH_WIDGET_GLOBAL_VIEW_H
 #define SPLASH_WIDGET_GLOBAL_VIEW_H
 
+#include "./camera.h"
 #include "./widget.h"
 
 namespace Splash
@@ -34,7 +35,8 @@ namespace Splash
 class GuiGlobalView : public GuiWidget
 {
     public:
-        GuiGlobalView(std::string name = "");
+        GuiGlobalView(std::weak_ptr<Scene> scene, std::string name = "")
+            : GuiWidget(scene, name) {}
         void render();
         int updateWindowFlags();
         void setCamera(CameraPtr cam);

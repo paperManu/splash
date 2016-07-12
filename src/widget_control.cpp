@@ -20,15 +20,13 @@ void GuiControl::render()
         if (ImGui::InputInt("World framerate", &worldFramerate, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             worldFramerate = std::max(worldFramerate, 0);
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("framerate", {worldFramerate});
+            setGlobal("framerate", {worldFramerate});
         }
         static auto syncTestFrameDelay = 0;
         if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("swapTest", {syncTestFrameDelay});
+            setGlobal("swapTest", {syncTestFrameDelay});
         }
         ImGui::Spacing();
         ImGui::Separator();
@@ -37,7 +35,8 @@ void GuiControl::render()
         // Node view
         if (!_nodeView)
         {
-            auto nodeView = make_shared<GuiNodeView>("Nodes");
+            auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+            auto nodeView = make_shared<GuiNodeView>(scene, "Nodes");
             nodeView->setScene(_scene);
             _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);
         }
@@ -52,11 +51,11 @@ void GuiControl::render()
         ImGui::Text("Global configuration");
         static auto blendWidth = 0.05f;
         if (ImGui::InputFloat("Blending width", &blendWidth, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
-            sendValuesToObjectsOfType("camera", "blendWidth", {blendWidth});
+            setObjectsOfType("camera", "blendWidth", {blendWidth});
 
         static auto blendPrecision = 0.1f;
         if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
-            sendValuesToObjectsOfType("camera", "blendPrecision", {blendPrecision});
+            setObjectsOfType("camera", "blendPrecision", {blendPrecision});
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -93,7 +92,7 @@ void GuiControl::render()
 
         if (_targetObjectName != "")
         {
-            auto scene = _scene.lock();
+            auto scene = dynamic_pointer_cast<Scene>(_root.lock());
 
             bool isDistant = false;
             if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
@@ -114,7 +113,7 @@ void GuiControl::render()
             string newName = _targetObjectName;
             newName.resize(256);
             if (ImGui::InputText("Rename", const_cast<char*>(newName.c_str()), newName.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                scene->sendMessageToWorld("renameObject", {_targetObjectName, newName});
+                setGlobal("renameObject", {_targetObjectName, newName});
 
             ImGui::Spacing();
             ImGui::Separator();
@@ -122,50 +121,12 @@ void GuiControl::render()
 
             if (ImGui::Button("Delete selected object"))
             {
-                scene->sendMessageToWorld("deleteObject", {_targetObjectName});
+                setGlobal("deleteObject", {_targetObjectName});
                 _targetObjectName = "";
                 _targetIndex = -1;
             }
         }
     }
-}
-
-/*************/
-vector<string> GuiControl::getObjectNames()
-{
-    auto scene = _scene.lock();
-    vector<string> objNames;
-
-    for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        objNames.push_back(o.first);
-    }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        objNames.push_back(o.first);
-    }
-
-    return objNames;
-}
-
-/*************/
-void GuiControl::sendValuesToObjectsOfType(string type, string attr, Values values)
-{
-    auto scene = _scene.lock();
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == type)
-            obj.second->setAttribute(attr, values);
-    
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == type)
-        {
-            obj.second->setAttribute(attr, values);
-            scene->sendMessageToWorld("sendAll", {obj.first, attr, values});
-        }
 }
 
 /*************/

@@ -47,7 +47,7 @@ class Object : public BaseObject
          * Constructor
          */
         Object();
-        Object(RootObjectWeakPtr root);
+        Object(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

@@ -37,8 +37,9 @@
 
 #include <boost/asio.hpp>
 
-#include "coretypes.h"
-#include "basetypes.h"
+#include "./coretypes.h"
+#include "./controller.h"
+#include "./basetypes.h"
 
 namespace Splash {
 
@@ -235,7 +236,7 @@ namespace Http {
 class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
-class HttpServer : public BaseObject
+class HttpServer : public ControllerObject
 {
     public:
         HttpServer(const std::string& address, const std::string& port, SceneWeakPtr scene);

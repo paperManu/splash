@@ -34,7 +34,7 @@ namespace Splash
 class GuiNodeView : public GuiWidget
 {
     public:
-        GuiNodeView(std::string name);
+        GuiNodeView(std::weak_ptr<Scene> scene, std::string name);
         void render();
         std::string getClickedNode() {return _clickedNode;}
         int updateWindowFlags();
@@ -51,8 +51,6 @@ class GuiNodeView : public GuiWidget
         std::vector<int> _viewShift {0, 0};
         std::map<std::string, std::vector<float>> _nodePositions;
         
-        std::map<std::string, std::vector<std::string>> getObjectLinks();
-        std::map<std::string, std::string> getObjectTypes();
         void renderNode(std::string name);
 };
 

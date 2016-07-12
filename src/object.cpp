@@ -28,7 +28,7 @@ Object::Object()
 }
 
 /*************/
-Object::Object(RootObjectWeakPtr root)
+Object::Object(std::weak_ptr<RootObject> root)
        : BaseObject(root)
 {
     init();

@@ -18,7 +18,7 @@ Texture::Texture()
 }
 
 /*************/
-Texture::Texture(RootObjectWeakPtr root)
+Texture::Texture(std::weak_ptr<RootObject> root)
         : BaseObject(root)
 {
     init();

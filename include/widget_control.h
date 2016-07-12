@@ -34,7 +34,8 @@ namespace Splash
 class GuiControl : public GuiWidget
 {
     public:
-        GuiControl(std::string name) : GuiWidget(name) {}
+        GuiControl(std::weak_ptr<Scene> scene, std::string name)
+            : GuiWidget(scene, name) {}
         void render();
         int updateWindowFlags();
 
@@ -42,9 +43,6 @@ class GuiControl : public GuiWidget
         std::shared_ptr<GuiWidget> _nodeView;
         int _targetIndex {-1};
         std::string _targetObjectName {};
-        
-        std::vector<std::string> getObjectNames();
-        void sendValuesToObjectsOfType(std::string type, std::string attr, Values values);
 };
 
 } // end of namespace

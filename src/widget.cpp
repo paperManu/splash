@@ -197,15 +197,19 @@ namespace SplashImGui
 
 /*************/
 /*************/
-GuiWidget::GuiWidget(string name)
+GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name)
+    : ControllerObject(scene),
+      _scene(scene),
+      _name(name)
 {
-    _name = name;
 }
 
 /*************/
 void GuiWidget::drawAttributes(const string& objName, const unordered_map<string, Values>& attributes)
 {
-    auto scene = _scene.lock();
+    auto scene = dynamic_pointer_cast<Scene>(_scene.lock());
+    if (!scene)
+        return;
 
     for (auto& attr : attributes)
     {

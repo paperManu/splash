@@ -41,7 +41,7 @@ bool Scene::_isGlfwInitialized {false};
 /*************/
 Scene::Scene(std::string name, bool autoRun)
 {
-    _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
+    _self = std::shared_ptr<Scene>(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
 
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
@@ -88,7 +88,7 @@ Scene::~Scene()
 }
 
 /*************/
-BaseObjectPtr Scene::add(string type, string name)
+std::shared_ptr<BaseObject> Scene::add(string type, string name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
@@ -153,7 +153,7 @@ void Scene::addGhost(string type, string name)
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
 
     // Add the object for real ...
-    BaseObjectPtr obj = add(type, name);
+    std::shared_ptr<BaseObject> obj = add(type, name);
 
     // And move it to _ghostObjects
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
@@ -247,8 +247,8 @@ Json::Value Scene::getConfigurationAsJson()
 /*************/
 bool Scene::link(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
@@ -262,7 +262,7 @@ bool Scene::link(string first, string second)
 }
 
 /*************/
-bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
+bool Scene::link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -276,8 +276,8 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 void Scene::unlink(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
@@ -289,7 +289,7 @@ void Scene::unlink(string first, string second)
 }
 
 /*************/
-void Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
+void Scene::unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -301,8 +301,8 @@ void Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 bool Scene::linkGhost(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_ghostObjects.find(first) != _ghostObjects.end())
         source = _ghostObjects[first];
@@ -324,8 +324,8 @@ bool Scene::linkGhost(string first, string second)
 /*************/
 void Scene::unlinkGhost(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_ghostObjects.find(first) != _ghostObjects.end())
         source = _ghostObjects[first];
@@ -347,7 +347,7 @@ void Scene::unlinkGhost(string first, string second)
 /*************/
 void Scene::remove(string name)
 {
-    BaseObjectPtr obj;
+    std::shared_ptr<BaseObject> obj;
 
     if (_objects.find(name) != _objects.end())
         _objects.erase(name);

@@ -21,7 +21,7 @@ namespace Splash
 {
 
 /*************/
-Queue::Queue(RootObjectWeakPtr root)
+Queue::Queue(std::weak_ptr<RootObject> root)
     : BufferObject(root)
 {
     _type = "queue";
@@ -394,7 +394,7 @@ void Queue::registerAttributes()
 /*************/
 
 /*************/
-QueueSurrogate::QueueSurrogate(RootObjectWeakPtr root)
+QueueSurrogate::QueueSurrogate(std::weak_ptr<RootObject> root)
     : Texture(root)
 {
     _type = "queue";

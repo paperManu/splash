@@ -38,6 +38,7 @@
 #endif
 #include "./coretypes.h"
 #include "./basetypes.h"
+#include "./controller.h"
 #include "./factory.h"
 #include "./gui.h"
 #include "./httpServer.h"
@@ -45,11 +46,12 @@
 namespace Splash {
 
 class Scene;
-typedef std::shared_ptr<Scene> ScenePtr;
+
 
 /*************/
 class Scene : public RootObject
 {
+    friend ControllerObject;
 #if HAVE_GPHOTO
     friend ColorCalibrator;
 #endif
@@ -76,7 +78,7 @@ class Scene : public RootObject
         /**
          * Add an object of the given type, with the given name
          */
-        BaseObjectPtr add(std::string type, std::string name = std::string());
+        std::shared_ptr<BaseObject> add(std::string type, std::string name = std::string());
 
         /**
          * Add a fake object, keeping only its configuration between uses
@@ -91,7 +93,7 @@ class Scene : public RootObject
 
         /**
          * Get an attribute description
-         * Trie locally and to the World
+         * Try locally and to the World
          */
         Values getAttributeDescriptionFromObject(std::string name, std::string attribute);
 
@@ -134,9 +136,9 @@ class Scene : public RootObject
          * Link / unlink an object to another, base on their types
          */
         bool link(std::string first, std::string second);
-        bool link(BaseObjectPtr first, BaseObjectPtr second);
+        bool link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second);
         void unlink(std::string first, std::string second);
-        void unlink(BaseObjectPtr first, BaseObjectPtr second);
+        void unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second);
 
         /**
          * Link / unlink objects, at least one of them being a ghost
@@ -192,7 +194,7 @@ class Scene : public RootObject
         std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};
 
-        std::unordered_map<std::string, BaseObjectPtr> _ghostObjects;
+        std::unordered_map<std::string, std::shared_ptr<BaseObject>> _ghostObjects;
 
         // Gui exists in master scene whatever the configuration
         GuiPtr _gui;
@@ -217,7 +219,7 @@ class Scene : public RootObject
     private:
         static bool _isGlfwInitialized;
 
-        ScenePtr _self;
+        std::shared_ptr<Scene> _self;
         bool _started {false};
 
         bool _isMaster {false}; //< Set to true if this is the master Scene of the current config
@@ -314,7 +316,7 @@ class Scene : public RootObject
         void updateInputs();
 };
 
-typedef std::shared_ptr<Scene> ScenePtr;
+
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 } // end of namespace

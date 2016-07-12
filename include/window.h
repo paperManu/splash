@@ -51,7 +51,7 @@ class Window : public BaseObject
         /**
          * Constructor
          */
-        Window(RootObjectWeakPtr root);
+        Window(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

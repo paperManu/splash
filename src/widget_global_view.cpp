@@ -12,12 +12,6 @@ namespace Splash
 {
 
 /*************/
-GuiGlobalView::GuiGlobalView(string name)
-    : GuiWidget(name)
-{
-}
-
-/*************/
 void GuiGlobalView::render()
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -72,12 +66,10 @@ void GuiGlobalView::render()
 
             if(ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             {
-                auto scene = _scene.lock();
-
                 // If shift is pressed, we hide / unhide this camera
                 if (io.KeyCtrl)
                 {
-                    scene->sendMessageToWorld("sendAll", {camera->getName(), "hide", -1});
+                    setObject(camera->getName(), "hide", {-1});
                 }
                 else
                 {
@@ -87,15 +79,15 @@ void GuiGlobalView::render()
                     // Ensure that all cameras are shown
                     _camerasHidden = false;
                     for (auto& cam : cameras)
-                        scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+                        setObject(cam->getName(), "hide", {0});
 
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+                    setObject(_camera->getName(), "frame", {0});
+                    setObject(_camera->getName(), "displayCalibration", {0});
 
                     _camera = camera;
 
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+                    setObject(_camera->getName(), "frame", {1});
+                    setObject(_camera->getName(), "displayCalibration", {1});
                 }
             }
 
@@ -169,9 +161,9 @@ void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>
 /*************/
 vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 {
-    auto scene = _scene.lock();
     auto rtMatrices = vector<glm::dmat4>();
 
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "camera")
             rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
@@ -185,8 +177,9 @@ vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 /*************/
 void GuiGlobalView::nextCamera()
 {
-    auto scene = _scene.lock();
     vector<CameraPtr> cameras;
+
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
@@ -200,10 +193,10 @@ void GuiGlobalView::nextCamera()
     // Ensure that all cameras are shown
     _camerasHidden = false;
     for (auto& cam : cameras)
-        scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+        setObject(cam->getName(), "hide", {0});
 
-    scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 0});
-    scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 0});
+    setObject(_camera->getName(), "frame", {0});
+    setObject(_camera->getName(), "displayCalibration", {0});
 
     if (cameras.size() == 0)
         _camera = _guiCamera;
@@ -228,8 +221,8 @@ void GuiGlobalView::nextCamera()
 
     if (_camera != _guiCamera)
     {
-        scene->sendMessageToWorld("sendAll", {_camera->getName(), "frame", 1});
-        scene->sendMessageToWorld("sendAll", {_camera->getName(), "displayCalibration", 1});
+        setObject(_camera->getName(), "frame", {1});
+        setObject(_camera->getName(), "displayCalibration", {1});
     }
 
     return;
@@ -254,33 +247,31 @@ void GuiGlobalView::revertCalibration()
     _camera->setAttribute("fov", params.fov);
     _camera->setAttribute("principalPoint", params.principalPoint);
     
-    auto scene = _scene.lock();
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_ghostObjects)
         if (_camera->getName() == obj.second->getName())
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "eye", params.eye[0], params.eye[1], params.eye[2]});
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "target", params.target[0], params.target[1], params.target[2]});
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "up", params.up[0], params.up[1], params.up[2]});
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", params.fov[0]});
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "principalPoint", params.principalPoint[0], params.principalPoint[1]});
+            setObject(_camera->getName(), "eye", {params.eye[0], params.eye[1], params.eye[2]});
+            setObject(_camera->getName(), "target", {params.target[0], params.target[1], params.target[2]});
+            setObject(_camera->getName(), "up", {params.up[0], params.up[1], params.up[2]});
+            setObject(_camera->getName(), "fov", {params.fov[0]});
+            setObject(_camera->getName(), "principalPoint", {params.principalPoint[0], params.principalPoint[1]});
         }
 }
 
 /*************/
 void GuiGlobalView::showAllCalibrationPoints()
 {
-    auto scene = _scene.lock();
-    scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchShowAllCalibrationPoints"});
+    setObject(_camera->getName(), "switchShowAllCalibrationPoints", {});
 }
 
 /*************/
 void GuiGlobalView::showAllCamerasCalibrationPoints()
 {
-    auto scene = _scene.lock();
     if (_camera == _guiCamera)
         _guiCamera->setAttribute("switchDisplayAllCalibration", {});
     else
-        scene->sendMessageToWorld("sendAll", {_camera->getName(), "switchDisplayAllCalibration"});
+        setObject(_camera->getName(), "switchDisplayAllCalibration", {});
 }
 
 /*************/
@@ -306,7 +297,7 @@ void GuiGlobalView::doCalibration()
 void GuiGlobalView::propagateCalibration()
 {
     bool isDistant {false};
-    auto scene = _scene.lock();
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_ghostObjects)
         if (_camera->getName() == obj.second->getName())
             isDistant = true;
@@ -314,17 +305,11 @@ void GuiGlobalView::propagateCalibration()
     if (isDistant)
     {
         vector<string> properties {"eye", "target", "up", "fov", "principalPoint"};
-        auto scene = _scene.lock();
         for (auto& p : properties)
         {
             Values values;
             _camera->getAttribute(p, values);
-
-            Values sendValues {_camera->getName(), p};
-            for (auto& v : values)
-                sendValues.push_back(v);
-
-            scene->sendMessageToWorld("sendAll", sendValues);
+            setObject(_camera->getName(), p, values);
         }
     }
 }
@@ -332,8 +317,9 @@ void GuiGlobalView::propagateCalibration()
 /*************/
 void GuiGlobalView::switchHideOtherCameras()
 {
-    auto scene = _scene.lock();
     vector<CameraPtr> cameras;
+
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)
         if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
@@ -345,14 +331,14 @@ void GuiGlobalView::switchHideOtherCameras()
     {
         for (auto& cam : cameras)
             if (cam.get() != _camera.get())
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 1});
+                setObject(cam->getName(), "hide", {1});
         _camerasHidden = true;
     }
     else
     {
         for (auto& cam : cameras)
             if (cam.get() != _camera.get())
-                scene->sendMessageToWorld("sendAll", {cam->getName(), "hide", 0});
+                setObject(cam->getName(), "hide", {0});
         _camerasHidden = false;
     }
 }
@@ -360,7 +346,6 @@ void GuiGlobalView::switchHideOtherCameras()
 /*************/
 void GuiGlobalView::processJoystickState()
 {
-    auto scene = _scene.lock();
 
     float speed = 1.f;
 
@@ -369,11 +354,11 @@ void GuiGlobalView::processJoystickState()
     {
         if (_joyButtons[0] == 1 && _joyButtons[0] != _joyButtonsPrevious[0])
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectPreviousCalibrationPoint"});
+            setObject(_camera->getName(), "selectPreviousCalibrationPoint", {});
         }
         else if (_joyButtons[1] == 1 && _joyButtons[1] != _joyButtonsPrevious[1])
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "selectNextCalibrationPoint"});
+            setObject(_camera->getName(), "selectNextCalibrationPoint", {});
         }
         else if (_joyButtons[2] == 1)
         {
@@ -406,7 +391,7 @@ void GuiGlobalView::processJoystickState()
 
         if (xValue != 0.f || yValue != 0.f)
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", xValue * speed, yValue * speed});
+            setObject(_camera->getName(), "moveCalibrationPoint", {xValue * speed, yValue * speed});
             _camera->moveCalibrationPoint(0.0, 0.0);
             propagateCalibration();
         }
@@ -457,8 +442,6 @@ void GuiGlobalView::processKeyEvents()
     // Arrow keys
     else
     {
-        auto scene = _scene.lock();
-
         float delta = 1.f;
         if (io.KeyShift)
             delta = 0.1f;
@@ -467,22 +450,22 @@ void GuiGlobalView::processKeyEvents()
             
         if (io.KeysDown[262])
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", delta, 0});
+            setObject(_camera->getName(), "moveCalibrationPoint", {delta, 0});
             propagateCalibration();
         }
         if (io.KeysDown[263])
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", -delta, 0});
+            setObject(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
             propagateCalibration();
         }
         if (io.KeysDown[264])
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, -delta});
+            setObject(_camera->getName(), "moveCalibrationPoint", {0, -delta});
             propagateCalibration();
         }
         if (io.KeysDown[265])
         {
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "moveCalibrationPoint", 0, delta});
+            setObject(_camera->getName(), "moveCalibrationPoint", {0, delta});
             propagateCalibration();
         }
 
@@ -506,26 +489,24 @@ void GuiGlobalView::processMouseEvents()
             return;
 
         // Set a calibration point
-        auto scene = _scene.lock();
         if (io.KeyCtrl && io.MouseClicked[0])
         {
-            auto scene = _scene.lock();
             Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
             if (position.size() == 3)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "removeCalibrationPoint", position[0], position[1], position[2]});
+                setObject(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
         }
         else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "setCalibrationPoint", mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
+            setObject(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
         else if (io.MouseClicked[0]) // Add a new calibration point
         {
             Values position = _camera->pickVertexOrCalibrationPoint(mousePos.x, mousePos.y);
             if (position.size() == 3)
             {
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "addCalibrationPoint", position[0], position[1], position[2]});
+                setObject(_camera->getName(), "addCalibrationPoint", {position[0], position[1], position[2]});
                 _previousPointAdded = position;
             }
             else
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "deselectCalibrationPoint"});
+                setObject(_camera->getName(), "deselectCalibrationPoint", {});
         }
         return;
     }
@@ -546,14 +527,13 @@ void GuiGlobalView::processMouseEvents()
         {
             float dx = io.MouseDelta.x;
             float dy = io.MouseDelta.y;
-            auto scene = _scene.lock();
 
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundPoint", dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    setObject(_camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
                 else
-                    scene->sendMessageToWorld("sendAll", {_camera->getName(), "rotateAroundTarget", dx / 100.f, dy / 100.f, 0});
+                    setObject(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
             else
             {
@@ -568,18 +548,16 @@ void GuiGlobalView::processMouseEvents()
         {
             float dx = io.MouseDelta.x * _newTargetDistance;
             float dy = io.MouseDelta.y * _newTargetDistance;
-            auto scene = _scene.lock();
             if (_camera != _guiCamera)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "pan", -dx / 100.f, dy / 100.f, 0.f});
+                setObject(_camera->getName(), "pan", {-dx / 100.f, dy / 100.f, 0.f});
             else
                 _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0});
         }
         else if (!io.KeyShift && io.KeyCtrl)
         {
             float dy = io.MouseDelta.y * _newTargetDistance / 100.f;
-            auto scene = _scene.lock();
             if (_camera != _guiCamera)
-                scene->sendMessageToWorld("sendAll", {_camera->getName(), "forward", dy});
+                setObject(_camera->getName(), "forward", {dy});
             else
                 _camera->setAttribute("forward", {dy});
         }
@@ -593,9 +571,8 @@ void GuiGlobalView::processMouseEvents()
         camFov += io.MouseWheel;
         camFov = std::max(2.f, std::min(180.f, camFov));
 
-        auto scene = _scene.lock();
         if (_camera != _guiCamera)
-            scene->sendMessageToWorld("sendAll", {_camera->getName(), "fov", camFov});
+            setObject(_camera->getName(), "fov", {camFov});
         else
             _camera->setAttribute("fov", {camFov});
     }
@@ -613,7 +590,7 @@ vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
         _guiCamera->drawModelOnce("camera", matrix);
     cameras.push_back(_guiCamera);
 
-    auto scene = _scene.lock();
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "camera")
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));

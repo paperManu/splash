@@ -826,7 +826,7 @@ namespace Http {
 /*************/
 /*************/
 HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr scene) :
-    BaseObject(scene),
+    ControllerObject(scene),
     _ioService(),
     _acceptor(_ioService),
     _socket(_ioService),
@@ -880,23 +880,13 @@ void HttpServer::run()
                     if (args.size() < 4)
                         continue;
 
-                    auto scene = _scene.lock();
                     auto objectName = args[1].asString();
 
                     for (int idx = 2; idx < args.size(); idx += 2)
                     {
                         auto attrName = args[idx].asString();
                         Values attrValue({args[idx + 1]});
-
-                        // Local
-                        if (scene->_objects.find(objectName) != scene->_objects.end())
-                            scene->_objects[objectName]->setAttribute(attrName, attrValue);
-
-                        // And global
-                        Values sendValues {objectName, attrName};
-                        for (auto& v : attrValue)
-                            sendValues.push_back(v);
-                        scene->sendMessageToWorld("sendAll", sendValues);
+                        setObject(objectName, attrName, attrValue);
                     }
 
                     returnFunc("");
@@ -906,11 +896,10 @@ void HttpServer::run()
                     if (args.size() < 3)
                         continue;
 
-                    auto scene = _scene.lock();
                     auto objectName = args[1].asString();
                     auto attrName = args[2].asString();
 
-                    auto values = scene->getAttributeFromObject(objectName, attrName);
+                    auto values = getObjectAttribute(objectName, attrName);
 
                     Json::Value jsValue;
                     jsValue[attrName] = getValuesAsJson(values);

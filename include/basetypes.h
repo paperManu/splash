@@ -214,9 +214,7 @@ struct AttributeFunctor
 };
 
 class BaseObject;
-typedef std::shared_ptr<BaseObject> BaseObjectPtr;
 class RootObject;
-typedef std::weak_ptr<RootObject> RootObjectWeakPtr;
 
 /*************/
 class BaseObject
@@ -226,7 +224,7 @@ class BaseObject
         {
             init();
         }
-        BaseObject(RootObjectWeakPtr root)
+        BaseObject(std::weak_ptr<RootObject> root)
         {
             init();
             _root = root;
@@ -536,7 +534,7 @@ class BaseObject
         bool _isConnectedToRemote {false}; // True if the object gets data from a World object
         std::string _configFilePath {""}; // All objects know about their location
 
-        RootObjectWeakPtr _root;
+        std::weak_ptr<RootObject> _root;
         std::vector<std::weak_ptr<BaseObject>> _linkedObjects;
 
         std::unordered_map<std::string, AttributeFunctor> _attribFunctions;
@@ -623,7 +621,7 @@ class BaseObject
         /**
          * Register new attributes
          */
-        virtual void registerAttributes() = 0;
+        virtual void registerAttributes() {};
 };
 
 /*************/
@@ -631,7 +629,7 @@ class BufferObject : public BaseObject
 {
     public:
         BufferObject() {}
-        BufferObject(RootObjectWeakPtr root) : BaseObject(root) {}
+        BufferObject(std::weak_ptr<RootObject> root) : BaseObject(root) {}
 
         virtual ~BufferObject() {}
 

@@ -45,7 +45,7 @@ class Texture : public BaseObject
          * Constructor
          */
         Texture();
-        Texture(RootObjectWeakPtr root);
+        Texture(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

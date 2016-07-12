@@ -1,6 +1,7 @@
 #include "./gui.h"
 
 #include "./camera.h"
+#include "./controller.h"
 #include "./log.h"
 #include "./object.h"
 #include "./osUtils.h"
@@ -29,6 +30,7 @@ size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
 Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
+    : ControllerObject(s)
 {
     _type = "gui";
 
@@ -114,20 +116,19 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 /*************/
 void Gui::computeBlending(bool once)
 {
-    auto scene = _scene.lock();
     if (_blendingActive)
     {
-        scene->sendMessageToWorld("computeBlending", {"none"});
+        setGlobal("computeBlending", {"none"});
         _blendingActive = false;
     }
     else if (once)
     {
-        scene->sendMessageToWorld("computeBlending", {"once"});
+        setGlobal("computeBlending", {"once"});
         _blendingActive = true;
     }
     else 
     {
-        scene->sendMessageToWorld("computeBlending", {"continuous"});
+        setGlobal("computeBlending", {"continuous"});
         _blendingActive = true;
     }
 }
@@ -135,18 +136,11 @@ void Gui::computeBlending(bool once)
 /*************/
 void Gui::activateLUT()
 {
-    auto scene = _scene.lock();
-    vector<CameraPtr> cameras;
-    for (auto& obj : scene->_objects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-    for (auto& obj : scene->_ghostObjects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    auto cameras = getObjectsOfType("camera");
     for (auto& cam : cameras)
     {
-        scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorLUT", 2});
-        scene->sendMessageToWorld("sendAll", {cam->getName(), "activateColorMixMatrix", 2});
+        setObject(cam->getName(), "activateColorLUT", {2});
+        setObject(cam->getName(), "activateColorMixMatrix", {2});
     }
 }
 
@@ -167,32 +161,28 @@ void Gui::calibrateColors()
 /*************/
 void Gui::loadConfiguration()
 {
-    auto scene = _scene.lock();
-    scene->sendMessageToWorld("loadConfig", {_configurationPath});
+    setGlobal("loadConfig", {_configurationPath});
 }
 
 /*************/
 void Gui::copyCameraParameters()
 {
-    auto scene = _scene.lock();
-    scene->sendMessageToWorld("copyCameraParameters", {_configurationPath});
+    setGlobal("copyCameraParameters", {_configurationPath});
 }
 
 /*************/
 void Gui::saveConfiguration()
 {
-    auto scene = _scene.lock();
-    scene->sendMessageToWorld("save", {_configurationPath});
+    setGlobal("save", {_configurationPath});
 }
 
 /*************/
 void Gui::flashBackground()
 {
-    auto scene = _scene.lock();
     if (_flashBG)
-        scene->sendMessageToWorld("flashBG", {0});
+        setGlobal("flashBG", {0});
     else
-        scene->sendMessageToWorld("flashBG", {1});
+        setGlobal("flashBG", {1});
     _flashBG = !_flashBG;
 }
 
@@ -245,8 +235,7 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS)
         {
-            auto scene = _scene.lock();
-            scene->sendMessageToWorld("quit");
+            setGlobal("quit");
         }
         break;
     }
@@ -311,9 +300,8 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
-            auto scene = _scene.lock();
             _wireframe = false;
-            scene->sendMessageToWorld("wireframe", {0});
+            setGlobal("wireframe", {0});
         }
         break;
     }
@@ -322,9 +310,8 @@ sendAsDefault:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
-            auto scene = _scene.lock();
             _wireframe = true;
-            scene->sendMessageToWorld("wireframe", {1});
+            setGlobal("wireframe", {1});
         }
         break;
     }
@@ -456,9 +443,8 @@ bool Gui::render()
 
             if (ImGui::Button("Wireframe / Textured"))
             {
-                auto scene = _scene.lock();
                 _wireframe = !_wireframe;
-                scene->sendMessageToWorld("wireframe", {(int)_wireframe});
+                setGlobal("wireframe", {(int)_wireframe});
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
@@ -797,13 +783,13 @@ void Gui::initImWidgets()
     // Template configurations
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        auto templateBox = make_shared<GuiTemplate>("Templates");
+        auto templateBox = make_shared<GuiTemplate>(_scene, "Templates");
         templateBox->setScene(_scene);
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(templateBox));
     }
 
     // Some help regarding keyboard shortcuts
-    auto helpBox = make_shared<GuiTextBox>("Shortcuts");
+    auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
     helpBox->setTextFunc([]()
     {
         string text;
@@ -841,7 +827,7 @@ void Gui::initImWidgets()
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(helpBox));
 
     // FPS and timings
-    auto timingBox = make_shared<GuiTextBox>("Timings");
+    auto timingBox = make_shared<GuiTextBox>(_scene, "Timings");
     timingBox->setTextFunc([]()
     {
         // Smooth the values
@@ -901,7 +887,7 @@ void Gui::initImWidgets()
     // Log display
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        auto logBox = make_shared<GuiTextBox>("Logs");
+        auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
         logBox->setTextFunc([]()
         {
             int nbrLines = 10;
@@ -921,30 +907,26 @@ void Gui::initImWidgets()
     }
 
     // Control
-    auto controlView = make_shared<GuiControl>("Controls");
-    controlView->setScene(_scene);
+    auto controlView = make_shared<GuiControl>(_scene, "Controls");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(controlView));
 
     // Media
-    auto mediaSelector = make_shared<GuiMedia>("Media");
-    mediaSelector->setScene(_scene);
+    auto mediaSelector = make_shared<GuiMedia>(_scene, "Media");
     _guiWidgets.push_back(mediaSelector);
 
     // GUI camera view
-    auto globalView = make_shared<GuiGlobalView>("Cameras");
+    auto globalView = make_shared<GuiGlobalView>(_scene, "Cameras");
     globalView->setCamera(_guiCamera);
-    globalView->setScene(_scene);
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(globalView));
 
     // Warp control
-    auto warpControl = make_shared<GuiWarp>("Warp");
-    warpControl->setScene(_scene);
+    auto warpControl = make_shared<GuiWarp>(_scene, "Warp");
     _guiWidgets.push_back(dynamic_pointer_cast<GuiWarp>(warpControl));
 
     // Performance graph
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
-        auto perfGraph = make_shared<GuiGraph>("Performance Graph");
+        auto perfGraph = make_shared<GuiGraph>(_scene, "Performance Graph");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
     }
 }

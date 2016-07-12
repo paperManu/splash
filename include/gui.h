@@ -60,7 +60,7 @@ class Scene;
 typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 /*************/
-class Gui : public BaseObject
+class Gui : public ControllerObject
 {
     public:
         /**

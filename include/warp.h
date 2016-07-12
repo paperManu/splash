@@ -49,7 +49,7 @@ class Warp : public Texture
         /**
          * Constructor
          */
-        Warp(RootObjectWeakPtr root);
+        Warp(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

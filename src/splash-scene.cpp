@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 
     Log::get() << "splashScene::main - Creating Scene with name " << name << Log::endl;
 
-    ScenePtr scene = make_shared<Scene>(name);
+    std::shared_ptr<Scene> scene = make_shared<Scene>(name);
 
     return 0;
 }

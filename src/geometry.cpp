@@ -16,7 +16,7 @@ Geometry::Geometry()
 }
 
 /*************/
-Geometry::Geometry(RootObjectWeakPtr root)
+Geometry::Geometry(std::weak_ptr<RootObject> root)
     : BufferObject(root)
 {
     init();

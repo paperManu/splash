@@ -16,7 +16,11 @@ void GuiWarp::render()
 
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto warps = getWarps();
+        auto objects = getObjectsOfType("warp");
+        auto warps = vector<shared_ptr<Warp>>();
+        for (auto& object : objects)
+            warps.push_back(dynamic_pointer_cast<Warp>(object));
+
         _currentWarpName = warps[_currentWarp]->getName();
 
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -33,11 +37,10 @@ void GuiWarp::render()
                 if (obj->getType() == "camera")
                     dynamic_pointer_cast<Camera>(obj)->render();
 
-            auto scene = _scene.lock();
             if (_currentWarp == i)
-                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlLattice", 1});
+                setObject(warp->getName(), "showControlLattice", {1});
             else
-                scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlLattice", 0});
+                setObject(warp->getName(), "showControlLattice", {0});
 
             warp->update();
 
@@ -64,16 +67,15 @@ void GuiWarp::render()
 
             warp->getAttribute("patchResolution", values);
             if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
-                _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchResolution", values[0].asInt()});
-            {
-                warp->getAttribute("patchSize", values);
-                vector<int> tmp;
-                tmp.push_back(values[0].asInt());
-                tmp.push_back(values[1].asInt());
+                setObject(warp->getName(), "patchResolution", {values[0].asInt()});
+                
+            warp->getAttribute("patchSize", values);
+            vector<int> tmp;
+            tmp.push_back(values[0].asInt());
+            tmp.push_back(values[1].asInt());
 
-                if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                    _scene.lock()->sendMessageToWorld("sendAll", {warp->getName(), "patchSize", tmp[0],  tmp[1]});
-            }
+            if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
+                setObject(warp->getName(), "patchSize", {tmp[0],  tmp[1]});
 
             if (auto texture = warp->getTexture())
             {
@@ -100,29 +102,12 @@ void GuiWarp::render()
     }
     else
     {
-        auto scene = _scene.lock();
         if (_currentWarpName != "")
         {
-            scene->sendMessageToWorld("sendAll", {_currentWarpName, "showControlLattice", 0});
+            setObject(_currentWarpName, "showControlLattice", {0});
             _currentWarpName = "";
         }
     }
-}
-
-/*************/
-vector<shared_ptr<Warp>> GuiWarp::getWarps()
-{
-    auto warps = vector<shared_ptr<Warp>>();
-
-    auto scene = _scene.lock();
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == "warp")
-            warps.push_back(dynamic_pointer_cast<Warp>(obj.second));
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == "warp")
-            warps.push_back(dynamic_pointer_cast<Warp>(obj.second));
-
-    return warps;
 }
 
 /*************/
@@ -160,12 +145,11 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
                 _currentControlPointIndex = 0;
         }
 
-        auto scene = _scene.lock();
-        scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoint", _currentControlPointIndex});
+        setObject(warp->getName(), "showControlPoint", {_currentControlPointIndex});
     }
     // Arrow keys
     {
-        auto scene = _scene.lock();
+        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
 
         Values controlPoints;
         warp->getAttribute("patchControl", controlPoints);
@@ -220,16 +204,12 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
     ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / warpWidth,
                              -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / warpHeight);
 
-    auto scene = _scene.lock();
-    if (!scene)
-        return;
-
     if (io.MouseDownDuration[0] == 0.0)
     {
         // Select a control point
         glm::vec2 picked;
         _currentControlPointIndex = warp->pickControlPoint(glm::vec2(mousePos.x * 2.0 - 1.0, mousePos.y * 2.0 - 1.0), picked);
-        scene->sendMessageToWorld("sendAll", {warp->getName(), "showControlPoint", _currentControlPointIndex});
+        setObject(warp->getName(), "showControlPoint", {_currentControlPointIndex});
         _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
     }
     else if (io.MouseDownDuration[0] > 0.0)
@@ -254,14 +234,7 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
 /*************/
 void GuiWarp::updateControlPoints(const string& warpName, const Values& controlPoints)
 {
-    Values msg;
-    msg.push_back(warpName);
-    msg.push_back("patchControl");
-    for (auto& point : controlPoints)
-        msg.push_back(point);
-    
-    auto scene = _scene.lock();
-    scene->sendMessageToWorld("sendAll", msg);
+    setObject(warpName, "patchControl", controlPoints);
 }
 
 } // end of namespace

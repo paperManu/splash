@@ -34,7 +34,7 @@ atomic_bool Window::_quitFlag;
 atomic_int Window::_swappableWindowsCount {0};
 
 /*************/
-Window::Window(RootObjectWeakPtr root)
+Window::Window(std::weak_ptr<RootObject> root)
        : BaseObject(root)
 {
     _type = "window";
@@ -46,7 +46,7 @@ Window::Window(RootObjectWeakPtr root)
     if (_root.expired())
         return;
 
-    ScenePtr scene = dynamic_pointer_cast<Scene>(root.lock());
+    std::shared_ptr<Scene> scene = dynamic_pointer_cast<Scene>(root.lock());
     GlWindowPtr w = scene->getNewSharedWindow();
     if (w.get() == nullptr)
         return;

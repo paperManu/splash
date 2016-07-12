@@ -11,7 +11,7 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Filter::Filter(RootObjectWeakPtr root)
+Filter::Filter(std::weak_ptr<RootObject> root)
        : Texture(root)
 {
     init();

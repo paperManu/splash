@@ -41,7 +41,7 @@ using namespace glm;
 namespace Splash {
 
 /*************/
-Camera::Camera(RootObjectWeakPtr root)
+Camera::Camera(std::weak_ptr<RootObject> root)
        : BaseObject(root)
 {
     init();

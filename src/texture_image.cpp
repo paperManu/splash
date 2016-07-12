@@ -21,14 +21,14 @@ Texture_Image::Texture_Image()
 }
 
 /*************/
-Texture_Image::Texture_Image(RootObjectWeakPtr root)
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
     : Texture(root)
 {
     init();
 }
 
 /*************/
-Texture_Image::Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                  GLint border, GLenum format, GLenum type, const GLvoid* data)
     : Texture(root)
 {

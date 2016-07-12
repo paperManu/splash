@@ -48,7 +48,7 @@ class Filter : public Texture
         /**
          * Constructor
          */
-        Filter(RootObjectWeakPtr root);
+        Filter(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

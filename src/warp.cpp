@@ -17,7 +17,7 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Warp::Warp(RootObjectWeakPtr root)
+Warp::Warp(std::weak_ptr<RootObject> root)
        : Texture(root)
 {
     init();

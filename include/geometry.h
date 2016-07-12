@@ -47,7 +47,7 @@ class Geometry : public BufferObject
          * Constructor
          */
         Geometry();
-        Geometry(RootObjectWeakPtr root);
+        Geometry(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

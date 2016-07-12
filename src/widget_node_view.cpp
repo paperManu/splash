@@ -11,65 +11,11 @@ namespace Splash
 {
 
 /*************/
-GuiNodeView::GuiNodeView(string name)
-    : GuiWidget(name)
+GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name)
+    : GuiWidget(scene, name)
 {
     auto factory = Factory();
     _objectTypes = factory.getObjectTypes();
-}
-
-/*************/
-map<string, vector<string>> GuiNodeView::getObjectLinks()
-{
-    auto scene = _scene.lock();
-
-    auto links = map<string, vector<string>>();
-
-    for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-        {
-            links[o.first].push_back(link->getName());
-        }
-    }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-            links[o.first].push_back(link->getName());
-    }
-
-    return links;
-}
-
-/*************/
-map<string, string> GuiNodeView::getObjectTypes()
-{
-    auto scene = _scene.lock();
-
-    auto types = map<string, string>();
-
-    for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        types[o.first] = o.second->getType();
-    }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        types[o.first] = o.second->getType();
-    }
-
-    return types;
 }
 
 /*************/
@@ -201,9 +147,7 @@ void GuiNodeView::render()
         ImGui::Text("Select a type to add an object:");
         ImGui::PushID("addObject");
         if (ImGui::Combo("", &itemIndex, items.data(), items.size()))
-        {
-            _scene.lock()->sendMessageToWorld("addObject", {_objectTypes[itemIndex]});
-        }
+            setGlobal("addObject", {_objectTypes[itemIndex]});
         ImGui::PopID();
     }
 }
@@ -245,13 +189,13 @@ void GuiNodeView::renderNode(string name)
         {
             if (io.KeyShift)
             {
-                auto scene = _scene.lock();
+                auto scene = dynamic_pointer_cast<Scene>(_root.lock());
                 scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
                 scene->sendMessageToWorld("sendAllScenes", {"linkGhost", _sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
-                auto scene = _scene.lock();
+                auto scene = dynamic_pointer_cast<Scene>(_root.lock());
                 scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
                 scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
             }

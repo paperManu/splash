@@ -78,6 +78,7 @@ target_sources(
     splash-${API_VERSION} PRIVATE
     camera.cpp
     cgUtils.cpp
+    controller.cpp
     factory.cpp
     filter.cpp
     geometry.cpp

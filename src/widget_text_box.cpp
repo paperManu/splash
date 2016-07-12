@@ -10,12 +10,6 @@ namespace Splash
 {
 
 /*************/
-GuiTextBox::GuiTextBox(string name)
-    : GuiWidget(name)
-{
-}
-
-/*************/
 void GuiTextBox::render()
 {
     if (getText)
