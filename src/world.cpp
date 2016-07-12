@@ -951,13 +951,14 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
         {
-            cout << "Basic usage: splash -o [config.json]" << endl;
+            cout << "Basic usage: splash [config.json]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            cout << endl;
             exit(0);
         }
         else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
@@ -966,8 +967,16 @@ void World::parseArguments(int argc, char** argv)
             cout << descriptions << endl;
             exit(0);
         }
-        else
+        else if (defaultFile)
+        {
+            filename = string(argv[idx]);
+            defaultFile = false;
             idx++;
+        }
+        else
+        {
+            idx++;
+        }
     }
 
     if (defaultFile)
