@@ -141,7 +141,7 @@ int GuiGlobalView::updateWindowFlags()
 }
 
 /*************/
-void GuiGlobalView::setCamera(CameraPtr cam)
+void GuiGlobalView::setCamera(const shared_ptr<Camera>& cam)
 {
     if (cam != nullptr)
     {
@@ -177,7 +177,7 @@ vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 /*************/
 void GuiGlobalView::nextCamera()
 {
-    vector<CameraPtr> cameras;
+    vector<shared_ptr<Camera>> cameras;
 
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)
@@ -317,7 +317,7 @@ void GuiGlobalView::propagateCalibration()
 /*************/
 void GuiGlobalView::switchHideOtherCameras()
 {
-    vector<CameraPtr> cameras;
+    vector<shared_ptr<Camera>> cameras;
 
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)

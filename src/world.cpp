@@ -92,7 +92,7 @@ void World::run()
             map<string, shared_ptr<SerializedObject>> serializedObjects;
             for (auto& o : _objects)
             {
-                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 // This prevents the map structure to be modified in the threads
                 serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
 
@@ -732,7 +732,7 @@ void World::handleSerializedObject(const string name, shared_ptr<SerializedObjec
 /*************/
 void World::init()
 {
-    _self = WorldPtr(this, [](World*){}); // A shared pointer with no deleter, how convenient
+    _self = shared_ptr<World>(this, [](World*){}); // A shared pointer with no deleter, how convenient
 
     _type = "world";
     _name = "world";

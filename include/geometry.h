@@ -173,8 +173,6 @@ class Geometry : public BufferObject
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Geometry> GeometryPtr;
-
 } // end of namespace
 
 #endif // SPLASH_GEOMETRY_H

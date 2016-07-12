@@ -39,13 +39,13 @@ class GuiGlobalView : public GuiWidget
             : GuiWidget(scene, name) {}
         void render();
         int updateWindowFlags();
-        void setCamera(CameraPtr cam);
+        void setCamera(const std::shared_ptr<Camera>& cam);
         void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
 
     protected:
-        CameraPtr _camera, _guiCamera;
-        SceneWeakPtr _scene;
+        std::shared_ptr<Camera> _camera, _guiCamera;
+        std::weak_ptr<Scene> _scene;
         bool _camerasHidden {false};
         bool _beginDrag {true};
         bool _noMove {false};

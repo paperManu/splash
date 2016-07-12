@@ -78,12 +78,12 @@ class Object : public BaseObject
         /**
          * Add a geometry to this object
          */
-        void addGeometry(const GeometryPtr geometry) {_geometries.push_back(geometry);}
+        void addGeometry(const std::shared_ptr<Geometry>& geometry) {_geometries.push_back(geometry);}
 
         /**
          * Add a texture to this object
          */
-        void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
+        void addTexture(const std::shared_ptr<Texture>& texture) {_textures.push_back(texture);}
 
         /**
          * Add and remove a calibration point
@@ -109,7 +109,7 @@ class Object : public BaseObject
         /**
          * Get the shader
          */
-        ShaderPtr getShader() const {return _shader;}
+        std::shared_ptr<Shader> getShader() const {return _shader;}
 
         /**
          * Try to link the given BaseObject to this
@@ -150,12 +150,12 @@ class Object : public BaseObject
         /**
          * Set the blending map for the object
          */
-        void setBlendingMap(TexturePtr map);
+        void setBlendingMap(const std::shared_ptr<Texture>& map);
 
         /**
          * Set the shader
          */
-        void setShader(const ShaderPtr shader) {_shader = shader;}
+        void setShader(const std::shared_ptr<Shader>& shader) {_shader = shader;}
 
         /**
          * Set the view projection matrix
@@ -180,18 +180,18 @@ class Object : public BaseObject
     private:
         mutable std::mutex _mutex;
 
-        ShaderPtr _shader {};
-        ShaderPtr _computeShaderResetBlending {};
-        ShaderPtr _computeShaderComputeBlending {};
-        ShaderPtr _computeShaderTransferVisibilityToAttr {};
-        ShaderPtr _feedbackShaderSubdivideCamera {};
+        std::shared_ptr<Shader> _shader {};
+        std::shared_ptr<Shader> _computeShaderResetBlending {};
+        std::shared_ptr<Shader> _computeShaderComputeBlending {};
+        std::shared_ptr<Shader> _computeShaderTransferVisibilityToAttr {};
+        std::shared_ptr<Shader> _feedbackShaderSubdivideCamera {};
 
         // A map for previously used graphics shaders
-        std::map<std::string, ShaderPtr> _graphicsShaders;
+        std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;
 
-        std::vector<TexturePtr> _textures;
-        std::vector<GeometryPtr> _geometries;
-        std::vector<TexturePtr> _blendMaps;
+        std::vector<std::shared_ptr<Texture>> _textures;
+        std::vector<std::shared_ptr<Geometry>> _geometries;
+        std::vector<std::shared_ptr<Texture>> _blendMaps;
 
         bool _vertexBlendingActive {false};
 
@@ -224,8 +224,6 @@ class Object : public BaseObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Object> ObjectPtr;
 
 } // end of namespace
 

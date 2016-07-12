@@ -100,7 +100,7 @@ class ColorCalibrator : public BaseObject
         // Attributes
         //
         std::weak_ptr<Scene> _scene;
-        Image_GPhotoPtr _gcamera;
+        std::shared_ptr<Image_GPhoto> _gcamera;
         std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
 
         unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
@@ -157,8 +157,6 @@ class ColorCalibrator : public BaseObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<ColorCalibrator> ColorCalibratorPtr;
 
 } // end of namespace
 

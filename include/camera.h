@@ -75,7 +75,7 @@ class Camera : public BaseObject
         /**
          * Computes the blending map for this camera
          */
-        void computeBlendingMap(ImagePtr& map);
+        void computeBlendingMap(const std::shared_ptr<Image>& map);
 
         /**
          * Compute the blending for all objects seen by this camera
@@ -172,11 +172,11 @@ class Camera : public BaseObject
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
+        std::shared_ptr<GlWindow> _window;
 
         GLuint _fbo {0};
-        Texture_ImagePtr _depthTexture;
-        std::vector<Texture_ImagePtr> _outTextures;
+        std::shared_ptr<Texture_Image> _depthTexture;
+        std::vector<std::shared_ptr<Texture_Image>> _outTextures;
         std::vector<std::weak_ptr<Object>> _objects;
 
         // Rendering parameters
@@ -270,8 +270,6 @@ class Camera : public BaseObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Camera> CameraPtr;
 
 } // end of namespace
 

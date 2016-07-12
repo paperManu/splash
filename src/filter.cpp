@@ -237,7 +237,7 @@ void Filter::setOutput()
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"filter"});
-    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
+    auto virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
 }
 

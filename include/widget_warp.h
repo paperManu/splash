@@ -38,7 +38,7 @@ class GuiWarp : public GuiWidget
         GuiWarp(std::weak_ptr<Scene> scene, std::string name)
             : GuiWidget(scene, name) {}
         void render();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
         int updateWindowFlags();
 
     private:

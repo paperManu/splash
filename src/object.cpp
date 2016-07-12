@@ -398,7 +398,7 @@ void Object::removeTexture(const shared_ptr<Texture>& tex)
 /*************/
 void Object::resetBlendingMap()
 {
-    for (vector<TexturePtr>::iterator textureIt = _textures.begin(); textureIt != _textures.end();)
+    for (auto textureIt = _textures.begin(); textureIt != _textures.end();)
     {
         bool hasErased {false};
         for (auto& m : _blendMaps)
@@ -564,7 +564,7 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
 }
 
 /*************/
-void Object::setBlendingMap(TexturePtr map)
+void Object::setBlendingMap(const shared_ptr<Texture>& map)
 {
     _blendMaps.push_back(map);
     _textures.push_back(map);

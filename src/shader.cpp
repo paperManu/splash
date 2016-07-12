@@ -217,7 +217,7 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 }
 
 /*************/
-void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
+void Shader::setTexture(const shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name)
 {
     auto uniformIt = _uniforms.find(name);
 

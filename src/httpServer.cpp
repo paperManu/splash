@@ -635,14 +635,14 @@ namespace Http {
     
     /*************/
     /*************/
-    void ConnectionManager::start(ConnectionPtr c)
+    void ConnectionManager::start(const shared_ptr<Connection>& c)
     {
         _connections.insert(c);
         c->start();
     }
     
     /*************/
-    void ConnectionManager::stop(ConnectionPtr c)
+    void ConnectionManager::stop(const shared_ptr<Connection>& c)
     {
         _connections.erase(c);
         c->stop();
@@ -825,7 +825,7 @@ namespace Http {
 
 /*************/
 /*************/
-HttpServer::HttpServer(const string& address, const string& port, SceneWeakPtr scene) :
+HttpServer::HttpServer(const string& address, const string& port, const weak_ptr<Scene>& scene) :
     ControllerObject(scene),
     _ioService(),
     _acceptor(_ioService),

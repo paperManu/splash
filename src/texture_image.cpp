@@ -79,7 +79,7 @@ bool Texture_Image::linkTo(std::shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        ImagePtr img = dynamic_pointer_cast<Image>(obj);
+        auto img = dynamic_pointer_cast<Image>(obj);
         _img = weak_ptr<Image>(img);
         return true;
     }
@@ -88,9 +88,9 @@ bool Texture_Image::linkTo(std::shared_ptr<BaseObject> obj)
 }
 
 /*************/
-ImagePtr Texture_Image::read()
+shared_ptr<Image> Texture_Image::read()
 {
-    ImagePtr img = make_shared<Image>(_spec);
+    auto img = make_shared<Image>(_spec);
     glBindTexture(GL_TEXTURE_2D, _glTex);
     glGetTexImage(GL_TEXTURE_2D, 0, _texFormat, _texType, (GLvoid*)img->data());
     glBindTexture(GL_TEXTURE_2D, 0);

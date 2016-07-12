@@ -114,8 +114,6 @@ class Image_Shmdata : public Image
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
-
 /**
  * Utility function to clamp quickly a value
  */

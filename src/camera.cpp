@@ -105,7 +105,7 @@ Camera::~Camera()
 }
 
 /*************/
-void Camera::computeBlendingMap(ImagePtr& map)
+void Camera::computeBlendingMap(const shared_ptr<Image>& map)
 {
     if (map->getSpec().type != ImageBufferSpec::Type::UINT16)
     {
@@ -566,7 +566,7 @@ bool Camera::linkTo(shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
-        ObjectPtr obj3D = dynamic_pointer_cast<Object>(obj);
+        auto obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
 
         sendCalibrationPointsToObjects();
@@ -1072,7 +1072,7 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            Texture_ImagePtr texture = make_shared<Texture_Image>(_root);
+            auto texture = make_shared<Texture_Image>(_root);
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);

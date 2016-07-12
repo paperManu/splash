@@ -152,8 +152,6 @@ class Image_FFmpeg : public Image
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Image_FFmpeg> Image_FFmpegPtr;
-
 } // end of namespace
 
 #endif // SPLASH_IMAGE_FFMPEG_H

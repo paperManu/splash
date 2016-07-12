@@ -126,8 +126,6 @@ class Texture : public BaseObject
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Texture> TexturePtr;
-
 } // end of namespace
 
 #endif // SPLASH_TEXTURE_H

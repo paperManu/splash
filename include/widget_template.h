@@ -41,7 +41,7 @@ class GuiTemplate : public GuiWidget
     private:
         bool _templatesLoaded {false};
         std::vector<std::string> _names;
-        std::map<std::string, Texture_ImagePtr> _textures;
+        std::map<std::string, std::shared_ptr<Texture_Image>> _textures;
         std::map<std::string, std::string> _descriptions;
 
         void loadTemplates();

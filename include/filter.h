@@ -97,7 +97,7 @@ class Filter : public Texture
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
+        std::shared_ptr<GlWindow> _window;
         std::weak_ptr<Texture> _inTexture;
 
         GLuint _fbo {0};

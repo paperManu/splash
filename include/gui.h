@@ -57,7 +57,6 @@
 namespace Splash {
 
 class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 /*************/
 class Gui : public ControllerObject
@@ -66,7 +65,7 @@ class Gui : public ControllerObject
         /**
          * Constructor
          */
-        Gui(GlWindowPtr w, SceneWeakPtr s);
+        Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
 
         /**
          * Destructor
@@ -82,7 +81,7 @@ class Gui : public ControllerObject
         /**
          * Get pointers to this camera textures
          */
-        TexturePtr getTexture() const {return _outTexture;}
+        std::shared_ptr<Texture> getTexture() const {return _outTexture;}
 
         /**
          * Check wether it is initialized
@@ -134,16 +133,16 @@ class Gui : public ControllerObject
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
-        SceneWeakPtr _scene;
+        std::shared_ptr<GlWindow> _window;
+        std::weak_ptr<Scene> _scene;
 
         GLuint _fbo;
-        Texture_ImagePtr _depthTexture;
-        TexturePtr _outTexture;
+        std::shared_ptr<Texture_Image> _depthTexture;
+        std::shared_ptr<Texture> _outTexture;
         float _width {512}, _height {512};
 
         // GUI specific camera
-        CameraPtr _guiCamera;
+        std::shared_ptr<Camera> _guiCamera;
 
         // ImGUI related attributes
         static GLuint _imFontTextureId;
@@ -195,8 +194,6 @@ class Gui : public ControllerObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Gui> GuiPtr;
 
 } // end of namespace
 

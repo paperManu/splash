@@ -112,7 +112,7 @@ class Texture_Image : public Texture
         /**
          * Read the texture and returns an Image
          */
-        ImagePtr read();
+        std::shared_ptr<Image> read();
 
         /**
          * Set the buffer size / type / internal format
@@ -184,8 +184,6 @@ class Texture_Image : public Texture
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Texture_Image> Texture_ImagePtr;
 
 } // end of namespace
 

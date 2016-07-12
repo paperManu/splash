@@ -29,7 +29,7 @@ GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
-Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
+Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
     : ControllerObject(s)
 {
     _type = "gui";
@@ -47,7 +47,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
 
     {
-        Texture_ImagePtr texture = make_shared<Texture_Image>(s);
+        auto texture = make_shared<Texture_Image>(s);
         texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
         texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
@@ -55,7 +55,7 @@ Gui::Gui(GlWindowPtr w, SceneWeakPtr s)
     }
 
     {
-        Texture_ImagePtr texture = make_shared<Texture_Image>(s);
+        auto texture = make_shared<Texture_Image>(s);
         texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
         texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
@@ -376,7 +376,7 @@ bool Gui::linkTo(shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
-        ObjectPtr object = dynamic_pointer_cast<Object>(obj);
+        auto object = dynamic_pointer_cast<Object>(obj);
         _guiCamera->linkTo(object);
         return true;
     }

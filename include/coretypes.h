@@ -316,8 +316,6 @@ class GlWindow
         GLFWwindow* _mainWindow {nullptr};
 };
 
-typedef std::shared_ptr<GlWindow> GlWindowPtr;
-
 struct Value;
 typedef std::deque<Value> Values;
 

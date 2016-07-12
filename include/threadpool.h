@@ -83,8 +83,6 @@ class ThreadPool
         std::atomic_uint nextId {1};
 };
 
-typedef std::shared_ptr<ThreadPool> ThreadPoolPtr;
-
 /*************/
 template<class F>
 unsigned int ThreadPool::enqueue(F f)

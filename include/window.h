@@ -134,8 +134,8 @@ class Window : public BaseObject
         /**
          * Set / unset a new texture to draw
          */
-        void setTexture(std::shared_ptr<Texture> tex);
-        void unsetTexture(std::shared_ptr<Texture> tex);
+        void setTexture(const std::shared_ptr<Texture>& tex);
+        void unsetTexture(const std::shared_ptr<Texture>& tex);
 
         /**
          * Swap the back and front buffers
@@ -144,7 +144,7 @@ class Window : public BaseObject
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
+        std::shared_ptr<GlWindow> _window;
         int _screenId {-1};
         bool _fullscreen {false};
         bool _withDecoration {true};
@@ -163,15 +163,15 @@ class Window : public BaseObject
         // Offscreen rendering related objects
         GLuint _renderFbo {0};
         GLuint _readFbo {0};
-        Texture_ImagePtr _depthTexture {nullptr};
-        Texture_ImagePtr _colorTexture {nullptr};
+        std::shared_ptr<Texture_Image> _depthTexture {nullptr};
+        std::shared_ptr<Texture_Image> _colorTexture {nullptr};
         GLsync _renderFence;
 
-        ObjectPtr _screen;
-        ObjectPtr _screenGui;
+        std::shared_ptr<Object> _screen;
+        std::shared_ptr<Object> _screenGui;
         glm::dmat4 _viewProjectionMatrix;
         std::list<std::weak_ptr<Texture>> _inTextures;
-        TexturePtr _guiTexture {nullptr}; // The gui has its own texture
+        std::shared_ptr<Texture> _guiTexture {nullptr}; // The gui has its own texture
 
         static std::mutex _callbackMutex;
         static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys; // Input keys queue
@@ -229,8 +229,6 @@ class Window : public BaseObject
          */
         void updateWindowShape();
 };
-
-typedef std::shared_ptr<Window> WindowPtr;
 
 } // end of namespace
 

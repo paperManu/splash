@@ -109,7 +109,7 @@ class Warp : public Texture
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
+        std::shared_ptr<GlWindow> _window;
         std::weak_ptr<Camera> _inCamera;
 
         GLuint _fbo {0};

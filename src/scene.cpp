@@ -389,8 +389,8 @@ void Scene::renderBlending()
             // Only the master scene computes the blending
             if (_isMaster)
             {
-                vector<CameraPtr> cameras;
-                vector<ObjectPtr> objects;
+                vector<shared_ptr<Camera>> cameras;
+                vector<shared_ptr<Object>> objects;
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
                         cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
@@ -458,8 +458,8 @@ void Scene::renderBlending()
             blendComputedInPreviousFrame = false;
             blendComputedOnce = false;
 
-            vector<CameraPtr> cameras;
-            vector<ObjectPtr> objects;
+            vector<shared_ptr<Camera>> cameras;
+            vector<shared_ptr<Object>> objects;
             for (auto& obj : _objects)
                 if (obj.second->getType() == "camera")
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
@@ -633,11 +633,11 @@ void Scene::updateInputs()
             break;
 
         // Find where this action happened
-        WindowPtr eventWindow;
+        shared_ptr<Window> eventWindow;
         for (auto& w : _objects)
             if (w.second->getType() == "window")
             {
-                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
                 if (window->isWindow(win))
                     eventWindow = window;
             }
@@ -666,11 +666,11 @@ void Scene::updateInputs()
             break;
 
         // Find where this action happened
-        WindowPtr eventWindow;
+        shared_ptr<Window> eventWindow;
         for (auto& w : _objects)
             if (w.second->getType() == "window")
             {
-                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
                 if (window->isWindow(win))
                     eventWindow = window;
             }
@@ -829,7 +829,7 @@ void Scene::activateBlendingMap(bool once)
                 dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
         // Filter the output to fill the blanks (dilate filter)
-        ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
+        auto buffer = make_shared<Image>(_blendingMap->getSpec());
         unsigned short* pixBuffer = (unsigned short*)buffer->data();
         unsigned short* pixels = (unsigned short*)_blendingMap->data();
         int w = _blendingMap->getSpec().width;
@@ -917,7 +917,7 @@ void Scene::computeBlendingMap(const std::string& mode)
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow(string name)
+shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
@@ -925,7 +925,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name)
     if (!_mainWindow)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
-        return GlWindowPtr(nullptr);
+        return {nullptr};
     }
 
     // The GL version is the same as in the initialization, so we don't have to reset it here
@@ -936,9 +936,9 @@ GlWindowPtr Scene::getNewSharedWindow(string name)
     if (!window)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
-        return GlWindowPtr(nullptr);
+        return {nullptr};
     }
-    GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
+    auto glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
 #if not HAVE_OSX

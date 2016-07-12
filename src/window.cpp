@@ -47,7 +47,7 @@ Window::Window(std::weak_ptr<RootObject> root)
         return;
 
     std::shared_ptr<Scene> scene = dynamic_pointer_cast<Scene>(root.lock());
-    GlWindowPtr w = scene->getNewSharedWindow();
+    auto w = scene->getNewSharedWindow();
     if (w.get() == nullptr)
         return;
 
@@ -205,7 +205,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = dynamic_pointer_cast<Texture>(obj);
         setTexture(tex);
         return true;
     }
@@ -248,7 +248,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
     {
         if (_guiTexture != nullptr)
             _screenGui->removeTexture(_guiTexture);
-        GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
+        auto gui = dynamic_pointer_cast<Gui>(obj);
         _guiTexture = gui->getTexture();
         _screenGui->addTexture(_guiTexture);
         return true;
@@ -262,14 +262,14 @@ void Window::unlinkFrom(shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
-        TexturePtr tex = dynamic_pointer_cast<Texture>(obj);
+        auto tex = dynamic_pointer_cast<Texture>(obj);
         unsetTexture(tex);
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         // Look for the corresponding texture
         string texName = getName() + "_" + obj->getName() + "_tex";
-        TexturePtr tex = nullptr;
+        shared_ptr<Texture> tex = nullptr;
         for (auto& inTex : _inTextures)
         {
             if (inTex.expired())
@@ -295,13 +295,13 @@ void Window::unlinkFrom(shared_ptr<BaseObject> obj)
             unlinkFrom(warp);
         }
 
-        CameraPtr cam = dynamic_pointer_cast<Camera>(obj);
+        auto cam = dynamic_pointer_cast<Camera>(obj);
         for (auto& tex : cam->getTextures())
             unsetTexture(tex);
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
-        GuiPtr gui = dynamic_pointer_cast<Gui>(obj);
+        auto gui = dynamic_pointer_cast<Gui>(obj);
         if (gui->getTexture() == _guiTexture)
         {
             _screenGui->removeTexture(_guiTexture);
@@ -566,7 +566,7 @@ bool Window::switchFullscreen(int screenId)
 }
 
 /*************/
-void Window::setTexture(TexturePtr tex)
+void Window::setTexture(const shared_ptr<Texture>& tex)
 {
     auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
         if (t.expired())
@@ -585,7 +585,7 @@ void Window::setTexture(TexturePtr tex)
 }
 
 /*************/
-void Window::unsetTexture(TexturePtr tex)
+void Window::unsetTexture(const shared_ptr<Texture>& tex)
 {
     auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
         if (t.expired())
@@ -685,7 +685,7 @@ bool Window::setProjectionSurface()
 
     _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"window"});
-    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
+    auto virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
 
     _screenGui = make_shared<Object>(_root);

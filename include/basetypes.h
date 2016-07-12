@@ -715,8 +715,6 @@ class BufferObject : public BaseObject
         bool _newSerializedObject {false};
 };
 
-typedef std::shared_ptr<BufferObject> BufferObjectPtr;
-
 /*************/
 class RootObject : public BaseObject
 {
@@ -895,8 +893,6 @@ class RootObject : public BaseObject
                 return {};
         }
 };
-
-typedef std::shared_ptr<RootObject> RootObjectPtr;
 
 } // end of namespace
 

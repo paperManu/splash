@@ -105,7 +105,7 @@ class Scene : public RootObject
         /**
          * Get a glfw window sharing the same context as _mainWindow
          */
-        GlWindowPtr getNewSharedWindow(std::string name = std::string());
+        std::shared_ptr<GlWindow> getNewSharedWindow(std::string name = std::string());
 
         /**
          * Get the list of objects by their type
@@ -190,23 +190,23 @@ class Scene : public RootObject
 
     protected:
         std::unique_ptr<Factory> _factory {nullptr};
-        GlWindowPtr _mainWindow;
+        std::shared_ptr<GlWindow> _mainWindow;
         std::vector<int> _glVersion {0, 0};
         bool _isRunning {false};
 
         std::unordered_map<std::string, std::shared_ptr<BaseObject>> _ghostObjects;
 
         // Gui exists in master scene whatever the configuration
-        GuiPtr _gui;
+        std::shared_ptr<Gui> _gui;
         bool _guiLinkedToWindow {false};
         
         // Http server, in master scene too
-        HttpServerPtr _httpServer;
+        std::shared_ptr<HttpServer> _httpServer;
         std::future<void> _httpServerFuture;
 
         // Objects in charge of calibration
 #if HAVE_GPHOTO
-        ColorCalibratorPtr _colorCalibrator;
+        std::shared_ptr<ColorCalibrator> _colorCalibrator;
 #endif
 
         /**
@@ -236,7 +236,7 @@ class Scene : public RootObject
         // Texture upload context
         std::future<void> _textureUploadFuture;
         std::condition_variable _textureUploadCondition;
-        GlWindowPtr _textureUploadWindow;
+        std::shared_ptr<GlWindow> _textureUploadWindow;
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
         GLsync _textureUploadFence, _cameraDrawnFence;
@@ -257,8 +257,8 @@ class Scene : public RootObject
         bool _computeBlending {false};
         bool _computeBlendingOnce {false};
         unsigned int _blendingResolution {2048};
-        Texture_ImagePtr _blendingTexture;
-        ImagePtr _blendingMap;
+        std::shared_ptr<Texture_Image> _blendingTexture;
+        std::shared_ptr<Image> _blendingMap;
 
         /**
          * Find which OpenGL version is available
@@ -315,9 +315,6 @@ class Scene : public RootObject
          */
         void updateInputs();
 };
-
-
-typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 } // end of namespace
 

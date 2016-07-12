@@ -85,8 +85,6 @@ class Mesh_Shmdata : public Mesh
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Mesh_Shmdata> Mesh_ShmdataPtr;
-
 } // end of namespace
 
 #endif // SPLASH_MESH_SHMDATA_H

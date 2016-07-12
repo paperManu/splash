@@ -179,18 +179,16 @@ namespace Http {
             void doWrite();
     };
     
-    typedef std::shared_ptr<Connection> ConnectionPtr;
-    
     /*************/
     class ConnectionManager
     {
         public:
-            void start(ConnectionPtr c);
-            void stop(ConnectionPtr c);
+            void start(const std::shared_ptr<Connection>& c);
+            void stop(const std::shared_ptr<Connection>& c);
             void stopAll();
     
         private:
-            std::set<ConnectionPtr> _connections;
+            std::set<std::shared_ptr<Connection>> _connections;
     };
     
     /*************/
@@ -234,12 +232,11 @@ namespace Http {
 
 /*************/
 class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 class HttpServer : public ControllerObject
 {
     public:
-        HttpServer(const std::string& address, const std::string& port, SceneWeakPtr scene);
+        HttpServer(const std::string& address, const std::string& port, const std::weak_ptr<Scene>& scene);
 
         explicit operator bool() const
         {
@@ -253,7 +250,7 @@ class HttpServer : public ControllerObject
         std::string getPort() const {return _port;}
 
     private:
-        SceneWeakPtr _scene;
+        std::weak_ptr<Scene> _scene;
         bool _ready {false};
         std::string _address {""};
         std::string _port {""};
@@ -270,8 +267,6 @@ class HttpServer : public ControllerObject
 
         void registerAttributes();
 };
-
-typedef std::shared_ptr<HttpServer> HttpServerPtr;
 
 } // end of namespace
 

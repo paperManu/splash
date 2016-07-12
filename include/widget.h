@@ -48,7 +48,6 @@ namespace Splash
 {
 class Gui;
 class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 namespace SplashImGui
 {
@@ -71,11 +70,11 @@ class GuiWidget : public ControllerObject
         virtual void render() {}
         virtual int updateWindowFlags() {return 0;}
         virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
 
     protected:
         std::string _name {""};
-        SceneWeakPtr _scene;
+        std::weak_ptr<Scene> _scene;
         std::string _fileSelectorTarget {""};
 
         /**
