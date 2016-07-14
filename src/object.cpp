@@ -134,7 +134,6 @@ void Object::activate()
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
-    _shader->setAttribute("uniform", {"_scale", _scale.x, _scale.y, _scale.z});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
 
     if (_geometries.size() > 0)
@@ -174,7 +173,8 @@ glm::dmat4 Object::computeModelMatrix() const
         return glm::translate(glm::dmat4(1.f), _position)
              * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0))
              * glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0))
-             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0));
+             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0))
+             * glm::scale(glm::dmat4(1.f), _scale);
 }
 
 /*************/

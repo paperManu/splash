@@ -712,7 +712,6 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
@@ -725,7 +724,7 @@ struct ShaderSources
 
         void main(void)
         {
-            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = vec4(_vertex.xyz, 1.0);
             vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
@@ -920,7 +919,6 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
@@ -934,7 +932,7 @@ struct ShaderSources
 
         void main(void)
         {
-            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = vec4(_vertex.xyz, 1.0);
             vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
@@ -1182,7 +1180,6 @@ struct ShaderSources
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
 
         in VertexData
         {
@@ -1199,21 +1196,21 @@ struct ShaderSources
 
         void main()
         {
-            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz * _scale.xyz, 1.0);
+            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[0].texcoord;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.0);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[1].texcoord;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.0);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[2].texcoord;
             vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
@@ -1344,12 +1341,10 @@ struct ShaderSources
         layout(location = 1) in vec2 _texcoord;
         //layout(location = 2) in vec3 _normal;
         //uniform mat4 _modelViewProjectionMatrix;
-        //uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         out vec2 texCoord;
 
         void main(void)
         {
-            //gl_Position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
             texCoord = _texcoord;
         }
