@@ -528,6 +528,8 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
                 geom->deactivateFeedback();
                 geom->deactivate();
+
+                glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
             } while (geom->hasBeenResized());
 
             geom->swapBuffers();
@@ -592,6 +594,8 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
             _computeShaderComputeBlending->doCompute(verticesNbr / 3);
 
             geom->deactivate();
+
+            glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
         }
     }
 }

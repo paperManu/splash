@@ -424,7 +424,6 @@ void Scene::renderBlending()
                         camera->computeBlendingContribution();
                     }
 
-                    glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT | GL_ELEMENT_ARRAY_BARRIER_BIT);
                 }
 
                 for (auto& obj : _objects)
