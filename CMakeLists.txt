@@ -113,10 +113,7 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
     set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://github.com/paperManu/splash/wiki")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "automake,
-                                      cdbs,
-                                      debhelper,
-                                      gettext,
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
                                       libavformat-dev,
                                       libavcodec-dev,
                                       libavutil-dev,
@@ -135,9 +132,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
                                       libzmq3-dev,
                                       portaudio19-dev,
                                       mesa-common-dev,
-                                      pkg-config,
-                                      bzip2,
-                                      tar,
                                       zip")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
