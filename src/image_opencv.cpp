@@ -161,7 +161,7 @@ void Image_OpenCV::registerAttributes()
     }, [&]() -> Values {
         return {(int)_width, (int)_height};
     }, {'n', 'n'});
-    setAttributeDescription("size", "Set the desired capture resolution")
+    setAttributeDescription("size", "Set the desired capture resolution");
 
     addAttribute("framerate", [&](const Values& args) {
         _framerate = (args[0].asFloat() == 0) ? 60 : args[0].asFloat();
@@ -169,7 +169,7 @@ void Image_OpenCV::registerAttributes()
     }, [&]() -> Values {
         return {_framerate};
     }, {'n'});
-    setAttributeDescription("framerate", "Set the desired capture framerate")
+    setAttributeDescription("framerate", "Set the desired capture framerate");
 }
 
 } // end of namespace
