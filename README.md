@@ -152,10 +152,7 @@ We then install Shmdata, which depends on GStreamer. Note that Shmdata is only n
 
 Install all the other dependencies:
 
-    sudo port install snappy
-    sudo port install gsl zmq
-    sudo port install glfw glm
-    sudo port install ffmpeg
+    sudo port install boost gsl zmq glfw glm ffmpeg portaudio snappy
 
 And then grab and install Splash:
 
