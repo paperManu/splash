@@ -415,7 +415,7 @@ struct ShaderSources
         {
             if (gl_InvocationID == 0)
             {
-                bvec3 vertexVisibility;
+                bool anyVertexVisible = false;
                 vec4 projectedVertices[3];
                 float maxDist = 0.0;
                 float nearestBorder = 0.0; // 0 is nearest border is horizontal, 1 otherwise
@@ -427,11 +427,13 @@ struct ShaderSources
 
                 if (tcs_in[0].annexe.z > 0.0)
                 {
+                    // Check whether the vertices are visible, and their distances to the borders
                     for (int i = 0; i < 3; ++i)
                     {
                         vec2 distToCenter;
                         projectedVertices[i] = tcs_in[i].vertex;
-                        vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, distToCenter);
+                        if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, distToCenter))
+                            anyVertexVisible = true;
                         float localMax = max(distToCenter.x, distToCenter.y);
                         if (localMax > maxDist)
                         {
@@ -440,8 +442,17 @@ struct ShaderSources
                         }
                     }
 
+                    // Also check for the middle of the edges, to improve the handling of larger faces
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        vec2 distToCenter;
+                        vec4 middlePoint = (projectedVertices[i] + projectedVertices[(i + 1) % 3]) / 2.0;
+                        if (projectAndCheckVisibility(middlePoint, _mvp, 0.0, distToCenter))
+                            anyVertexVisible = true;
+                    }
+
                     vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
-                    if (any(vertexVisibility) && projectedNormal.z >= 0.0)
+                    if (anyVertexVisible && projectedNormal.z >= 0.0)
                     {
                         if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
                         {
