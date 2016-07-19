@@ -300,7 +300,8 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
     {
         auto objects = getObjectsOfType(type);
         for (auto& object : objects)
-            mediaList.push_back(object);
+            if (object->getSavable())
+                mediaList.push_back(object);
     }
 
     return mediaList;

@@ -657,6 +657,7 @@ void World::saveConfig()
     for (int i = 0; i < jsScenes.size(); ++i)
     {
         string sceneName = jsScenes[i]["name"].asString();
+        _config[sceneName] = Json::Value();
 
         // Set the scene configuration from what was received in the previous loop
         Json::Value::Members attributes = root[sceneName][sceneName].getMemberNames();
