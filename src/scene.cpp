@@ -423,7 +423,6 @@ void Scene::renderBlending()
                         camera->computeVertexVisibility();
                         camera->computeBlendingContribution();
                     }
-
                 }
 
                 for (auto& obj : _objects)

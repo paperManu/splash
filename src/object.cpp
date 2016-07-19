@@ -233,6 +233,15 @@ void Object::draw()
 }
 
 /*************/
+int Object::getVerticesNumber() const
+{
+    int nbr = 0;
+    for (auto& g : _geometries)
+        nbr += g->getVerticesNumber();
+    return nbr;
+}
+
+/*************/
 bool Object::linkTo(shared_ptr<BaseObject> obj)
 {
     // Mandatory before trying to link
@@ -416,7 +425,7 @@ void Object::resetBlendingMap()
 }
 
 /*************/
-void Object::resetVisibility()
+void Object::resetVisibility(int primitiveIdShift)
 {
     lock_guard<mutex> lock(_mutex);
 
@@ -434,6 +443,7 @@ void Object::resetVisibility()
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
             _computeShaderResetVisibility->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderResetVisibility->setAttribute("uniform", {"_primitiveIdShift", primitiveIdShift});
             _computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1);
             geom->deactivate();
         }
@@ -539,7 +549,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 }
 
 /*************/
-void Object::transferVisibilityFromTexToAttr(int width, int height)
+void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift)
 {
     lock_guard<mutex> lock(_mutex);
 
@@ -554,7 +564,9 @@ void Object::transferVisibilityFromTexToAttr(int width, int height)
         geom->update();
         geom->activateAsSharedBuffer();
         _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", (float)width, (float)height});
+        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
         _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
         geom->deactivate();
     }
 }

@@ -194,6 +194,7 @@ struct ShaderSources
         };
 
         uniform int _vertexNbr;
+        uniform int _primitiveIdShift = 0;
 
         void main(void)
         {
@@ -205,7 +206,7 @@ struct ShaderSources
                 {
                     int vertexId = globalID * 3 + idx;
                     // the W coordinates holds the primitive ID, for use in the first visibility test
-                    annexe[vertexId].zw = vec2(0.0, float(globalID));
+                    annexe[vertexId].zw = vec2(0.0, float(globalID + _primitiveIdShift));
                 }
             }
         }
@@ -259,6 +260,7 @@ struct ShaderSources
         };
 
         uniform vec2 _texSize;
+        uniform int _idShift = 0;
 
         void main(void)
         {
@@ -267,8 +269,8 @@ struct ShaderSources
 
             if (all(lessThan(pixCoords.xy, _texSize.xy)))
             {
-                vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
-                int primitiveID = int(round(visibility.r * 65025.0 + visibility.g * 255.0 + visibility.b));
+                ivec4 visibility = ivec4(round(texelFetch(imgVisibility, ivec2(pixCoords), 0) * 255.0));
+                int primitiveID = visibility.r * 65025 + visibility.g * 255 + visibility.b - _idShift;
                 // Mark the primitive found as visible
                 for (int idx = primitiveID * 3; idx < primitiveID * 3 + 3; ++idx)
                     annexe[idx].z = 1.0;
@@ -629,10 +631,10 @@ struct ShaderSources
             // ... if not
             else
             {
-                vec4 vertices[5];
-                vec2 texcoords[5];
-                vec4 normals[5];
-                vec4 annexes[5];
+                vec4 vertices[6];
+                vec2 texcoords[6];
+                vec4 normals[6];
+                vec4 annexes[6];
                 for (int i = 0; i < 3; ++i)
                 {
                     vertices[i] = geom_in[i].vertex;
@@ -670,7 +672,6 @@ struct ShaderSources
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
                         texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
-                        annexes[nextVertex] = mix(annexes[i], annexes[nextId], ratio);
                         nextVertex++;
                     }
                 }
@@ -685,7 +686,6 @@ struct ShaderSources
                         geom_out.vertex = vertices[currentIndex];
                         geom_out.texcoord = texcoords[currentIndex];
                         geom_out.normal = normals[currentIndex];
-                        geom_out.annexe = annexes[currentIndex];
                         EmitVertex();
                     }
 
