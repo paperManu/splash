@@ -288,7 +288,7 @@ void Camera::computeBlendingContribution()
             continue;
         auto obj = o.lock();
 
-        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
+        obj->computeCameraContribution(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
 }
 
@@ -297,16 +297,19 @@ void Camera::computeVertexVisibility()
 {
     // We want to render the object with a specific texture, containing the primitive IDs
     vector<Values> shaderFill;
+    int primitiveIdShift = 0; // The primitive ID is shifted by the number of vertices already drawn
     for (auto& o : _objects)
     {
         if (o.expired())
             continue;
         auto obj = o.lock();
+        obj->resetVisibility(primitiveIdShift);
+        primitiveIdShift += obj->getVerticesNumber() / 3;
 
         Values fill;
         obj->getAttribute("fill", fill);
-        obj->setAttribute("fill", {"primitiveId"});
         shaderFill.push_back(fill);
+        obj->setAttribute("fill", {"primitiveId"});
     }
 
     // Render with the current texture, with no marker or frame
@@ -332,13 +335,15 @@ void Camera::computeVertexVisibility()
     // Update the vertices visibility based on the result
     glActiveTexture(GL_TEXTURE0);
     _outTextures[0]->bind();
+    primitiveIdShift = 0;
     for (auto& o : _objects)
     {
         if (o.expired())
             continue;
         auto obj = o.lock();
 
-        obj->transferVisibilityFromTexToAttr(_width, _height);
+        obj->transferVisibilityFromTexToAttr(_width, _height, primitiveIdShift);
+        primitiveIdShift += obj->getVerticesNumber() / 3;
     }
     _outTextures[0]->unbind();
 }
@@ -352,7 +357,7 @@ void Camera::blendingTessellateForCurrentCamera()
             continue;
         auto obj = o.lock();
 
-        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), glm::radians(_fov * _width / _height), glm::radians(_fov), _blendWidth, _blendPrecision);
     }
 }
 
@@ -777,6 +782,7 @@ bool Camera::render()
             auto obj = o.lock();
 
             obj->activate();
+
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});

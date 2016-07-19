@@ -407,13 +407,20 @@ void Scene::renderBlending()
                     for (auto& object : objects)
                         object->resetTessellation();
 
-                    glFinish();
+                    // Tessellate
                     for (auto& camera : cameras)
                     {
-                        for (auto& object : objects)
-                            object->resetVisibility();
                         camera->computeVertexVisibility();
                         camera->blendingTessellateForCurrentCamera();
+                    }
+
+                    for (auto& object : objects)
+                        object->resetBlendingAttribute();
+
+                    // Compute each camera contribution
+                    for (auto& camera : cameras)
+                    {
+                        camera->computeVertexVisibility();
                         camera->computeBlendingContribution();
                     }
                 }

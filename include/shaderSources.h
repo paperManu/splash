@@ -35,9 +35,10 @@ struct ShaderSources
 {
     const std::map<std::string, std::string> INCLUDES {
         //
-        // Project a point wrt a mvp matrix, and check if it is in the view frustum
+        // Project a point wrt a mvp matrix, and check if it is in the view frustum.
+        // Returns the distance on X and Y in the distToCenter parameter
         {"projectAndCheckVisibility", R"(
-            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 dist)
+            bool projectAndCheckVisibility(inout vec4 p, in mat4 mvp, in float margin, out vec2 distToCenter)
             {
                 vec4 projected = mvp * vec4(p.xyz, 1.0);
                 projected /= projected.w;
@@ -46,9 +47,9 @@ struct ShaderSources
                 if (projected.z >= 0.0)
                 {
                     projected = abs(projected);
-                    dist = projected.xy;
+                    distToCenter = projected.xy;
                     bvec4 isVisible = lessThanEqual(projected, vec4(1.0 + margin));
-                    if (isVisible.x && isVisible.y && isVisible.z)
+                    if (all(isVisible.xyz))
                         return true;
                 }
 
@@ -56,7 +57,7 @@ struct ShaderSources
             }
         )"},
         //
-        // Compute a normal vector from three vectors
+        // Compute a normal vector from three points
         {"normalVector", R"(
             uniform int _sideness;
 
@@ -179,13 +180,46 @@ struct ShaderSources
     )"};
 
     /**
-     * Compute shader to reset all camera contribution to zero
+     * Compute shader to reset all camera visibility attributes
      */
     const std::string COMPUTE_SHADER_RESET_VISIBILITY {R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
-        layout(local_size_x = 32, local_size_y = 32) in;
+        layout(local_size_x = 128) in;
+
+        layout (std430, binding = 3) buffer annexeBuffer
+        {
+            vec4 annexe[];
+        };
+
+        uniform int _vertexNbr;
+        uniform int _primitiveIdShift = 0;
+
+        void main(void)
+        {
+            int globalID = int(gl_GlobalInvocationID.x);
+
+            if (globalID < _vertexNbr / 3)
+            {
+                for (int idx = 0; idx < 3; ++idx)
+                {
+                    int vertexId = globalID * 3 + idx;
+                    // the W coordinates holds the primitive ID, for use in the first visibility test
+                    annexe[vertexId].zw = vec2(0.0, float(globalID + _primitiveIdShift));
+                }
+            }
+        }
+    )"};
+
+    /**
+     * Compute shader to reset all camera contribution to zero
+     */
+    const std::string COMPUTE_SHADER_RESET_BLENDING {R"(
+        #extension GL_ARB_compute_shader : enable
+        #extension GL_ARB_shader_storage_buffer_object : enable
+
+        layout(local_size_x = 128) in;
 
         layout (std430, binding = 3) buffer annexeBuffer
         {
@@ -196,17 +230,15 @@ struct ShaderSources
 
         void main(void)
         {
-            int globalID = int(gl_WorkGroupID.x * 32 * 32
-                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
-                               + gl_LocalInvocationIndex);
+            int globalID = int(gl_GlobalInvocationID.x);
 
             if (globalID < _vertexNbr / 3)
             {
                 for (int idx = 0; idx < 3; ++idx)
                 {
                     int vertexId = globalID * 3 + idx;
-                    // the W coordinates holds the primitive ID, for use in the first visibility test
-                    annexe[vertexId].zw = vec2(0.0, float(globalID));
+                    // The x coordinate holds the number of camera, y the blending value
+                    annexe[vertexId].xy = vec2(0.0, 0.0);
                 }
             }
         }
@@ -228,16 +260,17 @@ struct ShaderSources
         };
 
         uniform vec2 _texSize;
+        uniform int _idShift = 0;
 
         void main(void)
         {
-            vec2 pixCoords = gl_WorkGroupID.xy * vec2(32.0) + gl_LocalInvocationID.xy;
+            vec2 pixCoords = vec2(gl_GlobalInvocationID.xy);
             vec2 texCoords = pixCoords / _texSize;
-            vec4 visibility = texture2D(imgVisibility, texCoords) * 255.0;
 
             if (all(lessThan(pixCoords.xy, _texSize.xy)))
             {
-                int primitiveID = int(round(visibility.r * 65536 + visibility.g * 256.0 + visibility.b));
+                ivec4 visibility = ivec4(round(texelFetch(imgVisibility, ivec2(pixCoords), 0) * 255.0));
+                int primitiveID = visibility.r * 65025 + visibility.g * 255 + visibility.b - _idShift;
                 // Mark the primitive found as visible
                 for (int idx = primitiveID * 3; idx < primitiveID * 3 + 3; ++idx)
                     annexe[idx].z = 1.0;
@@ -248,7 +281,7 @@ struct ShaderSources
     /**
      * Compute shader to compute the contribution of a specific camera
      */
-    const std::string COMPUTE_SHADER_COMPUTE_VISIBILITY {R"(
+    const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION {R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -256,7 +289,7 @@ struct ShaderSources
         #include normalVector
         #include projectAndCheckVisibility
 
-        layout(local_size_x = 32, local_size_y = 32) in;
+        layout(local_size_x = 128) in;
 
         layout (std430, binding = 0) buffer vertexBuffer
         {
@@ -280,9 +313,7 @@ struct ShaderSources
 
         void main(void)
         {
-            int globalID = int(gl_WorkGroupID.x * 32 * 32
-                               + gl_WorkGroupID.y * gl_NumWorkGroups.x * 32 * 32
-                               + gl_LocalInvocationIndex);
+            int globalID = int(gl_GlobalInvocationID.x);
             vec4 screenVertex[3];
             bvec3 vertexVisible;
 
@@ -296,9 +327,9 @@ struct ShaderSources
                     if (annexe[vertexId].z == 0.0)
                         return;
 
-                    vec2 dist;
+                    vec2 distToCenter;
                     vec4 normalizedSpaceVertex = vertex[vertexId];
-                    vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, dist);
+                    vertexVisible[idx] = projectAndCheckVisibility(normalizedSpaceVertex, _mvp, 0.005, distToCenter);
                     screenVertex[idx] = normalizedSpaceVertex;
                 }
 
@@ -384,10 +415,10 @@ struct ShaderSources
         {
             if (gl_InvocationID == 0)
             {
-                bvec3 vertexVisibility;
+                bool anyVertexVisible = false;
                 vec4 projectedVertices[3];
                 float maxDist = 0.0;
-                int nearestBorder = 0; // 0 is nearest border is horizontal, 1 otherwise
+                float nearestBorder = 0.0; // 0 is nearest border is horizontal, 1 otherwise
 
                 gl_TessLevelInner[0] = 1.0;
                 gl_TessLevelOuter[0] = 1.0;
@@ -396,25 +427,36 @@ struct ShaderSources
 
                 if (tcs_in[0].annexe.z > 0.0)
                 {
+                    // Check whether the vertices are visible, and their distances to the borders
                     for (int i = 0; i < 3; ++i)
                     {
-                        vec2 dist;
+                        vec2 distToCenter;
                         projectedVertices[i] = tcs_in[i].vertex;
-                        vertexVisibility[i] = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
-                        float localMax = max(dist.x, dist.y);
+                        if (projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, distToCenter))
+                            anyVertexVisible = true;
+                        float localMax = max(distToCenter.x, distToCenter.y);
                         if (localMax > maxDist)
                         {
                             maxDist = localMax;
-                            nearestBorder = int(dist.y > dist.x);
+                            nearestBorder = float(distToCenter.y > distToCenter.x);
                         }
                     }
 
+                    // Also check for the middle of the edges, to improve the handling of larger faces
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        vec2 distToCenter;
+                        vec4 middlePoint = (projectedVertices[i] + projectedVertices[(i + 1) % 3]) / 2.0;
+                        if (projectAndCheckVisibility(middlePoint, _mvp, 0.0, distToCenter))
+                            anyVertexVisible = true;
+                    }
+
                     vec3 projectedNormal = normalVector(projectedVertices[0].xyz, projectedVertices[1].xyz, projectedVertices[2].xyz);
-                    if (any(vertexVisibility) && projectedNormal.z >= 0.0)
+                    if (anyVertexVisible && projectedNormal.z >= 0.0)
                     {
                         if (1.0 - maxDist < _blendWidth * blendDistFactorToSubdiv)
                         {
-                            vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1 - nearestBorder) * vec2(0.0, 1.0);
+                            vec2 nearestBorderNormal = nearestBorder * vec2(1.0, 0.0) + (1.0 - nearestBorder) * vec2(0.0, 1.0);
                             float maxTessLevel = 1.0;
                             for (int idx = 0; idx < 3; idx++)
                             {
@@ -482,7 +524,7 @@ struct ShaderSources
     )"};
 
     /**
-     * Default feedback geometry shader
+     * Feedback geometry shader for handling camera borders
      */
     const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
         #include normalVector
@@ -516,21 +558,66 @@ struct ShaderSources
             0, 3, 4, 3, 1, 4, 1, 2, 4
         };
 
+        uniform vec2 _fov;
+        uniform mat4 _mv;
         uniform mat4 _mvp;
+        uniform mat4 _ip;
+
+        vec4 pointToCameraBase(in vec4 p)
+        {
+            vec4 coords = _mv * vec4(p.xyz, 1.0);
+            coords /= coords.w;
+            return coords;
+        }
+
+        // Compute the ratio of the camera border projected onto the [pq] segment
+        vec2 computeRatios(in vec4 p, in vec4 q)
+        {
+            vec2 r = vec2(0.5, 0.5);
+            for (int dir = 0; dir < 2; ++dir)
+            {
+                vec4 borderPoint = vec4(1.0, 1.0, 0.5, 1.0);
+                borderPoint = _ip * borderPoint;
+                borderPoint /= borderPoint.w;
+
+                vec2 mm = vec2(borderPoint[dir], borderPoint.z);
+                vec2 p1 = vec2(abs(p[dir]), p.z);
+                vec2 p2 = vec2(abs(q[dir]), q.z);
+                vec2 D = normalize(mm);
+                vec2 d = normalize(p2 - p1);
+                
+                vec2 m;
+                if (abs(p1.y - p2.y) < 0.0001)
+                {
+                    m.y = p1.y;
+                    m.x = m.y / D.y * D.x;
+                }
+                else
+                {
+                    m.y = (-p1.y * d.x / d.y + p1.x) / (D.x / D.y - d.x / d.y);
+                    m.x = m.y / D.y * D.x;
+                }
+                r[dir] = length(m - p1) / length(p2 - p1);
+            }
+
+            return r;
+        }
 
         void main(void)
         {
             vec4 projectedVertices[3];
             bvec3 side; // true = inside, false = outside
             vec2 distToBoundary[3];
+            vec4 pointsCameraBase[3];
             int cutCase = 0;
             for (int i = 0; i < 3; ++i)
             {
-                vec2 dist;
+                vec2 distToCenter;
                 projectedVertices[i] = geom_in[i].vertex;
-                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, dist);
+                bool isVisible = projectAndCheckVisibility(projectedVertices[i], _mvp, 0.0, distToCenter);
                 side[i] = isVisible;
-                distToBoundary[i] = dist - vec2(1.0);
+                distToBoundary[i] = distToCenter - vec2(1.0);
+                pointsCameraBase[i] = pointToCameraBase(geom_in[i].vertex);
                 if (side[i])
                     cutCase += 1 << i;
             }
@@ -555,10 +642,10 @@ struct ShaderSources
             // ... if not
             else
             {
-                vec4 vertices[5];
-                vec2 texcoords[5];
-                vec4 normals[5];
-                vec4 annexes[5];
+                vec4 vertices[6];
+                vec2 texcoords[6];
+                vec4 normals[6];
+                vec4 annexes[6];
                 for (int i = 0; i < 3; ++i)
                 {
                     vertices[i] = geom_in[i].vertex;
@@ -574,10 +661,9 @@ struct ShaderSources
                     int nextId = (i + 1) % 3;
                     if (side[i] != side[nextId])
                     {
-                        float ratios[2];
-                        ratios[0] = abs(distToBoundary[i].x) / (abs(distToBoundary[i].x) + abs(distToBoundary[nextId].x));
-                        ratios[1] = abs(distToBoundary[i].y) / (abs(distToBoundary[i].y) + abs(distToBoundary[nextId].y));
-                        
+                        // We first need to find the ratio in projected space, to find the cut direction
+                        vec2 ratios = computeRatios(pointsCameraBase[i], pointsCameraBase[nextId]);
+
                         vec2 signs[2];
                         signs[0] = sign(distToBoundary[i]);
                         signs[1] = sign(distToBoundary[nextId]);
@@ -592,11 +678,11 @@ struct ShaderSources
                         // Second edge case: a point is above the horizontal edges
                         else
                             ratio = ratios[1];
-                        
+
+                        i = i % 3;
                         vertices[nextVertex] = mix(vertices[i], vertices[nextId], ratio);
                         texcoords[nextVertex] = mix(texcoords[i], texcoords[nextId], ratio);
                         normals[nextVertex] = mix(normals[i], normals[nextId], ratio);
-                        annexes[nextVertex] = mix(annexes[i], annexes[nextId], ratio);
                         nextVertex++;
                     }
                 }
@@ -611,7 +697,6 @@ struct ShaderSources
                         geom_out.vertex = vertices[currentIndex];
                         geom_out.texcoord = texcoords[currentIndex];
                         geom_out.normal = normals[currentIndex];
-                        geom_out.annexe = annexes[currentIndex];
                         EmitVertex();
                     }
 
@@ -638,7 +723,6 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
@@ -651,7 +735,7 @@ struct ShaderSources
 
         void main(void)
         {
-            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = vec4(_vertex.xyz, 1.0);
             vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
@@ -846,7 +930,6 @@ struct ShaderSources
 
         uniform mat4 _modelViewProjectionMatrix;
         uniform mat4 _normalMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
 
         out VertexData
@@ -860,7 +943,7 @@ struct ShaderSources
 
         void main(void)
         {
-            vertexOut.position = vec4(_vertex.xyz * _scale, 1.0);
+            vertexOut.position = vec4(_vertex.xyz, 1.0);
             vertexOut.position = _modelViewProjectionMatrix * vertexOut.position;
             gl_Position = vertexOut.position;
             vertexOut.normal = normalize(_normalMatrix * _normal);
@@ -1076,7 +1159,9 @@ struct ShaderSources
         void main(void)
         {
             int index = int(round(vertexIn.annexe.w));
-            fragColor = vec4(float(index / 65536) / 255.0, float(index / 256) / 255.0, float(index % 256) / 255.0, 1.0);
+            ivec2 components = ivec2(index) / ivec2(65025, 255);
+            components.y -= components.x * 255;
+            fragColor = vec4(float(components.x) / 255.0, float(components.y) / 255.0, float(index % 255) / 255.0, 1.0);
         }
     )"};
 
@@ -1106,7 +1191,6 @@ struct ShaderSources
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
-        uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
 
         in VertexData
         {
@@ -1123,21 +1207,21 @@ struct ShaderSources
 
         void main()
         {
-            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz * _scale.xyz, 1.0);
+            vec4 v = _modelViewProjectionMatrix * vec4(vertexIn[0].vertex.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[0].texcoord;
             vertexOut.bcoord = vec3(1.0, 0.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz * _scale.xyz, 1.0);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[1].vertex.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[1].texcoord;
             vertexOut.bcoord = vec3(0.0, 1.0, 0.0);
             vertexOut.position = v;
             EmitVertex();
 
-            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz * _scale.xyz, 1.0);
+            v = _modelViewProjectionMatrix * vec4(vertexIn[2].vertex.xyz, 1.0);
             gl_Position = v;
             vertexOut.texcoord = vertexIn[2].texcoord;
             vertexOut.bcoord = vec3(0.0, 0.0, 1.0);
@@ -1268,12 +1352,10 @@ struct ShaderSources
         layout(location = 1) in vec2 _texcoord;
         //layout(location = 2) in vec3 _normal;
         //uniform mat4 _modelViewProjectionMatrix;
-        //uniform vec3 _scale = vec3(1.0, 1.0, 1.0);
         out vec2 texCoord;
 
         void main(void)
         {
-            //gl_Position = _modelViewProjectionMatrix * vec4(_vertex.x * _scale.x, _vertex.y * _scale.y, _vertex.z * _scale.z, 1.0);
             gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
             texCoord = _texcoord;
         }

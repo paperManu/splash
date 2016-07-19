@@ -134,7 +134,6 @@ void Object::activate()
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
-    _shader->setAttribute("uniform", {"_scale", _scale.x, _scale.y, _scale.z});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
 
     if (_geometries.size() > 0)
@@ -174,7 +173,8 @@ glm::dmat4 Object::computeModelMatrix() const
         return glm::translate(glm::dmat4(1.f), _position)
              * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0))
              * glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0))
-             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0));
+             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0))
+             * glm::scale(glm::dmat4(1.f), _scale);
 }
 
 /*************/
@@ -230,6 +230,15 @@ void Object::draw()
 
     _shader->updateUniforms();
     glDrawArrays(GL_TRIANGLES, 0, _geometries[0]->getVerticesNumber());
+}
+
+/*************/
+int Object::getVerticesNumber() const
+{
+    int nbr = 0;
+    for (auto& g : _geometries)
+        nbr += g->getVerticesNumber();
+    return nbr;
 }
 
 /*************/
@@ -416,26 +425,51 @@ void Object::resetBlendingMap()
 }
 
 /*************/
-void Object::resetVisibility()
+void Object::resetVisibility(int primitiveIdShift)
 {
     lock_guard<mutex> lock(_mutex);
 
-    if (!_computeShaderResetBlending)
+    if (!_computeShaderResetVisibility)
     {
-        _computeShaderResetBlending = make_shared<Shader>(Shader::prgCompute);
-        _computeShaderResetBlending->setAttribute("computePhase", {"resetVisibility"});
+        _computeShaderResetVisibility = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetVisibility->setAttribute("computePhase", {"resetVisibility"});
     }
 
-    if (_computeShaderResetBlending)
+    if (_computeShaderResetVisibility)
     {
         for (auto& geom : _geometries)
         {
             geom->update();
             geom->activateAsSharedBuffer();
             auto verticesNbr = geom->getVerticesNumber();
-            _computeShaderResetBlending->setAttribute("uniform", {"_vertexNbr", verticesNbr});
-            unsigned int groupCountX = verticesNbr / 3 / 128;
-            _computeShaderResetBlending->doCompute(groupCountX, 128);
+            _computeShaderResetVisibility->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderResetVisibility->setAttribute("uniform", {"_primitiveIdShift", primitiveIdShift});
+            _computeShaderResetVisibility->doCompute(verticesNbr / 3 / 128 + 1);
+            geom->deactivate();
+        }
+    }
+}
+
+/*************/
+void Object::resetBlendingAttribute()
+{
+    lock_guard<mutex> lock(_mutex);
+
+    if (!_computeShaderResetBlendingAttributes)
+    {
+        _computeShaderResetBlendingAttributes = make_shared<Shader>(Shader::prgCompute);
+        _computeShaderResetBlendingAttributes->setAttribute("computePhase", {"resetBlending"});
+    }
+
+    if (_computeShaderResetBlendingAttributes)
+    {
+        for (auto& geom : _geometries)
+        {
+            geom->update();
+            geom->activateAsSharedBuffer();
+            auto verticesNbr = geom->getVerticesNumber();
+            _computeShaderResetBlendingAttributes->setAttribute("uniform", {"_vertexNbr", verticesNbr});
+            _computeShaderResetBlendingAttributes->doCompute(verticesNbr / 3 / 128 + 1);
             geom->deactivate();
         }
     }
@@ -453,7 +487,7 @@ void Object::resetTessellation()
 }
 
 /*************/
-void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision)
+void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision)
 {
     lock_guard<mutex> lock(_mutex);
 
@@ -479,10 +513,19 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendWidth", blendWidth});
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_blendPrecision", blendPrecision});
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_sideness", _sideness});
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_fov", fovX, fovY});
+
+                auto mv = viewMatrix * computeModelMatrix();
+                auto mvAsValues = Values(glm::value_ptr(mv), glm::value_ptr(mv) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mv", mvAsValues});
 
                 auto mvp = projectionMatrix * viewMatrix * computeModelMatrix();
                 auto mvpAsValues = Values(glm::value_ptr(mvp), glm::value_ptr(mvp) + 16);
                 _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_mvp", mvpAsValues});
+
+                auto ip = glm::inverse(projectionMatrix);
+                auto ipAsValues = Values(glm::value_ptr(ip), glm::value_ptr(ip) + 16);
+                _feedbackShaderSubdivideCamera->setAttribute("uniform", {"_ip", ipAsValues});
 
                 auto mNormal = projectionMatrix * glm::transpose(glm::inverse(viewMatrix * computeModelMatrix()));
                 auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
@@ -495,6 +538,8 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 
                 geom->deactivateFeedback();
                 geom->deactivate();
+
+                glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
             } while (geom->hasBeenResized());
 
             geom->swapBuffers();
@@ -504,7 +549,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
 }
 
 /*************/
-void Object::transferVisibilityFromTexToAttr(int width, int height)
+void Object::transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift)
 {
     lock_guard<mutex> lock(_mutex);
 
@@ -519,20 +564,22 @@ void Object::transferVisibilityFromTexToAttr(int width, int height)
         geom->update();
         geom->activateAsSharedBuffer();
         _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_texSize", (float)width, (float)height});
+        _computeShaderTransferVisibilityToAttr->setAttribute("uniform", {"_idShift", primitiveIdShift});
         _computeShaderTransferVisibilityToAttr->doCompute(width / 32 + 1, height / 32 + 1);
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
         geom->deactivate();
     }
 }
 
 /*************/
-void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
+void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth)
 {
     lock_guard<mutex> lock(_mutex);
 
     if (!_computeShaderComputeBlending)
     {
         _computeShaderComputeBlending = make_shared<Shader>(Shader::prgCompute);
-        _computeShaderComputeBlending->setAttribute("computePhase", {"computeVisibility"});
+        _computeShaderComputeBlending->setAttribute("computePhase", {"computeCameraContribution"});
     }
 
     if (_computeShaderComputeBlending)
@@ -556,9 +603,11 @@ void Object::computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatri
             auto mNormalAsValues = Values(glm::value_ptr(mNormal), glm::value_ptr(mNormal) + 16);
             _computeShaderComputeBlending->setAttribute("uniform", {"_mNormal", mNormalAsValues});
 
-            unsigned int groupCountX = verticesNbr / 3 / (32 * 32) + 1;
-            _computeShaderComputeBlending->doCompute(groupCountX, 32);
+            _computeShaderComputeBlending->doCompute(verticesNbr / 3);
+
             geom->deactivate();
+
+            glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
         }
     }
 }
