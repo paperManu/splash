@@ -1,8 +1,3 @@
-<head>
-    <meta charset=utf-8>
-    <link href="data/github.css" rel="stylesheet">
-</head>
-
 Splash, a multi-projector video-mapping software
 ================================================
 

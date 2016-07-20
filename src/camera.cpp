@@ -1,16 +1,4 @@
-#include "camera.h"
-
-#include "cgUtils.h"
-#include "image.h"
-#include "log.h"
-#include "mesh.h"
-#include "object.h"
-#include "scene.h"
-#include "shader.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "timer.h"
-#include "threadpool.h"
+#include "./camera.h"
 
 #include <fstream>
 #include <limits>
@@ -22,6 +10,18 @@
 #include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtx/simd_vec4.hpp>
 #include <glm/gtx/vector_angle.hpp>
+
+#include "./cgUtils.h"
+#include "./image.h"
+#include "./log.h"
+#include "./mesh.h"
+#include "./object.h"
+#include "./scene.h"
+#include "./shader.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./timer.h"
+#include "./threadpool.h"
 
 #define SCISSOR_WIDTH 8
 #define WORLDMARKER_SCALE 0.0003

@@ -48,42 +48,73 @@ class Link
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
+         * \param name Name of the link
          */
         Link(std::weak_ptr<RootObject> root, std::string name);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Link();
 
         /**
-         * Connect to a pair given its name, or a shared_ptr
+         * \brief Connect to a pair given its name
+         * \param name Peer name
          */
         void connectTo(const std::string& name);
+
+        /**
+         * \brief Connect to a pair given its name and a shared_ptr, useful when the peer is an object of _root
+         * \param name Peer name
+         * \param peer Pointer to an inner peer
+         */
         void connectTo(const std::string& name, const std::weak_ptr<RootObject>& peer);
 
         /**
-         * Disconnect from a pair given its name
+         * \brief Disconnect from a pair given its name
+         * \param name Peer name
          */
         void disconnectFrom(const std::string& name);
 
         /**
-         * Send a buffer to the connected pairs
+         * \brief Send a buffer to the connected peers
+         * \param name Buffer name
+         * \param buffer Serialized buffer
          */
         bool sendBuffer(const std::string& name, std::shared_ptr<SerializedObject> buffer);
+
+        /**
+         * \brief Send a buffer to the connected peers
+         * \param name Buffer name
+         * \param object Object to get a serialized version from
+         */
         bool sendBuffer(const std::string& name, const std::shared_ptr<BufferObject>& object);
 
         /**
-         * Send a message to connected pairs
-         * The second one converts known base types to vector<Value> before sending
+         * \brief Send a message to connected peers
+         * \param name Destination object name
+         * \param attribute Attribute
+         * \param message Message
+         * \return Return true if all went well
          */
         bool sendMessage(const std::string& name, const std::string& attribute, const Values& message);
+
+        /**
+         * \brief Send a message to connected peers. Converts known base types to vector<Value> before sending.
+         * \param name Destination object name
+         * \param attribute Attribute
+         * \param message Message
+         * \return Return true if all went well
+         */
         template <typename T>
         bool sendMessage(const std::string& name, const std::string& attribute, const std::vector<T>& message);
 
         /**
-         * Check that all buffers were sent to the client
+         * \brief Check that all buffers were sent to the client
+         * \param maximumWait Maximum waiting time
+         * \return Return true if all went well
          */
         bool waitForBufferSending(std::chrono::milliseconds maximumWait);
 
@@ -113,17 +144,19 @@ class Link
         std::thread _messageInThread;
 
         /**
-         * Callback to remove the shared_ptr to a sent buffer
+         * \brief Callback to remove the shared_ptr to a sent buffer
+         * \param data Pointer to sent data
+         * \param hint Pointer to the Link
          */
         static void freeOlderBuffer(void* data, void* hint);
 
         /**
-         * Message input thread function
+         * \brief Message input thread function
          */
         void handleInputMessages();
 
         /**
-         * Buffer input thread function
+         * \brief Buffer input thread function
          */
         void handleInputBuffers();
 };

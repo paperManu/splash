@@ -12,12 +12,6 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Texture::Texture()
-{
-    init();
-}
-
-/*************/
 Texture::Texture(std::weak_ptr<RootObject> root)
         : BaseObject(root)
 {

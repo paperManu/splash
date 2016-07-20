@@ -54,13 +54,13 @@ class Image_FFmpeg : public Image
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Image_FFmpeg();
         Image_FFmpeg(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Image_FFmpeg();
 
@@ -71,7 +71,9 @@ class Image_FFmpeg : public Image
         Image_FFmpeg& operator=(const Image_FFmpeg&) = delete;
 
         /**
-         * Set the path to read from
+         * \brief Set the path to read from
+         * \param filename File to read
+         * \bool Return true if all went well
          */
         bool read(const std::string& filename);
 
@@ -117,37 +119,40 @@ class Image_FFmpeg : public Image
 #endif
 
         /**
-         * Convert a codec tag to a fourcc
+         * \brief Convert a codec tag to a fourcc
+         * \param tag Tag to convert
+         * \return Return the tag as a string
          */
         std::string tagToFourCC(unsigned int tag);
 
         /**
-         * Free everything related to FFmpeg
+         * \brief Free everything related to FFmpeg
          */
         void freeFFmpegObjects();
 
         /**
-         * Base init for the class
+         * \brief Base init for the class
          */
         void init();
 
         /**
-         * File read loop
+         * \brief File read loop
          */
         void readLoop();
 
         /**
-         * Seek in the video
+         * \brief Seek in the video
+         * \param seconds Desired position
          */
         void seek(float seconds);
 
         /**
-         * Video display loop
+         * \brief Video display loop
          */
         void videoDisplayLoop();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

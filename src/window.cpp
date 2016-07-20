@@ -1,17 +1,17 @@
-#include "window.h"
+#include "./window.h"
 
-#include "camera.h"
-#include "controller_gui.h"
-#include "geometry.h"
-#include "image.h"
-#include "log.h"
-#include "object.h"
-#include "scene.h"
-#include "shader.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "timer.h"
-#include "warp.h"
+#include "./camera.h"
+#include "./controller_gui.h"
+#include "./geometry.h"
+#include "./image.h"
+#include "./log.h"
+#include "./object.h"
+#include "./scene.h"
+#include "./shader.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./timer.h"
+#include "./warp.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
@@ -111,14 +111,6 @@ int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
     _chars.pop_front();
 
     return _chars.size() + 1;
-}
-
-/*************/
-bool Window::getKey(int key)
-{
-    if (glfwGetKey(_window->get(), key) == GLFW_PRESS)
-        return true;
-    return false;
 }
 
 /*************/

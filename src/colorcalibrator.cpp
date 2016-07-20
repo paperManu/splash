@@ -54,7 +54,7 @@ ColorCalibrator::~ColorCalibrator()
 void ColorCalibrator::update()
 {
     // Initialize camera
-    _gcamera = make_shared<Image_GPhoto>("");
+    _gcamera = make_shared<Image_GPhoto>(_root, "");
     // Prepare for freeing the camera when leaving scope
     OnScopeExit{_gcamera.reset();};
 
@@ -312,7 +312,7 @@ void ColorCalibrator::update()
 void ColorCalibrator::updateCRF()
 {
     // Initialize camera
-    _gcamera = make_shared<Image_GPhoto>("");
+    _gcamera = make_shared<Image_GPhoto>(_root, "");
 
     // Check whether the camera is ready
     Values status;

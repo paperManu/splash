@@ -10,13 +10,7 @@ using namespace glm;
 namespace Splash {
 
 /*************/
-Geometry::Geometry()
-{
-    init();
-}
-
-/*************/
-Geometry::Geometry(std::weak_ptr<RootObject> root)
+Geometry::Geometry(weak_ptr<RootObject> root)
     : BufferObject(root)
 {
     init();

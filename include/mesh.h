@@ -42,13 +42,13 @@ class Mesh : public BufferObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Mesh();
         Mesh(std::weak_ptr<RootObject> root); 
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         virtual ~Mesh();
 
@@ -60,47 +60,58 @@ class Mesh : public BufferObject
         Mesh& operator=(Mesh&&) = default;
 
         /**
-         * Compare meshes based on their timestamps
+         * \brief Compare meshes based on their timestamps
+         * \param otherMesh Mesh to compare to
+         * \return Return true if the meshes share the same timestamp
          */
         bool operator==(Mesh& otherMesh) const;
 
         /**
-         * Get a 1D vector of all points in the mesh, in normalized coordinates
+         * \brief Get a 1D vector of all points of the mesh, in normalized coordinates
+         * \return Return a vector representing all points of the mesh
          */
         virtual std::vector<float> getVertCoords() const;
 
         /**
-         * Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
+         * \brief Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
+         * \return Return a vector representing the UV coordinates
          */
         virtual std::vector<float> getUVCoords() const;
 
         /**
-         * Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
+         * \brief Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
+         * \return Return a vector representing the normals
          */
         virtual std::vector<float> getNormals() const;
 
         /**
-         * Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
+         * \brief Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
+         * \return Return a vector representing the annexes
          */
         virtual std::vector<float> getAnnexe() const;
 
         /**
-         * Read / update the mesh
+         * \brief Read / update the mesh
+         * \param filename File to load from
+         * \return Return true if all went well
          */
         virtual bool read(const std::string& filename);
 
         /**
-         * Get a serialized representation of the mesh
+         * \brief Get a serialized representation of the mesh
+         * \return Return a serialized object
          */
         std::shared_ptr<SerializedObject> serialize() const;
 
         /**
-         * Set the mesh from a serialized representation
+         * \brief Set the mesh from a serialized representation
+         * \param obj Serialized object
+         * \return Return true if all went well
          */
         bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
         /**
-         * Update the content of the mesh
+         * \brief Update the content of the mesh
          */
         virtual void update();
 
@@ -126,12 +137,13 @@ class Mesh : public BufferObject
         void init();
 
         /**
-         * Create a plane mesh, subdivided according to the parameter
+         * \brief Create a plane mesh, subdivided according to the parameter
+         * \param subdiv Number of subdivision for the plane
          */
         void createDefaultMesh(int subdiv = 8);
         
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

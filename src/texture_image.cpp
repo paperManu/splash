@@ -14,13 +14,6 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Texture_Image::Texture_Image()
-    : Texture()
-{
-    init();
-}
-
-/*************/
 Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
     : Texture(root)
 {
@@ -90,7 +83,7 @@ bool Texture_Image::linkTo(std::shared_ptr<BaseObject> obj)
 /*************/
 shared_ptr<Image> Texture_Image::read()
 {
-    auto img = make_shared<Image>(_spec);
+    auto img = make_shared<Image>(_root, _spec);
     glBindTexture(GL_TEXTURE_2D, _glTex);
     glGetTexImage(GL_TEXTURE_2D, 0, _texFormat, _texType, (GLvoid*)img->data());
     glBindTexture(GL_TEXTURE_2D, 0);

@@ -47,7 +47,6 @@ class Image_OpenCV : public Image
         /**
          * Constructor
          */
-        Image_OpenCV();
         Image_OpenCV(std::weak_ptr<RootObject> root);
 
         /**

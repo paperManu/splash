@@ -43,13 +43,13 @@ class Mesh_BezierPatch : public Mesh
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Mesh_BezierPatch();
         Mesh_BezierPatch(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         virtual ~Mesh_BezierPatch();
 
@@ -61,17 +61,19 @@ class Mesh_BezierPatch : public Mesh
         Mesh_BezierPatch& operator=(Mesh_BezierPatch&&) = default;
 
         /**
-         * Get the list of the control points
+         * \brief Get the list of the control points
+         * \return Returns the list
          */
         std::vector<glm::vec2> getControlPoints() const {return _patch.vertices;}
 
         /**
-         * Select the bezier mesh or the control points as the mesh to output
+         * \brief Select the bezier mesh or the control points as the mesh to output
+         * \param control If true, selects the control points
          */
         void switchMeshes(bool control);
 
         /**
-         * Update the content of the mesh
+         * \brief Update the content of the mesh
          */
         virtual void update();
 
@@ -117,21 +119,27 @@ class Mesh_BezierPatch : public Mesh
             return factorial(n, i) / factorial(i);
         }
 
+        /**
+         * \brief Initialization
+         */
         void init();
 
         /**
-         * Create a patch
+         * \brief Create a patch
+         * \param width Horizontal control point count
+         * \param height Vertical control point count
+         * \param patch Patch description
          */
         void createPatch(int width = 4, int height = 4);
         void createPatch(Patch& patch);
 
         /**
-         * Update the underlying mesh from the patch control points
+         * \brief Update the underlying mesh from the patch control points
          */
         void updatePatch();
         
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

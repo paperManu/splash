@@ -42,13 +42,13 @@ class Texture_Syphon : public Texture
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Texture_Syphon();
         Texture_Syphon(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Texture_Syphon();
 
@@ -59,29 +59,35 @@ class Texture_Syphon : public Texture
         Texture_Syphon& operator=(const Texture_Syphon&) = delete;
 
         /**
-         * Bind / unbind this texture
+         * \brief Bind this texture
          */
         void bind();
+
+        /**
+         * \brief Unbind this texture
+         */
         void unbind();
 
         /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
+         * \brief Get the shader parameters related to this texture. Texture should be locked first.
+         * \return Return the shader uniforms
          */
         std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
 
         /**
-         * Get spec of the texture
+         * \brief Get spec of the texture
+         * \return Return the texture spec
          */
         ImageBufferSpec getSpec() const {return ImageBufferSpec();}
 
         /**
-         * Try to link the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Update the texture according to the owned Image
+         * \brief Update the texture according to the owned Image
          */
         void update() {};
 
@@ -96,12 +102,12 @@ class Texture_Syphon : public Texture
         std::unordered_map<std::string, Values> _shaderUniforms;
 
         /**
-         * Initialization
+         * \brief Initialization
          */
         void init();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

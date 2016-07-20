@@ -13,20 +13,8 @@ namespace Splash
 {
 
 /*************/
-Image_GPhoto::Image_GPhoto()
-{
-    init();
-}
-
-/*************/
-Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root)
+Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root, std::string cameraName)
     : Image(root)
-{
-    init();
-}
-
-/*************/
-Image_GPhoto::Image_GPhoto(std::string cameraName)
 {
     init();
     read(cameraName);

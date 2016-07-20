@@ -42,13 +42,13 @@ class Texture : public BaseObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Texture();
         Texture(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         virtual ~Texture();
 
@@ -59,49 +59,56 @@ class Texture : public BaseObject
         Texture& operator=(const Texture&) = delete;
 
         /**
-         * Bind / unbind this texture
+         * \brief Bind this texture
          */
         virtual void bind() = 0;
+
+        /**
+         * \brief Unbind this texture
+         */
         virtual void unbind() = 0;
 
         /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
+         * \brief Get the shader parameters related to this texture. Texture should be locked first.
+         * \return Return the shader uniforms
          */
         virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;
 
         /**
-         * Get spec of the texture
+         * \brief Get spec of the texture
+         * \return Return the texture spec
          */
         virtual ImageBufferSpec getSpec() const = 0;
 
         /**
-         * Get the prefix for the glsl sampler name
+         * \brief Get the prefix for the glsl sampler name
          */
         virtual std::string getPrefix() const {return "_tex";}
 
         /**
-         * Try to link the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         virtual bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Lock the texture for read / write operations
+         * \brief Lock the texture for read / write operations
          */
         void lock() const {_mutex.lock();}
 
         /**
-         * Unlock the texture for read / write operations
+         * \brief Unlock the texture for read / write operations
          */
         void unlock() const {_mutex.unlock();}
 
         /**
-         * Set whether the texture should be resizable
+         * \brief Set whether the texture should be resizable
+         * \param resizable If true, the texture is resizable
          */
         void setResizable(bool resizable) {_resizable = resizable;}
 
         /**
-         * Update the texture according to the owned Image
+         * \brief Update the texture according to the owned Image
          */
         virtual void update() = 0;
 
@@ -116,12 +123,12 @@ class Texture : public BaseObject
 
     private:
         /**
-         * As says its name
+         * \brief As says its name
          */
         void init();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

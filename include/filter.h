@@ -46,12 +46,13 @@ class Filter : public Texture
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
         Filter(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Filter();
 
@@ -63,9 +64,13 @@ class Filter : public Texture
         Filter& operator=(const Filter&) = delete;
 
         /**
-         * Bind / unbind this texture of this filter
+         * \brief Bind the texture of this filter
          */
         void bind();
+
+        /**
+         * \brief Unbind the texture of this filter
+         */
         void unbind();
 
         /**
@@ -75,23 +80,31 @@ class Filter : public Texture
         std::unordered_map<std::string, Values> getShaderUniforms() const;
 
         /**
-         * Get spec of the texture
+         * \brief Get specs of the texture
+         * \return Return the texture specs
          */
         ImageBufferSpec getSpec() const {return _outTextureSpec;}
 
         /**
-         * Try to link / unlink the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * \brief Try to unlink the given BaseObject from this object
+         * \param obj Shared pointer to the (supposed) child object
+         */
         void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Filters should always be saved as it holds user-modifiable parameters
+         * \brief Filters should always be saved as it holds user-modifiable parameters
+         * \param savable Needed for heritage reasons, no effect whatsoever
          */
         void setSavable(bool savable) {_savable = true;}
 
         /**
-         * Update the texture according to the owned Image
+         * \brief Update the texture according to the owned Image
          */
         void update();
 
@@ -118,28 +131,27 @@ class Filter : public Texture
         glm::vec2 _colorBalance {1.f, 1.f};
 
         /**
-         * Init function called in constructors
+         * \brief Init function called in constructors
          */
         void init();
 
         /**
-         * Setup the output texture
+         * \brief Setup the output texture
          */
         void setOutput();
 
         /**
-         * Update the color depth for all textures
+         * \brief Update the color depth for all textures
          */
         void updateColorDepth();
 
         /**
-         * Updates the shader uniforms according to the textures and images
-         * the filter is connected to.
+         * \brief Updates the shader uniforms according to the textures and images the filter is connected to.
          */
         void updateUniforms();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

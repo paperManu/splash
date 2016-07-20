@@ -82,12 +82,13 @@ class Shader : public BaseObject
         };
 
         /**
-         * Constructor
+         * \brief Constructor
+         * \param type Shader type
          */
         Shader(ProgramType type = prgGraphic);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Shader();
 
@@ -98,48 +99,65 @@ class Shader : public BaseObject
         Shader& operator=(const Shader&) = delete;
 
         /**
-         * Activate this shader
+         * \brief Activate this shader
          */
         void activate();
 
         /**
-         * Deactivate this shader
+         * \brief Deactivate this shader
          */
         void deactivate();
 
         /**
-         * Launch the compute shader, if present
+         * \brief Launch the compute shader, if present
+         * \param numGroupsX Compute group count along X
+         * \param numGroupsY Compute group count along Y
          */
         void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
         /**
-         * Set the sideness of the object
+         * \brief Set the sideness of the object
+         * \param side Sideness
          */
         void setSideness(const Sideness side);
+
+        /**
+         * \brief Get the sideness of the object
+         * \return Return the sideness
+         */
         Sideness getSideness() const {return _sideness;}
 
         /**
-         * Set a shader source
+         * \brief Set a shader source
+         * \param src Shader string
+         * \param type Shader type
          */
         void setSource(std::string src, const ShaderType type);
 
         /**
-         * Set a shader source from file
+         * \brief Set a shader source from file
+         * \param filename Shader file
+         * \param type Shader type
          */
         void setSourceFromFile(const std::string filename, const ShaderType type);
 
         /**
-         * Add a new texture to use
+         * \brief Add a new texture to use
+         * \param texture Texture
+         * \param textureUnit GL texture unit
+         * \param name Texture name
          */
         void setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name);
 
         /**
-         * Set the model view and projection matrices
+         * \brief Set the model view and projection matrices
+         * \param mv View matrix
+         * \param mp Projection matrix
          */
         void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
         /**
-         * Set the currently queued uniforms updates
+         * \brief Set the currently queued uniforms updates
          */
         void updateUniforms();
 
@@ -173,37 +191,41 @@ class Shader : public BaseObject
         std::vector<int> _layout {0, 0, 0, 0};
 
         /**
-         * Compile the shader program
+         * \brief Compile the shader program
          */
         void compileProgram();
 
         /**
-         * Link the shader program
+         * \brief Link the shader program
          */
         bool linkProgram();
 
         /**
-         * Parses the shader to replace includes by the corresponding sources
+         * \brief Parses the shader to replace includes by the corresponding sources
+         * \param src Shader source
          */
         void parseIncludes(std::string& src);
 
         /**
-         * Parses the shader to find uniforms
+         * \brief Parses the shader to find uniforms
          */
         void parseUniforms(const std::string& src);
 
         /**
-         * Get a string expression of the shader type, used for logging
+         * \brief Get a string expression of the shader type, used for logging
+         * \param type Shader type
+         * \return Return the shader type as a string
          */
         std::string stringFromShaderType(int type);
 
         /**
-         * Replace a shader with an empty one
+         * \brief Replace a shader with an empty one
+         * \param type Shader type
          */
         void resetShader(ShaderType type);
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
         void registerGraphicAttributes();

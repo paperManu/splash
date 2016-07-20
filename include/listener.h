@@ -54,17 +54,17 @@ class Listener : public BaseObject
         };
         
         /**
-         * Constructor
+         * \brief Constructor
          */
         Listener();
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Listener();
 
         /**
-         * Safe bool idiom
+         * \brief Safe bool idiom
          */
         explicit operator bool() const
         {
@@ -78,14 +78,14 @@ class Listener : public BaseObject
         Listener& operator=(const Listener&) = delete;
 
         /**
-         * Add a buffer to the playing queue
-         * Returns false if there was an error
+         * \brief Add a buffer to the playing queue
+         * \return Return false if there was an error
          */
         template<typename T>
         bool readFromQueue(std::vector<T>& buffer);
 
         /**
-         * Set the audio parameters
+         * \brief Set the audio parameters
          */
         void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const std::string& deviceName = "");
 
@@ -108,22 +108,22 @@ class Listener : public BaseObject
         std::atomic_int _ringUnusedSpace {0};
 
         /**
-         * Free all PortAudio resources
+         * \brief Free all PortAudio resources
          */
         void freeResources();
 
         /**
-         * Initialize PortAudio resources
+         * \brief Initialize PortAudio resources
          */
         void initResources();
 
         /**
-         * PortAudio callback
+         * \brief PortAudio callback
          */
         static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

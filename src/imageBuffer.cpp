@@ -113,34 +113,6 @@ ImageBuffer::ImageBuffer(const ImageBufferSpec& spec)
 }
 
 /*************/
-ImageBuffer::ImageBuffer(unsigned int width, unsigned int height, unsigned int channels, ImageBufferSpec::Type type)
-{
-    auto spec = ImageBufferSpec();
-    spec.width = width;
-    spec.height = height;
-    spec.channels = channels;
-    spec.type = type;
-    
-    switch (channels)
-    {
-    case 1:
-        spec.format = {"R"};
-        break;
-    case 2:
-        spec.format = {"R", "G"};
-        break;
-    case 3:
-        spec.format = {"R", "G", "B"};
-        break;
-    case 4:
-        spec.format = {"R", "G", "B", "A"};
-        break;
-    }
-
-    init(spec);
-}
-
-/*************/
 ImageBuffer::~ImageBuffer()
 {
 }

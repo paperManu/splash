@@ -27,12 +27,6 @@ namespace Splash
 {
 
 /*************/
-Image_Shmdata::Image_Shmdata()
-{
-    init();
-}
-
-/*************/
 Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
     : Image(root)
 {

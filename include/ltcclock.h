@@ -56,11 +56,18 @@ class LtcClock : public BaseObject
             bool paused {false};
         };
 
+        /**
+         * \brief Constructor
+         */
         LtcClock(bool masterClock = false, const std::string& deviceName = "");
+
+        /**
+         * \brief Destructor
+         */
         ~LtcClock();
 
         /**
-         * Safe bool idiom
+         * \brief Safe bool idiom
          */
         explicit operator bool() const
         {
@@ -68,10 +75,14 @@ class LtcClock : public BaseObject
         }
 
         /**
-         * Get the clock as a Clock struct, or as values
-         * (from years to frame, starting with a bool set to true if clock is running)
+         * \brief Get the clock as a Clock struct
+         * \return Return a Clock struct
          */
         Clock getClock();
+
+        /**
+         * \brief Get the clock as as values (from years to frame, starting with a bool set to true if clock is running)
+         */
         void getClock(Values& clockValues);
 
     private:
@@ -88,7 +99,7 @@ class LtcClock : public BaseObject
         std::unique_ptr<Listener> _listener;
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

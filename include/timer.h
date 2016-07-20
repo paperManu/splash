@@ -44,7 +44,8 @@ class Timer
 {
     public:
         /**
-         * Get the singleton
+         * \brief Get the singleton
+         * \return Return the Timer singleton
          */
         static Timer& get()
         {
@@ -53,13 +54,20 @@ class Timer
         }
 
         /**
-         * Returns whether the timer is set to debug mode
+         * \brief Returns whether the timer is set to debug mode
+         * \return Return true if it is
          */
         bool isDebug() {return _isDebug;}
+
+        /**
+         * \brief Set the timer in debug mode
+         * \param d If true, set to debug mode
+         */
         void setDebug(bool d) {_isDebug = d;}
 
         /**
-         * Start / end a timer
+         * \brief Start a duration measurement
+         * \param name Duration name
          */
         void start(const std::string& name)
         {
@@ -74,6 +82,11 @@ class Timer
                 timeIt->second = currentTime;
         }
 
+
+        /**
+         * \brief End a duration measurement
+         * \param name Duration name
+         */
         void stop(const std::string& name)
         {
             if (!_enabled)
@@ -93,7 +106,10 @@ class Timer
         }
 
         /**
-         * Wait for the specified timer to reach a certain value, in us
+         * \brief Wait for the specified timer to reach a certain value, in us
+         * \param name Duration name
+         * \param duration Desired duration
+         * \return Return false if the timer does not exist
          */
         bool waitUntilDuration(const std::string& name, unsigned long long duration)
         {
@@ -132,7 +148,9 @@ class Timer
         }
         
         /**
-         * Get the last occurence of the specified duration
+         * \brief Get the last occurence of the specified duration
+         * \param name Duration name
+         * \return Return the duration in us
          */
         unsigned long long getDuration(const std::string& name) const
         {
@@ -143,7 +161,8 @@ class Timer
         }
         
         /**
-         * Get the whole time map
+         * \brief Get the whole duration map
+         * \return Return the whole duration map
          */
         const std::unordered_map<std::string, std::atomic_ullong>& getDurationMap() const
         {
@@ -151,7 +170,9 @@ class Timer
         }
         
         /**
-         * Set an element in the duration map. Used for transmitting timings between pairs
+         * \brief Set an element in the duration map. Used for transmitting timings between pairs
+         * \param name Duration name
+         * \param value Duration in us
          */
         void setDuration(const std::string& name, unsigned long long value)
         {
@@ -163,8 +184,9 @@ class Timer
         }
         
         /**
-         * Return the time since the last call with this name,
-         * or 0 if it is the first time
+         * \brief Return the duration since the last call with this name, or 0 if it is the first time.
+         * \param name Duration name
+         * \return Return the duration
          */
         unsigned long long sinceLastSeen(const std::string& name)
         {
@@ -221,12 +243,13 @@ class Timer
         unsigned long long operator[](const std::string& name) {return getDuration(name);}
         
         /**
-         * Enable / disable the timers
+         * \brief Enable / disable the timers
          */
         void setStatus(bool enabled) {_enabled = enabled;}
         
         /**
-         * Master clock related
+         * \brief Set the master clock time
+         * \param clock Master clock value
          */
         void setMasterClock(const Values& clock)
         {
@@ -237,6 +260,11 @@ class Timer
             }
         }
         
+        /**
+         * \brief Get the master clock time
+         * \param clock Master clock value
+         * \return Return true if the master clock is set
+         */
         bool getMasterClock(Values& clock) const
         {
             if (_clock.size() > 0)
@@ -251,6 +279,12 @@ class Timer
             }
         }
 
+        /**
+         * \brief Get the master clock time
+         * \param time Master clock time in us
+         * \param paused True if the clock is paused
+         * \return Return true if the master clock is set
+         */
         template <typename T>
         bool getMasterClock(int64_t& time, bool& paused) const
         {
@@ -274,7 +308,8 @@ class Timer
         }
 
         /**
-         * Get the current time in microseconds from epoch
+         * \brief Get the current time in us from epoch
+         * \return Return the duration since epoch
          */
         static inline int64_t getTime()
         {

@@ -22,12 +22,6 @@ namespace Splash
 {
 
 /*************/
-Image_FFmpeg::Image_FFmpeg()
-{
-    init();
-}
-
-/*************/
 Image_FFmpeg::Image_FFmpeg(weak_ptr<RootObject> root)
     : Image(root)
 {

@@ -63,12 +63,14 @@ class Gui : public ControllerObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param w Window to display the gui
+         * \param s Root scene
          */
         Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Gui();
 
@@ -79,55 +81,88 @@ class Gui : public ControllerObject
         Gui& operator=(const Gui&) = delete;
 
         /**
-         * Get pointers to this camera textures
+         * \brief Get pointers to this gui textures
+         * \return Return shared pointers to the rendered textures
          */
         std::shared_ptr<Texture> getTexture() const {return _outTexture;}
 
         /**
-         * Check wether it is initialized
+         * \brief Check wether it is initialized
+         * \return Return true if the gui is initialized
          */
         bool isInitialized() const {return _isInitialized;}
 
         /**
-         * Forward a unicode char event
+         * \brief Forward a unicode char event
+         * \param unicodeChar Unicode character to forward to the gui
          */
         void unicodeChar(unsigned int unicodeChar);
 
         /**
-         * Forward joystick state
+         * \brief Forward joystick state
+         * \param axes Axes state
+         * \param buttons Buttons state
          */
         void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
 
         /**
-         * Forward a key event
+         * \brief Forward a key event
+         * \param key Key code
+         * \param action Action to applied to the key
+         * \param mods Modifier keys
          */
         void key(int key, int action, int mods);
 
         /**
-         * Forward mouse events
+         * \brief Forward mouse position
+         * \param xpos X position
+         * \param ypos Y position
          */
         void mousePosition(int xpos, int ypos);
+
+        /**
+         * \brief Forward mouse buttons
+         * \param btn Button
+         * \param action Action applied to the button
+         * \param mods Key modifier
+         */
         void mouseButton(int btn, int action, int mods);
+
+        /**
+         * \brief Forward mouse scroll
+         * \param xoffset Scroll along X axis
+         * \param yoffset Scroll along Y axis
+         */
         void mouseScroll(double xoffset, double yoffset);
 
         /**
-         * Try to link / unlink the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * \brief Try to unlink the given BaseObject from this object
+         * \param obj Shared pointer to the (supposed) child object
+         */
         void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Render this camera into its textures
+         * \brief Render this gui
+         * \return Return true if all went well
          */
         bool render();
 
         /**
-         * Specify the configuration path (as loaded by World)
+         * \brief Specify the configuration path (as loaded by World)
+         * \param path Configuration path
          */
         void setConfigFilePath(const std::string& path) {_configurationPath = path.data();}
 
         /**
-         * Set the resolution of the GUI
+         * \brief Set the resolution of the gui
+         * \param width Width
+         * \param height Height
          */
         void setOutputSize(int width, int height);
 
@@ -168,26 +203,65 @@ class Gui : public ControllerObject
         bool _blendingActive {false};
 
         /**
-         * Initialize ImGui
+         * \brief Initialize ImGui
+         * \brief width Default width
+         * \brief height Default height
          */
         void initImGui(int width, int height);
+
+        /**
+         * \brief Initialize widgets
+         */
         void initImWidgets();
 
         /**
-         * ImGui render function
+         * \brief ImGui render function
+         * \param draw_data Data sent by ImGui for drawing
          */
         static void imGuiRenderDrawLists(ImDrawData* draw_data);
 
         /**
          * Actions
          */
+
+        /**
+         * \brief Activate the cameras lookup tables
+         */
         void activateLUT();
+
+        /**
+         * \brief Launch calibration of the camera response function
+         */
         void calibrateColorResponseFunction();
+
+        /**
+         * \brief Calibrate projectors colors
+         */
         void calibrateColors();
+
+        /**
+         * \brief Compute projectors blending
+         */
         void computeBlending(bool once = false);
+
+        /**
+         * \brief Make the background flash to light grey
+         */
         void flashBackground();
+
+        /**
+         * \brief Copy camera parameters from the specified configuration file to the current configuration
+         */
         void copyCameraParameters();
+
+        /**
+         * \brief Load the specified configuration
+         */
         void loadConfiguration();
+        
+        /**
+         * \brief Save the configuration to the specified file
+         */
         void saveConfiguration();
 
         /**

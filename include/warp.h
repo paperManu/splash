@@ -47,12 +47,13 @@ class Warp : public Texture
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
         Warp(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Warp();
 
@@ -64,46 +65,60 @@ class Warp : public Texture
         Warp& operator=(const Warp&) = delete;
 
         /**
-         * Bind / unbind this texture of this warp
+         * \brier Bind this texture of this warp
          */
         void bind();
+
+        /**
+         * \brier Unbind this texture of this warp
+         */
         void unbind();
 
         /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
+         * \brief Get the shader parameters related to this texture. Texture should be locked first.
+         * \return Return the shader uniforms
          */
         std::unordered_map<std::string, Values> getShaderUniforms() const;
 
         /**
-         * Get the rendered texture
+         * \brief Get the texture the warp is rendered to
+         * \return Return the rendered texture
          */
         std::shared_ptr<Texture_Image> getTexture() const {return _outTexture;}
 
         /**
-         * Get spec of the texture
+         * \brief Get spec of the texture
+         * \return Return the spec
          */
         ImageBufferSpec getSpec() const {return _outTextureSpec;}
 
         /**
-         * Try to link / unlink the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * \brief Try to unlink the given BaseObject from this object
+         * \param obj Shared pointer to the (supposed) child object
+         */
         void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Get the coordinates of the closest vertex to the given point
-         * Returns its index in the bezier patch
+         * \brief Get the coordinates of the closest vertex to the given point
+         * \param p Point around which to look
+         * \param v Closest vertex coordinates
+         * \return Return the index of the point
          */
         int pickControlPoint(glm::vec2 p, glm::vec2& v);
 
         /**
-         * Warps should always be saved as it hold user-modifiable parameters
+         * \brief Warps should always be saved as it hold user-modifiable parameters. This method has no effect.
          */
         void setSavable(bool savable) {_savable = true;}
 
         /**
-         * Update the texture according to the owned Image
+         * \brief Update the texture according to the owned Image
          */
         void update();
 
@@ -128,28 +143,27 @@ class Warp : public Texture
         int _selectedControlPointIndex {-1};
 
         /**
-         * Init function called in constructors
+         * \brief Init function called in constructors
          */
         void init();
 
         /**
-         * Load some defaults models
+         * \brief Load some defaults models
          */
         void loadDefaultModels();
 
         /**
-         * Setup the output texture
+         * \brief Setup the output texture
          */
         void setOutput();
 
         /**
-         * Updates the shader uniforms according to the textures and images
-         * the warp is connected to.
+         * \brief Updates the shader uniforms according to the textures and images the warp is connected to.
          */
         void updateUniforms();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

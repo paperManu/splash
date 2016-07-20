@@ -16,12 +16,6 @@ namespace Splash
 {
 
 /*************/
-Image_OpenCV::Image_OpenCV()
-{
-    init();
-}
-
-/*************/
 Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root)
     : Image(root)
 {

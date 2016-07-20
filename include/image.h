@@ -40,14 +40,20 @@ class Image : public BufferObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Image();
         Image(std::weak_ptr<RootObject> root);
-        Image(ImageBufferSpec spec);
 
         /**
-         * Destructor
+         * \brief Constructor
+         * \param root Root object
+         * \param spec Image specifications
+         */
+        Image(std::weak_ptr<RootObject> root, ImageBufferSpec spec);
+
+        /**
+         * \brief Destructor
          */
         virtual ~Image();
 
@@ -59,69 +65,89 @@ class Image : public BufferObject
         Image& operator=(Image&&) = default;
 
         /**
-         * Get a pointer to the data
+         * \brief Get a pointer to the data
+         * \return Return a pointer to the data
          */
         const void* data() const;
 
         /**
-         * Lock the image, useful while reading. Use with care
-         * Note that only write mutex is needed, as it also disables reading
+         * \brief Lock the image, useful while reading. Use with care Note that only write mutex is needed, as it also disables reading
          */
         void lock() {_writeMutex.lock();}
+
+        /**
+         * \brief Unlock the image
+         */
         void unlock() {_writeMutex.unlock();}
 
         /**
-         * Get the image buffer
+         * \brief Get the image buffer
+         * \return Return the image buffer
          */
         ImageBuffer get() const;
 
         /**
-         * Get the file path
+         * \brief Get the file path
+         * \return Return the file path
          */
         std::string getFilepath() const {return _filepath;}
 
         /**
-         * Get the image buffer specs
+         * \brief Get the image buffer specs
+         * \return Return the image buffer specs
          */
         ImageBufferSpec getSpec() const;
 
         /**
-         * Set the image from an ImageBuffer
+         * \brief Set the image from an ImageBuffer
+         * \param img Image buffer
          */
         void set(const ImageBuffer& img);
 
         /**
-         * Set the image as a empty with the given size / channels / typedesc
+         * \brief Set the image as a empty with the given size / channels / typedesc
+         * \param w Width
+         * \param h Height
+         * \param channels Channel count
+         * \param type Channel type
          */
         void set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type);
 
         /**
-         * Serialize the image
+         * \brief Serialize the image
+         * \return Return the serialized image
          */
         std::shared_ptr<SerializedObject> serialize() const;
 
         /**
-         * Update the Image from a serialized representation
+         * \brief Update the Image from a serialized representation
+         * \param obj Serialized image
+         * \return Return true if all went well
          */
         bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
         /**
-         * Set the path to read from
+         * \brief Set the path to read from
+         * \param filename File path
+         * \return Return true if all went well
          */
         virtual bool read(const std::string& filename);
 
         /**
-         * Set all pixels in the image to the specified value
+         * \brief Set all pixels in the image to the specified value
+         * \param value Value to set all channels to
          */
         void setTo(float value);
 
         /**
-         * Update the content of the image
+         * \brief Update the content of the image
          */
         virtual void update();
 
         /**
-         * Write the current buffer to the specified file
+         * \brief Write the current buffer to the specified file
+         * \param filename File path to write to
+         * \return Return true if all went well
          */
         bool write(const std::string& filename);
 
@@ -140,7 +166,9 @@ class Image : public BufferObject
         void createPattern(); //< Create a default pattern
 
         /**
-         * Read the specified image file
+         * \brief Read the specified image file
+         * \param filename File path
+         * \return Return true if all went well
          */
         bool readFile(const std::string& filename);
         
@@ -149,12 +177,12 @@ class Image : public BufferObject
         ImageBuffer _bufferDeserialize;
 
         /**
-         * Base init for the class
+         * \brief Base init for the class
          */
         void init();
         
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

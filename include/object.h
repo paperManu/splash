@@ -44,13 +44,13 @@ class Object : public BaseObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Object();
         Object(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Object();
 
@@ -61,123 +61,160 @@ class Object : public BaseObject
         Object& operator=(const Object& o) = delete;
 
         /**
-         * Activate this object for rendering
+         * \brief Activate this object for rendering
          */
         void activate();
 
         /**
-         * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
+         * \brief Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
+         * \param viewMatrix View matrix
+         * \param projectionMatrix Projection matrix
+         * \param blendWidth Width of the blending zone between projectors
          */
         void computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
         /**
-         * Deactivate this object for rendering
+         * \brief Deactivate this object for rendering
          */
         void deactivate();
 
         /**
-         * Add a geometry to this object
+         * \brief Add a geometry to this object
+         * \param geometry Geometry to add
          */
         void addGeometry(const std::shared_ptr<Geometry>& geometry) {_geometries.push_back(geometry);}
 
         /**
-         * Add a texture to this object
+         * \brief Add a texture to this object
+         * \param texture Texture to add
          */
         void addTexture(const std::shared_ptr<Texture>& texture) {_textures.push_back(texture);}
 
         /**
-         * Add and remove a calibration point
+         * \brief Add a calibration point
+         * \param point Point coordinates
          */
         void addCalibrationPoint(glm::dvec3 point);
+
+        /**
+         * \brief Remove a calibration point
+         * \param point Point coordinates
+         */
         void removeCalibrationPoint(glm::dvec3 point);
 
         /**
-         * Draw the object
+         * \brief Draw the object
          */
         void draw();
 
         /**
-         * Get a reference to all the calibration points set
+         * \brief Get a reference to all the calibration points set
+         * \return Return a reference to the vector containing all calibration points
          */
         inline std::vector<glm::dvec3>& getCalibrationPoints() {return _calibrationPoints;}
 
         /**
-         * Get the model matrix
+         * \brief Get the model matrix
+         * \return Return the model matrix
          */
         inline glm::dmat4 getModelMatrix() const {return computeModelMatrix();}
 
         /**
-         * Get the shader
+         * \brief Get the shader used for the object
+         * \return Return the shader
          */
         inline std::shared_ptr<Shader> getShader() const {return _shader;}
 
         /**
-         * Get the number of vertices for this object
+         * \brief Get the number of vertices for this object
+         * \return Return the number of vertices
          */
         int getVerticesNumber() const;
 
         /**
-         * Try to link the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * \brief Try to unlink the given BaseObject from this object
+         * \param obj Shared pointer to the (supposed) child object
+         */
         void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Get the coordinates of the closest vertex to the given point
+         * \brief Get the coordinates of the closest vertex to the given point
+         * \param p Coordinates around which to look
+         * \param v Found vertex coordinates
+         * \return Return the distance between p and v
          */
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
-         * Remove a geometry from this object
+         * \brief Remove a geometry from this object
+         * \param geometry Geometry to remove
          */
         void removeGeometry(const std::shared_ptr<Geometry>& geometry);
 
         /**
-         * Remove a texture from this object
+         * \brief Remove a texture from this object
+         * \param texture Texture to remove
          */
         void removeTexture(const std::shared_ptr<Texture>& texture);
 
         /**
-         * Reset tessellation of all linked objects
+         * \brief Reset tessellation of all linked objects
          */
         void resetTessellation();
 
         /**
          * \brief Reset the visibility flag, as well as the faces ID
-         * \params primitiveIdShift Shift for the ID of the vertices
+         * \param primitiveIdShift Shift for the ID of the vertices
          */
         void resetVisibility(int primitiveIdShift = 0);
 
         /**
-         * Reset the attribute holding the number of camera and the blending value
+         * \brief Reset the attribute holding the number of camera and the blending value
          */
         void resetBlendingAttribute();
 
         /**
-         * Set the shader
+         * \brief Set the shader to render this object with
+         * \param shader Shader to use
          */
         void setShader(const std::shared_ptr<Shader>& shader) {_shader = shader;}
 
         /**
-         * Set the view projection matrix
+         * \brief Set the view and projection matrices
+         * \param mv View matrix
+         * \[aram mp Projection matrix
          */
         void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
         /**
-         * Set the model matrix. This overrides the position attribute
+         * \brief Set the model matrix. This overrides the position attribute
+         * \param model Model matrix
          */
         void setModelMatrix(const glm::dmat4& model) {_modelMatrix = model;}
 
         /**
-         * Subdivide the objects wrt the given camera limits (for blending purposes)
+         * \brief Subdivide the objects wrt the given camera limits (for blending purposes)
+         * \param viewMatrix View matrix
+         * \param projectionMatrix Projection matrix
+         * \param fovX Horizontal FOV
+         * \param fovY Vertical FOV
+         * \param blendWidth Blending width
+         * \param blendPrecision Blending precision
          */
+        // TODO: use the matrices specified with setViewProjectionMatrix
         void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
         /**
          * \brief This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
-         * \params width Width of the texture
-         * \params height Height of the texture
-         * \params primitiveIdShift Shift for the ID as rendered in the texture
+         * \param width Width of the texture
+         * \param height Height of the texture
+         * \param primitiveIdShift Shift for the ID as rendered in the texture
          */
         void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
 
@@ -214,17 +251,18 @@ class Object : public BaseObject
         std::vector<glm::dvec3> _calibrationPoints;
 
         /**
-         * Init function called by constructor
+         * \brief Init function called by constructor
          */
         void init();
 
         /**
-         * Compute the matrix corresponding to the object position
+         * \brief Compute the matrix corresponding to the object position
+         * \return Return the model matrix
          */
         glm::dmat4 computeModelMatrix() const;
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

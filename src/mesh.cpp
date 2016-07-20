@@ -10,12 +10,6 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Mesh::Mesh()
-{
-    init();
-}
-
-/*************/
 Mesh::Mesh(weak_ptr<RootObject> root)
     : BufferObject(root)
 {

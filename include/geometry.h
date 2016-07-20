@@ -44,13 +44,13 @@ class Geometry : public BufferObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Geometry();
         Geometry(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Geometry();
 
@@ -61,78 +61,88 @@ class Geometry : public BufferObject
         Geometry& operator=(const Geometry&) = delete;
 
         /**
-         * Activate the geometry for rendering
+         * \brief Activate the geometry for rendering
          */
         void activate();
+
+        /**
+         * \brief Activate the geometry for gpgpu
+         */
         void activateAsSharedBuffer();
 
         /**
-         * Activate the geomtry for feedback into the alternative buffers
+         * \brief Activate the geomtry for feedback into the alternative buffers
          */
         void activateForFeedback();
 
         /**
-         * Deactivate the geometry for rendering
+         * \brief Deactivate the geometry for rendering
          */
         void deactivate() const;
 
         /**
-         * Deactivate for feedback
+         * \brief Deactivate for feedback
          */
         void deactivateFeedback();
 
         /**
-         * Get the number of vertices for this geometry
+         * \brief Get the number of vertices for this geometry
+         * \return Return the vertice count
          */
         int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
 
         /**
-         * Get the geometry as serialized
+         * \brief Get the geometry as serialized
+         * \return Return the serialized geometry
          */
         std::shared_ptr<SerializedObject> serialize() const;
 
         /**
-         * Deserialize the geometry
+         * \brief Deserialize the geometry
+         * \param obj Serialized object
+         * \return Return true if all went well
          */
         bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
         /**
-         * Get whether the alternative buffers have been resized during the last feedback call
+         * \brief Get whether the alternative buffers have been resized during the last feedback call
+         * \return Return true if the buffers have been resized
          */
         bool hasBeenResized() {return _buffersResized;}
 
         /**
-         * Try to link the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Get the coordinates of the closest vertex to the given point
+         * \brief Get the coordinates of the closest vertex to the given point
+         * \param p Point around which to look
+         * \param v If detected, vertex coordinates
+         * \return Return the distance from p to v
          */
         float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
         /**
-         * Specify the number of vertices to draw
-         */
-        void setAlternativeVerticesNumber(unsigned int nbr) {_alternativeVerticesNumber = nbr;}
-
-        /**
-         * Set the mesh for this object
+         * \brief Set the mesh for this object
+         * \param mesh Mesh
          */
         void setMesh(std::shared_ptr<Mesh> mesh) {_mesh = std::weak_ptr<Mesh>(mesh);}
 
         /**
-         * Swap between temporary and alternative buffers
+         * \brief Swap between temporary and alternative buffers
          */
         void swapBuffers();
 
         /**
-         * Updates the object
+         * \brief Updates the object
          */
         void update();
 
         /**
-         * Activate alternative buffers for draw
+         * \brief Activate alternative buffers for draw
+         * \param isActive If true, use alternative buffers
          */
         void useAlternativeBuffers(bool isActive);
 
@@ -165,7 +175,7 @@ class Geometry : public BufferObject
         int _feedbackMaxNbrPrimitives {0};
 
         /**
-         * Initialization
+         * \brief Initialization
          */
         void init();
 

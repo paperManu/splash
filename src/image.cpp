@@ -21,12 +21,6 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Image::Image()
-{
-    init();
-}
-
-/*************/
 Image::Image(weak_ptr<RootObject> root)
     : BufferObject(root)
 {
@@ -37,7 +31,8 @@ Image::Image(weak_ptr<RootObject> root)
 }
 
 /*************/
-Image::Image(ImageBufferSpec spec)
+Image::Image(weak_ptr<RootObject> root, ImageBufferSpec spec)
+    : BufferObject(root)
 {
     init();
     set(spec.width, spec.height, spec.channels, spec.type);

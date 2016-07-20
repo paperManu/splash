@@ -43,13 +43,13 @@ class Mesh_Shmdata : public Mesh
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
-        Mesh_Shmdata();
         Mesh_Shmdata(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Mesh_Shmdata();
 
@@ -60,7 +60,8 @@ class Mesh_Shmdata : public Mesh
         Mesh_Shmdata& operator=(const Mesh_Shmdata&) = delete;
 
         /**
-         * Set the path to read from
+         * \brief Set the path to read from
+         * \param filename File to read
          */
         bool read(const std::string& filename);
 
@@ -71,7 +72,7 @@ class Mesh_Shmdata : public Mesh
         bool _capsIsValid {false};
 
         /**
-         * Base init for the class
+         * \brief Base init for the class
          */
         void init();
 
@@ -80,10 +81,16 @@ class Mesh_Shmdata : public Mesh
          * \param dataType String holding the data type
          */
         void onCaps(const std::string& dataType);
+
+        /**
+         * \brief Callback called when receiving data
+         * \param data Pointer to the data
+         * \param data_size Size of the buffer
+         */
         void onData(void* data, int data_size);
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

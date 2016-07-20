@@ -44,7 +44,10 @@ namespace Splash
 {
     namespace Utils
     {
-        /*****/
+        /**
+         * \brief Get the current thread id
+         * \return Return the thread id
+         */
 #if HAVE_LINUX
         inline int getThreadId()
         {
@@ -54,14 +57,21 @@ namespace Splash
         }
 #endif
 
-        /*****/
+        /**
+         * \brief Get the CPU core count
+         * \return Return the core count
+         */
         inline int getCoreCount()
         {
             auto ncores = sysconf(_SC_NPROCESSORS_CONF);
             return ncores;
         }
 
-        /*****/
+        /**
+         * \brief Set the CPU core affinity. If one of the specified cores is not reachable, does nothing.
+         * \param cores Vector of the target cores
+         * \return Return true if all went well
+         */
         inline bool setAffinity(const std::vector<int>& cores)
         {
 #if HAVE_LINUX
@@ -84,7 +94,10 @@ namespace Splash
 #endif
         }
 
-        /*****/
+        /**
+         * \brief Set the current thread as realtime (nice = 99, SCHED_RR)
+         * \return Return true if it was able to set the scheduling
+         */
         inline bool setRealTime()
         {
 #if HAVE_LINUX
@@ -99,7 +112,11 @@ namespace Splash
 #endif
         }
 
-        /*****/
+        /**
+         * \brief Check whether a path is a directory
+         * \param filepath Path to test
+         * \param Return true if the path is a directory
+         */
         inline bool isDir(const std::string& filepath)
         {
             struct stat pathStat;
@@ -108,7 +125,11 @@ namespace Splash
             return S_ISDIR(pathStat.st_mode);
         }
 
-        /*****/
+        /**
+         * \brief Clean up a path, removing extra slashes and such
+         * \param filepath Path to clean
+         * \return Return the path cleaned
+         */
         inline std::string cleanPath(const std::string& filepath)
         {
             std::vector<std::string> links;
@@ -168,7 +189,10 @@ namespace Splash
             return path;
         }
 
-        /*****/
+        /**
+         * \brief Get the current user home path
+         * \return Return the home path
+         */
         inline std::string getHomePath()
         {
             if (getenv("HOME"))
@@ -178,7 +202,13 @@ namespace Splash
             return std::string(pw->pw_dir);
         }
 
-        /*****/
+        /**
+         * \brief Get the directory path from the file path.
+         * \param filepath File path
+         * \param configPath Configuration path
+         * \return Return the path
+         * If a config path is given, a relative file path is evaluated from there. Otherwise it is evaluated from the current working directory.
+         */
         inline std::string getPathFromFilePath(const std::string& filepath, const std::string& configPath = "")
         {
             auto path = filepath;
@@ -217,7 +247,11 @@ namespace Splash
             return cleanPath(fullPath);
         }
 
-        /*****/
+        /**
+         * \brief Get the directory path from an executable file path
+         * \param filepath Executable path
+         * \return Return the executable directory
+         */
         inline std::string getPathFromExecutablePath(const std::string& filepath)
         {
             auto path = filepath;
@@ -247,7 +281,11 @@ namespace Splash
             return fullPath;
         }
 
-        /*****/
+        /**
+         * \brief Extract the filename from a file path
+         * \param filepath File path
+         * \return Return the file name
+         */
         inline std::string getFilenameFromFilePath(const std::string& filepath)
         {
             size_t slashPos = filepath.rfind("/");
@@ -259,7 +297,11 @@ namespace Splash
             return filename;
         }
 
-        /*****/
+        /**
+         * \brief Get a list of the files in a directory
+         * \param path Directory path
+         * \return Return the file list
+         */
         inline std::vector<std::string> listDirContent(const std::string& path)
         {
             bool isDirectoryPath = true;
@@ -285,7 +327,11 @@ namespace Splash
             return files;
         }
 
-        /*****/
+        /**
+         * \brief Get the file descriptor from a file path.
+         * \param filepath File path to look for
+         * \return Return the file descriptor, or 0 if it was not able to find the file in the list of opened file.
+         */
         inline int getFileDescriptorForOpenedFile(const std::string& filepath)
         {
 #if HAVE_LINUX
@@ -310,8 +356,9 @@ namespace Splash
         }
     
 #if HAVE_SHMDATA
-        /*****/
-        // A shmdata logger dedicated to splash
+        /**
+         * \brief Shmdata logger dedicated to splash
+         */
         class ConsoleLogger: public shmdata::AbstractLogger
         {
             private:

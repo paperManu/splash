@@ -189,7 +189,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         if (source.stop > source.start)
             continue;
 
-        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg());
+        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg(_root));
         videoSrc->setAttribute("file", {source.filename});
         Values duration;
         videoSrc->getAttribute("duration", duration);

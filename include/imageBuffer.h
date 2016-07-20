@@ -46,7 +46,18 @@ class ImageBufferSpec
             FLOAT
         };
 
+        /**
+         * \brief Constructor
+         */
         ImageBufferSpec() {};
+
+        /**
+         * \brief Constructor
+         * \param w Width
+         * \param h Height
+         * \param c Channel count
+         * \param t Channel type
+         */
         ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, ImageBufferSpec::Type t)
         {
             width = w;
@@ -103,9 +114,22 @@ class ImageBufferSpec
             return !(*this == spec);
         }
 
+        /**
+         * \brief Convert the spec to a string
+         * \return Return a string representation of the spec
+         */
         std::string to_string();
+
+        /**
+         * \brief Update from a spec string
+         * \param spec Spec string
+         */
         void from_string(const std::string& spec);
 
+        /**
+         * \brief Get channel size in bytes
+         * \return Return channel size
+         */
         int pixelBytes()
         {
             int bytes = channels;
@@ -124,6 +148,10 @@ class ImageBufferSpec
             return bytes;
         }
 
+        /**
+         * \brief Get image size in bytes
+         * \return Return image size
+         */
         int rawSize()
         {
             return pixelBytes() * width * height;
@@ -135,14 +163,18 @@ class ImageBuffer
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
          */
         ImageBuffer();
-        ImageBuffer(const ImageBufferSpec& spec);
-        ImageBuffer(unsigned int width, unsigned int height, unsigned int channels, ImageBufferSpec::Type type);
 
         /**
-         * Destructor
+         * \brief Constructor
+         * \param spec Image spec
+         */
+        ImageBuffer(const ImageBufferSpec& spec);
+
+        /**
+         * \brief Destructor
          */
         ~ImageBuffer();
 
@@ -151,18 +183,30 @@ class ImageBuffer
         ImageBuffer& operator=(const ImageBuffer& i) = default;
         ImageBuffer& operator=(ImageBuffer&& i) = default;
 
+        /**
+         * \brief Return a pointer to the image data
+         * \return Return a pointer to the data
+         */
         char* data()
         {
             return _buffer.data();
         }
 
+        /**
+         * \brief Get the image spec
+         * \return Return image spec
+         */
         ImageBufferSpec getSpec() {return _spec;}
 
+        /**
+         * \brief Fill all channels with the given value
+         * \param value Value to fill the image with
+         */
         void fill(float value);
 
         /**
-         * Set the inner raw buffer, to use with caution,
-         * its size must match the spec
+         * \brief Set the inner raw buffer, to use with caution, its size must match the spec
+         * \param buffer Buffer to use as inner buffer
          */
         void setRawBuffer(ResizableArray<char>&& buffer)
         {
@@ -173,6 +217,9 @@ class ImageBuffer
         ImageBufferSpec _spec {};
         ResizableArray<char> _buffer;
 
+        /**
+         * \brief Initialization
+         */
         void init(const ImageBufferSpec& spec);
 };
 

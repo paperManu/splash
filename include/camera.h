@@ -36,14 +36,14 @@
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
 
-#include "config.h"
+#include "./config.h"
 
-#include "coretypes.h"
-#include "basetypes.h"
-#include "image.h"
-#include "geometry.h"
-#include "object.h"
-#include "texture_image.h"
+#include "./coretypes.h"
+#include "./basetypes.h"
+#include "./image.h"
+#include "./geometry.h"
+#include "./object.h"
+#include "./texture_image.h"
 
 namespace Splash {
 
@@ -52,12 +52,13 @@ class Camera : public BaseObject
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
          */
         Camera(std::weak_ptr<RootObject> root);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Camera();
 
@@ -68,100 +69,159 @@ class Camera : public BaseObject
         Camera& operator=(const Camera&) = delete;
 
         /**
-         * Tessellate the objects for the given camera
+         * \brief Tessellate the objects for this camera
          */
         void blendingTessellateForCurrentCamera();
 
         /**
-         * Compute the blending for all objects seen by this camera
+         * \brief Compute the blending for all objects seen by this camera
          */
         void computeBlendingContribution();
 
         /**
-         * Compute the vertex visibility for all objects in front of this camera
+         * \brief Compute the vertex visibility for all objects visible by this camera
          */
         void computeVertexVisibility();
 
         /**
-         * Get the frustum matrix from the current camera parameters
+         * \brief Get the projection matrix
+         * \return Return the projection matrix
          */
         glm::dmat4 computeProjectionMatrix();
+
+        /**
+         * \brief Get the projection matrix given the fov and shift (0.5 meaning no shift, 0.0 and 1.0 meaning 100% on one direction or the other)
+         * \param fov Field of view, in degrees
+         * \param cx Center shift along X
+         * \param cy Center shift along Y
+         * \return Return the projection matrix
+         */
         glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
 
         /**
-         * Get the view matrix from the camera parameters
+         * \brief Get the view matrix
+         * \return Return the view matrix
          */
         glm::dmat4 computeViewMatrix();
 
         /**
-         * Compute the calibration given the calibration points
+         * \brief Compute the calibration given the calibration points
+         * \return Return true if all went well
          */
         bool doCalibration();
 
         /**
-         * Add one of the core models to the next redraw, with the given transformation matrix
+         * \brief Add one of the core models to the next redraw, with the given transformation matrix
+         * \param modelName Name of the model, as known in the _models map
+         * \param rtMatrix Model matrix
          */
         void drawModelOnce(const std::string& modelName, const glm::dmat4& rtMatrix);
 
         /**
-         * Get pointers to this camera textures
+         * \brief Get the output textures for this camera
+         * \return Return a vector of pointers to the output textures
          */
         std::vector<std::shared_ptr<Texture_Image>> getTextures() const {return _outTextures;}
 
         /**
-         * Check wether it is initialized
+         * \brief Check whether the camera is initialized
+         * \return Return true if the camera is initialized
          */
         bool isInitialized() const {return _isInitialized;}
 
         /**
-         * Try to link / unlink the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
+
+        /**
+         * \brief Try to unlink the given BaseObject from this object
+         * \param obj Shared pointer to the (supposed) child object
+         */
         void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Get the coordinates of the closest vertex to the given point
+         * \brief Get the coordinates of the closest vertex to the given point
+         * \param x Target x coordinate
+         * \param y Target y coordinate
+         * \return Return the coordinates of the closest vertex, or an empty Values if no vertex is close enough
          */
         Values pickVertex(float x, float y);
 
         /**
-         * Get the coordinates of the given fragment (world coordinates)
-         * Also returns its depth in camera space
+         * \brief Get the coordinates of the given fragment (world coordinates). Also returns its depth in camera space
+         * \param x Target x coordinate
+         * \param y Target y coordinate
+         * \param fragDepth Fragment depth
+         * \return Return the world coordinate of the point represented by the fragment
          */
         Values pickFragment(float x, float y, float& fragDepth);
 
         /**
-         * Get the coordinates of the closest calibration point
+         * \brief Get the coordinates of the closest calibration point
+         * \param x Target x coordinate
+         * \param y Target y coordinate
+         * \return Return the closest calibration point, or an empty Values if no point is close enough
          */
         Values pickCalibrationPoint(float x, float y);
 
         /**
-         * Pick the closest calibration point or vertex
+         * \brief Pick the closest calibration point or vertex
+         * \param x Target x coordinate
+         * \param y Target y coordinate
+         * \return Return the closest point or vertex, or an empty Values if none is close enough
          */
         Values pickVertexOrCalibrationPoint(float x, float y);
 
         /**
-         * Render this camera into its textures
+         * \brief Render this camera into its textures
+         * \return Return true if all went well
          */
         bool render();
 
         /**
-         * Set the given calibration point
-         * Returns true if the point already existed
+         * \brief Set the given calibration point. This point is then selected
+         * \return Return true if the point has been added or if it already existed
          */
         bool addCalibrationPoint(const Values& worldPoint);
+
+        /**
+         * \brief Deselect the current calibration point
+         */
         void deselectCalibrationPoint();
+
+        /**
+         * \brief Move the selected calibration point
+         * \param dx Displacement along X
+         * \param dy Displacement along Y
+         */
         void moveCalibrationPoint(float dx, float dy);
+
+        /**
+         * \brief Remove the given calibration point
+         * \param point Point to remove
+         * \param unlessSet If true, does not remove the point if it is set
+         */
         void removeCalibrationPoint(const Values& point, bool unlessSet = false);
+
+        /**
+         * \brief Set the selected calibration point
+         * \param screenPoint Desired projected position of this calibration point
+         * \return Return true if all went well
+         */
         bool setCalibrationPoint(const Values& screenPoint);
 
         /**
-         * Set the number of output buffers for this camera
+         * \brief Set the number of output buffers for this camera
+         * \param nbr Number of outputs
          */
         void setOutputNbr(int nbr);
 
         /**
-         * Set the resolution of this camera
+         * \brief Set the resolution of this camera
+         * \param width Width of the output textures
+         * \param height Height of the output textures
          */
         void setOutputSize(int width, int height);
 
@@ -195,19 +255,19 @@ class Camera : public BaseObject
         std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
         // Camera parameters
-        float _fov {35.f}; // This is the vertical FOV
-        float _width {512.f}, _height {512.f};
-        float _newWidth {0.f}, _newHeight {0.f};
-        float _near {0.1f}, _far {100.0f};
-        float _cx {0.5f}, _cy {0.5f};
-        glm::dvec3 _eye {1.0, 0.0, 5.0};
-        glm::dvec3 _target {0.0, 0.0, 0.0};
-        glm::dvec3 _up {0.0, 0.0, 1.0};
-        float _blendWidth {0.05f}; // Width of the blending, as a fraction of the width and height
-        float _blendPrecision {0.1f}; // Controls the tessellation level for the blending
-        float _brightness {1.f};
-        float _colorTemperature {6500.f};
-        bool _weightedCalibrationPoints {true};
+        float _fov {35.f}; //!< Vertical FOV
+        float _width {512.f}, _height {512.f}; //!< Current width and height
+        float _newWidth {0.f}, _newHeight {0.f}; //!< New width and height
+        float _near {0.1f}, _far {100.0f}; //!< Near and far parameters
+        float _cx {0.5f}, _cy {0.5f}; //!< Relative position of the lens center
+        glm::dvec3 _eye {1.0, 0.0, 5.0}; //!< Camera position
+        glm::dvec3 _target {0.0, 0.0, 0.0}; //!< Camera target
+        glm::dvec3 _up {0.0, 0.0, 1.0}; //!< Camera up vector
+        float _blendWidth {0.05f}; //!< Width of the blending, as a fraction of the width and height
+        float _blendPrecision {0.1f}; //!< Controls the tessellation level for the blending
+        float _brightness {1.f}; //!< Brightness correction
+        float _colorTemperature {6500.f}; //!< Color temperature correction
+        bool _weightedCalibrationPoints {true}; //!< If true, calibration points closer to the borders have a higher influence on the calibration
 
         // Calibration parameters
         bool _calibrationCalledOnce {false};
@@ -227,7 +287,7 @@ class Camera : public BaseObject
         std::vector<CalibrationPoint> _calibrationPoints;
         int _selectedCalibrationPoint {-1};
 
-        // List of additional objects to draw
+        //! List of additional objects to draw
         struct Drawable
         {
             Drawable(std::string name, glm::dmat4 mat)
@@ -242,27 +302,27 @@ class Camera : public BaseObject
         static double cameraCalibration_f(const gsl_vector* v, void* params);
 
         /**
-         * Init function called in constructors
+         * \brief Init function called in constructors
          */
         void init();
 
         /**
-         * Load some defaults models, like the locator for calibration
+         * \brief Load some defaults models, like the locator for calibration
          */
         void loadDefaultModels();
 
         /**
-         * Send calibration points to the model
+         * \brief Send calibration points to the model
          */
         void sendCalibrationPointsToObjects();
 
         /**
-         * Update the color depth for all textures
+         * \brief Update the color depth for all textures
          */
         void updateColorDepth();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

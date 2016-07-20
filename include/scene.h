@@ -48,6 +48,7 @@ class Scene;
 
 
 /*************/
+//! Scene class, which does the rendering on a given GPU
 class Scene : public RootObject
 {
     friend ControllerObject;
@@ -64,125 +65,174 @@ class Scene : public RootObject
 
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param name Scene name
+         * \param autoRun If true, the Scene will start without waiting for a start message from the World
          */
         Scene(std::string name = "Splash", bool autoRun = true);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Scene();
 
         /**
-         * Add an object of the given type, with the given name
+         * \brief Add an object of the given type, with the given name
+         * \param type Object type
+         * \param name Object name
+         * \return Return a shared pointer to the created object
          */
         std::shared_ptr<BaseObject> add(std::string type, std::string name = std::string());
 
         /**
-         * Add a fake object, keeping only its configuration between uses
+         * \brief Add an object ghosting one in another Scene. Used in master Scene for controlling purposes
+         * \param type Object type
+         * \param name Object name
          */
         void addGhost(std::string type, std::string name = std::string());
 
         /**
-         * Get an attribute for the given object
-         * Trie locally and to the World
+         * \brief Get an attribute for the given object. Try locally and to the World
+         * \param name Object name
+         * \param attribute Attribute
+         * \return Return the attribute value
          */
         Values getAttributeFromObject(std::string name, std::string attribute);
 
         /**
-         * Get an attribute description
-         * Try locally and to the World
+         * \brief Get an attribute description. Try locally and to the World
+         * \param name Object name
+         * \param attribute Attribute
+         * \return Return the attribute description
          */
         Values getAttributeDescriptionFromObject(std::string name, std::string attribute);
 
         /**
-         * Get the current configuration of the scene as a json object
+         * \brief Get the current configuration of the scene as a json object
+         * \return Return a Json object holding the configuration
          */
         Json::Value getConfigurationAsJson();
 
         /**
-         * Get a glfw window sharing the same context as _mainWindow
+         * \brief Get a glfw window sharing the same context as _mainWindow
+         * \param name Window name
+         * \return Return a shared pointer to the new window
          */
         std::shared_ptr<GlWindow> getNewSharedWindow(std::string name = std::string());
 
         /**
-         * Get the list of objects by their type
+         * \brief Get the list of objects by their type
+         * \param type Object type
+         * \return Return the list of objects of the given type
          */
         Values getObjectsNameByType(std::string type);
 
         /**
-         * Get the status of the scene, return true if all is well
+         * \brief Get the status of the scene
+         * \return Return true if all is well
          */
         bool getStatus() const {return _status;}
 
         /**
-         * Check wether it is initialized
+         * \brief Check whether it is initialized
+         * \return Return true if the Scene is initialized
          */
         bool isInitialized() const {return _isInitialized;}
 
         /**
-         * Returns whether the scene is Master or not
+         * \brief Ask whether the scene is Master or not
+         * \return Return true if the Scene is master
          */
         bool isMaster() const {return _isMaster;}
 
         /**
-         * Check wether the scene is running
+         * \brief Check wether the scene is running
+         * \return Return true if the scene runs
          */
         bool isRunning() const {return _isRunning;}
 
         /**
-         * Link / unlink an object to another, base on their types
+         * \brief Link an object to another, base on their types
+         * \param first Child object
+         * \param second Parent object
+         * \return Return true if the linking succeeded
          */
         bool link(std::string first, std::string second);
         bool link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second);
+
+        /**
+         * \brief Unlink two objects. This always succeeds
+         * \param first Child object
+         * \param second Parent object
+         */
         void unlink(std::string first, std::string second);
         void unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second);
 
         /**
-         * Link / unlink objects, at least one of them being a ghost
+         * \brief Link objects, one of them being a ghost
+         * \param first Child object
+         * \param second Parent object
+         * \return Return true if the linking succeeded
          */
         bool linkGhost(std::string first, std::string second);
+
+        /**
+         * \brief Unlink two objects, one of them being a ghost
+         * \param first Child object
+         * \param second Parent object
+         */
         void unlinkGhost(std::string first, std::string second);
 
         /**
-         * Remove an object
+         * \brief Remove an object
+         * \param name Object name
          */
         void remove(std::string name);
 
         /**
-         * Render everything
+         * \brief Render everything
          */
         void render();
 
         /**
-         * Render the blending
+         * \brief Render the blending
          */
         void renderBlending();
 
         /**
-         * Main loop for the scene
+         * \brief Main loop for the scene
          */
         void run();
 
         /**
-         * Set the Scene as the master one
+         * \brief Set the Scene as the master one
+         * \param configFilePath File path for the loaded configuration
          */
         void setAsMaster(std::string configFilePath = "");
 
         /**
-         * Give a special behavior to the scene, making it the main window of the World
+         * \brief Give a special behavior to the scene, making it the main window of the World
          */
         void setAsWorldScene();
 
         /**
-         * Set a message to be sent to the world
+         * \brief Set a message to be sent to the world
+         * \param message Message type to send, which should correspond to a World attribute
+         * \param value Message content
          */
         void sendMessageToWorld(const std::string& message, const Values& value = {});
+
+        /**
+         * \brief Set a message to be sent to the world, and wait for the World to send an answer
+         * \param message Message type to send, which should correspond to a World attribute
+         * \param value Message content
+         * \param timeout Timeout in microseconds
+         * \return Return the answer from the World
+         */
         Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
         /**
-         * Wait for synchronization with texture upload
-         * Has to be called from a GL context
+         * \brief Wait for synchronization with texture upload. This must to be called from a GL context
          */
         void waitTextureUpload();
 
@@ -252,33 +302,37 @@ class Scene : public RootObject
         bool _computeBlendingOnce {false};
 
         /**
-         * Find which OpenGL version is available
-         * Returns MAJOR and MINOR
+         * \brief Find which OpenGL version is available (from a predefined list)
+         * \return Return MAJOR and MINOR
          */
         std::vector<int> findGLVersion();
 
         /**
-         * Set up the context and everything
+         * \brief Set up the context and everything
+         * \param name Scene name
          */
         void init(std::string name);
 
         /**
-         * Joystick loop
+         * \brief Joystick loop
          */
         void joystickUpdateLoop();
 
         /**
-         * Get the next available id
+         * \brief Get the next available id
+         * \return Returns a new id
          */
         unsigned long getId() {return ++_nextId;}
 
         /**
-         * Callback for GLFW errors
+         * \brief Callback for GLFW errors
+         * \param code Error code
+         * \param msg Associated error message
          */
         static void glfwErrorCallback(int code, const char* msg);
 
         /**
-         * Callback for GL errors and warnings
+         * \brief Callback for GL errors and warnings
          */
 #ifdef HAVE_OSX
         static void glMsgCallback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar*, const void*);
@@ -287,17 +341,17 @@ class Scene : public RootObject
 #endif
 
         /**
-         * Texture update loop
+         * \brief Texture update loop
          */
         void textureUploadRun();
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new attributes
          */
         void registerAttributes();
 
         /**
-         * Update the various inputs (mouse, keyboard...)
+         * \brief Update the various inputs (mouse, keyboard...)
          */
         void updateInputs();
 };

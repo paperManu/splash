@@ -51,6 +51,7 @@ pkg_search_module(ZMQ REQUIRED libzmq)
 # Optional dependencies
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
 find_package(PythonLibs)
+find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
@@ -94,6 +95,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CUR
 #
 add_subdirectory(addons)
 add_subdirectory(data)
+add_subdirectory(docs)
 add_subdirectory(external)
 add_subdirectory(osx)
 add_subdirectory(src)
@@ -182,6 +184,7 @@ info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)
+info_cfg_option(DOXYGEN_FOUND)
 
 info_cfg_text("")
 message("${_config_msg}")

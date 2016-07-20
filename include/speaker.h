@@ -58,17 +58,17 @@ class Speaker : public BaseObject
         };
         
         /**
-         * Constructor
+         * \brief Constructor
          */
         Speaker();
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Speaker();
 
         /**
-         * Safe bool idiom
+         * \brief Safe bool idiom
          */
         explicit operator bool() const
         {
@@ -82,19 +82,23 @@ class Speaker : public BaseObject
         Speaker& operator=(const Speaker&) = delete;
 
         /**
-         * Add a buffer to the playing queue
-         * Returns false if there was an error
+         * \brief Add a buffer to the playing queue
+         * \param buffer Buffer to add
+         * \return Return false if there was an error
          */
         template<typename T>
         bool addToQueue(const ResizableArray<T>& buffer);
 
         /**
-         * Clear the queue
+         * \brief Clear the queue
          */
         void clearQueue();
 
         /**
-         * Set the audio parameters
+         * \brief Set the audio parameters
+         * \param channels Channel count
+         * \param sampleRate Sample rate
+         * \param format Sample format
          */
         void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);
 
@@ -116,22 +120,27 @@ class Speaker : public BaseObject
         std::mutex _ringWriteMutex;
 
         /**
-         * Free all PortAudio resources
+         * \brief Free all PortAudio resources
          */
         void freeResources();
 
         /**
-         * Initialize PortAudio resources
+         * \brief Initialize PortAudio resources
          */
         void initResources();
 
         /**
-         * PortAudio callback
+         * \brief PortAudio callback
+         * \param in Unused
+         * \param out Pointer to output data
+         * \param framesPerBuffer Frame count 
+         * \param timeInfo Unused
+         * \param userData Pointer to this object
          */
         static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

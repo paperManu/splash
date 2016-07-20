@@ -43,15 +43,24 @@ class Texture_Image : public Texture
 {
     public:
         /**
-         * Constructor
+         * \brief Constructor
+         * \param root Root object
+         * \param target Texture target
+         * \param level Mipmap level
+         * \param internalFormat Texture internal format
+         * \param width Width
+         * \param height Height
+         * \param border Texture border behavior
+         * \param format Texture format
+         * \param type Texture type
+         * \param data Pointer to data to use to initialize the texture
          */
-        Texture_Image();
         Texture_Image(std::weak_ptr<RootObject> root);
         Texture_Image(std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                 GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Texture_Image();
 
@@ -62,82 +71,101 @@ class Texture_Image : public Texture
         Texture_Image& operator=(const Texture_Image&) = delete;
 
         /**
-         * Sets the specified buffer as the texture on the device
+         * \brief Sets the specified buffer as the texture on the device
+         * \param img Image to set the texture from
          */
         Texture_Image& operator=(const std::shared_ptr<Image>& img);
 
         /**
-         * Bind / unbind this texture
+         * \brief Bind this texture
          */
         void bind();
+
+        /**
+         * \brief Unbind this texture
+         */
         void unbind();
 
         /**
-         * Flush the PBO copy which may still be happening. Do this before
-         * closing the current context!
+         * \brief Flush the PBO copy which may still be happening. Do this before closing the current context!
          */
         void flushPbo();
 
         /**
-         * Generate the mipmaps for the texture
+         * \brief Generate the mipmaps for the texture
          */
         void generateMipmap() const;
 
         /**
-         * Get the id of the gl texture
+         * \brief Get the id of the gl texture
+         * \return Return the texture id
          */
         GLuint getTexId() const {return _glTex;}
 
         /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
+         * \brief Get the shader parameters related to this texture. Texture should be locked first.
+         * \return Return the shader uniforms
          */
         std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
 
         /**
-         * Get spec of the texture
+         * \brief Get spec of the texture
+         * \return Return the spec
          */
         ImageBufferSpec getSpec() const {return _spec;}
 
         /**
-         * Try to link the given BaseObject to this
+         * \brief Try to link the given BaseObject to this object
+         * \param obj Shared pointer to the (wannabe) child object
          */
         bool linkTo(std::shared_ptr<BaseObject> obj);
 
         /**
-         * Lock the texture for read / write operations
+         * \brief Lock the texture for read / write operations
          */
         void lock() const {_mutex.lock();}
 
         /**
-         * Read the texture and returns an Image
+         * \brief Read the texture and returns an Image
+         * \return Return the image
          */
         std::shared_ptr<Image> read();
 
         /**
-         * Set the buffer size / type / internal format
-         * See glTexImage2D for information about parameters
+         * \brief Set the buffer size / type / internal format
+         * \param target Texture target
+         * \param level Mipmap level
+         * \param internalFormat Texture internal format
+         * \param width Width
+         * \param height Height
+         * \param border Texture border behavior
+         * \param format Texture format
+         * \param type Texture type
+         * \param data Pointer to data to use to initialize the texture
          */
         void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                    GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
-         * Modify the size of the texture
+         * \brief Modify the size of the texture
+         * \param width Width
+         * \param height Height
          */
         void resize(int width, int height);
 
         /**
-         * Enable / disable clamp to edge
+         * \brief Enable / disable clamp to edge
+         * \param active If true, enables clamping
          */
         void setClampToEdge(bool active) {_glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT;}
 
         /**
-         * Unlock the texture for read / write operations
+         * \brief Unlock the texture for read / write operations
          */
         void unlock() const {_mutex.unlock();}
 
         /**
-         * Update the texture according to the owned Image
+         * \brief Update the texture according to the owned Image
          */
         void update();
 
@@ -165,22 +193,27 @@ class Texture_Image : public Texture
         std::unordered_map<std::string, Values> _shaderUniforms;
 
         /**
-         * As says its name
+         * \brief Initialization
          */
         void init();
 
         /**
-         * Get GL channel order according to spec.format
+         * \brief Get GL channel order according to spec.format
+         * \param spec Specification
+         * \return Return the GL channel order (GL_RGBA, GL_BGRA, ...)
          */
         GLenum getChannelOrder(const ImageBufferSpec& spec);
 
         /**
-         * Update the pbos according to the parameters
+         * \brief Update the pbos according to the parameters
+         * \param width Width
+         * \param height Height
+         * \param bytes Bytes per pixel
          */
         void updatePbos(int width, int height, int bytes);
 
         /**
-         * Register new functors to modify attributes
+         * \brief Register new functors to modify attributes
          */
         void registerAttributes();
 };

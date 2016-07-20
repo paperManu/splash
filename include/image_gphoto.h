@@ -43,9 +43,7 @@ class Image_GPhoto : public Image
         /**
          * Constructor
          */
-        Image_GPhoto();
-        Image_GPhoto(std::weak_ptr<RootObject> root);
-        Image_GPhoto(std::string cameraName);
+        Image_GPhoto(std::weak_ptr<RootObject> root, std::string cameraName = "");
 
         /**
          * Destructor

@@ -8,12 +8,6 @@ namespace Splash
 {
 
 /**************/
-Texture_Syphon::Texture_Syphon()
-{
-    init();
-}
-
-/**************/
 Texture_Syphon::Texture_Syphon(weak_ptr<RootObject> root)
     : Texture(root)
 {

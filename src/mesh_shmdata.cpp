@@ -9,12 +9,6 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Mesh_Shmdata::Mesh_Shmdata()
-{
-    init();
-}
-
-/*************/
 Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root)
     : Mesh(root)
 {

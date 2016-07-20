@@ -50,22 +50,31 @@ class ControllerObject : public BaseObject
         virtual ~ControllerObject() {};
 
         /**
-         * Get a list of the object names
+         * \brief Get a list of the object names
+         * \return Return a vector of all the objects
          */
         std::vector<std::string> getObjectNames() const;
 
         /**
-         * Get the description for the given attribute
+         * \brief Get the description for the given attribute
+         * \param name Object name
+         * \param attr Attribute name
+         * \return Return the description of the given attribute
          */
         Values getObjectAttributeDescription(const std::string& name, const std::string& attr) const;
 
         /**
-         * Get one specific attribute from the given object
+         * \brief Get one specific attribute from the given object
+         * \param name Object name
+         * \param attr Attribute
+         * \return Return the value of the given attribute
          */
         Values getObjectAttribute(const std::string& name, const std::string& attr) const;
 
         /**
-         * Get all the attributes from the given object
+         * \brief Get all the attributes from the given object
+         * \param name Object name
+         * \return Return a map of all of the object's attributes
          */
         std::unordered_map<std::string, Values> getObjectAttributes(const std::string& name) const;
 
@@ -82,27 +91,38 @@ class ControllerObject : public BaseObject
         std::unordered_map<std::string, std::vector<std::string>> getObjectReversedLinks() const;
 
         /**
-         * Get a map of the objects types
+         * \brief Get a map of the object types
+         * \return Return a map of all object types
          */
         std::map<std::string, std::string> getObjectTypes() const;
 
         /**
-         * Get all object of given type
+         * \brief Get all object of given type
+         * \param type Type to look for
+         * \return Return a list of all objects of the given type
          */
         std::list<std::shared_ptr<BaseObject>> getObjectsOfType(const std::string& type) const;
 
         /**
-         * Set the given configuration-related attribute
+         * \brief Set the given configuration-related attribute
+         * \param name Attribute name
+         * \param values Value to set the attribute to
          */
         void setGlobal(const std::string& name, const Values& values = {}) const;
 
         /**
-         * Set the given attribute for the given object
+         * \brief Set the given attribute for the given object
+         * \param name Object name
+         * \param attr Attribute name
+         * \param values Value to set the attribute to
          */
         void setObject(const std::string& name, const std::string& attr, const Values& values = {}) const;
 
         /**
-         * Set the given attribute for all objets of the given type
+         * \brief Set the given attribute for all objets of the given type
+         * \param type Object type
+         * \param attr Attribute
+         * \param values Value to set the attribute to
          */
         void setObjectsOfType(const std::string& type, const std::string& attr, const Values& values = {}) const;
 };

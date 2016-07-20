@@ -61,7 +61,7 @@ class Log
         };
 
         /**
-         * Get the singleton
+         * \brief Get the singleton
          */
         static Log& get()
         {
@@ -70,7 +70,9 @@ class Log
         }
 
         /**
-         * Shortcut for any type of log
+         * \brief Shortcut for any type of log
+         * \param p Message priority
+         * \param args Message
          */
         template<typename ... T>
         void operator()(Priority p, T ... args)
@@ -80,7 +82,9 @@ class Log
         }
 
         /**
-         * Shortcut for setting MESSAGE log
+         * \brief Shortcut for setting MESSAGE log
+         * \param msg Message
+         * \return Return this Log object
          */
         template <typename T>
         Log& operator<<(const T& msg)
@@ -90,6 +94,11 @@ class Log
             return *this;
         }
 
+        /**
+         * \brief Shortcut for setting a MESSAGE log from a Value
+         * \param v Value to set
+         * \return Return this Log object
+         */
         Log& operator<<(const Value& v)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -97,6 +106,11 @@ class Log
             return *this;
         }
 
+        /**
+         * \brief Set an action
+         * \param action Action to set
+         * \return Return this Log object
+         */
         Log& operator<<(Log::Action action)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -110,6 +124,11 @@ class Log
             return *this;
         }
 
+        /**
+         * \brief Set the priority
+         * \param p Priority
+         * \return Return this Log object
+         */
         Log& operator<<(Log::Priority p)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -118,7 +137,8 @@ class Log
         }
 
         /**
-         * Get the full logs
+         * \brief Get the full logs
+         * \return Return the full logs
          */
         std::deque<std::pair<std::string, Priority>> getFullLogs()
         {
@@ -126,7 +146,9 @@ class Log
         }
 
         /**
-         * Get the logs by priority
+         * \brief Get the logs by priority
+         * \param args Priorities
+         * \return Return the logs
          */
         template<typename ... T>
         std::vector<std::string> getLogs(T ... args)
@@ -143,7 +165,8 @@ class Log
         }
 
         /**
-         * Get the new logs (from last call to this method)
+         * \brief Get the new logs (from last call to this method)
+         * \return Return the new logs
          */
         std::vector<std::pair<std::string, Priority>> getNewLogs()
         {
@@ -156,7 +179,8 @@ class Log
         }
 
         /**
-         * Get the verbosity of the console output
+         * \brief Get the verbosity of the console output
+         * \return Return the verbosity (= the priority)
          */
         Priority getVerbosity()
         {
@@ -164,7 +188,8 @@ class Log
         }
 
         /**
-         * Set the verbosity of the console output
+         * \brief Set the verbosity of the console output
+         * \param p Priority
          */
         void setVerbosity(Priority p)
         {
@@ -172,7 +197,9 @@ class Log
         }
 
         /**
-         * Add new logs from an outside source, i.e. another process
+         * \brief Add new logs from an outside source, i.e. another process
+         * \param log Log
+         * \param priority Priority
          */
         void setLog(std::string log, Priority priority)
         {
@@ -188,12 +215,12 @@ class Log
 
     private:
         /**
-         * Constructor
+         * \brief Constructor
          */
         Log() {}
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~Log() {}
 
@@ -241,7 +268,7 @@ class Log
         }
 
         /**
-         * Set a new log message
+         * \brief Set a new log message
          */
         template<typename ... T>
         void rec(Priority p, T ... args)

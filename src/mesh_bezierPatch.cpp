@@ -8,12 +8,6 @@ namespace Splash
 {
 
 /*************/
-Mesh_BezierPatch::Mesh_BezierPatch()
-{
-    init();
-}
-
-/*************/
 Mesh_BezierPatch::Mesh_BezierPatch(weak_ptr<RootObject> root)
     : Mesh(root)
 {

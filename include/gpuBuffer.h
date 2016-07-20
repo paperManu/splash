@@ -42,18 +42,22 @@ class GpuBuffer
 {
     public:
         /**
-         * Constructor
-         * size is given as the number of elements
+         * \brief Constructor
+         * \param elementSize Component count for each entry
+         * \param type Component type, as per OpenGL specs
+         * \param usage Buffer usage, as per OpenGL specs
+         * \param size Number of entries
+         * \param data Pointer to data to initialized the buffer with
          */
         GpuBuffer(GLint elementSize, GLenum type, GLenum usage, size_t size, GLvoid* data = nullptr);
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~GpuBuffer();
 
         /**
-         * Copy and move constructors
+         * \brief Copy constructor
          */
         GpuBuffer(const GpuBuffer& o)
         {
@@ -72,6 +76,9 @@ class GpuBuffer
         GpuBuffer(GpuBuffer&&) = delete;
         GpuBuffer& operator=(GpuBuffer&&) = default;
 
+        /**
+         * \brief Bool pattern
+         */
         explicit operator bool() const
         {
             if (_size == 0 || _baseSize == 0 || _elementSize == 0 || _glId == 0)
@@ -81,22 +88,25 @@ class GpuBuffer
         }
 
         /**
-         * Fill the buffer with 0
+         * \brief Fill the buffer with 0
          */
         void clear();
 
         /**
-         * Get the GL id
+         * \brief Get the GL id
+         * \return Return the GL id
          */
         inline GLuint getId() const {return _glId;}
 
         /**
-         * Get the size of the buffer
+         * \brief Get the entry count in the buffer
+         * \return Return the entry count
          */
         inline size_t getSize() const {return _size;}
 
         /**
-         * Get the size in bytes of the buffer
+         * \brief Get the size in bytes of the buffer
+         * \return Return the size in bytes for the buffer
          */
         inline size_t getMemorySize() const {return _size * _baseSize * _elementSize;}
 
@@ -107,22 +117,26 @@ class GpuBuffer
         std::vector<char> getBufferAsVector(size_t vertexNbr = 0);
 
         /**
-         * Get the component size
+         * \brief Get the component size
+         * \return Return the component size
          */
         inline size_t getComponentSize() const {return _baseSize;}
 
         /**
-         * Get the element size
+         * \brief Get component count per entry
+         * \return Return the component count per entry
          */
         inline size_t getElementSize() const {return _elementSize;}
 
         /**
-         * Resize the GL buffer
+         * \brief Resize the GL buffer
+         * \param size Entry count
          */
         void resize(size_t size);
 
         /**
-         * Set the content from a vector of char
+         * \brief Set the content from a vector of char
+         * \param buffer Source buffer
          */
         void setBufferFromVector(const std::vector<char>& buffer);
 
