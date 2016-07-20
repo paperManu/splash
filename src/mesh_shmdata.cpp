@@ -35,10 +35,10 @@ bool Mesh_Shmdata::read(const string& filename)
 
     _reader.reset(new shmdata::Follower(filepath,
                                         [&](void* data, size_t size) {
-                                            onData(data, size, this);
+                                            onData(data, size);
                                         },
                                         [&](const string& caps) {
-                                            _caps = caps;
+                                            onCaps(caps);
                                         },
                                         [&](){},
                                         &_logger));
@@ -62,8 +62,28 @@ void Mesh_Shmdata::init()
 }
 
 /*************/
-void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
+void Mesh_Shmdata::onCaps(const string& dataType)
 {
+    Log::get() << Log::MESSAGE << "Mesh_Shmdata::" << __FUNCTION__ << " - Trying to connect with the following caps: " << dataType << Log::endl;
+    if (dataType == "application/x-polymesh")
+    {
+        _capsIsValid = true;
+        Log::get() << Log::MESSAGE << "Mesh_Shmdata::" << __FUNCTION__ << " - Connection successful" << Log::endl;
+    }
+    else
+    {
+        _capsIsValid = false;
+        Log::get() << Log::MESSAGE << "Mesh_Shmdata::" << __FUNCTION__ << " - Wrong data type" << Log::endl;
+    }
+
+}
+
+/*************/
+void Mesh_Shmdata::onData(void* data, int data_size)
+{
+    if (!_capsIsValid)
+        return;
+
     // Read the number of vertices and polys
     int* intPtr = (int*)data;
     float* floatPtr = (float*)data;
@@ -115,17 +135,16 @@ void Mesh_Shmdata::onData(void* data, int data_size, void* user_data)
         intPtr += size;
     }
 
-    Mesh_Shmdata* ctx = reinterpret_cast<Mesh_Shmdata*>(user_data);
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(_writeMutex);
     if (Timer::get().isDebug())
-        Timer::get() << "mesh_shmdata " + ctx->_name;
+        Timer::get() << "mesh_shmdata " + _name;
 
-    ctx->_bufferMesh = std::move(newMesh);
-    ctx->_meshUpdated = true;
-    ctx->updateTimestamp();
+    _bufferMesh = std::move(newMesh);
+    _meshUpdated = true;
+    updateTimestamp();
 
     if (Timer::get().isDebug())
-        Timer::get() >> "mesh_shmdata " + ctx->_name;
+        Timer::get() >> "mesh_shmdata " + _name;
 }
 
 /*************/

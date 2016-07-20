@@ -68,6 +68,7 @@ class Mesh_Shmdata : public Mesh
         std::string _caps {""};
         Utils::ConsoleLogger _logger;
         std::unique_ptr<shmdata::Follower> _reader {nullptr};
+        bool _capsIsValid {false};
 
         /**
          * Base init for the class
@@ -75,9 +76,11 @@ class Mesh_Shmdata : public Mesh
         void init();
 
         /**
-         * Shmdata callback
+         * \brief Callback called when receiving a new caps
+         * \param dataType String holding the data type
          */
-        static void onData(void* data, int data_size, void* user_data);
+        void onCaps(const std::string& dataType);
+        void onData(void* data, int data_size);
 
         /**
          * Register new functors to modify attributes
