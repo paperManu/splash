@@ -1,5 +1,7 @@
 #include "./gui.h"
 
+#include <fstream>
+
 #include "./camera.h"
 #include "./controller.h"
 #include "./log.h"
@@ -689,6 +691,24 @@ void Gui::initImGui(int width, int height)
     // Initialize ImGui
     ImGuiIO& io = GetIO();
 
+    string fontPath = "";
+    vector<string> fontPaths {string(DATADIR) + string("fonts/OpenSans-Bold.ttf"),
+                             "../Resources/fonts/OpenSans-Bold.ttf"};
+    for (auto& path : fontPaths)
+        if (ifstream(path, ios::in | ios::binary))
+            fontPath = path;
+
+    if (fontPath != "")
+    {
+        io.Fonts->Clear();
+        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
+        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
+        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
+        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
+        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
+        io.Fonts->Build();
+    }
+
     io.IniFilename = nullptr;
 
     io.DisplaySize.x = width;
@@ -721,6 +741,7 @@ void Gui::initImGui(int width, int height)
     style.FrameRounding = 2.f;
     style.ScrollbarSize = 12.f;
     style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    style.Colors[ImGuiCol_TextDisabled]          = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     style.Colors[ImGuiCol_Border]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);

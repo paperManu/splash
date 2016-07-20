@@ -29,6 +29,12 @@ install(FILES
     templates.txt
     DESTINATION "share/splash/")
 
+install(FILES
+    fonts/OpenSans-Bold.ttf
+    fonts/OpenSans-Light.ttf
+    fonts/OpenSans-Regular.ttf
+    DESTINATION "share/splash/fonts")
+
 install(FILES 
     templates/single_plane.json
     templates/single_plane.png
