@@ -162,6 +162,15 @@ shared_ptr<SerializedObject> Geometry::serialize() const
 /*************/
 bool Geometry::deserialize(const shared_ptr<SerializedObject>& obj)
 {
+    auto verticesNumber = *(int*)(obj->data());
+
+    if (obj->size() != verticesNumber * 4 * 14 + 4)
+    {
+        Log::get() << Log::WARNING << "Geometry::" << __FUNCTION__ << " - Received buffer size does not match its header. Dropping." << Log::endl;
+        return false;
+    }
+
+    _serializedMesh = std::move(*obj);
     return true;
 }
 
@@ -284,37 +293,39 @@ void Geometry::update()
     }
 
     // If a serialized geometry is present, we use it as the alternative buffer
-    if (!_onMasterScene && _serializedObject && _serializedObject->size() != 0)
+    if (!_onMasterScene && _serializedMesh.size() != 0)
     {
+        lock_guard<mutex> lock(_writeMutex);
+
         if (_glTemporaryBuffers.size() != 4)
             _glTemporaryBuffers.resize(4);
 
-        _temporaryVerticesNumber = *(int*)(_serializedObject->data());
+        _temporaryVerticesNumber = *(int*)(_serializedMesh.data());
         _temporaryBufferSize = _temporaryVerticesNumber;
 
         if (!_glTemporaryBuffers[0])
-            _glTemporaryBuffers[0] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4);
+            _glTemporaryBuffers[0] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4);
         else
-            _glTemporaryBuffers[0]->setBufferFromVector(vector<char>(_serializedObject->data() + 4,
-                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 4));
+            _glTemporaryBuffers[0]->setBufferFromVector(vector<char>(_serializedMesh.data() + 4,
+                                                                     _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 4));
 
         if (!_glTemporaryBuffers[1])
-            _glTemporaryBuffers[1] = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 4);
+            _glTemporaryBuffers[1] = make_shared<GpuBuffer>(2, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 4);
         else
-            _glTemporaryBuffers[1]->setBufferFromVector(vector<char>(_serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 4,
-                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 6));
+            _glTemporaryBuffers[1]->setBufferFromVector(vector<char>(_serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 4,
+                                                                     _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 6));
 
         if (!_glTemporaryBuffers[2])
-            _glTemporaryBuffers[2] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 6);
+            _glTemporaryBuffers[2] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 6);
         else
-            _glTemporaryBuffers[2]->setBufferFromVector(vector<char>(_serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 6,
-                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 10));
+            _glTemporaryBuffers[2]->setBufferFromVector(vector<char>(_serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 6,
+                                                                     _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 10));
 
         if (!_glTemporaryBuffers[3])
-            _glTemporaryBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 10);
+            _glTemporaryBuffers[3] = make_shared<GpuBuffer>(4, GL_FLOAT, GL_STATIC_DRAW, _temporaryVerticesNumber, _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 10);
         else
-            _glTemporaryBuffers[3]->setBufferFromVector(vector<char>(_serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 10,
-                                                                     _serializedObject->data() + 4 + _temporaryVerticesNumber * 4 * 14));
+            _glTemporaryBuffers[3]->setBufferFromVector(vector<char>(_serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 10,
+                                                                     _serializedMesh.data() + 4 + _temporaryVerticesNumber * 4 * 14));
 
 
         swapBuffers();
