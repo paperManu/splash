@@ -559,9 +559,9 @@ struct ShaderSources
         };
 
         uniform vec2 _fov;
-        uniform mat4 _mv;
-        uniform mat4 _mvp;
-        uniform mat4 _ip;
+        uniform mat4 _mv; // Model-view matrix
+        uniform mat4 _mvp; // Model-view-projection matrix
+        uniform mat4 _ip; // Inverse of the projection matrix
 
         vec4 pointToCameraBase(in vec4 p)
         {
@@ -571,16 +571,16 @@ struct ShaderSources
         }
 
         // Compute the ratio of the camera border projected onto the [pq] segment
-        vec2 computeRatios(in vec4 p, in vec4 q)
+        vec2 computeRatios(in vec4 p, in vec4 q, in vec4 borderPointProjectionSpace)
         {
             vec2 r = vec2(0.5, 0.5);
             for (int dir = 0; dir < 2; ++dir)
             {
-                vec4 borderPoint = vec4(1.0, 1.0, 0.5, 1.0);
-                borderPoint = _ip * borderPoint;
+                //vec4 borderPoint = vec4(1.0, 1.0, 0.5, 1.0);
+                vec4 borderPoint = _ip * borderPointProjectionSpace;
                 borderPoint /= borderPoint.w;
 
-                vec2 mm = vec2(borderPoint[dir], borderPoint.z);
+                vec2 mm = vec2(abs(borderPoint[dir]), borderPoint.z);
                 vec2 p1 = vec2(abs(p[dir]), p.z);
                 vec2 p2 = vec2(abs(q[dir]), q.z);
                 vec2 D = normalize(mm);
@@ -600,7 +600,7 @@ struct ShaderSources
                 r[dir] = length(m - p1) / length(p2 - p1);
             }
 
-            return r;
+            return max(vec2(0.0), min(vec2(1.0), r));
         }
 
         void main(void)
@@ -661,8 +661,17 @@ struct ShaderSources
                     int nextId = (i + 1) % 3;
                     if (side[i] != side[nextId])
                     {
-                        // We first need to find the ratio in projected space, to find the cut direction
-                        vec2 ratios = computeRatios(pointsCameraBase[i], pointsCameraBase[nextId]);
+                        // Check on which side the cut should be
+                        vec4 borderPoint = vec4(0.0, 0.0, 0.5, 1.0);
+                        int exteriorVertexId = !side[i] ? i : nextId;
+                        if (!side[exteriorVertexId])
+                        {
+                            borderPoint.x = projectedVertices[exteriorVertexId].x < 0.0 ? -1.0 : 1.0;
+                            borderPoint.y = projectedVertices[exteriorVertexId].y < 0.0 ? -1.0 : 1.0;
+                        }
+
+                        // We need to find the ratio in projected space, to find the cut direction
+                        vec2 ratios = computeRatios(pointsCameraBase[i], pointsCameraBase[nextId], borderPoint);
 
                         vec2 signs[2];
                         signs[0] = sign(distToBoundary[i]);
