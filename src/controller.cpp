@@ -89,10 +89,10 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 }
 
 /*************/
-unordered_map<string, string> ControllerObject::getObjectTypes() const
+map<string, string> ControllerObject::getObjectTypes() const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    auto types = unordered_map<string, string>();
+    auto types = map<string, string>();
 
     for (auto& o : scene->_objects)
     {

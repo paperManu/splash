@@ -30,18 +30,18 @@ void GuiNodeView::render()
 
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
-                                                                 {"window", {8, 32}},
-                                                                 {"warp", {32, 64}},
-                                                                 {"camera", {8, 96}},
-                                                                 {"object", {32, 128}},
-                                                                 {"texture filter queue", {8, 160}},
-                                                                 {"image", {32, 192}},
-                                                                 {"mesh", {8, 224}}
+                                                                 {"window", {8, 48}},
+                                                                 {"warp", {32, 88}},
+                                                                 {"camera", {8, 128}},
+                                                                 {"object", {32, 168}},
+                                                                 {"texture filter queue", {8, 208}},
+                                                                 {"image", {32, 248}},
+                                                                 {"mesh", {8, 288}}
                                                                 });
         std::map<std::string, int> shiftByType;
 
         // Begin a subwindow to enclose nodes
-        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::BeginChild("NodeView", ImVec2(0, _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
         // Get objects and their relations
         auto objectLinks = getObjectLinks();

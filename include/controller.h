@@ -69,7 +69,7 @@ class ControllerObject : public BaseObject
         /**
          * Get a map of the objects types
          */
-        std::unordered_map<std::string, std::string> getObjectTypes() const;
+        std::map<std::string, std::string> getObjectTypes() const;
 
         /**
          * Get all object of given type
