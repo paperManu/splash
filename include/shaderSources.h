@@ -1251,6 +1251,7 @@ struct ShaderSources
             vec4 position;
         } vertexIn;
 
+        uniform vec4 _wireframeColor = vec4(1.0, 0.0, 0.0, 1.0);
         uniform int _sideness = 0;
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         out vec4 fragColor;
@@ -1269,7 +1270,7 @@ struct ShaderSources
             vec3 b = vertexIn.bcoord;
             float minDist = min(min(b[0], b[1]), b[2]);
             vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
-            fragColor.rgba = mix(vec4(1.0), matColor, edgeFactor());
+            fragColor.rgba = mix(_wireframeColor, matColor, edgeFactor());
         }
     )"};
 

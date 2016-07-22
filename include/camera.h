@@ -188,6 +188,7 @@ class Camera : public BaseObject
         bool _render16bits {false};
         bool _updateColorDepth {false}; // Set to true if the _render16bits has been updated
         glm::dvec4 _clearColor {0.6, 0.6, 0.6, 1.0};
+        glm::dvec4 _wireframeColor {1.0, 1.0, 1.0, 1.0};
 
         // Color correction
         Values _colorLUT {0};

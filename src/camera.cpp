@@ -784,6 +784,7 @@ bool Camera::render()
             obj->activate();
 
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
+            obj->getShader()->setAttribute("uniform", {"_wireframeColor", _wireframeColor.x, _wireframeColor.y, _wireframeColor.z, _wireframeColor.w});
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
@@ -1618,6 +1619,12 @@ void Camera::registerAttributes()
             return {};
     }, {'v'});
     setAttributeDescription("colorLUT", "Set the color lookup table");
+
+    addAttribute("colorWireframe", [&](const Values& args) {
+        _wireframeColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        return true;
+    }, {'n', 'n', 'n', 'n'});
+    setAttributeDescription("colorWireframe", "Set the color for the wireframe rendering");
 
     addAttribute("activateColorLUT", [&](const Values& args) {
         if (args[0].asInt() == 2)

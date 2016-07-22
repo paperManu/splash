@@ -50,6 +50,9 @@ class GuiGlobalView : public GuiWidget
         bool _beginDrag {true};
         bool _noMove {false};
 
+        bool _hideCameras {false};
+        bool _camerasColorized {false};
+
         // Size of the view
         int _camWidth, _camHeight;
 
@@ -75,9 +78,21 @@ class GuiGlobalView : public GuiWidget
         void processMouseEvents();
 
         // Actions
+        /**
+         * \brief Activate the colorization of the wireframe rendering
+         * \param colorize If true, activate the colorization
+         */
+        void colorizeCameraWireframes(bool colorize);
+
         void doCalibration();
         void propagateCalibration(); // Propagates calibration to other Scenes if needed
-        void switchHideOtherCameras();
+
+        /**
+         * \brief Hide all cameras except for the selected one
+         * \param hide Hide cameras if true
+         */
+        void hideOtherCameras(bool hide);
+
         void nextCamera();
         void revertCalibration();
         void showAllCalibrationPoints();

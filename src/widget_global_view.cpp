@@ -18,34 +18,40 @@ void GuiGlobalView::render()
 
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        if (ImGui::Button("Hide other cameras"))
-            switchHideOtherCameras();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Hide all but the selected camera (H while hovering the view)");
-        ImGui::SameLine();
-
-        if (ImGui::Button("Show targets"))
-            showAllCalibrationPoints();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Show the target positions for the calibration points (A while hovering the view)");
-        ImGui::SameLine();
-
-        if (ImGui::Button("Show points everywhere"))
-            showAllCamerasCalibrationPoints();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Show this camera's calibration points in other cameras (O while hovering the view)");
-        ImGui::SameLine();
-
         if (ImGui::Button("Calibrate camera"))
             doCalibration();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Calibrate the selected camera (C while hovering the view)");
+            ImGui::SetTooltip("Calibrate the selected camera\n(C while hovering the view)");
         ImGui::SameLine();
 
         if (ImGui::Button("Revert camera"))
             revertCalibration();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Revert the selected camera to its previous calibration (Ctrl + Z while hovering the view)");
+            ImGui::SetTooltip("Revert the selected camera to its previous calibration\n(Ctrl + Z while hovering the view)");
+
+        ImGui::Checkbox("Hide other cameras", &_hideCameras);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Hide all but the selected camera\n(H while hovering the view)");
+        ImGui::SameLine();
+
+        static bool showCalibrationPoints = false;
+        if (ImGui::Checkbox("Show targets", &showCalibrationPoints))
+            showAllCalibrationPoints();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Show the target positions for the calibration points\n(A while hovering the view)");
+        ImGui::SameLine();
+
+        static bool showAllCamerasPoints = false;
+        if (ImGui::Checkbox("Show points everywhere", &showAllCamerasPoints))
+            showAllCamerasCalibrationPoints();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Show this camera's calibration points in other cameras\n(O while hovering the view)");
+        ImGui::SameLine();
+
+        // Colorization of the wireframe rendering. Applied after the GUI camera rendering to keep cameras in gui white
+        ImGui::Checkbox("Colorize wireframes", &_camerasColorized);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Activate colorization of the wireframe rendering, green for selected camera and magenta for the other cameras\n(V while hovering the view)"); 
 
         ImVec2 winSize = ImGui::GetWindowSize();
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
@@ -56,6 +62,7 @@ void GuiGlobalView::render()
         ImGui::Text("Select a camera:");
         for (auto& camera : cameras)
         {
+            colorizeCameraWireframes(false);
             camera->render();
 
             Values size;
@@ -78,6 +85,7 @@ void GuiGlobalView::render()
 
                     // Ensure that all cameras are shown
                     _camerasHidden = false;
+                    _camerasColorized = false;
                     for (auto& cam : cameras)
                         setObject(cam->getName(), "hide", {0});
 
@@ -97,7 +105,7 @@ void GuiGlobalView::render()
         ImGui::EndChild();
 
         ImGui::SameLine();
-        ImGui::BeginChild("Calibration", ImVec2(0, ImGui::GetWindowWidth() * 0.67), false);
+        ImGui::BeginChild("Calibration", ImVec2(0, ImGui::GetWindowWidth() * 0.67), true);
         if (_camera != nullptr)
         {
             Values size;
@@ -125,6 +133,10 @@ void GuiGlobalView::render()
             }
         }
         ImGui::EndChild();
+
+        // Applying options which should not be visible inside the GUI
+        hideOtherCameras(_hideCameras);
+        colorizeCameraWireframes(_camerasColorized);
     }
 }
 
@@ -192,6 +204,7 @@ void GuiGlobalView::nextCamera()
 
     // Ensure that all cameras are shown
     _camerasHidden = false;
+    _camerasColorized = false;
     for (auto& cam : cameras)
         setObject(cam->getName(), "hide", {0});
 
@@ -275,6 +288,23 @@ void GuiGlobalView::showAllCamerasCalibrationPoints()
 }
 
 /*************/
+void GuiGlobalView::colorizeCameraWireframes(bool colorize)
+{
+    if (_camera == _guiCamera)
+        return;
+
+    if (colorize)
+    {
+        setObjectsOfType("camera", "colorWireframe", {1.0, 0.0, 1.0, 1.0});
+        setObject(_camera->getName(), "colorWireframe", {0.0, 1.0, 0.0, 1.0});
+    }
+    else
+    {
+        setObjectsOfType("camera", "colorWireframe", {1.0, 1.0, 1.0, 1.0});
+    }
+}
+
+/*************/
 void GuiGlobalView::doCalibration()
 {
     CameraParameters params;
@@ -315,9 +345,12 @@ void GuiGlobalView::propagateCalibration()
 }
 
 /*************/
-void GuiGlobalView::switchHideOtherCameras()
+void GuiGlobalView::hideOtherCameras(bool hide)
 {
     vector<shared_ptr<Camera>> cameras;
+
+    if (hide == _camerasHidden)
+        return;
 
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_objects)
@@ -327,20 +360,10 @@ void GuiGlobalView::switchHideOtherCameras()
         if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
             cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
 
-    if (!_camerasHidden)
-    {
-        for (auto& cam : cameras)
-            if (cam.get() != _camera.get())
-                setObject(cam->getName(), "hide", {1});
-        _camerasHidden = true;
-    }
-    else
-    {
-        for (auto& cam : cameras)
-            if (cam.get() != _camera.get())
-                setObject(cam->getName(), "hide", {0});
-        _camerasHidden = false;
-    }
+    for (auto& cam : cameras)
+        if (cam.get() != _camera.get())
+            setObject(cam->getName(), "hide", {(int)hide});
+    _camerasHidden = hide;
 }
 
 /*************/
@@ -377,7 +400,7 @@ void GuiGlobalView::processJoystickState()
         }
         else if (_joyButtons[5] == 1 && _joyButtons[5] != _joyButtonsPrevious[5])
         {
-            switchHideOtherCameras();
+            _hideCameras = !_camerasHidden;
         }
     }
 
@@ -424,12 +447,17 @@ void GuiGlobalView::processKeyEvents()
     }
     else if (io.KeysDown['H'] && io.KeysDownDuration['H'] == 0.0)
     {
-        switchHideOtherCameras();
+        _hideCameras = !_camerasHidden;
         return;
     }
     else if (io.KeysDown['O'] && io.KeysDownDuration['O'] == 0.0)
     {
         showAllCamerasCalibrationPoints();
+        return;
+    }
+    else if (io.KeysDown['V'] && io.KeysDownDuration['V'] == 0.0)
+    {
+        _camerasColorized = !_camerasColorized;
         return;
     }
     // Reset to the previous camera calibration
