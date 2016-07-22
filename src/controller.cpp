@@ -156,7 +156,10 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
         if (obj.second->getType() == type)
         {
             obj.second->setAttribute(attr, values);
-            scene->sendMessageToWorld("sendAll", {obj.first, attr, values});
+            auto msg = values;
+            msg.push_front(attr);
+            msg.push_front(obj.first);
+            scene->sendMessageToWorld("sendAll", msg);
         }
 }
 
