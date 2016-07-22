@@ -89,14 +89,14 @@ void World::run()
             // Read and serialize new buffers
             Timer::get() << "serialize";
             vector<unsigned int> threadIds;
-            map<string, shared_ptr<SerializedObject>> serializedObjects;
+            unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
             for (auto& o : _objects)
             {
                 auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 // This prevents the map structure to be modified in the threads
-                serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
+                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
 
-                threadIds.push_back(SThread::pool.enqueue([=, &serializedObjects, &o]() {
+                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                     // Update the local objects
                     o.second->update();
 
@@ -108,7 +108,7 @@ void World::run()
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
                             if (obj)
-                                serializedObjects[bufferObj->getDistantName()] = obj;
+                                serializedObjectIt.first->second = obj;
                         }
                     }
                 }));
