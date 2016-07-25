@@ -79,11 +79,11 @@ target_sources(
     camera.cpp
     cgUtils.cpp
     controller.cpp
+    controller_gui.cpp
     factory.cpp
     filter.cpp
     geometry.cpp
     gpuBuffer.cpp
-    gui.cpp
     imageBuffer.cpp
     image.cpp
     link.cpp
@@ -126,7 +126,7 @@ else()
 endif()
 
 if (Boost_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE httpServer.cpp)
+    target_sources(splash-${API_VERSION} PRIVATE controller_httpServer.cpp)
 endif()
 
 if (FFMPEG_FOUND)

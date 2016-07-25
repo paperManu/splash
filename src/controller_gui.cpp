@@ -1,4 +1,4 @@
-#include "./gui.h"
+#include "./controller_gui.h"
 
 #include <fstream>
 

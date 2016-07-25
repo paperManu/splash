@@ -1,7 +1,7 @@
 #include <bandit/bandit.h>
 
+#include "controller_gui.h"
 #include "world.h"
-#include "gui.h"
 
 using namespace std;
 using namespace bandit;

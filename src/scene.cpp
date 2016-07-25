@@ -3,9 +3,9 @@
 #include <utility>
 
 #include "./camera.h"
+#include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
-#include "./gui.h"
 #include "./image.h"
 #include "./link.h"
 #include "./log.h"

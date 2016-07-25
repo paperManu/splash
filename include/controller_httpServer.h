@@ -18,7 +18,7 @@
  */
 
 /*
- * @httpServer.h
+ * @controller_httpServer.h
  * The HttpServer class
  */
 

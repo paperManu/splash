@@ -18,7 +18,7 @@
  */
 
 /*
- * @gui.h
+ * @controller_gui.h
  * The Gui base class
  */
 

@@ -1,8 +1,8 @@
 #include "window.h"
 
 #include "camera.h"
+#include "controller_gui.h"
 #include "geometry.h"
-#include "gui.h"
 #include "image.h"
 #include "log.h"
 #include "object.h"

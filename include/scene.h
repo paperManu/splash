@@ -37,11 +37,11 @@
     #include "./colorcalibrator.h"
 #endif
 #include "./coretypes.h"
+#include "./controller_gui.h"
+#include "./controller_httpServer.h"
 #include "./basetypes.h"
 #include "./controller.h"
 #include "./factory.h"
-#include "./gui.h"
-#include "./httpServer.h"
 
 namespace Splash {
 

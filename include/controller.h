@@ -40,6 +40,8 @@ class ControllerObject : public BaseObject
         ControllerObject(std::weak_ptr<RootObject> root)
             : BaseObject(root) {}
 
+        virtual ~ControllerObject() {};
+
     protected:
         /**
          * Get a list of the object names
