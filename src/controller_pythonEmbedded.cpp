@@ -11,9 +11,8 @@ using namespace std;
 namespace Splash {
 
 /*************/
-// Definition of the splash python module
-mutex pythonMutex {};
-PythonEmbedded* that {nullptr};
+mutex PythonEmbedded::_pythonMutex {};
+PythonEmbedded* PythonEmbedded::_that {nullptr};
 
 /*************/
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
@@ -26,7 +25,6 @@ PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
     auto capsule = PyDict_GetItem(moduleDict, key);
 
     Py_DECREF(key);
-    Py_DECREF(moduleDict);
 
     if (!capsule)
         return nullptr;
@@ -48,6 +46,7 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (int i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
+
     return pythonObjectList;
 }
 
@@ -66,6 +65,7 @@ PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
         PyDict_SetItemString(pythonObjectDict, obj.first.c_str(), val);
         Py_DECREF(val);
     }
+
     return pythonObjectDict;
 }
 
@@ -270,7 +270,7 @@ PyModuleDef PythonEmbedded::SplashModule = {
 /*************/
 PyObject* PythonEmbedded::pythonInitSplash()
 {
-    if (!that)
+    if (!PythonEmbedded::_that)
         return nullptr;
 
     PyObject* module {nullptr};
@@ -279,11 +279,15 @@ PyObject* PythonEmbedded::pythonInitSplash()
     if (!module)
         return nullptr;
 
-    PyObject* splashCapsule = PyCapsule_New((void*)that, "splash.splash", nullptr);
+    // Pointer to the PythonEmbedded instance
+    PyObject* splashCapsule = PyCapsule_New((void*)PythonEmbedded::_that, "splash.splash", nullptr);
     if (!splashCapsule)
         return nullptr;
-
     PyModule_AddObject(module, "splash", splashCapsule);
+
+    // Python object to mirror the _doLoop inside Python
+    PyObject* doLoop = Py_BuildValue("i", 1);
+    PyModule_AddObject(module, "loop", doLoop);
 
     return module;
 }
@@ -340,24 +344,22 @@ bool PythonEmbedded::run()
 /*************/
 bool PythonEmbedded::stop()
 {
-    auto loopFuture = _loopThreadPromise.get_future();
+    // Tell    // Stop and wait for the loop
     _doLoop = false;
-    loopFuture.wait();
-    return loopFuture.get();
+    if (_loopThread.joinable())
+        _loopThread.join();
 }
 
 /*************/
 void PythonEmbedded::loop()
 {
-    bool returnValue = true;
-
     PyObject *pName, *pModule, *pDict, *pFunc;
     PyObject *pArgs, *pValue;
 
     // Initialize the Splash python module
     {
-        lock_guard<mutex> pythonLock(pythonMutex);
-        that = this;
+        lock_guard<mutex> pythonLock(_pythonMutex);
+        _that = this;
         PyImport_AppendInittab("splash", &pythonInitSplash);
     }
 
@@ -375,18 +377,23 @@ void PythonEmbedded::loop()
 
     if (pModule)
     {
-        pFunc = PyObject_GetAttrString(pModule, moduleName.c_str());
+        pFunc = PyObject_GetAttrString(pModule, "splash_loop");
 
         if (!pFunc || !PyCallable_Check(pFunc))
         {
             if (PyErr_Occurred())
                 PyErr_Print();
             Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Cannot find function " << _scriptName << Log::endl;
-            returnValue = false;
         }
         else
         {
-            auto pReturn = PyObject_CallObject(pFunc, nullptr);
+            auto timerName = "PythonEmbedded_" + _name;
+            while (_doLoop)
+            {
+                Timer::get() << timerName;
+                PyObject_CallObject(pFunc, nullptr);
+                Timer::get() >> _loopDurationMs * 1000 >> timerName;
+            }
         }
 
         Py_XDECREF(pFunc);
@@ -397,12 +404,9 @@ void PythonEmbedded::loop()
         if (PyErr_Occurred())
             PyErr_Print();
         Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Error while importing module " << _filepath + _scriptName << Log::endl;
-        returnValue = false;
     }
 
     Py_Finalize();
-
-    _loopThreadPromise.set_value(returnValue);
 }
 
 /*************/

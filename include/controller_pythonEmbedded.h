@@ -75,6 +75,7 @@ class PythonEmbedded : public ControllerObject
         std::string _scriptName {""}; //!< Name of the module (filename minus .py)
 
         bool _doLoop {false}; //!< Set to false to stop the Python loop
+        int _loopDurationMs {10}; //!< Time between loops in ms
         std::thread _loopThread {}; //!< Python thread loop
         std::promise<bool> _loopThreadPromise {}; //!< Holds the output result from the threading loop
 
@@ -105,6 +106,9 @@ class PythonEmbedded : public ControllerObject
         void registerAttributes();
 
     private:
+        static std::mutex _pythonMutex;
+        static PythonEmbedded* _that;
+
         // Python objects and methods
         static PyMethodDef SplashMethods[];
         static PyModuleDef SplashModule;
