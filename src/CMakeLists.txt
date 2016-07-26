@@ -47,6 +47,7 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS})
 
 link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${GLFW_LIBRARY_DIRS})
@@ -58,6 +59,7 @@ link_directories(${FFMPEG_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
+link_directories(${PYTHON_LIBRARIES})
 
 #
 # Targets
@@ -166,6 +168,13 @@ if (SHMDATA_FOUND)
     )
 endif()
 
+if (PYTHONLIBS_FOUND)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+        controller_pythonEmbedded.cpp
+    )
+endif()
+
 if (APPLE)
     target_sources(
         splash-${API_VERSION} PRIVATE
@@ -185,6 +194,7 @@ target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SNAPPY_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 
 #
 # splash and splash-scene executables

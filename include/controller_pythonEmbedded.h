@@ -29,6 +29,8 @@
 #include <string>
 #include <thread>
 
+#include <Python.h>
+
 #include "./coretypes.h"
 #include "./basetypes.h"
 #include "./controller.h"
@@ -76,15 +78,47 @@ class PythonEmbedded : public ControllerObject
         std::thread _loopThread {}; //!< Python thread loop
         std::promise<bool> _loopThreadPromise {}; //!< Holds the output result from the threading loop
 
+        std::vector<PyMethodDef> _pythonMethods {};
+
         /**
          * \brief Python interpreter main loop
          */
         void loop();
 
         /**
+         * \brief Build a Python object from a Value
+         * \param value Value to convert
+         * \return Return a PyObject* representation of the value
+         */
+        static PyObject* convertFromValue(const Value& value);
+
+        /**
+         * \brief Build a Value from a valid Python object
+         * \param pyObject Python object to interpret
+         * \return Return a Value
+         */
+        static Value convertToValue(PyObject* pyObject);
+
+        /**
          * \brief Register new functors to modify attributes
          */
         void registerAttributes();
+
+    private:
+        // Python objects and methods
+        static PyMethodDef SplashMethods[];
+        static PyModuleDef SplashModule;
+
+        static PyObject* pythonInitSplash();
+        static PythonEmbedded* getSplashInstance(PyObject* module);
+        static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
+        static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
+        static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args);
+        static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args);
+        static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
+        static PyObject* pythonSetGlobal(PyObject* self, PyObject* args);
+        static PyObject* pythonSetObject(PyObject* self, PyObject* args);
+        static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args);
 };
 
 } // end of namespace

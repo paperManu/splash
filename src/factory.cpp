@@ -1,9 +1,12 @@
 #include "./factory.h"
 
 #include "./camera.h"
+#if HAVE_GPHOTO
+    #include "./colorcalibrator.h"
+#endif
+#include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
-#include "./gui.h"
 #include "./image.h"
 #if HAVE_GPHOTO
     #include "./image_gphoto.h"
@@ -24,21 +27,19 @@
     #include "./mesh_shmdata.h"
 #endif
 #include "./object.h"
+#if HAVE_PYTHON
+    #include "./controller_pythonEmbedded.h"
+#endif
 #include "./queue.h"
 #include "./texture.h"
 #include "./texture_image.h"
+#if HAVE_OSX
+    #include "./texture_syphon.h"
+#endif
 #include "./threadpool.h"
 #include "./timer.h"
 #include "./warp.h"
 #include "./window.h"
-
-#if HAVE_GPHOTO
-    #include "./colorcalibrator.h"
-#endif
-
-#if HAVE_OSX
-    #include "./texture_syphon.h"
-#endif
 
 using namespace std;
 
@@ -162,6 +163,12 @@ void Factory::registerObjects()
     _objectBook["object"] = [&]() {
         return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root));
      };
+
+#if HAVE_PYTHON
+    _objectBook["python"] = [&]() {
+        return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
+    };
+#endif
 
     _objectBook["queue"] = [&]() {
         shared_ptr<BaseObject> object;
