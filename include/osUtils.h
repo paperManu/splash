@@ -50,7 +50,7 @@ namespace Splash
         }
 
         /*****/
-        inline std::string getPathFromFilePath(const std::string& filepath)
+        inline std::string getPathFromFilePath(const std::string& filepath, const std::string& configPath = "")
         {
             auto path = filepath;
 
@@ -70,16 +70,24 @@ namespace Splash
                 fullPath = path.substr(0, slashPos) + "/";
             else if (isRelative)
             {
-                char workingPathChar[256];
-                auto workingPath = std::string(getcwd(workingPathChar, 255));
-                if (path.find("/") == 1)
-                    fullPath = workingPath + path.substr(1, slashPos) + "/";
-                else if (path.find("/") == 2)
-                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+                if (configPath.size() == 0)
+                {
+                    char workingPathChar[256];
+                    auto workingPath = std::string(getcwd(workingPathChar, 255));
+                    if (path.find("/") == 1)
+                        fullPath = workingPath + path.substr(1, slashPos) + "/";
+                    else if (path.find("/") == 2)
+                        fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+                }
+                else
+                {
+                    fullPath = configPath + path.substr(1, slashPos);
+                }
             }
 
             return fullPath;
         }
+
         /*****/
         inline std::string getPathFromExecutablePath(const std::string& filepath)
         {
@@ -114,7 +122,7 @@ namespace Splash
             if (slashPos == std::string::npos)
                 filename = filepath;
             else
-                filename = filepath.substr(slashPos);
+                filename = filepath.substr(slashPos + 1);
             return filename;
         }
 

@@ -25,6 +25,9 @@
 /* Defined to 1 if shmdata-1.0 is detected */
 #cmakedefine01 HAVE_SHMDATA
 
+/* Defined to 1 if python3.x is detected */
+#cmakedefine01 HAVE_PYTHON
+
 /* Support mmx instructions */
 #cmakedefine01 HAVE_MMX
 
