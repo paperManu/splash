@@ -17,22 +17,7 @@ PythonEmbedded* PythonEmbedded::_that {nullptr};
 /*************/
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
 {
-    if (!module || !PyModule_Check(module))
-        return nullptr;
-
-    auto moduleDict = PyModule_GetDict(module);
-    auto key = PyUnicode_FromString("splash");
-    auto capsule = PyDict_GetItem(moduleDict, key);
-
-    Py_DECREF(key);
-
-    if (!capsule)
-        return nullptr;
-
-    auto ptr = static_cast<PythonEmbedded*>(PyCapsule_GetPointer(capsule, "splash.splash"));
-    Py_DECREF(capsule);
-
-    return ptr;
+    return static_cast<PythonEmbedded*>(PyCapsule_Import("splash.splash", 0));
 }
 
 /*************/
@@ -40,12 +25,13 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
     if (!that)
-        return nullptr;
+        return PyList_New(0);
 
     auto objects = that->getObjectNames();
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (int i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
+    PRINT_FUNCTION_LINE
 
     return pythonObjectList;
 }
@@ -55,7 +41,7 @@ PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
     if (!that)
-        return nullptr;
+        return PyDict_New();
 
     auto objects = that->getObjectTypes();
     PyObject* pythonObjectDict = PyDict_New();
@@ -74,16 +60,16 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
 {
     auto that = getSplashInstance(self);
     if (!that)
-        return nullptr;
+        return Py_BuildValue("s", "");
 
     char* strName;
     char* strAttr;
     if (!PyArg_ParseTuple(args, "ss", &strName, &strAttr))
-        return nullptr;
+        return Py_BuildValue("s", "");
 
     auto result = that->getObjectAttributeDescription(string(strName), string(strAttr));
     if (result.size() == 0)
-        return nullptr;
+        return Py_BuildValue("s", "");
 
     auto description = result[0].asString();
     return Py_BuildValue("s", description.c_str());
@@ -94,12 +80,12 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
 {
     auto that = getSplashInstance(self);
     if (!that)
-        return nullptr;
+        return PyList_New(0);
 
     char* strName;
     char* strAttr;
     if (!PyArg_ParseTuple(args, "ss", &strName, &strAttr))
-        return nullptr;
+        return PyList_New(0);
 
     auto result = that->getObjectAttribute(string(strName), string(strAttr));
     auto pyResult = convertFromValue(result);
@@ -112,7 +98,7 @@ PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
     if (!that)
-        return nullptr;
+        return PyDict_New();
 
     auto objects = that->getObjectLinks();
     PyObject* pythonObjectDict = PyDict_New();
@@ -392,6 +378,8 @@ void PythonEmbedded::loop()
             {
                 Timer::get() << timerName;
                 PyObject_CallObject(pFunc, nullptr);
+                if (PyErr_Occurred())
+                    PyErr_Print();
                 Timer::get() >> _loopDurationMs * 1000 >> timerName;
             }
         }
