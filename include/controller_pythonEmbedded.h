@@ -75,7 +75,7 @@ class PythonEmbedded : public ControllerObject
         std::string _scriptName {""}; //!< Name of the module (filename minus .py)
 
         bool _doLoop {false}; //!< Set to false to stop the Python loop
-        int _loopDurationMs {10}; //!< Time between loops in ms
+        int _loopDurationMs {5}; //!< Time between loops in ms
         std::thread _loopThread {}; //!< Python thread loop
         std::promise<bool> _loopThreadPromise {}; //!< Holds the output result from the threading loop
 
@@ -85,6 +85,14 @@ class PythonEmbedded : public ControllerObject
          * \brief Python interpreter main loop
          */
         void loop();
+
+        /**
+         * \brief Get a Python function from the given module
+         * \param module Python module
+         * \param name Function name
+         * \return Return a python function, or nullptr if it does not exist
+         */
+        PyObject* getFuncFromModule(PyObject* module, const std::string& name);
 
         /**
          * \brief Build a Python object from a Value

@@ -31,7 +31,6 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (int i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
-    PRINT_FUNCTION_LINE
 
     return pythonObjectList;
 }
@@ -339,7 +338,7 @@ bool PythonEmbedded::stop()
 /*************/
 void PythonEmbedded::loop()
 {
-    PyObject *pName, *pModule, *pDict, *pFunc;
+    PyObject *pName, *pModule, *pDict;
     PyObject *pArgs, *pValue;
 
     // Initialize the Splash python module
@@ -363,28 +362,36 @@ void PythonEmbedded::loop()
 
     if (pModule)
     {
-        pFunc = PyObject_GetAttrString(pModule, "splash_loop");
-
-        if (!pFunc || !PyCallable_Check(pFunc))
+        auto pFuncInit = getFuncFromModule(pModule, "splash_init");
+        if (pFuncInit)
         {
+            PyObject_CallObject(pFuncInit, nullptr);
             if (PyErr_Occurred())
                 PyErr_Print();
-            Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Cannot find function " << _scriptName << Log::endl;
-        }
-        else
-        {
-            auto timerName = "PythonEmbedded_" + _name;
-            while (_doLoop)
-            {
-                Timer::get() << timerName;
-                PyObject_CallObject(pFunc, nullptr);
-                if (PyErr_Occurred())
-                    PyErr_Print();
-                Timer::get() >> _loopDurationMs * 1000 >> timerName;
-            }
+            Py_XDECREF(pFuncInit);
         }
 
-        Py_XDECREF(pFunc);
+        auto pFuncLoop = getFuncFromModule(pModule, "splash_loop");
+        auto timerName = "PythonEmbedded_" + _name;
+        while (pFuncLoop && _doLoop)
+        {
+            Timer::get() << timerName;
+            PyObject_CallObject(pFuncLoop, nullptr);
+            if (PyErr_Occurred())
+                PyErr_Print();
+            Timer::get() >> _loopDurationMs * 1000 >> timerName;
+        }
+        Py_XDECREF(pFuncLoop);
+
+        auto pFuncStop = getFuncFromModule(pModule, "splash_stop");
+        if (pFuncStop)
+        {
+            PyObject_CallObject(pFuncStop, nullptr);
+            if (PyErr_Occurred())
+                PyErr_Print();
+            Py_XDECREF(pFuncStop);
+        }
+
         Py_DECREF(pModule);
     }
     else
@@ -395,6 +402,21 @@ void PythonEmbedded::loop()
     }
 
     Py_Finalize();
+}
+
+/*************/
+PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const string& name)
+{
+    auto pFunc = PyObject_GetAttrString(module, name.c_str());
+
+    if (!pFunc || !PyCallable_Check(pFunc))
+    {
+        if (PyErr_Occurred())
+            PyErr_Print();
+        Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Cannot find function " << _scriptName << Log::endl;
+    }
+
+    return pFunc;
 }
 
 /*************/
@@ -449,9 +471,11 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         }
         else
         {
+            value = "";
             char* strPtr;
-            PyArg_ParseTuple(obj, "s", &strPtr);
-            value = string(strPtr);
+            if (auto asciiString = PyUnicode_AsASCIIString(obj))
+                if (strPtr = PyBytes_AsString(asciiString))
+                    value = string(strPtr);
         }
 
         return value;
