@@ -57,6 +57,20 @@ class SplashServer(BaseHTTPRequestHandler):
             obj = match[1]
             attr = match[2]
             value = match[3].split('&')
+            for i in range(len(value)):
+                converted = False
+                try:
+                    value[i] = int(value[i])
+                    converted = True
+                except:
+                    pass
+                
+                if not converted:
+                    try:
+                        value[i] = float(value[i])
+                    except:
+                        pass
+
             if splash.set_object(obj, attr, value):
                 self.sendResult("OK")
             else:

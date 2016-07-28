@@ -270,10 +270,6 @@ PyObject* PythonEmbedded::pythonInitSplash()
         return nullptr;
     PyModule_AddObject(module, "splash", splashCapsule);
 
-    // Python object to mirror the _doLoop inside Python
-    PyObject* doLoop = Py_BuildValue("i", 1);
-    PyModule_AddObject(module, "loop", doLoop);
-
     return module;
 }
 
@@ -472,10 +468,9 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         else
         {
             value = "";
-            char* strPtr;
-            if (auto asciiString = PyUnicode_AsASCIIString(obj))
-                if (strPtr = PyBytes_AsString(asciiString))
-                    value = string(strPtr);
+            char* strPtr = PyUnicode_AsUTF8(obj);
+            if (strPtr)
+                value = string(strPtr);
         }
 
         return value;
