@@ -74,6 +74,7 @@ class PythonEmbedded : public ControllerObject
         std::string _filepath {""}; //!< Path to the python script
         std::string _scriptName {""}; //!< Name of the module (filename minus .py)
 
+        PyThreadState* _pyThreadState {nullptr};
         bool _doLoop {false}; //!< Set to false to stop the Python loop
         int _loopDurationMs {5}; //!< Time between loops in ms
         std::thread _loopThread {}; //!< Python thread loop

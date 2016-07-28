@@ -132,7 +132,6 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args)
     }
 
     auto value = convertToValue(pyValue).asValues();
-    Py_XDECREF(pyValue);
     that->setGlobal(string(strName), value);
 
     Py_INCREF(Py_True);
@@ -159,7 +158,6 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
     }
 
     auto value = convertToValue(pyValue).asValues();
-    Py_XDECREF(pyValue);
     that->setObject(string(strName), string(strAttr), value);
 
     Py_INCREF(Py_True);
@@ -186,7 +184,6 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args)
     }
 
     auto value = convertToValue(pyValue).asValues();
-    Py_XDECREF(pyValue);
     that->setObjectsOfType(string(strType), string(strAttr), value);
 
     Py_INCREF(Py_True);
@@ -325,7 +322,7 @@ bool PythonEmbedded::run()
 /*************/
 bool PythonEmbedded::stop()
 {
-    // Tell    // Stop and wait for the loop
+    // Stop and wait for the loop
     _doLoop = false;
     if (_loopThread.joinable())
         _loopThread.join();
@@ -346,6 +343,7 @@ void PythonEmbedded::loop()
 
     // Load the module by its filename
     Py_Initialize();
+    PyEval_InitThreads();
     
     PyRun_SimpleString("import sys");
     PyRun_SimpleString(("sys.path.append(\"" + _filepath + "\")").c_str());
@@ -369,15 +367,20 @@ void PythonEmbedded::loop()
 
         auto pFuncLoop = getFuncFromModule(pModule, "splash_loop");
         auto timerName = "PythonEmbedded_" + _name;
+
+        _pyThreadState = PyEval_SaveThread();
         while (pFuncLoop && _doLoop)
         {
             Timer::get() << timerName;
+            PyEval_RestoreThread(_pyThreadState);
             PyObject_CallObject(pFuncLoop, nullptr);
             if (PyErr_Occurred())
                 PyErr_Print();
+            _pyThreadState = PyEval_SaveThread();
             Timer::get() >> _loopDurationMs * 1000 >> timerName;
         }
         Py_XDECREF(pFuncLoop);
+        PyEval_RestoreThread(_pyThreadState);
 
         auto pFuncStop = getFuncFromModule(pModule, "splash_stop");
         if (pFuncStop)
@@ -409,7 +412,7 @@ PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const string& name
     {
         if (PyErr_Occurred())
             PyErr_Print();
-        Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Cannot find function " << _scriptName << Log::endl;
+        Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Cannot find function " << name << Log::endl;
     }
 
     return pFunc;
