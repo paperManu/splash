@@ -233,14 +233,6 @@ sendAsDefault:
             goto sendAsDefault;
         break;
     }
-    case GLFW_KEY_ESCAPE:
-    {
-        if (action == GLFW_PRESS)
-        {
-            setGlobal("quit");
-        }
-        break;
-    }
     case GLFW_KEY_B:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
