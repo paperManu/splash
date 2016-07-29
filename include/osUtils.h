@@ -169,7 +169,10 @@ namespace Splash
             size_t slashPos = path.rfind("/");
 
             if (isAbsolute)
+            {
                 fullPath = path.substr(0, slashPos) + "/";
+                fullPath = cleanPath(fullPath);
+            }
             else if (isRelative)
             {
                 char workingPathChar[256];
@@ -178,9 +181,10 @@ namespace Splash
                     fullPath = workingPath + path.substr(1, slashPos) + "/";
                 else if (path.find("/") == 2)
                     fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+                fullPath = cleanPath(fullPath);
             }
 
-            return cleanPath(fullPath);
+            return fullPath;
         }
 
         /*****/
