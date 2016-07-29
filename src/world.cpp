@@ -1271,7 +1271,7 @@ void World::registerAttributes()
         });
         return true;
     }, {'s', 's'});
-    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type");
+    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type, and links the new object to the objects given by the following parameters");
 
     addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)

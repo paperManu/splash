@@ -13,10 +13,18 @@ import splash
 import code
 import threading
 
+try:
+    import readline
+except ImportError:
+    pass
+else:
+    import rlcompleter
+    readline.parse_and_bind("tab: complete")
+    readline.set_completer(rlcompleter.Completer(globals()).complete)
+
 def repl():
-    import splash
     global console
-    console = code.InteractiveConsole(locals=locals())
+    console = code.InteractiveConsole(locals=globals())
     console.interact()
 
 replThread = threading.Thread(target=repl)
@@ -30,4 +38,3 @@ def splash_loop():
 def splash_stop():
     print("Press a key to quit")
     console.push("quit()")
-    pass

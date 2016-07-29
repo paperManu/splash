@@ -219,55 +219,77 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
         (char*)"get_object_list", 
         PythonEmbedded::pythonGetObjectList, 
         METH_VARARGS, 
-        (char*)"Get the object list from Splash"
+        (char*)"splash.get_object_list()\n"
+               "\n"
+               "Returns the list of objects from Splash"
     },
     {
         (char*)"get_object_types", 
         PythonEmbedded::pythonGetObjectTypes, 
         METH_VARARGS, 
-        (char*)"Get a dict of the objects types"
+        (char*)"splash.get_object_types()\n"
+               "\n"
+               "Retusn a dict of the objects types"
     },
     {
         (char*)"get_object_attribute_description", 
         PythonEmbedded::pythonGetObjectAttributeDescription, 
         METH_VARARGS, 
-        (char*)"Get the description for the attribute of the given object"
+        (char*)"splash.get_object_attribute_description(objName, attribute)\n"
+               "\n"
+               "Returns the description for the attribute of the given object"
     },
     {
         (char*)"get_object_attribute",
         PythonEmbedded::pythonGetObjectAttribute,
         METH_VARARGS,
-        (char*)"Get the attribute value for the given object"
+        (char*)"splash.get_object_attribute(objName, attribute)\n"
+               "\n"
+               "Returns the attribute value for the given object"
     },
     {
         (char*)"get_object_attributes",
         PythonEmbedded::pythonGetObjectAttributes,
         METH_VARARGS,
-        (char*)"Get the availabled attributes for the given object"
+        (char*)"splash.get_object_attributes(objName)\n"
+               "\n"
+               "Returns a list of the available attributes for the given object"
     },
     {
         (char*)"get_object_links",
         PythonEmbedded::pythonGetObjectLinks,
         METH_VARARGS,
-        (char*)"Get the links between all objects"
+        (char*)"splash.get_object_links()\n"
+               "\n"
+               "Returns a dict of the links between all objects"
     },
     {
         (char*)"set_global",
         PythonEmbedded::pythonSetGlobal,
         METH_VARARGS,
-        (char*)"Set the given configuration-related attribute"
+        (char*)"splash.set_global(attribute, value)\n"
+               "\n"
+               "Set the given configuration-related attribute\n"
+               "These attributes are listed in the \"world\" object type\n"
+               "Returns True if the command was accepted"
     },
     {
         (char*)"set_object",
         PythonEmbedded::pythonSetObject,
         METH_VARARGS,
-        (char*)"Set the attribute for the object to the given value"
+        (char*)"splash.set_object(objName, attribute, value)\n"
+               "\n"
+               "Set the attribute for the object to the given value\n"
+               "Returns True if the command was accepted"
     },
     {
         (char*)"set_objects_of_type",
         PythonEmbedded::pythonSetObjectsOfType,
         METH_VARARGS,
-        (char*)"Set the attribute for all the objects of the given type"
+        (char*)"splash.set_objects_of_type(objType, value)\n"
+               "\n"
+               "Set the attribute for all the objects of the given type\n"
+               "Returns True if the command was accepted"
     },
     {nullptr, nullptr, 0, nullptr}
 };
