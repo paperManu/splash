@@ -93,6 +93,29 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
 }
 
 /*************/
+PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args)
+{
+    auto that = getSplashInstance(self);
+    if (!that)
+        return PyList_New(0);
+
+    char* strName;
+    if (!PyArg_ParseTuple(args, "s", &strName))
+        return PyDict_New();
+
+    auto result = that->getObjectAttributes(string(strName));
+    auto pyResult = PyDict_New();
+    for (auto& r : result)
+    {
+        auto pyValue = convertFromValue(r.second);
+        PyDict_SetItemString(pyResult, r.first.c_str(), pyValue);
+        Py_DECREF(pyValue);
+    }
+
+    return pyResult;
+}
+
+/*************/
 PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
@@ -217,6 +240,12 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
         (char*)"Get the attribute value for the given object"
     },
     {
+        (char*)"get_object_attributes",
+        PythonEmbedded::pythonGetObjectAttributes,
+        METH_VARARGS,
+        (char*)"Get the availabled attributes for the given object"
+    },
+    {
         (char*)"get_object_links",
         PythonEmbedded::pythonGetObjectLinks,
         METH_VARARGS,
@@ -320,7 +349,7 @@ bool PythonEmbedded::run()
 }
 
 /*************/
-bool PythonEmbedded::stop()
+void PythonEmbedded::stop()
 {
     // Stop and wait for the loop
     _doLoop = false;

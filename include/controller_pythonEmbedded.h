@@ -66,9 +66,8 @@ class PythonEmbedded : public ControllerObject
 
         /**
          * \brief Stop the running script
-         * \return Return true if the script ran and exited correctly
          */
-        bool stop();
+        void stop();
 
     private:
         std::string _filepath {""}; //!< Path to the python script
@@ -128,6 +127,7 @@ class PythonEmbedded : public ControllerObject
         static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
         static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args);
         static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args);
+        static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args);
         static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
         static PyObject* pythonSetGlobal(PyObject* self, PyObject* args);
         static PyObject* pythonSetObject(PyObject* self, PyObject* args);
