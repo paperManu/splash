@@ -44,9 +44,9 @@ World* World::_that;
 /*************/
 World::World(int argc, char** argv)
 {
-    parseArguments(argc, argv);
-
     init();
+
+    parseArguments(argc, argv);
 }
 
 /*************/
@@ -577,6 +577,19 @@ string World::getObjectsAttributesDescriptions()
 {
     Json::Value root;
 
+    auto formatDescription = [](const string desc, const Values& argTypes) -> string {
+        string descriptionStr = "[";
+        for (int i = 0; i < argTypes.size(); ++i)
+        {
+            descriptionStr += argTypes[i].asString();
+            if (i < argTypes.size() - 1)
+                descriptionStr += ", ";
+        }
+        descriptionStr += "] " + desc;
+
+        return descriptionStr;
+    };
+
     // We create "fake" objects and ask then for their attributes
     auto localFactory = Factory();
     auto types = localFactory.getObjectTypes();
@@ -598,17 +611,7 @@ string World::getObjectsAttributesDescriptions()
             if (d[2].asValues().size() == 0)
                 continue;
 
-            string descriptionStr = "[";
-            auto type = d[2].asValues();
-            for (int i = 0; i < type.size(); ++i)
-            {
-                descriptionStr += type[i].asString();
-                if (i < type.size() - 1)
-                    descriptionStr += ", ";
-            }
-            descriptionStr += "] " + d[1].asString();
-                
-            root[obj->getType()][d[0].asString()] = descriptionStr;
+            root[obj->getType()][d[0].asString()] = formatDescription(d[1].asString(), d[2].asValues());
             
             addedAttribute++;
         }
@@ -616,6 +619,16 @@ string World::getObjectsAttributesDescriptions()
         // If the object has no documented attribute
         if (addedAttribute == 0)
             root.removeMember(obj->getType());
+    }
+
+    // Also, add documentation for the World and Scene types
+    auto worldDescription = getAttributesDescriptions();
+    for (auto& d : worldDescription)
+    {
+        if (d[1].size() == 0)
+            continue;
+
+        root["world"][d[0].asString()] = formatDescription(d[1].asString(), d[2].asValues());
     }
 
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas

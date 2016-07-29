@@ -535,6 +535,8 @@ struct Value
                 return sizeof(_f);
             else if (_type == Type::s)
                 return _s.size();
+            else if (_type == Type::v)
+                return _v->size();
             else
                 return 0;
         }
