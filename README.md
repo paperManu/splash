@@ -110,7 +110,7 @@ And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
-    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev libboost-all-dev
+    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev
     sudo apt-get install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev
     sudo apt-get install libglfw3-dev libxinerama-dev libxcursor-dev
     sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
@@ -152,7 +152,7 @@ We then install Shmdata, which depends on GStreamer. Note that Shmdata is only n
 
 Install all the other dependencies:
 
-    sudo port install boost gsl zmq glfw glm ffmpeg portaudio snappy
+    sudo port install gsl zmq glfw glm ffmpeg portaudio snappy
 
 And then grab and install Splash:
 

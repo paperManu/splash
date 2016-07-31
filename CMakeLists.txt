@@ -51,7 +51,6 @@ pkg_search_module(ZMQ REQUIRED libzmq)
 # Optional dependencies
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
 find_package(PythonLibs)
-find_package(Boost COMPONENTS system thread)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
@@ -61,6 +60,8 @@ pkg_search_module(SHMDATA shmdata-1.2)
 #
 # Configuration
 #
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
@@ -171,7 +172,6 @@ function(info_cfg_text
     set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
 endfunction()
 
-info_cfg_option(Boost_VERSION)
 info_cfg_option(GPHOTO_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)

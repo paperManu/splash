@@ -38,7 +38,6 @@
 #endif
 #include "./coretypes.h"
 #include "./controller_gui.h"
-#include "./controller_httpServer.h"
 #include "./basetypes.h"
 #include "./controller.h"
 #include "./factory.h"
@@ -62,7 +61,6 @@ class Scene : public RootObject
     friend GuiWarp;
     friend GuiWidget;
     friend Gui;
-    friend HttpServer;
 
     public:
         /**
@@ -199,10 +197,6 @@ class Scene : public RootObject
         // Gui exists in master scene whatever the configuration
         std::shared_ptr<Gui> _gui;
         bool _guiLinkedToWindow {false};
-        
-        // Http server, in master scene too
-        std::shared_ptr<HttpServer> _httpServer;
-        std::future<void> _httpServerFuture;
 
         // Objects in charge of calibration
 #if HAVE_GPHOTO

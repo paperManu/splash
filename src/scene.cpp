@@ -71,12 +71,6 @@ Scene::~Scene()
 
     _joystickUpdateFuture.get();
 
-    if (_httpServerFuture.valid())
-    {
-        _httpServer->stop();
-        _httpServerFuture.get();
-    }
-
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     lock_guard<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
@@ -1353,27 +1347,6 @@ void Scene::registerAttributes()
         return true;
     }, {'s'});
     setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
-
-    addAttribute("httpServer", [&](const Values& args) {
-        string address = args[0].asString();
-        string port = args[1].asString();
-
-        _httpServer = make_shared<HttpServer>(address, port, _self);
-        if (_httpServer)
-        {
-            _httpServerFuture = async(std::launch::async, [&](){
-                _httpServer->run();
-            });
-        }
-
-        return true;
-    }, [&]() -> Values {
-        if (_httpServer)
-            return {_httpServer->getAddress(), _httpServer->getPort()};
-        else
-            return {};
-    }, {'s', 's'});
-    setAttributeDescription("httpServer", "Create an HTTP server given its address and port");
    
     addAttribute("link", [&](const Values& args) {
         addTask([=]() {

@@ -37,7 +37,6 @@ else()
     include_directories(../external/glad/core/include)
 endif()
 
-include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
@@ -49,7 +48,6 @@ include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
-link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${GLFW_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
@@ -127,10 +125,6 @@ else()
     )
 endif()
 
-if (Boost_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE controller_httpServer.cpp)
-endif()
-
 if (FFMPEG_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE image_ffmpeg.cpp)
 endif()
@@ -199,10 +193,7 @@ target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 #
 # splash and splash-scene executables
 #
-target_compile_features(splash PRIVATE cxx_variadic_templates)
 target_link_libraries(splash splash-${API_VERSION})
-
-target_compile_features(splash-scene PRIVATE cxx_variadic_templates)
 target_link_libraries(splash-scene splash-${API_VERSION})
 
 #
