@@ -11,8 +11,10 @@ using namespace std;
 namespace Splash {
 
 /*************/
+atomic_int PythonEmbedded::_pythonInstances {0};
 mutex PythonEmbedded::_pythonMutex {};
-PythonEmbedded* PythonEmbedded::_that {nullptr};
+unique_ptr<ControllerObject> PythonEmbedded::_controller {nullptr};
+PyThreadState* PythonEmbedded::_pythonGlobalThreadState {nullptr};
 
 /*************/
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
@@ -23,11 +25,11 @@ PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
 /*************/
 PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
         return PyList_New(0);
 
-    auto objects = that->getObjectNames();
+    auto objects = _controller->getObjectNames();
     PyObject* pythonObjectList = PyList_New(objects.size());
     for (int i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
@@ -38,11 +40,11 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 /*************/
 PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
         return PyDict_New();
 
-    auto objects = that->getObjectTypes();
+    auto objects = _controller->getObjectTypes();
     PyObject* pythonObjectDict = PyDict_New();
     for (auto& obj : objects)
     {
@@ -57,8 +59,8 @@ PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
 /*************/
 PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
         return Py_BuildValue("s", "");
 
     char* strName;
@@ -66,7 +68,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
     if (!PyArg_ParseTuple(args, "ss", &strName, &strAttr))
         return Py_BuildValue("s", "");
 
-    auto result = that->getObjectAttributeDescription(string(strName), string(strAttr));
+    auto result = _controller->getObjectAttributeDescription(string(strName), string(strAttr));
     if (result.size() == 0)
         return Py_BuildValue("s", "");
 
@@ -77,8 +79,8 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
 /*************/
 PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
         return PyList_New(0);
 
     char* strName;
@@ -86,7 +88,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
     if (!PyArg_ParseTuple(args, "ss", &strName, &strAttr))
         return PyList_New(0);
 
-    auto result = that->getObjectAttribute(string(strName), string(strAttr));
+    auto result = _controller->getObjectAttribute(string(strName), string(strAttr));
     auto pyResult = convertFromValue(result);
 
     return pyResult;
@@ -95,15 +97,15 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
 /*************/
 PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
         return PyList_New(0);
 
     char* strName;
     if (!PyArg_ParseTuple(args, "s", &strName))
         return PyDict_New();
 
-    auto result = that->getObjectAttributes(string(strName));
+    auto result = _controller->getObjectAttributes(string(strName));
     auto pyResult = PyDict_New();
     for (auto& r : result)
     {
@@ -118,11 +120,11 @@ PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* ar
 /*************/
 PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
         return PyDict_New();
 
-    auto objects = that->getObjectLinks();
+    auto objects = _controller->getObjectLinks();
     PyObject* pythonObjectDict = PyDict_New();
     for (auto& obj : objects)
     {
@@ -139,8 +141,8 @@ PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 /*************/
 PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
     {
         Py_INCREF(Py_False);
         return Py_False;
@@ -155,7 +157,7 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args)
     }
 
     auto value = convertToValue(pyValue).asValues();
-    that->setGlobal(string(strName), value);
+    _controller->setGlobal(string(strName), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -164,8 +166,8 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args)
 /*************/
 PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
     {
         Py_INCREF(Py_False);
         return Py_False;
@@ -181,7 +183,7 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
     }
 
     auto value = convertToValue(pyValue).asValues();
-    that->setObject(string(strName), string(strAttr), value);
+    _controller->setObject(string(strName), string(strAttr), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -190,8 +192,8 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
 /*************/
 PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
-    if (!that)
+    //auto that = getSplashInstance(self);
+    if (!_controller)
     {
         Py_INCREF(Py_False);
         return Py_False;
@@ -207,7 +209,7 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args)
     }
 
     auto value = convertToValue(pyValue).asValues();
-    that->setObjectsOfType(string(strType), string(strAttr), value);
+    _controller->setObjectsOfType(string(strType), string(strAttr), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -303,7 +305,7 @@ PyModuleDef PythonEmbedded::SplashModule = {
 /*************/
 PyObject* PythonEmbedded::pythonInitSplash()
 {
-    if (!PythonEmbedded::_that)
+    if (!PythonEmbedded::_controller)
         return nullptr;
 
     PyObject* module {nullptr};
@@ -311,12 +313,6 @@ PyObject* PythonEmbedded::pythonInitSplash()
     module = PyModule_Create(&PythonEmbedded::SplashModule);
     if (!module)
         return nullptr;
-
-    // Pointer to the PythonEmbedded instance
-    PyObject* splashCapsule = PyCapsule_New((void*)PythonEmbedded::_that, "splash.splash", nullptr);
-    if (!splashCapsule)
-        return nullptr;
-    PyModule_AddObject(module, "splash", splashCapsule);
 
     return module;
 }
@@ -330,13 +326,31 @@ PythonEmbedded::PythonEmbedded(weak_ptr<RootObject> root)
 
     _type = "python";
     registerAttributes();
+
+    // Initialize the Splash python module
+    if (_pythonInstances.fetch_add(1) == 0)
+    {
+        lock_guard<mutex> pythonLock(_pythonMutex);
+        _controller = unique_ptr<ControllerObject>(new ControllerObject(_root));
+
+        PyImport_AppendInittab("splash", &pythonInitSplash);
+        Py_Initialize();
+        PyEval_InitThreads();
+
+        _pythonGlobalThreadState = PyThreadState_Get();
+        PyEval_ReleaseThread(_pythonGlobalThreadState);
+    }
 }
 
 /*************/
 PythonEmbedded::~PythonEmbedded()
 {
-    if (_doLoop)
-        stop();
+    stop();
+    if (_pythonInstances.fetch_sub(1) == 1)
+    {
+        PyEval_AcquireThread(_pythonGlobalThreadState);
+        Py_Finalize();
+    }
 }
 
 /*************/
@@ -385,18 +399,13 @@ void PythonEmbedded::loop()
     PyObject *pName, *pModule, *pDict;
     PyObject *pArgs, *pValue;
 
-    // Initialize the Splash python module
-    {
-        lock_guard<mutex> pythonLock(_pythonMutex);
-        _that = this;
-        PyImport_AppendInittab("splash", &pythonInitSplash);
-    }
+    // Create the sub-interpreter
+    PyEval_AcquireThread(_pythonGlobalThreadState);
+    auto pyThreadState = Py_NewInterpreter();
+    PyThreadState_Swap(pyThreadState);
 
-    // Load the module by its filename
-    Py_Initialize();
-    PyEval_InitThreads();
-    
     PyRun_SimpleString("import sys");
+    // Load the module by its filename
     PyRun_SimpleString(("sys.path.append(\"" + _filepath + "\")").c_str());
 
     string moduleName = _scriptName.substr(0, _scriptName.rfind("."));
@@ -407,6 +416,7 @@ void PythonEmbedded::loop()
 
     if (pModule)
     {
+        // Run the initialization function
         auto pFuncInit = getFuncFromModule(pModule, "splash_init");
         if (pFuncInit)
         {
@@ -419,20 +429,33 @@ void PythonEmbedded::loop()
         auto pFuncLoop = getFuncFromModule(pModule, "splash_loop");
         auto timerName = "PythonEmbedded_" + _name;
 
-        _pyThreadState = PyEval_SaveThread();
+        PyThreadState_Swap(_pythonGlobalThreadState);
+        PyEval_ReleaseThread(_pythonGlobalThreadState);
+
+        // Run the module loop
         while (pFuncLoop && _doLoop)
         {
             Timer::get() << timerName;
-            PyEval_RestoreThread(_pyThreadState);
+
+            PyEval_AcquireThread(_pythonGlobalThreadState);
+            PyThreadState_Swap(pyThreadState);
+
             PyObject_CallObject(pFuncLoop, nullptr);
             if (PyErr_Occurred())
                 PyErr_Print();
-            _pyThreadState = PyEval_SaveThread();
+
+            PyThreadState_Swap(_pythonGlobalThreadState);
+            PyEval_ReleaseThread(_pythonGlobalThreadState);
+
             Timer::get() >> _loopDurationMs * 1000 >> timerName;
         }
-        Py_XDECREF(pFuncLoop);
-        PyEval_RestoreThread(_pyThreadState);
 
+        PyEval_AcquireThread(_pythonGlobalThreadState);
+        PyThreadState_Swap(pyThreadState);
+
+        Py_XDECREF(pFuncLoop);
+
+        // Run the stop function
         auto pFuncStop = getFuncFromModule(pModule, "splash_stop");
         if (pFuncStop)
         {
@@ -443,15 +466,28 @@ void PythonEmbedded::loop()
         }
 
         Py_DECREF(pModule);
+
+        PyThreadState_Swap(_pythonGlobalThreadState);
+        PyEval_ReleaseThread(_pythonGlobalThreadState);
     }
     else
     {
         if (PyErr_Occurred())
             PyErr_Print();
         Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Error while importing module " << _filepath + _scriptName << Log::endl;
+
+        PyThreadState_Swap(_pythonGlobalThreadState);
+        PyEval_ReleaseThread(_pythonGlobalThreadState);
     }
 
-    Py_Finalize();
+    // Clean the interpreter
+    PyEval_AcquireThread(_pythonGlobalThreadState);
+    PyThreadState_Swap(pyThreadState);
+
+    Py_EndInterpreter(pyThreadState);
+
+    PyThreadState_Swap(_pythonGlobalThreadState);
+    PyEval_ReleaseThread(_pythonGlobalThreadState);
 }
 
 /*************/
@@ -539,7 +575,7 @@ void PythonEmbedded::registerAttributes()
     addAttribute("file", [&](const Values& args) {
         return setScriptFile(args[0].asString());
     }, [&]() -> Values {
-        return {_filepath};
+        return {_filepath + _scriptName};
     }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
 }

@@ -37,12 +37,18 @@ namespace Splash {
 class ControllerObject : public BaseObject
 {
     public:
+        /**
+         * \brief Constructor
+         * \param root RootObject
+         */
         ControllerObject(std::weak_ptr<RootObject> root)
             : BaseObject(root) {}
 
+        /**
+         * \brief Desctructor
+         */
         virtual ~ControllerObject() {};
 
-    protected:
         /**
          * Get a list of the object names
          */

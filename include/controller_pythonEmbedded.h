@@ -25,6 +25,7 @@
 #ifndef SPLASH_PYTHON_EMBEDDED_H
 #define SPLASH_PYTHON_EMBEDDED_H
 
+#include <atomic>
 #include <future>
 #include <string>
 #include <thread>
@@ -73,7 +74,7 @@ class PythonEmbedded : public ControllerObject
         std::string _filepath {""}; //!< Path to the python script
         std::string _scriptName {""}; //!< Name of the module (filename minus .py)
 
-        PyThreadState* _pyThreadState {nullptr};
+        static std::atomic_int _pythonInstances; //!< Number of Python scripts running
         bool _doLoop {false}; //!< Set to false to stop the Python loop
         int _loopDurationMs {5}; //!< Time between loops in ms
         std::thread _loopThread {}; //!< Python thread loop
@@ -115,7 +116,8 @@ class PythonEmbedded : public ControllerObject
 
     private:
         static std::mutex _pythonMutex;
-        static PythonEmbedded* _that;
+        static std::unique_ptr<ControllerObject> _controller;
+        static PyThreadState* _pythonGlobalThreadState;
 
         // Python objects and methods
         static PyMethodDef SplashMethods[];
