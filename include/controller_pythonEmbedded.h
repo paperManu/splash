@@ -74,7 +74,6 @@ class PythonEmbedded : public ControllerObject
         std::string _filepath {""}; //!< Path to the python script
         std::string _scriptName {""}; //!< Name of the module (filename minus .py)
 
-        static std::atomic_int _pythonInstances; //!< Number of Python scripts running
         bool _doLoop {false}; //!< Set to false to stop the Python loop
         int _loopDurationMs {5}; //!< Time between loops in ms
         std::thread _loopThread {}; //!< Python thread loop
@@ -115,8 +114,7 @@ class PythonEmbedded : public ControllerObject
         void registerAttributes();
 
     private:
-        static std::mutex _pythonMutex;
-        static std::unique_ptr<ControllerObject> _controller;
+        static std::atomic_int _pythonInstances; //!< Number of Python scripts running
         static PyThreadState* _pythonGlobalThreadState;
 
         // Python objects and methods

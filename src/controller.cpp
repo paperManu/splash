@@ -10,6 +10,9 @@ namespace Splash {
 vector<string> ControllerObject::getObjectNames() const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
+
     vector<string> objNames;
     
     for (auto& o : scene->_objects)
@@ -33,20 +36,28 @@ vector<string> ControllerObject::getObjectNames() const
 Values ControllerObject::getObjectAttributeDescription(const string& name, const string& attr) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    return scene->getAttributeDescriptionFromObject(name, attr);
+    if (!scene)
+        return {};
+    else
+        return scene->getAttributeDescriptionFromObject(name, attr);
 }
 
 /*************/
 Values ControllerObject::getObjectAttribute(const string& name, const string& attr) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    return scene->getAttributeFromObject(name, attr);
+    if (!scene)
+        return {};
+    else
+        return scene->getAttributeFromObject(name, attr);
 }
 
 /*************/
 unordered_map<string, Values> ControllerObject::getObjectAttributes(const string& name) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
 
     auto objectIt = scene->_objects.find(name);
     if (objectIt == scene->_objects.end())
@@ -61,6 +72,8 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
 unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
 
     auto links = unordered_map<string, vector<string>>();
 
@@ -92,6 +105,9 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 map<string, string> ControllerObject::getObjectTypes() const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
+
     auto types = map<string, string>();
 
     for (auto& o : scene->_objects)
@@ -113,9 +129,11 @@ map<string, string> ControllerObject::getObjectTypes() const
 /*************/
 list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& type) const
 {
-    auto objects = list<shared_ptr<BaseObject>>();
-
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
+
+    auto objects = list<shared_ptr<BaseObject>>();
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type)
             objects.push_back(obj.second);
@@ -130,6 +148,9 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
 void ControllerObject::setGlobal(const string& name, const Values& values) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return;
+
     scene->sendMessageToWorld(name, values);
 }
 
@@ -137,6 +158,9 @@ void ControllerObject::setGlobal(const string& name, const Values& values) const
 void ControllerObject::setObject(const string& name, const string& attr, const Values& values) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return;
+
     auto message = values;
     message.push_front(attr);
     message.push_front(name);
@@ -147,6 +171,8 @@ void ControllerObject::setObject(const string& name, const string& attr, const V
 void ControllerObject::setObjectsOfType(const string& type, const string& attr, const Values& values) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return;
 
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type)
