@@ -13,6 +13,7 @@ namespace Splash {
 /*************/
 atomic_int PythonEmbedded::_pythonInstances {0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState {nullptr};
+PyObject* PythonEmbedded::SplashError {nullptr};
 
 /*************/
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
@@ -21,11 +22,25 @@ PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetObjectList_doc__,
+    "Get the list of objects from Splash\n"
+    "\n"
+    "splash.get_object_list()\n"
+    "\n"
+    "Returns:\n"
+    "  The list of objects instances\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
         return PyList_New(0);
+    }
 
     auto objects = that->getObjectNames();
     PyObject* pythonObjectList = PyList_New(objects.size());
@@ -36,11 +51,25 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetObjectTypes_doc__,
+    "Get all the objects types\n"
+    "\n"
+    "splash.get_object_types()\n"
+    "\n"
+    "Returns:\n"
+    "  The list of the object types\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
-        return PyDict_New();
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
 
     auto objects = that->getObjectTypes();
     PyObject* pythonObjectDict = PyDict_New();
@@ -55,36 +84,87 @@ PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonGetObjectAttributeDescription_doc__,
+    "Get the description for the attribute of the given object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_attribute_description(objectname, attribute)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): name of the object\n"
+    "  attribute (string): wanted attribute\n"
+    "\n"
+    "Returns:\n"
+    "  The description of the attribute\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+
+PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
-        return Py_BuildValue("s", "");
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
 
     char* strName;
     char* strAttr;
-    if (!PyArg_ParseTuple(args, "ss", &strName, &strAttr))
+    static const char* kwlist[] = {"objectname", "attribute", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", const_cast<char**>(kwlist), &strName, &strAttr))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         return Py_BuildValue("s", "");
+    }
 
     auto result = that->getObjectAttributeDescription(string(strName), string(strAttr));
     if (result.size() == 0)
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         return Py_BuildValue("s", "");
+    }
 
     auto description = result[0].asString();
     return Py_BuildValue("s", description.c_str());
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
+    "Get the attribute value for the given object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_attribute(objectname, attribute)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): name of the object\n"
+    "  attribute (string): wanted attribute\n"
+    "\n"
+    "Returns:\n"
+    "  The value of the attribute\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+
+PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
         return PyList_New(0);
+    }
 
     char* strName;
     char* strAttr;
-    if (!PyArg_ParseTuple(args, "ss", &strName, &strAttr))
+    static const char* kwlist[] = {"objectname", "attribute", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", const_cast<char**>(kwlist), &strName, &strAttr))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         return PyList_New(0);
+    }
 
     auto result = that->getObjectAttribute(string(strName), string(strAttr));
     auto pyResult = convertFromValue(result);
@@ -93,15 +173,38 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonGetObjectAttributes_doc__,
+    "Get attributes for the given object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_attributes(objectname)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): name of the object\n"
+    "\n"
+    "Returns:\n"
+    "  A list of the attributes of the object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+
+PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
         return PyList_New(0);
+    }
 
     char* strName;
-    if (!PyArg_ParseTuple(args, "s", &strName))
+    static const char* kwlist[] = {"objectname", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         return PyDict_New();
+    }
 
     auto result = that->getObjectAttributes(string(strName));
     auto pyResult = PyDict_New();
@@ -116,11 +219,26 @@ PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* ar
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonGetObjectLinks_doc__,
+    "Get the links between all objects\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_links()\n"
+    "\n"
+    "Returns:\n"
+    "  A dict of the links between the object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
-        return PyDict_New();
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
 
     auto objects = that->getObjectLinks();
     PyObject* pythonObjectDict = PyDict_New();
@@ -137,36 +255,74 @@ PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonSetGlobal_doc__,
+    "Set the given configuration-related attribute\n"
+    "These attributes are listed in the \"world\" object type\n"
+    "\n"
+    "Signature:\n"
+    "  splash.set_global(attribute, value)\n"
+    "\n"
+    "Args:\n"
+    "  attribute (string): global attribute to set\n"
+    "  value (object): value to set the attribute to\n"
+    "\n"
+    "Returns:\n"
+    "  True if all went well\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
     {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
         Py_INCREF(Py_False);
         return Py_False;
     }
 
-    char* strName;
+    char* attrName;
     PyObject* pyValue;
-    if (!PyArg_ParseTuple(args, "sO", &strName, &pyValue))
+    static const char* kwlist[] = {"attribute", "value", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO", const_cast<char**>(kwlist), &attrName, &pyValue))
     {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
 
     auto value = convertToValue(pyValue).asValues();
-    that->setGlobal(string(strName), value);
+    that->setGlobal(string(attrName), value);
 
     Py_INCREF(Py_True);
     return Py_True;
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonSetObject_doc__,
+    "Set the attribute for the object to the given value\n"
+    "\n"
+    "Signature:\n"
+    "  splash.set_object(objectname, attribute, value)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): object name\n"
+    "  attribute (string): attribute to set\n"
+    "  value (object): value to set the attribute to\n"
+    "\n"
+    "Returns:\n"
+    "  True if all went well\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
     {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -174,8 +330,10 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
     char* strName;
     char* strAttr;
     PyObject* pyValue;
-    if (!PyArg_ParseTuple(args, "ssO", &strName, &strAttr, &pyValue))
+    static const char* kwlist[] = {"objectname", "attribute", "value", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &strName, &strAttr, &pyValue))
     {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -188,11 +346,28 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args)
 }
 
 /*************/
-PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args)
+PyDoc_STRVAR(pythonSetObjectsOfType_doc__,
+    "Set the attribute for all the objects of the given type\n"
+    "\n"
+    "splash.set_objects_of_type(objecttype, attribute, value)\n"
+    "\n"
+    "Args:\n"
+    "  objecttype (string): object type\n"
+    "  attribute (string): attribute to set\n"
+    "  value (object): value to set the attribute to\n"
+    "\n"
+    "Returns:\n"
+    "  True if all went well\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
     {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -200,8 +375,10 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args)
     char* strType;
     char* strAttr;
     PyObject* pyValue;
-    if (!PyArg_ParseTuple(args, "ssO", &strType, &strAttr, &pyValue))
+    static const char* kwlist[] = {"objecttype", "attribute", "value", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &strType, &strAttr, &pyValue))
     {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -217,79 +394,57 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args)
 PyMethodDef PythonEmbedded::SplashMethods[] = {
     {
         (char*)"get_object_list", 
-        PythonEmbedded::pythonGetObjectList, 
-        METH_VARARGS, 
-        (char*)"splash.get_object_list()\n"
-               "\n"
-               "Returns the list of objects from Splash"
+        (PyCFunction)PythonEmbedded::pythonGetObjectList, 
+        METH_VARARGS | METH_KEYWORDS, 
+        pythonGetObjectList_doc__
     },
     {
         (char*)"get_object_types", 
-        PythonEmbedded::pythonGetObjectTypes, 
-        METH_VARARGS, 
-        (char*)"splash.get_object_types()\n"
-               "\n"
-               "Retusn a dict of the objects types"
+        (PyCFunction)PythonEmbedded::pythonGetObjectTypes, 
+        METH_VARARGS | METH_KEYWORDS,
+        pythonGetObjectTypes_doc__
     },
     {
         (char*)"get_object_attribute_description", 
-        PythonEmbedded::pythonGetObjectAttributeDescription, 
-        METH_VARARGS, 
-        (char*)"splash.get_object_attribute_description(objName, attribute)\n"
-               "\n"
-               "Returns the description for the attribute of the given object"
+        (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription, 
+        METH_VARARGS | METH_KEYWORDS,
+        pythonGetObjectAttributeDescription_doc__
     },
     {
         (char*)"get_object_attribute",
-        PythonEmbedded::pythonGetObjectAttribute,
-        METH_VARARGS,
-        (char*)"splash.get_object_attribute(objName, attribute)\n"
-               "\n"
-               "Returns the attribute value for the given object"
+        (PyCFunction)PythonEmbedded::pythonGetObjectAttribute,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonGetObjectAttribute_doc__
     },
     {
         (char*)"get_object_attributes",
-        PythonEmbedded::pythonGetObjectAttributes,
-        METH_VARARGS,
-        (char*)"splash.get_object_attributes(objName)\n"
-               "\n"
-               "Returns a list of the available attributes for the given object"
+        (PyCFunction)PythonEmbedded::pythonGetObjectAttributes,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonGetObjectAttributes_doc__
     },
     {
         (char*)"get_object_links",
-        PythonEmbedded::pythonGetObjectLinks,
-        METH_VARARGS,
-        (char*)"splash.get_object_links()\n"
-               "\n"
-               "Returns a dict of the links between all objects"
+        (PyCFunction)PythonEmbedded::pythonGetObjectLinks,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonGetObjectLinks_doc__
     },
     {
         (char*)"set_global",
-        PythonEmbedded::pythonSetGlobal,
-        METH_VARARGS,
-        (char*)"splash.set_global(attribute, value)\n"
-               "\n"
-               "Set the given configuration-related attribute\n"
-               "These attributes are listed in the \"world\" object type\n"
-               "Returns True if the command was accepted"
+        (PyCFunction)PythonEmbedded::pythonSetGlobal,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonSetGlobal_doc__
     },
     {
         (char*)"set_object",
-        PythonEmbedded::pythonSetObject,
-        METH_VARARGS,
-        (char*)"splash.set_object(objName, attribute, value)\n"
-               "\n"
-               "Set the attribute for the object to the given value\n"
-               "Returns True if the command was accepted"
+        (PyCFunction)PythonEmbedded::pythonSetObject,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonSetObject_doc__
     },
     {
         (char*)"set_objects_of_type",
-        PythonEmbedded::pythonSetObjectsOfType,
-        METH_VARARGS,
-        (char*)"splash.set_objects_of_type(objType, value)\n"
-               "\n"
-               "Set the attribute for all the objects of the given type\n"
-               "Returns True if the command was accepted"
+        (PyCFunction)PythonEmbedded::pythonSetObjectsOfType,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonSetObjectsOfType_doc__
     },
     {nullptr, nullptr, 0, nullptr}
 };
@@ -308,6 +463,13 @@ PyObject* PythonEmbedded::pythonInitSplash()
     module = PyModule_Create(&PythonEmbedded::SplashModule);
     if (!module)
         return nullptr;
+
+    SplashError = PyErr_NewException((char*)"splash.error", nullptr, nullptr);
+    if (SplashError)
+    {
+        Py_INCREF(SplashError);
+        PyModule_AddObject(module, "error", SplashError);
+    }
 
     return module;
 }
@@ -473,6 +635,8 @@ void PythonEmbedded::loop()
         if (PyErr_Occurred())
             PyErr_Print();
         Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Error while importing module " << _filepath + _scriptName << Log::endl;
+
+        PyErr_SetString(SplashError, "Error while importing module");
 
         PyThreadState_Swap(_pythonGlobalThreadState);
         PyEval_ReleaseThread(_pythonGlobalThreadState);

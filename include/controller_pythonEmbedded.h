@@ -120,18 +120,19 @@ class PythonEmbedded : public ControllerObject
         // Python objects and methods
         static PyMethodDef SplashMethods[];
         static PyModuleDef SplashModule;
+        static PyObject* SplashError;
 
         static PyObject* pythonInitSplash();
         static PythonEmbedded* getSplashInstance(PyObject* module);
         static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
         static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
-        static PyObject* pythonSetGlobal(PyObject* self, PyObject* args);
-        static PyObject* pythonSetObject(PyObject* self, PyObject* args);
-        static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args);
+        static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
 };
 
 } // end of namespace
