@@ -178,6 +178,7 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 endif()
 
+target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GLFW_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
