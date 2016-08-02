@@ -127,11 +127,6 @@ class SplashCameraNode(SplashBaseNode):
         row.prop(self, "sp_objectProperty")
 
     def init(self, context):
-        self.inputs.new('NodeSocketFloat', 'Black level').default_value = 0.0
-        self.inputs.new('NodeSocketFloat', 'Blending width').default_value = 0.1
-        self.inputs.new('NodeSocketFloat', 'Blending precision').default_value = 0.1
-        self.inputs.new('NodeSocketFloat', 'Brightness').default_value = 1.0
-        self.inputs.new('NodeSocketFloat', 'Color temperature').default_value = 6500.0
         self.inputs.new('NodeSocketInt', 'Width').default_value = 1920
         self.inputs.new('NodeSocketInt', 'Height').default_value = 1080
 
@@ -158,11 +153,6 @@ class SplashCameraNode(SplashBaseNode):
             values['fov'] = camera.angle_y * 180.0 / numpy.pi
             values['principalPoint'] = [0.5 - camera.shift_x * 2.0, 0.5 - camera.shift_y * 2.0]
 
-        values['blackLevel'] = self.inputs['Black level'].default_value
-        values['blendWidth'] = self.inputs['Blending width'].default_value
-        values['blendPrecision'] = self.inputs['Blending precision'].default_value
-        values['brightness'] = self.inputs['Brightness'].default_value
-        values['colorTemperature'] = self.inputs['Color temperature'].default_value
         values['size'] = [self.inputs['Width'].default_value, self.inputs['Height'].default_value]
 
         return values
@@ -174,8 +164,8 @@ class SplashCameraNode(SplashBaseNode):
 class SplashGuiNode(SplashBaseNode):
     '''Splash Gui node'''
     bl_idname = 'SplashGuiNodeType'
-    bl_label = 'Gui'
-    name = 'Gui'
+    bl_label = 'Gui window'
+    name = 'Gui window'
 
     sp_acceptedLinks = [
         ]
@@ -368,14 +358,23 @@ class SplashObjectNode(SplashBaseNode):
         'SplashMeshNodeType',
         ]
 
+    sp_cullingModes = [
+        ("0", "none", "No culling"),
+        ("1", "front", "Frontface culling"),
+        ("2", "back", "Backface culling")
+    ]
+    sp_cullingModeProperty = bpy.props.EnumProperty(name="Culling",
+        description="Face winding culling",
+        items=sp_cullingModes,
+        default="0")
+
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
+        row = layout.row()
+        row.prop(self, "sp_cullingModeProperty")
 
     def init(self, context):
         self.inputs.new('NodeSocketColor', 'Color').default_value = [1.0, 1.0, 1.0, 1.0]
-        self.inputs.new('NodeSocketVector', 'Position').default_value = [0.0, 0.0, 0.0]
-        self.inputs.new('NodeSocketVector', 'Scale').default_value = [1.0, 1.0, 1.0]
-        self.inputs.new('NodeSocketInt', 'Sideness').default_value = 0
 
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
@@ -387,13 +386,7 @@ class SplashObjectNode(SplashBaseNode):
                            self.inputs['Color'].default_value[1],
                            self.inputs['Color'].default_value[2],
                            self.inputs['Color'].default_value[3]]
-        values['position'] = [self.inputs['Position'].default_value[0],
-                              self.inputs['Position'].default_value[1],
-                              self.inputs['Position'].default_value[2]]
-        values['scale'] = [self.inputs['Scale'].default_value[0],
-                           self.inputs['Scale'].default_value[1],
-                           self.inputs['Scale'].default_value[2]]
-        values['sideness'] = self.inputs['Side'].default_value
+        values['sideness'] = int(self.sp_cullingModeProperty)
 
         return values
 
@@ -404,7 +397,7 @@ class SplashObjectNode(SplashBaseNode):
 class SplashSceneNode(SplashBaseNode):
     '''Splash Scene node'''
     bl_idname = 'SplashSceneNodeType'
-    bl_label = 'Scene'
+    bl_label = 'Graphic card'
 
     sp_acceptedLinks = [
         'SplashWindowNodeType',
@@ -415,11 +408,9 @@ class SplashSceneNode(SplashBaseNode):
         layout.prop(self, "name")
 
     def init(self, context):
-        self.inputs.new('NodeSocketString', 'Address').default_value = 'localhost'
-        self.inputs.new('NodeSocketInt', 'Blending resolution').default_value = 2048
-        self.inputs.new('NodeSocketInt', 'Display').default_value = 0
-        self.inputs.new('NodeSocketBool', 'Spawn').default_value = True
-        self.inputs.new('NodeSocketInt', 'Swap interval').default_value = 1
+        self.name = 'GPU'
+        self.inputs.new('NodeSocketInt', 'GPU Id').default_value = 0
+        self.inputs.new('NodeSocketInt', 'VSync').default_value = 1
 
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
@@ -427,11 +418,11 @@ class SplashSceneNode(SplashBaseNode):
     def exportProperties(self, exportPath):
         values = {}
         values['name'] = "\"" + self.name + "\""
-        values['address'] = "\"" + self.inputs['Address'].default_value + "\""
-        values['blendingResolution'] = self.inputs['Blending resolution'].default_value
-        values['display'] = self.inputs['Display'].default_value
-        values['spawn'] = int(self.inputs['Spawn'].default_value)
-        values['swapInterval'] = self.inputs['Swap interval'].default_value
+        values['display'] = self.inputs['GPU Id'].default_value
+        if self.inputs['VSync'].default_value == 1:
+            values['swapInterval'] = 1
+        else:
+            values['swapInterval'] = 0
 
         return values
 
@@ -453,14 +444,10 @@ class SplashWindowNode(SplashBaseNode):
         layout.prop(self, "name")
 
     def init(self, context):
-        self.inputs.new('NodeSocketBool', 'Decorated').default_value = True
-        self.inputs.new('NodeSocketBool', 'Fullscreen').default_value = False
-        self.inputs.new('NodeSocketInt', 'Screen').default_value = 0
-        self.inputs.new('NodeSocketFloat', 'Gamma').default_value = 2.2
-        self.inputs.new('NodeSocketVector', 'Position').default_value = [0.0, 0.0, 0.0]
+        self.inputs.new('NodeSocketInt', 'Position X').default_value = 0
+        self.inputs.new('NodeSocketInt', 'Position Y').default_value = 0
         self.inputs.new('NodeSocketInt', 'Width').default_value = 1920
         self.inputs.new('NodeSocketInt', 'Height').default_value = 1080
-        self.inputs.new('NodeSocketBool', 'sRGB').default_value = True
 
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
@@ -468,14 +455,11 @@ class SplashWindowNode(SplashBaseNode):
     def exportProperties(self, exportPath):
         values = {}
         values['type'] = "\"window\""
-        values['decorated'] = int(self.inputs['Decorated'].default_value)
-        if self.inputs['Fullscreen'].default_value:
-            values['fullscreen'] = self.inputs['Screen'].default_value
-        else:
-            values['fullscreen'] = -1
-        values['position'] = [self.inputs['Position'].default_value[0], self.inputs['Position'].default_value[1]]
+        values['decorated'] = 0
+        values['fullscreen'] = -1
+        values['position'] = [self.inputs['Position X'].default_value, self.inputs['Position Y'].default_value]
         values['size'] = [self.inputs['Width'].default_value, self.inputs['Height'].default_value]
-        values['srgb'] = int(self.inputs['sRGB'].default_value)
+        values['srgb'] = 1
 
         inputCounts = 0
         for input in self.inputs:
