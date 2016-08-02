@@ -231,7 +231,7 @@ PyDoc_STRVAR(pythonGetObjectLinks_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 {
     auto that = getSplashInstance(self);
     if (!that || !that->_doLoop)
@@ -349,7 +349,8 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObje
 PyDoc_STRVAR(pythonSetObjectsOfType_doc__,
     "Set the attribute for all the objects of the given type\n"
     "\n"
-    "splash.set_objects_of_type(objecttype, attribute, value)\n"
+    "Signature\n"
+    "  splash.set_objects_of_type(objecttype, attribute, value)\n"
     "\n"
     "Args:\n"
     "  objecttype (string): object type\n"
@@ -391,17 +392,113 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args,
 }
 
 /*************/
+PyDoc_STRVAR(pythonAddCustomAttribute_doc__,
+    "Add a custom attribute to the script\n"
+    "\n"
+    "Signature:\n"
+    "  splash.add_custom_attribute(variable)\n"
+    "\n"
+    "Args:\n"
+    "  variable (string): global variable name to map as attribute\n"
+    "\n"
+    "Returns:\n"
+    "  True if all went well\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available, or parameters are wrong");
+
+PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance(self);
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    char* strAttr;
+    static const char* kwlist[] = {"variable", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strAttr))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    auto attributeName = string(strAttr);
+
+    // Check whether the variable is global to the script
+    auto moduleDict = PyModule_GetDict(that->_pythonModule);
+    auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
+    if (!object)
+    {
+        PyErr_SetString(SplashError, (string("Could not find object named ") + attributeName + " in the global scope").c_str());
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->addAttribute(attributeName, [=](const Values& args) {
+        PyEval_AcquireThread(that->_pythonGlobalThreadState);
+        PyThreadState_Swap(that->_pythonLocalThreadState);
+
+        auto moduleDict = PyModule_GetDict(that->_pythonModule);
+        PyObject* object = nullptr;
+        if (args.size() == 1)
+            object = convertFromValue(args[0]);
+        else
+            object = convertFromValue(args);
+        if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
+        {
+            PyErr_SetString(SplashError, (string("Could not set object named ") + attributeName).c_str());
+            Py_DECREF(object);
+            return false;
+        }
+
+        Py_DECREF(object);
+
+        PyThreadState_Swap(that->_pythonGlobalThreadState);
+        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+
+        return true;
+    }, [=]() -> Values {
+        PyEval_AcquireThread(that->_pythonGlobalThreadState);
+        PyThreadState_Swap(that->_pythonLocalThreadState);
+
+        auto moduleDict = PyModule_GetDict(that->_pythonModule);
+        auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
+        auto value = convertToValue(object);
+        if (!object)
+        {
+            PyErr_SetString(SplashError, (string("Could not find object named ") + attributeName).c_str());
+            return {};
+        }
+        
+        PyThreadState_Swap(that->_pythonGlobalThreadState);
+        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+
+        if (value.getType() == Value::Type::v)
+            return value.asValues();
+        else
+            return {value};
+    }, {});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {
     {
         (char*)"get_object_list", 
         (PyCFunction)PythonEmbedded::pythonGetObjectList, 
-        METH_VARARGS | METH_KEYWORDS, 
+        METH_VARARGS,
         pythonGetObjectList_doc__
     },
     {
         (char*)"get_object_types", 
         (PyCFunction)PythonEmbedded::pythonGetObjectTypes, 
-        METH_VARARGS | METH_KEYWORDS,
+        METH_VARARGS,
         pythonGetObjectTypes_doc__
     },
     {
@@ -445,6 +542,12 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
         (PyCFunction)PythonEmbedded::pythonSetObjectsOfType,
         METH_VARARGS | METH_KEYWORDS,
         pythonSetObjectsOfType_doc__
+    },
+    {
+        (char*)"add_custom_attribute",
+        (PyCFunction)PythonEmbedded::pythonAddCustomAttribute,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonAddCustomAttribute_doc__
     },
     {nullptr, nullptr, 0, nullptr}
 };
@@ -555,8 +658,8 @@ void PythonEmbedded::loop()
 
     // Create the sub-interpreter
     PyEval_AcquireThread(_pythonGlobalThreadState);
-    auto pyThreadState = Py_NewInterpreter();
-    PyThreadState_Swap(pyThreadState);
+    _pythonLocalThreadState = Py_NewInterpreter();
+    PyThreadState_Swap(_pythonLocalThreadState);
 
     // Set the current instance in a capsule
     auto module = PyImport_ImportModule("splash");
@@ -571,13 +674,13 @@ void PythonEmbedded::loop()
     string moduleName = _scriptName.substr(0, _scriptName.rfind("."));
     pName = PyUnicode_FromString(moduleName.c_str());
 
-    pModule = PyImport_Import(pName);
+    _pythonModule = PyImport_Import(pName);
     Py_DECREF(pName);
 
-    if (pModule)
+    if (_pythonModule)
     {
         // Run the initialization function
-        auto pFuncInit = getFuncFromModule(pModule, "splash_init");
+        auto pFuncInit = getFuncFromModule(_pythonModule, "splash_init");
         if (pFuncInit)
         {
             PyObject_CallObject(pFuncInit, nullptr);
@@ -586,7 +689,7 @@ void PythonEmbedded::loop()
             Py_XDECREF(pFuncInit);
         }
 
-        auto pFuncLoop = getFuncFromModule(pModule, "splash_loop");
+        auto pFuncLoop = getFuncFromModule(_pythonModule, "splash_loop");
         auto timerName = "PythonEmbedded_" + _name;
 
         PyThreadState_Swap(_pythonGlobalThreadState);
@@ -598,7 +701,7 @@ void PythonEmbedded::loop()
             Timer::get() << timerName;
 
             PyEval_AcquireThread(_pythonGlobalThreadState);
-            PyThreadState_Swap(pyThreadState);
+            PyThreadState_Swap(_pythonLocalThreadState);
 
             PyObject_CallObject(pFuncLoop, nullptr);
             if (PyErr_Occurred())
@@ -611,12 +714,12 @@ void PythonEmbedded::loop()
         }
 
         PyEval_AcquireThread(_pythonGlobalThreadState);
-        PyThreadState_Swap(pyThreadState);
+        PyThreadState_Swap(_pythonLocalThreadState);
 
         Py_XDECREF(pFuncLoop);
 
         // Run the stop function
-        auto pFuncStop = getFuncFromModule(pModule, "splash_stop");
+        auto pFuncStop = getFuncFromModule(_pythonModule, "splash_stop");
         if (pFuncStop)
         {
             PyObject_CallObject(pFuncStop, nullptr);
@@ -625,7 +728,7 @@ void PythonEmbedded::loop()
             Py_XDECREF(pFuncStop);
         }
 
-        Py_DECREF(pModule);
+        Py_DECREF(_pythonModule);
 
         PyThreadState_Swap(_pythonGlobalThreadState);
         PyEval_ReleaseThread(_pythonGlobalThreadState);
@@ -644,9 +747,9 @@ void PythonEmbedded::loop()
 
     // Clean the interpreter
     PyEval_AcquireThread(_pythonGlobalThreadState);
-    PyThreadState_Swap(pyThreadState);
+    PyThreadState_Swap(_pythonLocalThreadState);
 
-    Py_EndInterpreter(pyThreadState);
+    Py_EndInterpreter(_pythonLocalThreadState);
 
     PyThreadState_Swap(_pythonGlobalThreadState);
     PyEval_ReleaseThread(_pythonGlobalThreadState);

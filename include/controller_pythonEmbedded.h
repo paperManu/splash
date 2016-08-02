@@ -79,7 +79,8 @@ class PythonEmbedded : public ControllerObject
         std::thread _loopThread {}; //!< Python thread loop
         std::promise<bool> _loopThreadPromise {}; //!< Holds the output result from the threading loop
 
-        std::vector<PyMethodDef> _pythonMethods {};
+        PyObject* _pythonModule {nullptr}; //!< Loaded module (from the specified script)
+        PyThreadState* _pythonLocalThreadState {nullptr}; //!< Local Python thread state, for the sub-interpreter
 
         /**
          * \brief Python interpreter main loop
@@ -115,7 +116,7 @@ class PythonEmbedded : public ControllerObject
 
     private:
         static std::atomic_int _pythonInstances; //!< Number of Python scripts running
-        static PyThreadState* _pythonGlobalThreadState;
+        static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
 
         // Python objects and methods
         static PyMethodDef SplashMethods[];
@@ -129,10 +130,11 @@ class PythonEmbedded : public ControllerObject
         static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
         static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
         static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
         static PyObject* pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds);
         static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
         static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
+        static PyObject* pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds);
 };
 
 } // end of namespace

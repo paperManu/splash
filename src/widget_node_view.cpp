@@ -36,7 +36,8 @@ void GuiNodeView::render()
                                                                  {"object", {32, 168}},
                                                                  {"texture filter queue", {8, 208}},
                                                                  {"image", {32, 248}},
-                                                                 {"mesh", {8, 288}}
+                                                                 {"mesh", {8, 288}},
+                                                                 {"python", {32, 328}}
                                                                 });
         std::map<std::string, int> shiftByType;
 

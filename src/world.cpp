@@ -1062,7 +1062,7 @@ void World::registerAttributes()
     }, [&]() -> Values {
         return {_blendingMode};
     }, {'s'});
-    setAttributeDescription("computeBlending", "Ask all Scenes to compute the blending");
+    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
     addAttribute("deleteObject", [&](const Values& args) {
         addTask([=]() {
