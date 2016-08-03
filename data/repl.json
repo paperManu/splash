@@ -67,6 +67,10 @@
          "size" : [ 1280, 1024 ],
          "srgb" : [ 1 ],
          "type" : "window"
+      },
+      "repl" : {
+        "type" : "python",
+        "file" : "../addons/python/repl.py"
       }
    },
    "scenes" : [
