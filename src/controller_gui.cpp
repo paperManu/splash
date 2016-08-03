@@ -411,8 +411,21 @@ bool Gui::render()
         ImGui::NewFrame();
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 900), 0.95f, _windowFlags);
-        ImGui::SetWindowPos(ImVec2(16, 16), ImGuiSetCond_Once);
         _windowFlags = 0;
+
+        // Check whether the GUI is alone in its window
+        auto objReversedLinks = getObjectReversedLinks();
+        auto objLinks = getObjectLinks();
+        if (objLinks[objReversedLinks[_name][0]].size() == 1)
+        {
+            ImGui::SetWindowPos(ImVec2(0, 0), ImGuiSetCond_Once);
+            ImGui::SetWindowSize(ImVec2(_width, _height));
+            _windowFlags |= ImGuiWindowFlags_NoMove;
+        }
+        else
+        {
+            ImGui::SetWindowPos(ImVec2(_initialGuiPos[0], _initialGuiPos[1]), ImGuiSetCond_Once);
+        }
 
         // Some global buttons
         if (ImGui::CollapsingHeader("General commands", nullptr, true, true))
