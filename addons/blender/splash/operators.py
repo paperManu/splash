@@ -302,6 +302,10 @@ class SplashExportNodeTree(Operator):
     bl_label = "Exports the node tree"
 
     filepath = bpy.props.StringProperty(subtype='FILE_PATH')
+    filter_glob = bpy.props.StringProperty(
+        default="*.json",
+        options={'HIDDEN'},
+        )
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
     world_node = None
@@ -429,6 +433,7 @@ class SplashExportNodeTree(Operator):
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        self.filepath = os.path.splitext(bpy.data.filepath)[0] + ".json"
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
