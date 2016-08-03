@@ -102,6 +102,35 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
 }
 
 /*************/
+unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks() const
+{
+    auto links = getObjectLinks();
+    auto reversedLinks = unordered_map<string, vector<string>>();
+
+    for (auto& l : links)
+    {
+        auto parent = l.first;
+        auto children = l.second;
+        for (auto& child : children)
+        {
+            auto childIt = reversedLinks.find(child);
+            if (childIt == reversedLinks.end())
+            {
+                reversedLinks[child] = {parent};
+            }
+            else
+            {
+                auto parentIt = find(childIt->second.begin(), childIt->second.end(), parent);
+                if (parentIt == childIt->second.end())
+                    childIt->second.push_back(parent);
+            }
+        }
+    }
+
+    return reversedLinks;
+}
+
+/*************/
 map<string, string> ControllerObject::getObjectTypes() const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());

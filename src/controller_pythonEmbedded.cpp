@@ -220,7 +220,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* ar
 
 /*************/
 PyDoc_STRVAR(pythonGetObjectLinks_doc__,
-    "Get the links between all objects\n"
+    "Get the links between all objects (parents to children)\n"
     "\n"
     "Signature:\n"
     "  splash.get_object_links()\n"
@@ -241,6 +241,42 @@ PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
     }
 
     auto objects = that->getObjectLinks();
+    PyObject* pythonObjectDict = PyDict_New();
+    for (auto& obj : objects)
+    {
+        PyObject* links = PyList_New(obj.second.size());
+        for (int i = 0; i < obj.second.size(); ++i)
+            PyList_SetItem(links, i, Py_BuildValue("s", obj.second[i].c_str()));
+        PyDict_SetItemString(pythonObjectDict, obj.first.c_str(), links);
+        Py_DECREF(links);
+    }
+
+    return pythonObjectDict;
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectReversedLinks_doc__,
+    "Get the links between all objects (children to parents)\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_reversed_links()\n"
+    "\n"
+    "Returns:\n"
+    "  A dict of the links between the object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectReversedLinks(PyObject* self, PyObject* args)
+{
+    auto that = getSplashInstance(self);
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
+
+    auto objects = that->getObjectReversedLinks();
     PyObject* pythonObjectDict = PyDict_New();
     for (auto& obj : objects)
     {
@@ -524,6 +560,12 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
         (PyCFunction)PythonEmbedded::pythonGetObjectLinks,
         METH_VARARGS | METH_KEYWORDS,
         pythonGetObjectLinks_doc__
+    },
+    {
+        (char*)"get_object_reversed_links",
+        (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks,
+        METH_VARARGS | METH_KEYWORDS,
+        pythonGetObjectReversedLinks_doc__
     },
     {
         (char*)"set_global",
