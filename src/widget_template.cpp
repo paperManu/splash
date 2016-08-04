@@ -1,5 +1,6 @@
 #include "./widget_node_view.h"
 
+#include <array>
 #include <fstream>
 
 #include <imgui.h>

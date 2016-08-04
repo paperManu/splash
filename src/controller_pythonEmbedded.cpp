@@ -856,7 +856,7 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
         }
         else if (PyLong_Check(obj))
         {
-            value = PyLong_AsLong(obj);
+            value = static_cast<int64_t>(PyLong_AsLong(obj));
         }
         else if (PyFloat_Check(obj))
         {

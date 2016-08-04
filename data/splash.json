@@ -39,7 +39,7 @@
          [ "mesh", "object" ],
          [ "object", "cam1" ],
          [ "image", "object" ],
-         [ "cam1", "win1" ],
+         [ "cam1", "win1" ]
       ],
       "local" : {
          "blendingResolution" : [ 2048 ],
