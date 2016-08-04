@@ -65,12 +65,16 @@ Factory::Factory(weak_ptr<RootObject> root)
 shared_ptr<BaseObject> Factory::create(string type)
 {
     // Not all object types are listed here, only those which are available to the user are
-    shared_ptr<BaseObject> object(nullptr);
     auto page = _objectBook.find(type);
     if (page != _objectBook.end())
-        object = page->second();
-
-    return object;
+    {
+        return page->second();
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Object type " << type << " does not exist" << Log::endl;
+        return {nullptr};
+    }
 }
 
 /*************/

@@ -98,13 +98,13 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
         Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
     auto obj = _factory->create(type);
-    obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
-
     _mainWindow->releaseContext();
 
     // Add the object to the objects list
     if (obj.get() != nullptr)
     {
+        obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
+
         obj->setId(getId());
         name = obj->setName(name);
         if (name == string())
@@ -148,11 +148,13 @@ void Scene::addGhost(string type, string name)
 
     // Add the object for real ...
     std::shared_ptr<BaseObject> obj = add(type, name);
-
-    // And move it to _ghostObjects
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    _objects.erase(obj->getName());
-    _ghostObjects[obj->getName()] = obj;
+    if (obj)
+    {
+        // And move it to _ghostObjects
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        _objects.erase(obj->getName());
+        _ghostObjects[obj->getName()] = obj;
+    }
 }
 
 /*************/
