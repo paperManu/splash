@@ -19,6 +19,7 @@
 
 add_custom_command(
     OUTPUT blenderSplash.zip
+    COMMAND sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash ./splash
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/templates ./templates
     COMMAND zip blenderSplash.zip -r splash/* -x *.swp splash/Makefile*
