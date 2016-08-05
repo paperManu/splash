@@ -1,8 +1,27 @@
 Splash release notes
 ===================
 
-Splash 0.4.x (2016-xx-xx)
+Splash 0.4.4 (2016-08-05)
 -------------------------
+New features:
+* Scriptable with Python
+
+Improvements:
+* Improved vertex blending
+* Wireframe coloring when in calibration mode, to help while matching projections
+* New GUI font: OpenSans
+* Fullsize GUI when alone in a window
+* Cleaned Blender nodes
+* Cleaned Shmdata objects
+* Added a Controller base class, used in particular for Python scripting
+* Removed Autotools
+* Removed the HttpServer class, as it can now be done through Python
+* Added a simple Python script implementing a HTTP server
+
+Bug fixed:
+* Serialization of Geometry
+* Random crash in the main loop when sending a serialized object
+* Object deletion was not saved
 
 Splash 0.4.2 (2016-06-21)
 -------------------------
