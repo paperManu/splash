@@ -48,7 +48,7 @@ class Filter : public Texture
         /**
          * Constructor
          */
-        Filter(RootObjectWeakPtr root);
+        Filter(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -97,7 +97,7 @@ class Filter : public Texture
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
+        std::shared_ptr<GlWindow> _window;
         std::weak_ptr<Texture> _inTexture;
 
         GLuint _fbo {0};

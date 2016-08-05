@@ -12,8 +12,8 @@ namespace Splash
 {
 
 /*************/
-GuiMedia::GuiMedia(std::string name)
-    : GuiWidget(name)
+GuiMedia::GuiMedia(weak_ptr<Scene> scene, string name)
+    : GuiWidget(scene, name)
 {
     for (auto& type : _mediaTypes)
         _mediaTypesReversed[type.second] = type.first;
@@ -24,8 +24,6 @@ void GuiMedia::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
-        auto scene = _scene.lock();
-
         auto mediaList = getSceneMedia();
         for (auto& media : mediaList)
         {
@@ -215,9 +213,7 @@ void GuiMedia::render()
                         
                         if (updated)
                         {
-                            playlist.push_front("playlist");
-                            playlist.push_front(mediaName);
-                            scene->sendMessageToWorld("sendAll", playlist);
+                            setObject(mediaName, "playlist", playlist);
                         }
 
                         ImGui::TreePop();
@@ -258,7 +254,7 @@ void GuiMedia::render()
 /*************/
 void GuiMedia::replaceMedia(string previousMedia, string type)
 {
-    auto scene = _scene.lock();
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
 
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<BaseObject>>();
@@ -284,7 +280,7 @@ void GuiMedia::replaceMedia(string previousMedia, string type)
         msg.push_back(object->getName());
     }
 
-    scene->sendMessageToWorld("replaceObject", msg);
+    setGlobal("replaceObject", msg);
 }
 
 /*************/
@@ -298,32 +294,14 @@ int GuiMedia::updateWindowFlags()
 list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 {
     auto mediaList = list<shared_ptr<BaseObject>>();
-    auto scene = _scene.lock();
+    auto mediaTypes = list<string>({"image", "queue", "texture"});
 
-    for (auto& obj : scene->_objects)
+    for (auto& type : mediaTypes)
     {
-        if (!obj.second->getSavable())
-            continue;
-
-        if (obj.second->getType().find("image") != string::npos
-            || obj.second->getType().find("queue") != string::npos
-            || obj.second->getType().find("texture") != string::npos)
-        {
-            mediaList.push_back(obj.second);
-        }
-    }
-
-    for (auto& obj : scene->_ghostObjects)
-    {
-        if (!obj.second->getSavable())
-            continue;
-
-        if (obj.second->getType().find("image") != string::npos
-            || obj.second->getType().find("queue") != string::npos
-            || obj.second->getType().find("texture") != string::npos)
-        {
-            mediaList.push_back(obj.second);
-        }
+        auto objects = getObjectsOfType(type);
+        for (auto& object : objects)
+            if (object->getSavable())
+                mediaList.push_back(object);
     }
 
     return mediaList;
@@ -333,7 +311,7 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 list<shared_ptr<BaseObject>> GuiMedia::getFiltersForImage(const shared_ptr<BaseObject>& image)
 {
     auto filterList = list<shared_ptr<BaseObject>>();
-    auto scene = _scene.lock();
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
 
     for (auto& obj : scene->_objects)
     {

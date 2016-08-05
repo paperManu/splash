@@ -131,7 +131,7 @@ class Shader : public BaseObject
         /**
          * Add a new texture to use
          */
-        void setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name);
+        void setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name);
 
         /**
          * Set the model view and projection matrices
@@ -163,7 +163,7 @@ class Shader : public BaseObject
         };
         std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
-        std::vector<TexturePtr> _textures; // Currently used textures
+        std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
 
         // A map of previously compiled programs
         std::string _currentProgramName {};
@@ -215,8 +215,6 @@ class Shader : public BaseObject
         void registerComputeAttributes();
         void registerFeedbackAttributes();
 };
-
-typedef std::shared_ptr<Shader> ShaderPtr;
 
 } // end of namespace
 

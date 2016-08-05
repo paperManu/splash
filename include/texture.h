@@ -45,7 +45,7 @@ class Texture : public BaseObject
          * Constructor
          */
         Texture();
-        Texture(RootObjectWeakPtr root);
+        Texture(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -125,8 +125,6 @@ class Texture : public BaseObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Texture> TexturePtr;
 
 } // end of namespace
 

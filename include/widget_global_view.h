@@ -25,6 +25,7 @@
 #ifndef SPLASH_WIDGET_GLOBAL_VIEW_H
 #define SPLASH_WIDGET_GLOBAL_VIEW_H
 
+#include "./camera.h"
 #include "./widget.h"
 
 namespace Splash
@@ -34,19 +35,23 @@ namespace Splash
 class GuiGlobalView : public GuiWidget
 {
     public:
-        GuiGlobalView(std::string name = "");
+        GuiGlobalView(std::weak_ptr<Scene> scene, std::string name = "")
+            : GuiWidget(scene, name) {}
         void render();
         int updateWindowFlags();
-        void setCamera(CameraPtr cam);
+        void setCamera(const std::shared_ptr<Camera>& cam);
         void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
 
     protected:
-        CameraPtr _camera, _guiCamera;
-        SceneWeakPtr _scene;
+        std::shared_ptr<Camera> _camera, _guiCamera;
+        std::weak_ptr<Scene> _scene;
         bool _camerasHidden {false};
         bool _beginDrag {true};
         bool _noMove {false};
+
+        bool _hideCameras {false};
+        bool _camerasColorized {false};
 
         // Size of the view
         int _camWidth, _camHeight;
@@ -73,9 +78,21 @@ class GuiGlobalView : public GuiWidget
         void processMouseEvents();
 
         // Actions
+        /**
+         * \brief Activate the colorization of the wireframe rendering
+         * \param colorize If true, activate the colorization
+         */
+        void colorizeCameraWireframes(bool colorize);
+
         void doCalibration();
         void propagateCalibration(); // Propagates calibration to other Scenes if needed
-        void switchHideOtherCameras();
+
+        /**
+         * \brief Hide all cameras except for the selected one
+         * \param hide Hide cameras if true
+         */
+        void hideOtherCameras(bool hide);
+
         void nextCamera();
         void revertCalibration();
         void showAllCalibrationPoints();

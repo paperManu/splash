@@ -24,7 +24,7 @@ go_bandit([]() {
         timespec nap({1, (long int)0});
         nanosleep(&nap, 0);
         it("should initialize smoothly", [&]() {
-            BaseObjectPtr obj = scene.add("camera");
+            std::shared_ptr<BaseObject> obj = scene.add("camera");
             CameraPtr camera = static_pointer_cast<Camera>(obj);
             AssertThat(camera->isInitialized(), Equals(true));
 
@@ -40,7 +40,7 @@ go_bandit([]() {
         timespec nap({1, (long int)0});
         nanosleep(&nap, 0);
         it("should initialize smoothly", [&]() {
-            BaseObjectPtr obj = scene.add("window");
+            std::shared_ptr<BaseObject> obj = scene.add("window");
             WindowPtr window = static_pointer_cast<Window>(obj);
             AssertThat(window->isInitialized(), Equals(true));
         });

@@ -46,8 +46,8 @@ class Texture_Image : public Texture
          * Constructor
          */
         Texture_Image();
-        Texture_Image(RootObjectWeakPtr root);
-        Texture_Image(RootObjectWeakPtr root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
+        Texture_Image(std::weak_ptr<RootObject> root);
+        Texture_Image(std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
                 GLint border, GLenum format, GLenum type, const GLvoid* data);
 
         /**
@@ -112,7 +112,7 @@ class Texture_Image : public Texture
         /**
          * Read the texture and returns an Image
          */
-        ImagePtr read();
+        std::shared_ptr<Image> read();
 
         /**
          * Set the buffer size / type / internal format
@@ -184,8 +184,6 @@ class Texture_Image : public Texture
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Texture_Image> Texture_ImagePtr;
 
 } // end of namespace
 

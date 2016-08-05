@@ -11,65 +11,11 @@ namespace Splash
 {
 
 /*************/
-GuiNodeView::GuiNodeView(string name)
-    : GuiWidget(name)
+GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name)
+    : GuiWidget(scene, name)
 {
     auto factory = Factory();
     _objectTypes = factory.getObjectTypes();
-}
-
-/*************/
-map<string, vector<string>> GuiNodeView::getObjectLinks()
-{
-    auto scene = _scene.lock();
-
-    auto links = map<string, vector<string>>();
-
-    for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-        {
-            links[o.first].push_back(link->getName());
-        }
-    }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-            links[o.first].push_back(link->getName());
-    }
-
-    return links;
-}
-
-/*************/
-map<string, string> GuiNodeView::getObjectTypes()
-{
-    auto scene = _scene.lock();
-
-    auto types = map<string, string>();
-
-    for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        types[o.first] = o.second->getType();
-    }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        types[o.first] = o.second->getType();
-    }
-
-    return types;
 }
 
 /*************/
@@ -84,18 +30,19 @@ void GuiNodeView::render()
 
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
-                                                                 {"window", {8, 32}},
-                                                                 {"warp", {32, 64}},
-                                                                 {"camera", {8, 96}},
-                                                                 {"object", {32, 128}},
-                                                                 {"texture filter queue", {8, 160}},
-                                                                 {"image", {32, 192}},
-                                                                 {"mesh", {8, 224}}
+                                                                 {"window", {8, 48}},
+                                                                 {"warp", {32, 88}},
+                                                                 {"camera", {8, 128}},
+                                                                 {"object", {32, 168}},
+                                                                 {"texture filter queue", {8, 208}},
+                                                                 {"image", {32, 248}},
+                                                                 {"mesh", {8, 288}},
+                                                                 {"python", {32, 328}}
                                                                 });
         std::map<std::string, int> shiftByType;
 
         // Begin a subwindow to enclose nodes
-        ImGui::BeginChild("NodeView", ImVec2(_viewSize[0], _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::BeginChild("NodeView", ImVec2(0, _viewSize[1]), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
         // Get objects and their relations
         auto objectLinks = getObjectLinks();
@@ -201,9 +148,7 @@ void GuiNodeView::render()
         ImGui::Text("Select a type to add an object:");
         ImGui::PushID("addObject");
         if (ImGui::Combo("", &itemIndex, items.data(), items.size()))
-        {
-            _scene.lock()->sendMessageToWorld("addObject", {_objectTypes[itemIndex]});
-        }
+            setGlobal("addObject", {_objectTypes[itemIndex]});
         ImGui::PopID();
     }
 }
@@ -245,13 +190,13 @@ void GuiNodeView::renderNode(string name)
         {
             if (io.KeyShift)
             {
-                auto scene = _scene.lock();
+                auto scene = dynamic_pointer_cast<Scene>(_root.lock());
                 scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
                 scene->sendMessageToWorld("sendAllScenes", {"linkGhost", _sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
-                auto scene = _scene.lock();
+                auto scene = dynamic_pointer_cast<Scene>(_root.lock());
                 scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
                 scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
             }

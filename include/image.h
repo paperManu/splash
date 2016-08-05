@@ -159,8 +159,6 @@ class Image : public BufferObject
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Image> ImagePtr;
-
 } // end of namespace
 
 #endif // SPLASH_IMAGE_H

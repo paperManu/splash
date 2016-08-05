@@ -56,10 +56,10 @@ bool Image_Shmdata::read(const string& filename)
 
     _reader.reset(new shmdata::Follower(filepath,
                                         [&](void* data, size_t size) {
-                                            onData(data, size, this);
+                                            onData(data, size);
                                         },
                                         [&](const string& caps) {
-                                            onCaps(caps, this);
+                                            onCaps(caps);
                                         },
                                         [&](){},
                                         &_logger));
@@ -90,25 +90,25 @@ void Image_Shmdata::init()
 }
 
 /*************/
-void Image_Shmdata::onCaps(const string& dataType, void* user_data)
+void Image_Shmdata::onCaps(const string& dataType)
 {
-    Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
+    Log::get() << Log::MESSAGE << "Image_Shmdata::" << __FUNCTION__ << " - Trying to connect with the following caps: " << dataType << Log::endl;
 
-    if (dataType != ctx->_inputDataType)
+    if (dataType != _inputDataType)
     {
-        ctx->_inputDataType = dataType;
+        _inputDataType = dataType;
 
-        ctx->_bpp = 0;
-        ctx->_width = 0;
-        ctx->_height = 0;
-        ctx->_red = 0;
-        ctx->_green = 0;
-        ctx->_blue = 0;
-        ctx->_channels = 0;
-        ctx->_isHap = false;
-        ctx->_isYUV = false;
-        ctx->_is420 = false;
-        ctx->_is422 = false;
+        _bpp = 0;
+        _width = 0;
+        _height = 0;
+        _red = 0;
+        _green = 0;
+        _blue = 0;
+        _channels = 0;
+        _isHap = false;
+        _isYUV = false;
+        _is420 = false;
+        _is422 = false;
         
         regex regHap, regWidth, regHeight;
         regex regVideo, regFormat;
@@ -187,55 +187,55 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
 
                 if ("RGB" == substr)
                 {
-                    ctx->_bpp = 24;
-                    ctx->_channels = 3;
-                    ctx->_red = 2;
-                    ctx->_green = 1;
-                    ctx->_blue = 0;
+                    _bpp = 24;
+                    _channels = 3;
+                    _red = 2;
+                    _green = 1;
+                    _blue = 0;
                 }
                 else if ("BGR" == substr)
                 {
-                    ctx->_bpp = 24;
-                    ctx->_channels = 3;
-                    ctx->_red = 0;
-                    ctx->_green = 1;
-                    ctx->_blue = 2;
+                    _bpp = 24;
+                    _channels = 3;
+                    _red = 0;
+                    _green = 1;
+                    _blue = 2;
                 }
                 else if ("RGBA" == substr)
                 {
-                    ctx->_bpp = 32;
-                    ctx->_channels = 4;
-                    ctx->_red = 2;
-                    ctx->_green = 1;
-                    ctx->_blue = 0;
+                    _bpp = 32;
+                    _channels = 4;
+                    _red = 2;
+                    _green = 1;
+                    _blue = 0;
                 }
                 else if ("BGRA" == substr)
                 {
-                    ctx->_bpp = 32;
-                    ctx->_channels = 4;
-                    ctx->_red = 0;
-                    ctx->_green = 1;
-                    ctx->_blue = 2;
+                    _bpp = 32;
+                    _channels = 4;
+                    _red = 0;
+                    _green = 1;
+                    _blue = 2;
                 }
                 else if ("I420" == substr)
                 {
-                    ctx->_bpp = 12;
-                    ctx->_channels = 3;
-                    ctx->_isYUV = true;
-                    ctx->_is420 = true;
+                    _bpp = 12;
+                    _channels = 3;
+                    _isYUV = true;
+                    _is420 = true;
                 }
                 else if ("UYVY" == substr)
                 {
-                    ctx->_bpp = 12;
-                    ctx->_channels = 3;
-                    ctx->_isYUV = true;
-                    ctx->_is422 = true;
+                    _bpp = 12;
+                    _channels = 3;
+                    _isYUV = true;
+                    _is422 = true;
                 }
             }
         }
         else if (regex_match(dataType, regHap))
         {
-            ctx->_isHap = true;
+            _isHap = true;
         }
 
         if (regex_match(dataType, match, regWidth))
@@ -244,7 +244,7 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
             substr = subMatch.str();
             removeExtraParenthesis(substr);
             substr = substr.substr(0, substr.find(","));
-            ctx->_width = stoi(substr);
+            _width = stoi(substr);
         }
 
         if (regex_match(dataType, match, regHeight))
@@ -253,41 +253,40 @@ void Image_Shmdata::onCaps(const string& dataType, void* user_data)
             substr = subMatch.str();
             removeExtraParenthesis(substr);
             substr = substr.substr(0, substr.find(","));
-            ctx->_height = stoi(substr);
+            _height = stoi(substr);
         }
+
+        Log::get() << Log::MESSAGE << "Image_Shmdata::" << __FUNCTION__ << " - Connection successful" << Log::endl;
     }
 }
 
 /*************/
-void Image_Shmdata::onData(void* data, int data_size, void* user_data)
+void Image_Shmdata::onData(void* data, int data_size)
 {
-    Image_Shmdata* ctx = reinterpret_cast<Image_Shmdata*>(user_data);
-
     if (Timer::get().isDebug())
     {
-        Timer::get().sinceLastSeen("image_shmdata_period " + ctx->_name);
-        Timer::get() << "image_shmdata " + ctx->_name;
+        Timer::get() << "image_shmdata " + _name;
     }
 
     // Standard images, RGB or YUV
-    if (ctx->_width != 0 && ctx->_height != 0 && ctx->_bpp != 0 && ctx->_channels != 0)
+    if (_width != 0 && _height != 0 && _bpp != 0 && _channels != 0)
     {
-        readUncompressedFrame(ctx, data, data_size);
+        readUncompressedFrame(data, data_size);
     }
     // Hap compressed images
-    else if (ctx->_isHap == true)
+    else if (_isHap == true)
     {
-        readHapFrame(ctx, data, data_size);
+        readHapFrame(data, data_size);
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> "image_shmdata " + ctx->_name;
+        Timer::get() >> "image_shmdata " + _name;
 }
 
 /*************/
-void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
+void Image_Shmdata::readHapFrame(void* data, int data_size)
 {
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(_writeMutex);
 
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
@@ -297,64 +296,64 @@ void Image_Shmdata::readHapFrame(Image_Shmdata* ctx, void* data, int data_size)
 
     // Check if we need to resize the reader buffer
     // We set the size so as to have just enough place for the given texture format
-    auto bufSpec = ctx->_readerBuffer.getSpec();
-    if (bufSpec.width != ctx->_width || (bufSpec.height != ctx->_height && textureFormat != ctx->_textureFormat))
+    auto bufSpec = _readerBuffer.getSpec();
+    if (bufSpec.width != _width || (bufSpec.height != _height && textureFormat != _textureFormat))
     {
-        ctx->_textureFormat = textureFormat;
+        _textureFormat = textureFormat;
 
         ImageBufferSpec spec;
         if (textureFormat == "RGB_DXT1")
-            spec = ImageBufferSpec(ctx->_width, (int)(ceil((float)ctx->_height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
+            spec = ImageBufferSpec(_width, (int)(ceil((float)_height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
         else if (textureFormat == "RGBA_DXT5")
-            spec = ImageBufferSpec(ctx->_width, ctx->_height, 1, ImageBufferSpec::Type::UINT8);
+            spec = ImageBufferSpec(_width, _height, 1, ImageBufferSpec::Type::UINT8);
         else if (textureFormat == "YCoCg_DXT5")
-            spec = ImageBufferSpec(ctx->_width, ctx->_height, 1, ImageBufferSpec::Type::UINT8);
+            spec = ImageBufferSpec(_width, _height, 1, ImageBufferSpec::Type::UINT8);
         else
             return;
 
         spec.format = {textureFormat};
-        ctx->_readerBuffer = ImageBuffer(spec);
+        _readerBuffer = ImageBuffer(spec);
     }
 
     unsigned long outputBufferBytes = bufSpec.width * bufSpec.height * bufSpec.channels;
-    if (!hapDecodeFrame(data, data_size, ctx->_readerBuffer.data(), outputBufferBytes, textureFormat))
+    if (!hapDecodeFrame(data, data_size, _readerBuffer.data(), outputBufferBytes, textureFormat))
         return;
     
-    if (!ctx->_bufferImage)
-        ctx->_bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-    std::swap(*(ctx->_bufferImage), ctx->_readerBuffer);
-    ctx->_imageUpdated = true;
-    ctx->updateTimestamp();
+    if (!_bufferImage)
+        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*(_bufferImage), _readerBuffer);
+    _imageUpdated = true;
+    updateTimestamp();
 }
 
 /*************/
-void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size)
+void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
 {
-    lock_guard<mutex> lock(ctx->_writeMutex);
+    lock_guard<mutex> lock(_writeMutex);
 
     // Check if we need to resize the reader buffer
-    auto bufSpec = ctx->_readerBuffer.getSpec();
-    if (bufSpec.width != ctx->_width || bufSpec.height != ctx->_height || bufSpec.channels != ctx->_channels)
+    auto bufSpec = _readerBuffer.getSpec();
+    if (bufSpec.width != _width || bufSpec.height != _height || bufSpec.channels != _channels)
     {
-        ImageBufferSpec spec(ctx->_width, ctx->_height, ctx->_channels, ImageBufferSpec::Type::UINT8);
-        if (ctx->_green < ctx->_blue)
+        ImageBufferSpec spec(_width, _height, _channels, ImageBufferSpec::Type::UINT8);
+        if (_green < _blue)
             spec.format = {"B", "G", "R"};
         else
             spec.format = {"R", "G", "B"};
-        if (ctx->_channels == 4)
+        if (_channels == 4)
             spec.format.push_back("A");
 
-        ctx->_readerBuffer = ImageBuffer(spec);
+        _readerBuffer = ImageBuffer(spec);
     }
 
-    if (!ctx->_isYUV && (ctx->_channels == 3 || ctx->_channels == 4))
+    if (!_isYUV && (_channels == 3 || _channels == 4))
     {
-        char* pixels = (char*)(ctx->_readerBuffer).data();
+        char* pixels = (char*)(_readerBuffer).data();
         vector<unsigned int> threadIds;
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
-            int size = ctx->_width * ctx->_height * ctx->_channels * sizeof(char);
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+            int size = _width * _height * _channels * sizeof(char);
+            threadIds.push_back(SThread::pool.enqueue([=]() {
                 int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (size - size / SPLASH_SHMDATA_THREADS * block < 2 * size / SPLASH_SHMDATA_THREADS)
                     sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
@@ -366,26 +365,26 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
         }
         SThread::pool.waitThreads(threadIds);
     }
-    else if (ctx->_is420)
+    else if (_is420)
     {
         const unsigned char* Y = (const unsigned char*)data;
-        const unsigned char* U = (const unsigned char*)data + ctx->_width * ctx->_height;
-        const unsigned char* V = (const unsigned char*)data + ctx->_width * ctx->_height * 5 / 4;
+        const unsigned char* U = (const unsigned char*)data + _width * _height;
+        const unsigned char* V = (const unsigned char*)data + _width * _height * 5 / 4;
 
-        char* pixels = (char*)(ctx->_readerBuffer).data();
+        char* pixels = (char*)(_readerBuffer).data();
         vector<unsigned int> threadIds;
 #ifdef HAVE_SSE2
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
-            int width = ctx->_width;
-            int height = ctx->_height;
+            int width = _width;
+            int height = _height;
 
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+            threadIds.push_back(SThread::pool.enqueue([=]() {
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
-                    lastLine = ctx->_height;
+                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
+                    lastLine = _height;
                 else
-                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
 
                 auto uLine = vector<unsigned char>(width / 2);
                 auto vLine = vector<unsigned char>(width / 2);
@@ -434,18 +433,18 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
 #else
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+            threadIds.push_back(SThread::pool.enqueue([=]() {
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
-                    lastLine = ctx->_height;
+                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
+                    lastLine = _height;
                 else
-                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
 
-                for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x < ctx->_width; x+=2)
+                for (int y = _height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
+                    for (int x = 0; x < _width; x+=2)
                     {
-                        int uValue = (int)(U[(y / 2) * (ctx->_width / 2) + x / 2]) - 128;
-                        int vValue = (int)(V[(y / 2) * (ctx->_width / 2) + x / 2]) - 128;
+                        int uValue = (int)(U[(y / 2) * (_width / 2) + x / 2]) - 128;
+                        int vValue = (int)(V[(y / 2) * (_width / 2) + x / 2]) - 128;
 
                         int rPart = 52298 * vValue;
                         int gPart = -12846 * uValue - 36641 * vValue;
@@ -453,40 +452,40 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
                        
                         int col = x;
                         int row = y;
-                        int yValue = (int)(Y[row * ctx->_width + col] - 16) * 38142;
-                        pixels[(row * ctx->_width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(row * ctx->_width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+                        int yValue = (int)(Y[row * _width + col] - 16) * 38142;
+                        pixels[(row * _width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(row * _width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(row * _width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
 
                         col++;
-                        yValue = (int)(Y[row * ctx->_width + col] - 16) * 38142;
-                        pixels[(row * ctx->_width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(row * ctx->_width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(row * ctx->_width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+                        yValue = (int)(Y[row * _width + col] - 16) * 38142;
+                        pixels[(row * _width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(row * _width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(row * _width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
                     }
             }));
         }
 #endif
         SThread::pool.waitThreads(threadIds);
     }
-    else if (ctx->_is422)
+    else if (_is422)
     {
         const unsigned char* YUV = (const unsigned char*)data;
 
-        char* pixels = (char*)(ctx->_readerBuffer).data();
+        char* pixels = (char*)(_readerBuffer).data();
         vector<unsigned int> threadIds;
 #ifdef HAVE_SSE2
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
-            int width = ctx->_width;
-            int height = ctx->_height;
+            int width = _width;
+            int height = _height;
 
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+            threadIds.push_back(SThread::pool.enqueue([=]() {
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
-                    lastLine = ctx->_height;
+                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
+                    lastLine = _height;
                 else
-                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
 
                 auto line = vector<unsigned char>(width * 2);
                 auto localPixels = vector<unsigned char>(width * 3);
@@ -530,18 +529,18 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
 #else
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
-            threadIds.push_back(SThread::pool.enqueue([=, &ctx]() {
+            threadIds.push_back(SThread::pool.enqueue([=]() {
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (ctx->_height - ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1) < ctx->_height / SPLASH_SHMDATA_THREADS)
-                    lastLine = ctx->_height;
+                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
+                    lastLine = _height;
                 else
-                    lastLine = ctx->_height / SPLASH_SHMDATA_THREADS * (block + 1);
+                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
 
-                for (int y = ctx->_height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x < ctx->_width; x+=2)
+                for (int y = _height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
+                    for (int x = 0; x < _width; x+=2)
                     {
                         unsigned char block[4];
-                        memcpy(block, &YUV[y * ctx->_width * 2 + x * 2], 4 * sizeof(unsigned char));
+                        memcpy(block, &YUV[y * _width * 2 + x * 2], 4 * sizeof(unsigned char));
 
                         int uValue = (int)(block[0]) - 128;
                         int vValue = (int)(block[2]) - 128;
@@ -551,14 +550,14 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
                         int bPart = 66094 * uValue;
                        
                         int yValue = (int)(block[1] - 16) * 38142;
-                        pixels[(y * ctx->_width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(y * ctx->_width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(y * ctx->_width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+                        pixels[(y * _width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(y * _width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(y * _width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
 
                         yValue = (int)(block[3] - 16) * 38142;
-                        pixels[(y * ctx->_width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(y * ctx->_width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(y * ctx->_width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
+                        pixels[(y * _width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
+                        pixels[(y * _width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
+                        pixels[(y * _width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
                     }
             }));
         }
@@ -568,11 +567,11 @@ void Image_Shmdata::readUncompressedFrame(Image_Shmdata* ctx, void* data, int da
     else
         return;
 
-    if (!ctx->_bufferImage)
-        ctx->_bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
-    std::swap(*(ctx->_bufferImage), ctx->_readerBuffer);
-    ctx->_imageUpdated = true;
-    ctx->updateTimestamp();
+    if (!_bufferImage)
+        _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    std::swap(*(_bufferImage), _readerBuffer);
+    _imageUpdated = true;
+    updateTimestamp();
 
 }
 

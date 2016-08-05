@@ -25,6 +25,7 @@
 #ifndef SPLASH_WIDGET_WARP_H
 #define SPLASH_WIDGET_WARP_H
 
+#include "./warp.h"
 #include "./widget.h"
 
 namespace Splash
@@ -34,13 +35,13 @@ namespace Splash
 class GuiWarp : public GuiWidget
 {
     public:
-        GuiWarp(std::string name) : GuiWidget(name) {}
+        GuiWarp(std::weak_ptr<Scene> scene, std::string name)
+            : GuiWidget(scene, name) {}
         void render();
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
         int updateWindowFlags();
 
     private:
-        std::vector<std::shared_ptr<Warp>> getWarps();
         bool _noMove {false};
 
         int _currentWarp {0};

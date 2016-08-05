@@ -26,6 +26,7 @@
 #define SPLASH_OSUTILS_H
 
 #include <string>
+#include <sys/stat.h>
 #include <vector>
 #include <unistd.h>
 #if HAVE_SHMDATA
@@ -40,82 +41,11 @@ namespace Splash
     namespace Utils
     {
         /*****/
-        inline std::string getHomePath()
+        inline bool isDir(const std::string& filepath)
         {
-            if (getenv("HOME"))
-                return std::string(getenv("HOME"));
-
-            struct passwd* pw = getpwuid(getuid());
-            return std::string(pw->pw_dir);
-        }
-
-        /*****/
-        inline std::string getPathFromFilePath(const std::string& filepath)
-        {
-            auto path = filepath;
-
-            bool isRelative = path.find(".") == 0 ? true : false;
-            bool isAbsolute = path.find("/") == 0 ? true : false;
-            auto fullPath = std::string("");
-
-            if (!isRelative && !isAbsolute)
-            {
-                isRelative = true;
-                path = "./" + filepath;
-            }
-
-            size_t slashPos = path.rfind("/");
-
-            if (isAbsolute)
-                fullPath = path.substr(0, slashPos) + "/";
-            else if (isRelative)
-            {
-                char workingPathChar[256];
-                auto workingPath = std::string(getcwd(workingPathChar, 255));
-                if (path.find("/") == 1)
-                    fullPath = workingPath + path.substr(1, slashPos) + "/";
-                else if (path.find("/") == 2)
-                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
-            }
-
-            return fullPath;
-        }
-        /*****/
-        inline std::string getPathFromExecutablePath(const std::string& filepath)
-        {
-            auto path = filepath;
-
-            bool isRelative = path.find(".") == 0 ? true : false;
-            bool isAbsolute = path.find("/") == 0 ? true : false;
-            auto fullPath = std::string("");
-
-            size_t slashPos = path.rfind("/");
-
-            if (isAbsolute)
-                fullPath = path.substr(0, slashPos) + "/";
-            else if (isRelative)
-            {
-                char workingPathChar[256];
-                auto workingPath = std::string(getcwd(workingPathChar, 255));
-                if (path.find("/") == 1)
-                    fullPath = workingPath + path.substr(1, slashPos) + "/";
-                else if (path.find("/") == 2)
-                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
-            }
-
-            return fullPath;
-        }
-
-        /*****/
-        inline std::string getFilenameFromFilePath(const std::string& filepath)
-        {
-            size_t slashPos = filepath.rfind("/");
-            auto filename = std::string("");
-            if (slashPos == std::string::npos)
-                filename = filepath;
-            else
-                filename = filepath.substr(slashPos);
-            return filename;
+            struct stat pathStat;
+            lstat(filepath.c_str(), &pathStat);
+            return S_ISDIR(pathStat.st_mode);
         }
 
         /*****/
@@ -172,7 +102,101 @@ namespace Splash
             if (path.size() == 0)
                 path = "/";
 
+            if (isDir(path) && path[path.size() - 1] != '/')
+                path += "/";
+
             return path;
+        }
+
+        /*****/
+        inline std::string getHomePath()
+        {
+            if (getenv("HOME"))
+                return std::string(getenv("HOME"));
+
+            struct passwd* pw = getpwuid(getuid());
+            return std::string(pw->pw_dir);
+        }
+
+        /*****/
+        inline std::string getPathFromFilePath(const std::string& filepath, const std::string& configPath = "")
+        {
+            auto path = filepath;
+
+            bool isRelative = path.find(".") == 0 ? true : false;
+            bool isAbsolute = path.find("/") == 0 ? true : false;
+            auto fullPath = std::string("");
+
+            if (!isRelative && !isAbsolute)
+            {
+                isRelative = true;
+                path = "./" + filepath;
+            }
+
+            size_t slashPos = path.rfind("/");
+
+            if (isAbsolute)
+                fullPath = path.substr(0, slashPos) + "/";
+            else if (isRelative)
+            {
+                if (configPath.size() == 0)
+                {
+                    char workingPathChar[256];
+                    auto workingPath = std::string(getcwd(workingPathChar, 255));
+                    if (path.find("/") == 1)
+                        fullPath = workingPath + path.substr(1, slashPos) + "/";
+                    else if (path.find("/") == 2)
+                        fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+                }
+                else
+                {
+                    fullPath = configPath + "/" + path.substr(0, slashPos);
+                }
+            }
+
+            return cleanPath(fullPath);
+        }
+
+        /*****/
+        inline std::string getPathFromExecutablePath(const std::string& filepath)
+        {
+            auto path = filepath;
+
+            bool isRelative = path.find(".") == 0 ? true : false;
+            bool isAbsolute = path.find("/") == 0 ? true : false;
+            auto fullPath = std::string("");
+
+            size_t slashPos = path.rfind("/");
+
+            if (isAbsolute)
+            {
+                fullPath = path.substr(0, slashPos) + "/";
+                fullPath = cleanPath(fullPath);
+            }
+            else if (isRelative)
+            {
+                char workingPathChar[256];
+                auto workingPath = std::string(getcwd(workingPathChar, 255));
+                if (path.find("/") == 1)
+                    fullPath = workingPath + path.substr(1, slashPos) + "/";
+                else if (path.find("/") == 2)
+                    fullPath = workingPath + "/" + path.substr(0, slashPos) + "/";
+                fullPath = cleanPath(fullPath);
+            }
+
+            return fullPath;
+        }
+
+        /*****/
+        inline std::string getFilenameFromFilePath(const std::string& filepath)
+        {
+            size_t slashPos = filepath.rfind("/");
+            auto filename = std::string("");
+            if (slashPos == std::string::npos)
+                filename = filepath;
+            else
+                filename = filepath.substr(slashPos + 1);
+            return filename;
         }
     
 #if HAVE_SHMDATA

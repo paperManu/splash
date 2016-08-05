@@ -132,8 +132,6 @@ class Image_GPhoto : public Image
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Image_GPhoto> Image_GPhotoPtr;
-
 } // end of namespace
 
 #endif // SPLASH_IMAGE_GPHOTO_H

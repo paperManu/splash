@@ -3,9 +3,9 @@
 #include <utility>
 
 #include "./camera.h"
+#include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
-#include "./gui.h"
 #include "./image.h"
 #include "./link.h"
 #include "./log.h"
@@ -41,7 +41,7 @@ bool Scene::_isGlfwInitialized {false};
 /*************/
 Scene::Scene(std::string name, bool autoRun)
 {
-    _self = ScenePtr(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
+    _self = std::shared_ptr<Scene>(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
 
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
@@ -71,12 +71,6 @@ Scene::~Scene()
 
     _joystickUpdateFuture.get();
 
-    if (_httpServerFuture.valid())
-    {
-        _httpServer->stop();
-        _httpServerFuture.get();
-    }
-
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     lock_guard<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
@@ -88,7 +82,7 @@ Scene::~Scene()
 }
 
 /*************/
-BaseObjectPtr Scene::add(string type, string name)
+std::shared_ptr<BaseObject> Scene::add(string type, string name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
@@ -104,13 +98,13 @@ BaseObjectPtr Scene::add(string type, string name)
         Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
     auto obj = _factory->create(type);
-    obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
-
     _mainWindow->releaseContext();
 
     // Add the object to the objects list
     if (obj.get() != nullptr)
     {
+        obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
+
         obj->setId(getId());
         name = obj->setName(name);
         if (name == string())
@@ -153,12 +147,14 @@ void Scene::addGhost(string type, string name)
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
 
     // Add the object for real ...
-    BaseObjectPtr obj = add(type, name);
-
-    // And move it to _ghostObjects
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    _objects.erase(obj->getName());
-    _ghostObjects[obj->getName()] = obj;
+    std::shared_ptr<BaseObject> obj = add(type, name);
+    if (obj)
+    {
+        // And move it to _ghostObjects
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        _objects.erase(obj->getName());
+        _ghostObjects[obj->getName()] = obj;
+    }
 }
 
 /*************/
@@ -247,8 +243,8 @@ Json::Value Scene::getConfigurationAsJson()
 /*************/
 bool Scene::link(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
@@ -262,7 +258,7 @@ bool Scene::link(string first, string second)
 }
 
 /*************/
-bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
+bool Scene::link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -276,8 +272,8 @@ bool Scene::link(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 void Scene::unlink(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
@@ -289,7 +285,7 @@ void Scene::unlink(string first, string second)
 }
 
 /*************/
-void Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
+void Scene::unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -301,8 +297,8 @@ void Scene::unlink(BaseObjectPtr first, BaseObjectPtr second)
 /*************/
 bool Scene::linkGhost(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_ghostObjects.find(first) != _ghostObjects.end())
         source = _ghostObjects[first];
@@ -324,8 +320,8 @@ bool Scene::linkGhost(string first, string second)
 /*************/
 void Scene::unlinkGhost(string first, string second)
 {
-    BaseObjectPtr source(nullptr);
-    BaseObjectPtr sink(nullptr);
+    std::shared_ptr<BaseObject> source(nullptr);
+    std::shared_ptr<BaseObject> sink(nullptr);
 
     if (_ghostObjects.find(first) != _ghostObjects.end())
         source = _ghostObjects[first];
@@ -347,7 +343,7 @@ void Scene::unlinkGhost(string first, string second)
 /*************/
 void Scene::remove(string name)
 {
-    BaseObjectPtr obj;
+    std::shared_ptr<BaseObject> obj;
 
     if (_objects.find(name) != _objects.end())
         _objects.erase(name);
@@ -389,8 +385,8 @@ void Scene::renderBlending()
             // Only the master scene computes the blending
             if (_isMaster)
             {
-                vector<CameraPtr> cameras;
-                vector<ObjectPtr> objects;
+                vector<shared_ptr<Camera>> cameras;
+                vector<shared_ptr<Object>> objects;
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
                         cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
@@ -407,13 +403,20 @@ void Scene::renderBlending()
                     for (auto& object : objects)
                         object->resetTessellation();
 
-                    glFinish();
+                    // Tessellate
                     for (auto& camera : cameras)
                     {
-                        for (auto& object : objects)
-                            object->resetVisibility();
                         camera->computeVertexVisibility();
                         camera->blendingTessellateForCurrentCamera();
+                    }
+
+                    for (auto& object : objects)
+                        object->resetBlendingAttribute();
+
+                    // Compute each camera contribution
+                    for (auto& camera : cameras)
+                    {
+                        camera->computeVertexVisibility();
                         camera->computeBlendingContribution();
                     }
                 }
@@ -458,8 +461,8 @@ void Scene::renderBlending()
             blendComputedInPreviousFrame = false;
             blendComputedOnce = false;
 
-            vector<CameraPtr> cameras;
-            vector<ObjectPtr> objects;
+            vector<shared_ptr<Camera>> cameras;
+            vector<shared_ptr<Object>> objects;
             for (auto& obj : _objects)
                 if (obj.second->getType() == "camera")
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
@@ -633,11 +636,11 @@ void Scene::updateInputs()
             break;
 
         // Find where this action happened
-        WindowPtr eventWindow;
+        shared_ptr<Window> eventWindow;
         for (auto& w : _objects)
             if (w.second->getType() == "window")
             {
-                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
                 if (window->isWindow(win))
                     eventWindow = window;
             }
@@ -666,11 +669,11 @@ void Scene::updateInputs()
             break;
 
         // Find where this action happened
-        WindowPtr eventWindow;
+        shared_ptr<Window> eventWindow;
         for (auto& w : _objects)
             if (w.second->getType() == "window")
             {
-                WindowPtr window = dynamic_pointer_cast<Window>(w.second);
+                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
                 if (window->isWindow(win))
                     eventWindow = window;
             }
@@ -829,7 +832,7 @@ void Scene::activateBlendingMap(bool once)
                 dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
 
         // Filter the output to fill the blanks (dilate filter)
-        ImagePtr buffer = make_shared<Image>(_blendingMap->getSpec());
+        auto buffer = make_shared<Image>(_blendingMap->getSpec());
         unsigned short* pixBuffer = (unsigned short*)buffer->data();
         unsigned short* pixels = (unsigned short*)_blendingMap->data();
         int w = _blendingMap->getSpec().width;
@@ -917,7 +920,7 @@ void Scene::computeBlendingMap(const std::string& mode)
 }
 
 /*************/
-GlWindowPtr Scene::getNewSharedWindow(string name)
+shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
@@ -925,7 +928,7 @@ GlWindowPtr Scene::getNewSharedWindow(string name)
     if (!_mainWindow)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Main window does not exist, unable to create new shared window" << Log::endl;
-        return GlWindowPtr(nullptr);
+        return {nullptr};
     }
 
     // The GL version is the same as in the initialization, so we don't have to reset it here
@@ -936,9 +939,9 @@ GlWindowPtr Scene::getNewSharedWindow(string name)
     if (!window)
     {
         Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to create new shared window" << Log::endl;
-        return GlWindowPtr(nullptr);
+        return {nullptr};
     }
-    GlWindowPtr glWindow = make_shared<GlWindow>(window, _mainWindow->get());
+    auto glWindow = make_shared<GlWindow>(window, _mainWindow->get());
 
     glWindow->setAsCurrentContext();
 #if not HAVE_OSX
@@ -1346,27 +1349,6 @@ void Scene::registerAttributes()
         return true;
     }, {'s'});
     setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
-
-    addAttribute("httpServer", [&](const Values& args) {
-        string address = args[0].asString();
-        string port = args[1].asString();
-
-        _httpServer = make_shared<HttpServer>(address, port, _self);
-        if (_httpServer)
-        {
-            _httpServerFuture = async(std::launch::async, [&](){
-                _httpServer->run();
-            });
-        }
-
-        return true;
-    }, [&]() -> Values {
-        if (_httpServer)
-            return {_httpServer->getAddress(), _httpServer->getPort()};
-        else
-            return {};
-    }, {'s', 's'});
-    setAttributeDescription("httpServer", "Create an HTTP server given its address and port");
    
     addAttribute("link", [&](const Values& args) {
         addTask([=]() {

@@ -93,28 +93,34 @@ class Image_Shmdata : public Image
         void init();
 
         /**
-         * Shmdata callback
+         * \brief Callback called when receiving a new caps
+         * \param dataType String holding the data type
          */
-        static void onCaps(const std::string& dataType, void* user_data);
-        static void onData(void* data, int data_size, void* user_data);
+        void onCaps(const std::string& dataType);
+
+        /**
+         * \brief Callback called when receiving a new frame
+         * \param data Content of the frame
+         * \param data_size Size of the frame
+         * \param user_data User data
+         */
+        void onData(void* data, int data_size);
         
         /**
          * Read Hap compressed images
          */
-        static void readHapFrame(Image_Shmdata* ctx, void* data, int data_size);
+        void readHapFrame(void* data, int data_size);
 
         /**
          * Read uncompressed RGB or YUV images
          */
-        static void readUncompressedFrame(Image_Shmdata* ctx, void* data, int data_size);
+        void readUncompressedFrame(void* data, int data_size);
 
         /**
          * Register new functors to modify attributes
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Image_Shmdata> Image_ShmdataPtr;
 
 /**
  * Utility function to clamp quickly a value

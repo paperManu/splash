@@ -34,7 +34,8 @@ namespace Splash
 class GuiGraph : public GuiWidget
 {
     public:
-        GuiGraph(std::string name) : GuiWidget(name) {}
+        GuiGraph(std::weak_ptr<Scene> scene, std::string name)
+            : GuiWidget(scene, name) {}
         void render();
 
     private:

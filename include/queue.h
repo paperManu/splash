@@ -50,7 +50,7 @@ class Queue : public BufferObject
         /**
          * Constructor
          */
-        Queue(RootObjectWeakPtr root);
+        Queue(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -141,7 +141,7 @@ class QueueSurrogate : public Texture
         /**
          * Constructor
          */
-        QueueSurrogate(RootObjectWeakPtr root);
+        QueueSurrogate(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor

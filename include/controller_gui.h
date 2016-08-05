@@ -18,7 +18,7 @@
  */
 
 /*
- * @gui.h
+ * @controller_gui.h
  * The Gui base class
  */
 
@@ -57,16 +57,15 @@
 namespace Splash {
 
 class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 /*************/
-class Gui : public BaseObject
+class Gui : public ControllerObject
 {
     public:
         /**
          * Constructor
          */
-        Gui(GlWindowPtr w, SceneWeakPtr s);
+        Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
 
         /**
          * Destructor
@@ -82,7 +81,7 @@ class Gui : public BaseObject
         /**
          * Get pointers to this camera textures
          */
-        TexturePtr getTexture() const {return _outTexture;}
+        std::shared_ptr<Texture> getTexture() const {return _outTexture;}
 
         /**
          * Check wether it is initialized
@@ -134,16 +133,17 @@ class Gui : public BaseObject
 
     private:
         bool _isInitialized {false};
-        GlWindowPtr _window;
-        SceneWeakPtr _scene;
+        std::shared_ptr<GlWindow> _window;
+        std::weak_ptr<Scene> _scene;
 
         GLuint _fbo;
-        Texture_ImagePtr _depthTexture;
-        TexturePtr _outTexture;
+        std::shared_ptr<Texture_Image> _depthTexture;
+        std::shared_ptr<Texture> _outTexture;
         float _width {512}, _height {512};
+        int _initialGuiPos[2] {16, 16}; //!< Gui position at startup
 
         // GUI specific camera
-        CameraPtr _guiCamera;
+        std::shared_ptr<Camera> _guiCamera;
 
         // ImGUI related attributes
         static GLuint _imFontTextureId;
@@ -195,8 +195,6 @@ class Gui : public BaseObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Gui> GuiPtr;
 
 } // end of namespace
 

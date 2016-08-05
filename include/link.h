@@ -140,8 +140,6 @@ bool Link::sendMessage(const std::string& name, const std::string& attribute, co
     return sendMessage(name, attribute, convertedMsg);
 }
 
-typedef std::shared_ptr<Link> LinkPtr;
-
 } // end of namespace
 
 #endif // SPLASH_LINK_H

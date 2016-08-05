@@ -106,8 +106,6 @@ class Texture_Syphon : public Texture
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Texture_Syphon> Texture_SyphonPtr;
-
 } // end of namespace
 
 #endif

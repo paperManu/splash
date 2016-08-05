@@ -41,7 +41,7 @@ using namespace glm;
 namespace Splash {
 
 /*************/
-Camera::Camera(RootObjectWeakPtr root)
+Camera::Camera(std::weak_ptr<RootObject> root)
        : BaseObject(root)
 {
     init();
@@ -105,7 +105,7 @@ Camera::~Camera()
 }
 
 /*************/
-void Camera::computeBlendingMap(ImagePtr& map)
+void Camera::computeBlendingMap(const shared_ptr<Image>& map)
 {
     if (map->getSpec().type != ImageBufferSpec::Type::UINT16)
     {
@@ -288,7 +288,7 @@ void Camera::computeBlendingContribution()
             continue;
         auto obj = o.lock();
 
-        obj->computeVisibility(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
+        obj->computeCameraContribution(computeViewMatrix(), computeProjectionMatrix(), _blendWidth);
     }
 }
 
@@ -297,16 +297,19 @@ void Camera::computeVertexVisibility()
 {
     // We want to render the object with a specific texture, containing the primitive IDs
     vector<Values> shaderFill;
+    int primitiveIdShift = 0; // The primitive ID is shifted by the number of vertices already drawn
     for (auto& o : _objects)
     {
         if (o.expired())
             continue;
         auto obj = o.lock();
+        obj->resetVisibility(primitiveIdShift);
+        primitiveIdShift += obj->getVerticesNumber() / 3;
 
         Values fill;
         obj->getAttribute("fill", fill);
-        obj->setAttribute("fill", {"primitiveId"});
         shaderFill.push_back(fill);
+        obj->setAttribute("fill", {"primitiveId"});
     }
 
     // Render with the current texture, with no marker or frame
@@ -332,13 +335,15 @@ void Camera::computeVertexVisibility()
     // Update the vertices visibility based on the result
     glActiveTexture(GL_TEXTURE0);
     _outTextures[0]->bind();
+    primitiveIdShift = 0;
     for (auto& o : _objects)
     {
         if (o.expired())
             continue;
         auto obj = o.lock();
 
-        obj->transferVisibilityFromTexToAttr(_width, _height);
+        obj->transferVisibilityFromTexToAttr(_width, _height, primitiveIdShift);
+        primitiveIdShift += obj->getVerticesNumber() / 3;
     }
     _outTextures[0]->unbind();
 }
@@ -352,7 +357,7 @@ void Camera::blendingTessellateForCurrentCamera()
             continue;
         auto obj = o.lock();
 
-        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), _blendWidth, _blendPrecision);
+        obj->tessellateForThisCamera(computeViewMatrix(), computeProjectionMatrix(), glm::radians(_fov * _width / _height), glm::radians(_fov), _blendWidth, _blendPrecision);
     }
 }
 
@@ -566,7 +571,7 @@ bool Camera::linkTo(shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
     {
-        ObjectPtr obj3D = dynamic_pointer_cast<Object>(obj);
+        auto obj3D = dynamic_pointer_cast<Object>(obj);
         _objects.push_back(obj3D);
 
         sendCalibrationPointsToObjects();
@@ -777,7 +782,9 @@ bool Camera::render()
             auto obj = o.lock();
 
             obj->activate();
+
             vec2 colorBalance = colorBalanceFromTemperature(_colorTemperature);
+            obj->getShader()->setAttribute("uniform", {"_wireframeColor", _wireframeColor.x, _wireframeColor.y, _wireframeColor.z, _wireframeColor.w});
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
@@ -1072,7 +1079,7 @@ void Camera::setOutputNbr(int nbr)
     {
         for (int i = _outTextures.size(); i < nbr; ++i)
         {
-            Texture_ImagePtr texture = make_shared<Texture_Image>(_root);
+            auto texture = make_shared<Texture_Image>(_root);
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
             texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
@@ -1612,6 +1619,12 @@ void Camera::registerAttributes()
             return {};
     }, {'v'});
     setAttributeDescription("colorLUT", "Set the color lookup table");
+
+    addAttribute("colorWireframe", [&](const Values& args) {
+        _wireframeColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+        return true;
+    }, {'n', 'n', 'n', 'n'});
+    setAttributeDescription("colorWireframe", "Set the color for the wireframe rendering");
 
     addAttribute("activateColorLUT", [&](const Values& args) {
         if (args[0].asInt() == 2)

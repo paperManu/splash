@@ -37,7 +37,6 @@ else()
     include_directories(../external/glad/core/include)
 endif()
 
-include_directories(${Boost_INCLUDE_DIRS})
 include_directories(${GLFW_INCLUDE_DIRS})
 include_directories(${GSL_INCLUDE_DIRS})
 include_directories(${ZMQ_INCLUDE_DIRS})
@@ -47,8 +46,8 @@ include_directories(${FFMPEG_INCLUDE_DIRS})
 include_directories(${PORTAUDIO_INCLUDE_DIRS})
 include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS})
 
-link_directories(${Boost_LIBRARY_DIRS})
 link_directories(${GLFW_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
@@ -58,6 +57,7 @@ link_directories(${FFMPEG_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
+link_directories(${PYTHON_LIBRARIES})
 
 #
 # Targets
@@ -78,11 +78,12 @@ target_sources(
     splash-${API_VERSION} PRIVATE
     camera.cpp
     cgUtils.cpp
+    controller.cpp
+    controller_gui.cpp
     factory.cpp
     filter.cpp
     geometry.cpp
     gpuBuffer.cpp
-    gui.cpp
     imageBuffer.cpp
     image.cpp
     link.cpp
@@ -124,10 +125,6 @@ else()
     )
 endif()
 
-if (Boost_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE httpServer.cpp)
-endif()
-
 if (FFMPEG_FOUND)
     target_sources(splash-${API_VERSION} PRIVATE image_ffmpeg.cpp)
 endif()
@@ -165,6 +162,13 @@ if (SHMDATA_FOUND)
     )
 endif()
 
+if (PYTHONLIBS_FOUND)
+    target_sources(
+        splash-${API_VERSION} PRIVATE
+        controller_pythonEmbedded.cpp
+    )
+endif()
+
 if (APPLE)
     target_sources(
         splash-${API_VERSION} PRIVATE
@@ -174,6 +178,7 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 endif()
 
+target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GLFW_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
@@ -184,14 +189,12 @@ target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SNAPPY_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 
 #
 # splash and splash-scene executables
 #
-target_compile_features(splash PRIVATE cxx_variadic_templates)
 target_link_libraries(splash splash-${API_VERSION})
-
-target_compile_features(splash-scene PRIVATE cxx_variadic_templates)
 target_link_libraries(splash-scene splash-${API_VERSION})
 
 #

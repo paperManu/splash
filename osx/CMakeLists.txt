@@ -28,6 +28,7 @@ if(APPLE)
         COMMAND cp ../src/splash ../src/splash-scene ./splash.app/Contents/MacOS/
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../data/2d_marker.obj ${CMAKE_CURRENT_SOURCE_DIR}/../data/3d_marker.obj ./splash.app/Contents/Resources/
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/../data/templates.txt ./splash.app/Contents/Resources/
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../data/fonts ./splash.app/Contents/Resources/fonts
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../data/templates ./splash.app/Contents/Resources/templates
         COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist ./splash.app/Contents/Info.plist
         COMMAND mkdir -p ./splash.app/Contents/Frameworks

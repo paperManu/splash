@@ -47,7 +47,7 @@ class Object : public BaseObject
          * Constructor
          */
         Object();
-        Object(RootObjectWeakPtr root);
+        Object(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -68,7 +68,7 @@ class Object : public BaseObject
         /**
          * Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
          */
-        void computeVisibility(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
+        void computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
         /**
          * Deactivate this object for rendering
@@ -78,12 +78,12 @@ class Object : public BaseObject
         /**
          * Add a geometry to this object
          */
-        void addGeometry(const GeometryPtr geometry) {_geometries.push_back(geometry);}
+        void addGeometry(const std::shared_ptr<Geometry>& geometry) {_geometries.push_back(geometry);}
 
         /**
          * Add a texture to this object
          */
-        void addTexture(const TexturePtr texture) {_textures.push_back(texture);}
+        void addTexture(const std::shared_ptr<Texture>& texture) {_textures.push_back(texture);}
 
         /**
          * Add and remove a calibration point
@@ -99,17 +99,22 @@ class Object : public BaseObject
         /**
          * Get a reference to all the calibration points set
          */
-        std::vector<glm::dvec3>& getCalibrationPoints() {return _calibrationPoints;}
+        inline std::vector<glm::dvec3>& getCalibrationPoints() {return _calibrationPoints;}
 
         /**
          * Get the model matrix
          */
-        glm::dmat4 getModelMatrix() const {return computeModelMatrix();}
+        inline glm::dmat4 getModelMatrix() const {return computeModelMatrix();}
 
         /**
          * Get the shader
          */
-        ShaderPtr getShader() const {return _shader;}
+        inline std::shared_ptr<Shader> getShader() const {return _shader;}
+
+        /**
+         * Get the number of vertices for this object
+         */
+        int getVerticesNumber() const;
 
         /**
          * Try to link the given BaseObject to this
@@ -143,19 +148,25 @@ class Object : public BaseObject
         void resetTessellation();
 
         /**
-         * Reset computed visibility from any camera
+         * \brief Reset the visibility flag, as well as the faces ID
+         * \params primitiveIdShift Shift for the ID of the vertices
          */
-        void resetVisibility();
+        void resetVisibility(int primitiveIdShift = 0);
+
+        /**
+         * Reset the attribute holding the number of camera and the blending value
+         */
+        void resetBlendingAttribute();
 
         /**
          * Set the blending map for the object
          */
-        void setBlendingMap(TexturePtr map);
+        void setBlendingMap(const std::shared_ptr<Texture>& map);
 
         /**
          * Set the shader
          */
-        void setShader(const ShaderPtr shader) {_shader = shader;}
+        void setShader(const std::shared_ptr<Shader>& shader) {_shader = shader;}
 
         /**
          * Set the view projection matrix
@@ -170,28 +181,32 @@ class Object : public BaseObject
         /**
          * Subdivide the objects wrt the given camera limits (for blending purposes)
          */
-        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth, float blendPrecision);
+        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
         /**
-         * This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
+         * \brief This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
+         * \params width Width of the texture
+         * \params height Height of the texture
+         * \params primitiveIdShift Shift for the ID as rendered in the texture
          */
-        void transferVisibilityFromTexToAttr(int width, int height);
+        void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
 
     private:
         mutable std::mutex _mutex;
 
-        ShaderPtr _shader {};
-        ShaderPtr _computeShaderResetBlending {};
-        ShaderPtr _computeShaderComputeBlending {};
-        ShaderPtr _computeShaderTransferVisibilityToAttr {};
-        ShaderPtr _feedbackShaderSubdivideCamera {};
+        std::shared_ptr<Shader> _shader {};
+        std::shared_ptr<Shader> _computeShaderResetVisibility {};
+        std::shared_ptr<Shader> _computeShaderResetBlendingAttributes {};
+        std::shared_ptr<Shader> _computeShaderComputeBlending {};
+        std::shared_ptr<Shader> _computeShaderTransferVisibilityToAttr {};
+        std::shared_ptr<Shader> _feedbackShaderSubdivideCamera {};
 
         // A map for previously used graphics shaders
-        std::map<std::string, ShaderPtr> _graphicsShaders;
+        std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;
 
-        std::vector<TexturePtr> _textures;
-        std::vector<GeometryPtr> _geometries;
-        std::vector<TexturePtr> _blendMaps;
+        std::vector<std::shared_ptr<Texture>> _textures;
+        std::vector<std::shared_ptr<Geometry>> _geometries;
+        std::vector<std::shared_ptr<Texture>> _blendMaps;
 
         bool _vertexBlendingActive {false};
 
@@ -224,8 +239,6 @@ class Object : public BaseObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Object> ObjectPtr;
 
 } // end of namespace
 

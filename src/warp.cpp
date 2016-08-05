@@ -17,7 +17,7 @@ using namespace std;
 namespace Splash {
 
 /*************/
-Warp::Warp(RootObjectWeakPtr root)
+Warp::Warp(std::weak_ptr<RootObject> root)
        : Texture(root)
 {
     init();
@@ -277,7 +277,7 @@ void Warp::loadDefaultModels()
         mesh->setAttribute("file", {file.second});
         _modelMeshes.push_back(mesh);
 
-        GeometryPtr geom = make_shared<Geometry>(_root);
+        auto geom = make_shared<Geometry>(_root);
         geom->setName(file.first);
         geom->linkTo(mesh);
         _modelGeometries.push_back(geom);
@@ -307,7 +307,7 @@ void Warp::setOutput()
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
     _screen->setAttribute("fill", {"warp"});
-    GeometryPtr virtualScreen = make_shared<Geometry>(_root);
+    auto virtualScreen = make_shared<Geometry>(_root);
     _screenMesh = make_shared<Mesh_BezierPatch>(_root);
     virtualScreen->linkTo(_screenMesh);
     _screen->addGeometry(virtualScreen);

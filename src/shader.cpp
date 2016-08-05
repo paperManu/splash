@@ -217,7 +217,7 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
 }
 
 /*************/
-void Shader::setTexture(const TexturePtr texture, const GLuint textureUnit, const std::string& name)
+void Shader::setTexture(const shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name)
 {
     auto uniformIt = _uniforms.find(name);
 
@@ -846,9 +846,14 @@ void Shader::registerComputeAttributes()
             setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
             compileProgram();
         }
-        else if ("computeVisibility" == args[0].asString())
+        else if ("resetBlending" == args[0].asString())
         {
-            setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_VISIBILITY, compute);
+            setSource(options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING, compute);
+            compileProgram();
+        }
+        else if ("computeCameraContribution" == args[0].asString())
+        {
+            setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION, compute);
             compileProgram();
         }
         else if ("transferVisibilityToAttr" == args[0].asString())

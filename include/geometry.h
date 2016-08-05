@@ -47,7 +47,7 @@ class Geometry : public BufferObject
          * Constructor
          */
         Geometry();
-        Geometry(RootObjectWeakPtr root);
+        Geometry(std::weak_ptr<RootObject> root);
 
         /**
          * Destructor
@@ -151,6 +151,8 @@ class Geometry : public BufferObject
         bool _buffersResized {false}; // Holds whether the alternative buffers have been resized in the previous feedback
         bool _useAlternativeBuffers {false};
 
+        SerializedObject _serializedMesh {};
+
         int _verticesNumber {0};
         int _alternativeVerticesNumber {0};
         int _alternativeBufferSize {0};
@@ -172,8 +174,6 @@ class Geometry : public BufferObject
          */
         void registerAttributes();
 };
-
-typedef std::shared_ptr<Geometry> GeometryPtr;
 
 } // end of namespace
 

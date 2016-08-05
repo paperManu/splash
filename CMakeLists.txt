@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.2
+    VERSION 0.4.4
     LANGUAGES C CXX
 )
 
@@ -34,8 +34,8 @@ endif(NOT CMAKE_BUILD_TYPE)
 #
 # Package information
 #
-set(API_VERSION 0.4)
-set(PACKAGE_VERSION 0.4.2)
+set(API_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+set(PACKAGE_VERSION ${PROJECT_VERSION})
 
 #
 # Find the various libraries
@@ -49,7 +49,8 @@ pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 
 # Optional dependencies
-find_package(Boost COMPONENTS system thread)
+set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
+find_package(PythonLibs)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
@@ -59,6 +60,8 @@ pkg_search_module(SHMDATA shmdata-1.2)
 #
 # Configuration
 #
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/share/splash/\\\"")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
@@ -68,6 +71,7 @@ set(HAVE_FFMPEG ${FFMPEG_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})
 set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
+set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
 
 if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION GREATER 57)
     set(HAVE_FFMPEG_3 1)
@@ -113,10 +117,7 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
     set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://github.com/paperManu/splash/wiki")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "automake,
-                                      cdbs,
-                                      debhelper,
-                                      gettext,
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
                                       libavformat-dev,
                                       libavcodec-dev,
                                       libavutil-dev,
@@ -135,9 +136,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
                                       libzmq3-dev,
                                       portaudio19-dev,
                                       mesa-common-dev,
-                                      pkg-config,
-                                      bzip2,
-                                      tar,
                                       zip")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
@@ -174,7 +172,6 @@ function(info_cfg_text
     set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
 endfunction()
 
-info_cfg_option(Boost_VERSION)
 info_cfg_option(GPHOTO_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)
@@ -184,6 +181,7 @@ info_cfg_option(HAVE_FFMPEG_3)
 info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(SHMDATA_VERSION)
+info_cfg_option(PYTHONLIBS_VERSION_STRING)
 
 info_cfg_text("")
 message("${_config_msg}")

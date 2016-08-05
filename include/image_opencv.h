@@ -93,8 +93,6 @@ class Image_OpenCV : public Image
         void registerAttributes();
 };
 
-typedef std::shared_ptr<Image_OpenCV> Image_OpenCVPtr;
-
 } // end of namespace
 
 #endif // SPLASH_IMAGE_OPENCV_H

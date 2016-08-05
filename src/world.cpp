@@ -44,9 +44,9 @@ World* World::_that;
 /*************/
 World::World(int argc, char** argv)
 {
-    parseArguments(argc, argv);
-
     init();
+
+    parseArguments(argc, argv);
 }
 
 /*************/
@@ -89,14 +89,14 @@ void World::run()
             // Read and serialize new buffers
             Timer::get() << "serialize";
             vector<unsigned int> threadIds;
-            map<string, shared_ptr<SerializedObject>> serializedObjects;
+            unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
             for (auto& o : _objects)
             {
-                BufferObjectPtr bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 // This prevents the map structure to be modified in the threads
-                serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
+                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
 
-                threadIds.push_back(SThread::pool.enqueue([=, &serializedObjects, &o]() {
+                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                     // Update the local objects
                     o.second->update();
 
@@ -108,7 +108,7 @@ void World::run()
                             auto obj = bufferObj->serialize();
                             bufferObj->setNotUpdated();
                             if (obj)
-                                serializedObjects[bufferObj->getDistantName()] = obj;
+                                serializedObjectIt.first->second = obj;
                         }
                     }
                 }));
@@ -577,6 +577,19 @@ string World::getObjectsAttributesDescriptions()
 {
     Json::Value root;
 
+    auto formatDescription = [](const string desc, const Values& argTypes) -> string {
+        string descriptionStr = "[";
+        for (int i = 0; i < argTypes.size(); ++i)
+        {
+            descriptionStr += argTypes[i].asString();
+            if (i < argTypes.size() - 1)
+                descriptionStr += ", ";
+        }
+        descriptionStr += "] " + desc;
+
+        return descriptionStr;
+    };
+
     // We create "fake" objects and ask then for their attributes
     auto localFactory = Factory();
     auto types = localFactory.getObjectTypes();
@@ -598,17 +611,7 @@ string World::getObjectsAttributesDescriptions()
             if (d[2].asValues().size() == 0)
                 continue;
 
-            string descriptionStr = "[";
-            auto type = d[2].asValues();
-            for (int i = 0; i < type.size(); ++i)
-            {
-                descriptionStr += type[i].asString();
-                if (i < type.size() - 1)
-                    descriptionStr += ", ";
-            }
-            descriptionStr += "] " + d[1].asString();
-                
-            root[obj->getType()][d[0].asString()] = descriptionStr;
+            root[obj->getType()][d[0].asString()] = formatDescription(d[1].asString(), d[2].asValues());
             
             addedAttribute++;
         }
@@ -616,6 +619,16 @@ string World::getObjectsAttributesDescriptions()
         // If the object has no documented attribute
         if (addedAttribute == 0)
             root.removeMember(obj->getType());
+    }
+
+    // Also, add documentation for the World and Scene types
+    auto worldDescription = getAttributesDescriptions();
+    for (auto& d : worldDescription)
+    {
+        if (d[1].size() == 0)
+            continue;
+
+        root["world"][d[0].asString()] = formatDescription(d[1].asString(), d[2].asValues());
     }
 
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -657,6 +670,7 @@ void World::saveConfig()
     for (int i = 0; i < jsScenes.size(); ++i)
     {
         string sceneName = jsScenes[i]["name"].asString();
+        _config[sceneName] = Json::Value();
 
         // Set the scene configuration from what was received in the previous loop
         Json::Value::Members attributes = root[sceneName][sceneName].getMemberNames();
@@ -732,7 +746,7 @@ void World::handleSerializedObject(const string name, shared_ptr<SerializedObjec
 /*************/
 void World::init()
 {
-    _self = WorldPtr(this, [](World*){}); // A shared pointer with no deleter, how convenient
+    _self = shared_ptr<World>(this, [](World*){}); // A shared pointer with no deleter, how convenient
 
     _type = "world";
     _name = "world";
@@ -951,13 +965,14 @@ void World::parseArguments(int argc, char** argv)
         }
         else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
         {
-            cout << "Basic usage: splash -o [config.json]" << endl;
+            cout << "Basic usage: splash [config.json]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            cout << endl;
             exit(0);
         }
         else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
@@ -966,8 +981,16 @@ void World::parseArguments(int argc, char** argv)
             cout << descriptions << endl;
             exit(0);
         }
-        else
+        else if (defaultFile)
+        {
+            filename = string(argv[idx]);
+            defaultFile = false;
             idx++;
+        }
+        else
+        {
+            idx++;
+        }
     }
 
     if (defaultFile)
@@ -1039,7 +1062,7 @@ void World::registerAttributes()
     }, [&]() -> Values {
         return {_blendingMode};
     }, {'s'});
-    setAttributeDescription("computeBlending", "Ask all Scenes to compute the blending");
+    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
     addAttribute("deleteObject", [&](const Values& args) {
         addTask([=]() {
@@ -1248,7 +1271,7 @@ void World::registerAttributes()
         });
         return true;
     }, {'s', 's'});
-    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type");
+    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type, and links the new object to the objects given by the following parameters");
 
     addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)

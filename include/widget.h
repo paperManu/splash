@@ -37,20 +37,17 @@
 #include <memory>
 #include <unordered_map>
 
-#include "config.h"
+#include "./config.h"
 
-#include "camera.h"
-#include "coretypes.h"
-#include "basetypes.h"
-#include "image.h"
-#include "texture.h"
-#include "warp.h"
+#include "./coretypes.h"
+#include "./controller.h"
+#include "./basetypes.h"
+#include "./image.h"
 
 namespace Splash
 {
 class Gui;
 class Scene;
-typedef std::weak_ptr<Scene> SceneWeakPtr;
 
 namespace SplashImGui
 {
@@ -65,19 +62,19 @@ namespace SplashImGui
 }
 
 /*************/
-class GuiWidget
+class GuiWidget : public ControllerObject
 {
     public:
-        GuiWidget(std::string name = "");
+        GuiWidget(std::weak_ptr<Scene> scene, std::string name = "");
         virtual ~GuiWidget() {}
         virtual void render() {}
         virtual int updateWindowFlags() {return 0;}
         virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
-        void setScene(SceneWeakPtr scene) {_scene = scene;}
+        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
 
     protected:
         std::string _name {""};
-        SceneWeakPtr _scene;
+        std::weak_ptr<Scene> _scene;
         std::string _fileSelectorTarget {""};
 
         /**
