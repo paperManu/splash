@@ -290,7 +290,7 @@ bool Shader::linkProgram()
     if (status == GL_TRUE)
     {
 #ifdef DEBUG
-        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program linked successfully" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader program " << _currentProgramName << " linked successfully" << Log::endl;
 #endif
 
         for (auto src : _shadersSource)
@@ -301,7 +301,7 @@ bool Shader::linkProgram()
     }
     else
     {
-        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program" << Log::endl;
+        Log::get() << Log::WARNING << "Shader::" << __FUNCTION__ << " - Error while linking the shader program " << _currentProgramName << Log::endl;
 
         GLint length;
         glGetProgramiv(_program, GL_INFO_LOG_LENGTH, &length);
@@ -722,6 +722,7 @@ void Shader::registerGraphicAttributes()
 
         if (args[0].asString() == "texture" && (_fill != texture || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = texture;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
@@ -731,6 +732,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "filter" && (_fill != filter || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = filter;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
@@ -740,6 +742,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = color;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
@@ -749,6 +752,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = primitiveId;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
@@ -758,6 +762,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = uv;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
@@ -767,6 +772,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "warp" && (_fill != warp || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = warp;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_WARP, vertex);
@@ -776,6 +782,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "warpControl" && (_fill != warp || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = warpControl;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME, vertex);
@@ -785,6 +792,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = wireframe;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
@@ -794,6 +802,7 @@ void Shader::registerGraphicAttributes()
         }
         else if (args[0].asString() == "window" && (_fill != window || _shaderOptions != options))
         {
+            _currentProgramName = args[0].asString();
             _fill = window;
             _shaderOptions = options;
             setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
@@ -843,21 +852,25 @@ void Shader::registerComputeAttributes()
 
         if ("resetVisibility" == args[0].asString())
         {
+            _currentProgramName = args[0].asString();
             setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
             compileProgram();
         }
         else if ("resetBlending" == args[0].asString())
         {
+            _currentProgramName = args[0].asString();
             setSource(options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING, compute);
             compileProgram();
         }
         else if ("computeCameraContribution" == args[0].asString())
         {
+            _currentProgramName = args[0].asString();
             setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION, compute);
             compileProgram();
         }
         else if ("transferVisibilityToAttr" == args[0].asString())
         {
+            _currentProgramName = args[0].asString();
             setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
             compileProgram();
         }
@@ -880,6 +893,7 @@ void Shader::registerFeedbackAttributes()
 
         if ("tessellateFromCamera" == args[0].asString())
         {
+            _currentProgramName = args[0].asString();
             setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
             setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
             setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);

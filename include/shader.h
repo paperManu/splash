@@ -164,12 +164,7 @@ class Shader : public BaseObject
         std::map<std::string, Uniform> _uniforms;
         std::vector<std::string> _uniformsToUpdate;
         std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
-
-        // A map of previously compiled programs
         std::string _currentProgramName {};
-        std::map<std::string, GLuint> _compiledPrograms;
-        std::map<std::string, std::string> _compiledProgramsOptions;
-        std::map<std::string, bool> _programsLinkStatus;
 
         // Rendering parameters
         Fill _fill {texture};

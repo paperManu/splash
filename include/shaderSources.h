@@ -390,10 +390,10 @@ struct ShaderSources
 
         in VS_OUT
         {
-            vec4 vertex;
-            vec2 texcoord;
-            vec4 normal;
-            vec4 annexe;
+            smooth vec4 vertex;
+            smooth vec2 texcoord;
+            smooth vec4 normal;
+            smooth vec4 annexe;
         } tcs_in[];
 
         out TCS_OUT
