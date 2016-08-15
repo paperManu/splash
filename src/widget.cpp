@@ -126,7 +126,8 @@ namespace SplashImGui
 
         ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
         char textBuffer[512];
-        strcpy(textBuffer, path.c_str());
+        memset(textBuffer, 0, 512);
+        strncpy(textBuffer, path.c_str(), 510);
 
         ImGui::PushItemWidth(-1.f);
         vector<FilesystemFile> fileList;

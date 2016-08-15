@@ -168,7 +168,8 @@ bool Image_GPhoto::capture()
         gp_camera_file_delete(camera.cam, filePath.folder, filePath.name, _gpContext);
 
         // Delete the file
-        remove((string("/tmp/") + string(filePath.name)).c_str());
+        if (remove((string("/tmp/") + string(filePath.name)).c_str()) == -1)
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to delete file /tmp/" << filePath.name << Log::endl;
     }
 
     if (res != GP_OK)

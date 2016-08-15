@@ -262,14 +262,21 @@ void World::applyConfig()
     _masterSceneName = "";
 
     // Get the list of all scenes, and create them
+    if (!_config.isMember("scenes"))
+    {
+        Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while getting scenes configuration" << Log::endl;
+        return;
+    }
+
     const Json::Value jsScenes = _config["scenes"];
+
     for (int i = 0; i < jsScenes.size(); ++i)
     {
         if (jsScenes[i]["address"].asString() == string("localhost"))
         {
             if (!jsScenes[i].isMember("name"))
             {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
+                Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
                 return;
             }
             int spawn = 0;

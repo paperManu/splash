@@ -863,8 +863,7 @@ void Scene::activateBlendingMap(bool once)
         if (_isMaster)
         {
             _link->sendBuffer("blendingMap", _blendingMap->serialize());
-            timespec nap {0, (long int)1e8};
-            nanosleep(&nap, NULL);
+            this_thread::sleep_for(chrono::milliseconds(10));
             _link->sendBuffer("blendingMap", _blendingMap->serialize());
         }
 
@@ -1162,8 +1161,9 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, void* userParam)
 #endif
 {
-    string typeString {""};
-    Log::Priority logType;
+    string typeString {"OTHER"};
+    Log::Priority logType {Log::MESSAGE};
+
     switch (type)
     {
     case GL_DEBUG_TYPE_ERROR:
@@ -1286,12 +1286,12 @@ void Scene::registerAttributes()
 
     addAttribute("deleteObject", [&](const Values& args) {
         addTask([=]() -> void {
-            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
             // We wait until we can indeed deleted the object
             bool expectedAtomicValue = false;
             while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
                 this_thread::sleep_for(chrono::milliseconds(1));
+
+            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
             auto objectName = args[0].asString();
 

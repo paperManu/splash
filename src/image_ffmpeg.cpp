@@ -504,7 +504,7 @@ void Image_FFmpeg::seek(float seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
 
     // Prevent seeking outside of the file
-    float duration = _avContext->duration / AV_TIME_BASE;
+    float duration = (float)_avContext->duration / (float)AV_TIME_BASE;
     if (seconds < 0)
         seconds = 0;
     else if (seconds > duration)
@@ -640,7 +640,7 @@ void Image_FFmpeg::registerAttributes()
         if (_avContext == nullptr)
             return {0.f};
 
-        float duration = _avContext->duration / AV_TIME_BASE;
+        float duration = (float)_avContext->duration / (float)AV_TIME_BASE;
         return {duration};
     });
     setAttributeParameter("duration", false, true);

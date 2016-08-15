@@ -163,6 +163,7 @@ void GuiNodeView::renderNode(string name)
     {
         auto cursorPos = ImGui::GetCursorPos();
         _nodePositions[name] = vector<float>({cursorPos.x + _viewShift[0], cursorPos.y + _viewShift[1]});
+        pos = _nodePositions.find(name);
     }
     else
     {

@@ -136,7 +136,7 @@ class Gui : public ControllerObject
         std::shared_ptr<GlWindow> _window;
         std::weak_ptr<Scene> _scene;
 
-        GLuint _fbo;
+        GLuint _fbo {0};
         std::shared_ptr<Texture_Image> _depthTexture;
         std::shared_ptr<Texture> _outTexture;
         float _width {512}, _height {512};

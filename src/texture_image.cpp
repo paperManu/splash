@@ -309,6 +309,11 @@ void Texture_Image::update()
             dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_R16;
         }
+        else
+        {
+            Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Unknown uncompressed format" << Log::endl;
+            return;
+        }
     }
     else if (isCompressed)
     {
@@ -330,11 +335,11 @@ void Texture_Image::update()
         {
             internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "Texture_Image::" <<  __FUNCTION__ << " - Texture format not supported" << Log::endl;
-        return;
+        else
+        {
+            Log::get() << Log::WARNING << "Texture_Image::" << __FUNCTION__ << " - Unknown compressed format" << Log::endl;
+            return;
+        }
     }
 
     // Update the textures if the format changed

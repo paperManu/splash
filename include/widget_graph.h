@@ -39,7 +39,6 @@ class GuiGraph : public GuiWidget
         void render();
 
     private:
-        std::atomic_uint _target;
         unsigned int _maxHistoryLength {300};
         std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
 };

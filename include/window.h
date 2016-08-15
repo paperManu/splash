@@ -165,7 +165,7 @@ class Window : public BaseObject
         GLuint _readFbo {0};
         std::shared_ptr<Texture_Image> _depthTexture {nullptr};
         std::shared_ptr<Texture_Image> _colorTexture {nullptr};
-        GLsync _renderFence;
+        GLsync _renderFence {nullptr};
 
         std::shared_ptr<Object> _screen;
         std::shared_ptr<Object> _screenGui;

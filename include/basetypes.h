@@ -526,7 +526,7 @@ class BaseObject
         bool _savable {true};
 
     protected:
-        unsigned long _id;
+        unsigned long _id {0};
         std::string _type {"baseobject"};
         std::string _remoteType {""};
         std::string _name {""};
@@ -708,7 +708,7 @@ class BufferObject : public BaseObject
         mutable std::mutex _readMutex;
         mutable std::mutex _writeMutex;
         std::atomic_bool _serializedObjectWaiting {false};
-        int64_t _timestamp;
+        int64_t _timestamp {0};
         bool _updatedBuffer {false};
 
         std::shared_ptr<SerializedObject> _serializedObject;

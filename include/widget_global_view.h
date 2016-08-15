@@ -54,7 +54,7 @@ class GuiGlobalView : public GuiWidget
         bool _camerasColorized {false};
 
         // Size of the view
-        int _camWidth, _camHeight;
+        int _camWidth {0}, _camHeight {0};
 
         // Joystick state
         std::vector<float> _joyAxes {};

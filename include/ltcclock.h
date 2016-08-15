@@ -75,7 +75,7 @@ class LtcClock : public BaseObject
         void getClock(Values& clockValues);
 
     private:
-        bool _ready;
+        bool _ready {false};
         bool _masterClock {false};
         bool _continue {false};
         std::thread _ltcThread;

@@ -44,7 +44,8 @@ namespace Splash
         inline bool isDir(const std::string& filepath)
         {
             struct stat pathStat;
-            lstat(filepath.c_str(), &pathStat);
+            if (lstat(filepath.c_str(), &pathStat) == -1)
+                return false;
             return S_ISDIR(pathStat.st_mode);
         }
 

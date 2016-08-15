@@ -668,14 +668,15 @@ void Shader::updateUniforms()
 void Shader::resetShader(ShaderType type)
 {
     glDeleteShader(_shaders[type]);
-    GLenum glShaderType;
+
     if (type == vertex)
-        glShaderType = GL_VERTEX_SHADER;
-    if (type == geometry)
-        glShaderType = GL_GEOMETRY_SHADER;
-    if (type == fragment)
-        glShaderType = GL_FRAGMENT_SHADER;
-    _shaders[type] = glCreateShader(glShaderType);
+        _shaders[type] = glCreateShader(GL_VERTEX_SHADER);
+    else if (type == geometry)
+        _shaders[type] = glCreateShader(GL_GEOMETRY_SHADER);
+    else if (type == fragment)
+        _shaders[type] = glCreateShader(GL_FRAGMENT_SHADER);
+    else
+        return;
 }
 
 /*************/
