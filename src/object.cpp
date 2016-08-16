@@ -66,17 +66,6 @@ void Object::activate()
 
     _mutex.lock(); 
 
-    for (auto& m : _blendMaps)
-        m->update();
-
-    bool withTextureBlend = false;
-    if (_blendMaps.size() != 0)
-    {
-        for (int i = 0; i < _textures.size(); ++i)
-            if (_blendMaps[0] == _textures[i])
-                withTextureBlend = true;
-    }
-
     // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
     if (shaderIt == _graphicsShaders.end())
@@ -96,8 +85,6 @@ void Object::activate()
         {
             if (_vertexBlendingActive)
                 _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
-            else if (withTextureBlend)
-                _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
             else
                 _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
         }
@@ -105,8 +92,6 @@ void Object::activate()
         {
             if (_vertexBlendingActive)
                 _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
-            else if (withTextureBlend)
-                _shader->setAttribute("fill", {"texture", "BLENDING"});
             else
                 _shader->setAttribute("fill", {"texture"});
         }
@@ -180,13 +165,6 @@ glm::dmat4 Object::computeModelMatrix() const
 /*************/
 void Object::deactivate()
 {
-    for (auto& m : _blendMaps)
-    {
-        auto m_asTexImage = dynamic_pointer_cast<Texture_Image>(m);
-        if (m_asTexImage)
-            m_asTexImage->flushPbo();
-    }
-
     for (auto& t : _textures)
     {
         //t->flushPbo();
@@ -405,26 +383,6 @@ void Object::removeTexture(const shared_ptr<Texture>& tex)
 }
 
 /*************/
-void Object::resetBlendingMap()
-{
-    for (auto textureIt = _textures.begin(); textureIt != _textures.end();)
-    {
-        bool hasErased {false};
-        for (auto& m : _blendMaps)
-            if (*textureIt == m)
-            {
-                textureIt = _textures.erase(textureIt);
-                hasErased = true;
-            }
-        if (!hasErased)
-            textureIt++;
-    }
-
-    _blendMaps.clear();
-    _updatedParams = true;
-}
-
-/*************/
 void Object::resetVisibility(int primitiveIdShift)
 {
     lock_guard<mutex> lock(_mutex);
@@ -610,13 +568,6 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
             glMemoryBarrier(GL_TRANSFORM_FEEDBACK_BARRIER_BIT);
         }
     }
-}
-
-/*************/
-void Object::setBlendingMap(const shared_ptr<Texture>& map)
-{
-    _blendMaps.push_back(map);
-    _textures.push_back(map);
 }
 
 /*************/

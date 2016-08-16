@@ -354,113 +354,38 @@ void Scene::remove(string name)
 /*************/
 void Scene::renderBlending()
 {
-    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
-    {
-        static bool blendComputedInPreviousFrame = false;
-        static bool blendComputedOnce = false;
+    static bool blendComputedInPreviousFrame = false;
+    static bool blendComputedOnce = false;
 
-        if (blendComputedOnce && _computeBlendingOnce)
+    if (!((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4))
+        return;
+    
+    if (blendComputedOnce && _computeBlendingOnce)
+    {
+        // This allows for blending reset if it was computed once
+        blendComputedOnce = false;
+        _computeBlending = false;
+        _computeBlendingOnce = false;
+        blendComputedInPreviousFrame = true;
+    }
+    
+    if (_computeBlending)
+    {
+        // Check for regular or single computation
+        if (_computeBlendingOnce)
         {
-            // This allows for blending reset if it was computed once
-            blendComputedOnce = false;
             _computeBlending = false;
             _computeBlendingOnce = false;
+            blendComputedOnce = true;
+        }
+        else
+        {
             blendComputedInPreviousFrame = true;
         }
-
-        if (_computeBlending)
+    
+        // Only the master scene computes the blending
+        if (_isMaster)
         {
-            // Check for regular or single computation
-            if (_computeBlendingOnce)
-            {
-                _computeBlending = false;
-                _computeBlendingOnce = false;
-                blendComputedOnce = true;
-            }
-            else
-            {
-                blendComputedInPreviousFrame = true;
-            }
-
-            // Only the master scene computes the blending
-            if (_isMaster)
-            {
-                vector<shared_ptr<Camera>> cameras;
-                vector<shared_ptr<Object>> objects;
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "camera")
-                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                    else if (obj.second->getType() == "object")
-                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-                for (auto& obj : _ghostObjects)
-                    if (obj.second->getType() == "camera")
-                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                    else if (obj.second->getType() == "object")
-                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-
-                if (cameras.size() != 0)
-                {
-                    for (auto& object : objects)
-                        object->resetTessellation();
-
-                    // Tessellate
-                    for (auto& camera : cameras)
-                    {
-                        camera->computeVertexVisibility();
-                        camera->blendingTessellateForCurrentCamera();
-                    }
-
-                    for (auto& object : objects)
-                        object->resetBlendingAttribute();
-
-                    // Compute each camera contribution
-                    for (auto& camera : cameras)
-                    {
-                        camera->computeVertexVisibility();
-                        camera->computeBlendingContribution();
-                    }
-                }
-
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "object")
-                        obj.second->setAttribute("activateVertexBlending", {1});
-
-                // If there are some other scenes, send them the blending
-                if (_ghostObjects.size() != 0)
-                {
-                    for (auto& obj : _objects)
-                        if (obj.second->getType() == "geometry")
-                        {
-                            auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
-                            _link->sendBuffer(obj.first, std::move(serializedGeometry));
-                        }
-                    
-                    // Notify the other scenes that the blending has been updated
-                    sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
-                }
-            }
-            // The non-master scenes only need to activate blending
-            else
-            {
-                // Wait for the master scene to notify us that the blending was updated
-                unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
-                while (!_vertexBlendingReceptionStatus)
-                    _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
-                _vertexBlendingReceptionStatus = false;
-                    
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "object")
-                        obj.second->setAttribute("activateVertexBlending", {1});
-                    else if (obj.second->getType() == "geometry")
-                        dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
-            }
-        }
-        // This deactivates the blending
-        else if (blendComputedInPreviousFrame)
-        {
-            blendComputedInPreviousFrame = false;
-            blendComputedOnce = false;
-
             vector<shared_ptr<Camera>> cameras;
             vector<shared_ptr<Object>> objects;
             for (auto& obj : _objects)
@@ -468,22 +393,97 @@ void Scene::renderBlending()
                     cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
                 else if (obj.second->getType() == "object")
                     objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-            
-            if (_isMaster && cameras.size() != 0)
+            for (auto& obj : _ghostObjects)
+                if (obj.second->getType() == "camera")
+                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+                else if (obj.second->getType() == "object")
+                    objects.push_back(dynamic_pointer_cast<Object>(obj.second));
+    
+            if (cameras.size() != 0)
             {
                 for (auto& object : objects)
-                {
                     object->resetTessellation();
-                    object->resetVisibility();
+    
+                // Tessellate
+                for (auto& camera : cameras)
+                {
+                    camera->computeVertexVisibility();
+                    camera->blendingTessellateForCurrentCamera();
+                }
+    
+                for (auto& object : objects)
+                    object->resetBlendingAttribute();
+    
+                // Compute each camera contribution
+                for (auto& camera : cameras)
+                {
+                    camera->computeVertexVisibility();
+                    camera->computeBlendingContribution();
                 }
             }
-
+    
             for (auto& obj : _objects)
                 if (obj.second->getType() == "object")
-                    obj.second->setAttribute("activateVertexBlending", {0});
-                else if (obj.second->getType() == "geometry")
-                    dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(false);
+                    obj.second->setAttribute("activateVertexBlending", {1});
+    
+            // If there are some other scenes, send them the blending
+            if (_ghostObjects.size() != 0)
+            {
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "geometry")
+                    {
+                        auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
+                        _link->sendBuffer(obj.first, std::move(serializedGeometry));
+                    }
+                
+                // Notify the other scenes that the blending has been updated
+                sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
+            }
         }
+        // The non-master scenes only need to activate blending
+        else
+        {
+            // Wait for the master scene to notify us that the blending was updated
+            unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
+            while (!_vertexBlendingReceptionStatus)
+                _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
+            _vertexBlendingReceptionStatus = false;
+                
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "object")
+                    obj.second->setAttribute("activateVertexBlending", {1});
+                else if (obj.second->getType() == "geometry")
+                    dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
+        }
+    }
+    // This deactivates the blending
+    else if (blendComputedInPreviousFrame)
+    {
+        blendComputedInPreviousFrame = false;
+        blendComputedOnce = false;
+    
+        vector<shared_ptr<Camera>> cameras;
+        vector<shared_ptr<Object>> objects;
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "camera")
+                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+            else if (obj.second->getType() == "object")
+                objects.push_back(dynamic_pointer_cast<Object>(obj.second));
+        
+        if (_isMaster && cameras.size() != 0)
+        {
+            for (auto& object : objects)
+            {
+                object->resetTessellation();
+                object->resetVisibility();
+            }
+        }
+    
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "object")
+                obj.second->setAttribute("activateVertexBlending", {0});
+            else if (obj.second->getType() == "geometry")
+                dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(false);
     }
 }
 
@@ -802,7 +802,7 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-void Scene::activateBlendingMap(bool once)
+void Scene::activateBlending(bool once)
 {
     if (_isBlendingComputed)
         return;
@@ -815,73 +815,12 @@ void Scene::activateBlendingMap(bool once)
     }
     else
     {
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-        _mainWindow->setAsCurrentContext();
-
-        initBlendingMap();
-        // Set the blending map to zero
-        _blendingMap->setTo(0.f);
-        _blendingMap->setName("blendingMap");
-
-        // Compute the contribution of each camera
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-
-        // Filter the output to fill the blanks (dilate filter)
-        auto buffer = make_shared<Image>(_blendingMap->getSpec());
-        unsigned short* pixBuffer = (unsigned short*)buffer->data();
-        unsigned short* pixels = (unsigned short*)_blendingMap->data();
-        int w = _blendingMap->getSpec().width;
-        int h = _blendingMap->getSpec().height;
-        for (int x = 0; x < w; ++x)
-            for (int y = 0; y < h; ++y)
-            {
-                unsigned short maxValue = 0;
-                for (int xx = -1; xx <= 1; ++xx)
-                {
-                    if (x + xx < 0 || x + xx >= w)
-                        continue;
-                    for (int yy = -1; yy <= 1; ++yy)
-                    {
-                        if (y + yy < 0 || y + yy >= h)
-                            continue;
-                        maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
-                    }
-                }
-                pixBuffer[y * w + x] = maxValue;
-            }
-        swap(_blendingMap, buffer);
-        _blendingMap->setSavable(false);
-        _blendingMap->updateTimestamp();
-
-        // Small hack to handle the fact that texture transfer uses PBOs.
-        // If we send the buffer only once, the displayed PBOs wont be the correct one.
-        if (_isMaster)
-        {
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
-            this_thread::sleep_for(chrono::milliseconds(10));
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
-        }
-
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
-
-        _computeBlending = true;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
-        
-
-        _mainWindow->releaseContext();
+        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Blending computation needs at least OpenGL 4.3. Current version is " << _glVersion[0] << "." << _glVersion[1] << Log::endl;
     }
 }
 
 /*************/
-void Scene::deactivateBlendingMap()
+void Scene::deactivateBlending()
 {
     _isBlendingComputed = false;
     
@@ -890,32 +829,17 @@ void Scene::deactivateBlendingMap()
         _computeBlending = false;
         _computeBlendingOnce = true;
     }
-    else
-    {
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-        _mainWindow->setAsCurrentContext();
-
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
-
-        _computeBlending = false;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
-
-        _mainWindow->releaseContext();
-    }
 }
 
 /*************/
-void Scene::computeBlendingMap(const std::string& mode)
+void Scene::computeBlending(const std::string& mode)
 {
     if (mode == "once")
-        activateBlendingMap(true);
+        activateBlending(true);
     else if (mode == "continuous")
-        activateBlendingMap(false);
+        activateBlending(false);
     else
-        deactivateBlendingMap();
+        deactivateBlending();
 }
 
 /*************/
@@ -989,7 +913,7 @@ Values Scene::getObjectsNameByType(string type)
 /*************/
 vector<int> Scene::findGLVersion()
 {
-    vector<vector<int>> glVersionList {{4, 3}, {3, 3}, {3, 2}};
+    vector<vector<int>> glVersionList {{4, 3}, {4, 0}};
     vector<int> detectedVersion {0, 0};
 
     for (auto version : glVersionList)
@@ -997,9 +921,9 @@ vector<int> Scene::findGLVersion()
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version[0]);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version[1]);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        #if HAVE_OSX
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        #endif
+#if HAVE_OSX
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
         glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
@@ -1102,18 +1026,6 @@ void Scene::init(std::string name)
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
-}
-
-/*************/
-void Scene::initBlendingMap()
-{
-    _blendingMap = make_shared<Image>(_self);
-    _blendingMap->set(_blendingResolution, _blendingResolution, 1, ImageBufferSpec::Type::UINT16);
-    _objects["blendingMap"] = _blendingMap;
-
-    _blendingTexture = make_shared<Texture_Image>(_self);
-    _blendingTexture->setAttribute("filtering", {0});
-    *_blendingTexture = _blendingMap;
 }
 
 /*************/
@@ -1220,19 +1132,6 @@ void Scene::registerAttributes()
     }, {'s', 's'});
     setAttributeDescription("addGhost", "Add a ghost object of the given name and type. Only useful in the master Scene");
 
-    addAttribute("blendingResolution", [&](const Values& args) {
-        addTask([=]() {
-            int resolution = args[0].asInt();
-            if (resolution >= 64)
-                _blendingResolution = resolution;
-        });
-
-        return true;
-    }, [&]() -> Values {
-        return {(int)_blendingResolution};
-    }, {'n'});
-    setAttributeDescription("blendingResolution", "Set the resolution of the blending map");
-
     addAttribute("blendingUpdated", [&](const Values& args) {
         _vertexBlendingReceptionStatus = true;
         _vertexBlendingCondition.notify_one();
@@ -1249,29 +1148,29 @@ void Scene::registerAttributes()
     addAttribute("computeBlending", [&](const Values& args) {
         std::string blendingMode = args[0].asString();
         addTask([=]() -> void {
-            computeBlendingMap(blendingMode);
+            computeBlending(blendingMode);
         });
         return true;
     }, {'s'});
     setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
-    addAttribute("activateBlendingMap", [&](const Values& args) {
+    addAttribute("activateBlending", [&](const Values& args) {
         addTask([=]() -> void {
-            activateBlendingMap();
+            activateBlending();
         });
 
         return true;
     });
-    setAttributeDescription("activateBlendingMap", "Activate the blending map");
+    setAttributeDescription("activateBlending", "Activate the blending map");
 
-    addAttribute("deactivateBlendingMap", [&](const Values& args) {
+    addAttribute("deactivateBlending", [&](const Values& args) {
         addTask([=]() -> void {
-            deactivateBlendingMap();
+            deactivateBlending();
         });
 
         return true;
     });
-    setAttributeDescription("deactivateBlendingMap", "Deactivate the blending map");
+    setAttributeDescription("deactivateBlending", "Deactivate the blending map");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {

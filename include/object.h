@@ -138,11 +138,6 @@ class Object : public BaseObject
         void removeTexture(const std::shared_ptr<Texture>& texture);
 
         /**
-         * Reset the blending to no blending at all
-         */
-        void resetBlendingMap();
-
-        /**
          * Reset tessellation of all linked objects
          */
         void resetTessellation();
@@ -157,11 +152,6 @@ class Object : public BaseObject
          * Reset the attribute holding the number of camera and the blending value
          */
         void resetBlendingAttribute();
-
-        /**
-         * Set the blending map for the object
-         */
-        void setBlendingMap(const std::shared_ptr<Texture>& map);
 
         /**
          * Set the shader
@@ -206,7 +196,6 @@ class Object : public BaseObject
 
         std::vector<std::shared_ptr<Texture>> _textures;
         std::vector<std::shared_ptr<Geometry>> _geometries;
-        std::vector<std::shared_ptr<Texture>> _blendMaps;
 
         bool _vertexBlendingActive {false};
 

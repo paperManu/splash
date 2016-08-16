@@ -73,11 +73,6 @@ class Camera : public BaseObject
         void blendingTessellateForCurrentCamera();
 
         /**
-         * Computes the blending map for this camera
-         */
-        void computeBlendingMap(const std::shared_ptr<Image>& map);
-
-        /**
          * Compute the blending for all objects seen by this camera
          */
         void computeBlendingContribution();

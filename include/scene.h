@@ -206,9 +206,9 @@ class Scene : public RootObject
         /**
          * Creates the blending map from the current calibration of the cameras
          */
-        void computeBlendingMap(const std::string& mode = "once");
-        void activateBlendingMap(bool once = true);
-        void deactivateBlendingMap();
+        void computeBlending(const std::string& mode = "once");
+        void activateBlending(bool once = true);
+        void deactivateBlending();
 
     private:
         static bool _isGlfwInitialized;
@@ -250,9 +250,6 @@ class Scene : public RootObject
         bool _isBlendingComputed {false};
         bool _computeBlending {false};
         bool _computeBlendingOnce {false};
-        unsigned int _blendingResolution {2048};
-        std::shared_ptr<Texture_Image> _blendingTexture;
-        std::shared_ptr<Image> _blendingMap;
 
         /**
          * Find which OpenGL version is available
@@ -264,11 +261,6 @@ class Scene : public RootObject
          * Set up the context and everything
          */
         void init(std::string name);
-
-        /**
-         * Set up the blending map
-         */
-        void initBlendingMap();
 
         /**
          * Joystick loop
