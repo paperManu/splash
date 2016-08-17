@@ -26,20 +26,78 @@
 #define SPLASH_OSUTILS_H
 
 #include <string>
-#include <sys/stat.h>
 #include <vector>
 #include <unistd.h>
 #if HAVE_SHMDATA
     #include <shmdata/abstract-logger.hpp>
 #endif
 #include <pwd.h>
+#include <sched.h>
+#include <sys/stat.h>
+#include <sys/syscall.h>
+#include <sys/types.h>
 
-#include "log.h"
+#include "./log.h"
 
 namespace Splash
 {
     namespace Utils
     {
+        /*****/
+#if HAVE_LINUX
+        inline int getThreadId()
+        {
+            pid_t threadId;
+            threadId = syscall(SYS_gettid);
+            return threadId;
+        }
+#endif
+
+        /*****/
+        inline int getCoreCount()
+        {
+            auto ncores = sysconf(_SC_NPROCESSORS_CONF);
+            return ncores;
+        }
+
+        /*****/
+        inline bool setAffinity(const std::vector<int>& cores)
+        {
+#if HAVE_LINUX
+            auto ncores = getCoreCount();
+            for (auto& core : cores)
+                if (core >= ncores)
+                    return false;
+
+            cpu_set_t set;
+            CPU_ZERO(&set);
+            for (auto& core : cores)
+                CPU_SET(core, &set);
+
+            if (sched_setaffinity(getThreadId(), sizeof(set), &set) != 0)
+                return false;
+
+            return true;
+#else
+            return false;
+#endif
+        }
+
+        /*****/
+        inline bool setRealTime()
+        {
+#if HAVE_LINUX
+            sched_param params;
+            params.sched_priority = 99;
+            if (sched_setscheduler(getThreadId(), SCHED_RR, &params) != 0)
+                return false;
+
+            return true;
+#else
+            return false;
+#endif
+        }
+
         /*****/
         inline bool isDir(const std::string& filepath)
         {

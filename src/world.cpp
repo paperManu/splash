@@ -1102,6 +1102,45 @@ void World::registerAttributes()
     }, {'n'});
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
+#if HAVE_LINUX
+    addAttribute("forceRealtime", [&](const Values& args) {
+        _enforceCoreAffinity = args[0].asInt();
+
+        if (!_enforceCoreAffinity)
+            return true;
+
+        int sceneCount = _scenes.size();
+        int sceneAffinity = 1;
+        for (auto& s : _scenes)
+        {
+            sendMessage(s.first, "sceneAffinity", {sceneAffinity, sceneCount + 1});
+            sceneAffinity++;
+        }
+
+        addTask([=]() {
+            if (Utils::setAffinity({0}))
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to run on the first CPU core" << Log::endl;
+            else
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set World CPU core affinity" << Log::endl;
+
+            if (Utils::setRealTime())
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
+            else
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
+
+            vector<int> cores {};
+            for (int i = sceneCount + 1; i < Utils::getCoreCount(); ++i)
+                cores.push_back(i);
+            SThread::pool.setAffinity(cores);
+        });
+
+        return true;
+    }, [&]() -> Values {
+        return {(int)_enforceCoreAffinity};
+    }, {'n'});
+    setAttributeDescription("forceRealtime", "Enforce the World and Scene loops onto their own cores. The thread pool will use the remaining cores.");
+#endif
+
     addAttribute("framerate", [&](const Values& args) {
         _worldFramerate = std::max(1, args[0].asInt());
         return true;

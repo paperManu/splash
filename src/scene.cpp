@@ -16,6 +16,7 @@
 #include "./texture_image.h"
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./osUtils.h"
 #include "./warp.h"
 #include "./window.h"
 
@@ -1450,6 +1451,32 @@ void Scene::registerAttributes()
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
+#if HAVE_LINUX
+    addAttribute("sceneAffinity", [&](const Values& args) {
+        auto core = args[0].asInt();
+        auto rootObjectCount = args[1].asInt();
+
+        addTask([=]() {
+            if (Utils::setAffinity({core}))
+                Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Set to run on CPU core #" << core << Log::endl;
+            else
+                Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to set Scene CPU core affinity" << Log::endl;
+
+            if (Utils::setRealTime())
+                Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
+            else
+                Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
+
+            vector<int> cores {};
+            for (int i = rootObjectCount; i < Utils::getCoreCount(); ++i)
+                cores.push_back(i);
+            SThread::pool.setAffinity(cores);
+        });
+
+        return true;
+    }, {'n', 'n'});
+    setAttributeDescription("sceneAffinity", "Set the core for the main loop, as well as the number of root objects. The thread pool will use the remaining cores.");
+#endif
 }
 
 } // end of namespace

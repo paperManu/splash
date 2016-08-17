@@ -1,17 +1,28 @@
-#include "threadpool.h"
+#include "./threadpool.h"
 
 #include <algorithm>
 #include <unistd.h>
 
+#include "./log.h"
+#include "./osUtils.h"
+
 using namespace std;
+using namespace Splash;
 
 /*************/
 void Worker::operator() ()
 {
     shared_ptr<function<void()>> task;
+    Utils::setRealTime();
 
     while (true)
     {
+        if (!affinitySet && pool.cores.size() > 0)
+        {
+            Utils::setAffinity(pool.cores);
+            affinitySet = true;
+        }
+
         unsigned int id;
         {
             // Acquire locklock
@@ -51,7 +62,7 @@ ThreadPool::ThreadPool(int threads)
 {
     int nprocessors = threads;
     if (threads == -1)
-        nprocessors = std::min(std::max(sysconf(_SC_NPROCESSORS_CONF), 2l), 16l);
+        nprocessors = std::min(std::max(Splash::Utils::getCoreCount(), 2), 16);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }
@@ -66,6 +77,12 @@ ThreadPool::~ThreadPool()
     // join them
     for (size_t i = 0; i < workers.size(); ++i)
         workers[i].join();
+}
+
+/*************/
+void ThreadPool::setAffinity(const vector<int>& cores)
+{
+    this->cores = cores;
 }
 
 /*************/

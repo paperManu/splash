@@ -37,8 +37,6 @@
 
 #include "config.h"
 
-#define SPLASH_MAX_THREAD 8
-
 /*************/
 class ThreadPool;
 
@@ -51,6 +49,7 @@ class Worker
      
     private:
         ThreadPool &pool;
+        bool affinitySet {false};
 };
 
 /*************/
@@ -64,6 +63,7 @@ class ThreadPool
         template<class F> void enqueueWithoutId(F f);
         unsigned int getTasksNumber();
         void addWorkers(unsigned int nbr);
+        void setAffinity(const std::vector<int>& cores);
         void waitAllThreads();
         void waitThreads(std::vector<unsigned int>&);
 
@@ -71,6 +71,7 @@ class ThreadPool
         friend class Worker;
 
         std::vector<std::thread> workers;
+        std::vector<int> cores {};
         std::deque<std::shared_ptr<std::function<void()>>> tasks;
         std::deque<unsigned int> tasksId;
         std::deque<unsigned int> tasksFinished;

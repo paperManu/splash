@@ -97,6 +97,7 @@ class World : public RootObject
         struct sigaction _signals;
         std::string _executionPath {""};
         std::mutex _configurationMutex;
+        bool _enforceCoreAffinity {false}; //!< If true, World and Scenes have their affinity fixed in specific, separate cores
 
         // World parameters
         unsigned int _worldFramerate {60};
