@@ -857,6 +857,8 @@ void Gui::initImWidgets()
     timingBox->setTextFunc([]()
     {
         // Smooth the values
+        static float sce {0.f};
+        static float wrl {0.f};
         static float fps {0.f};
         static float worldFps {0.f};
         static float upl {0.f};
@@ -870,8 +872,10 @@ void Gui::initImWidgets()
         static float buf {0.f};
         static float evt {0.f};
 
-        fps = fps * 0.95 + 1e6 / std::max(1ull, Timer::get()["sceneLoop"]) * 0.05;
-        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, Timer::get()["worldLoop"]) * 0.1;
+        sce = sce * 0.9 + Timer::get()["sceneLoop"] * 0.001 * 0.1;
+        wrl = wrl * 0.9 + Timer::get()["worldLoop"] * 0.001 * 0.1;
+        fps = 1e3 / std::max(1.f, sce);
+        worldFps = 1e3 / std::max(1.f, wrl);
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
@@ -894,17 +898,21 @@ void Gui::initImWidgets()
                 stream << " - Paused";
             stream << "\n";
         }
-        stream << "Framerate: " << setprecision(4) << fps << " fps\n";
-        stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
-        stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
-        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
-        stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
-        stream << "Filters: " << setprecision(4) << flt << " ms\n";
-        stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
-        stream << "Warps: " << setprecision(4) << wrp << " ms\n";
-        stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
-        stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
-        stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
+        stream << "World:\n";
+        stream << "  World framerate: " << setprecision(4) << worldFps << " fps\n";
+        stream << "  Time per world frame: " << wrl << " ms\n";
+        stream << "  Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
+        stream << "Rendering:\n";
+        stream << "  Rendering framerate: " << setprecision(4) << fps << " fps\n";
+        stream << "  Time per rendered frame: " << sce << " ms\n";
+        stream << "  Texture upload: " << setprecision(4) << tex << " ms\n";
+        stream << "  Blending computation: " << setprecision(4) << ble << " ms\n";
+        stream << "  Filters: " << setprecision(4) << flt << " ms\n";
+        stream << "  Cameras rendering: " << setprecision(4) << cam << " ms\n";
+        stream << "  Warps: " << setprecision(4) << wrp << " ms\n";
+        stream << "  GUI rendering: " << setprecision(4) << gui << " ms\n";
+        stream << "  Windows rendering: " << setprecision(4) << win << " ms\n";
+        stream << "  Swapping and events: " << setprecision(4) << buf << " ms\n";
 
         return stream.str();
     });
