@@ -1,12 +1,16 @@
 #include "image_ffmpeg.h"
 
 #include <chrono>
+#if HAVE_LINUX
+#include <fcntl.h>
+#endif
 #include <hap.h>
 
-#include "cgUtils.h"
-#include "log.h"
-#include "timer.h"
-#include "threadpool.h"
+#include "./cgUtils.h"
+#include "./log.h"
+#include "./osUtils.h"
+#include "./timer.h"
+#include "./threadpool.h"
 
 #if HAVE_FFMPEG_3
 #define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
@@ -93,6 +97,19 @@ bool Image_FFmpeg::read(const string& filename)
     Log::get() << Log::MESSAGE << "Image_FFmpeg::" << __FUNCTION__ << " - Successfully loaded file " << filename << Log::endl;
     av_dump_format(_avContext, 0, filename.c_str(), 0);
     _filepath = filename;
+
+#if HAVE_LINUX
+    // Give the kernel hints about how to read the file
+    auto fd = Utils::getFileDescriptorForOpenedFile(filename);
+    if (fd)
+    {
+        bool success = true;
+        success &= posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED) == 0;
+        success &= posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL) == 0;
+        if (!success)
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not set hints for video file reading access" << Log::endl;
+    }
+#endif
 
     // Launch the loops
     _continueRead = true;

@@ -25,6 +25,7 @@
 #ifndef SPLASH_OSUTILS_H
 #define SPLASH_OSUTILS_H
 
+#include <dirent.h>
 #include <string>
 #include <vector>
 #include <unistd.h>
@@ -256,6 +257,56 @@ namespace Splash
             else
                 filename = filepath.substr(slashPos + 1);
             return filename;
+        }
+
+        /*****/
+        inline std::vector<std::string> listDirContent(const std::string& path)
+        {
+            bool isDirectoryPath = true;
+            auto tmpPath = cleanPath(path);
+
+            auto directory = opendir(tmpPath.c_str());
+            if (directory == nullptr)
+            {
+                isDirectoryPath = false;
+                tmpPath = Utils::getPathFromFilePath(tmpPath);
+                directory = opendir(tmpPath.c_str());
+            }
+
+            std::vector<std::string> files {};
+            if (directory != nullptr)
+            {
+                struct dirent* dirEntry;
+                while ((dirEntry = readdir(directory)) != nullptr)
+                    files.push_back(std::string(dirEntry->d_name));
+                closedir(directory);
+            }
+
+            return files;
+        }
+
+        /*****/
+        inline int getFileDescriptorForOpenedFile(const std::string& filepath)
+        {
+#if HAVE_LINUX
+            auto pid = getpid();
+            auto procDir = "/proc/" + std::to_string(pid) + "/fd/";
+            auto files = listDirContent(procDir);
+
+            char* realPath = nullptr;
+            for (auto& file : files)
+            {
+                realPath = realpath((procDir + file).c_str(), nullptr);
+                if (realPath)
+                {
+                    auto linkedPath = std::string(realPath);
+                    free(realPath);
+                    if (filepath == linkedPath)
+                        return std::stoi(file);
+                }
+            }
+#endif
+            return 0;
         }
     
 #if HAVE_SHMDATA
