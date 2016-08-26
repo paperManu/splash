@@ -166,7 +166,16 @@ void Shader::doCompute(GLuint numGroupsX, GLuint numGroupsY)
 }
 
 /*************/
-void Shader::setSource(std::string src, const ShaderType type)
+map<string, Values> Shader::getUniforms() const
+{
+    map<string, Values> uniforms;
+    for (auto& u : _uniforms)
+        uniforms[u.first] = u.second.values;
+    return uniforms;
+}
+
+/*************/
+bool Shader::setSource(std::string src, const ShaderType type)
 {
     GLuint shader = _shaders[type];
 
@@ -196,10 +205,26 @@ void Shader::setSource(std::string src, const ShaderType type)
 
     _shadersSource[type] = src;
     _isLinked = false;
+    return status;
 }
 
 /*************/
-void Shader::setSourceFromFile(const std::string filename, const ShaderType type)
+bool Shader::setSource(map<ShaderType, string> sources)
+{
+    resetShader(vertex);
+    resetShader(geometry);
+    resetShader(fragment);
+    _shadersSource.clear();
+
+    bool status = true;
+    for (auto& source : sources)
+        status = status && setSource(source.second, source.first);
+
+    return status;
+}
+
+/*************/
+bool Shader::setSourceFromFile(const std::string filename, const ShaderType type)
 {
     ifstream in(filename, ios::in | ios::binary);
     if (in)
@@ -210,10 +235,13 @@ void Shader::setSourceFromFile(const std::string filename, const ShaderType type
         in.seekg(0, ios::beg);
         in.read(&contents[0], contents.size());
         in.close();
-        setSource(contents, type);
+        return setSource(contents, type);
     }
-
-    Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+    else
+    {
+        Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
+        return false;
+    }
 }
 
 /*************/
@@ -717,7 +745,7 @@ void Shader::registerGraphicAttributes()
 {
     addAttribute("fill", [&](const Values& args) {
         // Get additionnal shading options
-        string options = ShaderSources.VERSION_DIRECTIVE_330;
+        string options = ShaderSources.VERSION_DIRECTIVE_430;
         for (int i = 1; i < args.size(); ++i)
             options += "#define " + args[i].asString() + "\n";
 
@@ -759,6 +787,17 @@ void Shader::registerGraphicAttributes()
             setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
             resetShader(geometry);
             setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
+            compileProgram();
+        }
+        else if (args[0].asString() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
+        {
+            _currentProgramName = args[0].asString();
+            _fill = userDefined;
+            _shaderOptions = options;
+            if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
+                setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+            if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
+                setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
             compileProgram();
         }
         else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))

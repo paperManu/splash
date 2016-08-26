@@ -75,6 +75,7 @@ class Shader : public BaseObject
             filter,
             primitiveId,
             uv,
+            userDefined,
             warp,
             warpControl,
             wireframe,
@@ -128,18 +129,33 @@ class Shader : public BaseObject
         Sideness getSideness() const {return _sideness;}
 
         /**
+         * \brief Get the list of uniforms in the shader program
+         * \return Return a map of uniforms and their values
+         */
+        std::map<std::string, Values> getUniforms() const;
+
+        /**
          * \brief Set a shader source
          * \param src Shader string
          * \param type Shader type
+         * \return Return true if the shader was compiled successfully
          */
-        void setSource(std::string src, const ShaderType type);
+        bool setSource(std::string src, const ShaderType type);
+
+        /**
+         * \brief Set multiple shaders at once
+         * \param sources Map of shader sources
+         * \return Return true if all shader could be compiled
+         */
+        bool setSource(std::map<ShaderType, std::string> sources);
 
         /**
          * \brief Set a shader source from file
          * \param filename Shader file
          * \param type Shader type
+         * \return Return true if the shader was compiled successfully
          */
-        void setSourceFromFile(const std::string filename, const ShaderType type);
+        bool setSourceFromFile(const std::string filename, const ShaderType type);
 
         /**
          * \brief Add a new texture to use

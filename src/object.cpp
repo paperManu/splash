@@ -62,10 +62,14 @@ void Object::activate()
 
     // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
-    if (shaderIt == _graphicsShaders.end())
+    if (shaderIt == _graphicsShaders.end() && _fill != "userDefined")
     {
         _shader = make_shared<Shader>();
         _graphicsShaders[_fill] = _shader;
+    }
+    else if (_fill == "userDefined")
+    {
+        _graphicsShaders["userDefined"] = _shader;
     }
     else
     {
@@ -621,7 +625,7 @@ void Object::registerAttributes()
     }, [&]() -> Values {
         return {_fill};
     }, {'s'});
-    setAttributeDescription("fill", "Set the fill type (texture, wireframe or color)");
+    setAttributeDescription("fill", "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined manually then.");
 
     addAttribute("color", [&](const Values& args) {
         _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());

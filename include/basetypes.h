@@ -754,6 +754,17 @@ class BaseObject
         }
 
         /**
+         * \brief Remove the specified attribute
+         * \param name Attribute name
+         */
+        void removeAttribute(const std::string& name)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+                _attribFunctions.erase(attr);
+        }
+
+        /**
          * \brief Set additional parameters for a given attribute
          * \param name Attribute name
          * \param savable Savability

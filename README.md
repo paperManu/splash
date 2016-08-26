@@ -163,7 +163,7 @@ It is also possible to create an app bundle automatically, the resulting bundle 
 
 Remember that it is a very early port to OSX. Please report any issue you encounter!
 
-<a name="howto"/></a>
+<a name="goingforward"/></a>
 Going forward
 -------------
 

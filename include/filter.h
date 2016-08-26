@@ -64,12 +64,12 @@ class Filter : public Texture
         Filter& operator=(const Filter&) = delete;
 
         /**
-         * \brief Bind the texture of this filter
+         * \brief Bind the filter
          */
         void bind();
 
         /**
-         * \brief Unbind the texture of this filter
+         * \brief Unbind the filter
          */
         void unbind();
 
@@ -104,7 +104,7 @@ class Filter : public Texture
         void setSavable(bool savable) {_savable = true;}
 
         /**
-         * \brief Update the texture according to the owned Image
+         * \brief Render the filter
          */
         void update();
 
@@ -119,21 +119,37 @@ class Filter : public Texture
         ImageBufferSpec _outTextureSpec;
 
         // Filter parameters
-        bool _render16bits {false};
-        bool _updateColorDepth {false}; // Set to true if the _render16bits has been updated
-        float _blackLevel {0.f};
-        float _brightness {1.f};
-        float _colorTemperature {6500.f};
-        float _contrast {1.f};
-        float _saturation {1.f};
+        std::map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
+        bool _render16bits {false}; //!< Set to true for the filter to be rendered in 16bits
+        bool _updateColorDepth {false}; //!< Set to true if the _render16bits has been updated
 
-        // Computed values
-        glm::vec2 _colorBalance {1.f, 1.f};
+        std::string _shaderSource {""}; //!< User defined fragment shader filter
+        
+        // Tasks queue
+        std::mutex _taskMutex;
+        std::list<std::function<void()>> _taskQueue;
+
+        /**
+         * \brief Add a new task to the queue
+         * \param task Task function
+         */
+        void addTask(const std::function<void()>& task)
+        {
+            std::lock_guard<std::mutex> lock(_taskMutex);
+            _taskQueue.push_back(task);
+        }
 
         /**
          * \brief Init function called in constructors
          */
         void init();
+
+        /**
+         * \brief Set the filter fragment shader. Automatically adds attributes corresponding to the uniforms
+         * \param source Source fragment shader
+         * \return Return true if the shader is valid
+         */
+        bool setFilterSource(const std::string& source);
 
         /**
          * \brief Setup the output texture

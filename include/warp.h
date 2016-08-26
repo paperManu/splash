@@ -65,17 +65,17 @@ class Warp : public Texture
         Warp& operator=(const Warp&) = delete;
 
         /**
-         * \brier Bind this texture of this warp
+         * \brier Bind this warp
          */
         void bind();
 
         /**
-         * \brier Unbind this texture of this warp
+         * \brier Unbind this warp
          */
         void unbind();
 
         /**
-         * \brief Get the shader parameters related to this texture. Texture should be locked first.
+         * \brief Get the shader parameters related to this warp. Texture should be locked first.
          * \return Return the shader uniforms
          */
         std::unordered_map<std::string, Values> getShaderUniforms() const;
@@ -118,7 +118,7 @@ class Warp : public Texture
         void setSavable(bool savable) {_savable = true;}
 
         /**
-         * \brief Update the texture according to the owned Image
+         * \brief Update the warp
          */
         void update();
 
