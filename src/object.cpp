@@ -77,22 +77,22 @@ void Object::activate()
     }
 
     // Set the shader depending on a few other parameters
+    Values shaderParameters {};
+    for (int i = 0; i < _textures.size(); ++i)
+        shaderParameters.push_back("TEX_" + to_string(i + 1));
+
     if (_fill == "texture")
     {
+        if (_vertexBlendingActive)
+            shaderParameters.push_back("VERTEXBLENDING");
+
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
-        {
-            if (_vertexBlendingActive)
-                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
-            else
-                _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
-        }
+            shaderParameters.push_back("TEXTURE_RECT");
         else
-        {
-            if (_vertexBlendingActive)
-                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
-            else
-                _shader->setAttribute("fill", {"texture"});
-        }
+            shaderParameters.push_back("VERTEXBLENDING");
+
+        shaderParameters.push_front("texture");
+        _shader->setAttribute("fill", shaderParameters);
     }
     else if (_fill == "filter")
     {
@@ -100,18 +100,13 @@ void Object::activate()
     }
     else if (_fill == "window")
     {
-        if (_textures.size() == 1)
-            _shader->setAttribute("fill", {"window", "TEX_1"});
-        else if (_textures.size() == 2)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
-        else if (_textures.size() == 3)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
-        else if (_textures.size() == 4)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
+        shaderParameters.push_front("window");
+        _shader->setAttribute("fill", shaderParameters);
     }
     else
     {
-        _shader->setAttribute("fill", {_fill});
+        shaderParameters.push_front(_fill);
+        _shader->setAttribute("fill", shaderParameters);
         _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
     }
 

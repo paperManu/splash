@@ -982,9 +982,10 @@ struct ShaderSources
         uniform sampler2D _tex0;
     #endif
 
-    #ifdef BLENDING
+    #ifdef TEX_2
         uniform sampler2D _tex1;
     #endif
+
         uniform vec2 _tex0_size = vec2(1.0);
 
         uniform int _sideness = 0;
@@ -1022,36 +1023,15 @@ struct ShaderSources
 
             vec4 color = texture(_tex0, texCoord);
 
+        #ifdef TEX_2
+            vec4 maskColor = texture(_tex1, texCoord);
+            color.rgb = mix(color.rgb, maskColor.rgb, maskColor.a);
+        #endif
+
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _fovAndColorBalance.w / maxBalanceRatio;
-            
-            // If there is a blending map
-        #ifdef BLENDING
-            int blendFactor = int(texture(_tex1, texCoord).r * 65536.0);
-            // Extract the number of cameras
-            int camNbr = blendFactor / 4096;
-            blendFactor = blendFactor - camNbr * 4096;
-            float blendFactorFloat = 0.0;
-
-            if (blendFactor == 0)
-                blendFactorFloat = 0.05; // The non-visible part is kinda hidden
-            else if (blendWidth > 0.0)
-            {
-                vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
-                vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
-                distDoubleInvert = clamp(distDoubleInvert / blendWidth, vec2(0.0), vec2(1.0));
-                float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                float dist = pow(clamp(weight, 0.0, 1.0), 2.0);
-                blendFactorFloat = 256.0 * dist / float(blendFactor);
-            }
-            else
-            {
-                blendFactorFloat = 1.0 / float(camNbr);
-            }
-            color.rgb = color.rgb * min(1.0, blendFactorFloat);
-        #endif
 
         #ifdef VERTEXBLENDING
             color.rgb = color.rgb * vertexIn.blendingValue;
