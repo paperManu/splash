@@ -61,7 +61,6 @@ class Scene : public RootObject
     friend GuiNodeView;
     friend GuiWarp;
     friend GuiWidget;
-    friend Gui;
 
     public:
         /**

@@ -828,6 +828,11 @@ void Window::registerAttributes()
     }, {'n', 'n'});
     setAttributeDescription("position", "Set the window position");
 
+    addAttribute("showCursor", [&](const Values& args) {
+        showCursor(args[0].asInt());
+        return true;
+    }, {'n'});
+
     addAttribute("size", [&](const Values& args) {
         _windowRect[2] = args[0].asInt();
         _windowRect[3] = args[1].asInt();

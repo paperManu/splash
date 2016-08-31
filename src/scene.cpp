@@ -758,9 +758,11 @@ void Scene::setAsMaster(string configFilePath)
 {
     _isMaster = true;
 
+    _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, _self);
     _gui->setName("gui");
     _gui->setConfigFilePath(configFilePath);
+    _mainWindow->releaseContext();
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object

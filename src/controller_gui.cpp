@@ -75,13 +75,11 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
     _window->releaseContext();
 
     // Create the default GUI camera
-    scene->_mainWindow->setAsCurrentContext();
     _guiCamera = make_shared<Camera>(s);
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
-    scene->_mainWindow->releaseContext();
 
     // Intialize the GUI widgets
     _window->setAsCurrentContext();
@@ -282,10 +280,7 @@ sendAsDefault:
             static bool cursorVisible = false;
             cursorVisible = !cursorVisible;
 
-            auto scene = _scene.lock();
-            for (auto& obj : scene->_objects)
-                if (obj.second->getType() == "window")
-                    dynamic_pointer_cast<Window>(obj.second)->showCursor(cursorVisible);
+            setObjectsOfType("window", "showCursor", {(int)cursorVisible});
         }
         break;
     }
