@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "./camera.h"
+#include "./controller_blender.h"
 #include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
@@ -353,142 +354,6 @@ void Scene::remove(string name)
 }
 
 /*************/
-void Scene::renderBlending()
-{
-    static bool blendComputedInPreviousFrame = false;
-    static bool blendComputedOnce = false;
-
-    if (!((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4))
-        return;
-    
-    if (blendComputedOnce && _computeBlendingOnce)
-    {
-        // This allows for blending reset if it was computed once
-        blendComputedOnce = false;
-        _computeBlending = false;
-        _computeBlendingOnce = false;
-        blendComputedInPreviousFrame = true;
-    }
-    
-    if (_computeBlending)
-    {
-        // Check for regular or single computation
-        if (_computeBlendingOnce)
-        {
-            _computeBlending = false;
-            _computeBlendingOnce = false;
-            blendComputedOnce = true;
-        }
-        else
-        {
-            blendComputedInPreviousFrame = true;
-        }
-    
-        // Only the master scene computes the blending
-        if (_isMaster)
-        {
-            vector<shared_ptr<Camera>> cameras;
-            vector<shared_ptr<Object>> objects;
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "camera")
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                else if (obj.second->getType() == "object")
-                    objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-            for (auto& obj : _ghostObjects)
-                if (obj.second->getType() == "camera")
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                else if (obj.second->getType() == "object")
-                    objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-    
-            if (cameras.size() != 0)
-            {
-                for (auto& object : objects)
-                    object->resetTessellation();
-    
-                // Tessellate
-                for (auto& camera : cameras)
-                {
-                    camera->computeVertexVisibility();
-                    camera->blendingTessellateForCurrentCamera();
-                }
-    
-                for (auto& object : objects)
-                    object->resetBlendingAttribute();
-    
-                // Compute each camera contribution
-                for (auto& camera : cameras)
-                {
-                    camera->computeVertexVisibility();
-                    camera->computeBlendingContribution();
-                }
-            }
-    
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "object")
-                    obj.second->setAttribute("activateVertexBlending", {1});
-    
-            // If there are some other scenes, send them the blending
-            if (_ghostObjects.size() != 0)
-            {
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "geometry")
-                    {
-                        auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
-                        _link->sendBuffer(obj.first, std::move(serializedGeometry));
-                    }
-                
-                // Notify the other scenes that the blending has been updated
-                sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
-            }
-        }
-        // The non-master scenes only need to activate blending
-        else
-        {
-            // Wait for the master scene to notify us that the blending was updated
-            unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
-            while (!_vertexBlendingReceptionStatus)
-                _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
-            _vertexBlendingReceptionStatus = false;
-                
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "object")
-                    obj.second->setAttribute("activateVertexBlending", {1});
-                else if (obj.second->getType() == "geometry")
-                    dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
-        }
-    }
-    // This deactivates the blending
-    else if (blendComputedInPreviousFrame)
-    {
-        blendComputedInPreviousFrame = false;
-        blendComputedOnce = false;
-    
-        vector<shared_ptr<Camera>> cameras;
-        vector<shared_ptr<Object>> objects;
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-            else if (obj.second->getType() == "object")
-                objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-        
-        if (_isMaster && cameras.size() != 0)
-        {
-            for (auto& object : objects)
-            {
-                object->resetTessellation();
-                object->resetVisibility();
-            }
-        }
-    
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                obj.second->setAttribute("activateVertexBlending", {0});
-            else if (obj.second->getType() == "geometry")
-                dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(false);
-    }
-}
-
-/*************/
 void Scene::render()
 {
     bool isError {false};
@@ -496,7 +361,9 @@ void Scene::render()
 
     // Compute the blending
     Timer::get() << "blending";
-    renderBlending();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "blender")
+            dynamic_pointer_cast<Blender>(obj.second)->render();
     Timer::get() >> "blending";
 
     unique_lock<mutex> lockTexture(_textureUploadMutex);
@@ -805,47 +672,6 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-void Scene::activateBlending(bool once)
-{
-    if (_isBlendingComputed)
-        return;
-    _isBlendingComputed = true;
-
-    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
-    {
-        _computeBlending = true;
-        _computeBlendingOnce = once;
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Blending computation needs at least OpenGL 4.3. Current version is " << _glVersion[0] << "." << _glVersion[1] << Log::endl;
-    }
-}
-
-/*************/
-void Scene::deactivateBlending()
-{
-    _isBlendingComputed = false;
-    
-    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
-    {
-        _computeBlending = false;
-        _computeBlendingOnce = true;
-    }
-}
-
-/*************/
-void Scene::computeBlending(const std::string& mode)
-{
-    if (mode == "once")
-        activateBlending(true);
-    else if (mode == "continuous")
-        activateBlending(false);
-    else
-        deactivateBlending();
-}
-
-/*************/
 shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
 {
     string windowName;
@@ -1135,13 +961,6 @@ void Scene::registerAttributes()
     }, {'s', 's'});
     setAttributeDescription("addGhost", "Add a ghost object of the given name and type. Only useful in the master Scene");
 
-    addAttribute("blendingUpdated", [&](const Values& args) {
-        _vertexBlendingReceptionStatus = true;
-        _vertexBlendingCondition.notify_one();
-        return true;
-    });
-    setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
-
     addAttribute("bufferUploaded", [&](const Values& args) {
         _textureUploadCondition.notify_all();
         return true;
@@ -1149,31 +968,31 @@ void Scene::registerAttributes()
     setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
 
     addAttribute("computeBlending", [&](const Values& args) {
-        std::string blendingMode = args[0].asString();
-        addTask([=]() -> void {
-            computeBlending(blendingMode);
+        addTask([=]() {
+            shared_ptr<BaseObject> blender {nullptr};
+            auto blenderIt = find_if(_objects.begin(), _objects.end(), [](std::pair<std::string, std::shared_ptr<BaseObject>> obj) {
+                if (obj.second->getType() == "blender")
+                    return true;
+                else
+                    return false;
+            });
+
+            if (blenderIt == _objects.end())
+            {
+                add("blender", "blender");
+                blender = _objects["blender"];
+            }
+            else
+            {
+                blender = blenderIt->second;
+            }
+
+            std::string blendingMode = args[0].asString();
+            blender->setAttribute("mode", args);
         });
         return true;
     }, {'s'});
     setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
-
-    addAttribute("activateBlending", [&](const Values& args) {
-        addTask([=]() -> void {
-            activateBlending();
-        });
-
-        return true;
-    });
-    setAttributeDescription("activateBlending", "Activate the blending map");
-
-    addAttribute("deactivateBlending", [&](const Values& args) {
-        addTask([=]() -> void {
-            deactivateBlending();
-        });
-
-        return true;
-    });
-    setAttributeDescription("deactivateBlending", "Deactivate the blending map");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {

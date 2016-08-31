@@ -79,6 +79,7 @@ target_sources(
     camera.cpp
     cgUtils.cpp
     controller.cpp
+    controller_blender.cpp
     controller_gui.cpp
     factory.cpp
     filter.cpp

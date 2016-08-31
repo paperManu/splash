@@ -4,6 +4,7 @@
 #if HAVE_GPHOTO
     #include "./colorcalibrator.h"
 #endif
+#include "./controller_blender.h"
 #include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
@@ -89,6 +90,10 @@ vector<string> Factory::getObjectTypes()
 /*************/
 void Factory::registerObjects()
 {
+    _objectBook["blender"] = [&]() {
+        return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root));
+    };
+
     _objectBook["camera"] = [&]() {
         return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root));
     };

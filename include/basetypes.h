@@ -45,6 +45,13 @@ namespace Splash
 struct AttributeFunctor
 {
     public:
+        enum class Sync
+        {
+            no_sync,
+            force_sync,
+            force_async
+        };
+
         /**
          * \brief Default constructor.
          */
@@ -271,6 +278,18 @@ struct AttributeFunctor
          */
         void setObjectName(const std::string& objectName) {_objectName = objectName;}
 
+        /**
+         * \brief Get the synchronization method for this attribute
+         * \return Return the synchronization method
+         */
+        Sync getSyncMethod() const {return _syncMethod;}
+
+        /**
+         * \brief Set the prefered synchronization method for this attribute
+         * \param method Can be Sync::no_sync, Sync::force_sync, Sync::force_async
+         */
+        void setSyncMethod(const Sync& method) {_syncMethod = method;}
+
     private:
         mutable std::mutex _defaultFuncMutex {};
         std::function<bool(const Values&)> _setFunc {};
@@ -281,6 +300,7 @@ struct AttributeFunctor
         std::string _description {}; // Attribute description
         Values _values; // Holds the values for the default set and get functions
         std::vector<char> _valuesTypes; // List of the types held in _values
+        Sync _syncMethod {Sync::no_sync}; //!< Synchronization to consider while setting this attribute
 
         bool _isLocked {false};
 
@@ -653,6 +673,20 @@ class BaseObject
             return descriptions;
         }
 
+        /**
+         * \brief Get the attribute synchronization method
+         * \param name Attribute name
+         * \return Return the synchronization method
+         */
+        AttributeFunctor::Sync getAttributeSyncMethod(const std::string& name)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+                return attr->second.getSyncMethod();
+            else
+                return AttributeFunctor::Sync::no_sync;
+        }
+
     public:
         bool _savable {true}; //!< True if the object should be saved
 
@@ -751,6 +785,17 @@ class BaseObject
             {
                 attr->second.setDescription(description);
             }
+        }
+
+        /**
+         * \brief Set attribute synchronization method
+         * \param Method Synchronization method, can be any of the AttributeFunctor::Sync values
+         */
+        void setAttributeSyncMethod(const std::string& name, const AttributeFunctor::Sync& method)
+        {
+            auto attr = _attribFunctions.find(name);
+            if (attr != _attribFunctions.end())
+                attr->second.setSyncMethod(method);
         }
 
         /**
@@ -979,6 +1024,10 @@ class RootObject : public BaseObject
             if (name == _name || name == SPLASH_ALL_PEERS)
                 return setAttribute(attrib, args);
 
+            auto objectIt = _objects.find(name);
+            if (objectIt != _objects.end() && objectIt->second->getAttributeSyncMethod(attrib) == AttributeFunctor::Sync::force_sync)
+                async = false;
+
             if (async)
             {
                 addTask([=]() {
@@ -989,7 +1038,6 @@ class RootObject : public BaseObject
             }
             else
             {
-                auto objectIt = _objects.find(name);
                 if (objectIt != _objects.end())
                     return objectIt->second->setAttribute(attrib, args);
                 else
@@ -1019,6 +1067,16 @@ class RootObject : public BaseObject
             {
                 handleSerializedObject(name, std::move(obj));
             }
+        }
+
+        /**
+         * \brief Send the given serialized buffer through the link
+         * \param name Destination BufferObject name
+         * \param buffer Serialized buffer
+         */
+        void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer)
+        {
+            _link->sendBuffer(name, buffer);
         }
 
     protected:

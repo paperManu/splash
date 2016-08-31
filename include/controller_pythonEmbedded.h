@@ -18,7 +18,7 @@
  */
 
 /*
- * @pythonEmbedded.h
+ * @controller_pythonEmbedded.h
  * The PythonEmbedded class, which runs a Python 3.x controller
  */
 

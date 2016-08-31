@@ -174,6 +174,13 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
 }
 
 /*************/
+void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const
+{
+    auto root = _root.lock();
+    root->sendBuffer(name, buffer);
+}
+
+/*************/
 void ControllerObject::setGlobal(const string& name, const Values& values) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());

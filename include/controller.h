@@ -104,6 +104,13 @@ class ControllerObject : public BaseObject
         std::list<std::shared_ptr<BaseObject>> getObjectsOfType(const std::string& type) const;
 
         /**
+         * \brief Send a serialized buffer to the given BufferObject
+         * \param name Object name
+         * \param buffer Serialized buffer
+         */
+        void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const;
+
+        /**
          * \brief Set the given configuration-related attribute
          * \param name Attribute name
          * \param values Value to set the attribute to

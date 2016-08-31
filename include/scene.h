@@ -194,11 +194,6 @@ class Scene : public RootObject
         void render();
 
         /**
-         * \brief Render the blending
-         */
-        void renderBlending();
-
-        /**
          * \brief Main loop for the scene
          */
         void run();
@@ -252,13 +247,6 @@ class Scene : public RootObject
         std::shared_ptr<ColorCalibrator> _colorCalibrator;
 #endif
 
-        /**
-         * Creates the blending map from the current calibration of the cameras
-         */
-        void computeBlending(const std::string& mode = "once");
-        void activateBlending(bool once = true);
-        void deactivateBlending();
-
     private:
         static bool _isGlfwInitialized;
 
@@ -283,11 +271,6 @@ class Scene : public RootObject
         std::atomic_bool _textureUploadDone {false};
         std::mutex _textureUploadMutex;
         GLsync _textureUploadFence, _cameraDrawnFence;
-        
-        // Vertex blending variables
-        std::mutex _vertexBlendingMutex;
-        std::condition_variable _vertexBlendingCondition;
-        std::atomic_bool _vertexBlendingReceptionStatus {false};
 
         // NV Swap group specific
         GLuint _maxSwapGroups {0};
@@ -295,10 +278,8 @@ class Scene : public RootObject
 
         unsigned long _nextId {0};
 
-        // Blending attributes
-        bool _isBlendingComputed {false};
-        bool _computeBlending {false};
-        bool _computeBlendingOnce {false};
+        //! Blender object
+        std::shared_ptr<BaseObject> _blender;
 
         /**
          * \brief Find which OpenGL version is available (from a predefined list)
