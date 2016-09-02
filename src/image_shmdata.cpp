@@ -1,23 +1,23 @@
 #include "image_shmdata.h"
 
-#include <regex>
 #include <hap.h>
+#include <regex>
 
 #ifdef HAVE_SSE2
-    #define GLM_FORCE_SSE2
-    #define GLM_FORCE_INLINE
-    #include <glm/glm.hpp>
-    #include <glm/gtx/simd_vec4.hpp>
+#define GLM_FORCE_SSE2
+#define GLM_FORCE_INLINE
+#include <glm/glm.hpp>
+#include <glm/gtx/simd_vec4.hpp>
 #else
-    #define GLM_FORCE_INLINE
-    #include <glm/glm.hpp>
+#define GLM_FORCE_INLINE
+#include <glm/glm.hpp>
 #endif
 
 #include "cgUtils.h"
 #include "log.h"
 #include "osUtils.h"
-#include "timer.h"
 #include "threadpool.h"
+#include "timer.h"
 
 #define SPLASH_SHMDATA_THREADS 2
 
@@ -27,14 +27,7 @@ namespace Splash
 {
 
 /*************/
-Image_Shmdata::Image_Shmdata()
-{
-    init();
-}
-
-/*************/
-Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
-    : Image(root)
+Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root) : Image(root)
 {
     init();
 }
@@ -54,15 +47,7 @@ bool Image_Shmdata::read(const string& filename)
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
 
-    _reader.reset(new shmdata::Follower(filepath,
-                                        [&](void* data, size_t size) {
-                                            onData(data, size);
-                                        },
-                                        [&](const string& caps) {
-                                            onCaps(caps);
-                                        },
-                                        [&](){},
-                                        &_logger));
+    _reader.reset(new shmdata::Follower(filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
     _filepath = filename;
 
     return true;
@@ -109,7 +94,7 @@ void Image_Shmdata::onCaps(const string& dataType)
         _isYUV = false;
         _is420 = false;
         _is422 = false;
-        
+
         regex regHap, regWidth, regHeight;
         regex regVideo, regFormat;
         try
@@ -125,48 +110,48 @@ void Image_Shmdata::onCaps(const string& dataType)
             auto errorString = string();
             switch (e.code())
             {
-                default:
-                    errorString = "unknown error";
-                    break;
-                case regex_constants::error_collate:
-                    errorString = "the expression contains an invalid collating element name";
-                    break;
-                case regex_constants::error_ctype:
-                    errorString = "the expression contains an invalid character class name";
-                    break;
-                case regex_constants::error_escape:
-                    errorString = "the expression contains an invalid escaped character or a trailing escape";
-                    break;
-                case regex_constants::error_backref:
-                    errorString = "the expression contains an invalid back reference";
-                    break;
-                case regex_constants::error_brack:
-                    errorString = "the expression contains mismatched square brackets ('[' and ']')";
-                    break;
-                case regex_constants::error_paren:
-                    errorString = "the expression contains mismatched parentheses ('(' and ')')";
-                    break;
-                case regex_constants::error_brace:
-                    errorString = "the expression contains mismatched curly braces ('{' and '}')";
-                    break;
-                case regex_constants::error_badbrace:
-                    errorString = "the expression contains an invalid range in a {} expression";
-                    break;
-                case regex_constants::error_range:
-                    errorString = "the expression contains an invalid character range (e.g. [b-a])";
-                    break;
-                case regex_constants::error_space:
-                    errorString = "there was not enough m2emory to convert the expression into a finite state machine";
-                    break;
-                case regex_constants::error_badrepeat:
-                    errorString = "one of *?+{ was not preceded by a valid regular expression";
-                    break;
-                case regex_constants::error_complexity:
-                    errorString = "the complexity of an attempted match exceeded a predefined level";
-                    break;
-                case regex_constants::error_stack:
-                    errorString = "there was not enough memory to perform a match";
-                    break;
+            default:
+                errorString = "unknown error";
+                break;
+            case regex_constants::error_collate:
+                errorString = "the expression contains an invalid collating element name";
+                break;
+            case regex_constants::error_ctype:
+                errorString = "the expression contains an invalid character class name";
+                break;
+            case regex_constants::error_escape:
+                errorString = "the expression contains an invalid escaped character or a trailing escape";
+                break;
+            case regex_constants::error_backref:
+                errorString = "the expression contains an invalid back reference";
+                break;
+            case regex_constants::error_brack:
+                errorString = "the expression contains mismatched square brackets ('[' and ']')";
+                break;
+            case regex_constants::error_paren:
+                errorString = "the expression contains mismatched parentheses ('(' and ')')";
+                break;
+            case regex_constants::error_brace:
+                errorString = "the expression contains mismatched curly braces ('{' and '}')";
+                break;
+            case regex_constants::error_badbrace:
+                errorString = "the expression contains an invalid range in a {} expression";
+                break;
+            case regex_constants::error_range:
+                errorString = "the expression contains an invalid character range (e.g. [b-a])";
+                break;
+            case regex_constants::error_space:
+                errorString = "there was not enough m2emory to convert the expression into a finite state machine";
+                break;
+            case regex_constants::error_badrepeat:
+                errorString = "one of *?+{ was not preceded by a valid regular expression";
+                break;
+            case regex_constants::error_complexity:
+                errorString = "the complexity of an attempted match exceeded a predefined level";
+                break;
+            case regex_constants::error_stack:
+                errorString = "there was not enough memory to perform a match";
+                break;
             }
             Log::get() << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
             return;
@@ -318,7 +303,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
     unsigned long outputBufferBytes = bufSpec.width * bufSpec.height * bufSpec.channels;
     if (!hapDecodeFrame(data, data_size, _readerBuffer.data(), outputBufferBytes, textureFormat))
         return;
-    
+
     if (!_bufferImage)
         _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
     std::swap(*(_bufferImage), _readerBuffer);
@@ -359,7 +344,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                     sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
                 else
                     sizeOfBlock = size / SPLASH_SHMDATA_THREADS;
-                    
+
                 memcpy(pixels + size / SPLASH_SHMDATA_THREADS * block, (const char*)data + size / SPLASH_SHMDATA_THREADS * block, sizeOfBlock);
             }));
         }
@@ -441,7 +426,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                     lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
 
                 for (int y = _height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x < _width; x+=2)
+                    for (int x = 0; x < _width; x += 2)
                     {
                         int uValue = (int)(U[(y / 2) * (_width / 2) + x / 2]) - 128;
                         int vValue = (int)(V[(y / 2) * (_width / 2) + x / 2]) - 128;
@@ -449,7 +434,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                         int rPart = 52298 * vValue;
                         int gPart = -12846 * uValue - 36641 * vValue;
                         int bPart = 66094 * uValue;
-                       
+
                         int col = x;
                         int row = y;
                         int yValue = (int)(Y[row * _width + col] - 16) * 38142;
@@ -537,7 +522,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                     lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
 
                 for (int y = _height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x < _width; x+=2)
+                    for (int x = 0; x < _width; x += 2)
                     {
                         unsigned char block[4];
                         memcpy(block, &YUV[y * _width * 2 + x * 2], 4 * sizeof(unsigned char));
@@ -548,7 +533,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                         int rPart = 52298 * vValue;
                         int gPart = -12846 * uValue - 36641 * vValue;
                         int bPart = 66094 * uValue;
-                       
+
                         int yValue = (int)(block[1] - 16) * 38142;
                         pixels[(y * _width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
                         pixels[(y * _width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
@@ -572,12 +557,10 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
     std::swap(*(_bufferImage), _readerBuffer);
     _imageUpdated = true;
     updateTimestamp();
-
 }
 
 /*************/
 void Image_Shmdata::registerAttributes()
 {
 }
-
 }

@@ -28,64 +28,72 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
+#include <shmdata/follower.hpp>
 #include <string>
 #include <vector>
-#include <shmdata/follower.hpp>
 
 #include "config.h"
 
 #include "mesh.h"
 #include "osUtils.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Mesh_Shmdata : public Mesh
 {
-    public:
-        /**
-         * Constructor
-         */
-        Mesh_Shmdata();
-        Mesh_Shmdata(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Mesh_Shmdata(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        ~Mesh_Shmdata();
+    /**
+     * \brief Destructor
+     */
+    ~Mesh_Shmdata();
 
-        /**
-         * No copy constructor, only move
-         */
-        Mesh_Shmdata(const Mesh_Shmdata&) = delete;
-        Mesh_Shmdata& operator=(const Mesh_Shmdata&) = delete;
+    /**
+     * No copy constructor, only move
+     */
+    Mesh_Shmdata(const Mesh_Shmdata&) = delete;
+    Mesh_Shmdata& operator=(const Mesh_Shmdata&) = delete;
 
-        /**
-         * Set the path to read from
-         */
-        bool read(const std::string& filename);
+    /**
+     * \brief Set the path to read from
+     * \param filename File to read
+     */
+    bool read(const std::string& filename);
 
-    protected:
-        std::string _caps {""};
-        Utils::ConsoleLogger _logger;
-        std::unique_ptr<shmdata::Follower> _reader {nullptr};
-        bool _capsIsValid {false};
+  protected:
+    std::string _caps{""};
+    Utils::ConsoleLogger _logger;
+    std::unique_ptr<shmdata::Follower> _reader{nullptr};
+    bool _capsIsValid{false};
 
-        /**
-         * Base init for the class
-         */
-        void init();
+    /**
+     * \brief Base init for the class
+     */
+    void init();
 
-        /**
-         * \brief Callback called when receiving a new caps
-         * \param dataType String holding the data type
-         */
-        void onCaps(const std::string& dataType);
-        void onData(void* data, int data_size);
+    /**
+     * \brief Callback called when receiving a new caps
+     * \param dataType String holding the data type
+     */
+    void onCaps(const std::string& dataType);
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Callback called when receiving data
+     * \param data Pointer to the data
+     * \param data_size Size of the buffer
+     */
+    void onData(void* data, int data_size);
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

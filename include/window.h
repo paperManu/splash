@@ -35,199 +35,242 @@
 
 #include <glm/glm.hpp>
 
-#include "config.h"
+#include "./config.h"
 
-#include "coretypes.h"
-#include "basetypes.h"
-#include "object.h"
-#include "texture.h"
-#include "texture_image.h"
+#include "./basetypes.h"
+#include "./coretypes.h"
+#include "./object.h"
+#include "./texture.h"
+#include "./texture_image.h"
 
-namespace Splash {
+namespace Splash
+{
 
+/*************/
+//! Window class, holding the GL context
 class Window : public BaseObject
 {
-    public:
-        /**
-         * Constructor
-         */
-        Window(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Window(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        ~Window();
+    /**
+     * \brief Destructor
+     */
+    ~Window();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Window(const Window&) = delete;
-        Window& operator=(const Window&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Window(const Window&) = delete;
+    Window& operator=(const Window&) = delete;
 
-        /**
-         * Get grabbed character (not necesseraly a specific key)
-         */
-        static int getChars(GLFWwindow*& win, unsigned int& codepoint);
+    /**
+     * \brief Get grabbed character (not necesserily a specific key)
+     * \param win GLFW window which grabbed the input
+     * \param codepoint Character code
+     * \return Return the number of characters in the queue before calling this method
+     */
+    static int getChars(GLFWwindow*& win, unsigned int& codepoint);
 
-        /**
-         * Get the grabbed key
-         */
-        bool getKey(int key);
-        static int getKeys(GLFWwindow*& win, int& key, int& action, int& mods);
+    /**
+     * \brief Get the next grabbed key in the queue
+     * \param win GLFW window which grabbed the key
+     * \param key Key code
+     * \param action Action grabbed (press, release)
+     * \param mods Key modifier
+     * \return Return the number of actions in the queue before calling this method
+     */
+    static int getKeys(GLFWwindow*& win, int& key, int& action, int& mods);
 
-        /**
-         * Get the grabbed mouse action
-         */
-        static int getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods);
+    /**
+     * \brief Get the grabbed mouse action
+     * \param win GLFW window which grabbed the key
+     * \param btn Mouse button number
+     * \param action Mouse action detected (press, release)
+     * \param mods Key modifier
+     * \return Return the number of actions in the queue before calling this method
+     */
+    static int getMouseBtn(GLFWwindow*& win, int& btn, int& action, int& mods);
 
-        /**
-         * Get the mouse position
-         */
-        static void getMousePos(GLFWwindow*& win, int& xpos, int& ypos);
+    /**
+     * \brief Get the mouse position
+     * \param win GLFW window the mouse hovers
+     * \param xpos X position
+     * \param ypos Y position
+     */
+    static void getMousePos(GLFWwindow*& win, int& xpos, int& ypos);
 
-        /**
-         * Get the mouse position
-         */
-        static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
+    /**
+     * \brief Get the mouse wheel movement
+     * \param win GLFW window the mouse hovers
+     * \param xoffset X offset of the wheel
+     * \param yoffset Y offset of the wheel
+     * \return Return the number of actions in the queue before calling this method
+     */
+    static int getScroll(GLFWwindow*& win, double& xoffset, double& yoffset);
 
-        /**
-         * Get the list of paths dropped onto any window
-         */
-        static std::vector<std::string> getPathDropped();
+    /**
+     * \brief Get the list of paths dropped onto any window
+     * \return Return the list of paths
+     */
+    static std::vector<std::string> getPathDropped();
 
-        /**
-         * Get the quit flag status
-         */
-        static int getQuitFlag() {return _quitFlag;}
+    /**
+     * \brief Get the quit flag status
+     * \return Return the quit flag status
+     */
+    static int getQuitFlag() { return _quitFlag; }
 
-        /**
-         * Check wether it is initialized
-         */
-        bool isInitialized() const {return _isInitialized;}
+    /**
+     * \brief Check whether the window is initialized
+     * \return Return true if the window is initialized
+     */
+    bool isInitialized() const { return _isInitialized; }
 
-        /**
-         * Check wether the given GLFW window is related to this object
-         */
-        bool isWindow(GLFWwindow* w) const {return (w == _window->get() ? true : false);}
+    /**
+     * \brief Check whether the given GLFW window is related to this object
+     * \return Return true if the GLFW window is held by this object
+     */
+    bool isWindow(GLFWwindow* w) const { return (w == _window->get() ? true : false); }
 
-        /**
-         * Try to link / unlink the given BaseObject to this
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
-        void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * Render this window to screen
-         */
-        bool render();
+    /**
+     * \brief Try to unlink the given BaseObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * Hide / show cursor
-         */
-        void showCursor(bool visibility);
+    /**
+     * \brief Render this window to screen
+     */
+    bool render();
 
-        /**
-         * Set the window to fullscreen
-         */
-        bool switchFullscreen(int screenId = -1);
+    /**
+     * \brief Hide / show cursor
+     * \param visibility Desired visibility
+     */
+    void showCursor(bool visibility);
 
-        /**
-         * Set / unset a new texture to draw
-         */
-        void setTexture(const std::shared_ptr<Texture>& tex);
-        void unsetTexture(const std::shared_ptr<Texture>& tex);
+    /**
+     * \brief Set the window to fullscreen
+     * \param screenId Screen where the window should be placed
+     */
+    bool switchFullscreen(int screenId = -1);
 
-        /**
-         * Swap the back and front buffers
-         */
-        void swapBuffers();
+    /**
+     * \brief Set a new texture to draw
+     * \param tex Target texture
+     */
+    void setTexture(const std::shared_ptr<Texture>& tex);
 
-    private:
-        bool _isInitialized {false};
-        std::shared_ptr<GlWindow> _window;
-        int _screenId {-1};
-        bool _fullscreen {false};
-        bool _withDecoration {true};
-        int _windowRect[4];
-        bool _srgb {true};
-        float _gammaCorrection {2.2f};
-        Values _layout {0, 0, 0, 0};
-        int _swapInterval {1};
+    /**
+     * \brief Unset a new texture to draw
+     * \param tex Target texture
+     */
+    void unsetTexture(const std::shared_ptr<Texture>& tex);
 
-        // Swap synchronization test
-        bool _swapSynchronizationTesting {false};
-        glm::vec4 _swapSynchronizationColor {0.0, 0.0, 0.0, 1.0};
+    /**
+     * \brief Swap the back and front buffers
+     */
+    void swapBuffers();
 
-        static std::atomic_int _swappableWindowsCount;
+  private:
+    bool _isInitialized{false};
+    std::shared_ptr<GlWindow> _window;
+    int _screenId{-1};
+    bool _fullscreen{false};
+    bool _withDecoration{true};
+    int _windowRect[4];
+    bool _srgb{true};
+    float _gammaCorrection{2.2f};
+    Values _layout{0, 0, 0, 0};
+    int _swapInterval{1};
 
-        // Offscreen rendering related objects
-        GLuint _renderFbo {0};
-        GLuint _readFbo {0};
-        std::shared_ptr<Texture_Image> _depthTexture {nullptr};
-        std::shared_ptr<Texture_Image> _colorTexture {nullptr};
-        GLsync _renderFence;
+    // Swap synchronization test
+    bool _swapSynchronizationTesting{false};
+    glm::vec4 _swapSynchronizationColor{0.0, 0.0, 0.0, 1.0};
 
-        std::shared_ptr<Object> _screen;
-        std::shared_ptr<Object> _screenGui;
-        glm::dmat4 _viewProjectionMatrix;
-        std::list<std::weak_ptr<Texture>> _inTextures;
-        std::shared_ptr<Texture> _guiTexture {nullptr}; // The gui has its own texture
+    static std::atomic_int _swappableWindowsCount;
 
-        static std::mutex _callbackMutex;
-        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys; // Input keys queue
-        static std::deque<std::pair<GLFWwindow*, unsigned int>> _chars; // Input keys queue
-        static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn; // Input mouse buttons queue
-        static std::pair<GLFWwindow*, std::vector<double>> _mousePos; // Input mouse position
-        static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
-        static std::vector<std::string> _pathDropped; // Filepath drag&dropped
-        static std::atomic_bool _quitFlag; // Grabs close window events
+    // Offscreen rendering related objects
+    GLuint _renderFbo{0};
+    GLuint _readFbo{0};
+    std::shared_ptr<Texture_Image> _depthTexture{nullptr};
+    std::shared_ptr<Texture_Image> _colorTexture{nullptr};
+    GLsync _renderFence{nullptr};
 
-        /**
-         * Input callbacksppa:andrewrk/rucksack
-         */
-        static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
-        static void charCallback(GLFWwindow* win, unsigned int codepoint);
-        static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
-        static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
-        static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
-        static void pathdropCallback(GLFWwindow* win, int count, const char** paths);
-        static void closeCallback(GLFWwindow* win);
+    std::shared_ptr<Object> _screen;
+    std::shared_ptr<Object> _screenGui;
+    glm::dmat4 _viewProjectionMatrix;
+    std::list<std::weak_ptr<Texture>> _inTextures;
+    std::shared_ptr<Texture> _guiTexture{nullptr}; // The gui has its own texture
 
-        /**
-         * Set FBOs up
-         */
-        void setupRenderFBO();
-        void setupReadFBO();
+    static std::mutex _callbackMutex;
+    static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _keys;      // Input keys queue
+    static std::deque<std::pair<GLFWwindow*, unsigned int>> _chars;         // Input keys queue
+    static std::deque<std::pair<GLFWwindow*, std::vector<int>>> _mouseBtn;  // Input mouse buttons queue
+    static std::pair<GLFWwindow*, std::vector<double>> _mousePos;           // Input mouse position
+    static std::deque<std::pair<GLFWwindow*, std::vector<double>>> _scroll; // Input mouse scroll queue
+    static std::vector<std::string> _pathDropped;                           // Filepath drag&dropped
+    static std::atomic_bool _quitFlag;                                      // Grabs close window events
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Input callbacks
+     */
+    static void keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods);
+    static void charCallback(GLFWwindow* win, unsigned int codepoint);
+    static void mouseBtnCallback(GLFWwindow* win, int button, int action, int mods);
+    static void mousePosCallback(GLFWwindow* win, double xpos, double ypos);
+    static void scrollCallback(GLFWwindow* win, double xoffset, double yoffset);
+    static void pathdropCallback(GLFWwindow* win, int count, const char** paths);
+    static void closeCallback(GLFWwindow* win);
 
-        /**
-         * Set up the user events callbacks
-         */
-        void setEventsCallbacks();
+    /**
+     * \brief Set FBOs up
+     */
+    void setupRenderFBO();
+    void setupReadFBO();
 
-        /**
-         * Set up the projection surface
-         */
-        bool setProjectionSurface();
+    /**
+     * \brief Register new attributes
+     */
+    void registerAttributes();
 
-        /**
-         * Set whether the window has decorations
-         */
-        void setWindowDecoration(bool hasDecoration);
+    /**
+     * \brief Set up the user events callbacks
+     */
+    void setEventsCallbacks();
 
-        /**
-         * Update the swap interval
-         */
-        void updateSwapInterval();
+    /**
+     * \brief Set up the projection surface
+     * \return Return true if all is well
+     */
+    bool setProjectionSurface();
 
-        /**
-         * Update the window size and position
-         */
-        void updateWindowShape();
+    /**
+     * \brief Set whether the window has decorations
+     * \param hasDecoration Desired decoration status
+     */
+    void setWindowDecoration(bool hasDecoration);
+
+    /**
+     * \brief Update the swap interval. Call this when the _swapInterval has been changed
+     */
+    void updateSwapInterval();
+
+    /**
+     * \brief Update the window size and position to reflect its attributes
+     */
+    void updateWindowShape();
 };
 
 } // end of namespace

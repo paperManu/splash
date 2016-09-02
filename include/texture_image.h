@@ -26,163 +26,204 @@
 #define SPLASH_TEXTURE_IMAGE_H
 
 #include <chrono>
+#include <glm/glm.hpp>
 #include <memory>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "image.h"
 #include "texture.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Texture_Image : public Texture
 {
-    public:
-        /**
-         * Constructor
-         */
-        Texture_Image();
-        Texture_Image(std::weak_ptr<RootObject> root);
-        Texture_Image(std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                GLint border, GLenum format, GLenum type, const GLvoid* data);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     * \param target Texture target
+     * \param level Mipmap level
+     * \param internalFormat Texture internal format
+     * \param width Width
+     * \param height Height
+     * \param border Texture border behavior
+     * \param format Texture format
+     * \param type Texture type
+     * \param data Pointer to data to use to initialize the texture
+     */
+    Texture_Image(std::weak_ptr<RootObject> root);
+    Texture_Image(std::weak_ptr<RootObject> root,
+        GLenum target,
+        GLint level,
+        GLint internalFormat,
+        GLsizei width,
+        GLsizei height,
+        GLint border,
+        GLenum format,
+        GLenum type,
+        const GLvoid* data);
 
-        /**
-         * Destructor
-         */
-        ~Texture_Image();
+    /**
+     * \brief Destructor
+     */
+    ~Texture_Image();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Texture_Image(const Texture_Image&) = delete;
-        Texture_Image& operator=(const Texture_Image&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Texture_Image(const Texture_Image&) = delete;
+    Texture_Image& operator=(const Texture_Image&) = delete;
 
-        /**
-         * Sets the specified buffer as the texture on the device
-         */
-        Texture_Image& operator=(const std::shared_ptr<Image>& img);
+    /**
+     * \brief Sets the specified buffer as the texture on the device
+     * \param img Image to set the texture from
+     */
+    Texture_Image& operator=(const std::shared_ptr<Image>& img);
 
-        /**
-         * Bind / unbind this texture
-         */
-        void bind();
-        void unbind();
+    /**
+     * \brief Bind this texture
+     */
+    void bind();
 
-        /**
-         * Flush the PBO copy which may still be happening. Do this before
-         * closing the current context!
-         */
-        void flushPbo();
+    /**
+     * \brief Unbind this texture
+     */
+    void unbind();
 
-        /**
-         * Generate the mipmaps for the texture
-         */
-        void generateMipmap() const;
+    /**
+     * \brief Flush the PBO copy which may still be happening. Do this before closing the current context!
+     */
+    void flushPbo();
 
-        /**
-         * Get the id of the gl texture
-         */
-        GLuint getTexId() const {return _glTex;}
+    /**
+     * \brief Generate the mipmaps for the texture
+     */
+    void generateMipmap() const;
 
-        /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
-         */
-        std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
+    /**
+     * \brief Get the id of the gl texture
+     * \return Return the texture id
+     */
+    GLuint getTexId() const { return _glTex; }
 
-        /**
-         * Get spec of the texture
-         */
-        ImageBufferSpec getSpec() const {return _spec;}
+    /**
+     * \brief Get the shader parameters related to this texture. Texture should be locked first.
+     * \return Return the shader uniforms
+     */
+    std::unordered_map<std::string, Values> getShaderUniforms() const { return _shaderUniforms; }
 
-        /**
-         * Try to link the given BaseObject to this
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Get spec of the texture
+     * \return Return the spec
+     */
+    ImageBufferSpec getSpec() const { return _spec; }
 
-        /**
-         * Lock the texture for read / write operations
-         */
-        void lock() const {_mutex.lock();}
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * Read the texture and returns an Image
-         */
-        std::shared_ptr<Image> read();
+    /**
+     * \brief Lock the texture for read / write operations
+     */
+    void lock() const { _mutex.lock(); }
 
-        /**
-         * Set the buffer size / type / internal format
-         * See glTexImage2D for information about parameters
-         */
-        void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                   GLint border, GLenum format, GLenum type, const GLvoid* data);
+    /**
+     * \brief Read the texture and returns an Image
+     * \return Return the image
+     */
+    std::shared_ptr<Image> read();
 
-        /**
-         * Modify the size of the texture
-         */
-        void resize(int width, int height);
+    /**
+     * \brief Set the buffer size / type / internal format
+     * \param target Texture target
+     * \param level Mipmap level
+     * \param internalFormat Texture internal format
+     * \param width Width
+     * \param height Height
+     * \param border Texture border behavior
+     * \param format Texture format
+     * \param type Texture type
+     * \param data Pointer to data to use to initialize the texture
+     */
+    void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data);
 
-        /**
-         * Enable / disable clamp to edge
-         */
-        void setClampToEdge(bool active) {_glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT;}
+    /**
+     * \brief Modify the size of the texture
+     * \param width Width
+     * \param height Height
+     */
+    void resize(int width, int height);
 
-        /**
-         * Unlock the texture for read / write operations
-         */
-        void unlock() const {_mutex.unlock();}
+    /**
+     * \brief Enable / disable clamp to edge
+     * \param active If true, enables clamping
+     */
+    void setClampToEdge(bool active) { _glTextureWrap = active ? GL_CLAMP_TO_EDGE : GL_REPEAT; }
 
-        /**
-         * Update the texture according to the owned Image
-         */
-        void update();
+    /**
+     * \brief Unlock the texture for read / write operations
+     */
+    void unlock() const { _mutex.unlock(); }
 
-    private:
-        GLint _glVersionMajor {0};
-        GLint _glVersionMinor {0};
+    /**
+     * \brief Update the texture according to the owned Image
+     */
+    void update();
 
-        GLuint _glTex {0};
-        GLuint _pbos[2];
-        int _pboReadIndex {0};
-        std::vector<unsigned int> _pboCopyThreadIds;
+  private:
+    GLint _glVersionMajor{0};
+    GLint _glVersionMinor{0};
 
-        // Store some texture parameters
-        bool _filtering {true};
-        GLenum _texTarget, _texFormat, _texType;
-        GLint _texLevel, _texInternalFormat, _texBorder;
-        GLint _glTextureWrap {GL_REPEAT};
+    GLuint _glTex{0};
+    GLuint _pbos[2];
+    int _pboReadIndex{0};
+    std::vector<unsigned int> _pboCopyThreadIds;
 
-        // And some temporary attributes
-        GLint _activeTexture; // Texture unit to which the texture is bound
+    // Store some texture parameters
+    bool _filtering{true};
+    GLenum _texTarget{GL_TEXTURE_2D}, _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
+    GLint _texLevel{0}, _texInternalFormat{GL_CLAMP_TO_EDGE}, _texBorder{0};
+    GLint _glTextureWrap{GL_REPEAT};
 
-        std::weak_ptr<Image> _img;
+    // And some temporary attributes
+    GLint _activeTexture{0}; // Texture unit to which the texture is bound
 
-        // Parameters to send to the shader
-        std::unordered_map<std::string, Values> _shaderUniforms;
+    std::weak_ptr<Image> _img;
 
-        /**
-         * As says its name
-         */
-        void init();
+    // Parameters to send to the shader
+    std::unordered_map<std::string, Values> _shaderUniforms;
 
-        /**
-         * Get GL channel order according to spec.format
-         */
-        GLenum getChannelOrder(const ImageBufferSpec& spec);
+    /**
+     * \brief Initialization
+     */
+    void init();
 
-        /**
-         * Update the pbos according to the parameters
-         */
-        void updatePbos(int width, int height, int bytes);
+    /**
+     * \brief Get GL channel order according to spec.format
+     * \param spec Specification
+     * \return Return the GL channel order (GL_RGBA, GL_BGRA, ...)
+     */
+    GLenum getChannelOrder(const ImageBufferSpec& spec);
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Update the pbos according to the parameters
+     * \param width Width
+     * \param height Height
+     * \param bytes Bytes per pixel
+     */
+    void updatePbos(int width, int height, int bytes);
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

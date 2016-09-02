@@ -32,24 +32,24 @@ namespace Splash
 
 class SyphonReceiver
 {
-    public:
-        SyphonReceiver();
-        ~SyphonReceiver();
+  public:
+    SyphonReceiver();
+    ~SyphonReceiver();
 
-        bool connect(const char* serverName = "", const char* appName = "");
-        void disconnect();
-        bool isConnected() {return _syphonClient != nullptr;}
+    bool connect(const char* serverName = "", const char* appName = "");
+    void disconnect();
+    bool isConnected() { return _syphonClient != nullptr; }
 
-        int getFrame();
-        int getHeight() {return _height;}
-        int getWidth() {return _width;}
-        void releaseFrame();
+    int getFrame();
+    int getHeight() { return _height; }
+    int getWidth() { return _width; }
+    void releaseFrame();
 
-    private:
-        void* _syphonClient;
-        void* _syphonImage;
-        void* _sharedDirectory;
-        int _width, _height;
+  private:
+    void* _syphonClient;
+    void* _syphonImage;
+    void* _sharedDirectory;
+    int _width, _height;
 };
 
 } // end of namespace

@@ -39,7 +39,7 @@ namespace Splash
 /*************/
 struct RgbValue
 {
-    RgbValue() {};
+    RgbValue(){};
     RgbValue(Values v)
     {
         if (v.size() != 3)
@@ -73,7 +73,7 @@ struct RgbValue
             return b;
     }
 
-    RgbValue operator*(const float v) const 
+    RgbValue operator*(const float v) const
     {
         RgbValue tmp = *this;
         tmp.r *= v;
@@ -82,7 +82,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator/(const float v) const 
+    RgbValue operator/(const float v) const
     {
         RgbValue tmp = *this;
         tmp.r /= v;
@@ -91,7 +91,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator*(const RgbValue c) const 
+    RgbValue operator*(const RgbValue c) const
     {
         RgbValue tmp = *this;
         tmp.r *= c.r;
@@ -100,7 +100,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator/(const RgbValue c) const 
+    RgbValue operator/(const RgbValue c) const
     {
         RgbValue tmp = *this;
         tmp.r /= c.r;
@@ -109,7 +109,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator+(const RgbValue c) const 
+    RgbValue operator+(const RgbValue c) const
     {
         RgbValue tmp = *this;
         tmp.r += c.r;
@@ -119,10 +119,7 @@ struct RgbValue
     }
 
     // Get the luminance, considering a sRGB linearized color space
-    float luminance() const 
-    {
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    }
+    float luminance() const { return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
 
     // Normalizes in a colorspace manner, i.e so that max value = 1.f
     RgbValue& normalize()
@@ -144,9 +141,9 @@ struct RgbValue
             b = v;
     }
 
-    float r {0.f};
-    float g {0.f};
-    float b {0.f};
+    float r{0.f};
+    float g{0.f};
+    float b{0.f};
 };
 
 /**
@@ -169,7 +166,7 @@ inline glm::vec2 colorBalanceFromTemperature(float temp)
         c.r = 329.698727466 * pow(c.r, -0.1332047592);
         c.r = max(0.0, min(c.r, 255.0));
     }
-  
+
     if (t <= 66)
     {
         c.g = t;
@@ -182,7 +179,7 @@ inline glm::vec2 colorBalanceFromTemperature(float temp)
         c.g = 288.1221695283 * pow(c.g, -0.0755148492);
         c.g = max(0.0, min(c.g, 255.0));
     }
-  
+
     if (t >= 66)
         c.b = 255.0;
     else
@@ -196,7 +193,7 @@ inline glm::vec2 colorBalanceFromTemperature(float temp)
             c.b = max(0.0, min(c.b, 255.0));
         }
     }
-  
+
     glm::vec2 colorBalance;
     colorBalance.x = c.r / c.g;
     colorBalance.y = c.b / c.g;

@@ -32,104 +32,103 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-    
+
 #include <portaudio.h>
 
-#include "config.h"
 #include "basetypes.h"
+#include "config.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class Listener : public BaseObject
 {
-    public:
-        enum SampleFormat
-        {
-            SAMPLE_FMT_UNKNOWN = -1,
-            SAMPLE_FMT_U8 = 0,
-            SAMPLE_FMT_S16,
-            SAMPLE_FMT_S32,
-            SAMPLE_FMT_FLT
-        };
-        
-        /**
-         * Constructor
-         */
-        Listener();
+  public:
+    enum SampleFormat
+    {
+        SAMPLE_FMT_UNKNOWN = -1,
+        SAMPLE_FMT_U8 = 0,
+        SAMPLE_FMT_S16,
+        SAMPLE_FMT_S32,
+        SAMPLE_FMT_FLT
+    };
 
-        /**
-         * Destructor
-         */
-        ~Listener();
+    /**
+     * \brief Constructor
+     */
+    Listener();
 
-        /**
-         * Safe bool idiom
-         */
-        explicit operator bool() const
-        {
-            return _ready;
-        }
+    /**
+     * \brief Destructor
+     */
+    ~Listener();
 
-        /**
-         * No copy, but some move constructors
-         */
-        Listener(const Listener&) = delete;
-        Listener& operator=(const Listener&) = delete;
+    /**
+     * \brief Safe bool idiom
+     */
+    explicit operator bool() const { return _ready; }
 
-        /**
-         * Add a buffer to the playing queue
-         * Returns false if there was an error
-         */
-        template<typename T>
-        bool readFromQueue(std::vector<T>& buffer);
+    /**
+     * No copy, but some move constructors
+     */
+    Listener(const Listener&) = delete;
+    Listener& operator=(const Listener&) = delete;
 
-        /**
-         * Set the audio parameters
-         */
-        void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const std::string& deviceName = "");
+    /**
+     * \brief Add a buffer to the playing queue
+     * \return Return false if there was an error
+     */
+    template <typename T>
+    bool readFromQueue(std::vector<T>& buffer);
 
-    private:
-        bool _ready {false};
-        unsigned int _channels {2};
-        unsigned int _sampleRate {0};
-        SampleFormat _sampleFormat {SAMPLE_FMT_FLT};
-        std::string _deviceName {""};
+    /**
+     * \brief Set the audio parameters
+     */
+    void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const std::string& deviceName = "");
 
-        bool _useJack {false};
-        size_t _sampleSize {2};
+  private:
+    bool _ready{false};
+    unsigned int _channels{2};
+    unsigned int _sampleRate{0};
+    SampleFormat _sampleFormat{SAMPLE_FMT_FLT};
+    std::string _deviceName{""};
 
-        PaStream* _portAudioStream {nullptr};
-        bool _abordCallback {false};
+    bool _useJack{false};
+    size_t _sampleSize{2};
 
-        std::array<uint8_t, SPLASH_LISTENER_RINGBUFFER_SIZE> _ringBuffer;
-        std::atomic_int _ringWritePosition {0};
-        std::atomic_int _ringReadPosition {0};
-        std::atomic_int _ringUnusedSpace {0};
+    PaStream* _portAudioStream{nullptr};
+    bool _abordCallback{false};
 
-        /**
-         * Free all PortAudio resources
-         */
-        void freeResources();
+    std::array<uint8_t, SPLASH_LISTENER_RINGBUFFER_SIZE> _ringBuffer;
+    std::atomic_int _ringWritePosition{0};
+    std::atomic_int _ringReadPosition{0};
+    std::atomic_int _ringUnusedSpace{0};
 
-        /**
-         * Initialize PortAudio resources
-         */
-        void initResources();
+    /**
+     * \brief Free all PortAudio resources
+     */
+    void freeResources();
 
-        /**
-         * PortAudio callback
-         */
-        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+    /**
+     * \brief Initialize PortAudio resources
+     */
+    void initResources();
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief PortAudio callback
+     */
+    static int portAudioCallback(
+        const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 /*************/
-template<typename T>
+template <typename T>
 bool Listener::readFromQueue(std::vector<T>& buffer)
 {
     if (buffer.size() == 0)

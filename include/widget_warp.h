@@ -34,25 +34,24 @@ namespace Splash
 /*************/
 class GuiWarp : public GuiWidget
 {
-    public:
-        GuiWarp(std::weak_ptr<Scene> scene, std::string name)
-            : GuiWidget(scene, name) {}
-        void render();
-        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
-        int updateWindowFlags();
+  public:
+    GuiWarp(std::weak_ptr<Scene> scene, std::string name) : GuiWidget(scene, name) {}
+    void render();
+    void setScene(std::weak_ptr<Scene> scene) { _scene = scene; }
+    int updateWindowFlags();
 
-    private:
-        bool _noMove {false};
+  private:
+    bool _noMove{false};
 
-        int _currentWarp {0};
-        std::string _currentWarpName {""};
-        int _currentControlPointIndex {0};
-        glm::vec2 _previousMousePos;
+    int _currentWarp{0};
+    std::string _currentWarpName{""};
+    int _currentControlPointIndex{0};
+    glm::vec2 _previousMousePos;
 
-        void processKeyEvents(const std::shared_ptr<Warp>& warp);
-        void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
+    void processKeyEvents(const std::shared_ptr<Warp>& warp);
+    void processMouseEvents(const std::shared_ptr<Warp>& warp, int warpWidth, int warpHeight);
 
-        void updateControlPoints(const std::string& warpName, const Values& controlPoints);
+    void updateControlPoints(const std::string& warpName, const Values& controlPoints);
 };
 
 } // end of namespace

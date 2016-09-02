@@ -30,37 +30,47 @@
 
 #include "./basetypes.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
+//! Factory class, in charge of creating objects base on their type
 class Factory
 {
-    public:
-        /**
-         * Constructor
-         */
-        Factory();
-        Factory(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     */
+    Factory();
 
-        /**
-         * Creates a BaseObject given its type
-         */
-        std::shared_ptr<BaseObject> create(std::string type);
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Factory(std::weak_ptr<RootObject> root);
 
-        /**
-         * Get all creatable object types
-         */
-        std::vector<std::string> getObjectTypes();
+    /**
+     * \brief Creates a BaseObject given its type
+     * \param type Object type
+     * \return Return a shared pointer to the created object
+     */
+    std::shared_ptr<BaseObject> create(std::string type);
 
-    private:
-        std::weak_ptr<RootObject> _root;
-        bool _isScene {false};
-        std::map<std::string, std::function<std::shared_ptr<BaseObject>()>> _objectBook;
+    /**
+     * \brief Get all creatable object types
+     * \return Return a vector of all the creatable objects
+     */
+    std::vector<std::string> getObjectTypes();
 
-        /**
-         * Registers the available objects inside the _objectBook
-         */
-        void registerObjects();
+  private:
+    std::weak_ptr<RootObject> _root;                                                 //!< Root object, used as root for all created objects
+    bool _isScene{false};                                                            //!< True if the root is a Scene, false if it is a World (or if there is no root)
+    std::map<std::string, std::function<std::shared_ptr<BaseObject>()>> _objectBook; //!< List of all creatable objects
+
+    /**
+     * |brief Registers the available objects inside the _objectBook
+     */
+    void registerObjects();
 };
 
 } // end of namespace

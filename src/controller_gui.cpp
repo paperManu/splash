@@ -10,8 +10,8 @@
 #include "./scene.h"
 #include "./texture.h"
 #include "./texture_image.h"
-#include "./timer.h"
 #include "./threadpool.h"
+#include "./timer.h"
 #include "./window.h"
 
 using namespace std;
@@ -31,8 +31,7 @@ GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
-Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
-    : ControllerObject(s)
+Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s) : ControllerObject(s)
 {
     _type = "gui";
 
@@ -42,8 +41,9 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
 
     _scene = s;
     _window = w;
-    if (!_window->setAsCurrentContext()) 
-    	 Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    if (!_window->setAsCurrentContext())
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    ;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -75,13 +75,11 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
     _window->releaseContext();
 
     // Create the default GUI camera
-    scene->_mainWindow->setAsCurrentContext();
     _guiCamera = make_shared<Camera>(s);
     _guiCamera->setName("guiCamera");
     _guiCamera->setAttribute("eye", {2.0, 2.0, 0.0});
     _guiCamera->setAttribute("target", {0.0, 0.0, 0.5});
     _guiCamera->setAttribute("size", {640, 480});
-    scene->_mainWindow->releaseContext();
 
     // Intialize the GUI widgets
     _window->setAsCurrentContext();
@@ -128,7 +126,7 @@ void Gui::computeBlending(bool once)
         setGlobal("computeBlending", {"once"});
         _blendingActive = true;
     }
-    else 
+    else
     {
         setGlobal("computeBlending", {"continuous"});
         _blendingActive = true;
@@ -202,7 +200,7 @@ void Gui::key(int key, int action, int mods)
     {
     default:
     {
-sendAsDefault:
+    sendAsDefault:
         using namespace ImGui;
 
         // Numpad enter is converted to regular enter
@@ -216,7 +214,7 @@ sendAsDefault:
             io.KeysDown[key] = false;
         io.KeyCtrl = ((mods & GLFW_MOD_CONTROL) != 0) && (action == GLFW_PRESS);
         io.KeyShift = ((mods & GLFW_MOD_SHIFT) != 0) && (action == GLFW_PRESS);
-    
+
         break;
     }
     case GLFW_KEY_TAB:
@@ -282,15 +280,12 @@ sendAsDefault:
             static bool cursorVisible = false;
             cursorVisible = !cursorVisible;
 
-            auto scene = _scene.lock();
-            for (auto& obj : scene->_objects)
-                if (obj.second->getType() == "window")
-                    dynamic_pointer_cast<Window>(obj.second)->showCursor(cursorVisible);
+            setObjectsOfType("window", "showCursor", {(int)cursorVisible});
         }
         break;
     }
     // Switch the rendering to textured
-    case GLFW_KEY_T: 
+    case GLFW_KEY_T:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
@@ -329,7 +324,7 @@ void Gui::mouseButton(int btn, int action, int mods)
     using namespace ImGui;
     ImGuiIO& io = GetIO();
 
-    int button {0};
+    int button{0};
     bool isPressed = action == GLFW_PRESS ? true : false;
     switch (btn)
     {
@@ -483,7 +478,7 @@ bool Gui::render()
             _configurationPath = string(configurationPath);
 
             ImGui::SameLine();
-            static bool showFileSelector {false};
+            static bool showFileSelector{false};
             if (ImGui::Button("..."))
             {
                 showFileSelector = true;
@@ -530,8 +525,8 @@ bool Gui::render()
         ImGui::End();
 
         // Uncomment to show styling gui!
-        //ImGuiStyle& style = ImGui::GetStyle();
-        //ImGui::ShowStyleEditor(&style);
+        // ImGuiStyle& style = ImGui::GetStyle();
+        // ImGui::ShowStyleEditor(&style);
 
         static double time = 0.0;
         const double currentTime = glfwGetTime();
@@ -581,8 +576,9 @@ void Gui::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    if (!_window->setAsCurrentContext()) 
-    	 Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    if (!_window->setAsCurrentContext())
+        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    ;
     _depthTexture->setAttribute("size", {width, height});
     _outTexture->setAttribute("size", {width, height});
 
@@ -602,7 +598,7 @@ void Gui::initImGui(int width, int height)
     using namespace ImGui;
 
     // Initialize GL stuff for ImGui
-    const std::string vertexShader {R"(
+    const std::string vertexShader{R"(
         #version 330 core
 
         uniform mat4 ProjMtx;
@@ -621,7 +617,7 @@ void Gui::initImGui(int width, int height)
         }
     )"};
 
-    const std::string fragmentShader {R"(
+    const std::string fragmentShader{R"(
         #version 330 core
 
         uniform sampler2D Texture;
@@ -677,8 +673,8 @@ void Gui::initImGui(int width, int height)
 
     glGenBuffers(1, &_imGuiVboHandle);
     glGenBuffers(1, &_imGuiElementsHandle);
-    //glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-    //glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
+    // glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
+    // glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
 
     glGenVertexArrays(1, &_imGuiVaoHandle);
     glBindVertexArray(_imGuiVaoHandle);
@@ -687,9 +683,9 @@ void Gui::initImGui(int width, int height)
     glEnableVertexAttribArray(_imGuiUVLocation);
     glEnableVertexAttribArray(_imGuiColorLocation);
 
-    glVertexAttribPointer(_imGuiPositionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->pos));
-    glVertexAttribPointer(_imGuiUVLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->uv));
-    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)(size_t)&(((ImDrawVert*)0)->col));
+    glVertexAttribPointer(_imGuiPositionLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t) & (((ImDrawVert*)0)->pos));
+    glVertexAttribPointer(_imGuiUVLocation, 2, GL_FLOAT, GL_FALSE, sizeof(ImDrawVert), (GLvoid*)(size_t) & (((ImDrawVert*)0)->uv));
+    glVertexAttribPointer(_imGuiColorLocation, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)(size_t) & (((ImDrawVert*)0)->col));
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -697,8 +693,7 @@ void Gui::initImGui(int width, int height)
     ImGuiIO& io = GetIO();
 
     string fontPath = "";
-    vector<string> fontPaths {string(DATADIR) + string("fonts/OpenSans-Bold.ttf"),
-                             "../Resources/fonts/OpenSans-Bold.ttf"};
+    vector<string> fontPaths{string(DATADIR) + string("fonts/OpenSans-Bold.ttf"), "../Resources/fonts/OpenSans-Bold.ttf"};
     for (auto& path : fontPaths)
         if (ifstream(path, ios::in | ios::binary))
             fontPath = path;
@@ -745,47 +740,47 @@ void Gui::initImGui(int width, int height)
     style.ChildWindowRounding = 2.f;
     style.FrameRounding = 2.f;
     style.ScrollbarSize = 12.f;
-    style.Colors[ImGuiCol_Text]                  = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    style.Colors[ImGuiCol_TextDisabled]          = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
-    style.Colors[ImGuiCol_WindowBg]              = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_ChildWindowBg]         = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    style.Colors[ImGuiCol_Border]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    style.Colors[ImGuiCol_BorderShadow]          = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
-    style.Colors[ImGuiCol_FrameBg]               = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
-    style.Colors[ImGuiCol_TitleBg]               = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
-    style.Colors[ImGuiCol_TitleBgCollapsed]      = ImVec4(0.81f, 0.40f, 0.25f, 0.45f);
-    style.Colors[ImGuiCol_TitleBgActive]         = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
-    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.79f, 0.40f, 0.25f, 0.15f);
-    style.Colors[ImGuiCol_ScrollbarGrab]         = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
-    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
-    style.Colors[ImGuiCol_ScrollbarGrabActive]   = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
-    style.Colors[ImGuiCol_ComboBg]               = ImVec4(0.20f, 0.20f, 0.20f, 0.99f);
-    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
-    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
-    style.Colors[ImGuiCol_CheckMark]             = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
-    style.Colors[ImGuiCol_SliderGrab]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-    style.Colors[ImGuiCol_SliderGrabActive]      = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_Button]                = ImVec4(0.67f, 0.40f, 0.40f, 0.60f);
-    style.Colors[ImGuiCol_ButtonHovered]         = ImVec4(0.67f, 0.40f, 0.40f, 1.00f);
-    style.Colors[ImGuiCol_ButtonActive]          = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_Header]                = ImVec4(0.81f, 0.40f, 0.24f, 0.45f);
-    style.Colors[ImGuiCol_HeaderHovered]         = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
-    style.Colors[ImGuiCol_HeaderActive]          = ImVec4(0.79f, 0.53f, 0.21f, 0.80f);
-    style.Colors[ImGuiCol_Column]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    style.Colors[ImGuiCol_ColumnHovered]         = ImVec4(0.60f, 0.40f, 0.40f, 1.00f);
-    style.Colors[ImGuiCol_ColumnActive]          = ImVec4(0.80f, 0.47f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_ResizeGrip]            = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
-    style.Colors[ImGuiCol_ResizeGripHovered]     = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
-    style.Colors[ImGuiCol_ResizeGripActive]      = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
-    style.Colors[ImGuiCol_CloseButton]           = ImVec4(0.81f, 0.50f, 0.28f, 0.50f);
-    style.Colors[ImGuiCol_CloseButtonHovered]    = ImVec4(0.70f, 0.70f, 0.90f, 0.60f);
-    style.Colors[ImGuiCol_CloseButtonActive]     = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
-    style.Colors[ImGuiCol_PlotLines]             = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotLinesHovered]      = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogram]         = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogramHovered]  = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_TextSelectedBg]        = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
-    style.Colors[ImGuiCol_TooltipBg]             = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
+    style.Colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+    style.Colors[ImGuiCol_Border] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
+    style.Colors[ImGuiCol_FrameBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
+    style.Colors[ImGuiCol_TitleBg] = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
+    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.81f, 0.40f, 0.25f, 0.45f);
+    style.Colors[ImGuiCol_TitleBgActive] = ImVec4(1.00f, 0.50f, 0.25f, 0.74f);
+    style.Colors[ImGuiCol_ScrollbarBg] = ImVec4(0.79f, 0.40f, 0.25f, 0.15f);
+    style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
+    style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
+    style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
+    style.Colors[ImGuiCol_ComboBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.99f);
+    style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
+    style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
+    style.Colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
+    style.Colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_Button] = ImVec4(0.67f, 0.40f, 0.40f, 0.60f);
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.67f, 0.40f, 0.40f, 1.00f);
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4(0.80f, 0.50f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_Header] = ImVec4(0.81f, 0.40f, 0.24f, 0.45f);
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
+    style.Colors[ImGuiCol_HeaderActive] = ImVec4(0.79f, 0.53f, 0.21f, 0.80f);
+    style.Colors[ImGuiCol_Column] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.60f, 0.40f, 0.40f, 1.00f);
+    style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.80f, 0.47f, 0.50f, 1.00f);
+    style.Colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
+    style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
+    style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
+    style.Colors[ImGuiCol_CloseButton] = ImVec4(0.81f, 0.50f, 0.28f, 0.50f);
+    style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.70f, 0.70f, 0.90f, 0.60f);
+    style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
+    style.Colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
+    style.Colors[ImGuiCol_TooltipBg] = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
     style.AntiAliasedLines = false;
 
     unsigned char* pixels;
@@ -816,8 +811,7 @@ void Gui::initImWidgets()
 
     // Some help regarding keyboard shortcuts
     auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
-    helpBox->setTextFunc([]()
-    {
+    helpBox->setTextFunc([]() {
         string text;
         text += "Tab: show / hide this GUI\n";
         text += "General shortcuts:\n";
@@ -854,24 +848,27 @@ void Gui::initImWidgets()
 
     // FPS and timings
     auto timingBox = make_shared<GuiTextBox>(_scene, "Timings");
-    timingBox->setTextFunc([]()
-    {
+    timingBox->setTextFunc([]() {
         // Smooth the values
-        static float fps {0.f};
-        static float worldFps {0.f};
-        static float upl {0.f};
-        static float tex {0.f};
-        static float ble {0.f};
-        static float flt {0.f};
-        static float cam {0.f};
-        static float wrp {0.f};
-        static float gui {0.f};
-        static float win {0.f};
-        static float buf {0.f};
-        static float evt {0.f};
+        static float sce{0.f};
+        static float wrl{0.f};
+        static float fps{0.f};
+        static float worldFps{0.f};
+        static float upl{0.f};
+        static float tex{0.f};
+        static float ble{0.f};
+        static float flt{0.f};
+        static float cam{0.f};
+        static float wrp{0.f};
+        static float gui{0.f};
+        static float win{0.f};
+        static float buf{0.f};
+        static float evt{0.f};
 
-        fps = fps * 0.95 + 1e6 / std::max(1ull, Timer::get()["sceneLoop"]) * 0.05;
-        worldFps = worldFps * 0.9 + 1e6 / std::max(1ull, Timer::get()["worldLoop"]) * 0.1;
+        sce = sce * 0.9 + Timer::get()["sceneLoop"] * 0.001 * 0.1;
+        wrl = wrl * 0.9 + Timer::get()["worldLoop"] * 0.001 * 0.1;
+        fps = 1e3 / std::max(1.f, sce);
+        worldFps = 1e3 / std::max(1.f, wrl);
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
         ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
@@ -883,28 +880,32 @@ void Gui::initImWidgets()
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
-
         // Create the text message
         ostringstream stream;
         Values clock;
         if (Timer::get().getMasterClock(clock))
         {
-            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":" << clock[5].asInt() << ":" << clock[6].asInt();
+            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":"
+                   << clock[5].asInt() << ":" << clock[6].asInt();
             if (clock[7].asInt() == 1)
                 stream << " - Paused";
             stream << "\n";
         }
-        stream << "Framerate: " << setprecision(4) << fps << " fps\n";
-        stream << "World framerate: " << setprecision(4) << worldFps << " fps\n";
-        stream << "Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
-        stream << "Texture upload: " << setprecision(4) << tex << " ms\n";
-        stream << "Blending computation: " << setprecision(4) << ble << " ms\n";
-        stream << "Filters: " << setprecision(4) << flt << " ms\n";
-        stream << "Cameras rendering: " << setprecision(4) << cam << " ms\n";
-        stream << "Warps: " << setprecision(4) << wrp << " ms\n";
-        stream << "GUI rendering: " << setprecision(4) << gui << " ms\n";
-        stream << "Windows rendering: " << setprecision(4) << win << " ms\n";
-        stream << "Swapping and events: " << setprecision(4) << buf << " ms\n";
+        stream << "World:\n";
+        stream << "  World framerate: " << setprecision(4) << worldFps << " fps\n";
+        stream << "  Time per world frame: " << wrl << " ms\n";
+        stream << "  Sending buffers to Scenes: " << setprecision(4) << upl << " ms\n";
+        stream << "Rendering:\n";
+        stream << "  Rendering framerate: " << setprecision(4) << fps << " fps\n";
+        stream << "  Time per rendered frame: " << sce << " ms\n";
+        stream << "  Texture upload: " << setprecision(4) << tex << " ms\n";
+        stream << "  Blending computation: " << setprecision(4) << ble << " ms\n";
+        stream << "  Filters: " << setprecision(4) << flt << " ms\n";
+        stream << "  Cameras rendering: " << setprecision(4) << cam << " ms\n";
+        stream << "  Warps: " << setprecision(4) << wrp << " ms\n";
+        stream << "  GUI rendering: " << setprecision(4) << gui << " ms\n";
+        stream << "  Windows rendering: " << setprecision(4) << win << " ms\n";
+        stream << "  Swapping and events: " << setprecision(4) << buf << " ms\n";
 
         return stream.str();
     });
@@ -914,8 +915,7 @@ void Gui::initImWidgets()
     if (Log::get().getVerbosity() == Log::DEBUGGING)
     {
         auto logBox = make_shared<GuiTextBox>(_scene, "Logs");
-        logBox->setTextFunc([]()
-        {
+        logBox->setTextFunc([]() {
             int nbrLines = 10;
             // Convert the last lines of the text log
             vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
@@ -973,12 +973,8 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 
     const float width = ImGui::GetIO().DisplaySize.x;
     const float height = ImGui::GetIO().DisplaySize.y;
-    const float orthoProjection[4][4] = 
-    {
-        { 2.0f/width,	0.0f,			0.0f,		0.0f },
-        { 0.0f,			2.0f/-height,	0.0f,		0.0f },
-        { 0.0f,			0.0f,			-1.0f,		0.0f },
-        { -1.0f,		1.0f,			0.0f,		1.0f },
+    const float orthoProjection[4][4] = {
+        {2.0f / width, 0.0f, 0.0f, 0.0f}, {0.0f, 2.0f / -height, 0.0f, 0.0f}, {0.0f, 0.0f, -1.0f, 0.0f}, {-1.0f, 1.0f, 0.0f, 1.0f},
     };
 
     glUseProgram(_imGuiShaderHandle);
@@ -989,11 +985,11 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
     for (int n = 0; n < draw_data->CmdListsCount; ++n)
     {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
-        //const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
+        // const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
         const ImDrawIdx* idx_buffer_offset = 0;
 
         glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-        //glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
+        // glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
 
         int needed_vtx_size = cmd_list->VtxBuffer.size() * sizeof(ImDrawVert);
         if (_imGuiVboMaxSize < needed_vtx_size)
@@ -1020,14 +1016,12 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
             else
             {
                 glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
-                glScissor((int)pcmd->ClipRect.x, (int)(height - pcmd->ClipRect.w),
-                          (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
+                glScissor((int)pcmd->ClipRect.x, (int)(height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
                 glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset);
             }
 
             idx_buffer_offset += pcmd->ElemCount;
         }
-
     }
 
     glBindVertexArray(0);
@@ -1044,10 +1038,12 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 /*************/
 void Gui::registerAttributes()
 {
-    addAttribute("size", [&](const Values& args) {
-        setOutputSize(args[0].asInt(), args[1].asInt());
-        return true;
-    }, {'n', 'n'});
+    addAttribute("size",
+        [&](const Values& args) {
+            setOutputSize(args[0].asInt(), args[1].asInt());
+            return true;
+        },
+        {'n', 'n'});
     setAttributeDescription("size", "Set the GUI render resolution");
 }
 

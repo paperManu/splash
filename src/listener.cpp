@@ -1,11 +1,11 @@
 #include "listener.h"
 
 #include "log.h"
-#include "timer.h"
 #include "threadpool.h"
+#include "timer.h"
 
 #if not HAVE_OSX
-    #include "pa_jack.h"
+#include "pa_jack.h"
 #endif
 
 using namespace std;
@@ -46,7 +46,7 @@ void Listener::freeResources()
     if (_portAudioStream)
     {
         Pa_AbortStream(_portAudioStream);
-        //Pa_CloseStream(_portAudioStream);
+        // Pa_CloseStream(_portAudioStream);
         _portAudioStream = nullptr;
     }
 
@@ -160,7 +160,8 @@ void Listener::initResources()
 }
 
 /*************/
-int Listener::portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
+int Listener::portAudioCallback(
+    const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
     auto that = (Listener*)userData;
     uint8_t* input = (uint8_t*)in;

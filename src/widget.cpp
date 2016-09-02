@@ -10,7 +10,7 @@
 #include "./image.h"
 #include "./image_ffmpeg.h"
 #if HAVE_SHMDATA
-    #include "./image_shmdata.h"
+#include "./image_shmdata.h"
 #endif
 #include "./log.h"
 #include "./object.h"
@@ -34,173 +34,171 @@ namespace Splash
 
 namespace SplashImGui
 {
-    /*********/
-    bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
+/*********/
+bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vector<string>& extensions, bool showNormalFiles)
+{
+    bool isDirectoryPath = true;
+    path = Utils::cleanPath(path);
+    string tmpPath = path;
+
+    auto directory = opendir(tmpPath.c_str());
+    if (directory == nullptr)
     {
-        bool isDirectoryPath = true;
-        path = Utils::cleanPath(path);
-        string tmpPath = path;
-
-        auto directory = opendir(tmpPath.c_str());
-        if (directory == nullptr)
-        {
-            isDirectoryPath = false;
-            tmpPath = Utils::getPathFromFilePath(tmpPath);
-            directory = opendir(tmpPath.c_str());
-        }
-
-        if (directory != nullptr)
-        {
-            list.clear();
-            vector<FilesystemFile> files {};
-
-            struct dirent* dirEntry;
-            while ((dirEntry = readdir(directory)) != nullptr)
-            {
-                FilesystemFile path;
-                path.filename = dirEntry->d_name;
-
-                // Do not show hidden files
-                if (path.filename.size() > 2 && path.filename[0] == '.')
-                    continue;
-
-                if (dirEntry->d_type == DT_DIR)
-                    path.isDir = true;
-                else if (!showNormalFiles)
-                    continue;
-
-                files.push_back(path);
-            }
-            closedir(directory);
-
-            // Alphabetical order
-            std::sort(files.begin(), files.end(), [](FilesystemFile a, FilesystemFile b) {
-                return a.filename < b.filename;
-            });
-
-            // But we put directories first
-            std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) {
-                return p.isDir;
-            });
-
-            std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) {
-                return !p.isDir;
-            });
-
-            // Filter files based on extension
-            if (extensions.size() != 0)
-            {
-                list.erase(std::remove_if(list.begin(), list.end(), [&extensions](FilesystemFile p) {
-                    if (p.isDir)
-                        return false;
-
-                    bool filteredOut = true;
-                    for (auto& ext : extensions)
-                    {
-                        auto pos = p.filename.rfind(ext);
-                        if (pos != string::npos && pos == p.filename.size() - ext.size())
-                            filteredOut = false;
-                    }
-
-                    return filteredOut;
-                }), list.end());
-            }
-        }
-
-        return isDirectoryPath;
+        isDirectoryPath = false;
+        tmpPath = Utils::getPathFromFilePath(tmpPath);
+        directory = opendir(tmpPath.c_str());
     }
 
-    /*********/
-    bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
+    if (directory != nullptr)
     {
-        static bool filterExtension = true;;
-        bool manualPath = false;
-        bool selectionDone = false;
-        cancelled = false;
+        list.clear();
+        vector<FilesystemFile> files{};
 
-        ImGui::PushID(label.c_str());
-
-        string windowName = "Select file path";
-        if (label.size() != 0)
-            windowName += " - " + label;
-
-        ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
-        char textBuffer[512];
-        strcpy(textBuffer, path.c_str());
-
-        ImGui::PushItemWidth(-1.f);
-        vector<FilesystemFile> fileList;
-        if (ImGui::InputText("##FileSelectFullPath", textBuffer, 512))
+        struct dirent* dirEntry;
+        while ((dirEntry = readdir(directory)) != nullptr)
         {
-            path = string(textBuffer);
+            FilesystemFile path;
+            path.filename = dirEntry->d_name;
+
+            // Do not show hidden files
+            if (path.filename.size() > 2 && path.filename[0] == '.')
+                continue;
+
+            if (dirEntry->d_type == DT_DIR)
+                path.isDir = true;
+            else if (!showNormalFiles)
+                continue;
+
+            files.push_back(path);
         }
-        ImGui::PopItemWidth();
+        closedir(directory);
 
-        if (filterExtension)
+        // Alphabetical order
+        std::sort(files.begin(), files.end(), [](FilesystemFile a, FilesystemFile b) { return a.filename < b.filename; });
+
+        // But we put directories first
+        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) { return p.isDir; });
+
+        std::copy_if(files.begin(), files.end(), std::back_inserter(list), [](FilesystemFile p) { return !p.isDir; });
+
+        // Filter files based on extension
+        if (extensions.size() != 0)
         {
-            if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
-                manualPath = true;
+            list.erase(std::remove_if(list.begin(),
+                           list.end(),
+                           [&extensions](FilesystemFile p) {
+                               if (p.isDir)
+                                   return false;
+
+                               bool filteredOut = true;
+                               for (auto& ext : extensions)
+                               {
+                                   auto pos = p.filename.rfind(ext);
+                                   if (pos != string::npos && pos == p.filename.size() - ext.size())
+                                       filteredOut = false;
+                               }
+
+                               return filteredOut;
+                           }),
+                list.end());
         }
-        else
+    }
+
+    return isDirectoryPath;
+}
+
+/*********/
+bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
+{
+    static bool filterExtension = true;
+    ;
+    bool manualPath = false;
+    bool selectionDone = false;
+    cancelled = false;
+
+    ImGui::PushID(label.c_str());
+
+    string windowName = "Select file path";
+    if (label.size() != 0)
+        windowName += " - " + label;
+
+    ImGui::Begin(windowName.c_str(), nullptr, ImVec2(400, 600), 0.95f);
+    char textBuffer[512];
+    memset(textBuffer, 0, 512);
+    strncpy(textBuffer, path.c_str(), 510);
+
+    ImGui::PushItemWidth(-1.f);
+    vector<FilesystemFile> fileList;
+    if (ImGui::InputText("##FileSelectFullPath", textBuffer, 512))
+    {
+        path = string(textBuffer);
+    }
+    ImGui::PopItemWidth();
+
+    if (filterExtension)
+    {
+        if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
+            manualPath = true;
+    }
+    else
+    {
+        if (!FileSelectorParseDir(path, fileList, {}, showNormalFiles))
+            manualPath = true;
+    }
+
+    ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
+    static int selectedId = 0;
+    for (int i = 0; i < fileList.size(); ++i)
+    {
+        bool isSelected = (selectedId == i);
+
+        auto filename = fileList[i].filename;
+        if (fileList[i].isDir)
+            filename += "/";
+
+        if (ImGui::Selectable(filename.c_str(), isSelected))
         {
-            if (!FileSelectorParseDir(path, fileList, {}, showNormalFiles))
-                manualPath = true;
+            selectedId = i;
+            manualPath = false;
         }
-            
-        ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
-        static int selectedId = 0;
-        for (int i = 0; i < fileList.size(); ++i)
-        {
-            bool isSelected = (selectedId == i);
+    }
 
-            auto filename = fileList[i].filename;
-            if (fileList[i].isDir)
-                filename += "/";
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0))
+    {
+        path = path + "/" + fileList[selectedId].filename;
+        if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
+            selectionDone = true;
+    }
+    ImGui::EndChild();
 
-            if (ImGui::Selectable(filename.c_str(), isSelected))
-            {
-                selectedId = i;
-                manualPath = false;
-            }
-        }
+    ImGui::Checkbox("Filter files", &filterExtension);
 
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0))
-        {
+    if (ImGui::Button("Select path"))
+    {
+        if (!manualPath)
             path = path + "/" + fileList[selectedId].filename;
-            if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
-                selectionDone = true;
-        }
-        ImGui::EndChild();
-
-        ImGui::Checkbox("Filter files", &filterExtension);
-
-        if (ImGui::Button("Select path"))
-        {
-            if (!manualPath)
-                path = path + "/" + fileList[selectedId].filename;
-            selectionDone = true;;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel"))
-            cancelled = true;;
-
-        ImGui::End();
-
-        ImGui::PopID();
-
-        if (selectionDone || cancelled)
-            return true;
-
-        return false;
+        selectionDone = true;
+        ;
     }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel"))
+        cancelled = true;
+    ;
+
+    ImGui::End();
+
+    ImGui::PopID();
+
+    if (selectionDone || cancelled)
+        return true;
+
+    return false;
+}
 }
 
 /*************/
 /*************/
-GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name)
-    : ControllerObject(scene),
-      _scene(scene),
-      _name(name)
+GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name) : ControllerObject(scene), _scene(scene), _name(name)
 {
 }
 
@@ -215,10 +213,8 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
     {
         if (attr.second.size() > 4 || attr.second.size() == 0)
             continue;
-    
-        if (attr.second[0].getType() == Value::Type::i
-         || attr.second[0].getType() == Value::Type::f
-         || attr.second[0].getType() == Value::Type::l)
+
+        if (attr.second[0].getType() == Value::Type::i || attr.second[0].getType() == Value::Type::f || attr.second[0].getType() == Value::Type::l)
         {
             ImGui::PushID(attr.first.c_str());
             if (ImGui::Button("L"))
@@ -231,7 +227,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             int precision = 0;
             if (attr.second[0].getType() == Value::Type::f)
                 precision = 3;
-    
+
             if (attr.second.size() == 1)
             {
                 float tmp = attr.second[0].asFloat();
@@ -274,9 +270,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             Values values = attr.second[0].asValues();
             if (values.size() > 16)
             {
-                if (values[0].getType() == Value::Type::i 
-                 || values[0].getType() == Value::Type::f
-                 || values[0].getType() == Value::Type::l)
+                if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f || values[0].getType() == Value::Type::l)
                 {
                     float minValue = numeric_limits<float>::max();
                     float maxValue = numeric_limits<float>::min();
@@ -288,8 +282,15 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                         minValue = std::min(value, minValue);
                         samples.push_back(value);
                     }
-                    
-                    ImGui::PlotLines(attr.first.c_str(), samples.data(), samples.size(), samples.size(), ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(), minValue, maxValue, ImVec2(0, 100));
+
+                    ImGui::PlotLines(attr.first.c_str(),
+                        samples.data(),
+                        samples.size(),
+                        samples.size(),
+                        ("[" + to_string(minValue) + ", " + to_string(maxValue) + "]").c_str(),
+                        minValue,
+                        maxValue,
+                        ImVec2(0, 100));
                 }
             }
         }
@@ -305,7 +306,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     ImGui::PushID((objName + attr.first).c_str());
                     if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
                         scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
-    
+
                     ImGui::SameLine();
                     if (ImGui::Button("..."))
                     {
@@ -315,9 +316,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     {
                         static string path = Utils::getPathFromFilePath("./");
                         bool cancelled;
-                        vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"},
-                                                   {"avi"}, {"mov"}, {"mp4"},
-                                                   {"obj"}};
+                        vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}, {"obj"}};
                         if (SplashImGui::FileSelector(objName, path, cancelled, extensions))
                         {
                             if (!cancelled)
@@ -328,7 +327,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                             _fileSelectorTarget = "";
                         }
                     }
-    
+
                     ImGui::PopID();
                 }
                 // For everything else ...

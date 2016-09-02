@@ -7,17 +7,11 @@
 
 using namespace std;
 
-namespace Splash {
-
-/*************/
-Mesh::Mesh()
+namespace Splash
 {
-    init();
-}
 
 /*************/
-Mesh::Mesh(weak_ptr<RootObject> root)
-    : BufferObject(root)
+Mesh::Mesh(weak_ptr<RootObject> root) : BufferObject(root)
 {
     init();
     if (!root.expired() && root.lock()->getType() == "world")
@@ -158,7 +152,7 @@ shared_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(getVertCoords());
     data.push_back(getUVCoords());
     data.push_back(getNormals());
-    data.push_back(getAnnexe());    
+    data.push_back(getAnnexe());
 
     lock_guard<mutex> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
@@ -178,7 +172,7 @@ shared_ptr<SerializedObject> Mesh::serialize() const
         copy(ptr, ptr + d.size() * sizeof(float), currentObjPtr);
         currentObjPtr += d.size() * sizeof(float);
     }
-    
+
     if (Timer::get().isDebug())
         Timer::get() >> "serialize " + _name;
 
@@ -236,25 +230,25 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
         mesh.vertices.resize(nbrVertices);
         for (unsigned int i = 0; i < nbrVertices; ++i)
         {
-            mesh.vertices[i][0] = data[0][i*4 + 0];
-            mesh.vertices[i][1] = data[0][i*4 + 1];
-            mesh.vertices[i][2] = data[0][i*4 + 2];
-            mesh.vertices[i][3] = data[0][i*4 + 3];
+            mesh.vertices[i][0] = data[0][i * 4 + 0];
+            mesh.vertices[i][1] = data[0][i * 4 + 1];
+            mesh.vertices[i][2] = data[0][i * 4 + 2];
+            mesh.vertices[i][3] = data[0][i * 4 + 3];
         }
 
         mesh.uvs.resize(nbrVertices);
         for (unsigned int i = 0; i < nbrVertices; ++i)
         {
-            mesh.uvs[i][0] = data[1][i*2 + 0];
-            mesh.uvs[i][1] = data[1][i*2 + 1];
+            mesh.uvs[i][0] = data[1][i * 2 + 0];
+            mesh.uvs[i][1] = data[1][i * 2 + 1];
         }
 
         mesh.normals.resize(nbrVertices);
         for (unsigned int i = 0; i < nbrVertices; ++i)
         {
-            mesh.normals[i][0] = data[2][i*4 + 0];
-            mesh.normals[i][1] = data[2][i*4 + 1];
-            mesh.normals[i][2] = data[2][i*4 + 2];
+            mesh.normals[i][0] = data[2][i * 4 + 0];
+            mesh.normals[i][1] = data[2][i * 4 + 1];
+            mesh.normals[i][2] = data[2][i * 4 + 2];
         }
 
         if (hasAnnexe)
@@ -262,10 +256,10 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
             mesh.annexe.resize(nbrVertices);
             for (unsigned int i = 0; i < nbrVertices; ++i)
             {
-                mesh.annexe[i][0] = data[3][i*4 + 0];
-                mesh.annexe[i][1] = data[3][i*4 + 1];
-                mesh.annexe[i][2] = data[3][i*4 + 2];
-                mesh.annexe[i][3] = data[3][i*4 + 3];
+                mesh.annexe[i][0] = data[3][i * 4 + 0];
+                mesh.annexe[i][1] = data[3][i * 4 + 1];
+                mesh.annexe[i][2] = data[3][i * 4 + 2];
+                mesh.annexe[i][3] = data[3][i * 4 + 3];
             }
         }
 
@@ -369,20 +363,18 @@ void Mesh::createDefaultMesh(int subdiv)
 /*************/
 void Mesh::registerAttributes()
 {
-    addAttribute("file", [&](const Values& args) {
-        return read(args[0].asString());
-    }, [&]() -> Values {
-        return {_filepath};
-    }, {'s'});
+    addAttribute("file", [&](const Values& args) { return read(args[0].asString()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Mesh file to load");
-    
-    addAttribute("benchmark", [&](const Values& args) {
-        if (args[0].asInt() > 0)
-            _benchmark = true;
-        else
-            _benchmark = false;
-        return true;
-    }, {'n'});
+
+    addAttribute("benchmark",
+        [&](const Values& args) {
+            if (args[0].asInt() > 0)
+                _benchmark = true;
+            else
+                _benchmark = false;
+            return true;
+        },
+        {'n'});
     setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
 }
 

@@ -8,14 +8,7 @@ namespace Splash
 {
 
 /**************/
-Texture_Syphon::Texture_Syphon()
-{
-    init();
-}
-
-/**************/
-Texture_Syphon::Texture_Syphon(weak_ptr<RootObject> root)
-    : Texture(root)
+Texture_Syphon::Texture_Syphon(weak_ptr<RootObject> root) : Texture(root)
 {
     init();
 }
@@ -54,7 +47,7 @@ void Texture_Syphon::bind()
     {
         _shaderUniforms.clear();
         _shaderUniforms["size"] = {(float)_syphonReceiver.getWidth(), (float)_syphonReceiver.getHeight()};
-        
+
         glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
         auto frameId = _syphonReceiver.getFrame();
         if (frameId != -1)
@@ -78,44 +71,48 @@ void Texture_Syphon::unbind()
 /**************/
 void Texture_Syphon::registerAttributes()
 {
-    addAttribute("connect", [&](const Values& args) {
-        if (args.size() == 0)
-        {
-            _serverName = "";
-            _appName = "";
-        }
-        else if (args.size() == 1 && args[0].asValues().size() == 2 && args[0].asValues()[0].asString() == "servername")
-        {
-            _serverName = args[0].asValues()[1].asString();
-            _appName = "";
-        }
-        else if (args.size() == 1 && args[0].asValues().size() == 2 && args[0].asValues()[0].asString() == "appname")
-        {
-            _serverName = "";
-            _appName = args[0].asValues()[1].asString();
-        }
-        else if (args.size() == 2 && args[0].asValues().size() == 2 && args[1].asValues().size() == 2)
-        {
-            _serverName = args[0].asValues()[1].asString();
-            _appName = args[1].asValues()[1].asString();
-        }
+    addAttribute("connect",
+        [&](const Values& args) {
+            if (args.size() == 0)
+            {
+                _serverName = "";
+                _appName = "";
+            }
+            else if (args.size() == 1 && args[0].asValues().size() == 2 && args[0].asValues()[0].asString() == "servername")
+            {
+                _serverName = args[0].asValues()[1].asString();
+                _appName = "";
+            }
+            else if (args.size() == 1 && args[0].asValues().size() == 2 && args[0].asValues()[0].asString() == "appname")
+            {
+                _serverName = "";
+                _appName = args[0].asValues()[1].asString();
+            }
+            else if (args.size() == 2 && args[0].asValues().size() == 2 && args[1].asValues().size() == 2)
+            {
+                _serverName = args[0].asValues()[1].asString();
+                _appName = args[1].asValues()[1].asString();
+            }
 
-        if (!_syphonReceiver.connect(_serverName.c_str(), _appName.c_str()))
-        {
-            Log::get() << Log::WARNING << "Texture_Syphon::connect - Could not connect to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")" << Log::endl;
-            return false;
-        }
-        else
-        {
-            Log::get() << Log::MESSAGE << "Texture_Syphon::connect - Connected to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")" << Log::endl;
-        }
-        return true;
-    }, [&]() -> Values {
-        Values v;
-        v.push_back(Values({"servername", _serverName}));
-        v.push_back(Values({"appname", _appName}));
-        return v;
-    });
+            if (!_syphonReceiver.connect(_serverName.c_str(), _appName.c_str()))
+            {
+                Log::get() << Log::WARNING << "Texture_Syphon::connect - Could not connect to the specified syphon source (servername: " << _serverName << ", appname: " << _appName
+                           << ")" << Log::endl;
+                return false;
+            }
+            else
+            {
+                Log::get() << Log::MESSAGE << "Texture_Syphon::connect - Connected to the specified syphon source (servername: " << _serverName << ", appname: " << _appName << ")"
+                           << Log::endl;
+            }
+            return true;
+        },
+        [&]() -> Values {
+            Values v;
+            v.push_back(Values({"servername", _serverName}));
+            v.push_back(Values({"appname", _appName}));
+            return v;
+        });
     setAttributeDescription("connect", "Try to connect to the Syphon server, given its server name and application name");
 }
 

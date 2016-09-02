@@ -1,17 +1,17 @@
-#include "window.h"
+#include "./window.h"
 
-#include "camera.h"
-#include "controller_gui.h"
-#include "geometry.h"
-#include "image.h"
-#include "log.h"
-#include "object.h"
-#include "scene.h"
-#include "shader.h"
-#include "texture.h"
-#include "texture_image.h"
-#include "timer.h"
-#include "warp.h"
+#include "./camera.h"
+#include "./controller_gui.h"
+#include "./geometry.h"
+#include "./image.h"
+#include "./log.h"
+#include "./object.h"
+#include "./scene.h"
+#include "./shader.h"
+#include "./texture.h"
+#include "./texture_image.h"
+#include "./timer.h"
+#include "./warp.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>
@@ -19,7 +19,8 @@
 using namespace std;
 using namespace std::placeholders;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 mutex Window::_callbackMutex;
@@ -31,11 +32,10 @@ deque<pair<GLFWwindow*, vector<double>>> Window::_scroll;
 vector<string> Window::_pathDropped;
 atomic_bool Window::_quitFlag;
 
-atomic_int Window::_swappableWindowsCount {0};
+atomic_int Window::_swappableWindowsCount{0};
 
 /*************/
-Window::Window(std::weak_ptr<RootObject> root)
-       : BaseObject(root)
+Window::Window(std::weak_ptr<RootObject> root) : BaseObject(root)
 {
     _type = "window";
     registerAttributes();
@@ -111,14 +111,6 @@ int Window::getChars(GLFWwindow*& win, unsigned int& codepoint)
     _chars.pop_front();
 
     return _chars.size() + 1;
-}
-
-/*************/
-bool Window::getKey(int key)
-{
-    if (glfwGetKey(_window->get(), key) == GLFW_PRESS)
-        return true;
-    return false;
 }
 
 /*************/
@@ -241,7 +233,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
             _root.lock()->registerObject(warp);
             return linkTo(warp);
         }
-        
+
         return false;
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
@@ -340,7 +332,7 @@ bool Window::render()
     // If we are in synchronization testing mode
     if (_swapSynchronizationTesting)
     {
-        glClearColor(_swapSynchronizationColor[0], _swapSynchronizationColor[1], _swapSynchronizationColor[2], _swapSynchronizationColor[3]); 
+        glClearColor(_swapSynchronizationColor[0], _swapSynchronizationColor[1], _swapSynchronizationColor[2], _swapSynchronizationColor[3]);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
     // else, we draw the window normally
@@ -352,7 +344,7 @@ bool Window::render()
         auto layout = _layout;
         layout.push_front("layout");
         _screen->getShader()->setAttribute("uniform", layout);
-        _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection}); 
+        _screen->getShader()->setAttribute("uniform", {"_gamma", (float)_srgb, _gammaCorrection});
         _screen->activate();
         _screen->draw();
         _screen->deactivate();
@@ -387,7 +379,7 @@ bool Window::render()
             if (t.expired())
                 continue;
             t.lock()->setAttribute("size", {w, h});
-        }   
+        }
     }
     if (_guiTexture != nullptr)
         _guiTexture->setAttribute("size", {w, h});
@@ -473,8 +465,9 @@ void Window::setupReadFBO()
 /*************/
 void Window::swapBuffers()
 {
-    if (!_window->setAsCurrentContext()) 
-    	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    if (!_window->setAsCurrentContext())
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    ;
 
     glFlush();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
@@ -483,7 +476,7 @@ void Window::swapBuffers()
     auto windowIndex = _swappableWindowsCount.fetch_add(1);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
 
-    // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
+// If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
 #if HAVE_OSX
     glDrawBuffer(GL_BACK);
 #else
@@ -493,9 +486,7 @@ void Window::swapBuffers()
         glDrawBuffer(GL_BACK);
 #endif
 
-    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3],
-                      0, 0, _windowRect[2], _windowRect[3],
-                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 
 #if HAVE_OSX
@@ -607,7 +598,7 @@ void Window::unsetTexture(const shared_ptr<Texture>& tex)
 void Window::keyCallback(GLFWwindow* win, int key, int scancode, int action, int mods)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    vector<int> keys {key, scancode, action, mods};
+    vector<int> keys{key, scancode, action, mods};
     _keys.push_back(pair<GLFWwindow*, vector<int>>(win, keys));
 }
 
@@ -622,15 +613,15 @@ void Window::charCallback(GLFWwindow* win, unsigned int codepoint)
 void Window::mouseBtnCallback(GLFWwindow* win, int button, int action, int mods)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    vector<int> btn {button, action, mods};
-    _mouseBtn.push_back(pair<GLFWwindow*, vector<int>>(win,btn));
+    vector<int> btn{button, action, mods};
+    _mouseBtn.push_back(pair<GLFWwindow*, vector<int>>(win, btn));
 }
 
 /*************/
 void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    vector<double> pos {xpos, ypos};
+    vector<double> pos{xpos, ypos};
     _mousePos.first = win;
     _mousePos.second = move(pos);
 }
@@ -639,7 +630,7 @@ void Window::mousePosCallback(GLFWwindow* win, double xpos, double ypos)
 void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    vector<double> scroll {xoffset, yoffset};
+    vector<double> scroll{xoffset, yoffset};
     _scroll.push_back(pair<GLFWwindow*, vector<double>>(win, scroll));
 }
 
@@ -673,12 +664,13 @@ void Window::setEventsCallbacks()
 /*************/
 bool Window::setProjectionSurface()
 {
-    if (!_window->setAsCurrentContext()) 
-    	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    if (!_window->setAsCurrentContext())
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    ;
     glfwShowWindow(_window->get());
     glfwSwapInterval(_swapInterval);
 
-    // Setup the projection surface
+// Setup the projection surface
 #ifdef DEBUG
     glGetError();
 #endif
@@ -744,8 +736,9 @@ void Window::setWindowDecoration(bool hasDecoration)
 /*************/
 void Window::updateSwapInterval()
 {
-    if (!_window->setAsCurrentContext()) 
-    	 Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;;
+    if (!_window->setAsCurrentContext())
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
+    ;
 
     glfwSwapInterval(_swapInterval);
 
@@ -765,107 +758,133 @@ void Window::updateWindowShape()
 /*************/
 void Window::registerAttributes()
 {
-    addAttribute("fullscreen", [&](const Values& args) {
-        switchFullscreen(args[0].asInt());
-        return true;
-    }, [&]() -> Values {
-        return {_screenId};
-    }, {'n'});
+    addAttribute("fullscreen",
+        [&](const Values& args) {
+            switchFullscreen(args[0].asInt());
+            return true;
+        },
+        [&]() -> Values { return {_screenId}; },
+        {'n'});
     setAttributeDescription("fullscreen", "Set the window as fullscreen given the screen index");
 
-    addAttribute("decorated", [&](const Values& args) {
-        _withDecoration = args[0].asInt() == 0 ? false : true;
-        setWindowDecoration(_withDecoration);
-        updateWindowShape();
-        return true;
-    }, [&]() -> Values {
-        if (_screenId != -1)
-            return Values();
-        else
-            return {(int)_withDecoration};
-    }, {'n'});
+    addAttribute("decorated",
+        [&](const Values& args) {
+            _withDecoration = args[0].asInt() == 0 ? false : true;
+            setWindowDecoration(_withDecoration);
+            updateWindowShape();
+            return true;
+        },
+        [&]() -> Values {
+            if (_screenId != -1)
+                return Values();
+            else
+                return {(int)_withDecoration};
+        },
+        {'n'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
-    addAttribute("srgb", [&](const Values& args) {
-        if (args[0].asInt() != 0)
-            _srgb = true;
-        else
-            _srgb = false;
-        return true;
-    }, [&]() -> Values {
-        return {_srgb};
-    }, {'n'});
+    addAttribute("srgb",
+        [&](const Values& args) {
+            if (args[0].asInt() != 0)
+                _srgb = true;
+            else
+                _srgb = false;
+            return true;
+        },
+        [&]() -> Values { return {_srgb}; },
+        {'n'});
     setAttributeDescription("srgb", "If set to 1, the window is drawn in the sRGB color space");
 
-    addAttribute("gamma", [&](const Values& args) {
-        _gammaCorrection = args[0].asFloat();
-        return true;
-    }, [&]() -> Values {
-        return {_gammaCorrection};
-    }, {'n'});
+    addAttribute("gamma",
+        [&](const Values& args) {
+            _gammaCorrection = args[0].asFloat();
+            return true;
+        },
+        [&]() -> Values { return {_gammaCorrection}; },
+        {'n'});
     setAttributeDescription("gamma", "Set the gamma correction for this window");
 
     // Attribute to configure the placement of the various texture input
-    addAttribute("layout", [&](const Values& args) {
-        _layout.clear();
-        for (auto& arg : args)
-            _layout.push_back(arg.asInt());
+    addAttribute("layout",
+        [&](const Values& args) {
+            _layout.clear();
+            for (auto& arg : args)
+                _layout.push_back(arg.asInt());
 
-        for (int i = _layout.size(); i < 4; ++i)
-            _layout.push_back(0);
+            for (int i = _layout.size(); i < 4; ++i)
+                _layout.push_back(0);
 
-        if (_layout.size() > 4)
-            _layout.resize(4);
+            if (_layout.size() > 4)
+                _layout.resize(4);
 
-        return true;
-    }, [&]() {
-        return _layout;
-    }, {'n'});
+            return true;
+        },
+        [&]() { return _layout; },
+        {'n'});
     setAttributeDescription("layout", "Set the placement of the various input textures");
 
-    addAttribute("position", [&](const Values& args) {
-        _windowRect[0] = args[0].asInt();
-        _windowRect[1] = args[1].asInt();
-        updateWindowShape();
-        return true;
-    }, [&]() -> Values {
-        if (_screenId != -1)
-            return {};
-        else
-            return {_windowRect[0], _windowRect[1]};
-    }, {'n', 'n'});
+    addAttribute("position",
+        [&](const Values& args) {
+            _windowRect[0] = args[0].asInt();
+            _windowRect[1] = args[1].asInt();
+            updateWindowShape();
+            return true;
+        },
+        [&]() -> Values {
+            if (_screenId != -1)
+                return {};
+            else
+                return {_windowRect[0], _windowRect[1]};
+        },
+        {'n', 'n'});
     setAttributeDescription("position", "Set the window position");
 
-    addAttribute("size", [&](const Values& args) {
-        _windowRect[2] = args[0].asInt();
-        _windowRect[3] = args[1].asInt();
-        updateWindowShape();
-        return true;
-    }, [&]() -> Values {
-        if (_screenId != -1)
-            return {};
-        else
-            return {_windowRect[2], _windowRect[3]};
-    }, {'n', 'n'});
+    addAttribute("showCursor",
+        [&](const Values& args) {
+            showCursor(args[0].asInt());
+            return true;
+        },
+        {'n'});
+
+    addAttribute("size",
+        [&](const Values& args) {
+            _windowRect[2] = args[0].asInt();
+            _windowRect[3] = args[1].asInt();
+            updateWindowShape();
+            return true;
+        },
+        [&]() -> Values {
+            if (_screenId != -1)
+                return {};
+            else
+                return {_windowRect[2], _windowRect[3]};
+        },
+        {'n', 'n'});
     setAttributeDescription("size", "Set the window dimensions");
 
-    addAttribute("swapInterval", [&](const Values& args) {
-        _swapInterval = max(-1, args[0].asInt());
-        updateSwapInterval();
-        return true;
-    }, {'n'});
+    addAttribute("swapInterval",
+        [&](const Values& args) {
+            _swapInterval = max(-1, args[0].asInt());
+            updateSwapInterval();
+            return true;
+        },
+        {'n'});
     setAttributeDescription("swapInterval", "Set the window swap interval");
 
-    addAttribute("swapTest", [&](const Values& args) {
-        _swapSynchronizationTesting = args[0].asInt();
-        return true;
-    }, {'n'});
+    addAttribute("swapTest",
+        [&](const Values& args) {
+            _swapSynchronizationTesting = args[0].asInt();
+            return true;
+        },
+        {'n'});
     setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
-    addAttribute("swapTestColor", [&](const Values& args) {
-        _swapSynchronizationColor = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
-        return true;
-    }, {'n', 'n', 'n', 'n'});
+    addAttribute("swapTestColor",
+        [&](const Values& args) {
+            _swapSynchronizationColor = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            return true;
+        },
+        {'n', 'n', 'n', 'n'});
     setAttributeDescription("swapTestColor", "Set the swap test color");
 }
 

@@ -2,7 +2,8 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 string ImageBufferSpec::to_string()
@@ -113,34 +114,6 @@ ImageBuffer::ImageBuffer(const ImageBufferSpec& spec)
 }
 
 /*************/
-ImageBuffer::ImageBuffer(unsigned int width, unsigned int height, unsigned int channels, ImageBufferSpec::Type type)
-{
-    auto spec = ImageBufferSpec();
-    spec.width = width;
-    spec.height = height;
-    spec.channels = channels;
-    spec.type = type;
-    
-    switch (channels)
-    {
-    case 1:
-        spec.format = {"R"};
-        break;
-    case 2:
-        spec.format = {"R", "G"};
-        break;
-    case 3:
-        spec.format = {"R", "G", "B"};
-        break;
-    case 4:
-        spec.format = {"R", "G", "B", "A"};
-        break;
-    }
-
-    init(spec);
-}
-
-/*************/
 ImageBuffer::~ImageBuffer()
 {
 }
@@ -173,28 +146,28 @@ void ImageBuffer::fill(float value)
     switch (_spec.type)
     {
     case ImageBufferSpec::Type::UINT8:
-        {
-            uint8_t* data = reinterpret_cast<uint8_t*>(_buffer.data());
-            uint8_t v = static_cast<char>(value);
-            for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
-                data[p] = v;
-        }
-        break;
+    {
+        uint8_t* data = reinterpret_cast<uint8_t*>(_buffer.data());
+        uint8_t v = static_cast<char>(value);
+        for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
+            data[p] = v;
+    }
+    break;
     case ImageBufferSpec::Type::UINT16:
-        {
-            uint16_t* data = reinterpret_cast<uint16_t*>(_buffer.data());
-            uint16_t v = static_cast<uint16_t>(value);
-            for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
-                data[p] = v;
-        }
-        break;
+    {
+        uint16_t* data = reinterpret_cast<uint16_t*>(_buffer.data());
+        uint16_t v = static_cast<uint16_t>(value);
+        for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
+            data[p] = v;
+    }
+    break;
     case ImageBufferSpec::Type::FLOAT:
-        {
-            float* data = reinterpret_cast<float*>(_buffer.data());
-            for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
-                data[p] = value;
-        }
-        break;
+    {
+        float* data = reinterpret_cast<float*>(_buffer.data());
+        for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
+            data[p] = value;
+    }
+    break;
     }
 }
 

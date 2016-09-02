@@ -3,16 +3,16 @@
 #include "cgUtils.h"
 #include "log.h"
 #include "scene.h"
-#include "timer.h"
 #include "texture_image.h"
+#include "timer.h"
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Filter::Filter(std::weak_ptr<RootObject> root)
-       : Texture(root)
+Filter::Filter(std::weak_ptr<RootObject> root) : Texture(root)
 {
     init();
 }
@@ -38,10 +38,10 @@ void Filter::init()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-	{
+    {
         Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-		return;
-	}
+        return;
+    }
     else
         Log::get() << Log::MESSAGE << "Filter::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
@@ -67,7 +67,7 @@ Filter::~Filter()
         return;
 
 #ifdef DEBUG
-    Log::get()<< Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
 #endif
 
     glDeleteFramebuffers(1, &_fbo);
@@ -164,6 +164,14 @@ void Filter::update()
     if (_inTexture.expired())
         return;
 
+    // Execute waiting tasks
+    {
+        lock_guard<mutex> lockTask(_taskMutex);
+        for (auto& task : _taskQueue)
+            task();
+        _taskQueue.clear();
+    }
+
     if (_updateColorDepth)
         updateColorDepth();
 
@@ -196,6 +204,7 @@ void Filter::updateUniforms()
 {
     auto shader = _screen->getShader();
 
+    // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
     {
         auto scene = dynamic_pointer_cast<Scene>(_root.lock());
@@ -216,11 +225,15 @@ void Filter::updateUniforms()
         }
     }
 
-    shader->setAttribute("uniform", {"_blackLevel", _blackLevel});
-    shader->setAttribute("uniform", {"_brightness", _brightness});
-    shader->setAttribute("uniform", {"_contrast", _contrast});
-    shader->setAttribute("uniform", {"_colorBalance", _colorBalance.x, _colorBalance.y});
-    shader->setAttribute("uniform", {"_saturation", _saturation});
+    // Update uniforms specific to the current filtering shader
+    for (auto& uniform : _filterUniforms)
+    {
+        Values param;
+        param.push_back(uniform.first);
+        for (auto& v : uniform.second)
+            param.push_back(v);
+        shader->setAttribute("uniform", param);
+    }
 }
 
 /*************/
@@ -257,66 +270,159 @@ void Filter::updateColorDepth()
 }
 
 /*************/
+bool Filter::setFilterSource(const string& source)
+{
+    _screen->setAttribute("fill", {"userDefined"});
+
+    auto shader = _screen->getShader();
+    map<Shader::ShaderType, string> shaderSources;
+    shaderSources[Shader::ShaderType::fragment] = source;
+    if (!shader->setSource(shaderSources))
+    {
+        Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Could not apply shader filter" << Log::endl;
+        return false;
+    }
+
+    // This is a trick to force the shader compilation
+    _screen->activate();
+    _screen->deactivate();
+
+    // Unregister previous automatically added uniforms
+    _attribFunctions.clear();
+    registerAttributes();
+
+    // Register the attributes corresponding to the shader uniforms
+    auto uniforms = shader->getUniforms();
+    for (auto& u : uniforms)
+    {
+        vector<char> types;
+        for (auto& v : u.second)
+            types.push_back(v.getTypeAsChar());
+
+        _filterUniforms[u.first] = u.second;
+        addAttribute(u.first,
+            [=](const Values& args) {
+                _filterUniforms[u.first] = args;
+                return true;
+            },
+            [=]() -> Values { return _filterUniforms[u.first]; },
+            types);
+    }
+
+    return true;
+}
+
+/*************/
 void Filter::registerAttributes()
 {
-    addAttribute("16bits", [&](const Values& args) {
-        bool render16bits = args[0].asInt();
-        if (render16bits != _render16bits)
-        {
-            _render16bits = render16bits;
-            _updateColorDepth = true;
-        }
-        return true;
-    }, [&]() -> Values {
-        return {(int)_render16bits};
-    }, {'n'});
+    addAttribute("16bits",
+        [&](const Values& args) {
+            bool render16bits = args[0].asInt();
+            if (render16bits != _render16bits)
+            {
+                _render16bits = render16bits;
+                _updateColorDepth = true;
+            }
+            return true;
+        },
+        [&]() -> Values { return {(int)_render16bits}; },
+        {'n'});
     setAttributeDescription("16bits", "Set to 1 for the filter to be rendered in 16bits per component (otherwise 8bpc)");
 
-    addAttribute("blackLevel", [&](const Values& args) {
-        _blackLevel = args[0].asFloat();
-        _blackLevel = std::max(0.f, std::min(1.f, _blackLevel));
-        return true;
-    }, [&]() -> Values {
-        return {_blackLevel};
-    }, {'n'});
+    addAttribute("blackLevel",
+        [&](const Values& args) {
+            auto blackLevel = args[0].asFloat();
+            blackLevel = std::max(0.f, std::min(1.f, blackLevel));
+            _filterUniforms["_blackLevel"] = {blackLevel};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_blackLevel");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_blackLevel"] = {0.f}; // Default value
+            return _filterUniforms["_blackLevel"];
+        },
+        {'n'});
     setAttributeDescription("blackLevel", "Set the black level for the linked texture");
 
-    addAttribute("brightness", [&](const Values& args) {
-        _brightness = args[0].asFloat();
-        _brightness = std::max(0.f, std::min(2.f, _brightness));
-        return true;
-    }, [&]() -> Values {
-        return {_brightness};
-    }, {'n'});
+    addAttribute("brightness",
+        [&](const Values& args) {
+            auto brightness = args[0].asFloat();
+            brightness = std::max(0.f, std::min(2.f, brightness));
+            _filterUniforms["_brightness"] = {brightness};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_brightness");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_brightness"] = {1.f}; // Default value
+            return _filterUniforms["_brightness"];
+        },
+        {'n'});
     setAttributeDescription("brightness", "Set the brightness for the linked texture");
 
-    addAttribute("contrast", [&](const Values& args) {
-        _contrast = args[0].asFloat();
-        _contrast = std::max(0.f, std::min(2.f, _contrast));
-        return true;
-    }, [&]() -> Values {
-        return {_contrast};
-    }, {'n'});
+    addAttribute("contrast",
+        [&](const Values& args) {
+            auto contrast = args[0].asFloat();
+            contrast = std::max(0.f, std::min(2.f, contrast));
+            _filterUniforms["_contrast"] = {contrast};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_contrast");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_contrast"] = {1.f}; // Default value
+            return _filterUniforms["contrast"];
+        },
+        {'n'});
     setAttributeDescription("contrast", "Set the contrast for the linked texture");
 
-    addAttribute("colorTemperature", [&](const Values& args) {
-        _colorTemperature = args[0].asFloat();
-        _colorTemperature = std::max(0.f, std::min(16000.f, _colorTemperature));
-        _colorBalance = colorBalanceFromTemperature(_colorTemperature);
-        return true;
-    }, [&]() -> Values {
-        return {_colorTemperature};
-    }, {'n'});
+    addAttribute("colorTemperature",
+        [&](const Values& args) {
+            auto colorTemperature = args[0].asFloat();
+            colorTemperature = std::max(0.f, std::min(16000.f, colorTemperature));
+            _filterUniforms["_colorTemperature"] = {colorTemperature};
+            auto colorBalance = colorBalanceFromTemperature(colorTemperature);
+            _filterUniforms["_colorBalance"] = {colorBalance.x, colorBalance.y};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_colorTemperature");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_colorTemperature"] = {6500.f}; // Default value
+            return _filterUniforms["_colorTemperature"];
+        },
+        {'n'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
-    addAttribute("saturation", [&](const Values& args) {
-        _saturation = args[0].asFloat();
-        _saturation = std::max(0.f, std::min(2.f, _saturation));
-        return true;
-    }, [&]() -> Values {
-        return {_saturation};
-    }, {'n'});
+    addAttribute("saturation",
+        [&](const Values& args) {
+            auto saturation = args[0].asFloat();
+            saturation = std::max(0.f, std::min(2.f, saturation));
+            _filterUniforms["_saturation"] = {saturation};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_saturation");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_saturation"] = {1.f}; // Default value
+            return _filterUniforms["_saturation"];
+        },
+        {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
+
+    addAttribute("filterSource",
+        [&](const Values& args) {
+            auto src = args[0].asString();
+            if (src.size() == 0)
+                return true; // No shader specified
+            _shaderSource = src;
+            addTask([=]() { setFilterSource(src); });
+            return true;
+        },
+        [&]() -> Values { return {_shaderSource}; },
+        {'s'});
+    setAttributeDescription("setFilterSource", "Set the fragment shader source for the filter");
 }
 
 } // end of namespace

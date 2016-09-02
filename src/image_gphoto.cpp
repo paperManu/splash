@@ -1,11 +1,11 @@
 #include "image_gphoto.h"
 
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "log.h"
-#include "timer.h"
 #include "threadpool.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -13,20 +13,7 @@ namespace Splash
 {
 
 /*************/
-Image_GPhoto::Image_GPhoto()
-{
-    init();
-}
-
-/*************/
-Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root)
-    : Image(root)
-{
-    init();
-}
-
-/*************/
-Image_GPhoto::Image_GPhoto(std::string cameraName)
+Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root, std::string cameraName) : Image(root)
 {
     init();
     read(cameraName);
@@ -49,7 +36,7 @@ Image_GPhoto::~Image_GPhoto()
 bool Image_GPhoto::read(const string& cameraName)
 {
     // If filename is empty, we connect to the first available camera
-    lock_guard<recursive_mutex> lock(_gpMutex);    
+    lock_guard<recursive_mutex> lock(_gpMutex);
 
     if (_cameras.size() == 0)
     {
@@ -96,7 +83,8 @@ void Image_GPhoto::detectCameras()
     gp_list_new(&availableCameras);
     gp_abilities_list_detect(_gpCams, _gpPorts, availableCameras, _gpContext);
 
-    Log::get() << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - " << (gp_list_count(availableCameras) > 0 ? gp_list_count(availableCameras) : 0) << " cameras detected" << Log::endl;
+    Log::get() << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - " << (gp_list_count(availableCameras) > 0 ? gp_list_count(availableCameras) : 0) << " cameras detected"
+               << Log::endl;
 
     // Create the list of tetherable cameras
     for (int i = 0; i < gp_list_count(availableCameras); ++i)
@@ -116,7 +104,8 @@ void Image_GPhoto::detectCameras()
         else if (!camera.canTether && !camera.canImport)
         {
             releaseCamera(camera);
-            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " does not support import or tethering" << Log::endl;
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Camera " << camera.model << " on port " << camera.port << " does not support import or tethering"
+                       << Log::endl;
         }
         else
         {
@@ -152,10 +141,11 @@ bool Image_GPhoto::capture()
             {
                 gp_file_new_from_fd(&destination, handle);
                 if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
-                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name) << Log::endl;
+                    Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name)
+                               << Log::endl;
                 close(handle);
             }
- 
+
             // Read the downloaded file
             readFile(string("/tmp/") + string(filePath.name));
         }
@@ -168,7 +158,8 @@ bool Image_GPhoto::capture()
         gp_camera_file_delete(camera.cam, filePath.folder, filePath.name, _gpContext);
 
         // Delete the file
-        remove((string("/tmp/") + string(filePath.name)).c_str());
+        if (remove((string("/tmp/") + string(filePath.name)).c_str()) == -1)
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to delete file /tmp/" << filePath.name << Log::endl;
     }
 
     if (res != GP_OK)
@@ -377,66 +368,67 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 /*************/
 void Image_GPhoto::registerAttributes()
 {
-    addAttribute("aperture", [&](const Values& args) {
-        return doSetProperty("aperture", args[0].asString());
-    }, [&]() -> Values {
-        string value;
-        if (doGetProperty("aperture", value))
-            return {value};
-        else
-            return {};
-    }, {'n'});
+    addAttribute("aperture",
+        [&](const Values& args) { return doSetProperty("aperture", args[0].asString()); },
+        [&]() -> Values {
+            string value;
+            if (doGetProperty("aperture", value))
+                return {value};
+            else
+                return {};
+        },
+        {'n'});
     setAttributeDescription("aperture", "Set the aperture of the lens");
 
-    addAttribute("isospeed", [&](const Values& args) {
-        return doSetProperty("iso", args[0].asString());
-    }, [&]() -> Values {
-        string value;
-        if (doGetProperty("iso", value))
-            return {value};
-        else
-            return {};
-    }, {'n'});
+    addAttribute("isospeed",
+        [&](const Values& args) { return doSetProperty("iso", args[0].asString()); },
+        [&]() -> Values {
+            string value;
+            if (doGetProperty("iso", value))
+                return {value};
+            else
+                return {};
+        },
+        {'n'});
     setAttributeDescription("isospeed", "Set the ISO value of the camera");
 
-    addAttribute("shutterspeed", [&](const Values& args) {
-        doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
-        return true;
-    }, [&]() -> Values {
-        string value;
-        doGetProperty("shutterspeed", value);
-        float duration = getFloatFromShutterspeedString(value);
-        return {duration};
-    }, {'n'});
+    addAttribute("shutterspeed",
+        [&](const Values& args) {
+            doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
+            return true;
+        },
+        [&]() -> Values {
+            string value;
+            doGetProperty("shutterspeed", value);
+            float duration = getFloatFromShutterspeedString(value);
+            return {duration};
+        },
+        {'n'});
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");
 
     // Actions
     addAttribute("capture", [&](const Values& args) {
-        SThread::pool.enqueue([&]() {
-            capture();
-        });
+        SThread::pool.enqueue([&]() { capture(); });
         return true;
     });
     setAttributeDescription("capture", "Ask for the camera to shoot");
 
     addAttribute("detect", [&](const Values& args) {
-        SThread::pool.enqueue([&]() {
-            detectCameras();
-        });
+        SThread::pool.enqueue([&]() { detectCameras(); });
         return true;
     });
     setAttributeDescription("detect", "Ask for camera detection");
 
     // Status
-    addAttribute("ready", [&](const Values& args) {
-        return false;
-    }, [&]() -> Values {
-        lock_guard<recursive_mutex> lock(_gpMutex);
-        if (_selectedCameraIndex == -1)
-            return {0};
-        else
-            return {1};
-    });
+    addAttribute("ready",
+        [&](const Values& args) { return false; },
+        [&]() -> Values {
+            lock_guard<recursive_mutex> lock(_gpMutex);
+            if (_selectedCameraIndex == -1)
+                return {0};
+            else
+                return {1};
+        });
     setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
 }
 

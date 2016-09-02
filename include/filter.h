@@ -25,123 +25,152 @@
 #ifndef SPLASH_FILTER_H
 #define SPLASH_FILTER_H
 
+#include <glm/glm.hpp>
 #include <memory>
 #include <string>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "image.h"
 #include "object.h"
 #include "texture.h"
 #include "texture_image.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class Filter : public Texture
 {
-    public:
-        /**
-         * Constructor
-         */
-        Filter(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Filter(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        ~Filter();
+    /**
+     * \brief Destructor
+     */
+    ~Filter();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Filter(const Filter&) = delete;
-        Filter(Filter&&) = default;
-        Filter& operator=(const Filter&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Filter(const Filter&) = delete;
+    Filter(Filter&&) = default;
+    Filter& operator=(const Filter&) = delete;
 
-        /**
-         * Bind / unbind this texture of this filter
-         */
-        void bind();
-        void unbind();
+    /**
+     * \brief Bind the filter
+     */
+    void bind();
 
-        /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
-         */
-        std::unordered_map<std::string, Values> getShaderUniforms() const;
+    /**
+     * \brief Unbind the filter
+     */
+    void unbind();
 
-        /**
-         * Get spec of the texture
-         */
-        ImageBufferSpec getSpec() const {return _outTextureSpec;}
+    /**
+     * Get the shader parameters related to this texture
+     * Texture should be locked first
+     */
+    std::unordered_map<std::string, Values> getShaderUniforms() const;
 
-        /**
-         * Try to link / unlink the given BaseObject to this
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
-        void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Get specs of the texture
+     * \return Return the texture specs
+     */
+    ImageBufferSpec getSpec() const { return _outTextureSpec; }
 
-        /**
-         * Filters should always be saved as it holds user-modifiable parameters
-         */
-        void setSavable(bool savable) {_savable = true;}
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * Update the texture according to the owned Image
-         */
-        void update();
+    /**
+     * \brief Try to unlink the given BaseObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
-    private:
-        bool _isInitialized {false};
-        std::shared_ptr<GlWindow> _window;
-        std::weak_ptr<Texture> _inTexture;
+    /**
+     * \brief Filters should always be saved as it holds user-modifiable parameters
+     * \param savable Needed for heritage reasons, no effect whatsoever
+     */
+    void setSavable(bool savable) { _savable = true; }
 
-        GLuint _fbo {0};
-        std::shared_ptr<Texture_Image> _outTexture {nullptr};
-        std::shared_ptr<Object> _screen;
-        ImageBufferSpec _outTextureSpec;
+    /**
+     * \brief Render the filter
+     */
+    void update();
 
-        // Filter parameters
-        bool _render16bits {false};
-        bool _updateColorDepth {false}; // Set to true if the _render16bits has been updated
-        float _blackLevel {0.f};
-        float _brightness {1.f};
-        float _colorTemperature {6500.f};
-        float _contrast {1.f};
-        float _saturation {1.f};
+  private:
+    bool _isInitialized{false};
+    std::shared_ptr<GlWindow> _window;
+    std::weak_ptr<Texture> _inTexture;
 
-        // Computed values
-        glm::vec2 _colorBalance {1.f, 1.f};
+    GLuint _fbo{0};
+    std::shared_ptr<Texture_Image> _outTexture{nullptr};
+    std::shared_ptr<Object> _screen;
+    ImageBufferSpec _outTextureSpec;
 
-        /**
-         * Init function called in constructors
-         */
-        void init();
+    // Filter parameters
+    std::map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
+    bool _render16bits{false};                     //!< Set to true for the filter to be rendered in 16bits
+    bool _updateColorDepth{false};                 //!< Set to true if the _render16bits has been updated
 
-        /**
-         * Setup the output texture
-         */
-        void setOutput();
+    std::string _shaderSource{""}; //!< User defined fragment shader filter
 
-        /**
-         * Update the color depth for all textures
-         */
-        void updateColorDepth();
+    // Tasks queue
+    std::mutex _taskMutex;
+    std::list<std::function<void()>> _taskQueue;
 
-        /**
-         * Updates the shader uniforms according to the textures and images
-         * the filter is connected to.
-         */
-        void updateUniforms();
+    /**
+     * \brief Add a new task to the queue
+     * \param task Task function
+     */
+    void addTask(const std::function<void()>& task)
+    {
+        std::lock_guard<std::mutex> lock(_taskMutex);
+        _taskQueue.push_back(task);
+    }
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Init function called in constructors
+     */
+    void init();
+
+    /**
+     * \brief Set the filter fragment shader. Automatically adds attributes corresponding to the uniforms
+     * \param source Source fragment shader
+     * \return Return true if the shader is valid
+     */
+    bool setFilterSource(const std::string& source);
+
+    /**
+     * \brief Setup the output texture
+     */
+    void setOutput();
+
+    /**
+     * \brief Update the color depth for all textures
+     */
+    void updateColorDepth();
+
+    /**
+     * \brief Updates the shader uniforms according to the textures and images the filter is connected to.
+     */
+    void updateUniforms();
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

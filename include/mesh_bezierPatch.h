@@ -26,114 +26,120 @@
 #define SPLASH_MESH_BEZIERPATCH_H
 
 #include <chrono>
+#include <glm/glm.hpp>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "mesh.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Mesh_BezierPatch : public Mesh
 {
-    public:
-        /**
-         * Constructor
-         */
-        Mesh_BezierPatch();
-        Mesh_BezierPatch(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Mesh_BezierPatch(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        virtual ~Mesh_BezierPatch();
+    /**
+     * \brief Destructor
+     */
+    virtual ~Mesh_BezierPatch();
 
-        /**
-         * No copy constructor, but a copy operator
-         */
-        Mesh_BezierPatch(const Mesh_BezierPatch&) = delete;
-        Mesh_BezierPatch& operator=(const Mesh_BezierPatch&) = delete;
-        Mesh_BezierPatch& operator=(Mesh_BezierPatch&&) = default;
+    /**
+     * No copy constructor, but a copy operator
+     */
+    Mesh_BezierPatch(const Mesh_BezierPatch&) = delete;
+    Mesh_BezierPatch& operator=(const Mesh_BezierPatch&) = delete;
+    Mesh_BezierPatch& operator=(Mesh_BezierPatch&&) = default;
 
-        /**
-         * Get the list of the control points
-         */
-        std::vector<glm::vec2> getControlPoints() const {return _patch.vertices;}
+    /**
+     * \brief Get the list of the control points
+     * \return Returns the list
+     */
+    std::vector<glm::vec2> getControlPoints() const { return _patch.vertices; }
 
-        /**
-         * Select the bezier mesh or the control points as the mesh to output
-         */
-        void switchMeshes(bool control);
+    /**
+     * \brief Select the bezier mesh or the control points as the mesh to output
+     * \param control If true, selects the control points
+     */
+    void switchMeshes(bool control);
 
-        /**
-         * Update the content of the mesh
-         */
-        virtual void update();
+    /**
+     * \brief Update the content of the mesh
+     */
+    virtual void update();
 
-    private:
-        struct Patch
-        {
-            glm::ivec2 size {0, 0};
-            std::vector<glm::vec2> vertices {};
-            std::vector<glm::vec2> uvs {};
-        };
+  private:
+    struct Patch
+    {
+        glm::ivec2 size{0, 0};
+        std::vector<glm::vec2> vertices{};
+        std::vector<glm::vec2> uvs{};
+    };
 
-        Patch _patch {};
-        int _patchResolution {64};
+    Patch _patch{};
+    int _patchResolution{64};
 
-        bool _patchUpdated {true};
-        MeshContainer _bezierControl;
-        MeshContainer _bezierMesh;
+    bool _patchUpdated{true};
+    MeshContainer _bezierControl;
+    MeshContainer _bezierMesh;
 
-        std::vector<float> _binomialCoeffsX {};
-        std::vector<float> _binomialCoeffsY {};
-        glm::ivec2 _binomialDimensions {0, 0};
+    std::vector<float> _binomialCoeffsX{};
+    std::vector<float> _binomialCoeffsY{};
+    glm::ivec2 _binomialDimensions{0, 0};
 
-        // Factorial
-        inline int32_t factorial(int32_t i)
-        {
-            return (i == 0 || i == 1) ? 1 : factorial(i - 1) * i;
-        }
+    // Factorial
+    inline int32_t factorial(int32_t i) { return (i == 0 || i == 1) ? 1 : factorial(i - 1) * i; }
 
-        // "Semi" factorial
-        inline int32_t factorial(int32_t n, int32_t k)
-        {
-            int32_t res = 1;
-            for (int32_t i = n - k + 1; i <= n; ++i)
-                res *= i;
-            return res;
-        }
+    // "Semi" factorial
+    inline int32_t factorial(int32_t n, int32_t k)
+    {
+        int32_t res = 1;
+        for (int32_t i = n - k + 1; i <= n; ++i)
+            res *= i;
+        return res;
+    }
 
-        // Binomial coefficient
-        inline int32_t binomialCoeff(int32_t n, int32_t i)
-        {
-            if (n < i)
-                return 0;
-            return factorial(n, i) / factorial(i);
-        }
+    // Binomial coefficient
+    inline int32_t binomialCoeff(int32_t n, int32_t i)
+    {
+        if (n < i)
+            return 0;
+        return factorial(n, i) / factorial(i);
+    }
 
-        void init();
+    /**
+     * \brief Initialization
+     */
+    void init();
 
-        /**
-         * Create a patch
-         */
-        void createPatch(int width = 4, int height = 4);
-        void createPatch(Patch& patch);
+    /**
+     * \brief Create a patch
+     * \param width Horizontal control point count
+     * \param height Vertical control point count
+     * \param patch Patch description
+     */
+    void createPatch(int width = 4, int height = 4);
+    void createPatch(Patch& patch);
 
-        /**
-         * Update the underlying mesh from the patch control points
-         */
-        void updatePatch();
-        
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Update the underlying mesh from the patch control points
+     */
+    void updatePatch();
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

@@ -39,97 +39,95 @@ namespace Splash
 
 class Image_GPhoto : public Image
 {
-    public:
-        /**
-         * Constructor
-         */
-        Image_GPhoto();
-        Image_GPhoto(std::weak_ptr<RootObject> root);
-        Image_GPhoto(std::string cameraName);
+  public:
+    /**
+     * Constructor
+     */
+    Image_GPhoto(std::weak_ptr<RootObject> root, std::string cameraName = "");
 
-        /**
-         * Destructor
-         */
-        ~Image_GPhoto();
+    /**
+     * Destructor
+     */
+    ~Image_GPhoto();
 
-        /**
-         * No copy constructor, only move
-         */
-        Image_GPhoto(const Image_GPhoto&) = delete;
-        Image_GPhoto& operator=(const Image_GPhoto&) = delete;
+    /**
+     * No copy constructor, only move
+     */
+    Image_GPhoto(const Image_GPhoto&) = delete;
+    Image_GPhoto& operator=(const Image_GPhoto&) = delete;
 
-        /**
-         * Capture a new photo
-         */
-        bool capture();
+    /**
+     * Capture a new photo
+     */
+    bool capture();
 
-        /**
-         * Set the camera to read from
-         */
-        bool read(const std::string& cameraName);
+    /**
+     * Set the camera to read from
+     */
+    bool read(const std::string& cameraName);
 
-    private:
-        struct GPhotoCamera
-        {
-            std::string model;
-            std::string port;
-            GpCamera* cam {nullptr};
-            CameraWidget* configuration {nullptr};
+  private:
+    struct GPhotoCamera
+    {
+        std::string model;
+        std::string port;
+        GpCamera* cam{nullptr};
+        CameraWidget* configuration{nullptr};
 
-            bool canTether {false};
-            bool canConfig {false};
-            bool canImport {false};
+        bool canTether{false};
+        bool canConfig{false};
+        bool canImport{false};
 
-            std::vector<std::string> shutterspeeds;
-            std::vector<std::string> apertures;
-            std::vector<std::string> isos;
-        };
+        std::vector<std::string> shutterspeeds;
+        std::vector<std::string> apertures;
+        std::vector<std::string> isos;
+    };
 
-        std::recursive_mutex _gpMutex;
-        GPContext* _gpContext {nullptr};
-        CameraAbilitiesList* _gpCams {nullptr};
-        GPPortInfoList* _gpPorts {nullptr};
+    std::recursive_mutex _gpMutex;
+    GPContext* _gpContext{nullptr};
+    CameraAbilitiesList* _gpCams{nullptr};
+    GPPortInfoList* _gpPorts{nullptr};
 
-        std::vector<GPhotoCamera> _cameras;
-        int _selectedCameraIndex {-1};
+    std::vector<GPhotoCamera> _cameras;
+    int _selectedCameraIndex{-1};
 
-        /**
-         * Detect connected cameras
-         */
-        void detectCameras();
+    /**
+     * Detect connected cameras
+     */
+    void detectCameras();
 
-        /**
-         * Various commands sent to the camera
-         */
-        bool doSetProperty(std::string name, std::string value);
-        bool doGetProperty(std::string name, std::string& value);
+    /**
+     * Various commands sent to the camera
+     */
+    bool doSetProperty(std::string name, std::string value);
+    bool doGetProperty(std::string name, std::string& value);
 
-        /**
-         * Conversion between float and shutterspeed (as a string)
-         */
-        float getFloatFromShutterspeedString(std::string speed);
-        std::string getShutterspeedStringFromFloat(float duration);
+    /**
+     * Conversion between float and shutterspeed (as a string)
+     */
+    float getFloatFromShutterspeedString(std::string speed);
+    std::string getShutterspeedStringFromFloat(float duration);
 
-        /**
-         * Initialize the whole gphoto context
-         */
-        void init();
+    /**
+     * Initialize the whole gphoto context
+     */
+    void init();
 
-        /**
-         * Initialize the given camera
-         */
-        bool initCamera(GPhotoCamera& camera);
-        void initCameraProperty(GPhotoCamera& camera, std::string property, std::vector<std::string>& values);
+    /**
+     * Initialize the given camera
+     */
+    bool initCamera(GPhotoCamera& camera);
+    void initCameraProperty(GPhotoCamera& camera, std::string property, std::vector<std::string>& values);
 
-        /**
-         * Release the given camera
-         */
-        void releaseCamera(GPhotoCamera& camera);
+    /**
+     * Release the given camera
+     */
+    void releaseCamera(GPhotoCamera& camera);
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

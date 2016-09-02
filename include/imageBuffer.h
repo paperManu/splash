@@ -31,149 +31,186 @@
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class ImageBufferSpec
 {
-    public:
-        enum class Type : uint32_t {
-            UINT8,
-            UINT16,
-            FLOAT
-        };
+  public:
+    enum class Type : uint32_t
+    {
+        UINT8,
+        UINT16,
+        FLOAT
+    };
 
-        ImageBufferSpec() {};
-        ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, ImageBufferSpec::Type t)
+    /**
+     * \brief Constructor
+     */
+    ImageBufferSpec(){};
+
+    /**
+     * \brief Constructor
+     * \param w Width
+     * \param h Height
+     * \param c Channel count
+     * \param t Channel type
+     */
+    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, ImageBufferSpec::Type t)
+    {
+        width = w;
+        height = h;
+        channels = c;
+        type = t;
+
+        switch (channels)
         {
-            width = w;
-            height = h;
-            channels = c;
-            type = t;
+        default:
+            format = {"R", "G", "B"};
+            break;
+        case 0:
+            break;
+        case 1:
+            format = {"R"};
+            break;
+        case 2:
+            format = {"R", "G"};
+            break;
+        case 3:
+            format = {"R", "G", "B"};
+            break;
+        case 4:
+            format = {"R", "G", "B", "A"};
+            break;
+        }
+    }
 
-            switch (channels)
-            {
-            default:
-                format = {"R", "G", "B"};
-                break;
-            case 0:
-                break;
-            case 1:
-                format = {"R"};
-                break;
-            case 2:
-                format = {"R", "G"};
-                break;
-            case 3:
-                format = {"R", "G", "B"};
-                break;
-            case 4:
-                format = {"R", "G", "B", "A"};
-                break;
-            }
+    uint32_t width{0};
+    uint32_t height{0};
+    uint32_t channels{0};
+    Type type{Type::UINT8};
+    std::vector<std::string> format{};
+
+    inline bool operator==(const ImageBufferSpec& spec)
+    {
+        if (width != spec.width)
+            return false;
+        if (height != spec.height)
+            return false;
+        if (channels != spec.channels)
+            return false;
+        if (type != spec.type)
+            return false;
+        if (format != spec.format)
+            return false;
+
+        return true;
+    }
+
+    inline bool operator!=(const ImageBufferSpec& spec) { return !(*this == spec); }
+
+    /**
+     * \brief Convert the spec to a string
+     * \return Return a string representation of the spec
+     */
+    std::string to_string();
+
+    /**
+     * \brief Update from a spec string
+     * \param spec Spec string
+     */
+    void from_string(const std::string& spec);
+
+    /**
+     * \brief Get channel size in bytes
+     * \return Return channel size
+     */
+    int pixelBytes()
+    {
+        int bytes = channels;
+        switch (type)
+        {
+        case Type::UINT8:
+            break;
+        case Type::UINT16:
+            bytes *= 2;
+            break;
+        case Type::FLOAT:
+            bytes *= 4;
+            break;
         }
 
-        uint32_t width {0};
-        uint32_t height {0};
-        uint32_t channels {0};
-        Type type {Type::UINT8};
-        std::vector<std::string> format {};
+        return bytes;
+    }
 
-        inline bool operator==(const ImageBufferSpec& spec)
-        {
-            if (width != spec.width)
-                return false;
-            if (height != spec.height)
-                return false;
-            if (channels != spec.channels)
-                return false;
-            if (type != spec.type)
-                return false;
-            if (format != spec.format)
-                return false;
-
-            return true;
-        }
-
-        inline bool operator!=(const ImageBufferSpec& spec)
-        {
-            return !(*this == spec);
-        }
-
-        std::string to_string();
-        void from_string(const std::string& spec);
-
-        int pixelBytes()
-        {
-            int bytes = channels;
-            switch (type)
-            {
-            case Type::UINT8:
-                break;
-            case Type::UINT16:
-                bytes *= 2;
-                break;
-            case Type::FLOAT:
-                bytes *= 4;
-                break;
-            }
-
-            return bytes;
-        }
-
-        int rawSize()
-        {
-            return pixelBytes() * width * height;
-        }
+    /**
+     * \brief Get image size in bytes
+     * \return Return image size
+     */
+    int rawSize() { return pixelBytes() * width * height; }
 };
 
 /*************/
 class ImageBuffer
 {
-    public:
-        /**
-         * Constructor
-         */
-        ImageBuffer();
-        ImageBuffer(const ImageBufferSpec& spec);
-        ImageBuffer(unsigned int width, unsigned int height, unsigned int channels, ImageBufferSpec::Type type);
+  public:
+    /**
+     * \brief Constructor
+     */
+    ImageBuffer();
 
-        /**
-         * Destructor
-         */
-        ~ImageBuffer();
+    /**
+     * \brief Constructor
+     * \param spec Image spec
+     */
+    ImageBuffer(const ImageBufferSpec& spec);
 
-        ImageBuffer(const ImageBuffer& i) = default;
-        ImageBuffer(ImageBuffer&& i) = default;
-        ImageBuffer& operator=(const ImageBuffer& i) = default;
-        ImageBuffer& operator=(ImageBuffer&& i) = default;
+    /**
+     * \brief Destructor
+     */
+    ~ImageBuffer();
 
-        char* data()
-        {
-            return _buffer.data();
-        }
+    ImageBuffer(const ImageBuffer& i) = default;
+    ImageBuffer(ImageBuffer&& i) = default;
+    ImageBuffer& operator=(const ImageBuffer& i) = default;
+    ImageBuffer& operator=(ImageBuffer&& i) = default;
 
-        ImageBufferSpec getSpec() {return _spec;}
+    /**
+     * \brief Return a pointer to the image data
+     * \return Return a pointer to the data
+     */
+    char* data() { return _buffer.data(); }
 
-        void fill(float value);
+    /**
+     * \brief Get the image spec
+     * \return Return image spec
+     */
+    ImageBufferSpec getSpec() { return _spec; }
 
-        /**
-         * Set the inner raw buffer, to use with caution,
-         * its size must match the spec
-         */
-        void setRawBuffer(ResizableArray<char>&& buffer)
-        {
-            _buffer = std::move(buffer);
-        }
-        
-    private:
-        ImageBufferSpec _spec {};
-        ResizableArray<char> _buffer;
+    /**
+     * \brief Fill all channels with the given value
+     * \param value Value to fill the image with
+     */
+    void fill(float value);
 
-        void init(const ImageBufferSpec& spec);
+    /**
+     * \brief Set the inner raw buffer, to use with caution, its size must match the spec
+     * \param buffer Buffer to use as inner buffer
+     */
+    void setRawBuffer(ResizableArray<char>&& buffer) { _buffer = std::move(buffer); }
+
+  private:
+    ImageBufferSpec _spec{};
+    ResizableArray<char> _buffer;
+
+    /**
+     * \brief Initialization
+     */
+    void init(const ImageBufferSpec& spec);
 };
 
 } // end of namespace

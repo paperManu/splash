@@ -1,19 +1,20 @@
 #include "./controller_pythonEmbedded.h"
 
-#include <functional>
 #include <fstream>
+#include <functional>
 #include <mutex>
 
 #include "./osUtils.h"
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-atomic_int PythonEmbedded::_pythonInstances {0};
-PyThreadState* PythonEmbedded::_pythonGlobalThreadState {nullptr};
-PyObject* PythonEmbedded::SplashError {nullptr};
+atomic_int PythonEmbedded::_pythonInstances{0};
+PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
+PyObject* PythonEmbedded::SplashError{nullptr};
 
 /*************/
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
@@ -100,7 +101,6 @@ PyDoc_STRVAR(pythonGetObjectAttributeDescription_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-
 PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
@@ -147,7 +147,6 @@ PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-
 PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance(self);
@@ -187,7 +186,6 @@ PyDoc_STRVAR(pythonGetObjectAttributes_doc__,
     "\n"
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
-
 
 PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds)
 {
@@ -474,136 +472,82 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
         return Py_False;
     }
 
-    that->addAttribute(attributeName, [=](const Values& args) {
-        PyEval_AcquireThread(that->_pythonGlobalThreadState);
-        PyThreadState_Swap(that->_pythonLocalThreadState);
+    that->addAttribute(attributeName,
+        [=](const Values& args) {
+            PyEval_AcquireThread(that->_pythonGlobalThreadState);
+            PyThreadState_Swap(that->_pythonLocalThreadState);
 
-        auto moduleDict = PyModule_GetDict(that->_pythonModule);
-        PyObject* object = nullptr;
-        if (args.size() == 1)
-            object = convertFromValue(args[0]);
-        else
-            object = convertFromValue(args);
-        if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
-        {
-            PyErr_SetString(SplashError, (string("Could not set object named ") + attributeName).c_str());
+            auto moduleDict = PyModule_GetDict(that->_pythonModule);
+            PyObject* object = nullptr;
+            if (args.size() == 1)
+                object = convertFromValue(args[0]);
+            else
+                object = convertFromValue(args);
+            if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
+            {
+                PyErr_SetString(SplashError, (string("Could not set object named ") + attributeName).c_str());
+                Py_DECREF(object);
+                return false;
+            }
+
             Py_DECREF(object);
-            return false;
-        }
 
-        Py_DECREF(object);
+            PyThreadState_Swap(that->_pythonGlobalThreadState);
+            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
 
-        PyThreadState_Swap(that->_pythonGlobalThreadState);
-        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            return true;
+        },
+        [=]() -> Values {
+            PyEval_AcquireThread(that->_pythonGlobalThreadState);
+            PyThreadState_Swap(that->_pythonLocalThreadState);
 
-        return true;
-    }, [=]() -> Values {
-        PyEval_AcquireThread(that->_pythonGlobalThreadState);
-        PyThreadState_Swap(that->_pythonLocalThreadState);
+            auto moduleDict = PyModule_GetDict(that->_pythonModule);
+            auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
+            auto value = convertToValue(object);
+            if (!object)
+            {
+                PyErr_SetString(SplashError, (string("Could not find object named ") + attributeName).c_str());
+                return {};
+            }
 
-        auto moduleDict = PyModule_GetDict(that->_pythonModule);
-        auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
-        auto value = convertToValue(object);
-        if (!object)
-        {
-            PyErr_SetString(SplashError, (string("Could not find object named ") + attributeName).c_str());
-            return {};
-        }
-        
-        PyThreadState_Swap(that->_pythonGlobalThreadState);
-        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            PyThreadState_Swap(that->_pythonGlobalThreadState);
+            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
 
-        if (value.getType() == Value::Type::v)
-            return value.asValues();
-        else
-            return {value};
-    }, {});
+            if (value.getType() == Value::Type::v)
+                return value.asValues();
+            else
+                return {value};
+        },
+        {});
 
     Py_INCREF(Py_True);
     return Py_True;
 }
 
 /*************/
-PyMethodDef PythonEmbedded::SplashMethods[] = {
-    {
-        (char*)"get_object_list", 
-        (PyCFunction)PythonEmbedded::pythonGetObjectList, 
-        METH_VARARGS,
-        pythonGetObjectList_doc__
-    },
-    {
-        (char*)"get_object_types", 
-        (PyCFunction)PythonEmbedded::pythonGetObjectTypes, 
-        METH_VARARGS,
-        pythonGetObjectTypes_doc__
-    },
-    {
-        (char*)"get_object_attribute_description", 
-        (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription, 
+PyMethodDef PythonEmbedded::SplashMethods[] = {{(char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
+    {(char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
+    {(char*)"get_object_attribute_description",
+        (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription,
         METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectAttributeDescription_doc__
-    },
-    {
-        (char*)"get_object_attribute",
-        (PyCFunction)PythonEmbedded::pythonGetObjectAttribute,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectAttribute_doc__
-    },
-    {
-        (char*)"get_object_attributes",
-        (PyCFunction)PythonEmbedded::pythonGetObjectAttributes,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectAttributes_doc__
-    },
-    {
-        (char*)"get_object_links",
-        (PyCFunction)PythonEmbedded::pythonGetObjectLinks,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectLinks_doc__
-    },
-    {
-        (char*)"get_object_reversed_links",
-        (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectReversedLinks_doc__
-    },
-    {
-        (char*)"set_global",
-        (PyCFunction)PythonEmbedded::pythonSetGlobal,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonSetGlobal_doc__
-    },
-    {
-        (char*)"set_object",
-        (PyCFunction)PythonEmbedded::pythonSetObject,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonSetObject_doc__
-    },
-    {
-        (char*)"set_objects_of_type",
-        (PyCFunction)PythonEmbedded::pythonSetObjectsOfType,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonSetObjectsOfType_doc__
-    },
-    {
-        (char*)"add_custom_attribute",
-        (PyCFunction)PythonEmbedded::pythonAddCustomAttribute,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonAddCustomAttribute_doc__
-    },
-    {nullptr, nullptr, 0, nullptr}
-};
+        pythonGetObjectAttributeDescription_doc__},
+    {(char*)"get_object_attribute", (PyCFunction)PythonEmbedded::pythonGetObjectAttribute, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttribute_doc__},
+    {(char*)"get_object_attributes", (PyCFunction)PythonEmbedded::pythonGetObjectAttributes, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributes_doc__},
+    {(char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},
+    {(char*)"get_object_reversed_links", (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectReversedLinks_doc__},
+    {(char*)"set_global", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
+    {(char*)"set_object", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
+    {(char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},
+    {(char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
+    {nullptr, nullptr, 0, nullptr}};
 
 /*************/
-PyModuleDef PythonEmbedded::SplashModule = {
-    PyModuleDef_HEAD_INIT, "splash", nullptr, -1, PythonEmbedded::SplashMethods,
-    nullptr, nullptr, nullptr, nullptr
-};
+PyModuleDef PythonEmbedded::SplashModule = {PyModuleDef_HEAD_INIT, "splash", nullptr, -1, PythonEmbedded::SplashMethods, nullptr, nullptr, nullptr, nullptr};
 
 /*************/
 PyObject* PythonEmbedded::pythonInitSplash()
 {
-    PyObject* module {nullptr};
+    PyObject* module{nullptr};
 
     module = PyModule_Create(&PythonEmbedded::SplashModule);
     if (!module)
@@ -621,8 +565,7 @@ PyObject* PythonEmbedded::pythonInitSplash()
 
 /*************/
 // PythonEmbedded class definition
-PythonEmbedded::PythonEmbedded(weak_ptr<RootObject> root)
-    : ControllerObject(root)
+PythonEmbedded::PythonEmbedded(weak_ptr<RootObject> root) : ControllerObject(root)
 {
     using namespace std::placeholders;
 
@@ -879,11 +822,7 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
 /*************/
 void PythonEmbedded::registerAttributes()
 {
-    addAttribute("file", [&](const Values& args) {
-        return setScriptFile(args[0].asString());
-    }, [&]() -> Values {
-        return {_filepath + _scriptName};
-    }, {'s'});
+    addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].asString()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
 }
 

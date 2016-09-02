@@ -25,133 +25,148 @@
 #ifndef SPLASH_WARP_H
 #define SPLASH_WARP_H
 
+#include <glm/glm.hpp>
 #include <memory>
 #include <string>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
 #include "camera.h"
+#include "coretypes.h"
 #include "mesh_bezierPatch.h"
 #include "object.h"
 #include "texture.h"
 #include "texture_image.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class Warp : public Texture
 {
-    public:
-        /**
-         * Constructor
-         */
-        Warp(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Warp(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        ~Warp();
+    /**
+     * \brief Destructor
+     */
+    ~Warp();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Warp(const Warp&) = delete;
-        Warp(Warp&&) = default;
-        Warp& operator=(const Warp&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Warp(const Warp&) = delete;
+    Warp(Warp&&) = default;
+    Warp& operator=(const Warp&) = delete;
 
-        /**
-         * Bind / unbind this texture of this warp
-         */
-        void bind();
-        void unbind();
+    /**
+     * \brier Bind this warp
+     */
+    void bind();
 
-        /**
-         * Get the shader parameters related to this texture
-         * Texture should be locked first
-         */
-        std::unordered_map<std::string, Values> getShaderUniforms() const;
+    /**
+     * \brier Unbind this warp
+     */
+    void unbind();
 
-        /**
-         * Get the rendered texture
-         */
-        std::shared_ptr<Texture_Image> getTexture() const {return _outTexture;}
+    /**
+     * \brief Get the shader parameters related to this warp. Texture should be locked first.
+     * \return Return the shader uniforms
+     */
+    std::unordered_map<std::string, Values> getShaderUniforms() const;
 
-        /**
-         * Get spec of the texture
-         */
-        ImageBufferSpec getSpec() const {return _outTextureSpec;}
+    /**
+     * \brief Get the texture the warp is rendered to
+     * \return Return the rendered texture
+     */
+    std::shared_ptr<Texture_Image> getTexture() const { return _outTexture; }
 
-        /**
-         * Try to link / unlink the given BaseObject to this
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
-        void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Get spec of the texture
+     * \return Return the spec
+     */
+    ImageBufferSpec getSpec() const { return _outTextureSpec; }
 
-        /**
-         * Get the coordinates of the closest vertex to the given point
-         * Returns its index in the bezier patch
-         */
-        int pickControlPoint(glm::vec2 p, glm::vec2& v);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * Warps should always be saved as it hold user-modifiable parameters
-         */
-        void setSavable(bool savable) {_savable = true;}
+    /**
+     * \brief Try to unlink the given BaseObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * Update the texture according to the owned Image
-         */
-        void update();
+    /**
+     * \brief Get the coordinates of the closest vertex to the given point
+     * \param p Point around which to look
+     * \param v Closest vertex coordinates
+     * \return Return the index of the point
+     */
+    int pickControlPoint(glm::vec2 p, glm::vec2& v);
 
-    private:
-        bool _isInitialized {false};
-        std::shared_ptr<GlWindow> _window;
-        std::weak_ptr<Camera> _inCamera;
+    /**
+     * \brief Warps should always be saved as it hold user-modifiable parameters. This method has no effect.
+     */
+    void setSavable(bool savable) { _savable = true; }
 
-        GLuint _fbo {0};
-        std::shared_ptr<Texture_Image> _outTexture {nullptr};
-        std::shared_ptr<Mesh_BezierPatch> _screenMesh {nullptr};
-        std::shared_ptr<Object> _screen {nullptr};
-        ImageBufferSpec _outTextureSpec;
+    /**
+     * \brief Update the warp
+     */
+    void update();
 
-        // Some default models use in various situations
-        std::list<std::shared_ptr<Mesh>> _modelMeshes;
-        std::list<std::shared_ptr<Geometry>> _modelGeometries;
-        std::unordered_map<std::string, std::shared_ptr<Object>> _models;
+  private:
+    bool _isInitialized{false};
+    std::shared_ptr<GlWindow> _window;
+    std::weak_ptr<Camera> _inCamera;
 
-        // Render options
-        bool _showControlPoints {false};
-        int _selectedControlPointIndex {-1};
+    GLuint _fbo{0};
+    std::shared_ptr<Texture_Image> _outTexture{nullptr};
+    std::shared_ptr<Mesh_BezierPatch> _screenMesh{nullptr};
+    std::shared_ptr<Object> _screen{nullptr};
+    ImageBufferSpec _outTextureSpec;
 
-        /**
-         * Init function called in constructors
-         */
-        void init();
+    // Some default models use in various situations
+    std::list<std::shared_ptr<Mesh>> _modelMeshes;
+    std::list<std::shared_ptr<Geometry>> _modelGeometries;
+    std::unordered_map<std::string, std::shared_ptr<Object>> _models;
 
-        /**
-         * Load some defaults models
-         */
-        void loadDefaultModels();
+    // Render options
+    bool _showControlPoints{false};
+    int _selectedControlPointIndex{-1};
 
-        /**
-         * Setup the output texture
-         */
-        void setOutput();
+    /**
+     * \brief Init function called in constructors
+     */
+    void init();
 
-        /**
-         * Updates the shader uniforms according to the textures and images
-         * the warp is connected to.
-         */
-        void updateUniforms();
+    /**
+     * \brief Load some defaults models
+     */
+    void loadDefaultModels();
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Setup the output texture
+     */
+    void setOutput();
+
+    /**
+     * \brief Updates the shader uniforms according to the textures and images the warp is connected to.
+     */
+    void updateUniforms();
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

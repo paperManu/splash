@@ -29,191 +29,225 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "texture.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Shader : public BaseObject
 {
-    public:
-        enum ProgramType
-        {
-            prgGraphic = 0,
-            prgCompute,
-            prgFeedback
-        };
+  public:
+    enum ProgramType
+    {
+        prgGraphic = 0,
+        prgCompute,
+        prgFeedback
+    };
 
-        enum ShaderType
-        {
-            vertex = 0,
-            tess_ctrl,
-            tess_eval,
-            geometry,
-            fragment,
-            compute
-        };
+    enum ShaderType
+    {
+        vertex = 0,
+        tess_ctrl,
+        tess_eval,
+        geometry,
+        fragment,
+        compute
+    };
 
-        enum Sideness
-        {
-            doubleSided = 0,
-            singleSided,
-            inverted
-        };
+    enum Sideness
+    {
+        doubleSided = 0,
+        singleSided,
+        inverted
+    };
 
-        enum Fill
-        {
-            texture = 0,
-            texture_rect,
-            color,
-            filter,
-            primitiveId,
-            uv,
-            warp,
-            warpControl,
-            wireframe,
-            window
-        };
+    enum Fill
+    {
+        texture = 0,
+        texture_rect,
+        color,
+        filter,
+        primitiveId,
+        uv,
+        userDefined,
+        warp,
+        warpControl,
+        wireframe,
+        window
+    };
 
-        /**
-         * Constructor
-         */
-        Shader(ProgramType type = prgGraphic);
+    /**
+     * \brief Constructor
+     * \param type Shader type
+     */
+    Shader(ProgramType type = prgGraphic);
 
-        /**
-         * Destructor
-         */
-        ~Shader();
+    /**
+     * \brief Destructor
+     */
+    ~Shader();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Shader(const Shader&) = delete;
-        Shader& operator=(const Shader&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Shader(const Shader&) = delete;
+    Shader& operator=(const Shader&) = delete;
 
-        /**
-         * Activate this shader
-         */
-        void activate();
+    /**
+     * \brief Activate this shader
+     */
+    void activate();
 
-        /**
-         * Deactivate this shader
-         */
-        void deactivate();
+    /**
+     * \brief Deactivate this shader
+     */
+    void deactivate();
 
-        /**
-         * Launch the compute shader, if present
-         */
-        void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
+    /**
+     * \brief Launch the compute shader, if present
+     * \param numGroupsX Compute group count along X
+     * \param numGroupsY Compute group count along Y
+     */
+    void doCompute(GLuint numGroupsX = 1, GLuint numGroupsY = 1);
 
-        /**
-         * Set the sideness of the object
-         */
-        void setSideness(const Sideness side);
-        Sideness getSideness() const {return _sideness;}
+    /**
+     * \brief Set the sideness of the object
+     * \param side Sideness
+     */
+    void setSideness(const Sideness side);
 
-        /**
-         * Set a shader source
-         */
-        void setSource(std::string src, const ShaderType type);
+    /**
+     * \brief Get the sideness of the object
+     * \return Return the sideness
+     */
+    Sideness getSideness() const { return _sideness; }
 
-        /**
-         * Set a shader source from file
-         */
-        void setSourceFromFile(const std::string filename, const ShaderType type);
+    /**
+     * \brief Get the list of uniforms in the shader program
+     * \return Return a map of uniforms and their values
+     */
+    std::map<std::string, Values> getUniforms() const;
 
-        /**
-         * Add a new texture to use
-         */
-        void setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name);
+    /**
+     * \brief Set a shader source
+     * \param src Shader string
+     * \param type Shader type
+     * \return Return true if the shader was compiled successfully
+     */
+    bool setSource(std::string src, const ShaderType type);
 
-        /**
-         * Set the model view and projection matrices
-         */
-        void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
+    /**
+     * \brief Set multiple shaders at once
+     * \param sources Map of shader sources
+     * \return Return true if all shader could be compiled
+     */
+    bool setSource(std::map<ShaderType, std::string> sources);
 
-        /**
-         * Set the currently queued uniforms updates
-         */
-        void updateUniforms();
+    /**
+     * \brief Set a shader source from file
+     * \param filename Shader file
+     * \param type Shader type
+     * \return Return true if the shader was compiled successfully
+     */
+    bool setSourceFromFile(const std::string filename, const ShaderType type);
 
-    private:
-        mutable std::mutex _mutex;
-        std::atomic_bool _activated {false};
-        ProgramType _programType {prgGraphic};
+    /**
+     * \brief Add a new texture to use
+     * \param texture Texture
+     * \param textureUnit GL texture unit
+     * \param name Texture name
+     */
+    void setTexture(const std::shared_ptr<Texture>& texture, const GLuint textureUnit, const std::string& name);
 
-        std::unordered_map<int, GLuint> _shaders;
-        std::unordered_map<int, std::string> _shadersSource;
-        GLuint _program {0};
-        bool _isLinked = {false};
+    /**
+     * \brief Set the model view and projection matrices
+     * \param mv View matrix
+     * \param mp Projection matrix
+     */
+    void setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
-        struct Uniform
-        {
-            std::string type {""};
-            Values values {};
-            GLint glIndex {-1};
-            GLuint glBuffer {0};
-            bool glBufferReady {false};
-        };
-        std::map<std::string, Uniform> _uniforms;
-        std::vector<std::string> _uniformsToUpdate;
-        std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
+    /**
+     * \brief Set the currently queued uniforms updates
+     */
+    void updateUniforms();
 
-        // A map of previously compiled programs
-        std::string _currentProgramName {};
-        std::map<std::string, GLuint> _compiledPrograms;
-        std::map<std::string, std::string> _compiledProgramsOptions;
-        std::map<std::string, bool> _programsLinkStatus;
+  private:
+    mutable std::mutex _mutex;
+    std::atomic_bool _activated{false};
+    ProgramType _programType{prgGraphic};
 
-        // Rendering parameters
-        Fill _fill {texture};
-        std::string _shaderOptions {""};
-        Sideness _sideness {doubleSided};
-        std::vector<int> _layout {0, 0, 0, 0};
+    std::unordered_map<int, GLuint> _shaders;
+    std::unordered_map<int, std::string> _shadersSource;
+    GLuint _program{0};
+    bool _isLinked = {false};
 
-        /**
-         * Compile the shader program
-         */
-        void compileProgram();
+    struct Uniform
+    {
+        std::string type{""};
+        Values values{};
+        GLint glIndex{-1};
+        GLuint glBuffer{0};
+        bool glBufferReady{false};
+    };
+    std::map<std::string, Uniform> _uniforms;
+    std::vector<std::string> _uniformsToUpdate;
+    std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
+    std::string _currentProgramName{};
 
-        /**
-         * Link the shader program
-         */
-        bool linkProgram();
+    // Rendering parameters
+    Fill _fill{texture};
+    std::string _shaderOptions{""};
+    Sideness _sideness{doubleSided};
+    std::vector<int> _layout{0, 0, 0, 0};
 
-        /**
-         * Parses the shader to replace includes by the corresponding sources
-         */
-        void parseIncludes(std::string& src);
+    /**
+     * \brief Compile the shader program
+     */
+    void compileProgram();
 
-        /**
-         * Parses the shader to find uniforms
-         */
-        void parseUniforms(const std::string& src);
+    /**
+     * \brief Link the shader program
+     */
+    bool linkProgram();
 
-        /**
-         * Get a string expression of the shader type, used for logging
-         */
-        std::string stringFromShaderType(int type);
+    /**
+     * \brief Parses the shader to replace includes by the corresponding sources
+     * \param src Shader source
+     */
+    void parseIncludes(std::string& src);
 
-        /**
-         * Replace a shader with an empty one
-         */
-        void resetShader(ShaderType type);
+    /**
+     * \brief Parses the shader to find uniforms
+     */
+    void parseUniforms(const std::string& src);
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
-        void registerGraphicAttributes();
-        void registerComputeAttributes();
-        void registerFeedbackAttributes();
+    /**
+     * \brief Get a string expression of the shader type, used for logging
+     * \param type Shader type
+     * \return Return the shader type as a string
+     */
+    std::string stringFromShaderType(int type);
+
+    /**
+     * \brief Replace a shader with an empty one
+     * \param type Shader type
+     */
+    void resetShader(ShaderType type);
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
+    void registerGraphicAttributes();
+    void registerComputeAttributes();
+    void registerFeedbackAttributes();
 };
 
 } // end of namespace

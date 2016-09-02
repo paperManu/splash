@@ -25,22 +25,24 @@
 #ifndef SPLASH_COLORCALIBRATOR_H
 #define SPLASH_COLORCALIBRATOR_H
 
-#include <utility>
 #include <glm/glm.hpp>
+#include <utility>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
 #include "cgUtils.h"
+#include "coretypes.h"
 #include "image_gphoto.h"
 
-namespace pic {
+namespace pic
+{
 class Image;
 class CameraResponseFunction;
 }
 
-namespace Splash {
+namespace Splash
+{
 
 class World;
 class Scene;
@@ -48,114 +50,133 @@ class Scene;
 /*************/
 class ColorCalibrator : public BaseObject
 {
-    public:
-        /**
-         * Constructor
-         */
-        ColorCalibrator(std::weak_ptr<Scene> scene);
+  public:
+    /**
+     * \brief Constructor
+     * \param scene Root scene
+     */
+    ColorCalibrator(std::weak_ptr<Scene> scene);
 
-        /**
-         * Destructor
-         */
-        ~ColorCalibrator();
+    /**
+     * \brief Destructor
+     */
+    ~ColorCalibrator();
 
-        /**
-         * No copy constructor
-         */
-        ColorCalibrator(const ColorCalibrator&) = delete;
-        ColorCalibrator& operator=(const ColorCalibrator&) = delete;
+    /**
+     * No copy constructor
+     */
+    ColorCalibrator(const ColorCalibrator&) = delete;
+    ColorCalibrator& operator=(const ColorCalibrator&) = delete;
 
-        /**
-         * Update the color calibration of all cameras
-         */
-        void update();
+    /**
+     * \brief Update the color calibration of all cameras
+     */
+    void update();
 
-        /**
-         * Update the color response function of the physical camera
-         */
-        void updateCRF();
+    /**
+     * \brief Update the color response function of the physical camera
+     */
+    void updateCRF();
 
-    private:
-        //
-        // Some internal types
-        //
-        typedef std::pair<float, RgbValue> Point;
-        typedef std::vector<Point> Curve;
+  private:
+    //
+    // Some internal types
+    //
+    typedef std::pair<float, RgbValue> Point;
+    typedef std::vector<Point> Curve;
 
-        struct CalibrationParams
-        {
-            std::string camName {};
-            std::vector<int> camROI {0, 0};
-            std::vector<bool> maskROI;
-            RgbValue whitePoint;
-            RgbValue whiteBalance;
-            RgbValue minValues;
-            RgbValue maxValues;
-            std::vector<Curve> curves {3};
-            std::vector<Curve> projectorCurves;
-            glm::mat3 mixRGB;
-        };
+    struct CalibrationParams
+    {
+        std::string camName{};
+        std::vector<int> camROI{0, 0};
+        std::vector<bool> maskROI;
+        RgbValue whitePoint;
+        RgbValue whiteBalance;
+        RgbValue minValues;
+        RgbValue maxValues;
+        std::vector<Curve> curves{3};
+        std::vector<Curve> projectorCurves;
+        glm::mat3 mixRGB;
+    };
 
-        //
-        // Attributes
-        //
-        std::weak_ptr<Scene> _scene;
-        std::shared_ptr<Image_GPhoto> _gcamera;
-        std::shared_ptr<pic::CameraResponseFunction> _crf {nullptr};
+    //
+    // Attributes
+    //
+    std::weak_ptr<Scene> _scene;
+    std::shared_ptr<Image_GPhoto> _gcamera;
+    std::shared_ptr<pic::CameraResponseFunction> _crf{nullptr};
 
-        unsigned int _colorCurveSamples {5}; // Number of samples for each channels to create the color curves
-        double _displayDetectionThreshold {1.f}; // Coefficient applied while detecting displays / projectors, increase to get rid of ambiant lights
-        double _minimumROIArea {0.005}; // Minimum area size for projection detection, as a fraction of the image size
-        int _imagePerHDR {1}; // Number of images taken for each color-measuring HDR
-        double _hdrStep {1.0}; // Stops between images taken for color-measuring HDR
-        int _equalizationMethod {2}; //
+    unsigned int _colorCurveSamples{5};     //!< Number of samples for each channels to create the color curves
+    double _displayDetectionThreshold{1.f}; //!< Coefficient applied while detecting displays / projectors, increase to get rid of ambiant lights
+    double _minimumROIArea{0.005};          //!< Minimum area size for projection detection, as a fraction of the image size
+    int _imagePerHDR{1};                    //!< Number of images taken for each color-measuring HDR
+    double _hdrStep{1.0};                   //!< Stops between images taken for color-measuring HDR
+    int _equalizationMethod{2};
 
-        std::vector<CalibrationParams> _calibrationParams;
+    std::vector<CalibrationParams> _calibrationParams;
 
-        /**
-         * Capture an HDR image from the gcamera
-         */
-        std::shared_ptr<pic::Image> captureHDR(unsigned int nbrLDR = 3, double step = 1.0);
+    /**
+     * \brief Capture an HDR image from the gcamera
+     * \param nbrLDR Low dynamic ranger images count to use to create the HDR
+     * \param step Stops between successive LDR images
+     */
+    std::shared_ptr<pic::Image> captureHDR(unsigned int nbrLDR = 3, double step = 1.0);
 
-        /**
-         * Compute the inverse projection transformation function, typically
-         * correcting the projector non linearity for all three channels
-         */
-        std::vector<Curve> computeProjectorFunctionInverse(std::vector<Curve> rgbCurves);
+    /**
+     * \brief Compute the inverse projection transformation function, typically correcting the projector non linearity for all three channels
+     * \param rgbCurves Projection transformation function as a vector of Curves
+     * \return Return the inverted transformation function
+     */
+    std::vector<Curve> computeProjectorFunctionInverse(std::vector<Curve> rgbCurves);
 
-        /**
-         * Find the exposure which gives correctly exposed photos
-         */
-        float findCorrectExposure();
+    /**
+     * \brief Find the exposure which gives correctly exposed photos
+     * \return Return the found exposure duration
+     */
+    float findCorrectExposure();
 
-        /**
-         * Find the center of region with max values
-         */
-        std::vector<int> getMaxRegionROI(std::shared_ptr<pic::Image> image);
+    /**
+     * \brief Find the center of region with max values
+     * \return Return a vector<float> containing the coordinates (x, y) of the ROI as well as the side length
+     */
+    std::vector<int> getMaxRegionROI(std::shared_ptr<pic::Image> image);
 
-        /**
-         * Get a mask of the projectors surface
-         */
-        std::vector<bool> getMaskROI(std::shared_ptr<pic::Image> image);
+    /**
+     * \brief Get a mask of the projectors surface
+     * \param image The image to compute the mask for
+     * \return Return a vector<bool> the same size as image
+     */
+    std::vector<bool> getMaskROI(std::shared_ptr<pic::Image> image);
 
-        /**
-         * Get the mean value of the area around the given coords
-         */
-        std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
-        std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<bool> mask);
+    /**
+     * \brief Get the mean value of the area around the given coords
+     * \param image Input image
+     * \param coords Box center
+     * \param boxSize Box size
+     * \return Return the mean value for each channel
+     */
+    std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<int> coords = std::vector<int>(), int boxSize = 32);
 
-        /**
-         * White balance equalization strategies
-         */
-        std::function<RgbValue()> equalizeWhiteBalances;
-        RgbValue equalizeWhiteBalancesOnly(); // Only equalize WB without caring about luminance
-        RgbValue equalizeWhiteBalancesFromWeakestLum(); // Match all WB with the one of the weakest projector
-        RgbValue equalizeWhiteBalancesMaximizeMinLum(); // Match WB so as to maximize minimum luminance
+    /*
+     * \brief Get the mean value of the area defined by the mask
+     * \param image Input image
+     * \param mask Vector holding the coordinates (x, y) and the side length
+     * \return Return the mean value for each channel
+     */
+    std::vector<float> getMeanValue(std::shared_ptr<pic::Image> image, std::vector<bool> mask);
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief White balance equalization strategies
+     */
+    std::function<RgbValue()> equalizeWhiteBalances;
+    RgbValue equalizeWhiteBalancesOnly();           //!< Only equalize WB without caring about luminance
+    RgbValue equalizeWhiteBalancesFromWeakestLum(); //!< Match all WB with the one of the weakest projector
+    RgbValue equalizeWhiteBalancesMaximizeMinLum(); //!< Match WB so as to maximize minimum luminance
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

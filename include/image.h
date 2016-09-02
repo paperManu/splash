@@ -30,133 +30,162 @@
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "imageBuffer.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Image : public BufferObject
 {
-    public:
-        /**
-         * Constructor
-         */
-        Image();
-        Image(std::weak_ptr<RootObject> root);
-        Image(ImageBufferSpec spec);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Image(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        virtual ~Image();
+    /**
+     * \brief Constructor
+     * \param root Root object
+     * \param spec Image specifications
+     */
+    Image(std::weak_ptr<RootObject> root, ImageBufferSpec spec);
 
-        /**
-         * No copy constructor, but a copy operator
-         */
-        Image(const Image&) = delete;
-        Image& operator=(const Image&) = delete;
-        Image& operator=(Image&&) = default;
+    /**
+     * \brief Destructor
+     */
+    virtual ~Image();
 
-        /**
-         * Get a pointer to the data
-         */
-        const void* data() const;
+    /**
+     * No copy constructor, but a copy operator
+     */
+    Image(const Image&) = delete;
+    Image& operator=(const Image&) = delete;
+    Image& operator=(Image&&) = default;
 
-        /**
-         * Lock the image, useful while reading. Use with care
-         * Note that only write mutex is needed, as it also disables reading
-         */
-        void lock() {_writeMutex.lock();}
-        void unlock() {_writeMutex.unlock();}
+    /**
+     * \brief Get a pointer to the data
+     * \return Return a pointer to the data
+     */
+    const void* data() const;
 
-        /**
-         * Get the image buffer
-         */
-        ImageBuffer get() const;
+    /**
+     * \brief Lock the image, useful while reading. Use with care Note that only write mutex is needed, as it also disables reading
+     */
+    void lock() { _writeMutex.lock(); }
 
-        /**
-         * Get the file path
-         */
-        std::string getFilepath() const {return _filepath;}
+    /**
+     * \brief Unlock the image
+     */
+    void unlock() { _writeMutex.unlock(); }
 
-        /**
-         * Get the image buffer specs
-         */
-        ImageBufferSpec getSpec() const;
+    /**
+     * \brief Get the image buffer
+     * \return Return the image buffer
+     */
+    ImageBuffer get() const;
 
-        /**
-         * Set the image from an ImageBuffer
-         */
-        void set(const ImageBuffer& img);
+    /**
+     * \brief Get the file path
+     * \return Return the file path
+     */
+    std::string getFilepath() const { return _filepath; }
 
-        /**
-         * Set the image as a empty with the given size / channels / typedesc
-         */
-        void set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type);
+    /**
+     * \brief Get the image buffer specs
+     * \return Return the image buffer specs
+     */
+    ImageBufferSpec getSpec() const;
 
-        /**
-         * Serialize the image
-         */
-        std::shared_ptr<SerializedObject> serialize() const;
+    /**
+     * \brief Set the image from an ImageBuffer
+     * \param img Image buffer
+     */
+    void set(const ImageBuffer& img);
 
-        /**
-         * Update the Image from a serialized representation
-         */
-        bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    /**
+     * \brief Set the image as a empty with the given size / channels / typedesc
+     * \param w Width
+     * \param h Height
+     * \param channels Channel count
+     * \param type Channel type
+     */
+    void set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type);
 
-        /**
-         * Set the path to read from
-         */
-        virtual bool read(const std::string& filename);
+    /**
+     * \brief Serialize the image
+     * \return Return the serialized image
+     */
+    std::shared_ptr<SerializedObject> serialize() const;
 
-        /**
-         * Set all pixels in the image to the specified value
-         */
-        void setTo(float value);
+    /**
+     * \brief Update the Image from a serialized representation
+     * \param obj Serialized image
+     * \return Return true if all went well
+     */
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
-        /**
-         * Update the content of the image
-         */
-        virtual void update();
+    /**
+     * \brief Set the path to read from
+     * \param filename File path
+     * \return Return true if all went well
+     */
+    virtual bool read(const std::string& filename);
 
-        /**
-         * Write the current buffer to the specified file
-         */
-        bool write(const std::string& filename);
+    /**
+     * \brief Set all pixels in the image to the specified value
+     * \param value Value to set all channels to
+     */
+    void setTo(float value);
 
-    protected:
-        std::unique_ptr<ImageBuffer> _image;
-        std::unique_ptr<ImageBuffer> _bufferImage;
-        std::string _filepath;
-        bool _flip {false};
-        bool _flop {false};
-        bool _imageUpdated {false};
-        bool _srgb {true};
-        bool _benchmark {false};
-        bool _worldObject {false};
+    /**
+     * \brief Update the content of the image
+     */
+    virtual void update();
 
-        void createDefaultImage(); //< Create a default black image
-        void createPattern(); //< Create a default pattern
+    /**
+     * \brief Write the current buffer to the specified file
+     * \param filename File path to write to
+     * \return Return true if all went well
+     */
+    bool write(const std::string& filename);
 
-        /**
-         * Read the specified image file
-         */
-        bool readFile(const std::string& filename);
-        
-    private:
-        // Deserialization is done in this buffer, to avoid realloc
-        ImageBuffer _bufferDeserialize;
+  protected:
+    std::unique_ptr<ImageBuffer> _image;
+    std::unique_ptr<ImageBuffer> _bufferImage;
+    std::string _filepath;
+    bool _flip{false};
+    bool _flop{false};
+    bool _imageUpdated{false};
+    bool _srgb{true};
+    bool _benchmark{false};
+    bool _worldObject{false};
 
-        /**
-         * Base init for the class
-         */
-        void init();
-        
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    void createDefaultImage(); //< Create a default black image
+    void createPattern();      //< Create a default pattern
+
+    /**
+     * \brief Read the specified image file
+     * \param filename File path
+     * \return Return true if all went well
+     */
+    bool readFile(const std::string& filename);
+
+  private:
+    // Deserialization is done in this buffer, to avoid realloc
+    ImageBuffer _bufferDeserialize;
+
+    /**
+     * \brief Base init for the class
+     */
+    void init();
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

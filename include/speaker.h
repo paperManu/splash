@@ -32,112 +32,120 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-    
+
 #include <portaudio.h>
 
-#include "config.h"
 #include "basetypes.h"
+#include "config.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class Speaker : public BaseObject
 {
-    public:
-        enum SampleFormat
-        {
-            SAMPLE_FMT_UNKNOWN = -1,
-            SAMPLE_FMT_U8 = 0,
-            SAMPLE_FMT_S16,
-            SAMPLE_FMT_S32,
-            SAMPLE_FMT_FLT,
-            SAMPLE_FMT_U8P,
-            SAMPLE_FMT_S16P,
-            SAMPLE_FMT_S32P,
-            SAMPLE_FMT_FLTP
-        };
-        
-        /**
-         * Constructor
-         */
-        Speaker();
+  public:
+    enum SampleFormat
+    {
+        SAMPLE_FMT_UNKNOWN = -1,
+        SAMPLE_FMT_U8 = 0,
+        SAMPLE_FMT_S16,
+        SAMPLE_FMT_S32,
+        SAMPLE_FMT_FLT,
+        SAMPLE_FMT_U8P,
+        SAMPLE_FMT_S16P,
+        SAMPLE_FMT_S32P,
+        SAMPLE_FMT_FLTP
+    };
 
-        /**
-         * Destructor
-         */
-        ~Speaker();
+    /**
+     * \brief Constructor
+     */
+    Speaker();
 
-        /**
-         * Safe bool idiom
-         */
-        explicit operator bool() const
-        {
-            return _ready;
-        }
+    /**
+     * \brief Destructor
+     */
+    ~Speaker();
 
-        /**
-         * No copy, but some move constructors
-         */
-        Speaker(const Speaker&) = delete;
-        Speaker& operator=(const Speaker&) = delete;
+    /**
+     * \brief Safe bool idiom
+     */
+    explicit operator bool() const { return _ready; }
 
-        /**
-         * Add a buffer to the playing queue
-         * Returns false if there was an error
-         */
-        template<typename T>
-        bool addToQueue(const ResizableArray<T>& buffer);
+    /**
+     * No copy, but some move constructors
+     */
+    Speaker(const Speaker&) = delete;
+    Speaker& operator=(const Speaker&) = delete;
 
-        /**
-         * Clear the queue
-         */
-        void clearQueue();
+    /**
+     * \brief Add a buffer to the playing queue
+     * \param buffer Buffer to add
+     * \return Return false if there was an error
+     */
+    template <typename T>
+    bool addToQueue(const ResizableArray<T>& buffer);
 
-        /**
-         * Set the audio parameters
-         */
-        void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);
+    /**
+     * \brief Clear the queue
+     */
+    void clearQueue();
 
-    private:
-        bool _ready {false};
-        unsigned int _channels {2};
-        bool _planar {false};
-        unsigned int _sampleRate {44100};
-        SampleFormat _sampleFormat {SAMPLE_FMT_S16};
-        size_t _sampleSize {2};
+    /**
+     * \brief Set the audio parameters
+     * \param channels Channel count
+     * \param sampleRate Sample rate
+     * \param format Sample format
+     */
+    void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);
 
-        PaStream* _portAudioStream {nullptr};
-        bool _abortCallback {false};
+  private:
+    bool _ready{false};
+    unsigned int _channels{2};
+    bool _planar{false};
+    unsigned int _sampleRate{44100};
+    SampleFormat _sampleFormat{SAMPLE_FMT_S16};
+    size_t _sampleSize{2};
 
-        std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
-        std::atomic_int _ringWritePosition {0};
-        std::atomic_int _ringReadPosition {0};
-        std::atomic_int _ringUnusedSpace {0};
-        std::mutex _ringWriteMutex;
+    PaStream* _portAudioStream{nullptr};
+    bool _abortCallback{false};
 
-        /**
-         * Free all PortAudio resources
-         */
-        void freeResources();
+    std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;
+    std::atomic_int _ringWritePosition{0};
+    std::atomic_int _ringReadPosition{0};
+    std::atomic_int _ringUnusedSpace{0};
+    std::mutex _ringWriteMutex;
 
-        /**
-         * Initialize PortAudio resources
-         */
-        void initResources();
+    /**
+     * \brief Free all PortAudio resources
+     */
+    void freeResources();
 
-        /**
-         * PortAudio callback
-         */
-        static int portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+    /**
+     * \brief Initialize PortAudio resources
+     */
+    void initResources();
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief PortAudio callback
+     * \param in Unused
+     * \param out Pointer to output data
+     * \param framesPerBuffer Frame count
+     * \param timeInfo Unused
+     * \param userData Pointer to this object
+     */
+    static int portAudioCallback(
+        const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData);
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 /*************/
-template<typename T>
+template <typename T>
 bool Speaker::addToQueue(const ResizableArray<T>& buffer)
 {
     std::lock_guard<std::mutex> lock(_ringWriteMutex);

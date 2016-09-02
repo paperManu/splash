@@ -33,16 +33,15 @@ namespace Splash
 /*************/
 class GuiControl : public GuiWidget
 {
-    public:
-        GuiControl(std::weak_ptr<Scene> scene, std::string name)
-            : GuiWidget(scene, name) {}
-        void render();
-        int updateWindowFlags();
+  public:
+    GuiControl(std::weak_ptr<Scene> scene, std::string name) : GuiWidget(scene, name) {}
+    void render();
+    int updateWindowFlags();
 
-    private:
-        std::shared_ptr<GuiWidget> _nodeView;
-        int _targetIndex {-1};
-        std::string _targetObjectName {};
+  private:
+    std::shared_ptr<GuiWidget> _nodeView;
+    int _targetIndex{-1};
+    std::string _targetObjectName{};
 };
 
 } // end of namespace

@@ -25,16 +25,15 @@
 #ifndef SPLASH_SHADERSOURCES_H
 #define SPLASH_SHADERSOURCES_H
 
-#include <string>
 #include <map>
+#include <string>
 
 namespace Splash
 {
 
 struct ShaderSources
 {
-    const std::map<std::string, std::string> INCLUDES {
-        //
+    const std::map<std::string, std::string> INCLUDES{//
         // Project a point wrt a mvp matrix, and check if it is in the view frustum.
         // Returns the distance on X and Y in the distToCenter parameter
         {"projectAndCheckVisibility", R"(
@@ -116,17 +115,16 @@ struct ShaderSources
                 vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
                 return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
             }
-        )"}
-    };
+        )"}};
 
     /**
      * Version directive, included at the start of all shaders
      */
-    const std::string VERSION_DIRECTIVE_330 {R"(
+    const std::string VERSION_DIRECTIVE_330{R"(
         #version 330 core
     )"};
 
-    const std::string VERSION_DIRECTIVE_430 {R"(
+    const std::string VERSION_DIRECTIVE_430{R"(
         #version 430 core
     )"};
 
@@ -137,7 +135,7 @@ struct ShaderSources
     /**
      * Default compute shader
      */
-    const std::string COMPUTE_SHADER_DEFAULT {R"(
+    const std::string COMPUTE_SHADER_DEFAULT{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -182,7 +180,7 @@ struct ShaderSources
     /**
      * Compute shader to reset all camera visibility attributes
      */
-    const std::string COMPUTE_SHADER_RESET_VISIBILITY {R"(
+    const std::string COMPUTE_SHADER_RESET_VISIBILITY{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -215,7 +213,7 @@ struct ShaderSources
     /**
      * Compute shader to reset all camera contribution to zero
      */
-    const std::string COMPUTE_SHADER_RESET_BLENDING {R"(
+    const std::string COMPUTE_SHADER_RESET_BLENDING{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -247,7 +245,7 @@ struct ShaderSources
     /**
      * Compute shader to transfer the visibility from the GL_TEXTURE0 to the vertices attributes
      */
-    const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR {R"(
+    const std::string COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -281,7 +279,7 @@ struct ShaderSources
     /**
      * Compute shader to compute the contribution of a specific camera
      */
-    const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION {R"(
+    const std::string COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION{R"(
         #extension GL_ARB_compute_shader : enable
         #extension GL_ARB_shader_storage_buffer_object : enable
 
@@ -353,7 +351,7 @@ struct ShaderSources
     /**
      * Default vertex shader with feedback
      */
-    const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+    const std::string VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         layout (location = 0) in vec4 _vertex;
         layout (location = 1) in vec2 _texcoord;
         layout (location = 2) in vec4 _normal;
@@ -382,7 +380,7 @@ struct ShaderSources
     /**
      * Default feedback tessellation shader
      */
-    const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+    const std::string TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -390,10 +388,10 @@ struct ShaderSources
 
         in VS_OUT
         {
-            vec4 vertex;
-            vec2 texcoord;
-            vec4 normal;
-            vec4 annexe;
+            smooth vec4 vertex;
+            smooth vec2 texcoord;
+            smooth vec4 normal;
+            smooth vec4 annexe;
         } tcs_in[];
 
         out TCS_OUT
@@ -484,7 +482,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+    const std::string TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         //layout (triangles, fractional_odd_spacing) in;
         layout (triangles) in;
 
@@ -526,7 +524,7 @@ struct ShaderSources
     /**
      * Feedback geometry shader for handling camera borders
      */
-    const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA {R"(
+    const std::string GEOMETRY_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA{R"(
         #include normalVector
         #include projectAndCheckVisibility
 
@@ -722,7 +720,7 @@ struct ShaderSources
     /**
      * Default vertex shader
      */
-    const std::string VERTEX_SHADER_DEFAULT {R"(
+    const std::string VERTEX_SHADER_DEFAULT{R"(
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -756,7 +754,7 @@ struct ShaderSources
     /**
      * Filter vertex shader
      */
-    const std::string VERTEX_SHADER_FILTER {R"(
+    const std::string VERTEX_SHADER_FILTER{R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         out vec2 texCoord;
@@ -771,7 +769,7 @@ struct ShaderSources
     /**
      * Fragment shader for filters
      */
-    const std::string FRAGMENT_SHADER_FILTER {R"(
+    const std::string FRAGMENT_SHADER_FILTER{R"(
         #include hsv
 
         #define PI 3.14159265359
@@ -861,7 +859,7 @@ struct ShaderSources
     /**
      * Warp vertex shader
      */
-    const std::string VERTEX_SHADER_WARP {R"(
+    const std::string VERTEX_SHADER_WARP{R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         out vec2 texCoord;
@@ -876,7 +874,7 @@ struct ShaderSources
     /**
      * Fragment shader for warp
      */
-    const std::string FRAGMENT_SHADER_WARP {R"(
+    const std::string FRAGMENT_SHADER_WARP{R"(
 
         #define PI 3.14159265359
 
@@ -929,7 +927,7 @@ struct ShaderSources
     /**
      * Vertex shader for textured rendering
      */
-    const std::string VERTEX_SHADER_TEXTURE {R"(
+    const std::string VERTEX_SHADER_TEXTURE{R"(
         #include getSmoothBlendFromVertex
 
         layout(location = 0) in vec4 _vertex;
@@ -973,7 +971,7 @@ struct ShaderSources
     /**
      * Textured fragment shader
      */
-    const std::string FRAGMENT_SHADER_TEXTURE {R"(
+    const std::string FRAGMENT_SHADER_TEXTURE{R"(
         #define PI 3.14159265359
 
     #ifdef TEXTURE_RECT
@@ -982,9 +980,10 @@ struct ShaderSources
         uniform sampler2D _tex0;
     #endif
 
-    #ifdef BLENDING
+    #ifdef TEX_2
         uniform sampler2D _tex1;
     #endif
+
         uniform vec2 _tex0_size = vec2(1.0);
 
         uniform int _sideness = 0;
@@ -1022,36 +1021,15 @@ struct ShaderSources
 
             vec4 color = texture(_tex0, texCoord);
 
+        #ifdef TEX_2
+            vec4 maskColor = texture(_tex1, texCoord);
+            color.rgb = mix(color.rgb, maskColor.rgb, maskColor.a);
+        #endif
+
             float maxBalanceRatio = max(_fovAndColorBalance.z, _fovAndColorBalance.w);
             color.r *= _fovAndColorBalance.z / maxBalanceRatio;
             color.g *= 1.0 / maxBalanceRatio;
             color.b *= _fovAndColorBalance.w / maxBalanceRatio;
-            
-            // If there is a blending map
-        #ifdef BLENDING
-            int blendFactor = int(texture(_tex1, texCoord).r * 65536.0);
-            // Extract the number of cameras
-            int camNbr = blendFactor / 4096;
-            blendFactor = blendFactor - camNbr * 4096;
-            float blendFactorFloat = 0.0;
-
-            if (blendFactor == 0)
-                blendFactorFloat = 0.05; // The non-visible part is kinda hidden
-            else if (blendWidth > 0.0)
-            {
-                vec2 normalizedPos = vec2(screenPos.x / 2.0 + 0.5, screenPos.y / 2.0 + 0.5);
-                vec2 distDoubleInvert = vec2(min(normalizedPos.x, 1.0 - normalizedPos.x), min(normalizedPos.y, 1.0 - normalizedPos.y));
-                distDoubleInvert = clamp(distDoubleInvert / blendWidth, vec2(0.0), vec2(1.0));
-                float weight = 1.0 / (1.0 / distDoubleInvert.x + 1.0 / distDoubleInvert.y);
-                float dist = pow(clamp(weight, 0.0, 1.0), 2.0);
-                blendFactorFloat = 256.0 * dist / float(blendFactor);
-            }
-            else
-            {
-                blendFactorFloat = 1.0 / float(camNbr);
-            }
-            color.rgb = color.rgb * min(1.0, blendFactorFloat);
-        #endif
 
         #ifdef VERTEXBLENDING
             color.rgb = color.rgb * vertexIn.blendingValue;
@@ -1083,7 +1061,7 @@ struct ShaderSources
     /**
      * Single color fragment shader
      */
-    const std::string FRAGMENT_SHADER_COLOR {R"(
+    const std::string FRAGMENT_SHADER_COLOR{R"(
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
@@ -1115,7 +1093,7 @@ struct ShaderSources
      * UV drawing fragment shader
      * UV coordinates are encoded on 2 channels each, to get 16bits precision
      */
-    const std::string FRAGMENT_SHADER_UV {R"(
+    const std::string FRAGMENT_SHADER_UV{R"(
         #define PI 3.14159265359
 
         uniform int _sideness = 0;
@@ -1149,7 +1127,7 @@ struct ShaderSources
      * Draws the primitive ID
      * This shader has to be used after a pass of COMPUTE_SHADER_RESET_VISIBILITY
      */
-    const std::string FRAGMENT_SHADER_PRIMITIVEID {R"(
+    const std::string FRAGMENT_SHADER_PRIMITIVEID{R"(
         #define PI 3.14159265359
 
         in VertexData
@@ -1177,7 +1155,7 @@ struct ShaderSources
     /**
      * Wireframe rendering
      */
-    const std::string VERTEX_SHADER_WIREFRAME {R"(
+    const std::string VERTEX_SHADER_WIREFRAME{R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         layout(location = 2) in vec4 _normal;
@@ -1196,7 +1174,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string GEOMETRY_SHADER_WIREFRAME {R"(
+    const std::string GEOMETRY_SHADER_WIREFRAME{R"(
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
         uniform mat4 _modelViewProjectionMatrix;
@@ -1241,7 +1219,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_WIREFRAME {R"(
+    const std::string FRAGMENT_SHADER_WIREFRAME{R"(
         #define PI 3.14159265359
 
         in VertexData
@@ -1277,7 +1255,7 @@ struct ShaderSources
     /**
      * Wireframe rendering for Warps
      */
-    const std::string VERTEX_SHADER_WARP_WIREFRAME {R"(
+    const std::string VERTEX_SHADER_WARP_WIREFRAME{R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
 
@@ -1294,7 +1272,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string GEOMETRY_SHADER_WARP_WIREFRAME {R"(
+    const std::string GEOMETRY_SHADER_WARP_WIREFRAME{R"(
         layout(triangles) in;
         layout(triangle_strip, max_vertices = 3) out;
 
@@ -1330,7 +1308,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_WARP_WIREFRAME {R"(
+    const std::string FRAGMENT_SHADER_WARP_WIREFRAME{R"(
         #define PI 3.14159265359
 
         in VertexData
@@ -1357,7 +1335,7 @@ struct ShaderSources
     /**
      * Rendering of the output windows
      */
-    const std::string VERTEX_SHADER_WINDOW {R"(
+    const std::string VERTEX_SHADER_WINDOW{R"(
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         //layout(location = 2) in vec3 _normal;
@@ -1371,7 +1349,7 @@ struct ShaderSources
         }
     )"};
 
-    const std::string FRAGMENT_SHADER_WINDOW {R"(
+    const std::string FRAGMENT_SHADER_WINDOW{R"(
         #define PI 3.14159265359
 
     #ifdef TEX_1

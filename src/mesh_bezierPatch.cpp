@@ -8,14 +8,7 @@ namespace Splash
 {
 
 /*************/
-Mesh_BezierPatch::Mesh_BezierPatch()
-{
-    init();
-}
-
-/*************/
-Mesh_BezierPatch::Mesh_BezierPatch(weak_ptr<RootObject> root)
-    : Mesh(root)
+Mesh_BezierPatch::Mesh_BezierPatch(weak_ptr<RootObject> root) : Mesh(root)
 {
     init();
 }
@@ -183,13 +176,13 @@ void Mesh_BezierPatch::updatePatch()
         {
             uv.x = (float)u / ((float)_patchResolution - 1.f);
 
-            glm::vec2 vertex {0.f, 0.f};
+            glm::vec2 vertex{0.f, 0.f};
             for (int j = 0; j < _patch.size.y; ++j)
             {
-                for (int i = 0; i < _patch.size.x ; ++i)
+                for (int i = 0; i < _patch.size.x; ++i)
                 {
-                    float factor = _binomialCoeffsY[j] * pow(uv.y, (float)j) * pow(1.f - uv.y, (float)_patch.size.y - 1.f - (float)j)
-                                 * _binomialCoeffsX[i] * pow(uv.x, (float)i) * pow(1.f - uv.x, (float)_patch.size.x - 1.f - (float)i);
+                    float factor = _binomialCoeffsY[j] * pow(uv.y, (float)j) * pow(1.f - uv.y, (float)_patch.size.y - 1.f - (float)j) * _binomialCoeffsX[i] * pow(uv.x, (float)i) *
+                                   pow(1.f - uv.x, (float)_patch.size.x - 1.f - (float)i);
                     vertex += factor * _patch.vertices[i + j * _patch.size.x];
                 }
             }
@@ -240,52 +233,59 @@ void Mesh_BezierPatch::updatePatch()
 /*************/
 void Mesh_BezierPatch::registerAttributes()
 {
-    addAttribute("patchControl", [&](const Values& args) {
-        auto width = args[0].asInt();
-        auto height = args[1].asInt();
-        
-        if (args.size() - 2 != height * width)
-            return false;
+    addAttribute("patchControl",
+        [&](const Values& args) {
+            auto width = args[0].asInt();
+            auto height = args[1].asInt();
 
-        Patch patch;
-        patch.size = glm::ivec2(width, height);
-        for (int p = 2; p < args.size(); ++p)
-            patch.vertices.push_back(glm::vec2(args[p].asValues()[0].asFloat(), args[p].asValues()[1].asFloat()));
+            if (args.size() - 2 != height * width)
+                return false;
 
-        createPatch(patch);
+            Patch patch;
+            patch.size = glm::ivec2(width, height);
+            for (int p = 2; p < args.size(); ++p)
+                patch.vertices.push_back(glm::vec2(args[p].asValues()[0].asFloat(), args[p].asValues()[1].asFloat()));
 
-        return true;
-    }, [&]() -> Values {
-        Values v;
-        v.push_back(_patch.size.x);
-        v.push_back(_patch.size.y);
+            createPatch(patch);
 
-        for (int i = 0; i < _patch.vertices.size(); ++i)
-        {
-            Values vertex {_patch.vertices[i].x, _patch.vertices[i].y};
-            v.emplace_back(vertex);
-        }
+            return true;
+        },
+        [&]() -> Values {
+            Values v;
+            v.push_back(_patch.size.x);
+            v.push_back(_patch.size.y);
 
-        return v;
-    }, {'n', 'n'});
+            for (int i = 0; i < _patch.vertices.size(); ++i)
+            {
+                Values vertex{_patch.vertices[i].x, _patch.vertices[i].y};
+                v.emplace_back(vertex);
+            }
+
+            return v;
+        },
+        {'n', 'n'});
     setAttributeDescription("patchControl", "Set the control points positions");
 
-    addAttribute("patchSize", [&](const Values& args) {
-        createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
-        return true;
-    }, [&]() -> Values {
-        return {_patch.size.x, _patch.size.y};
-    }, {'n', 'n'});
+    addAttribute("patchSize",
+        [&](const Values& args) {
+            createPatch(std::max(args[0].asInt(), 2), std::max(args[1].asInt(), 2));
+            return true;
+        },
+        [&]() -> Values {
+            return {_patch.size.x, _patch.size.y};
+        },
+        {'n', 'n'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
-    addAttribute("patchResolution", [&](const Values& args) {
-        _patchResolution = std::max(4, args[0].asInt());
-        _patchUpdated = true;
-        updateTimestamp();
-        return true;
-    }, [&]() -> Values {
-        return {_patchResolution};
-    }, {'n'});
+    addAttribute("patchResolution",
+        [&](const Values& args) {
+            _patchResolution = std::max(4, args[0].asInt());
+            _patchUpdated = true;
+            updateTimestamp();
+            return true;
+        },
+        [&]() -> Values { return {_patchResolution}; },
+        {'n'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 }
 

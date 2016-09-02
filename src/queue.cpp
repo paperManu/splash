@@ -4,10 +4,10 @@
 
 #include "image.h"
 #if HAVE_FFMPEG
-    #include "image_ffmpeg.h"
+#include "image_ffmpeg.h"
 #endif
 #if HAVE_SHMDATA
-    #include "image_shmdata.h"
+#include "image_shmdata.h"
 #endif
 #include "log.h"
 #include "timer.h"
@@ -21,8 +21,7 @@ namespace Splash
 {
 
 /*************/
-Queue::Queue(std::weak_ptr<RootObject> root)
-    : BufferObject(root)
+Queue::Queue(std::weak_ptr<RootObject> root) : BufferObject(root)
 {
     _type = "queue";
     registerAttributes();
@@ -118,7 +117,7 @@ void Queue::update()
 
         _currentSourceIndex = sourceIndex;
         _currentSource.reset();
-        
+
         if (sourceIndex >= _playlist.size())
         {
             _currentSource = make_shared<Image>(_root);
@@ -155,7 +154,7 @@ void Queue::update()
         _currentSource->setAttribute("seek", {(float)(_currentTime - _playlist[_currentSourceIndex].start) / 1e6});
         _seeked = false;
     }
-    
+
     if (_currentSource)
         _currentSource->update();
 }
@@ -165,9 +164,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
 {
     auto cleanList = vector<Source>();
 
-    std::sort(playlist.begin(), playlist.end(), [](const Source& a, const Source& b) {
-        return a.start < b.start;
-    });
+    std::sort(playlist.begin(), playlist.end(), [](const Source& a, const Source& b) { return a.start < b.start; });
 
     // Clean each individual source
     for (auto it = playlist.begin(); it != playlist.end();)
@@ -189,7 +186,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         if (source.stop > source.start)
             continue;
 
-        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg());
+        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg(_root));
         videoSrc->setAttribute("file", {source.filename});
         Values duration;
         videoSrc->getAttribute("duration", duration);
@@ -300,92 +297,98 @@ shared_ptr<BufferObject> Queue::createSource(string type)
 /*************/
 void Queue::registerAttributes()
 {
-    addAttribute("loop", [&](const Values& args) {
-        _loop = (bool)args[0].asInt();
-        return true;
-    }, [&]() -> Values {
-        return {_loop};
-    }, {'n'});
+    addAttribute("loop",
+        [&](const Values& args) {
+            _loop = (bool)args[0].asInt();
+            return true;
+        },
+        [&]() -> Values { return {_loop}; },
+        {'n'});
     setAttributeParameter("loop", true, true);
     setAttributeDescription("loop", "Set whether to loop through the queue or not");
 
-    addAttribute("pause", [&](const Values& args) {
-        _paused = args[0].asInt();
+    addAttribute("pause",
+        [&](const Values& args) {
+            _paused = args[0].asInt();
 
-        return true;
-    }, [&]() -> Values {
-        return {_paused};
-    }, {'n'});
+            return true;
+        },
+        [&]() -> Values { return {_paused}; },
+        {'n'});
     setAttributeParameter("pause", false, true);
     setAttributeDescription("pause", "Pause the queue if set to 1");
 
-    addAttribute("playlist", [&](const Values& args) {
-        lock_guard<mutex> lock(_playlistMutex);
-        _playlist.clear();
+    addAttribute("playlist",
+        [&](const Values& args) {
+            lock_guard<mutex> lock(_playlistMutex);
+            _playlist.clear();
 
-        for (auto& it : args)
-        {
-            auto src = it.asValues();
-
-            if (src.size() >= 4) // We need at least type, name, start and stop for each input
+            for (auto& it : args)
             {
-                Source source;
-                source.type = src[0].asString();
-                source.filename = src[1].asString();
-                source.start = (int64_t)(src[2].asFloat() * 1e6);
-                source.stop = (int64_t)(src[3].asFloat() * 1e6);
-                for (auto idx = 4; idx < src.size(); ++idx)
-                    source.args.push_back(src[idx]);
+                auto src = it.asValues();
 
-                _playlist.push_back(source);
+                if (src.size() >= 4) // We need at least type, name, start and stop for each input
+                {
+                    Source source;
+                    source.type = src[0].asString();
+                    source.filename = src[1].asString();
+                    source.start = (int64_t)(src[2].asFloat() * 1e6);
+                    source.stop = (int64_t)(src[3].asFloat() * 1e6);
+                    for (auto idx = 4; idx < src.size(); ++idx)
+                        source.args.push_back(src[idx]);
+
+                    _playlist.push_back(source);
+                }
             }
-        }
 
-        cleanPlaylist(_playlist);
+            cleanPlaylist(_playlist);
 
-        return true;
-    }, [&]() -> Values {
-        lock_guard<mutex> lock(_playlistMutex);
-        Values playlist;
+            return true;
+        },
+        [&]() -> Values {
+            lock_guard<mutex> lock(_playlistMutex);
+            Values playlist;
 
-        for (auto& src : _playlist)
-        {
-            Values source;
-            source.push_back(src.type);
-            source.push_back(src.filename);
-            source.push_back((double)src.start / 1e6);
-            source.push_back((double)src.stop / 1e6);
-            for (auto& v : src.args)
-                source.push_back(v);
+            for (auto& src : _playlist)
+            {
+                Values source;
+                source.push_back(src.type);
+                source.push_back(src.filename);
+                source.push_back((double)src.start / 1e6);
+                source.push_back((double)src.stop / 1e6);
+                for (auto& v : src.args)
+                    source.push_back(v);
 
-            playlist.emplace_back(std::move(source));
-        }
+                playlist.emplace_back(std::move(source));
+            }
 
-        return playlist;
-    });
+            return playlist;
+        });
     setAttributeParameter("playlist", true, true);
     setAttributeDescription("playlist", "Set the playlist as an array of [type, filename, start, end, (args)]");
 
-    addAttribute("seek", [&](const Values& args) {
-        int64_t seekTime = args[0].asFloat() * 1e6;
-        _startTime = Timer::getTime() - seekTime;
-        _seeked = true;
-        return true;
-    }, [&]() -> Values {
-        return {(float)_currentTime / 1e6};
-    }, {'n'});
+    addAttribute("seek",
+        [&](const Values& args) {
+            int64_t seekTime = args[0].asFloat() * 1e6;
+            _startTime = Timer::getTime() - seekTime;
+            _seeked = true;
+            return true;
+        },
+        [&]() -> Values { return {(float)_currentTime / 1e6}; },
+        {'n'});
     setAttributeParameter("seek", false, true);
     setAttributeDescription("seek", "Seek through the playlist");
 
-    addAttribute("useClock", [&](const Values& args) {
-        _useClock = args[0].asInt();
-        if (_currentSource)
-            _currentSource->setAttribute("useClock", {_useClock});
+    addAttribute("useClock",
+        [&](const Values& args) {
+            _useClock = args[0].asInt();
+            if (_currentSource)
+                _currentSource->setAttribute("useClock", {_useClock});
 
-        return true;
-    }, [&]() -> Values {
-        return {(int)_useClock};
-    }, {'n'});
+            return true;
+        },
+        [&]() -> Values { return {(int)_useClock}; },
+        {'n'});
     setAttributeParameter("useClock", true, true);
     setAttributeDescription("useClock", "Use the master clock if set to 1");
 }
@@ -394,8 +397,7 @@ void Queue::registerAttributes()
 /*************/
 
 /*************/
-QueueSurrogate::QueueSurrogate(std::weak_ptr<RootObject> root)
-    : Texture(root)
+QueueSurrogate::QueueSurrogate(std::weak_ptr<RootObject> root) : Texture(root)
 {
     _type = "queue";
     _remoteType = "queue";
@@ -485,7 +487,7 @@ void QueueSurrogate::registerAttributes()
                 object = image;
             }
             // TODO: add Texture_Syphon type
-            //else if (type.find("texture_syphon") != string::npos)
+            // else if (type.find("texture_syphon") != string::npos)
             //{
             //    object = make_shared<Texture_Syphon>();
             //}

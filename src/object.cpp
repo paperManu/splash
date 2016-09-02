@@ -1,8 +1,8 @@
 #include "object.h"
 
-#include "image.h"
 #include "filter.h"
 #include "geometry.h"
+#include "image.h"
 #include "log.h"
 #include "mesh.h"
 #include "shader.h"
@@ -10,26 +10,19 @@
 #include "texture_image.h"
 #include "timer.h"
 
-
-#include <limits>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <limits>
 
 using namespace std;
 
-namespace Splash {
-
-/*************/
-Object::Object()
+namespace Splash
 {
-    init();
-}
 
 /*************/
-Object::Object(std::weak_ptr<RootObject> root)
-       : BaseObject(root)
+Object::Object(std::weak_ptr<RootObject> root) : BaseObject(root)
 {
     init();
 }
@@ -64,22 +57,15 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
-    _mutex.lock(); 
-
-    for (auto& m : _blendMaps)
-        m->update();
-
-    bool withTextureBlend = false;
-    if (_blendMaps.size() != 0)
-    {
-        for (int i = 0; i < _textures.size(); ++i)
-            if (_blendMaps[0] == _textures[i])
-                withTextureBlend = true;
-    }
+    _mutex.lock();
 
     // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
-    if (shaderIt == _graphicsShaders.end())
+    if (shaderIt == _graphicsShaders.end() && _fill == "userDefined")
+    {
+        _graphicsShaders["userDefined"] = _shader;
+    }
+    else if (shaderIt == _graphicsShaders.end())
     {
         _shader = make_shared<Shader>();
         _graphicsShaders[_fill] = _shader;
@@ -90,26 +76,22 @@ void Object::activate()
     }
 
     // Set the shader depending on a few other parameters
+    Values shaderParameters{};
+    for (int i = 0; i < _textures.size(); ++i)
+        shaderParameters.push_back("TEX_" + to_string(i + 1));
+
     if (_fill == "texture")
     {
+        if (_vertexBlendingActive)
+            shaderParameters.push_back("VERTEXBLENDING");
+
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
-        {
-            if (_vertexBlendingActive)
-                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING", "TEXTURE_RECT"});
-            else if (withTextureBlend)
-                _shader->setAttribute("fill", {"texture", "BLENDING", "TEXTURE_RECT"});
-            else
-                _shader->setAttribute("fill", {"texture", "TEXTURE_RECT"});
-        }
+            shaderParameters.push_back("TEXTURE_RECT");
         else
-        {
-            if (_vertexBlendingActive)
-                _shader->setAttribute("fill", {"texture", "VERTEXBLENDING"});
-            else if (withTextureBlend)
-                _shader->setAttribute("fill", {"texture", "BLENDING"});
-            else
-                _shader->setAttribute("fill", {"texture"});
-        }
+            shaderParameters.push_back("VERTEXBLENDING");
+
+        shaderParameters.push_front("texture");
+        _shader->setAttribute("fill", shaderParameters);
     }
     else if (_fill == "filter")
     {
@@ -117,18 +99,13 @@ void Object::activate()
     }
     else if (_fill == "window")
     {
-        if (_textures.size() == 1)
-            _shader->setAttribute("fill", {"window", "TEX_1"});
-        else if (_textures.size() == 2)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2"});
-        else if (_textures.size() == 3)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3"});
-        else if (_textures.size() == 4)
-            _shader->setAttribute("fill", {"window", "TEX_1", "TEX_2", "TEX_3", "TEX_4"});
+        shaderParameters.push_front("window");
+        _shader->setAttribute("fill", shaderParameters);
     }
     else
     {
-        _shader->setAttribute("fill", {_fill});
+        shaderParameters.push_front(_fill);
+        _shader->setAttribute("fill", shaderParameters);
         _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
     }
 
@@ -170,26 +147,17 @@ glm::dmat4 Object::computeModelMatrix() const
     if (_modelMatrix != glm::dmat4(0.0))
         return _modelMatrix;
     else
-        return glm::translate(glm::dmat4(1.f), _position)
-             * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0))
-             * glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0))
-             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0))
-             * glm::scale(glm::dmat4(1.f), _scale);
+        return glm::translate(glm::dmat4(1.f), _position) * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0)) *
+               glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0)) * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0)) *
+               glm::scale(glm::dmat4(1.f), _scale);
 }
 
 /*************/
 void Object::deactivate()
 {
-    for (auto& m : _blendMaps)
-    {
-        auto m_asTexImage = dynamic_pointer_cast<Texture_Image>(m);
-        if (m_asTexImage)
-            m_asTexImage->flushPbo();
-    }
-
     for (auto& t : _textures)
     {
-        //t->flushPbo();
+        // t->flushPbo();
         t->unlock();
     }
 
@@ -205,7 +173,7 @@ void Object::addCalibrationPoint(glm::dvec3 point)
     for (auto& p : _calibrationPoints)
         if (p == point)
             return;
-    
+
     _calibrationPoints.push_back(point);
 }
 
@@ -405,26 +373,6 @@ void Object::removeTexture(const shared_ptr<Texture>& tex)
 }
 
 /*************/
-void Object::resetBlendingMap()
-{
-    for (auto textureIt = _textures.begin(); textureIt != _textures.end();)
-    {
-        bool hasErased {false};
-        for (auto& m : _blendMaps)
-            if (*textureIt == m)
-            {
-                textureIt = _textures.erase(textureIt);
-                hasErased = true;
-            }
-        if (!hasErased)
-            textureIt++;
-    }
-
-    _blendMaps.clear();
-    _updatedParams = true;
-}
-
-/*************/
 void Object::resetVisibility(int primitiveIdShift)
 {
     lock_guard<mutex> lock(_mutex);
@@ -495,10 +443,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
         _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
-        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex",
-                                                                          "GEOM_OUT.texcoord",
-                                                                          "GEOM_OUT.normal",
-                                                                          "GEOM_OUT.annexe"});
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texcoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
 
     if (_feedbackShaderSubdivideCamera)
@@ -613,13 +558,6 @@ void Object::computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 project
 }
 
 /*************/
-void Object::setBlendingMap(const shared_ptr<Texture>& map)
-{
-    _blendMaps.push_back(map);
-    _textures.push_back(map);
-}
-
-/*************/
 void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
     _shader->setModelViewProjectionMatrix(mv * computeModelMatrix(), mp);
@@ -628,68 +566,85 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    addAttribute("activateVertexBlending", [&](const Values& args) {
-        _vertexBlendingActive = args[0].asInt();
-        return true;
-    }, {'n'});
+    addAttribute("activateVertexBlending",
+        [&](const Values& args) {
+            _vertexBlendingActive = args[0].asInt();
+            return true;
+        },
+        {'n'});
     setAttributeDescription("activateVertexBlending", "If set to 1, activate vertex blending");
-    
-    addAttribute("position", [&](const Values& args) {
-        _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
-        return true;
-    }, [&]() -> Values {
-        return {_position.x, _position.y, _position.z};
-    }, {'n', 'n', 'n'});
+
+    addAttribute("position",
+        [&](const Values& args) {
+            _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            return true;
+        },
+        [&]() -> Values {
+            return {_position.x, _position.y, _position.z};
+        },
+        {'n', 'n', 'n'});
     setAttributeDescription("position", "Set the object position");
 
-    addAttribute("rotation", [&](const Values& args) {
-        _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
-        return true;
-    }, [&]() -> Values {
-        return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
-    }, {'n', 'n', 'n'});
+    addAttribute("rotation",
+        [&](const Values& args) {
+            _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
+            return true;
+        },
+        [&]() -> Values {
+            return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
+        },
+        {'n', 'n', 'n'});
     setAttributeDescription("rotation", "Set the object rotation");
 
-    addAttribute("scale", [&](const Values& args) {
-        if (args.size() < 3)
-            _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
-        else
-            _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+    addAttribute("scale",
+        [&](const Values& args) {
+            if (args.size() < 3)
+                _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+            else
+                _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
-        return true;
-    }, [&]() -> Values {
-        return {_scale.x, _scale.y, _scale.z};
-    }, {'n'});
+            return true;
+        },
+        [&]() -> Values {
+            return {_scale.x, _scale.y, _scale.z};
+        },
+        {'n'});
     setAttributeDescription("scale", "Set the object scale");
 
-    addAttribute("sideness", [&](const Values& args) {
-        _sideness = args[0].asInt();
-        return true;
-    }, [&]() -> Values {
-        return {_sideness};
-    }, {'n'});
+    addAttribute("sideness",
+        [&](const Values& args) {
+            _sideness = args[0].asInt();
+            return true;
+        },
+        [&]() -> Values { return {_sideness}; },
+        {'n'});
     setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 
-    addAttribute("fill", [&](const Values& args) {
-        _fill = args[0].asString();
-        return true;
-    }, [&]() -> Values {
-        return {_fill};
-    }, {'s'});
-    setAttributeDescription("fill", "Set the fill type (texture, wireframe or color)");
+    addAttribute("fill",
+        [&](const Values& args) {
+            _fill = args[0].asString();
+            return true;
+        },
+        [&]() -> Values { return {_fill}; },
+        {'s'});
+    setAttributeDescription(
+        "fill", "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined manually then.");
 
-    addAttribute("color", [&](const Values& args) {
-        _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
-        return true;
-    }, {'n', 'n', 'n', 'n'});
+    addAttribute("color",
+        [&](const Values& args) {
+            _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            return true;
+        },
+        {'n', 'n', 'n', 'n'});
     setAttributeDescription("color", "Set the object color, if the fill setting is set accordingly");
 
-    addAttribute("normalExponent", [&](const Values& args) {
-        _normalExponent = args[0].asFloat();
-        return true;
-    }, [&]() -> Values {
-        return {_normalExponent};
-    }, {'n'});
+    addAttribute("normalExponent",
+        [&](const Values& args) {
+            _normalExponent = args[0].asFloat();
+            return true;
+        },
+        [&]() -> Values { return {_normalExponent}; },
+        {'n'});
     setAttributeDescription("normalExponent", "If set to anything but 0.0, set the exponent applied to the normal factor for blending computation");
 }
 

@@ -1,10 +1,8 @@
-<head>
-    <meta charset=utf-8>
-    <link href="data/github.css" rel="stylesheet">
-</head>
-
 Splash, a multi-projector video-mapping software
 ================================================
+
+[![Build status](https://travis-ci.org/paperManu/splash.svg?branch=master)](https://travis-ci.org/paperManu/splash)
+[![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
 For a more complete documentation, go visit the [wiki](https://github.com/paperManu/splash/wiki).
 
@@ -165,7 +163,7 @@ It is also possible to create an app bundle automatically, the resulting bundle 
 
 Remember that it is a very early port to OSX. Please report any issue you encounter!
 
-<a name="howto"/></a>
+<a name="goingforward"/></a>
 Going forward
 -------------
 

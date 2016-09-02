@@ -30,7 +30,7 @@ void GuiWarp::render()
         for (int i = 0; i < warps.size(); ++i)
         {
             auto& warp = warps[i];
-            
+
             // We need to update the underlying camera
             auto linkedObj = warp->getLinkedObjects();
             for (auto& obj : linkedObj)
@@ -48,7 +48,7 @@ void GuiWarp::render()
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
             int h = w * warpSpec.height / warpSpec.width;
 
-            if(ImGui::ImageButton((void*)(intptr_t)warp->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            if (ImGui::ImageButton((void*)(intptr_t)warp->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
                 _currentWarp = i;
 
             if (ImGui::IsItemHovered())
@@ -68,14 +68,14 @@ void GuiWarp::render()
             warp->getAttribute("patchResolution", values);
             if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
                 setObject(warp->getName(), "patchResolution", {values[0].asInt()});
-                
+
             warp->getAttribute("patchSize", values);
             vector<int> tmp;
             tmp.push_back(values[0].asInt());
             tmp.push_back(values[1].asInt());
 
             if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                setObject(warp->getName(), "patchSize", {tmp[0],  tmp[1]});
+                setObject(warp->getName(), "patchSize", {tmp[0], tmp[1]});
 
             if (auto texture = warp->getTexture())
             {
@@ -161,7 +161,7 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
             delta = 0.0001f;
         else if (io.KeyCtrl)
             delta = 0.01f;
-            
+
         if (io.KeysDown[262])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].asValues();
@@ -201,8 +201,7 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
     ImGuiIO& io = ImGui::GetIO();
 
     // Get mouse pos
-    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / warpWidth,
-                             -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / warpHeight);
+    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / warpWidth, -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / warpHeight);
 
     if (io.MouseDownDuration[0] == 0.0)
     {

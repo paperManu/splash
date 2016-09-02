@@ -39,15 +39,17 @@
 #include <cstring>
 #include <deque>
 #include <execinfo.h>
-#include <ostream>
 #include <memory>
 #include <mutex>
+#include <ostream>
 #include <string>
 #include <vector>
+// clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+// clang-format off
 
-#include "threadpool.h"
+#include "./threadpool.h"
 
 #ifndef SPLASH_CORETYPES_H
 #define SPLASH_CORETYPES_H
@@ -72,18 +74,30 @@ namespace Splash
 {
 
 /*************/
-// Resizable array, used to hold big buffers (like raw images)
+//! Resizable array, used to hold big buffers (like raw images)
 template <typename T>
 class ResizableArray
 {
     public:
+        /**
+         * \brief Constructor
+         */
         ResizableArray() {};
 
+        /**
+         * \brief Constructor with an initial size
+         * \param size Initial array size
+         */
         ResizableArray(size_t size)
         {
             resize(size);
         }
 
+        /**
+         * \brief Constructor from two iterators
+         * \param start Begin iterator
+         * \param end End iterator
+         */
         ResizableArray(T* start, T* end)
         {
             if (end <= start)
@@ -101,6 +115,10 @@ class ResizableArray
             memcpy(_buffer.get(), start, _size * sizeof(T));
         }
 
+        /**
+         * \brief Copy constructor
+         * \param a ResizableArray to copy
+         */
         ResizableArray(const ResizableArray& a)
         {
             _size = a._size - a._shift;
@@ -109,6 +127,10 @@ class ResizableArray
             memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
         }
 
+        /**
+         * \brief Move constructor
+         * \param a ResizableArray to move
+         */
         ResizableArray(ResizableArray&& a)
         {
             _size = a._size;
@@ -116,6 +138,10 @@ class ResizableArray
             _buffer = std::move(a._buffer);
         }
 
+        /**
+         * \brief Copy operator
+         * \param a ResizableArray to copy from
+         */
         ResizableArray& operator=(const ResizableArray& a)
         {
             if (this == &a)
@@ -129,6 +155,10 @@ class ResizableArray
             return *this;
         }
 
+        /**
+         * \brief Move operator
+         * \param a ResizableArray to move from
+         */
         ResizableArray& operator=(ResizableArray&& a)
         {
             if (this == &a)
@@ -141,18 +171,25 @@ class ResizableArray
             return *this;
         }
 
+        /**
+         * \brief Access operator
+         * \param i Index
+         * \return Return value at i
+         */
         T* operator[](unsigned int i) const
         {
             return data() + i;
         }
 
         /**
-         * Get a pointer to the data
+         * \brief Get a pointer to the data
+         * \return Return a pointer to the data
          */
         inline T* data() const {return _buffer.get() + _shift;}
 
         /**
-         * Shift the data, for example to get rid of a header without copying
+         * \brief Shift the data, for example to get rid of a header without copying
+         * \param shift Shift in size(T)
          */
         inline void shift(size_t shift)
         {
@@ -164,12 +201,14 @@ class ResizableArray
         }
 
         /**
-         * Get the size of the buffer
+         * \brief Get the size of the buffer
+         * \return Return the size of the buffer
          */
         inline size_t size() const {return _size - _shift;}
 
         /**
-         * Resize the buffer
+         * \brief Resize the buffer
+         * \param size New size
          */
         inline void resize(size_t size)
         {
@@ -185,31 +224,42 @@ class ResizableArray
         }
 
     private:
-        size_t _size {0};
-        size_t _shift {0};
-        std::unique_ptr<T[]> _buffer {nullptr};
+        size_t _size {0}; //!< Buffer size
+        size_t _shift {0}; //!< Buffer shift
+        std::unique_ptr<T[]> _buffer {nullptr}; //!< Pointer to the buffer data
 };
 
 /*************/
+//! Object holding the serialized form of a BufferObject
 struct SerializedObject
 {
     /**
-     * Constructors
+     * \brief Constructor
      */
     SerializedObject() {}
 
+    /**
+     * \brief Constructor with an initial size
+     * \param size Initial array size
+     */
     SerializedObject(int size)
     {
         _data.resize(size);
     }
 
+    /**
+     * \brief Constructor from two iterators
+     * \param start Begin iterator
+     * \param end End iterator
+     */
     SerializedObject(char* start, char* end)
     {
         _data = ResizableArray<char>(start, end);
     }
 
     /**
-     * Get the pointer to the data
+     * \brief Get the pointer to the data
+     * \return Return a pointer to the data
      */
     char* data()
     {
@@ -217,13 +267,14 @@ struct SerializedObject
     }
 
     /**
-     * Get ownership over the inner buffer
-     * Use with caution, as it invalidates the SerializedObject
+     * \brief Get ownership over the inner buffer. Use with caution, as it invalidates the SerializedObject
+     * \return Return the inner buffer as a rvalue
      */
     ResizableArray<char>&& grabData() {return std::move(_data);}
 
     /**
-     * Return the size of the data
+     * \brief Get the size of the data
+     * \return Return the size
      */
     std::size_t size()
     {
@@ -231,25 +282,27 @@ struct SerializedObject
     }
 
     /**
-     * Modify the size of the data
+     * \brief Modify the size of the data
+     * \param s New size
      */
     void resize(size_t s)
     {
         _data.resize(s);
     }
 
-    /**
-     * Attributes
-     */
+    //! Inner buffer
     ResizableArray<char> _data;
 };
 
 /*************/
+//! Class holding the OpenGL context
 class GlWindow
 {
     public:
         /**
-         * Constructors
+         * \brief Constructor
+         * \param w Pointer to an existing GLFWwindow
+         * \param mainWindow Pointer to an existing GLFWwindow which is shared with w
          */
         GlWindow(GLFWwindow* w, GLFWwindow* mainWindow)
         {
@@ -258,7 +311,7 @@ class GlWindow
         }
 
         /**
-         * Destructor
+         * \brief Destructor
          */
         ~GlWindow()
         {
@@ -267,17 +320,20 @@ class GlWindow
         }
 
         /**
-         * Get the pointer to the GLFW window
+         * \brief Get the pointer to the GLFW window
+         * \return Return the pointer to the GLFW window
          */
         GLFWwindow* get() const {return _window;}
 
         /**
-         * Get the pointer to the main GLFW window
+         * \brief Get the pointer to the main GLFW window
+         * \return Return the main GLFW window
          */
         GLFWwindow* getMainWindow() const {return _mainWindow;}
 
         /**
-         * Set the context of this window as current
+         * \brief Set the context of this window as current
+         * \return Return true if everything went well
          */
         bool setAsCurrentContext() const 
         {
@@ -290,7 +346,7 @@ class GlWindow
         }
 
         /**
-         * Release the context
+         * \brief Release the context
          */
         void releaseContext() const
         {
@@ -320,6 +376,7 @@ struct Value;
 typedef std::deque<Value> Values;
 
 /*************/
+//! Class which can hold different data types, and convert between them
 struct Value
 {
     public:
@@ -551,7 +608,7 @@ struct Value
 };
 
 /*************/
-// OnScopeExit, taken from Switcher (https://github.com/nicobou/switcher)
+//! OnScopeExit, taken from Switcher (https://github.com/nicobou/switcher)
 template <typename F>
 class ScopeGuard
 {

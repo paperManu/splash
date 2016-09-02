@@ -17,9 +17,15 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+if(UNIX AND NOT APPLE)
+    set(UPDATE_BLENDER_VERSION sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
+elseif(APPLE)
+    set(UPDATE_BLENDER_VERSION sed -i \"\" 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py)
+endif()
+
 add_custom_command(
     OUTPUT blenderSplash.zip
-    COMMAND sed -i 's/\"version\": .*/\"version\": \(${PROJECT_VERSION_MAJOR}, ${PROJECT_VERSION_MINOR}, ${PROJECT_VERSION_PATCH}\),/g' ${CMAKE_CURRENT_SOURCE_DIR}/splash/__init__.py
+    COMMAND ${UPDATE_BLENDER_VERSION}
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/splash ./splash
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/templates ./templates
     COMMAND zip blenderSplash.zip -r splash/* -x *.swp splash/Makefile*

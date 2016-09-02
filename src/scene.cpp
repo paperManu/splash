@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "./camera.h"
+#include "./controller_blender.h"
 #include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
@@ -11,6 +12,7 @@
 #include "./log.h"
 #include "./mesh.h"
 #include "./object.h"
+#include "./osUtils.h"
 #include "./queue.h"
 #include "./texture.h"
 #include "./texture_image.h"
@@ -20,28 +22,31 @@
 #include "./window.h"
 
 #if HAVE_GPHOTO
-    #include "./colorcalibrator.h"
+#include "./colorcalibrator.h"
 #endif
 
 #if HAVE_OSX
-    #include "./texture_syphon.h"
+#include "./texture_syphon.h"
 #else
-    #define GLFW_EXPOSE_NATIVE_X11
-    #define GLFW_EXPOSE_NATIVE_GLX
-    #include <GLFW/glfw3native.h>
-    #include <GL/glxext.h>
+// clang-format off
+#define GLFW_EXPOSE_NATIVE_X11
+#define GLFW_EXPOSE_NATIVE_GLX
+#include <GLFW/glfw3native.h>
+#include <GL/glxext.h>
+// clang-format on
 #endif
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
-bool Scene::_isGlfwInitialized {false};
+bool Scene::_isGlfwInitialized{false};
 
 /*************/
 Scene::Scene(std::string name, bool autoRun)
 {
-    _self = std::shared_ptr<Scene>(this, [](Scene*){}); // A shared pointer with no deleter, how convenient
+    _self = std::shared_ptr<Scene>(this, [](Scene*) {}); // A shared pointer with no deleter, how convenient
 
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
@@ -54,8 +59,8 @@ Scene::Scene(std::string name, bool autoRun)
 
     init(_name);
 
-    _textureUploadFuture = async(std::launch::async, [&](){textureUploadRun();});
-    _joystickUpdateFuture = async(std::launch::async, [&](){joystickUpdateLoop();});
+    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
+    _joystickUpdateFuture = async(std::launch::async, [&]() { joystickUpdateLoop(); });
 
     if (autoRun)
         run();
@@ -94,7 +99,7 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
         return {};
 
     // Create the wanted object
-    if(!_mainWindow->setAsCurrentContext())
+    if (!_mainWindow->setAsCurrentContext())
         Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
     auto obj = _factory->create(type);
@@ -161,7 +166,7 @@ void Scene::addGhost(string type, string name)
 Values Scene::getAttributeFromObject(string name, string attribute)
 {
     auto objectIt = _objects.find(name);
-    
+
     Values values;
     if (objectIt != _objects.end())
     {
@@ -183,7 +188,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
 {
     auto objectIt = _objects.find(name);
-    
+
     Values values;
     if (objectIt != _objects.end())
     {
@@ -352,150 +357,16 @@ void Scene::remove(string name)
 }
 
 /*************/
-void Scene::renderBlending()
-{
-    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
-    {
-        static bool blendComputedInPreviousFrame = false;
-        static bool blendComputedOnce = false;
-
-        if (blendComputedOnce && _computeBlendingOnce)
-        {
-            // This allows for blending reset if it was computed once
-            blendComputedOnce = false;
-            _computeBlending = false;
-            _computeBlendingOnce = false;
-            blendComputedInPreviousFrame = true;
-        }
-
-        if (_computeBlending)
-        {
-            // Check for regular or single computation
-            if (_computeBlendingOnce)
-            {
-                _computeBlending = false;
-                _computeBlendingOnce = false;
-                blendComputedOnce = true;
-            }
-            else
-            {
-                blendComputedInPreviousFrame = true;
-            }
-
-            // Only the master scene computes the blending
-            if (_isMaster)
-            {
-                vector<shared_ptr<Camera>> cameras;
-                vector<shared_ptr<Object>> objects;
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "camera")
-                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                    else if (obj.second->getType() == "object")
-                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-                for (auto& obj : _ghostObjects)
-                    if (obj.second->getType() == "camera")
-                        cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                    else if (obj.second->getType() == "object")
-                        objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-
-                if (cameras.size() != 0)
-                {
-                    for (auto& object : objects)
-                        object->resetTessellation();
-
-                    // Tessellate
-                    for (auto& camera : cameras)
-                    {
-                        camera->computeVertexVisibility();
-                        camera->blendingTessellateForCurrentCamera();
-                    }
-
-                    for (auto& object : objects)
-                        object->resetBlendingAttribute();
-
-                    // Compute each camera contribution
-                    for (auto& camera : cameras)
-                    {
-                        camera->computeVertexVisibility();
-                        camera->computeBlendingContribution();
-                    }
-                }
-
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "object")
-                        obj.second->setAttribute("activateVertexBlending", {1});
-
-                // If there are some other scenes, send them the blending
-                if (_ghostObjects.size() != 0)
-                {
-                    for (auto& obj : _objects)
-                        if (obj.second->getType() == "geometry")
-                        {
-                            auto serializedGeometry = dynamic_pointer_cast<Geometry>(obj.second)->serialize();
-                            _link->sendBuffer(obj.first, std::move(serializedGeometry));
-                        }
-                    
-                    // Notify the other scenes that the blending has been updated
-                    sendMessageToWorld("sendAll", {SPLASH_ALL_PEERS, "blendingUpdated"});
-                }
-            }
-            // The non-master scenes only need to activate blending
-            else
-            {
-                // Wait for the master scene to notify us that the blending was updated
-                unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
-                while (!_vertexBlendingReceptionStatus)
-                    _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
-                _vertexBlendingReceptionStatus = false;
-                    
-                for (auto& obj : _objects)
-                    if (obj.second->getType() == "object")
-                        obj.second->setAttribute("activateVertexBlending", {1});
-                    else if (obj.second->getType() == "geometry")
-                        dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(true);
-            }
-        }
-        // This deactivates the blending
-        else if (blendComputedInPreviousFrame)
-        {
-            blendComputedInPreviousFrame = false;
-            blendComputedOnce = false;
-
-            vector<shared_ptr<Camera>> cameras;
-            vector<shared_ptr<Object>> objects;
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "camera")
-                    cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-                else if (obj.second->getType() == "object")
-                    objects.push_back(dynamic_pointer_cast<Object>(obj.second));
-            
-            if (_isMaster && cameras.size() != 0)
-            {
-                for (auto& object : objects)
-                {
-                    object->resetTessellation();
-                    object->resetVisibility();
-                }
-            }
-
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "object")
-                    obj.second->setAttribute("activateVertexBlending", {0});
-                else if (obj.second->getType() == "geometry")
-                    dynamic_pointer_cast<Geometry>(obj.second)->useAlternativeBuffers(false);
-        }
-    }
-}
-
-/*************/
 void Scene::render()
 {
-    bool isError {false};
+    bool isError{false};
     vector<unsigned int> threadIds;
 
     // Compute the blending
     Timer::get() << "blending";
-    renderBlending();
+    for (auto& obj : _objects)
+        if (obj.second->getType() == "blender")
+            dynamic_pointer_cast<Blender>(obj.second)->render();
     Timer::get() >> "blending";
 
     unique_lock<mutex> lockTexture(_textureUploadMutex);
@@ -511,7 +382,7 @@ void Scene::render()
         if (obj.second->getType() == "filter")
             dynamic_pointer_cast<Filter>(obj.second)->update();
     Timer::get() >> "filters";
-    
+
     Timer::get() << "cameras";
     // We wait for textures to be uploaded, and we prevent any upload while rendering
     // cameras to prevent tearing
@@ -574,7 +445,7 @@ void Scene::run()
             this_thread::sleep_for(chrono::milliseconds(50));
             continue;
         }
-        
+
         Timer::get() << "sceneLoop";
 
         {
@@ -610,7 +481,7 @@ void Scene::updateInputs()
         int btn, action, mods;
         if (!Window::getMouseBtn(win, btn, action, mods))
             break;
-        
+
         if (_gui != nullptr)
             _gui->mouseButton(btn, action, mods);
     }
@@ -757,9 +628,11 @@ void Scene::setAsMaster(string configFilePath)
 {
     _isMaster = true;
 
+    _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, _self);
     _gui->setName("gui");
     _gui->setConfigFilePath(configFilePath);
+    _mainWindow->releaseContext();
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
@@ -799,124 +672,6 @@ void Scene::waitTextureUpload()
 {
     lock_guard<mutex> lockTexture(_textureUploadMutex);
     glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-}
-
-/*************/
-void Scene::activateBlendingMap(bool once)
-{
-    if (_isBlendingComputed)
-        return;
-    _isBlendingComputed = true;
-
-    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
-    {
-        _computeBlending = true;
-        _computeBlendingOnce = once;
-    }
-    else
-    {
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-        _mainWindow->setAsCurrentContext();
-
-        initBlendingMap();
-        // Set the blending map to zero
-        _blendingMap->setTo(0.f);
-        _blendingMap->setName("blendingMap");
-
-        // Compute the contribution of each camera
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-        for (auto& obj : _ghostObjects)
-            if (obj.second->getType() == "camera")
-                dynamic_pointer_cast<Camera>(obj.second)->computeBlendingMap(_blendingMap);
-
-        // Filter the output to fill the blanks (dilate filter)
-        auto buffer = make_shared<Image>(_blendingMap->getSpec());
-        unsigned short* pixBuffer = (unsigned short*)buffer->data();
-        unsigned short* pixels = (unsigned short*)_blendingMap->data();
-        int w = _blendingMap->getSpec().width;
-        int h = _blendingMap->getSpec().height;
-        for (int x = 0; x < w; ++x)
-            for (int y = 0; y < h; ++y)
-            {
-                unsigned short maxValue = 0;
-                for (int xx = -1; xx <= 1; ++xx)
-                {
-                    if (x + xx < 0 || x + xx >= w)
-                        continue;
-                    for (int yy = -1; yy <= 1; ++yy)
-                    {
-                        if (y + yy < 0 || y + yy >= h)
-                            continue;
-                        maxValue = std::max(maxValue, pixels[(y + yy) * w + x + xx]);
-                    }
-                }
-                pixBuffer[y * w + x] = maxValue;
-            }
-        swap(_blendingMap, buffer);
-        _blendingMap->setSavable(false);
-        _blendingMap->updateTimestamp();
-
-        // Small hack to handle the fact that texture transfer uses PBOs.
-        // If we send the buffer only once, the displayed PBOs wont be the correct one.
-        if (_isMaster)
-        {
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
-            timespec nap {0, (long int)1e8};
-            nanosleep(&nap, NULL);
-            _link->sendBuffer("blendingMap", _blendingMap->serialize());
-        }
-
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->setBlendingMap(_blendingTexture);
-
-        _computeBlending = true;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending computed" << Log::endl;
-        
-
-        _mainWindow->releaseContext();
-    }
-}
-
-/*************/
-void Scene::deactivateBlendingMap()
-{
-    _isBlendingComputed = false;
-    
-    if ((_glVersion[0] == 4 && _glVersion[1] >= 3) || _glVersion[0] > 4)
-    {
-        _computeBlending = false;
-        _computeBlendingOnce = true;
-    }
-    else
-    {
-        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-        _mainWindow->setAsCurrentContext();
-
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "object")
-                dynamic_pointer_cast<Object>(obj.second)->resetBlendingMap();
-
-        _computeBlending = false;
-
-        Log::get() << "Scene::" << __FUNCTION__ << " - Camera blending deactivated" << Log::endl;
-
-        _mainWindow->releaseContext();
-    }
-}
-
-/*************/
-void Scene::computeBlendingMap(const std::string& mode)
-{
-    if (mode == "once")
-        activateBlendingMap(true);
-    else if (mode == "continuous")
-        activateBlendingMap(false);
-    else
-        deactivateBlendingMap();
 }
 
 /*************/
@@ -990,17 +745,17 @@ Values Scene::getObjectsNameByType(string type)
 /*************/
 vector<int> Scene::findGLVersion()
 {
-    vector<vector<int>> glVersionList {{4, 3}, {3, 3}, {3, 2}};
-    vector<int> detectedVersion {0, 0};
+    vector<vector<int>> glVersionList{{4, 3}, {4, 0}};
+    vector<int> detectedVersion{0, 0};
 
     for (auto version : glVersionList)
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, version[0]);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, version[1]);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-        #if HAVE_OSX
-            glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-        #endif
+#if HAVE_OSX
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
         glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
@@ -1073,7 +828,7 @@ void Scene::init(std::string name)
     _mainWindow->setAsCurrentContext();
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    // Activate GL debug messages
+// Activate GL debug messages
 #if not HAVE_OSX
 #ifdef DEBUGGL
     glDebugMessageCallback(Scene::glMsgCallback, (void*)this);
@@ -1082,7 +837,7 @@ void Scene::init(std::string name)
 #endif
 #endif
 
-    // Check for swap groups
+// Check for swap groups
 #if not HAVE_OSX
 #ifdef GLX_NV_swap_group
     if (glfwExtensionSupported("GLX_NV_swap_group"))
@@ -1103,18 +858,6 @@ void Scene::init(std::string name)
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
-}
-
-/*************/
-void Scene::initBlendingMap()
-{
-    _blendingMap = make_shared<Image>(_self);
-    _blendingMap->set(_blendingResolution, _blendingResolution, 1, ImageBufferSpec::Type::UINT16);
-    _objects["blendingMap"] = _blendingMap;
-
-    _blendingTexture = make_shared<Texture_Image>(_self);
-    _blendingTexture->setAttribute("filtering", {0});
-    *_blendingTexture = _blendingMap;
 }
 
 /*************/
@@ -1162,8 +905,9 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, void* userParam)
 #endif
 {
-    string typeString {""};
-    Log::Priority logType;
+    string typeString{"OTHER"};
+    Log::Priority logType{Log::MESSAGE};
+
     switch (type)
     {
     case GL_DEBUG_TYPE_ERROR:
@@ -1198,47 +942,31 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 /*************/
 void Scene::registerAttributes()
 {
-    addAttribute("add", [&](const Values& args) {
-        addTask([=]() {
-            string type = args[0].asString();
-            string name = args[1].asString();
-            add(type, name);
-        });
+    addAttribute("add",
+        [&](const Values& args) {
+            addTask([=]() {
+                string type = args[0].asString();
+                string name = args[1].asString();
+                add(type, name);
+            });
 
-        return true;
-    }, {'s', 's'});
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("add", "Add an object of the given name and type");
 
-    addAttribute("addGhost", [&](const Values& args) {
-        addTask([=]() {
-            string type = args[0].asString();
-            string name = args[1].asString();
-            addGhost(type, name);
-        });
+    addAttribute("addGhost",
+        [&](const Values& args) {
+            addTask([=]() {
+                string type = args[0].asString();
+                string name = args[1].asString();
+                addGhost(type, name);
+            });
 
-        return true;
-    }, {'s', 's'});
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("addGhost", "Add a ghost object of the given name and type. Only useful in the master Scene");
-
-    addAttribute("blendingResolution", [&](const Values& args) {
-        addTask([=]() {
-            int resolution = args[0].asInt();
-            if (resolution >= 64)
-                _blendingResolution = resolution;
-        });
-
-        return true;
-    }, [&]() -> Values {
-        return {(int)_blendingResolution};
-    }, {'n'});
-    setAttributeDescription("blendingResolution", "Set the resolution of the blending map");
-
-    addAttribute("blendingUpdated", [&](const Values& args) {
-        _vertexBlendingReceptionStatus = true;
-        _vertexBlendingCondition.notify_one();
-        return true;
-    });
-    setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
 
     addAttribute("bufferUploaded", [&](const Values& args) {
         _textureUploadCondition.notify_all();
@@ -1246,32 +974,34 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
 
-    addAttribute("computeBlending", [&](const Values& args) {
-        std::string blendingMode = args[0].asString();
-        addTask([=]() -> void {
-            computeBlendingMap(blendingMode);
-        });
-        return true;
-    }, {'s'});
+    addAttribute("computeBlending",
+        [&](const Values& args) {
+            addTask([=]() {
+                shared_ptr<BaseObject> blender{nullptr};
+                auto blenderIt = find_if(_objects.begin(), _objects.end(), [](std::pair<std::string, std::shared_ptr<BaseObject>> obj) {
+                    if (obj.second->getType() == "blender")
+                        return true;
+                    else
+                        return false;
+                });
+
+                if (blenderIt == _objects.end())
+                {
+                    add("blender", "blender");
+                    blender = _objects["blender"];
+                }
+                else
+                {
+                    blender = blenderIt->second;
+                }
+
+                std::string blendingMode = args[0].asString();
+                blender->setAttribute("mode", args);
+            });
+            return true;
+        },
+        {'s'});
     setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
-
-    addAttribute("activateBlendingMap", [&](const Values& args) {
-        addTask([=]() -> void {
-            activateBlendingMap();
-        });
-
-        return true;
-    });
-    setAttributeDescription("activateBlendingMap", "Activate the blending map");
-
-    addAttribute("deactivateBlendingMap", [&](const Values& args) {
-        addTask([=]() -> void {
-            deactivateBlendingMap();
-        });
-
-        return true;
-    });
-    setAttributeDescription("deactivateBlendingMap", "Deactivate the blending map");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {
@@ -1284,98 +1014,114 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("config", "Ask the Scene for a JSON describing its configuration");
 
-    addAttribute("deleteObject", [&](const Values& args) {
-        addTask([=]() -> void {
-            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    addAttribute("deleteObject",
+        [&](const Values& args) {
+            addTask([=]() -> void {
+                // We wait until we can indeed deleted the object
+                bool expectedAtomicValue = false;
+                while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+                    this_thread::sleep_for(chrono::milliseconds(1));
 
-            // We wait until we can indeed deleted the object
-            bool expectedAtomicValue = false;
-            while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
-                this_thread::sleep_for(chrono::milliseconds(1));
+                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-            auto objectName = args[0].asString();
+                auto objectName = args[0].asString();
 
-            auto objectIt = _objects.find(objectName);
-            for (auto& localObject : _objects)
-                unlink(objectIt->second, localObject.second);
-            if (objectIt != _objects.end())
-                _objects.erase(objectIt);
+                auto objectIt = _objects.find(objectName);
+                for (auto& localObject : _objects)
+                    unlink(objectIt->second, localObject.second);
+                if (objectIt != _objects.end())
+                    _objects.erase(objectIt);
 
-            objectIt = _ghostObjects.find(objectName);
-            if (objectIt != _ghostObjects.end())
-            {
-                for (auto& ghostObject : _ghostObjects)
-                    unlink(objectIt->second, ghostObject.second);
-                _ghostObjects.erase(objectIt);
-            }
+                objectIt = _ghostObjects.find(objectName);
+                if (objectIt != _ghostObjects.end())
+                {
+                    for (auto& ghostObject : _ghostObjects)
+                        unlink(objectIt->second, ghostObject.second);
+                    _ghostObjects.erase(objectIt);
+                }
 
-            _objectsCurrentlyUpdated = false;
-        });
+                _objectsCurrentlyUpdated = false;
+            });
 
-        return true;
-    }, {'s'});
+            return true;
+        },
+        {'s'});
     setAttributeDescription("deleteObject", "Delete an object given its name");
 
-    addAttribute("duration", [&](const Values& args) {
-        Timer::get().setDuration(args[0].asString(), args[1].asInt());
-        return true;
-    }, {'s', 'n'});
+    addAttribute("duration",
+        [&](const Values& args) {
+            Timer::get().setDuration(args[0].asString(), args[1].asInt());
+            return true;
+        },
+        {'s', 'n'});
     setAttributeDescription("duration", "Set the duration of the given timer");
 
-    addAttribute("masterClock", [&](const Values& args) {
-        Timer::get().setMasterClock(args);
-        return true;
-    }, {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
+    addAttribute("masterClock",
+        [&](const Values& args) {
+            Timer::get().setMasterClock(args);
+            return true;
+        },
+        {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
     setAttributeDescription("masterClock", "Set the timing of the master clock");
- 
-    addAttribute("flashBG", [&](const Values& args) {
-        addTask([=]() {
-            for (auto& obj : _objects)
-                if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
-        });
 
-        return true;
-    }, {'n'});
+    addAttribute("flashBG",
+        [&](const Values& args) {
+            addTask([=]() {
+                for (auto& obj : _objects)
+                    if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+            });
+
+            return true;
+        },
+        {'n'});
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
-    addAttribute("getObjectsNameByType", [&](const Values& args) {
-        addTask([=]() {
-            string type = args[0].asString();
-            Values list = getObjectsNameByType(type);
-            sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
-        });
+    addAttribute("getObjectsNameByType",
+        [&](const Values& args) {
+            addTask([=]() {
+                string type = args[0].asString();
+                Values list = getObjectsNameByType(type);
+                sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
+            });
 
-        return true;
-    }, {'s'});
+            return true;
+        },
+        {'s'});
     setAttributeDescription("getObjectsNameByType", "Get a list of the objects having the given type");
-   
-    addAttribute("link", [&](const Values& args) {
-        addTask([=]() {
-            string src = args[0].asString();
-            string dst = args[1].asString();
-            link(src, dst);
-        });
 
-        return true;
-    }, {'s', 's'});
+    addAttribute("link",
+        [&](const Values& args) {
+            addTask([=]() {
+                string src = args[0].asString();
+                string dst = args[1].asString();
+                link(src, dst);
+            });
+
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("link", "Link the two given objects");
 
-    addAttribute("linkGhost", [&](const Values& args) {
-        addTask([=]() {
-            string src = args[0].asString();
-            string dst = args[1].asString();
-            linkGhost(src, dst);
-        });
+    addAttribute("linkGhost",
+        [&](const Values& args) {
+            addTask([=]() {
+                string src = args[0].asString();
+                string dst = args[1].asString();
+                linkGhost(src, dst);
+            });
 
-        return true;
-    }, {'s', 's'});
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("linkGhost", "Link the two given ghost objects");
 
-    addAttribute("log", [&](const Values& args) {
-        Log::get().setLog(args[0].asString(), (Log::Priority)args[1].asInt());
-        return true;
-    }, {'s', 'n'});
+    addAttribute("log",
+        [&](const Values& args) {
+            Log::get().setLog(args[0].asString(), (Log::Priority)args[1].asInt());
+            return true;
+        },
+        {'s', 'n'});
     setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
     addAttribute("ping", [&](const Values& args) {
@@ -1385,50 +1131,56 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("ping", "Ping the World");
 
-    addAttribute("remove", [&](const Values& args) {
-        addTask([=]() {
-            string name = args[1].asString();
-            remove(name);
-        });
+    addAttribute("remove",
+        [&](const Values& args) {
+            addTask([=]() {
+                string name = args[1].asString();
+                remove(name);
+            });
 
-        return true;
-    }, {'s'});
+            return true;
+        },
+        {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
 
-    addAttribute("renameObject", [&](const Values& args) {
-        auto name = args[0].asString();
-        auto newName = args[1].asString();
+    addAttribute("renameObject",
+        [&](const Values& args) {
+            auto name = args[0].asString();
+            auto newName = args[1].asString();
 
-        addTask([=]() {
-            lock_guard<recursive_mutex> lock(_objectsMutex);
+            addTask([=]() {
+                lock_guard<recursive_mutex> lock(_objectsMutex);
 
-            auto objIt = _objects.find(name);
-            if (objIt != _objects.end())
-            {
-                auto object = objIt->second;
-                object->setName(newName);
-                _objects[newName] = object;
-                _objects.erase(objIt);
-            }
-        });
+                auto objIt = _objects.find(name);
+                if (objIt != _objects.end())
+                {
+                    auto object = objIt->second;
+                    object->setName(newName);
+                    _objects[newName] = object;
+                    _objects.erase(objIt);
+                }
+            });
 
-        return true;
-    }, {'s', 's'});
+            return true;
+        },
+        {'s', 's'});
 
-    addAttribute("setGhost", [&](const Values& args) {
-        addTask([=]() {
-            string name = args[0].asString();
-            string attr = args[1].asString();
-            Values values;
-            for (int i = 2; i < args.size(); ++i)
-                values.push_back(args[i]);
+    addAttribute("setGhost",
+        [&](const Values& args) {
+            addTask([=]() {
+                string name = args[0].asString();
+                string attr = args[1].asString();
+                Values values;
+                for (int i = 2; i < args.size(); ++i)
+                    values.push_back(args[i]);
 
-            if (_ghostObjects.find(name) != _ghostObjects.end())
-                _ghostObjects[name]->setAttribute(attr, values);
-        });
+                if (_ghostObjects.find(name) != _ghostObjects.end())
+                    _ghostObjects[name]->setAttribute(attr, values);
+            });
 
-        return true;
-    }, {'s', 's'});
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("setGhost", "Set a given object the given attribute");
 
     addAttribute("setMaster", [&](const Values& args) {
@@ -1453,12 +1205,13 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("stop", "Stop the Scene main loop");
 
-    addAttribute("swapInterval", [&](const Values& args) {
-        _swapInterval = max(-1, args[0].asInt());
-        return true;
-    }, [&]() -> Values {
-        return {(int)_swapInterval};
-    }, {'n'});
+    addAttribute("swapInterval",
+        [&](const Values& args) {
+            _swapInterval = max(-1, args[0].asInt());
+            return true;
+        },
+        [&]() -> Values { return {(int)_swapInterval}; },
+        {'n'});
     setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
 
     addAttribute("swapTest", [&](const Values& args) {
@@ -1485,44 +1238,50 @@ void Scene::registerAttributes()
         return true;
     });
     setAttributeDescription("quit", "Ask the Scene to quit");
-   
-    addAttribute("unlink", [&](const Values& args) {
-        addTask([=]() {
-            string src = args[0].asString();
-            string dst = args[1].asString();
-            unlink(src, dst);
-        });
 
-        return true;
-    }, {'s', 's'});
+    addAttribute("unlink",
+        [&](const Values& args) {
+            addTask([=]() {
+                string src = args[0].asString();
+                string dst = args[1].asString();
+                unlink(src, dst);
+            });
+
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("unlink", "Unlink the two given objects");
 
-    addAttribute("unlinkGhost", [&](const Values& args) {
-        if (args.size() < 2)
-            return false;
+    addAttribute("unlinkGhost",
+        [&](const Values& args) {
+            if (args.size() < 2)
+                return false;
 
-        addTask([=]() {
-            string src = args[0].asString();
-            string dst = args[1].asString();
-            unlinkGhost(src, dst);
-        });
+            addTask([=]() {
+                string src = args[0].asString();
+                string dst = args[1].asString();
+                unlinkGhost(src, dst);
+            });
 
-        return true;
-    }, {'s', 's'});
+            return true;
+        },
+        {'s', 's'});
     setAttributeDescription("unlinkGhost", "Unlink the two given ghost objects");
- 
-    addAttribute("wireframe", [&](const Values& args) {
-        addTask([=]() {
-            for (auto& obj : _objects)
-                if (obj.second->getType() == "camera")
-                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
-            for (auto& obj : _ghostObjects)
-                if (obj.second->getType() == "camera")
-                    dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
-        });
 
-        return true;
-    }, {'n'});
+    addAttribute("wireframe",
+        [&](const Values& args) {
+            addTask([=]() {
+                for (auto& obj : _objects)
+                    if (obj.second->getType() == "camera")
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+                for (auto& obj : _ghostObjects)
+                    if (obj.second->getType() == "camera")
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+            });
+
+            return true;
+        },
+        {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
 #if HAVE_GPHOTO
@@ -1531,9 +1290,7 @@ void Scene::registerAttributes()
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
         // (and we will need it later)
-        SThread::pool.enqueue([&]() {
-            _colorCalibrator->update();
-        });
+        SThread::pool.enqueue([&]() { _colorCalibrator->update(); });
         return true;
     });
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
@@ -1543,14 +1300,40 @@ void Scene::registerAttributes()
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
         // (and we will need it later)
-        SThread::pool.enqueue([&]() {
-            _colorCalibrator->updateCRF();
-        });
+        SThread::pool.enqueue([&]() { _colorCalibrator->updateCRF(); });
         return true;
     });
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
 #endif
 
+#if HAVE_LINUX
+    addAttribute("sceneAffinity",
+        [&](const Values& args) {
+            auto core = args[0].asInt();
+            auto rootObjectCount = args[1].asInt();
+
+            addTask([=]() {
+                if (Utils::setAffinity({core}))
+                    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Set to run on CPU core #" << core << Log::endl;
+                else
+                    Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to set Scene CPU core affinity" << Log::endl;
+
+                if (Utils::setRealTime())
+                    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
+                else
+                    Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
+
+                vector<int> cores{};
+                for (int i = rootObjectCount; i < Utils::getCoreCount(); ++i)
+                    cores.push_back(i);
+                SThread::pool.setAffinity(cores);
+            });
+
+            return true;
+        },
+        {'n', 'n'});
+    setAttributeDescription("sceneAffinity", "Set the core for the main loop, as well as the number of root objects. The thread pool will use the remaining cores.");
+#endif
 }
 
 } // end of namespace

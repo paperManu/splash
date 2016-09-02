@@ -33,15 +33,13 @@ namespace Splash
 /*************/
 class GuiGraph : public GuiWidget
 {
-    public:
-        GuiGraph(std::weak_ptr<Scene> scene, std::string name)
-            : GuiWidget(scene, name) {}
-        void render();
+  public:
+    GuiGraph(std::weak_ptr<Scene> scene, std::string name) : GuiWidget(scene, name) {}
+    void render();
 
-    private:
-        std::atomic_uint _target;
-        unsigned int _maxHistoryLength {300};
-        std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
+  private:
+    unsigned int _maxHistoryLength{300};
+    std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
 } // end of namespace

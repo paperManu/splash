@@ -18,17 +18,11 @@
 
 using namespace std;
 
-namespace Splash {
-
-/*************/
-Image::Image()
+namespace Splash
 {
-    init();
-}
 
 /*************/
-Image::Image(weak_ptr<RootObject> root)
-    : BufferObject(root)
+Image::Image(weak_ptr<RootObject> root) : BufferObject(root)
 {
     init();
 
@@ -37,7 +31,7 @@ Image::Image(weak_ptr<RootObject> root)
 }
 
 /*************/
-Image::Image(ImageBufferSpec spec)
+Image::Image(weak_ptr<RootObject> root, ImageBufferSpec spec) : BufferObject(root)
 {
     init();
     set(spec.width, spec.height, spec.channels, spec.type);
@@ -133,7 +127,7 @@ shared_ptr<SerializedObject> Image::serialize() const
     int nbrChar = xmlSpec.size();
     int imgSize = _image->getSpec().rawSize();
     int totalSize = SPLASH_IMAGE_SERIALIZED_HEADER_SIZE + imgSize;
-    
+
     auto obj = make_shared<SerializedObject>(totalSize);
 
     auto currentObjPtr = obj->data();
@@ -149,14 +143,12 @@ shared_ptr<SerializedObject> Image::serialize() const
     const char* imgPtr = reinterpret_cast<const char*>(_image->data());
     if (imgPtr == NULL)
         return {};
-    
+
     vector<unsigned int> threadIds;
     int stride = SPLASH_IMAGE_COPY_THREADS;
     for (int i = 0; i < stride - 1; ++i)
     {
-        threadIds.push_back(SThread::pool.enqueue([=]() {
-            copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i);
-        }));
+        threadIds.push_back(SThread::pool.enqueue([=]() { copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); }));
     }
     copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
     SThread::pool.waitThreads(threadIds);
@@ -248,7 +240,7 @@ bool Image::readFile(const string& filename)
     }
 
     int w, h, c;
-    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 3);
+    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 0);
 
     if (!rawImage)
     {
@@ -257,7 +249,14 @@ bool Image::readFile(const string& filename)
     }
 
     auto spec = ImageBufferSpec(w, h, c, ImageBufferSpec::Type::UINT8);
-    spec.format = {"R", "G", "B"};
+    if (c == 1)
+        spec.format = {"R"};
+    else if (c == 3)
+        spec.format = {"R", "G", "B"};
+    else if (c == 4)
+        spec.format = {"R", "G", "B", "A"};
+    else
+        return false;
     auto img = ImageBuffer(spec);
     memcpy(img.data(), rawImage, w * h * c);
     stbi_image_free(rawImage);
@@ -266,7 +265,7 @@ bool Image::readFile(const string& filename)
     if (!_bufferImage)
         _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
     std::swap(*_bufferImage, img);
-    _imageUpdated =  true;
+    _imageUpdated = true;
 
     updateTimestamp();
 
@@ -372,53 +371,55 @@ void Image::createPattern()
 /*************/
 void Image::registerAttributes()
 {
-    addAttribute("flip", [&](const Values& args) {
-        _flip = (args[0].asInt() > 0) ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_flip};
-    }, {'n'});
+    addAttribute("flip",
+        [&](const Values& args) {
+            _flip = (args[0].asInt() > 0) ? true : false;
+            return true;
+        },
+        [&]() -> Values { return {_flip}; },
+        {'n'});
     setAttributeDescription("flip", "Mirrors the image on the Y axis");
 
-    addAttribute("flop", [&](const Values& args) {
-        _flop = (args[0].asInt() > 0) ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_flop};
-    }, {'n'});
+    addAttribute("flop",
+        [&](const Values& args) {
+            _flop = (args[0].asInt() > 0) ? true : false;
+            return true;
+        },
+        [&]() -> Values { return {_flop}; },
+        {'n'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file", [&](const Values& args) {
-        return read(args[0].asString());
-    }, [&]() -> Values {
-        return {_filepath};
-    }, {'s'});
+    addAttribute("file", [&](const Values& args) { return read(args[0].asString()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Image file to load");
 
-    addAttribute("srgb", [&](const Values& args) {
-        _srgb = (args[0].asInt() > 0) ? true : false;     
-        return true;
-    }, [&]() -> Values {
-        return {_srgb};
-    }, {'n'});
+    addAttribute("srgb",
+        [&](const Values& args) {
+            _srgb = (args[0].asInt() > 0) ? true : false;
+            return true;
+        },
+        [&]() -> Values { return {_srgb}; },
+        {'n'});
     setAttributeDescription("srgb", "Set to 1 if the image file is stored as sRGB");
 
-    addAttribute("benchmark", [&](const Values& args) {
-        if (args[0].asInt() > 0)
-            _benchmark = true;
-        else
-            _benchmark = false;
-        return true;
-    }, {'n'});
+    addAttribute("benchmark",
+        [&](const Values& args) {
+            if (args[0].asInt() > 0)
+                _benchmark = true;
+            else
+                _benchmark = false;
+            return true;
+        },
+        {'n'});
     setAttributeDescription("benchmark", "Set to 1 to resend the image even when not updated");
 
-    addAttribute("pattern", [&](const Values& args) {
-        if (args[0].asInt() == 1)
-            createPattern();
-        return true;
-    }, [&]() -> Values {
-        return {false};
-    }, {'n'});
+    addAttribute("pattern",
+        [&](const Values& args) {
+            if (args[0].asInt() == 1)
+                createPattern();
+            return true;
+        },
+        [&]() -> Values { return {false}; },
+        {'n'});
     setAttributeDescription("pattern", "Set to 1 to replace the image with a pattern");
 }
 

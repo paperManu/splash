@@ -1,12 +1,16 @@
 #include "image_ffmpeg.h"
 
 #include <chrono>
+#if HAVE_LINUX
+#include <fcntl.h>
+#endif
 #include <hap.h>
 
-#include "cgUtils.h"
-#include "log.h"
-#include "timer.h"
-#include "threadpool.h"
+#include "./cgUtils.h"
+#include "./log.h"
+#include "./osUtils.h"
+#include "./threadpool.h"
+#include "./timer.h"
 
 #if HAVE_FFMPEG_3
 #define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
@@ -18,14 +22,7 @@ namespace Splash
 {
 
 /*************/
-Image_FFmpeg::Image_FFmpeg()
-{
-    init();
-}
-
-/*************/
-Image_FFmpeg::Image_FFmpeg(weak_ptr<RootObject> root)
-    : Image(root)
+Image_FFmpeg::Image_FFmpeg(weak_ptr<RootObject> root) : Image(root)
 {
     init();
 }
@@ -94,15 +91,24 @@ bool Image_FFmpeg::read(const string& filename)
     av_dump_format(_avContext, 0, filename.c_str(), 0);
     _filepath = filename;
 
+#if HAVE_LINUX
+    // Give the kernel hints about how to read the file
+    auto fd = Utils::getFileDescriptorForOpenedFile(filename);
+    if (fd)
+    {
+        bool success = true;
+        success &= posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED) == 0;
+        success &= posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL) == 0;
+        if (!success)
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not set hints for video file reading access" << Log::endl;
+    }
+#endif
+
     // Launch the loops
     _continueRead = true;
-    _videoDisplayThread = thread([&]() {
-        videoDisplayLoop();
-    });
+    _videoDisplayThread = thread([&]() { videoDisplayLoop(); });
 
-    _readLoopThread = thread([&]() {
-        readLoop();
-    });
+    _readLoopThread = thread([&]() { readLoop(); });
 
     return true;
 }
@@ -283,20 +289,30 @@ void Image_FFmpeg::readLoop()
     if (!isHap)
     {
 #if HAVE_FFMPEG_3
-        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
-                                    AV_PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
-        
-        av_image_fill_arrays(rgbFrame->data,
-                             rgbFrame->linesize,
-                             buffer.data(), 
-                             AV_PIX_FMT_RGB24, 
-                             _videoCodecContext->width, 
-                             _videoCodecContext->height,
-                             1);
+        swsContext = sws_getContext(_videoCodecContext->width,
+            _videoCodecContext->height,
+            _videoCodecContext->pix_fmt,
+            _videoCodecContext->width,
+            _videoCodecContext->height,
+            AV_PIX_FMT_RGB24,
+            SWS_BILINEAR,
+            nullptr,
+            nullptr,
+            nullptr);
+
+        av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
 #else
-        swsContext = sws_getContext(_videoCodecContext->width, _videoCodecContext->height, _videoCodecContext->pix_fmt, _videoCodecContext->width, _videoCodecContext->height,
-                                    PIX_FMT_RGB24, SWS_BILINEAR, nullptr, nullptr, nullptr);
-    
+        swsContext = sws_getContext(_videoCodecContext->width,
+            _videoCodecContext->height,
+            _videoCodecContext->pix_fmt,
+            _videoCodecContext->width,
+            _videoCodecContext->height,
+            PIX_FMT_RGB24,
+            SWS_BILINEAR,
+            nullptr,
+            nullptr,
+            nullptr);
+
         avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
 #endif
     }
@@ -311,7 +327,7 @@ void Image_FFmpeg::readLoop()
     {
         _startTime = Timer::getTime();
         auto previousTime = 0ull;
-        
+
         auto shouldContinueLoop = [&]() -> bool {
             lock_guard<mutex> lock(_videoSeekMutex);
             return _continueRead && av_read_frame(_avContext, &packet) >= 0;
@@ -504,7 +520,7 @@ void Image_FFmpeg::seek(float seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
 
     // Prevent seeking outside of the file
-    float duration = _avContext->duration / AV_TIME_BASE;
+    float duration = (float)_avContext->duration / (float)AV_TIME_BASE;
     if (seconds < 0)
         seconds = 0;
     else if (seconds > duration)
@@ -534,7 +550,7 @@ void Image_FFmpeg::videoDisplayLoop()
 {
     auto previousTime = 0;
 
-    while(_continueRead)
+    while (_continueRead)
     {
         auto localQueue = deque<TimedFrame>();
         {
@@ -563,7 +579,7 @@ void Image_FFmpeg::videoDisplayLoop()
             float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
 
             int64_t clockAsMs;
-            bool clockIsPaused {false};
+            bool clockIsPaused{false};
             if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
@@ -634,77 +650,83 @@ void Image_FFmpeg::videoDisplayLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
-    addAttribute("duration", [&](const Values& args) {
-        return false;
-    }, [&]() -> Values {
-        if (_avContext == nullptr)
-            return {0.f};
+    addAttribute("duration",
+        [&](const Values& args) { return false; },
+        [&]() -> Values {
+            if (_avContext == nullptr)
+                return {0.f};
 
-        float duration = _avContext->duration / AV_TIME_BASE;
-        return {duration};
-    });
+            float duration = (float)_avContext->duration / (float)AV_TIME_BASE;
+            return {duration};
+        });
     setAttributeParameter("duration", false, true);
 
-    addAttribute("loop", [&](const Values& args) {
-        _loopOnVideo = (bool)args[0].asInt();
-        return true;
-    }, [&]() -> Values {
-        int loop = _loopOnVideo;
-        return {loop};
-    }, {'n'});
+    addAttribute("loop",
+        [&](const Values& args) {
+            _loopOnVideo = (bool)args[0].asInt();
+            return true;
+        },
+        [&]() -> Values {
+            int loop = _loopOnVideo;
+            return {loop};
+        },
+        {'n'});
     setAttributeParameter("loop", true, true);
 
-    addAttribute("remaining", [&](const Values& args) {
-        return false;
-    }, [&]() -> Values {
-        if (_avContext == nullptr)
-            return {0.f};
+    addAttribute("remaining",
+        [&](const Values& args) { return false; },
+        [&]() -> Values {
+            if (_avContext == nullptr)
+                return {0.f};
 
-        float duration = std::max(0.0, (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime  / 1e6);
-        return {duration};
-    });
+            float duration = std::max(0.0, (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime / 1e6);
+            return {duration};
+        });
     setAttributeParameter("remaining", false, true);
 
-    addAttribute("pause", [&](const Values& args) {
-        _paused = args[0].asInt();
-        return true;
-    }, [&]() -> Values {
-        return {_paused};
-    }, {'n'});
+    addAttribute("pause",
+        [&](const Values& args) {
+            _paused = args[0].asInt();
+            return true;
+        },
+        [&]() -> Values { return {_paused}; },
+        {'n'});
     setAttributeParameter("pause", false, true);
 
-    addAttribute("seek", [&](const Values& args) {
-        float seconds = args[0].asFloat();
-        SThread::pool.enqueueWithoutId([=]() {
-            seek(seconds);
-        });
+    addAttribute("seek",
+        [&](const Values& args) {
+            float seconds = args[0].asFloat();
+            SThread::pool.enqueueWithoutId([=]() { seek(seconds); });
 
-        _seekTime = seconds;
-        return true;
-    }, [&]() -> Values {
-        return {_seekTime};
-    }, {'n'});
+            _seekTime = seconds;
+            return true;
+        },
+        [&]() -> Values { return {_seekTime}; },
+        {'n'});
     setAttributeParameter("seek", false, true);
     setAttributeDescription("seek", "Change the read position in the video file");
 
-    addAttribute("useClock", [&](const Values& args) {
-        _useClock = args[0].asInt();
-        if (!_useClock)
-            _clockTime = -1;
-        else
-            _clockTime = 0;
+    addAttribute("useClock",
+        [&](const Values& args) {
+            _useClock = args[0].asInt();
+            if (!_useClock)
+                _clockTime = -1;
+            else
+                _clockTime = 0;
 
-        return true;
-    }, [&]() -> Values {
-        return {(int)_useClock};
-    }, {'n'});
+            return true;
+        },
+        [&]() -> Values { return {(int)_useClock}; },
+        {'n'});
     setAttributeParameter("useClock", true, true);
 
-    addAttribute("timeShift", [&](const Values& args) {
-        _shiftTime = args[0].asFloat();
+    addAttribute("timeShift",
+        [&](const Values& args) {
+            _shiftTime = args[0].asFloat();
 
-        return true;
-    }, {'n'});
+            return true;
+        },
+        {'n'});
 }
 
 } // end of namespace
