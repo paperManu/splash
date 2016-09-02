@@ -1,8 +1,22 @@
 Splash release notes
 ===================
 
-Splash 0.4.x (2016-xx-xx)
+Splash 0.4.6 (2016-09-02)
 -------------------------
+New features:
+* Added Doxygen documentation
+* Added continuous integration through Travis and Coverity
+* Filters now accept user-defined fragment shader
+* Objects can use a second texture as a mask
+
+Improvements:
+* Added hints for realtime and cpu affinity
+* Blending is now handling by a Blender class, not by the Scene
+* Removed old blending through a map method
+
+Bug fixed:
+* Fixed blending on Intel / Mesa12.1
+* Fixed Blender addon version update on OSX
 
 Splash 0.4.4 (2016-08-05)
 -------------------------
