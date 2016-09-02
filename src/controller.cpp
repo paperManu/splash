@@ -4,7 +4,8 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 vector<string> ControllerObject::getObjectNames() const
@@ -14,21 +15,21 @@ vector<string> ControllerObject::getObjectNames() const
         return {};
 
     vector<string> objNames;
-    
+
     for (auto& o : scene->_objects)
     {
         if (!o.second->getSavable())
             continue;
         objNames.push_back(o.first);
     }
-    
+
     for (auto& o : scene->_ghostObjects)
     {
         if (!o.second->getSavable())
             continue;
         objNames.push_back(o.first);
     }
-    
+
     return objNames;
 }
 
@@ -213,7 +214,7 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type)
             obj.second->setAttribute(attr, values);
-    
+
     for (auto& obj : scene->_ghostObjects)
         if (obj.second->getType() == type)
         {

@@ -30,46 +30,47 @@
 
 #include "./basetypes.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 //! Factory class, in charge of creating objects base on their type
 class Factory
 {
-    public:
-        /**
-         * \brief Constructor
-         */
-        Factory();
+  public:
+    /**
+     * \brief Constructor
+     */
+    Factory();
 
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Factory(std::weak_ptr<RootObject> root);
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Factory(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Creates a BaseObject given its type
-         * \param type Object type
-         * \return Return a shared pointer to the created object
-         */
-        std::shared_ptr<BaseObject> create(std::string type);
+    /**
+     * \brief Creates a BaseObject given its type
+     * \param type Object type
+     * \return Return a shared pointer to the created object
+     */
+    std::shared_ptr<BaseObject> create(std::string type);
 
-        /**
-         * \brief Get all creatable object types
-         * \return Return a vector of all the creatable objects
-         */
-        std::vector<std::string> getObjectTypes();
+    /**
+     * \brief Get all creatable object types
+     * \return Return a vector of all the creatable objects
+     */
+    std::vector<std::string> getObjectTypes();
 
-    private:
-        std::weak_ptr<RootObject> _root; //!< Root object, used as root for all created objects
-        bool _isScene {false}; //!< True if the root is a Scene, false if it is a World (or if there is no root)
-        std::map<std::string, std::function<std::shared_ptr<BaseObject>()>> _objectBook; //!< List of all creatable objects
+  private:
+    std::weak_ptr<RootObject> _root;                                                 //!< Root object, used as root for all created objects
+    bool _isScene{false};                                                            //!< True if the root is a Scene, false if it is a World (or if there is no root)
+    std::map<std::string, std::function<std::shared_ptr<BaseObject>()>> _objectBook; //!< List of all creatable objects
 
-        /**
-         * |brief Registers the available objects inside the _objectBook
-         */
-        void registerObjects();
+    /**
+     * |brief Registers the available objects inside the _objectBook
+     */
+    void registerObjects();
 };
 
 } // end of namespace

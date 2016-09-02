@@ -25,8 +25,8 @@
 #ifndef SPLASH_MESHLOADER_H
 #define SPLASH_MESHLOADER_H
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -37,269 +37,266 @@
 
 namespace Splash
 {
-    namespace Loader
-    {
+namespace Loader
+{
 
-    /**********/
-    class Base
-    {
-        public:
-            virtual ~Base() {};
+/**********/
+class Base
+{
+  public:
+    virtual ~Base(){};
 
-            virtual bool load(std::string filename) = 0;
-            virtual std::vector<glm::vec4> getVertices() const = 0;
-            virtual std::vector<glm::vec2> getUVs() const = 0;
-            virtual std::vector<glm::vec3> getNormals() const = 0;
-            virtual std::vector<std::vector<int>> getFaces() const = 0;
-    };
-    
-    /**********/
-    class Obj : public Base
-    {
-        public:
-            ~Obj() {};
+    virtual bool load(std::string filename) = 0;
+    virtual std::vector<glm::vec4> getVertices() const = 0;
+    virtual std::vector<glm::vec2> getUVs() const = 0;
+    virtual std::vector<glm::vec3> getNormals() const = 0;
+    virtual std::vector<std::vector<int>> getFaces() const = 0;
+};
 
-            /**/
-            bool load(std::string filename)
+/**********/
+class Obj : public Base
+{
+  public:
+    ~Obj(){};
+
+    /**/
+    bool load(std::string filename)
+    {
+        std::ifstream file(filename, std::ios::in);
+        if (!file.is_open())
+            return false;
+
+        _vertices.clear();
+        _uvs.clear();
+        _normals.clear();
+        _faces.clear();
+
+        // All objects are converted to a single one.
+        // This indices keeps track of the objects
+        int vertexShift = 0;
+        int uvShift = 0;
+        int normalShift = 0;
+
+        for (std::string line; std::getline(file, line);)
+        {
+
+            std::string::size_type pos;
+            if ((pos = line.find("o ")) == 0)
             {
-                std::ifstream file(filename, std::ios::in);
-                if (!file.is_open())
-                    return false;
-
-                _vertices.clear();
-                _uvs.clear();
-                _normals.clear();
-                _faces.clear();
-
-                // All objects are converted to a single one.
-                // This indices keeps track of the objects
-                int vertexShift = 0;
-                int uvShift = 0;
-                int normalShift = 0;
-
-                for (std::string line; std::getline(file, line);)
+                vertexShift = _vertices.size();
+                uvShift = _uvs.size();
+                normalShift = _normals.size();
+            }
+            else if ((pos = line.find("v ")) == 0)
+            {
+                pos += 1;
+                glm::vec4 vertex;
+                int index = 0;
+                do
                 {
-                    
-                    std::string::size_type pos;
-                    if ((pos = line.find("o ")) == 0)
+                    pos++;
+                    line = line.substr(pos);
+                    vertex[index] = std::stof(line);
+                    index++;
+                    pos = line.find(" ");
+                } while (pos != std::string::npos && index < 4);
+
+                if (index < 3)
+                    vertex[3] = 1.f;
+
+                _vertices.push_back(vertex);
+            }
+            else if ((pos = line.find("vt ")) == 0)
+            {
+                pos += 2;
+                glm::vec2 uv;
+                int index = 0;
+                do
+                {
+                    pos++;
+                    line = line.substr(pos);
+                    uv[index] = std::stof(line);
+                    index++;
+                    pos = line.find(" ");
+                } while (pos != std::string::npos && index < 2);
+
+                _uvs.push_back(uv);
+            }
+            else if ((pos = line.find("vn ")) == 0)
+            {
+                pos += 2;
+                glm::vec3 normal;
+                int index = 0;
+                do
+                {
+                    pos++;
+                    line = line.substr(pos);
+                    normal[index] = std::stof(line);
+                    index++;
+                    pos = line.find(" ");
+                } while (pos != std::string::npos && index < 3);
+
+                _normals.push_back(normal);
+            }
+            else if ((pos = line.find("f ")) == 0)
+            {
+                pos += 1;
+
+                std::vector<FaceVertex> face;
+                std::string::size_type nextSlash, nextSpace;
+                do
+                {
+                    pos++;
+                    line = line.substr(pos);
+                    nextSpace = line.find(" ");
+
+                    FaceVertex faceVertex;
+                    faceVertex.vertexId = std::stoi(line) - 1;
+
+                    nextSlash = line.find("/");
+                    if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                     {
-                        vertexShift = _vertices.size();
-                        uvShift = _uvs.size();
-                        normalShift = _normals.size();
-                    }
-                    else if ((pos = line.find("v ")) == 0)
-                    {
-                        pos += 1;
-                        glm::vec4 vertex;
-                        int index = 0;
-                        do
+                        line = line.substr(nextSlash + 1);
+                        nextSlash = line.find("/");
+                        if (nextSlash != 0)
                         {
-                            pos++;
-                            line = line.substr(pos);
-                            vertex[index] = std::stof(line);
-                            index++;
-                            pos = line.find(" ");
-                        } while (pos != std::string::npos && index < 4);
-
-                        if (index < 3)
-                            vertex[3] = 1.f;
-
-                        _vertices.push_back(vertex);
-                    }
-                    else if ((pos = line.find("vt ")) == 0)
-                    {
-                        pos += 2;
-                        glm::vec2 uv;
-                        int index = 0;
-                        do
-                        {
-                            pos++;
-                            line = line.substr(pos);
-                            uv[index] = std::stof(line);
-                            index++;
-                            pos = line.find(" ");
-                        } while (pos != std::string::npos && index < 2);
-
-                        _uvs.push_back(uv);
-                    }
-                    else if ((pos = line.find("vn ")) == 0)
-                    {
-                        pos += 2;
-                        glm::vec3 normal;
-                        int index = 0;
-                        do
-                        {
-                            pos++;
-                            line = line.substr(pos);
-                            normal[index] = std::stof(line);
-                            index++;
-                            pos = line.find(" ");
-                        } while (pos != std::string::npos && index < 3);
-
-                        _normals.push_back(normal);
-                    }
-                    else if ((pos = line.find("f ")) == 0)
-                    {
-                        pos += 1;
-
-                        std::vector<FaceVertex> face;
-                        std::string::size_type nextSlash, nextSpace;
-                        do
-                        {
-                            pos++;
-                            line = line.substr(pos);
                             nextSpace = line.find(" ");
-
-                            FaceVertex faceVertex;
-                            faceVertex.vertexId = std::stoi(line) - 1;
-
-                            nextSlash = line.find("/");
-                            if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
-                            {
-                                line = line.substr(nextSlash + 1);
-                                nextSlash = line.find("/");
-                                if (nextSlash != 0)
-                                {
-                                    nextSpace = line.find(" ");
-                                    faceVertex.uvId = std::stoi(line) - 1;
-                                }
-                            }
-                            else
-                                nextSlash = line.find("/");
-                            if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
-                            {
-                                line = line.substr(nextSlash + 1);
-                                nextSpace = line.find(" ");
-                                faceVertex.normalId = std::stoi(line) - 1;
-                            }
-
-                            face.push_back(faceVertex);
-
-                            pos = nextSpace;
-                        } while (pos != std::string::npos);
-
-                        // We triangulate faces right away if needed
-                        // Only tris and quads are supported
-                        if (face.size() == 3)
-                        {
-                            _faces.push_back(face);
-                        }
-                        else if (face.size() >= 4)
-                        {
-                            std::vector<FaceVertex> newFace;
-                            newFace.push_back(face[0]);
-                            newFace.push_back(face[1]);
-                            newFace.push_back(face[2]);
-                            _faces.push_back(newFace);
-
-                            newFace.clear();
-                            newFace.push_back(face[2]);
-                            newFace.push_back(face[3]);
-                            newFace.push_back(face[0]);
-                            _faces.push_back(newFace);
+                            faceVertex.uvId = std::stoi(line) - 1;
                         }
                     }
-                }
-
-                // Check that we have faces, vertices and UVs
-                if (_vertices.size() == 0 || _faces.size() == 0)
-                {
-                    _vertices.clear();
-                    _faces.clear();
-                    _uvs.clear();
-                    _normals.clear();
-
-                    return false;
-                }
-
-                return true;
-            }
-
-            /**/
-            std::vector<glm::vec4> getVertices() const
-            {
-                std::vector<glm::vec4> vertices;
-
-                for (auto& face : _faces)
-                {
-                    vertices.push_back(_vertices[face[0].vertexId]);
-                    vertices.push_back(_vertices[face[1].vertexId]);
-                    vertices.push_back(_vertices[face[2].vertexId]);
-                }
-
-                return vertices;
-            }
-
-            /**/
-            std::vector<glm::vec2> getUVs() const
-            {
-                std::vector<glm::vec2> uvs;
-
-                for (auto& face : _faces)
-                {
-                    if (face[0].uvId == -1)
-                        for (auto& v : face)
-                            uvs.push_back(glm::vec2(0.f, 0.f));
                     else
+                        nextSlash = line.find("/");
+                    if (nextSlash != std::string::npos && (nextSpace == std::string::npos || nextSlash < nextSpace))
                     {
-                        uvs.push_back(_uvs[face[0].uvId]);
-                        uvs.push_back(_uvs[face[1].uvId]);
-                        uvs.push_back(_uvs[face[2].uvId]);
+                        line = line.substr(nextSlash + 1);
+                        nextSpace = line.find(" ");
+                        faceVertex.normalId = std::stoi(line) - 1;
                     }
-                }
 
-                return uvs;
-            }
+                    face.push_back(faceVertex);
 
-            /**/
-            std::vector<glm::vec3> getNormals() const
-            {
-                std::vector<glm::vec3> normals;
+                    pos = nextSpace;
+                } while (pos != std::string::npos);
 
-                for (auto& face : _faces)
+                // We triangulate faces right away if needed
+                // Only tris and quads are supported
+                if (face.size() == 3)
                 {
-                    if (face[0].normalId == -1)
-                    {
-                        auto edge1 = glm::vec3(_vertices[face[1].vertexId] - _vertices[face[0].vertexId]);
-                        auto edge2 = glm::vec3(_vertices[face[2].vertexId] - _vertices[face[0].vertexId]);
-                        auto normal = glm::normalize(glm::cross(edge1, edge2));
-
-                        normals.push_back(normal);
-                        normals.push_back(normal);
-                        normals.push_back(normal);
-                    }
-                    else
-                    {
-                        normals.push_back(_normals[face[0].normalId]);
-                        normals.push_back(_normals[face[1].normalId]);
-                        normals.push_back(_normals[face[2].normalId]);
-                    }
+                    _faces.push_back(face);
                 }
+                else if (face.size() >= 4)
+                {
+                    std::vector<FaceVertex> newFace;
+                    newFace.push_back(face[0]);
+                    newFace.push_back(face[1]);
+                    newFace.push_back(face[2]);
+                    _faces.push_back(newFace);
 
-                return normals;
+                    newFace.clear();
+                    newFace.push_back(face[2]);
+                    newFace.push_back(face[3]);
+                    newFace.push_back(face[0]);
+                    _faces.push_back(newFace);
+                }
             }
+        }
 
-            /**/
-            std::vector<std::vector<int>> getFaces() const
+        // Check that we have faces, vertices and UVs
+        if (_vertices.size() == 0 || _faces.size() == 0)
+        {
+            _vertices.clear();
+            _faces.clear();
+            _uvs.clear();
+            _normals.clear();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**/
+    std::vector<glm::vec4> getVertices() const
+    {
+        std::vector<glm::vec4> vertices;
+
+        for (auto& face : _faces)
+        {
+            vertices.push_back(_vertices[face[0].vertexId]);
+            vertices.push_back(_vertices[face[1].vertexId]);
+            vertices.push_back(_vertices[face[2].vertexId]);
+        }
+
+        return vertices;
+    }
+
+    /**/
+    std::vector<glm::vec2> getUVs() const
+    {
+        std::vector<glm::vec2> uvs;
+
+        for (auto& face : _faces)
+        {
+            if (face[0].uvId == -1)
+                for (auto& v : face)
+                    uvs.push_back(glm::vec2(0.f, 0.f));
+            else
             {
-                return std::vector<std::vector<int>>();
+                uvs.push_back(_uvs[face[0].uvId]);
+                uvs.push_back(_uvs[face[1].uvId]);
+                uvs.push_back(_uvs[face[2].uvId]);
             }
+        }
 
-        private:
-            std::vector<glm::vec4> _vertices;
-            std::vector<glm::vec2> _uvs;
-            std::vector<glm::vec3> _normals;
+        return uvs;
+    }
 
-            struct FaceVertex
+    /**/
+    std::vector<glm::vec3> getNormals() const
+    {
+        std::vector<glm::vec3> normals;
+
+        for (auto& face : _faces)
+        {
+            if (face[0].normalId == -1)
             {
-                int vertexId {-1};
-                int uvId {-1};
-                int normalId {-1};
-            };
-            std::vector<std::vector<FaceVertex>> _faces;
+                auto edge1 = glm::vec3(_vertices[face[1].vertexId] - _vertices[face[0].vertexId]);
+                auto edge2 = glm::vec3(_vertices[face[2].vertexId] - _vertices[face[0].vertexId]);
+                auto normal = glm::normalize(glm::cross(edge1, edge2));
+
+                normals.push_back(normal);
+                normals.push_back(normal);
+                normals.push_back(normal);
+            }
+            else
+            {
+                normals.push_back(_normals[face[0].normalId]);
+                normals.push_back(_normals[face[1].normalId]);
+                normals.push_back(_normals[face[2].normalId]);
+            }
+        }
+
+        return normals;
+    }
+
+    /**/
+    std::vector<std::vector<int>> getFaces() const { return std::vector<std::vector<int>>(); }
+
+  private:
+    std::vector<glm::vec4> _vertices;
+    std::vector<glm::vec2> _uvs;
+    std::vector<glm::vec3> _normals;
+
+    struct FaceVertex
+    {
+        int vertexId{-1};
+        int uvId{-1};
+        int normalId{-1};
     };
-    
-    } // end of namespace
+    std::vector<std::vector<FaceVertex>> _faces;
+};
+
+} // end of namespace
 } // end of namespace
 
 #endif

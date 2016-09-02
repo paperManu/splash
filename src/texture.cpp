@@ -9,11 +9,11 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Texture::Texture(std::weak_ptr<RootObject> root)
-        : BaseObject(root)
+Texture::Texture(std::weak_ptr<RootObject> root) : BaseObject(root)
 {
     init();
 }

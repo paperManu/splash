@@ -35,16 +35,16 @@
 #include <atomic>
 #include <deque>
 #include <functional>
-#include <memory>
 #include <imgui.h>
+#include <memory>
 
 #include "config.h"
 
 #if HAVE_GPHOTO
-    #include "./colorcalibrator.h"
+#include "./colorcalibrator.h"
 #endif
-#include "./coretypes.h"
 #include "./basetypes.h"
+#include "./coretypes.h"
 #include "./widget_control.h"
 #include "./widget_global_view.h"
 #include "./widget_graph.h"
@@ -54,223 +54,223 @@
 #include "./widget_text_box.h"
 #include "./widget_warp.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Scene;
 
 /*************/
 class Gui : public ControllerObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param w Window to display the gui
-         * \param s Root scene
-         */
-        Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
+  public:
+    /**
+     * \brief Constructor
+     * \param w Window to display the gui
+     * \param s Root scene
+     */
+    Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
 
-        /**
-         * \brief Destructor
-         */
-        ~Gui();
+    /**
+     * \brief Destructor
+     */
+    ~Gui();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Gui(const Gui&) = delete;
-        Gui& operator=(const Gui&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Gui(const Gui&) = delete;
+    Gui& operator=(const Gui&) = delete;
 
-        /**
-         * \brief Get pointers to this gui textures
-         * \return Return shared pointers to the rendered textures
-         */
-        std::shared_ptr<Texture> getTexture() const {return _outTexture;}
+    /**
+     * \brief Get pointers to this gui textures
+     * \return Return shared pointers to the rendered textures
+     */
+    std::shared_ptr<Texture> getTexture() const { return _outTexture; }
 
-        /**
-         * \brief Check wether it is initialized
-         * \return Return true if the gui is initialized
-         */
-        bool isInitialized() const {return _isInitialized;}
+    /**
+     * \brief Check wether it is initialized
+     * \return Return true if the gui is initialized
+     */
+    bool isInitialized() const { return _isInitialized; }
 
-        /**
-         * \brief Forward a unicode char event
-         * \param unicodeChar Unicode character to forward to the gui
-         */
-        void unicodeChar(unsigned int unicodeChar);
+    /**
+     * \brief Forward a unicode char event
+     * \param unicodeChar Unicode character to forward to the gui
+     */
+    void unicodeChar(unsigned int unicodeChar);
 
-        /**
-         * \brief Forward joystick state
-         * \param axes Axes state
-         * \param buttons Buttons state
-         */
-        void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
+    /**
+     * \brief Forward joystick state
+     * \param axes Axes state
+     * \param buttons Buttons state
+     */
+    void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
 
-        /**
-         * \brief Forward a key event
-         * \param key Key code
-         * \param action Action to applied to the key
-         * \param mods Modifier keys
-         */
-        void key(int key, int action, int mods);
+    /**
+     * \brief Forward a key event
+     * \param key Key code
+     * \param action Action to applied to the key
+     * \param mods Modifier keys
+     */
+    void key(int key, int action, int mods);
 
-        /**
-         * \brief Forward mouse position
-         * \param xpos X position
-         * \param ypos Y position
-         */
-        void mousePosition(int xpos, int ypos);
+    /**
+     * \brief Forward mouse position
+     * \param xpos X position
+     * \param ypos Y position
+     */
+    void mousePosition(int xpos, int ypos);
 
-        /**
-         * \brief Forward mouse buttons
-         * \param btn Button
-         * \param action Action applied to the button
-         * \param mods Key modifier
-         */
-        void mouseButton(int btn, int action, int mods);
+    /**
+     * \brief Forward mouse buttons
+     * \param btn Button
+     * \param action Action applied to the button
+     * \param mods Key modifier
+     */
+    void mouseButton(int btn, int action, int mods);
 
-        /**
-         * \brief Forward mouse scroll
-         * \param xoffset Scroll along X axis
-         * \param yoffset Scroll along Y axis
-         */
-        void mouseScroll(double xoffset, double yoffset);
+    /**
+     * \brief Forward mouse scroll
+     * \param xoffset Scroll along X axis
+     * \param yoffset Scroll along Y axis
+     */
+    void mouseScroll(double xoffset, double yoffset);
 
-        /**
-         * \brief Try to link the given BaseObject to this object
-         * \param obj Shared pointer to the (wannabe) child object
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Try to unlink the given BaseObject from this object
-         * \param obj Shared pointer to the (supposed) child object
-         */
-        void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to unlink the given BaseObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Render this gui
-         * \return Return true if all went well
-         */
-        bool render();
+    /**
+     * \brief Render this gui
+     * \return Return true if all went well
+     */
+    bool render();
 
-        /**
-         * \brief Specify the configuration path (as loaded by World)
-         * \param path Configuration path
-         */
-        void setConfigFilePath(const std::string& path) {_configurationPath = path.data();}
+    /**
+     * \brief Specify the configuration path (as loaded by World)
+     * \param path Configuration path
+     */
+    void setConfigFilePath(const std::string& path) { _configurationPath = path.data(); }
 
-        /**
-         * \brief Set the resolution of the gui
-         * \param width Width
-         * \param height Height
-         */
-        void setOutputSize(int width, int height);
+    /**
+     * \brief Set the resolution of the gui
+     * \param width Width
+     * \param height Height
+     */
+    void setOutputSize(int width, int height);
 
-    private:
-        bool _isInitialized {false};
-        std::shared_ptr<GlWindow> _window;
-        std::weak_ptr<Scene> _scene;
+  private:
+    bool _isInitialized{false};
+    std::shared_ptr<GlWindow> _window;
+    std::weak_ptr<Scene> _scene;
 
-        GLuint _fbo {0};
-        std::shared_ptr<Texture_Image> _depthTexture;
-        std::shared_ptr<Texture> _outTexture;
-        float _width {512}, _height {512};
-        int _initialGuiPos[2] {16, 16}; //!< Gui position at startup
+    GLuint _fbo{0};
+    std::shared_ptr<Texture_Image> _depthTexture;
+    std::shared_ptr<Texture> _outTexture;
+    float _width{512}, _height{512};
+    int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
-        // GUI specific camera
-        std::shared_ptr<Camera> _guiCamera;
+    // GUI specific camera
+    std::shared_ptr<Camera> _guiCamera;
 
-        // ImGUI related attributes
-        static GLuint _imFontTextureId;
-        static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
-        static GLint _imGuiTextureLocation;
-        static GLint _imGuiProjMatrixLocation;
-        static GLint _imGuiPositionLocation;
-        static GLint _imGuiUVLocation;
-        static GLint _imGuiColorLocation;
-        static GLuint _imGuiVboHandle, _imGuiElementsHandle, _imGuiVaoHandle;
-        static size_t _imGuiVboMaxSize;
+    // ImGUI related attributes
+    static GLuint _imFontTextureId;
+    static GLuint _imGuiShaderHandle, _imGuiVertHandle, _imGuiFragHandle;
+    static GLint _imGuiTextureLocation;
+    static GLint _imGuiProjMatrixLocation;
+    static GLint _imGuiPositionLocation;
+    static GLint _imGuiUVLocation;
+    static GLint _imGuiColorLocation;
+    static GLuint _imGuiVboHandle, _imGuiElementsHandle, _imGuiVaoHandle;
+    static size_t _imGuiVboMaxSize;
 
-        // ImGUI objects
-        ImGuiWindowFlags _windowFlags {0};
-        std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
+    // ImGUI objects
+    ImGuiWindowFlags _windowFlags{0};
+    std::vector<std::shared_ptr<GuiWidget>> _guiWidgets;
 
-        // Gui related attributes
-        std::string _configurationPath;
-        bool _isVisible {false};
-        bool _flashBG {false}; // Set to true if the BG is set to all white for all outputs
-        bool _wireframe {false};
-        bool _blendingActive {false};
+    // Gui related attributes
+    std::string _configurationPath;
+    bool _isVisible{false};
+    bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
+    bool _wireframe{false};
+    bool _blendingActive{false};
 
-        /**
-         * \brief Initialize ImGui
-         * \brief width Default width
-         * \brief height Default height
-         */
-        void initImGui(int width, int height);
+    /**
+     * \brief Initialize ImGui
+     * \brief width Default width
+     * \brief height Default height
+     */
+    void initImGui(int width, int height);
 
-        /**
-         * \brief Initialize widgets
-         */
-        void initImWidgets();
+    /**
+     * \brief Initialize widgets
+     */
+    void initImWidgets();
 
-        /**
-         * \brief ImGui render function
-         * \param draw_data Data sent by ImGui for drawing
-         */
-        static void imGuiRenderDrawLists(ImDrawData* draw_data);
+    /**
+     * \brief ImGui render function
+     * \param draw_data Data sent by ImGui for drawing
+     */
+    static void imGuiRenderDrawLists(ImDrawData* draw_data);
 
-        /**
-         * Actions
-         */
+    /**
+     * Actions
+     */
 
-        /**
-         * \brief Activate the cameras lookup tables
-         */
-        void activateLUT();
+    /**
+     * \brief Activate the cameras lookup tables
+     */
+    void activateLUT();
 
-        /**
-         * \brief Launch calibration of the camera response function
-         */
-        void calibrateColorResponseFunction();
+    /**
+     * \brief Launch calibration of the camera response function
+     */
+    void calibrateColorResponseFunction();
 
-        /**
-         * \brief Calibrate projectors colors
-         */
-        void calibrateColors();
+    /**
+     * \brief Calibrate projectors colors
+     */
+    void calibrateColors();
 
-        /**
-         * \brief Compute projectors blending
-         */
-        void computeBlending(bool once = false);
+    /**
+     * \brief Compute projectors blending
+     */
+    void computeBlending(bool once = false);
 
-        /**
-         * \brief Make the background flash to light grey
-         */
-        void flashBackground();
+    /**
+     * \brief Make the background flash to light grey
+     */
+    void flashBackground();
 
-        /**
-         * \brief Copy camera parameters from the specified configuration file to the current configuration
-         */
-        void copyCameraParameters();
+    /**
+     * \brief Copy camera parameters from the specified configuration file to the current configuration
+     */
+    void copyCameraParameters();
 
-        /**
-         * \brief Load the specified configuration
-         */
-        void loadConfiguration();
-        
-        /**
-         * \brief Save the configuration to the specified file
-         */
-        void saveConfiguration();
+    /**
+     * \brief Load the specified configuration
+     */
+    void loadConfiguration();
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Save the configuration to the specified file
+     */
+    void saveConfiguration();
+
+    /**
+     * Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace
-
 
 #endif // SPLASH_GUI_H

@@ -26,126 +26,127 @@
 #define SPLASH_MESH_H
 
 #include <chrono>
+#include <glm/glm.hpp>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Mesh : public BufferObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Mesh(std::weak_ptr<RootObject> root); 
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Mesh(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        virtual ~Mesh();
+    /**
+     * \brief Destructor
+     */
+    virtual ~Mesh();
 
-        /**
-         * No copy constructor, but a copy operator
-         */
-        Mesh(const Mesh&) = delete;
-        Mesh& operator=(const Mesh&) = delete;
-        Mesh& operator=(Mesh&&) = default;
+    /**
+     * No copy constructor, but a copy operator
+     */
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+    Mesh& operator=(Mesh&&) = default;
 
-        /**
-         * \brief Compare meshes based on their timestamps
-         * \param otherMesh Mesh to compare to
-         * \return Return true if the meshes share the same timestamp
-         */
-        bool operator==(Mesh& otherMesh) const;
+    /**
+     * \brief Compare meshes based on their timestamps
+     * \param otherMesh Mesh to compare to
+     * \return Return true if the meshes share the same timestamp
+     */
+    bool operator==(Mesh& otherMesh) const;
 
-        /**
-         * \brief Get a 1D vector of all points of the mesh, in normalized coordinates
-         * \return Return a vector representing all points of the mesh
-         */
-        virtual std::vector<float> getVertCoords() const;
+    /**
+     * \brief Get a 1D vector of all points of the mesh, in normalized coordinates
+     * \return Return a vector representing all points of the mesh
+     */
+    virtual std::vector<float> getVertCoords() const;
 
-        /**
-         * \brief Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
-         * \return Return a vector representing the UV coordinates
-         */
-        virtual std::vector<float> getUVCoords() const;
+    /**
+     * \brief Get a 1D vector of the UV coordinates for all points, same order as getVertCoords()
+     * \return Return a vector representing the UV coordinates
+     */
+    virtual std::vector<float> getUVCoords() const;
 
-        /**
-         * \brief Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
-         * \return Return a vector representing the normals
-         */
-        virtual std::vector<float> getNormals() const;
+    /**
+     * \brief Get a 1D vector of the normal at each vertex, same order as getVertCoords(), normalized coords
+     * \return Return a vector representing the normals
+     */
+    virtual std::vector<float> getNormals() const;
 
-        /**
-         * \brief Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
-         * \return Return a vector representing the annexes
-         */
-        virtual std::vector<float> getAnnexe() const;
+    /**
+     * \brief Get a 1D vector of the annexe at each vertex, same order as getVertCoords()
+     * \return Return a vector representing the annexes
+     */
+    virtual std::vector<float> getAnnexe() const;
 
-        /**
-         * \brief Read / update the mesh
-         * \param filename File to load from
-         * \return Return true if all went well
-         */
-        virtual bool read(const std::string& filename);
+    /**
+     * \brief Read / update the mesh
+     * \param filename File to load from
+     * \return Return true if all went well
+     */
+    virtual bool read(const std::string& filename);
 
-        /**
-         * \brief Get a serialized representation of the mesh
-         * \return Return a serialized object
-         */
-        std::shared_ptr<SerializedObject> serialize() const;
+    /**
+     * \brief Get a serialized representation of the mesh
+     * \return Return a serialized object
+     */
+    std::shared_ptr<SerializedObject> serialize() const;
 
-        /**
-         * \brief Set the mesh from a serialized representation
-         * \param obj Serialized object
-         * \return Return true if all went well
-         */
-        bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    /**
+     * \brief Set the mesh from a serialized representation
+     * \param obj Serialized object
+     * \return Return true if all went well
+     */
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
-        /**
-         * \brief Update the content of the mesh
-         */
-        virtual void update();
+    /**
+     * \brief Update the content of the mesh
+     */
+    virtual void update();
 
-    protected:
-        bool _worldObject {false};
+  protected:
+    bool _worldObject{false};
 
-        struct MeshContainer
-        {
-            std::vector<glm::vec4> vertices;
-            std::vector<glm::vec2> uvs;
-            std::vector<glm::vec3> normals;
-            std::vector<glm::vec4> annexe;
-        };
+    struct MeshContainer
+    {
+        std::vector<glm::vec4> vertices;
+        std::vector<glm::vec2> uvs;
+        std::vector<glm::vec3> normals;
+        std::vector<glm::vec4> annexe;
+    };
 
-        std::string _filepath {};
-        MeshContainer _mesh;
-        MeshContainer _bufferMesh;
-        bool _meshUpdated {false};
-        bool _benchmark {false};
-        int _planeSubdivisions {0};
+    std::string _filepath{};
+    MeshContainer _mesh;
+    MeshContainer _bufferMesh;
+    bool _meshUpdated{false};
+    bool _benchmark{false};
+    int _planeSubdivisions{0};
 
-    private:
-        void init();
+  private:
+    void init();
 
-        /**
-         * \brief Create a plane mesh, subdivided according to the parameter
-         * \param subdiv Number of subdivision for the plane
-         */
-        void createDefaultMesh(int subdiv = 8);
-        
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Create a plane mesh, subdivided according to the parameter
+     * \param subdiv Number of subdivision for the plane
+     */
+    void createDefaultMesh(int subdiv = 8);
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

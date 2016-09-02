@@ -55,7 +55,7 @@ void GuiTemplate::loadTemplates()
     auto templatePath = string(DATADIR);
     auto examples = vector<string>();
     auto descriptions = vector<string>();
-    
+
     // Try to read the template file
     ifstream in(templatePath + "templates.txt", ios::in | ios::binary);
 #if HAVE_OSX

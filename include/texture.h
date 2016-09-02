@@ -26,111 +26,112 @@
 #define SPLASH_TEXTURE_H
 
 #include <chrono>
+#include <glm/glm.hpp>
 #include <memory>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "imageBuffer.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Texture : public BaseObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Texture(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Texture(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        virtual ~Texture();
+    /**
+     * \brief Destructor
+     */
+    virtual ~Texture();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Texture(const Texture&) = delete;
-        Texture& operator=(const Texture&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
 
-        /**
-         * \brief Bind this texture
-         */
-        virtual void bind() = 0;
+    /**
+     * \brief Bind this texture
+     */
+    virtual void bind() = 0;
 
-        /**
-         * \brief Unbind this texture
-         */
-        virtual void unbind() = 0;
+    /**
+     * \brief Unbind this texture
+     */
+    virtual void unbind() = 0;
 
-        /**
-         * \brief Get the shader parameters related to this texture. Texture should be locked first.
-         * \return Return the shader uniforms
-         */
-        virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;
+    /**
+     * \brief Get the shader parameters related to this texture. Texture should be locked first.
+     * \return Return the shader uniforms
+     */
+    virtual std::unordered_map<std::string, Values> getShaderUniforms() const = 0;
 
-        /**
-         * \brief Get spec of the texture
-         * \return Return the texture spec
-         */
-        virtual ImageBufferSpec getSpec() const = 0;
+    /**
+     * \brief Get spec of the texture
+     * \return Return the texture spec
+     */
+    virtual ImageBufferSpec getSpec() const = 0;
 
-        /**
-         * \brief Get the prefix for the glsl sampler name
-         */
-        virtual std::string getPrefix() const {return "_tex";}
+    /**
+     * \brief Get the prefix for the glsl sampler name
+     */
+    virtual std::string getPrefix() const { return "_tex"; }
 
-        /**
-         * \brief Try to link the given BaseObject to this object
-         * \param obj Shared pointer to the (wannabe) child object
-         */
-        virtual bool linkTo(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    virtual bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Lock the texture for read / write operations
-         */
-        void lock() const {_mutex.lock();}
+    /**
+     * \brief Lock the texture for read / write operations
+     */
+    void lock() const { _mutex.lock(); }
 
-        /**
-         * \brief Unlock the texture for read / write operations
-         */
-        void unlock() const {_mutex.unlock();}
+    /**
+     * \brief Unlock the texture for read / write operations
+     */
+    void unlock() const { _mutex.unlock(); }
 
-        /**
-         * \brief Set whether the texture should be resizable
-         * \param resizable If true, the texture is resizable
-         */
-        void setResizable(bool resizable) {_resizable = resizable;}
+    /**
+     * \brief Set whether the texture should be resizable
+     * \param resizable If true, the texture is resizable
+     */
+    void setResizable(bool resizable) { _resizable = resizable; }
 
-        /**
-         * \brief Update the texture according to the owned Image
-         */
-        virtual void update() = 0;
+    /**
+     * \brief Update the texture according to the owned Image
+     */
+    virtual void update() = 0;
 
-    protected:
-        mutable std::mutex _mutex;
-        ImageBufferSpec _spec;
+  protected:
+    mutable std::mutex _mutex;
+    ImageBufferSpec _spec;
 
-        // Store some texture parameters
-        bool _resizable {true};
+    // Store some texture parameters
+    bool _resizable{true};
 
-        int64_t _timestamp;
+    int64_t _timestamp;
 
-    private:
-        /**
-         * \brief As says its name
-         */
-        void init();
+  private:
+    /**
+     * \brief As says its name
+     */
+    void init();
 
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

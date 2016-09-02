@@ -33,18 +33,17 @@ namespace Splash
 /*************/
 class GuiTemplate : public GuiWidget
 {
-    public:
-        GuiTemplate(std::weak_ptr<Scene> scene, std::string name)
-            : GuiWidget(scene, name) {}
-        void render();
+  public:
+    GuiTemplate(std::weak_ptr<Scene> scene, std::string name) : GuiWidget(scene, name) {}
+    void render();
 
-    private:
-        bool _templatesLoaded {false};
-        std::vector<std::string> _names;
-        std::map<std::string, std::shared_ptr<Texture_Image>> _textures;
-        std::map<std::string, std::string> _descriptions;
+  private:
+    bool _templatesLoaded{false};
+    std::vector<std::string> _names;
+    std::map<std::string, std::shared_ptr<Texture_Image>> _textures;
+    std::map<std::string, std::string> _descriptions;
 
-        void loadTemplates();
+    void loadTemplates();
 };
 
 } // end of namespace

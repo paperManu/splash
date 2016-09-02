@@ -25,246 +25,247 @@
 #ifndef SPLASH_OBJECT_H
 #define SPLASH_OBJECT_H
 
+#include <glm/glm.hpp>
 #include <memory>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "geometry.h"
 #include "gpuBuffer.h"
 #include "shader.h"
 #include "texture.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Object : public BaseObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Object(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Object(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        ~Object();
+    /**
+     * \brief Destructor
+     */
+    ~Object();
 
-        /**
-         * No copy constructor, but some moves
-         */
-        Object(const Object& o) = delete;
-        Object& operator=(const Object& o) = delete;
+    /**
+     * No copy constructor, but some moves
+     */
+    Object(const Object& o) = delete;
+    Object& operator=(const Object& o) = delete;
 
-        /**
-         * \brief Activate this object for rendering
-         */
-        void activate();
+    /**
+     * \brief Activate this object for rendering
+     */
+    void activate();
 
-        /**
-         * \brief Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
-         * \param viewMatrix View matrix
-         * \param projectionMatrix Projection matrix
-         * \param blendWidth Width of the blending zone between projectors
-         */
-        void computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
+    /**
+     * \brief Compute the visibility for the mvp specified with setViewProjectionMatrix, for blending purposes
+     * \param viewMatrix View matrix
+     * \param projectionMatrix Projection matrix
+     * \param blendWidth Width of the blending zone between projectors
+     */
+    void computeCameraContribution(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float blendWidth);
 
-        /**
-         * \brief Deactivate this object for rendering
-         */
-        void deactivate();
+    /**
+     * \brief Deactivate this object for rendering
+     */
+    void deactivate();
 
-        /**
-         * \brief Add a geometry to this object
-         * \param geometry Geometry to add
-         */
-        void addGeometry(const std::shared_ptr<Geometry>& geometry) {_geometries.push_back(geometry);}
+    /**
+     * \brief Add a geometry to this object
+     * \param geometry Geometry to add
+     */
+    void addGeometry(const std::shared_ptr<Geometry>& geometry) { _geometries.push_back(geometry); }
 
-        /**
-         * \brief Add a texture to this object
-         * \param texture Texture to add
-         */
-        void addTexture(const std::shared_ptr<Texture>& texture) {_textures.push_back(texture);}
+    /**
+     * \brief Add a texture to this object
+     * \param texture Texture to add
+     */
+    void addTexture(const std::shared_ptr<Texture>& texture) { _textures.push_back(texture); }
 
-        /**
-         * \brief Add a calibration point
-         * \param point Point coordinates
-         */
-        void addCalibrationPoint(glm::dvec3 point);
+    /**
+     * \brief Add a calibration point
+     * \param point Point coordinates
+     */
+    void addCalibrationPoint(glm::dvec3 point);
 
-        /**
-         * \brief Remove a calibration point
-         * \param point Point coordinates
-         */
-        void removeCalibrationPoint(glm::dvec3 point);
+    /**
+     * \brief Remove a calibration point
+     * \param point Point coordinates
+     */
+    void removeCalibrationPoint(glm::dvec3 point);
 
-        /**
-         * \brief Draw the object
-         */
-        void draw();
+    /**
+     * \brief Draw the object
+     */
+    void draw();
 
-        /**
-         * \brief Get a reference to all the calibration points set
-         * \return Return a reference to the vector containing all calibration points
-         */
-        inline std::vector<glm::dvec3>& getCalibrationPoints() {return _calibrationPoints;}
+    /**
+     * \brief Get a reference to all the calibration points set
+     * \return Return a reference to the vector containing all calibration points
+     */
+    inline std::vector<glm::dvec3>& getCalibrationPoints() { return _calibrationPoints; }
 
-        /**
-         * \brief Get the model matrix
-         * \return Return the model matrix
-         */
-        inline glm::dmat4 getModelMatrix() const {return computeModelMatrix();}
+    /**
+     * \brief Get the model matrix
+     * \return Return the model matrix
+     */
+    inline glm::dmat4 getModelMatrix() const { return computeModelMatrix(); }
 
-        /**
-         * \brief Get the shader used for the object
-         * \return Return the shader
-         */
-        inline std::shared_ptr<Shader> getShader() const {return _shader;}
+    /**
+     * \brief Get the shader used for the object
+     * \return Return the shader
+     */
+    inline std::shared_ptr<Shader> getShader() const { return _shader; }
 
-        /**
-         * \brief Get the number of vertices for this object
-         * \return Return the number of vertices
-         */
-        int getVerticesNumber() const;
+    /**
+     * \brief Get the number of vertices for this object
+     * \return Return the number of vertices
+     */
+    int getVerticesNumber() const;
 
-        /**
-         * \brief Try to link the given BaseObject to this object
-         * \param obj Shared pointer to the (wannabe) child object
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Try to unlink the given BaseObject from this object
-         * \param obj Shared pointer to the (supposed) child object
-         */
-        void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to unlink the given BaseObject from this object
+     * \param obj Shared pointer to the (supposed) child object
+     */
+    void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Get the coordinates of the closest vertex to the given point
-         * \param p Coordinates around which to look
-         * \param v Found vertex coordinates
-         * \return Return the distance between p and v
-         */
-        float pickVertex(glm::dvec3 p, glm::dvec3& v);
+    /**
+     * \brief Get the coordinates of the closest vertex to the given point
+     * \param p Coordinates around which to look
+     * \param v Found vertex coordinates
+     * \return Return the distance between p and v
+     */
+    float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
-        /**
-         * \brief Remove a geometry from this object
-         * \param geometry Geometry to remove
-         */
-        void removeGeometry(const std::shared_ptr<Geometry>& geometry);
+    /**
+     * \brief Remove a geometry from this object
+     * \param geometry Geometry to remove
+     */
+    void removeGeometry(const std::shared_ptr<Geometry>& geometry);
 
-        /**
-         * \brief Remove a texture from this object
-         * \param texture Texture to remove
-         */
-        void removeTexture(const std::shared_ptr<Texture>& texture);
+    /**
+     * \brief Remove a texture from this object
+     * \param texture Texture to remove
+     */
+    void removeTexture(const std::shared_ptr<Texture>& texture);
 
-        /**
-         * \brief Reset tessellation of all linked objects
-         */
-        void resetTessellation();
+    /**
+     * \brief Reset tessellation of all linked objects
+     */
+    void resetTessellation();
 
-        /**
-         * \brief Reset the visibility flag, as well as the faces ID
-         * \param primitiveIdShift Shift for the ID of the vertices
-         */
-        void resetVisibility(int primitiveIdShift = 0);
+    /**
+     * \brief Reset the visibility flag, as well as the faces ID
+     * \param primitiveIdShift Shift for the ID of the vertices
+     */
+    void resetVisibility(int primitiveIdShift = 0);
 
-        /**
-         * \brief Reset the attribute holding the number of camera and the blending value
-         */
-        void resetBlendingAttribute();
+    /**
+     * \brief Reset the attribute holding the number of camera and the blending value
+     */
+    void resetBlendingAttribute();
 
-        /**
-         * \brief Set the shader to render this object with
-         * \param shader Shader to use
-         */
-        void setShader(const std::shared_ptr<Shader>& shader) {_shader = shader;}
+    /**
+     * \brief Set the shader to render this object with
+     * \param shader Shader to use
+     */
+    void setShader(const std::shared_ptr<Shader>& shader) { _shader = shader; }
 
-        /**
-         * \brief Set the view and projection matrices
-         * \param mv View matrix
-         * \[aram mp Projection matrix
-         */
-        void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
+    /**
+     * \brief Set the view and projection matrices
+     * \param mv View matrix
+     * \[aram mp Projection matrix
+     */
+    void setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp);
 
-        /**
-         * \brief Set the model matrix. This overrides the position attribute
-         * \param model Model matrix
-         */
-        void setModelMatrix(const glm::dmat4& model) {_modelMatrix = model;}
+    /**
+     * \brief Set the model matrix. This overrides the position attribute
+     * \param model Model matrix
+     */
+    void setModelMatrix(const glm::dmat4& model) { _modelMatrix = model; }
 
-        /**
-         * \brief Subdivide the objects wrt the given camera limits (for blending purposes)
-         * \param viewMatrix View matrix
-         * \param projectionMatrix Projection matrix
-         * \param fovX Horizontal FOV
-         * \param fovY Vertical FOV
-         * \param blendWidth Blending width
-         * \param blendPrecision Blending precision
-         */
-        // TODO: use the matrices specified with setViewProjectionMatrix
-        void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
+    /**
+     * \brief Subdivide the objects wrt the given camera limits (for blending purposes)
+     * \param viewMatrix View matrix
+     * \param projectionMatrix Projection matrix
+     * \param fovX Horizontal FOV
+     * \param fovY Vertical FOV
+     * \param blendWidth Blending width
+     * \param blendPrecision Blending precision
+     */
+    // TODO: use the matrices specified with setViewProjectionMatrix
+    void tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectionMatrix, float fovX, float fovY, float blendWidth, float blendPrecision);
 
-        /**
-         * \brief This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
-         * \param width Width of the texture
-         * \param height Height of the texture
-         * \param primitiveIdShift Shift for the ID as rendered in the texture
-         */
-        void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
+    /**
+     * \brief This transfers the visibility from the texture active as GL_TEXTURE0 to the vertices attributes
+     * \param width Width of the texture
+     * \param height Height of the texture
+     * \param primitiveIdShift Shift for the ID as rendered in the texture
+     */
+    void transferVisibilityFromTexToAttr(int width, int height, int primitiveIdShift);
 
-    private:
-        mutable std::mutex _mutex;
+  private:
+    mutable std::mutex _mutex;
 
-        std::shared_ptr<Shader> _shader {};
-        std::shared_ptr<Shader> _computeShaderResetVisibility {};
-        std::shared_ptr<Shader> _computeShaderResetBlendingAttributes {};
-        std::shared_ptr<Shader> _computeShaderComputeBlending {};
-        std::shared_ptr<Shader> _computeShaderTransferVisibilityToAttr {};
-        std::shared_ptr<Shader> _feedbackShaderSubdivideCamera {};
+    std::shared_ptr<Shader> _shader{};
+    std::shared_ptr<Shader> _computeShaderResetVisibility{};
+    std::shared_ptr<Shader> _computeShaderResetBlendingAttributes{};
+    std::shared_ptr<Shader> _computeShaderComputeBlending{};
+    std::shared_ptr<Shader> _computeShaderTransferVisibilityToAttr{};
+    std::shared_ptr<Shader> _feedbackShaderSubdivideCamera{};
 
-        // A map for previously used graphics shaders
-        std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;
+    // A map for previously used graphics shaders
+    std::map<std::string, std::shared_ptr<Shader>> _graphicsShaders;
 
-        std::vector<std::shared_ptr<Texture>> _textures;
-        std::vector<std::shared_ptr<Geometry>> _geometries;
+    std::vector<std::shared_ptr<Texture>> _textures;
+    std::vector<std::shared_ptr<Geometry>> _geometries;
 
-        bool _vertexBlendingActive {false};
+    bool _vertexBlendingActive{false};
 
-        glm::dvec3 _position {0.0, 0.0, 0.0};
-        glm::dvec3 _rotation {0.0, 0.0, 0.0};
-        glm::dvec3 _scale {1.0, 1.0, 1.0};
-        glm::dmat4 _modelMatrix;
+    glm::dvec3 _position{0.0, 0.0, 0.0};
+    glm::dvec3 _rotation{0.0, 0.0, 0.0};
+    glm::dvec3 _scale{1.0, 1.0, 1.0};
+    glm::dmat4 _modelMatrix;
 
-        std::string _fill {"texture"};
-        int _sideness {0};
-        glm::dvec4 _color {0.0, 1.0, 0.0, 1.0};
-        float _normalExponent {0.0};
+    std::string _fill{"texture"};
+    int _sideness{0};
+    glm::dvec4 _color{0.0, 1.0, 0.0, 1.0};
+    float _normalExponent{0.0};
 
-        // A copy of all the cameras' calibration points,
-        // for display purposes. These are not saved
-        std::vector<glm::dvec3> _calibrationPoints;
+    // A copy of all the cameras' calibration points,
+    // for display purposes. These are not saved
+    std::vector<glm::dvec3> _calibrationPoints;
 
-        /**
-         * \brief Init function called by constructor
-         */
-        void init();
+    /**
+     * \brief Init function called by constructor
+     */
+    void init();
 
-        /**
-         * \brief Compute the matrix corresponding to the object position
-         * \return Return the model matrix
-         */
-        glm::dmat4 computeModelMatrix() const;
+    /**
+     * \brief Compute the matrix corresponding to the object position
+     * \return Return the model matrix
+     */
+    glm::dmat4 computeModelMatrix() const;
 
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

@@ -3,16 +3,16 @@
 #include "cgUtils.h"
 #include "log.h"
 #include "scene.h"
-#include "timer.h"
 #include "texture_image.h"
+#include "timer.h"
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Filter::Filter(std::weak_ptr<RootObject> root)
-       : Texture(root)
+Filter::Filter(std::weak_ptr<RootObject> root) : Texture(root)
 {
     init();
 }
@@ -38,10 +38,10 @@ void Filter::init()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-	{
+    {
         Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-		return;
-	}
+        return;
+    }
     else
         Log::get() << Log::MESSAGE << "Filter::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
@@ -67,7 +67,7 @@ Filter::~Filter()
         return;
 
 #ifdef DEBUG
-    Log::get()<< Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
 #endif
 
     glDeleteFramebuffers(1, &_fbo);
@@ -300,12 +300,13 @@ bool Filter::setFilterSource(const string& source)
             types.push_back(v.getTypeAsChar());
 
         _filterUniforms[u.first] = u.second;
-        addAttribute(u.first, [=](const Values& args) {
-            _filterUniforms[u.first] = args;
-            return true;
-        }, [=]() -> Values {
-            return _filterUniforms[u.first];
-        }, types);
+        addAttribute(u.first,
+            [=](const Values& args) {
+                _filterUniforms[u.first] = args;
+                return true;
+            },
+            [=]() -> Values { return _filterUniforms[u.first]; },
+            types);
     }
 
     return true;
@@ -314,98 +315,113 @@ bool Filter::setFilterSource(const string& source)
 /*************/
 void Filter::registerAttributes()
 {
-    addAttribute("16bits", [&](const Values& args) {
-        bool render16bits = args[0].asInt();
-        if (render16bits != _render16bits)
-        {
-            _render16bits = render16bits;
-            _updateColorDepth = true;
-        }
-        return true;
-    }, [&]() -> Values {
-        return {(int)_render16bits};
-    }, {'n'});
+    addAttribute("16bits",
+        [&](const Values& args) {
+            bool render16bits = args[0].asInt();
+            if (render16bits != _render16bits)
+            {
+                _render16bits = render16bits;
+                _updateColorDepth = true;
+            }
+            return true;
+        },
+        [&]() -> Values { return {(int)_render16bits}; },
+        {'n'});
     setAttributeDescription("16bits", "Set to 1 for the filter to be rendered in 16bits per component (otherwise 8bpc)");
 
-    addAttribute("blackLevel", [&](const Values& args) {
-        auto blackLevel = args[0].asFloat();
-        blackLevel = std::max(0.f, std::min(1.f, blackLevel));
-        _filterUniforms["_blackLevel"] = {blackLevel};
-        return true;
-    }, [&]() -> Values {
-        auto it = _filterUniforms.find("_blackLevel");
-        if (it == _filterUniforms.end())
-            _filterUniforms["_blackLevel"] = {0.f}; // Default value
-        return _filterUniforms["_blackLevel"];
-    }, {'n'});
+    addAttribute("blackLevel",
+        [&](const Values& args) {
+            auto blackLevel = args[0].asFloat();
+            blackLevel = std::max(0.f, std::min(1.f, blackLevel));
+            _filterUniforms["_blackLevel"] = {blackLevel};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_blackLevel");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_blackLevel"] = {0.f}; // Default value
+            return _filterUniforms["_blackLevel"];
+        },
+        {'n'});
     setAttributeDescription("blackLevel", "Set the black level for the linked texture");
 
-    addAttribute("brightness", [&](const Values& args) {
-        auto brightness = args[0].asFloat();
-        brightness = std::max(0.f, std::min(2.f, brightness));
-        _filterUniforms["_brightness"] = {brightness};
-        return true;
-    }, [&]() -> Values {
-        auto it = _filterUniforms.find("_brightness");
-        if (it == _filterUniforms.end())
-            _filterUniforms["_brightness"] = {1.f}; // Default value
-        return _filterUniforms["_brightness"];
-    }, {'n'});
+    addAttribute("brightness",
+        [&](const Values& args) {
+            auto brightness = args[0].asFloat();
+            brightness = std::max(0.f, std::min(2.f, brightness));
+            _filterUniforms["_brightness"] = {brightness};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_brightness");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_brightness"] = {1.f}; // Default value
+            return _filterUniforms["_brightness"];
+        },
+        {'n'});
     setAttributeDescription("brightness", "Set the brightness for the linked texture");
 
-    addAttribute("contrast", [&](const Values& args) {
-        auto contrast = args[0].asFloat();
-        contrast = std::max(0.f, std::min(2.f, contrast));
-        _filterUniforms["_contrast"] = {contrast};
-        return true;
-    }, [&]() -> Values {
-        auto it = _filterUniforms.find("_contrast");
-        if (it == _filterUniforms.end())
-            _filterUniforms["_contrast"] = {1.f}; // Default value
-        return _filterUniforms["contrast"];
-    }, {'n'});
+    addAttribute("contrast",
+        [&](const Values& args) {
+            auto contrast = args[0].asFloat();
+            contrast = std::max(0.f, std::min(2.f, contrast));
+            _filterUniforms["_contrast"] = {contrast};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_contrast");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_contrast"] = {1.f}; // Default value
+            return _filterUniforms["contrast"];
+        },
+        {'n'});
     setAttributeDescription("contrast", "Set the contrast for the linked texture");
 
-    addAttribute("colorTemperature", [&](const Values& args) {
-        auto colorTemperature = args[0].asFloat();
-        colorTemperature = std::max(0.f, std::min(16000.f, colorTemperature));
-        _filterUniforms["_colorTemperature"] = {colorTemperature};
-        auto colorBalance = colorBalanceFromTemperature(colorTemperature);
-        _filterUniforms["_colorBalance"] = {colorBalance.x, colorBalance.y};
-        return true;
-    }, [&]() -> Values {
-        auto it = _filterUniforms.find("_colorTemperature");
-        if (it == _filterUniforms.end())
-            _filterUniforms["_colorTemperature"] = {6500.f}; // Default value
-        return _filterUniforms["_colorTemperature"];
-    }, {'n'});
+    addAttribute("colorTemperature",
+        [&](const Values& args) {
+            auto colorTemperature = args[0].asFloat();
+            colorTemperature = std::max(0.f, std::min(16000.f, colorTemperature));
+            _filterUniforms["_colorTemperature"] = {colorTemperature};
+            auto colorBalance = colorBalanceFromTemperature(colorTemperature);
+            _filterUniforms["_colorBalance"] = {colorBalance.x, colorBalance.y};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_colorTemperature");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_colorTemperature"] = {6500.f}; // Default value
+            return _filterUniforms["_colorTemperature"];
+        },
+        {'n'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
-    addAttribute("saturation", [&](const Values& args) {
-        auto saturation = args[0].asFloat();
-        saturation = std::max(0.f, std::min(2.f, saturation));
-        _filterUniforms["_saturation"] = {saturation};
-        return true;
-    }, [&]() -> Values {
-        auto it = _filterUniforms.find("_saturation");
-        if (it == _filterUniforms.end())
-            _filterUniforms["_saturation"] = {1.f}; // Default value
-        return _filterUniforms["_saturation"];
-    }, {'n'});
+    addAttribute("saturation",
+        [&](const Values& args) {
+            auto saturation = args[0].asFloat();
+            saturation = std::max(0.f, std::min(2.f, saturation));
+            _filterUniforms["_saturation"] = {saturation};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_saturation");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_saturation"] = {1.f}; // Default value
+            return _filterUniforms["_saturation"];
+        },
+        {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
-    addAttribute("filterSource", [&](const Values& args) {
-        auto src = args[0].asString();
-        if (src.size() == 0)
-            return true; // No shader specified
-        _shaderSource = src;
-        addTask([=]() {
-            setFilterSource(src);
-        });
-        return true;
-    }, [&]() -> Values {
-        return {_shaderSource};
-    }, {'s'});
+    addAttribute("filterSource",
+        [&](const Values& args) {
+            auto src = args[0].asString();
+            if (src.size() == 0)
+                return true; // No shader specified
+            _shaderSource = src;
+            addTask([=]() { setFilterSource(src); });
+            return true;
+        },
+        [&]() -> Values { return {_shaderSource}; },
+        {'s'});
     setAttributeDescription("setFilterSource", "Set the fragment shader source for the filter");
 }
 

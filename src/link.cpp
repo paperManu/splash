@@ -8,7 +8,8 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 Link::Link(weak_ptr<RootObject> root, string name)
@@ -30,13 +31,9 @@ Link::Link(weak_ptr<RootObject> root, string name)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
-    _bufferInThread = thread([&]() {
-        handleInputBuffers();
-    });
+    _bufferInThread = thread([&]() { handleInputBuffers(); });
 
-    _messageInThread = thread([&]() {
-        handleInputMessages();
-    });
+    _messageInThread = thread([&]() { handleInputMessages(); });
 }
 
 /*************/
@@ -110,7 +107,6 @@ void Link::disconnectFrom(const std::string& name)
         _connectedTargetPointers.erase(targetPointerIt);
     }
 
-
     auto targetIt = find(_connectedTargets.begin(), _connectedTargets.end(), name);
     if (targetIt != _connectedTargets.end())
     {
@@ -132,7 +128,7 @@ void Link::disconnectFrom(const std::string& name)
 bool Link::waitForBufferSending(chrono::milliseconds maximumWait)
 {
     bool returnValue;
-    chrono::milliseconds totalWait {0};
+    chrono::milliseconds totalWait{0};
 
     while (true)
     {
@@ -291,7 +287,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
         }
     }
 
-    // We don't display broadcast messages, for visibility
+// We don't display broadcast messages, for visibility
 #ifdef DEBUG
     if (name != SPLASH_ALL_PEERS)
         Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " - Sending message to " << name << "::" << attribute << Log::endl;
@@ -334,7 +330,7 @@ void Link::handleInputMessages()
         // Helper function to receive messages
         zmq::message_t msg;
         std::function<Values(void)> recvMessage;
-        recvMessage = [&]()->Values {
+        recvMessage = [&]() -> Values {
             _socketMessageIn->recv(&msg); // size of the message
             int size = *(int*)msg.data();
 
@@ -373,10 +369,11 @@ void Link::handleInputMessages()
             auto root = _rootObject.lock();
             if (root)
                 root->set(name, attribute, values);
-            // We don't display broadcast messages, for visibility
+// We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PEERS)
-                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")" << " - Receiving message for " << name << "::" << attribute << Log::endl;
+                Log::get() << Log::DEBUGGING << "Link::" << __FUNCTION__ << " (" << root->getName() << ")"
+                           << " - Receiving message for " << name << "::" << attribute << Log::endl;
 #endif
         }
     }
@@ -385,7 +382,6 @@ void Link::handleInputMessages()
         if (errno != ETERM)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
-
 
     _socketMessageIn.reset();
 }
@@ -411,7 +407,7 @@ void Link::handleInputBuffers()
 
             _socketBufferIn->recv(&msg);
             shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
-            
+
             auto root = _rootObject.lock();
             if (root)
                 root->setFromSerializedObject(name, std::move(buffer));

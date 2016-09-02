@@ -11,9 +11,7 @@ void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, 
     std::vector<unsigned int> threadIds;
     for (unsigned int i = 0; i < count; ++i)
     {
-        threadIds.push_back(SThread::pool.enqueue([=]() {
-            func(p, i);
-        }));
+        threadIds.push_back(SThread::pool.enqueue([=]() { func(p, i); }));
     }
 
     SThread::pool.waitThreads(threadIds);

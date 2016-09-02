@@ -11,8 +11,7 @@ namespace Splash
 {
 
 /*************/
-Blender::Blender(std::weak_ptr<RootObject> root)
-    : ControllerObject(root)
+Blender::Blender(std::weak_ptr<RootObject> root) : ControllerObject(root)
 {
     _type = "blender";
     registerAttributes();
@@ -32,18 +31,18 @@ void Blender::render()
     if (_computeBlending && (!_blendingComputed || _continuousBlending))
     {
         _blendingComputed = true;
-    
+
         // Only the master scene computes the blending
         if (isMaster)
         {
             auto cameras = getObjectsOfType("camera");
             auto objects = getObjectsOfType("object");
-    
+
             if (cameras.size() != 0)
             {
                 for (auto& it : objects)
                     dynamic_pointer_cast<Object>(it)->resetTessellation();
-    
+
                 // Tessellate
                 for (auto& it : cameras)
                 {
@@ -51,10 +50,10 @@ void Blender::render()
                     camera->computeVertexVisibility();
                     camera->blendingTessellateForCurrentCamera();
                 }
-    
+
                 for (auto& it : objects)
                     dynamic_pointer_cast<Object>(it)->resetBlendingAttribute();
-    
+
                 // Compute each camera contribution
                 for (auto& it : cameras)
                 {
@@ -67,9 +66,9 @@ void Blender::render()
             {
                 return;
             }
-    
+
             setObjectsOfType("object", "activateVertexBlending", {1});
-    
+
             // If there are some other scenes, send them the blending
             auto geometries = getObjectsOfType("geometry");
             for (auto& geometry : geometries)
@@ -102,10 +101,10 @@ void Blender::render()
     else if (_blendingComputed && !_computeBlending)
     {
         _blendingComputed = false;
-    
+
         auto cameras = getObjectsOfType("camera");
         auto objects = getObjectsOfType("object");
-        
+
         if (isMaster && cameras.size() != 0)
         {
             for (auto& it : objects)
@@ -115,7 +114,7 @@ void Blender::render()
                 object->resetVisibility();
             }
         }
-    
+
         for (auto& object : objects)
             object->setAttribute("activateVertexBlending", {0});
 
@@ -128,34 +127,35 @@ void Blender::render()
 /*************/
 void Blender::registerAttributes()
 {
-    addAttribute("mode", [&](const Values& args) {
-        auto mode = args[0].asString();
-        if (mode == "none")
-        {
-            _computeBlending = false;
-            _continuousBlending = false;
-        }
-        else if (mode == "once")
-        {
-            _computeBlending = true;
-            _continuousBlending = false;
-        }
-        else if (mode == "continuous")
-        {
-            _computeBlending = true;
-            _continuousBlending = true;
-        }
-        else
-        {
-            return false;
-        }
+    addAttribute("mode",
+        [&](const Values& args) {
+            auto mode = args[0].asString();
+            if (mode == "none")
+            {
+                _computeBlending = false;
+                _continuousBlending = false;
+            }
+            else if (mode == "once")
+            {
+                _computeBlending = true;
+                _continuousBlending = false;
+            }
+            else if (mode == "continuous")
+            {
+                _computeBlending = true;
+                _continuousBlending = true;
+            }
+            else
+            {
+                return false;
+            }
 
-        _blendingMode = mode;
+            _blendingMode = mode;
 
-        return true;
-    }, [&]() -> Values {
-        return {_blendingMode};
-    }, {'s'});
+            return true;
+        },
+        [&]() -> Values { return {_blendingMode}; },
+        {'s'});
     setAttributeDescription("mode", "Set the blending mode. Can be 'none', 'once' or 'continuous'");
 
     addAttribute("blendingUpdated", [&](const Values& args) {

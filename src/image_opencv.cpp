@@ -7,8 +7,8 @@
 
 #include "cgUtils.h"
 #include "log.h"
-#include "timer.h"
 #include "threadpool.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -16,8 +16,7 @@ namespace Splash
 {
 
 /*************/
-Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root)
-    : Image(root)
+Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root) : Image(root)
 {
     init();
 }
@@ -53,9 +52,7 @@ bool Image_OpenCV::read(const string& filename)
         _readLoopThread.join();
 
     _continueReading = true;
-    _readLoopThread = thread([&]() {
-        readLoop();
-    });
+    _readLoopThread = thread([&]() { readLoop(); });
 
     return true;
 }
@@ -144,25 +141,29 @@ void Image_OpenCV::readLoop()
 /*************/
 void Image_OpenCV::registerAttributes()
 {
-    addAttribute("size", [&](const Values& args) {
-        _width = args[0].asInt();
-        _height = args[1].asInt();
-        
-        _width = (_width == 0) ? 640 : _width;
-        _height = (_height == 0) ? 640 : _height;
+    addAttribute("size",
+        [&](const Values& args) {
+            _width = args[0].asInt();
+            _height = args[1].asInt();
 
-        return true;
-    }, [&]() -> Values {
-        return {(int)_width, (int)_height};
-    }, {'n', 'n'});
+            _width = (_width == 0) ? 640 : _width;
+            _height = (_height == 0) ? 640 : _height;
+
+            return true;
+        },
+        [&]() -> Values {
+            return {(int)_width, (int)_height};
+        },
+        {'n', 'n'});
     setAttributeDescription("size", "Set the desired capture resolution");
 
-    addAttribute("framerate", [&](const Values& args) {
-        _framerate = (args[0].asFloat() == 0) ? 60 : args[0].asFloat();
-        return true;
-    }, [&]() -> Values {
-        return {_framerate};
-    }, {'n'});
+    addAttribute("framerate",
+        [&](const Values& args) {
+            _framerate = (args[0].asFloat() == 0) ? 60 : args[0].asFloat();
+            return true;
+        },
+        [&]() -> Values { return {_framerate}; },
+        {'n'});
     setAttributeDescription("framerate", "Set the desired capture framerate");
 }
 

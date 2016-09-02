@@ -6,11 +6,11 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root)
-    : Mesh(root)
+Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root) : Mesh(root)
 {
     init();
 }
@@ -27,15 +27,7 @@ bool Mesh_Shmdata::read(const string& filename)
     if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
         filepath = _configFilePath + filepath;
 
-    _reader.reset(new shmdata::Follower(filepath,
-                                        [&](void* data, size_t size) {
-                                            onData(data, size);
-                                        },
-                                        [&](const string& caps) {
-                                            onCaps(caps);
-                                        },
-                                        [&](){},
-                                        &_logger));
+    _reader.reset(new shmdata::Follower(filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
 
     _filepath = filepath;
 
@@ -69,7 +61,6 @@ void Mesh_Shmdata::onCaps(const string& dataType)
         _capsIsValid = false;
         Log::get() << Log::MESSAGE << "Mesh_Shmdata::" << __FUNCTION__ << " - Wrong data type" << Log::endl;
     }
-
 }
 
 /*************/

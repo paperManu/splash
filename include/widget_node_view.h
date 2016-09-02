@@ -33,25 +33,25 @@ namespace Splash
 /*************/
 class GuiNodeView : public GuiWidget
 {
-    public:
-        GuiNodeView(std::weak_ptr<Scene> scene, std::string name);
-        void render();
-        std::string getClickedNode() {return _clickedNode;}
-        int updateWindowFlags();
+  public:
+    GuiNodeView(std::weak_ptr<Scene> scene, std::string name);
+    void render();
+    std::string getClickedNode() { return _clickedNode; }
+    int updateWindowFlags();
 
-    private:
-        bool _isHovered {false};
-        std::string _clickedNode {""};
-        std::string _sourceNode {""};
-        std::vector<std::string> _objectTypes {};
+  private:
+    bool _isHovered{false};
+    std::string _clickedNode{""};
+    std::string _sourceNode{""};
+    std::vector<std::string> _objectTypes{};
 
-        // Node render settings
-        std::vector<int> _nodeSize {200, 30};
-        std::vector<int> _viewSize {640, 360};
-        std::vector<int> _viewShift {0, 0};
-        std::map<std::string, std::vector<float>> _nodePositions;
-        
-        void renderNode(std::string name);
+    // Node render settings
+    std::vector<int> _nodeSize{200, 30};
+    std::vector<int> _viewSize{640, 360};
+    std::vector<int> _viewShift{0, 0};
+    std::map<std::string, std::vector<float>> _nodePositions;
+
+    void renderNode(std::string name);
 };
 
 } // end of namespace

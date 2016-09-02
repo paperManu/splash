@@ -5,20 +5,23 @@
 #include "cgUtils.h"
 #include "log.h"
 #include "scene.h"
-#include "timer.h"
 #include "texture_image.h"
+#include "timer.h"
 
 #define CONTROL_POINT_SCALE 0.02
 #define WORLDMARKER_SCALE 0.0003
-#define MARKER_SET {1.0, 0.5, 0.0, 1.0}
+#define MARKER_SET                                                                                                                                                                 \
+    {                                                                                                                                                                              \
+        1.0, 0.5, 0.0, 1.0                                                                                                                                                         \
+    }
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Warp::Warp(std::weak_ptr<RootObject> root)
-       : Texture(root)
+Warp::Warp(std::weak_ptr<RootObject> root) : Texture(root)
 {
     init();
 }
@@ -44,10 +47,10 @@ void Warp::init()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
-	{
+    {
         Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-		return;
-	}
+        return;
+    }
     else
         Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 
@@ -75,7 +78,7 @@ Warp::~Warp()
         return;
 
 #ifdef DEBUG
-    Log::get()<< Log::DEBUGGING << "Warp::~Warp - Destructor" << Log::endl;
+    Log::get() << Log::DEBUGGING << "Warp::~Warp - Destructor" << Log::endl;
 #endif
 
     glDeleteFramebuffers(1, &_fbo);
@@ -253,8 +256,8 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 /*************/
 void Warp::loadDefaultModels()
 {
-    map<string, string> files {{"3d_marker", "3d_marker.obj"}};
-    
+    map<string, string> files{{"3d_marker", "3d_marker.obj"}};
+
     for (auto& file : files)
     {
         if (!ifstream(file.second, ios::in | ios::binary))
@@ -316,67 +319,77 @@ void Warp::setOutput()
 /*************/
 void Warp::registerAttributes()
 {
-    addAttribute("patchControl", [&](const Values& args) {
-        if (!_screenMesh)
-            return false;
-        return _screenMesh->setAttribute("patchControl", args);
-    }, [&]() -> Values {
-        if (!_screenMesh)
-            return {};
+    addAttribute("patchControl",
+        [&](const Values& args) {
+            if (!_screenMesh)
+                return false;
+            return _screenMesh->setAttribute("patchControl", args);
+        },
+        [&]() -> Values {
+            if (!_screenMesh)
+                return {};
 
-        Values v;
-        _screenMesh->getAttribute("patchControl", v);
-        return v;
-    });
+            Values v;
+            _screenMesh->getAttribute("patchControl", v);
+            return v;
+        });
     setAttributeDescription("patchControl", "Set the control points positions");
 
-    addAttribute("patchResolution", [&](const Values& args) {
-        if (!_screenMesh)
-            return false;
-        return _screenMesh->setAttribute("patchResolution", args);
-    }, [&]() -> Values {
-        if (!_screenMesh)
-            return {};
+    addAttribute("patchResolution",
+        [&](const Values& args) {
+            if (!_screenMesh)
+                return false;
+            return _screenMesh->setAttribute("patchResolution", args);
+        },
+        [&]() -> Values {
+            if (!_screenMesh)
+                return {};
 
-        Values v;
-        _screenMesh->getAttribute("patchResolution", v);
-        return v;
-    });
+            Values v;
+            _screenMesh->getAttribute("patchResolution", v);
+            return v;
+        });
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
-    addAttribute("patchSize", [&](const Values& args) {
-        if (!_screenMesh)
-            return false;
-        return _screenMesh->setAttribute("patchSize", args);
-    }, [&]() -> Values {
-        if (!_screenMesh)
-            return {};
+    addAttribute("patchSize",
+        [&](const Values& args) {
+            if (!_screenMesh)
+                return false;
+            return _screenMesh->setAttribute("patchSize", args);
+        },
+        [&]() -> Values {
+            if (!_screenMesh)
+                return {};
 
-        Values v;
-        _screenMesh->getAttribute("patchSize", v);
-        return v;
-    });
+            Values v;
+            _screenMesh->getAttribute("patchSize", v);
+            return v;
+        });
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
-    addAttribute("showControlLattice", [&](const Values& args) {
-        _showControlPoints = args[0].asInt();
-        if (!_showControlPoints)
-            _selectedControlPointIndex = -1;
-        return true;
-    }, {'n'});
+    addAttribute("showControlLattice",
+        [&](const Values& args) {
+            _showControlPoints = args[0].asInt();
+            if (!_showControlPoints)
+                _selectedControlPointIndex = -1;
+            return true;
+        },
+        {'n'});
     setAttributeDescription("showControlLattice", "If set to 1, show the control lattice");
 
     // Show a single control point
-    addAttribute("showControlPoint", [&](const Values& args) {
-        auto index = args[0].asInt();
-        if (index < 0 || index >= _screenMesh->getControlPoints().size())
-            _selectedControlPointIndex = -1;
-        else
-            _selectedControlPointIndex = index;
-        return true;
-    }, {'n'});
+    addAttribute("showControlPoint",
+        [&](const Values& args) {
+            auto index = args[0].asInt();
+            if (index < 0 || index >= _screenMesh->getControlPoints().size())
+                _selectedControlPointIndex = -1;
+            else
+                _selectedControlPointIndex = index;
+            return true;
+        },
+        {'n'});
     setAttributeDescription("showControlPoint", "Show the control point given its index");
 }
 

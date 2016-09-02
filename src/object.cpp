@@ -1,8 +1,8 @@
 #include "object.h"
 
-#include "image.h"
 #include "filter.h"
 #include "geometry.h"
+#include "image.h"
 #include "log.h"
 #include "mesh.h"
 #include "shader.h"
@@ -10,20 +10,19 @@
 #include "texture_image.h"
 #include "timer.h"
 
-
-#include <limits>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/string_cast.hpp>
+#include <limits>
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Object::Object(std::weak_ptr<RootObject> root)
-       : BaseObject(root)
+Object::Object(std::weak_ptr<RootObject> root) : BaseObject(root)
 {
     init();
 }
@@ -58,18 +57,18 @@ void Object::activate()
     if (_geometries.size() == 0)
         return;
 
-    _mutex.lock(); 
+    _mutex.lock();
 
     // Create and store the shader depending on its type
     auto shaderIt = _graphicsShaders.find(_fill);
-    if (shaderIt == _graphicsShaders.end() && _fill != "userDefined")
+    if (shaderIt == _graphicsShaders.end() && _fill == "userDefined")
+    {
+        _graphicsShaders["userDefined"] = _shader;
+    }
+    else if (shaderIt == _graphicsShaders.end())
     {
         _shader = make_shared<Shader>();
         _graphicsShaders[_fill] = _shader;
-    }
-    else if (_fill == "userDefined")
-    {
-        _graphicsShaders["userDefined"] = _shader;
     }
     else
     {
@@ -77,7 +76,7 @@ void Object::activate()
     }
 
     // Set the shader depending on a few other parameters
-    Values shaderParameters {};
+    Values shaderParameters{};
     for (int i = 0; i < _textures.size(); ++i)
         shaderParameters.push_back("TEX_" + to_string(i + 1));
 
@@ -148,11 +147,9 @@ glm::dmat4 Object::computeModelMatrix() const
     if (_modelMatrix != glm::dmat4(0.0))
         return _modelMatrix;
     else
-        return glm::translate(glm::dmat4(1.f), _position)
-             * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0))
-             * glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0))
-             * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0))
-             * glm::scale(glm::dmat4(1.f), _scale);
+        return glm::translate(glm::dmat4(1.f), _position) * glm::rotate(glm::dmat4(1.f), _rotation.z, glm::dvec3(0.0, 0.0, 1.0)) *
+               glm::rotate(glm::dmat4(1.f), _rotation.y, glm::dvec3(0.0, 1.0, 0.0)) * glm::rotate(glm::dmat4(1.f), _rotation.x, glm::dvec3(1.0, 0.0, 0.0)) *
+               glm::scale(glm::dmat4(1.f), _scale);
 }
 
 /*************/
@@ -160,7 +157,7 @@ void Object::deactivate()
 {
     for (auto& t : _textures)
     {
-        //t->flushPbo();
+        // t->flushPbo();
         t->unlock();
     }
 
@@ -176,7 +173,7 @@ void Object::addCalibrationPoint(glm::dvec3 point)
     for (auto& p : _calibrationPoints)
         if (p == point)
             return;
-    
+
     _calibrationPoints.push_back(point);
 }
 
@@ -446,10 +443,7 @@ void Object::tessellateForThisCamera(glm::dmat4 viewMatrix, glm::dmat4 projectio
     {
         _feedbackShaderSubdivideCamera = make_shared<Shader>(Shader::prgFeedback);
         _feedbackShaderSubdivideCamera->setAttribute("feedbackPhase", {"tessellateFromCamera"});
-        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex",
-                                                                          "GEOM_OUT.texcoord",
-                                                                          "GEOM_OUT.normal",
-                                                                          "GEOM_OUT.annexe"});
+        _feedbackShaderSubdivideCamera->setAttribute("feedbackVaryings", {"GEOM_OUT.vertex", "GEOM_OUT.texcoord", "GEOM_OUT.normal", "GEOM_OUT.annexe"});
     }
 
     if (_feedbackShaderSubdivideCamera)
@@ -572,68 +566,85 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    addAttribute("activateVertexBlending", [&](const Values& args) {
-        _vertexBlendingActive = args[0].asInt();
-        return true;
-    }, {'n'});
+    addAttribute("activateVertexBlending",
+        [&](const Values& args) {
+            _vertexBlendingActive = args[0].asInt();
+            return true;
+        },
+        {'n'});
     setAttributeDescription("activateVertexBlending", "If set to 1, activate vertex blending");
-    
-    addAttribute("position", [&](const Values& args) {
-        _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
-        return true;
-    }, [&]() -> Values {
-        return {_position.x, _position.y, _position.z};
-    }, {'n', 'n', 'n'});
+
+    addAttribute("position",
+        [&](const Values& args) {
+            _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            return true;
+        },
+        [&]() -> Values {
+            return {_position.x, _position.y, _position.z};
+        },
+        {'n', 'n', 'n'});
     setAttributeDescription("position", "Set the object position");
 
-    addAttribute("rotation", [&](const Values& args) {
-        _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
-        return true;
-    }, [&]() -> Values {
-        return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
-    }, {'n', 'n', 'n'});
+    addAttribute("rotation",
+        [&](const Values& args) {
+            _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
+            return true;
+        },
+        [&]() -> Values {
+            return {_rotation.x * 180.0 / M_PI, _rotation.y * 180.0 / M_PI, _rotation.z * 180.0 / M_PI};
+        },
+        {'n', 'n', 'n'});
     setAttributeDescription("rotation", "Set the object rotation");
 
-    addAttribute("scale", [&](const Values& args) {
-        if (args.size() < 3)
-            _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
-        else
-            _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+    addAttribute("scale",
+        [&](const Values& args) {
+            if (args.size() < 3)
+                _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+            else
+                _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
 
-        return true;
-    }, [&]() -> Values {
-        return {_scale.x, _scale.y, _scale.z};
-    }, {'n'});
+            return true;
+        },
+        [&]() -> Values {
+            return {_scale.x, _scale.y, _scale.z};
+        },
+        {'n'});
     setAttributeDescription("scale", "Set the object scale");
 
-    addAttribute("sideness", [&](const Values& args) {
-        _sideness = args[0].asInt();
-        return true;
-    }, [&]() -> Values {
-        return {_sideness};
-    }, {'n'});
+    addAttribute("sideness",
+        [&](const Values& args) {
+            _sideness = args[0].asInt();
+            return true;
+        },
+        [&]() -> Values { return {_sideness}; },
+        {'n'});
     setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 
-    addAttribute("fill", [&](const Values& args) {
-        _fill = args[0].asString();
-        return true;
-    }, [&]() -> Values {
-        return {_fill};
-    }, {'s'});
-    setAttributeDescription("fill", "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined manually then.");
+    addAttribute("fill",
+        [&](const Values& args) {
+            _fill = args[0].asString();
+            return true;
+        },
+        [&]() -> Values { return {_fill}; },
+        {'s'});
+    setAttributeDescription(
+        "fill", "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined manually then.");
 
-    addAttribute("color", [&](const Values& args) {
-        _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
-        return true;
-    }, {'n', 'n', 'n', 'n'});
+    addAttribute("color",
+        [&](const Values& args) {
+            _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            return true;
+        },
+        {'n', 'n', 'n', 'n'});
     setAttributeDescription("color", "Set the object color, if the fill setting is set accordingly");
 
-    addAttribute("normalExponent", [&](const Values& args) {
-        _normalExponent = args[0].asFloat();
-        return true;
-    }, [&]() -> Values {
-        return {_normalExponent};
-    }, {'n'});
+    addAttribute("normalExponent",
+        [&](const Values& args) {
+            _normalExponent = args[0].asFloat();
+            return true;
+        },
+        [&]() -> Values { return {_normalExponent}; },
+        {'n'});
     setAttributeDescription("normalExponent", "If set to anything but 0.0, set the exponent applied to the normal factor for blending computation");
 }
 

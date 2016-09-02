@@ -39,13 +39,15 @@
 #include <cstring>
 #include <deque>
 #include <execinfo.h>
-#include <ostream>
 #include <memory>
 #include <mutex>
+#include <ostream>
 #include <string>
 #include <vector>
+// clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+// clang-format off
 
 #include "./threadpool.h"
 

@@ -5,14 +5,15 @@
 #include "timer.h"
 
 #include <fstream>
-#include <sstream>
-#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <sstream>
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 Shader::Shader(ProgramType type)
@@ -302,7 +303,8 @@ void Shader::compileProgram()
             {
                 glAttachShader(_program, shader.second);
 #ifdef DEBUG
-                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program" << Log::endl;
+                Log::get() << Log::DEBUGGING << "Shader::" << __FUNCTION__ << " - Shader of type " << stringFromShaderType(shader.first) << " successfully attached to the program"
+                           << Log::endl;
 #endif
             }
         }
@@ -743,138 +745,142 @@ void Shader::registerAttributes()
 /*************/
 void Shader::registerGraphicAttributes()
 {
-    addAttribute("fill", [&](const Values& args) {
-        // Get additionnal shading options
-        string options = ShaderSources.VERSION_DIRECTIVE_430;
-        for (int i = 1; i < args.size(); ++i)
-            options += "#define " + args[i].asString() + "\n";
+    addAttribute("fill",
+        [&](const Values& args) {
+            // Get additionnal shading options
+            string options = ShaderSources.VERSION_DIRECTIVE_430;
+            for (int i = 1; i < args.size(); ++i)
+                options += "#define " + args[i].asString() + "\n";
 
-        if (args[0].asString() == "texture" && (_fill != texture || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = texture;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "filter" && (_fill != filter || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = filter;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = color;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = primitiveId;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = userDefined;
-            _shaderOptions = options;
-            if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
+            if (args[0].asString() == "texture" && (_fill != texture || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = texture;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "filter" && (_fill != filter || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = filter;
+                _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
-            if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
+                resetShader(geometry);
                 setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = uv;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "warp" && (_fill != warp || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = warp;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_WARP, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_WARP, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "warpControl" && (_fill != warp || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = warpControl;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME, vertex);
-            setSource(options + ShaderSources.GEOMETRY_SHADER_WARP_WIREFRAME, geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = wireframe;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
-            setSource(options + ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
-            compileProgram();
-        }
-        else if (args[0].asString() == "window" && (_fill != window || _shaderOptions != options))
-        {
-            _currentProgramName = args[0].asString();
-            _fill = window;
-            _shaderOptions = options;
-            setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
-            resetShader(geometry);
-            setSource(options + ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
-            compileProgram();
-        }
-        return true;
-    }, [&]() -> Values {
-        string fill;
-        if (_fill == texture)
-            fill = "texture";
-        else if (_fill == texture_rect)
-            fill = "texture_rect";
-        else if (_fill == color)
-            fill = "color";
-        else if (_fill == uv)
-            fill = "uv";
-        else if (_fill == wireframe)
-            fill = "wireframe";
-        else if (_fill == window)
-            fill = "window";
-        return {fill};
-    }, {'s'});
+                compileProgram();
+            }
+            else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = color;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = primitiveId;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = userDefined;
+                _shaderOptions = options;
+                if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
+                    setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
+                if (_shadersSource.find(ShaderType::fragment) == _shadersSource.end())
+                    setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = uv;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "warp" && (_fill != warp || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = warp;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_WARP, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_WARP, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "warpControl" && (_fill != warp || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = warpControl;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME, vertex);
+                setSource(options + ShaderSources.GEOMETRY_SHADER_WARP_WIREFRAME, geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = wireframe;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
+                setSource(options + ShaderSources.GEOMETRY_SHADER_WIREFRAME, geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
+                compileProgram();
+            }
+            else if (args[0].asString() == "window" && (_fill != window || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].asString();
+                _fill = window;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_WINDOW, fragment);
+                compileProgram();
+            }
+            return true;
+        },
+        [&]() -> Values {
+            string fill;
+            if (_fill == texture)
+                fill = "texture";
+            else if (_fill == texture_rect)
+                fill = "texture_rect";
+            else if (_fill == color)
+                fill = "color";
+            else if (_fill == uv)
+                fill = "uv";
+            else if (_fill == wireframe)
+                fill = "wireframe";
+            else if (_fill == window)
+                fill = "window";
+            return {fill};
+        },
+        {'s'});
     setAttributeDescription("fill", "Set the filling mode");
 
-    addAttribute("sideness", [&](const Values& args) {
-        _sideness = (Shader::Sideness)args[0].asInt();
-        return true;
-    }, [&]() -> Values {
-        return {_sideness};
-    }, {'n'});
+    addAttribute("sideness",
+        [&](const Values& args) {
+            _sideness = (Shader::Sideness)args[0].asInt();
+            return true;
+        },
+        [&]() -> Values { return {_sideness}; },
+        {'n'});
     setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 }
 

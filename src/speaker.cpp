@@ -1,8 +1,8 @@
 #include "speaker.h"
 
 #include "log.h"
-#include "timer.h"
 #include "threadpool.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -155,7 +155,8 @@ void Speaker::initResources()
 }
 
 /*************/
-int Speaker::portAudioCallback(const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
+int Speaker::portAudioCallback(
+    const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
 {
     auto that = (Speaker*)userData;
     uint8_t* output = (uint8_t*)out;

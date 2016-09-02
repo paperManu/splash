@@ -33,34 +33,33 @@ namespace Splash
 /*************/
 class GuiMedia : public GuiWidget
 {
-    public:
-        GuiMedia(std::weak_ptr<Scene> scene, std::string name);
-        void render();
-        int updateWindowFlags();
+  public:
+    GuiMedia(std::weak_ptr<Scene> scene, std::string name);
+    void render();
+    int updateWindowFlags();
 
-    private:
-        std::map<std::string, int> _mediaTypeIndex;
-        std::map<std::string, std::string> _mediaTypes {{"image", "image"},
-                                                        {"video", "image_ffmpeg"},
-                                                        {"shared memory", "image_shmdata"},
-                                                        {"queue", "queue"},
+  private:
+    std::map<std::string, int> _mediaTypeIndex;
+    std::map<std::string, std::string> _mediaTypes
+    {
+        {"image", "image"}, {"video", "image_ffmpeg"}, {"shared memory", "image_shmdata"}, {"queue", "queue"},
 #if HAVE_OPENCV
-                                                        {"video grabber", "image_opencv"},
+            {"video grabber", "image_opencv"},
 #endif
 #if HAVE_OSX
-                                                        {"syphon", "texture_syphon"},
+            {"syphon", "texture_syphon"},
 #endif
-                                                        };
-        std::map<std::string, std::string> _mediaTypesReversed {}; // Created from the previous map
+    };
+    std::map<std::string, std::string> _mediaTypesReversed{}; // Created from the previous map
 
-        Values _newMedia {"image", "", 0.f, 0.f};
-        int _newMediaTypeIndex {0};
-        float _newMediaStart {0.f};
-        float _newMediaStop {0.f};
+    Values _newMedia{"image", "", 0.f, 0.f};
+    int _newMediaTypeIndex{0};
+    float _newMediaStart{0.f};
+    float _newMediaStop{0.f};
 
-        std::list<std::shared_ptr<BaseObject>> getSceneMedia();
-        std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);
-        void replaceMedia(std::string previousMedia, std::string type);
+    std::list<std::shared_ptr<BaseObject>> getSceneMedia();
+    std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);
+    void replaceMedia(std::string previousMedia, std::string type);
 };
 
 } // end of namespace

@@ -31,65 +31,67 @@
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "image.h"
 
-namespace cv {
-    class VideoCapture;
+namespace cv
+{
+class VideoCapture;
 }
 
-namespace Splash {
+namespace Splash
+{
 
 class Image_OpenCV : public Image
 {
-    public:
-        /**
-         * Constructor
-         */
-        Image_OpenCV(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * Constructor
+     */
+    Image_OpenCV(std::weak_ptr<RootObject> root);
 
-        /**
-         * Destructor
-         */
-        ~Image_OpenCV();
+    /**
+     * Destructor
+     */
+    ~Image_OpenCV();
 
-        /**
-         * No copy, but some move constructors
-         */
-        Image_OpenCV(const Image_OpenCV&) = delete;
-        Image_OpenCV& operator=(const Image_OpenCV&) = delete;
+    /**
+     * No copy, but some move constructors
+     */
+    Image_OpenCV(const Image_OpenCV&) = delete;
+    Image_OpenCV& operator=(const Image_OpenCV&) = delete;
 
-        /**
-         * Set the path to read from
-         */
-        bool read(const std::string& filename);
+    /**
+     * Set the path to read from
+     */
+    bool read(const std::string& filename);
 
-    private:
-        std::unique_ptr<cv::VideoCapture> _videoCapture;
-        int _inputIndex {-1};
-        unsigned int _width {640};
-        unsigned int _height {480};
-        float _framerate {60.0};
+  private:
+    std::unique_ptr<cv::VideoCapture> _videoCapture;
+    int _inputIndex{-1};
+    unsigned int _width{640};
+    unsigned int _height{480};
+    float _framerate{60.0};
 
-        std::thread _readLoopThread;
-        std::atomic_bool _continueReading {false};
-        ImageBuffer _readBuffer;
+    std::thread _readLoopThread;
+    std::atomic_bool _continueReading{false};
+    ImageBuffer _readBuffer;
 
-        /**
-         * Base init for the class
-         */
-        void init();
+    /**
+     * Base init for the class
+     */
+    void init();
 
-        /**
-         * Input read loop
-         */
-        void readLoop();
+    /**
+     * Input read loop
+     */
+    void readLoop();
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

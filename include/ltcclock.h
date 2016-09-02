@@ -33,75 +33,73 @@
 #include <ltc.h>
 #include <portaudio.h>
 
+#include "basetypes.h"
 #include "config.h"
 #include "coretypes.h"
-#include "basetypes.h"
 #include "listener.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class LtcClock : public BaseObject
 {
-    public:
-        struct Clock
-        {
-            uint8_t years {0};
-            uint8_t months {0};
-            uint8_t days {0};
-            uint8_t hours {0};
-            uint8_t mins {0};
-            uint8_t secs {0};
-            uint8_t frame {0};
-            bool paused {false};
-        };
+  public:
+    struct Clock
+    {
+        uint8_t years{0};
+        uint8_t months{0};
+        uint8_t days{0};
+        uint8_t hours{0};
+        uint8_t mins{0};
+        uint8_t secs{0};
+        uint8_t frame{0};
+        bool paused{false};
+    };
 
-        /**
-         * \brief Constructor
-         */
-        LtcClock(bool masterClock = false, const std::string& deviceName = "");
+    /**
+     * \brief Constructor
+     */
+    LtcClock(bool masterClock = false, const std::string& deviceName = "");
 
-        /**
-         * \brief Destructor
-         */
-        ~LtcClock();
+    /**
+     * \brief Destructor
+     */
+    ~LtcClock();
 
-        /**
-         * \brief Safe bool idiom
-         */
-        explicit operator bool() const
-        {
-            return _ready;
-        }
+    /**
+     * \brief Safe bool idiom
+     */
+    explicit operator bool() const { return _ready; }
 
-        /**
-         * \brief Get the clock as a Clock struct
-         * \return Return a Clock struct
-         */
-        Clock getClock();
+    /**
+     * \brief Get the clock as a Clock struct
+     * \return Return a Clock struct
+     */
+    Clock getClock();
 
-        /**
-         * \brief Get the clock as as values (from years to frame, starting with a bool set to true if clock is running)
-         */
-        void getClock(Values& clockValues);
+    /**
+     * \brief Get the clock as as values (from years to frame, starting with a bool set to true if clock is running)
+     */
+    void getClock(Values& clockValues);
 
-    private:
-        bool _ready {false};
-        bool _masterClock {false};
-        bool _continue {false};
-        std::thread _ltcThread;
+  private:
+    bool _ready{false};
+    bool _masterClock{false};
+    bool _continue{false};
+    std::thread _ltcThread;
 
-        bool _framerateChanged {false};
-        uint8_t _previousFrame {0};
-        uint8_t _maximumFramePerSec {30};
+    bool _framerateChanged{false};
+    uint8_t _previousFrame{0};
+    uint8_t _maximumFramePerSec{30};
 
-        Clock _clock;
-        std::unique_ptr<Listener> _listener;
+    Clock _clock;
+    std::unique_ptr<Listener> _listener;
 
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

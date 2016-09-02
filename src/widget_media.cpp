@@ -12,8 +12,7 @@ namespace Splash
 {
 
 /*************/
-GuiMedia::GuiMedia(weak_ptr<Scene> scene, string name)
-    : GuiWidget(scene, name)
+GuiMedia::GuiMedia(weak_ptr<Scene> scene, string name) : GuiWidget(scene, name)
 {
     for (auto& type : _mediaTypes)
         _mediaTypesReversed[type.second] = type.first;
@@ -198,7 +197,7 @@ void GuiMedia::render()
                         {
                             static string path = Utils::getPathFromFilePath("./");
                             bool cancelled;
-                            vector<string> extensions {{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
+                            vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
                             if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))
                             {
                                 if (!cancelled)
@@ -210,7 +209,7 @@ void GuiMedia::render()
                             }
                         }
                         ImGui::PopID();
-                        
+
                         if (updated)
                         {
                             setObject(mediaName, "playlist", playlist);

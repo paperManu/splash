@@ -11,22 +11,22 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
-Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
-    : Texture(root)
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root) : Texture(root)
 {
     init();
 }
 
 /*************/
-Texture_Image::Texture_Image(std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                 GLint border, GLenum format, GLenum type, const GLvoid* data)
+Texture_Image::Texture_Image(
+    std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
     : Texture(root)
 {
     init();
-    reset(target, level, internalFormat, width, height, border, format, type, data); 
+    reset(target, level, internalFormat, width, height, border, format, type, data);
 }
 
 /*************/
@@ -91,8 +91,7 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height,
-                    GLint border, GLenum format, GLenum type, const GLvoid* data)
+void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
 {
     if (width == 0 || height == 0)
     {
@@ -215,11 +214,9 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
         glChannelOrder = GL_BGRA;
     else if (spec.format == vector<string>({"R", "G", "B", "A"}))
         glChannelOrder = GL_RGBA;
-    else if (spec.format == vector<string>({"R", "G", "B"})
-          || spec.format == vector<string>({"RGB_DXT1"}))
+    else if (spec.format == vector<string>({"R", "G", "B"}) || spec.format == vector<string>({"RGB_DXT1"}))
         glChannelOrder = GL_RGB;
-    else if (spec.format == vector<string>({"R", "G", "B", "A"})
-          || spec.format == vector<string>({"RGBA_DXT5"}))
+    else if (spec.format == vector<string>({"R", "G", "B", "A"}) || spec.format == vector<string>({"RGBA_DXT5"}))
         glChannelOrder = GL_RGBA;
     else if (spec.channels == 1)
         glChannelOrder = GL_RED;
@@ -367,7 +364,7 @@ void Texture_Image::update()
         if (!isCompressed)
         {
 #ifdef DEBUG
-            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new texture" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
             img->lock();
             if (_glVersionMajor >= 4 && _glVersionMinor >= 2)
@@ -384,7 +381,7 @@ void Texture_Image::update()
         else if (isCompressed)
         {
 #ifdef DEBUG
-            Log::get() << Log::DEBUGGING << "Texture_Image::" <<  __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
+            Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
             img->lock();
@@ -435,7 +432,7 @@ void Texture_Image::update()
 #endif
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
-        
+
         // Fill the next PBO with the image pixels
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         GLubyte* pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
@@ -448,13 +445,11 @@ void Texture_Image::update()
             int size = imageDataSize;
             for (int i = 0; i < stride - 1; ++i)
             {
-                _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
-                    copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i);
-                }));
+                _pboCopyThreadIds.push_back(SThread::pool.enqueue(
+                    [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
             }
-            _pboCopyThreadIds.push_back(SThread::pool.enqueue([=]() {
-                copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1));
-            }));
+            _pboCopyThreadIds.push_back(
+                SThread::pool.enqueue([=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
         }
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
@@ -527,24 +522,29 @@ void Texture_Image::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture_Image::registerAttributes()
 {
-    addAttribute("filtering", [&](const Values& args) {
-        _filtering = args[0].asInt() > 0 ? true : false;
-        return true;
-    }, [&]() -> Values {
-        return {_filtering};
-    }, {'n'});
+    addAttribute("filtering",
+        [&](const Values& args) {
+            _filtering = args[0].asInt() > 0 ? true : false;
+            return true;
+        },
+        [&]() -> Values { return {_filtering}; },
+        {'n'});
     setAttributeDescription("filtering", "Activate the mipmaps for this texture");
 
-    addAttribute("clampToEdge", [&](const Values& args) {
-        _glTextureWrap = args[0].asInt() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
-        return true;
-    }, {'n'});
+    addAttribute("clampToEdge",
+        [&](const Values& args) {
+            _glTextureWrap = args[0].asInt() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+            return true;
+        },
+        {'n'});
     setAttributeDescription("clampToEdge", "If set to 1, clamp the texture to the edge");
 
-    addAttribute("size", [&](const Values& args) {
-        resize(args[0].asInt(), args[1].asInt());
-        return true;
-    }, {'n', 'n'});
+    addAttribute("size",
+        [&](const Values& args) {
+            resize(args[0].asInt(), args[1].asInt());
+            return true;
+        },
+        {'n', 'n'});
     setAttributeDescription("size", "Change the texture size");
 }
 

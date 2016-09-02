@@ -33,111 +33,112 @@
 
 #include <Python.h>
 
-#include "./coretypes.h"
 #include "./basetypes.h"
 #include "./controller.h"
+#include "./coretypes.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class PythonEmbedded : public ControllerObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        PythonEmbedded(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    PythonEmbedded(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        ~PythonEmbedded();
+    /**
+     * \brief Destructor
+     */
+    ~PythonEmbedded();
 
-        /**
-         * \brief Set the path to the source Python file
-         * \param filepath Path to the source file
-         * \return Return true if the file exists
-         */
-        bool setScriptFile(const std::string& filepath);
+    /**
+     * \brief Set the path to the source Python file
+     * \param filepath Path to the source file
+     * \return Return true if the file exists
+     */
+    bool setScriptFile(const std::string& filepath);
 
-        /**
-         * \brief Run the script
-         * \return Return true if the script launched successfully
-         */
-        bool run();
+    /**
+     * \brief Run the script
+     * \return Return true if the script launched successfully
+     */
+    bool run();
 
-        /**
-         * \brief Stop the running script
-         */
-        void stop();
+    /**
+     * \brief Stop the running script
+     */
+    void stop();
 
-    private:
-        std::string _filepath {""}; //!< Path to the python script
-        std::string _scriptName {""}; //!< Name of the module (filename minus .py)
+  private:
+    std::string _filepath{""};   //!< Path to the python script
+    std::string _scriptName{""}; //!< Name of the module (filename minus .py)
 
-        bool _doLoop {false}; //!< Set to false to stop the Python loop
-        int _loopDurationMs {5}; //!< Time between loops in ms
-        std::thread _loopThread {}; //!< Python thread loop
-        std::promise<bool> _loopThreadPromise {}; //!< Holds the output result from the threading loop
+    bool _doLoop{false};                     //!< Set to false to stop the Python loop
+    int _loopDurationMs{5};                  //!< Time between loops in ms
+    std::thread _loopThread{};               //!< Python thread loop
+    std::promise<bool> _loopThreadPromise{}; //!< Holds the output result from the threading loop
 
-        PyObject* _pythonModule {nullptr}; //!< Loaded module (from the specified script)
-        PyThreadState* _pythonLocalThreadState {nullptr}; //!< Local Python thread state, for the sub-interpreter
+    PyObject* _pythonModule{nullptr};                //!< Loaded module (from the specified script)
+    PyThreadState* _pythonLocalThreadState{nullptr}; //!< Local Python thread state, for the sub-interpreter
 
-        /**
-         * \brief Python interpreter main loop
-         */
-        void loop();
+    /**
+     * \brief Python interpreter main loop
+     */
+    void loop();
 
-        /**
-         * \brief Get a Python function from the given module
-         * \param module Python module
-         * \param name Function name
-         * \return Return a python function, or nullptr if it does not exist
-         */
-        PyObject* getFuncFromModule(PyObject* module, const std::string& name);
+    /**
+     * \brief Get a Python function from the given module
+     * \param module Python module
+     * \param name Function name
+     * \return Return a python function, or nullptr if it does not exist
+     */
+    PyObject* getFuncFromModule(PyObject* module, const std::string& name);
 
-        /**
-         * \brief Build a Python object from a Value
-         * \param value Value to convert
-         * \return Return a PyObject* representation of the value
-         */
-        static PyObject* convertFromValue(const Value& value);
+    /**
+     * \brief Build a Python object from a Value
+     * \param value Value to convert
+     * \return Return a PyObject* representation of the value
+     */
+    static PyObject* convertFromValue(const Value& value);
 
-        /**
-         * \brief Build a Value from a valid Python object
-         * \param pyObject Python object to interpret
-         * \return Return a Value
-         */
-        static Value convertToValue(PyObject* pyObject);
+    /**
+     * \brief Build a Value from a valid Python object
+     * \param pyObject Python object to interpret
+     * \return Return a Value
+     */
+    static Value convertToValue(PyObject* pyObject);
 
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 
-    private:
-        static std::atomic_int _pythonInstances; //!< Number of Python scripts running
-        static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
+  private:
+    static std::atomic_int _pythonInstances;        //!< Number of Python scripts running
+    static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
 
-        // Python objects and methods
-        static PyMethodDef SplashMethods[];
-        static PyModuleDef SplashModule;
-        static PyObject* SplashError;
+    // Python objects and methods
+    static PyMethodDef SplashMethods[];
+    static PyModuleDef SplashModule;
+    static PyObject* SplashError;
 
-        static PyObject* pythonInitSplash();
-        static PythonEmbedded* getSplashInstance(PyObject* module);
-        static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
-        static PyObject* pythonGetObjectReversedLinks(PyObject* self, PyObject* args);
-        static PyObject* pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
-        static PyObject* pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonInitSplash();
+    static PythonEmbedded* getSplashInstance(PyObject* module);
+    static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
+    static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
+    static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
+    static PyObject* pythonGetObjectReversedLinks(PyObject* self, PyObject* args);
+    static PyObject* pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds);
 };
 
 } // end of namespace

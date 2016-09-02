@@ -29,43 +29,44 @@
 
 #include "./controller.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Blender : public ControllerObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Blender(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Blender(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        ~Blender();
+    /**
+     * \brief Destructor
+     */
+    ~Blender();
 
-        /**
-         * \brief Update the blending
-         */
-        void render();
+    /**
+     * \brief Update the blending
+     */
+    void render();
 
-    private:
-        bool _isSceneMaster {false}; //!< True if the root Scene is master
-        std::string _blendingMode {"none"}; //!< Can be "none", "once" or "continuous"
-        bool _computeBlending {false}; //!< If true, compute blending in the next render
-        bool _continuousBlending {false}; //!< If true, render does not reset _computeBlending
-        bool _blendingComputed {false}; //!< True if the blending has been computed
-        
-        // Vertex blending variables
-        std::mutex _vertexBlendingMutex;
-        std::condition_variable _vertexBlendingCondition;
-        std::atomic_bool _vertexBlendingReceptionStatus {false};
+  private:
+    bool _isSceneMaster{false};        //!< True if the root Scene is master
+    std::string _blendingMode{"none"}; //!< Can be "none", "once" or "continuous"
+    bool _computeBlending{false};      //!< If true, compute blending in the next render
+    bool _continuousBlending{false};   //!< If true, render does not reset _computeBlending
+    bool _blendingComputed{false};     //!< True if the blending has been computed
 
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    // Vertex blending variables
+    std::mutex _vertexBlendingMutex;
+    std::condition_variable _vertexBlendingCondition;
+    std::atomic_bool _vertexBlendingReceptionStatus{false};
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

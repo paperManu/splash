@@ -28,110 +28,110 @@
 #include <string>
 #include <vector>
 
-#include "./coretypes.h"
 #include "./basetypes.h"
+#include "./coretypes.h"
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 class ControllerObject : public BaseObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root RootObject
-         */
-        ControllerObject(std::weak_ptr<RootObject> root)
-            : BaseObject(root) {}
+  public:
+    /**
+     * \brief Constructor
+     * \param root RootObject
+     */
+    ControllerObject(std::weak_ptr<RootObject> root) : BaseObject(root) {}
 
-        /**
-         * \brief Desctructor
-         */
-        virtual ~ControllerObject() {};
+    /**
+     * \brief Desctructor
+     */
+    virtual ~ControllerObject(){};
 
-        /**
-         * \brief Get a list of the object names
-         * \return Return a vector of all the objects
-         */
-        std::vector<std::string> getObjectNames() const;
+    /**
+     * \brief Get a list of the object names
+     * \return Return a vector of all the objects
+     */
+    std::vector<std::string> getObjectNames() const;
 
-        /**
-         * \brief Get the description for the given attribute
-         * \param name Object name
-         * \param attr Attribute name
-         * \return Return the description of the given attribute
-         */
-        Values getObjectAttributeDescription(const std::string& name, const std::string& attr) const;
+    /**
+     * \brief Get the description for the given attribute
+     * \param name Object name
+     * \param attr Attribute name
+     * \return Return the description of the given attribute
+     */
+    Values getObjectAttributeDescription(const std::string& name, const std::string& attr) const;
 
-        /**
-         * \brief Get one specific attribute from the given object
-         * \param name Object name
-         * \param attr Attribute
-         * \return Return the value of the given attribute
-         */
-        Values getObjectAttribute(const std::string& name, const std::string& attr) const;
+    /**
+     * \brief Get one specific attribute from the given object
+     * \param name Object name
+     * \param attr Attribute
+     * \return Return the value of the given attribute
+     */
+    Values getObjectAttribute(const std::string& name, const std::string& attr) const;
 
-        /**
-         * \brief Get all the attributes from the given object
-         * \param name Object name
-         * \return Return a map of all of the object's attributes
-         */
-        std::unordered_map<std::string, Values> getObjectAttributes(const std::string& name) const;
+    /**
+     * \brief Get all the attributes from the given object
+     * \param name Object name
+     * \return Return a map of all of the object's attributes
+     */
+    std::unordered_map<std::string, Values> getObjectAttributes(const std::string& name) const;
 
-        /**
-         * \brief Get the links between all objects, from parents to children
-         * \return Return an unordered_map the links, from one to many
-         */
-        std::unordered_map<std::string, std::vector<std::string>> getObjectLinks() const;
+    /**
+     * \brief Get the links between all objects, from parents to children
+     * \return Return an unordered_map the links, from one to many
+     */
+    std::unordered_map<std::string, std::vector<std::string>> getObjectLinks() const;
 
-        /**
-         * \brief Get the reversed links between all objects, from children to parents
-         * \return Return an unordered_map the links, from one to many
-         */
-        std::unordered_map<std::string, std::vector<std::string>> getObjectReversedLinks() const;
+    /**
+     * \brief Get the reversed links between all objects, from children to parents
+     * \return Return an unordered_map the links, from one to many
+     */
+    std::unordered_map<std::string, std::vector<std::string>> getObjectReversedLinks() const;
 
-        /**
-         * \brief Get a map of the object types
-         * \return Return a map of all object types
-         */
-        std::map<std::string, std::string> getObjectTypes() const;
+    /**
+     * \brief Get a map of the object types
+     * \return Return a map of all object types
+     */
+    std::map<std::string, std::string> getObjectTypes() const;
 
-        /**
-         * \brief Get all object of given type
-         * \param type Type to look for
-         * \return Return a list of all objects of the given type
-         */
-        std::list<std::shared_ptr<BaseObject>> getObjectsOfType(const std::string& type) const;
+    /**
+     * \brief Get all object of given type
+     * \param type Type to look for
+     * \return Return a list of all objects of the given type
+     */
+    std::list<std::shared_ptr<BaseObject>> getObjectsOfType(const std::string& type) const;
 
-        /**
-         * \brief Send a serialized buffer to the given BufferObject
-         * \param name Object name
-         * \param buffer Serialized buffer
-         */
-        void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const;
+    /**
+     * \brief Send a serialized buffer to the given BufferObject
+     * \param name Object name
+     * \param buffer Serialized buffer
+     */
+    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const;
 
-        /**
-         * \brief Set the given configuration-related attribute
-         * \param name Attribute name
-         * \param values Value to set the attribute to
-         */
-        void setGlobal(const std::string& name, const Values& values = {}) const;
+    /**
+     * \brief Set the given configuration-related attribute
+     * \param name Attribute name
+     * \param values Value to set the attribute to
+     */
+    void setGlobal(const std::string& name, const Values& values = {}) const;
 
-        /**
-         * \brief Set the given attribute for the given object
-         * \param name Object name
-         * \param attr Attribute name
-         * \param values Value to set the attribute to
-         */
-        void setObject(const std::string& name, const std::string& attr, const Values& values = {}) const;
+    /**
+     * \brief Set the given attribute for the given object
+     * \param name Object name
+     * \param attr Attribute name
+     * \param values Value to set the attribute to
+     */
+    void setObject(const std::string& name, const std::string& attr, const Values& values = {}) const;
 
-        /**
-         * \brief Set the given attribute for all objets of the given type
-         * \param type Object type
-         * \param attr Attribute
-         * \param values Value to set the attribute to
-         */
-        void setObjectsOfType(const std::string& type, const std::string& attr, const Values& values = {}) const;
+    /**
+     * \brief Set the given attribute for all objets of the given type
+     * \param type Object type
+     * \param attr Attribute
+     * \param values Value to set the attribute to
+     */
+    void setObjectsOfType(const std::string& type, const std::string& attr, const Values& values = {}) const;
 };
 
 } // end of namespace

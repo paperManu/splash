@@ -51,13 +51,13 @@ void GuiGlobalView::render()
         // Colorization of the wireframe rendering. Applied after the GUI camera rendering to keep cameras in gui white
         ImGui::Checkbox("Colorize wireframes", &_camerasColorized);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Activate colorization of the wireframe rendering, green for selected camera and magenta for the other cameras\n(V while hovering the view)"); 
+            ImGui::SetTooltip("Activate colorization of the wireframe rendering, green for selected camera and magenta for the other cameras\n(V while hovering the view)");
 
         ImVec2 winSize = ImGui::GetWindowSize();
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 
         auto cameras = getCameras();
-        
+
         ImGui::BeginChild("Cameras", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
         ImGui::Text("Select a camera:");
         for (auto& camera : cameras)
@@ -71,7 +71,7 @@ void GuiGlobalView::render()
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
             int h = w * size[1].asInt() / size[0].asInt();
 
-            if(ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            if (ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             {
                 // If shift is pressed, we hide / unhide this camera
                 if (io.KeyCtrl)
@@ -246,20 +246,20 @@ void GuiGlobalView::revertCalibration()
 {
     if (_previousCameraParameters.size() == 0)
         return;
-    
+
     Log::get() << Log::MESSAGE << "GuiGlobalView::" << __FUNCTION__ << " - Reverting camera to previous parameters" << Log::endl;
-    
+
     auto params = _previousCameraParameters.back();
     // We keep the very first calibration, it has proven useful
     if (_previousCameraParameters.size() > 1)
         _previousCameraParameters.pop_back();
-    
+
     _camera->setAttribute("eye", params.eye);
     _camera->setAttribute("target", params.target);
     _camera->setAttribute("up", params.up);
     _camera->setAttribute("fov", params.fov);
     _camera->setAttribute("principalPoint", params.principalPoint);
-    
+
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_ghostObjects)
         if (_camera->getName() == obj.second->getName())
@@ -308,7 +308,7 @@ void GuiGlobalView::colorizeCameraWireframes(bool colorize)
 void GuiGlobalView::doCalibration()
 {
     CameraParameters params;
-     // We keep the current values
+    // We keep the current values
     _camera->getAttribute("eye", params.eye);
     _camera->getAttribute("target", params.target);
     _camera->getAttribute("up", params.up);
@@ -326,15 +326,15 @@ void GuiGlobalView::doCalibration()
 /*************/
 void GuiGlobalView::propagateCalibration()
 {
-    bool isDistant {false};
+    bool isDistant{false};
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     for (auto& obj : scene->_ghostObjects)
         if (_camera->getName() == obj.second->getName())
             isDistant = true;
-    
+
     if (isDistant)
     {
-        vector<string> properties {"eye", "target", "up", "fov", "principalPoint"};
+        vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
         for (auto& p : properties)
         {
             Values values;
@@ -475,7 +475,7 @@ void GuiGlobalView::processKeyEvents()
             delta = 0.1f;
         else if (io.KeyCtrl)
             delta = 10.f;
-            
+
         if (io.KeysDown[262])
         {
             setObject(_camera->getName(), "moveCalibrationPoint", {delta, 0});
@@ -507,8 +507,7 @@ void GuiGlobalView::processMouseEvents()
     ImGuiIO& io = ImGui::GetIO();
 
     // Get mouse pos
-    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth,
-                             -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
+    ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth, -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
 
     if (io.MouseDown[0])
     {
@@ -548,7 +547,7 @@ void GuiGlobalView::processMouseEvents()
         else
             _newTargetDistance = -fragDepth * 0.1f;
     }
-    if (io.MouseDownDuration[1] > 0.0) 
+    if (io.MouseDownDuration[1] > 0.0)
     {
         // Move the camera
         if (!io.KeyCtrl && !io.KeyShift)

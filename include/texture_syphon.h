@@ -28,9 +28,9 @@
 #include <string>
 #include <vector>
 
+#include "basetypes.h"
 #include "config.h"
 #include "coretypes.h"
-#include "basetypes.h"
 #include "texture.h"
 #include "texture_syphon_client.h"
 
@@ -40,76 +40,76 @@ namespace Splash
 /**************/
 class Texture_Syphon : public Texture
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Texture_Syphon(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Texture_Syphon(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        ~Texture_Syphon();
+    /**
+     * \brief Destructor
+     */
+    ~Texture_Syphon();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Texture_Syphon(const Texture_Syphon&) = delete;
-        Texture_Syphon& operator=(const Texture_Syphon&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Texture_Syphon(const Texture_Syphon&) = delete;
+    Texture_Syphon& operator=(const Texture_Syphon&) = delete;
 
-        /**
-         * \brief Bind this texture
-         */
-        void bind();
+    /**
+     * \brief Bind this texture
+     */
+    void bind();
 
-        /**
-         * \brief Unbind this texture
-         */
-        void unbind();
+    /**
+     * \brief Unbind this texture
+     */
+    void unbind();
 
-        /**
-         * \brief Get the shader parameters related to this texture. Texture should be locked first.
-         * \return Return the shader uniforms
-         */
-        std::unordered_map<std::string, Values> getShaderUniforms() const {return _shaderUniforms;}
+    /**
+     * \brief Get the shader parameters related to this texture. Texture should be locked first.
+     * \return Return the shader uniforms
+     */
+    std::unordered_map<std::string, Values> getShaderUniforms() const { return _shaderUniforms; }
 
-        /**
-         * \brief Get spec of the texture
-         * \return Return the texture spec
-         */
-        ImageBufferSpec getSpec() const {return ImageBufferSpec();}
+    /**
+     * \brief Get spec of the texture
+     * \return Return the texture spec
+     */
+    ImageBufferSpec getSpec() const { return ImageBufferSpec(); }
 
-        /**
-         * \brief Try to link the given BaseObject to this object
-         * \param obj Shared pointer to the (wannabe) child object
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Update the texture according to the owned Image
-         */
-        void update() {};
+    /**
+     * \brief Update the texture according to the owned Image
+     */
+    void update(){};
 
-    private:
-        SyphonReceiver _syphonReceiver;
-        std::string _serverName {""};
-        std::string _appName {""};
+  private:
+    SyphonReceiver _syphonReceiver;
+    std::string _serverName{""};
+    std::string _appName{""};
 
-        GLint _activeTexture;
+    GLint _activeTexture;
 
-        // Parameters to send to the shader
-        std::unordered_map<std::string, Values> _shaderUniforms;
+    // Parameters to send to the shader
+    std::unordered_map<std::string, Values> _shaderUniforms;
 
-        /**
-         * \brief Initialization
-         */
-        void init();
+    /**
+     * \brief Initialization
+     */
+    void init();
 
-        /**
-         * \brief Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

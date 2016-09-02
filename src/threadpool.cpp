@@ -10,7 +10,7 @@ using namespace std;
 using namespace Splash;
 
 /*************/
-void Worker::operator() ()
+void Worker::operator()()
 {
     shared_ptr<function<void()>> task;
     Utils::setRealTime();
@@ -41,7 +41,7 @@ void Worker::operator() ()
 
             id = pool.tasksId.front();
             pool.tasksId.pop_front();
-        }   
+        }
 
         // Execute the task
         pool.workingThreads++;

@@ -8,7 +8,8 @@
 
 using namespace std;
 
-namespace Splash {
+namespace Splash
+{
 
 /*************/
 LtcClock::LtcClock(bool masterClock, const string& deviceName)
@@ -43,7 +44,7 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
                 continue;
             }
 
-            // Check all values to check whether the clock is paused or not 
+            // Check all values to check whether the clock is paused or not
             bool paused = true;
             for (auto& v : inputBuffer)
             {
@@ -134,14 +135,7 @@ void LtcClock::getClock(Values& clockValues)
         return;
 
     Clock clock = _clock;
-    clockValues = Values({(int)clock.years,
-                          (int)clock.months,
-                          (int)clock.days,
-                          (int)clock.hours,
-                          (int)clock.mins,
-                          (int)clock.secs,
-                          (int)clock.frame,
-                          (int)clock.paused});
+    clockValues = Values({(int)clock.years, (int)clock.months, (int)clock.days, (int)clock.hours, (int)clock.mins, (int)clock.secs, (int)clock.frame, (int)clock.paused});
 }
 
 /*************/

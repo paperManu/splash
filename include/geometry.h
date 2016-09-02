@@ -26,163 +26,164 @@
 #define SPLASH_GEOMETRY_H
 
 #include <chrono>
+#include <glm/glm.hpp>
 #include <map>
 #include <utility>
 #include <vector>
-#include <glm/glm.hpp>
 
 #include "config.h"
 
-#include "coretypes.h"
 #include "basetypes.h"
+#include "coretypes.h"
 #include "gpuBuffer.h"
 #include "mesh.h"
 
-namespace Splash {
+namespace Splash
+{
 
 class Geometry : public BufferObject
 {
-    public:
-        /**
-         * \brief Constructor
-         * \param root Root object
-         */
-        Geometry(std::weak_ptr<RootObject> root);
+  public:
+    /**
+     * \brief Constructor
+     * \param root Root object
+     */
+    Geometry(std::weak_ptr<RootObject> root);
 
-        /**
-         * \brief Destructor
-         */
-        ~Geometry();
+    /**
+     * \brief Destructor
+     */
+    ~Geometry();
 
-        /**
-         * No copy constructor, but a move one
-         */
-        Geometry(const Geometry&) = delete;
-        Geometry& operator=(const Geometry&) = delete;
+    /**
+     * No copy constructor, but a move one
+     */
+    Geometry(const Geometry&) = delete;
+    Geometry& operator=(const Geometry&) = delete;
 
-        /**
-         * \brief Activate the geometry for rendering
-         */
-        void activate();
+    /**
+     * \brief Activate the geometry for rendering
+     */
+    void activate();
 
-        /**
-         * \brief Activate the geometry for gpgpu
-         */
-        void activateAsSharedBuffer();
+    /**
+     * \brief Activate the geometry for gpgpu
+     */
+    void activateAsSharedBuffer();
 
-        /**
-         * \brief Activate the geomtry for feedback into the alternative buffers
-         */
-        void activateForFeedback();
+    /**
+     * \brief Activate the geomtry for feedback into the alternative buffers
+     */
+    void activateForFeedback();
 
-        /**
-         * \brief Deactivate the geometry for rendering
-         */
-        void deactivate() const;
+    /**
+     * \brief Deactivate the geometry for rendering
+     */
+    void deactivate() const;
 
-        /**
-         * \brief Deactivate for feedback
-         */
-        void deactivateFeedback();
+    /**
+     * \brief Deactivate for feedback
+     */
+    void deactivateFeedback();
 
-        /**
-         * \brief Get the number of vertices for this geometry
-         * \return Return the vertice count
-         */
-        int getVerticesNumber() const {return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber;}
+    /**
+     * \brief Get the number of vertices for this geometry
+     * \return Return the vertice count
+     */
+    int getVerticesNumber() const { return _useAlternativeBuffers ? _alternativeVerticesNumber : _verticesNumber; }
 
-        /**
-         * \brief Get the geometry as serialized
-         * \return Return the serialized geometry
-         */
-        std::shared_ptr<SerializedObject> serialize() const;
+    /**
+     * \brief Get the geometry as serialized
+     * \return Return the serialized geometry
+     */
+    std::shared_ptr<SerializedObject> serialize() const;
 
-        /**
-         * \brief Deserialize the geometry
-         * \param obj Serialized object
-         * \return Return true if all went well
-         */
-        bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    /**
+     * \brief Deserialize the geometry
+     * \param obj Serialized object
+     * \return Return true if all went well
+     */
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
 
-        /**
-         * \brief Get whether the alternative buffers have been resized during the last feedback call
-         * \return Return true if the buffers have been resized
-         */
-        bool hasBeenResized() {return _buffersResized;}
+    /**
+     * \brief Get whether the alternative buffers have been resized during the last feedback call
+     * \return Return true if the buffers have been resized
+     */
+    bool hasBeenResized() { return _buffersResized; }
 
-        /**
-         * \brief Try to link the given BaseObject to this object
-         * \param obj Shared pointer to the (wannabe) child object
-         */
-        bool linkTo(std::shared_ptr<BaseObject> obj);
+    /**
+     * \brief Try to link the given BaseObject to this object
+     * \param obj Shared pointer to the (wannabe) child object
+     */
+    bool linkTo(std::shared_ptr<BaseObject> obj);
 
-        /**
-         * \brief Get the coordinates of the closest vertex to the given point
-         * \param p Point around which to look
-         * \param v If detected, vertex coordinates
-         * \return Return the distance from p to v
-         */
-        float pickVertex(glm::dvec3 p, glm::dvec3& v);
+    /**
+     * \brief Get the coordinates of the closest vertex to the given point
+     * \param p Point around which to look
+     * \param v If detected, vertex coordinates
+     * \return Return the distance from p to v
+     */
+    float pickVertex(glm::dvec3 p, glm::dvec3& v);
 
-        /**
-         * \brief Set the mesh for this object
-         * \param mesh Mesh
-         */
-        void setMesh(std::shared_ptr<Mesh> mesh) {_mesh = std::weak_ptr<Mesh>(mesh);}
+    /**
+     * \brief Set the mesh for this object
+     * \param mesh Mesh
+     */
+    void setMesh(std::shared_ptr<Mesh> mesh) { _mesh = std::weak_ptr<Mesh>(mesh); }
 
-        /**
-         * \brief Swap between temporary and alternative buffers
-         */
-        void swapBuffers();
+    /**
+     * \brief Swap between temporary and alternative buffers
+     */
+    void swapBuffers();
 
-        /**
-         * \brief Updates the object
-         */
-        void update();
+    /**
+     * \brief Updates the object
+     */
+    void update();
 
-        /**
-         * \brief Activate alternative buffers for draw
-         * \param isActive If true, use alternative buffers
-         */
-        void useAlternativeBuffers(bool isActive);
+    /**
+     * \brief Activate alternative buffers for draw
+     * \param isActive If true, use alternative buffers
+     */
+    void useAlternativeBuffers(bool isActive);
 
-    private:
-        mutable std::mutex _mutex;
-        bool _onMasterScene {false};
+  private:
+    mutable std::mutex _mutex;
+    bool _onMasterScene{false};
 
-        std::shared_ptr<Mesh> _defaultMesh;
-        std::weak_ptr<Mesh> _mesh;
+    std::shared_ptr<Mesh> _defaultMesh;
+    std::weak_ptr<Mesh> _mesh;
 
-        std::map<GLFWwindow*, GLuint> _vertexArray;
-        std::vector<std::shared_ptr<GpuBuffer>> _glBuffers {};
-        std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers {}; // Alternative buffers used for rendering
-        std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers {}; // Temporary buffers used for feedback
-        bool _buffersDirty {false};
-        bool _buffersResized {false}; // Holds whether the alternative buffers have been resized in the previous feedback
-        bool _useAlternativeBuffers {false};
+    std::map<GLFWwindow*, GLuint> _vertexArray;
+    std::vector<std::shared_ptr<GpuBuffer>> _glBuffers{};
+    std::vector<std::shared_ptr<GpuBuffer>> _glAlternativeBuffers{}; // Alternative buffers used for rendering
+    std::vector<std::shared_ptr<GpuBuffer>> _glTemporaryBuffers{};   // Temporary buffers used for feedback
+    bool _buffersDirty{false};
+    bool _buffersResized{false}; // Holds whether the alternative buffers have been resized in the previous feedback
+    bool _useAlternativeBuffers{false};
 
-        SerializedObject _serializedMesh {};
+    SerializedObject _serializedMesh{};
 
-        int _verticesNumber {0};
-        int _alternativeVerticesNumber {0};
-        int _alternativeBufferSize {0};
-        int _temporaryVerticesNumber {0};
-        int _temporaryBufferSize {0};
+    int _verticesNumber{0};
+    int _alternativeVerticesNumber{0};
+    int _alternativeBufferSize{0};
+    int _temporaryVerticesNumber{0};
+    int _temporaryBufferSize{0};
 
-        // Transform feedback
-        GLuint _feedbackQuery;
-        bool _feedbackQueryRunning {false};
-        int _feedbackMaxNbrPrimitives {0};
+    // Transform feedback
+    GLuint _feedbackQuery;
+    bool _feedbackQueryRunning{false};
+    int _feedbackMaxNbrPrimitives{0};
 
-        /**
-         * \brief Initialization
-         */
-        void init();
+    /**
+     * \brief Initialization
+     */
+    void init();
 
-        /**
-         * Register new functors to modify attributes
-         */
-        void registerAttributes();
+    /**
+     * Register new functors to modify attributes
+     */
+    void registerAttributes();
 };
 
 } // end of namespace

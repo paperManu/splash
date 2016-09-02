@@ -11,8 +11,7 @@ namespace Splash
 {
 
 /*************/
-GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name)
-    : GuiWidget(scene, name)
+GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name) : GuiWidget(scene, name)
 {
     auto factory = Factory();
     _objectTypes = factory.getObjectTypes();
@@ -23,22 +22,21 @@ void GuiNodeView::render()
 {
     _clickedNode = "";
 
-    //if (ImGui::CollapsingHeader(_name.c_str()))
+    // if (ImGui::CollapsingHeader(_name.c_str()))
     if (true)
     {
         ImGui::Text("Click: select / Shift + click: link / Ctrl + click: unlink");
 
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
-                                                                 {"window", {8, 48}},
-                                                                 {"warp", {32, 88}},
-                                                                 {"camera", {8, 128}},
-                                                                 {"object", {32, 168}},
-                                                                 {"texture filter queue", {8, 208}},
-                                                                 {"image", {32, 248}},
-                                                                 {"mesh", {8, 288}},
-                                                                 {"python", {32, 328}}
-                                                                });
+            {"window", {8, 48}},
+            {"warp", {32, 88}},
+            {"camera", {8, 128}},
+            {"object", {32, 168}},
+            {"texture filter queue", {8, 208}},
+            {"image", {32, 248}},
+            {"mesh", {8, 288}},
+            {"python", {32, 328}}});
         std::map<std::string, int> shiftByType;
 
         // Begin a subwindow to enclose nodes
@@ -89,7 +87,7 @@ void GuiNodeView::render()
                 nodePosition = defaultPositionByType[defaultPosName];
                 nodePosition.x += shift;
             }
-            
+
             ImGui::SetCursorPos(nodePosition);
             renderNode(name);
 
@@ -183,7 +181,7 @@ void GuiNodeView::renderNode(string name)
     ImGui::BeginChild(string("node_" + name).c_str(), ImVec2(_nodeSize[0], _nodeSize[1]), false);
 
     ImGui::SetCursorPos(ImVec2(0, 2));
-    
+
     if (ImGui::IsItemHovered())
     {
         // Object linking
@@ -220,7 +218,7 @@ void GuiNodeView::renderNode(string name)
         _clickedNode = name;
         _sourceNode = name;
     }
-    
+
     // End of node rendering
     ImGui::EndChild();
 
@@ -238,6 +236,5 @@ int GuiNodeView::updateWindowFlags()
     }
     return flags;
 }
-
 
 } // end of namespace

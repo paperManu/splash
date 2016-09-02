@@ -39,9 +39,9 @@
 
 #include "./config.h"
 
-#include "./coretypes.h"
-#include "./controller.h"
 #include "./basetypes.h"
+#include "./controller.h"
+#include "./coretypes.h"
 #include "./image.h"
 
 namespace Splash
@@ -51,37 +51,37 @@ class Scene;
 
 namespace SplashImGui
 {
-    struct FilesystemFile
-    {
-        std::string filename {""};
-        bool isDir {false};
-    };
+struct FilesystemFile
+{
+    std::string filename{""};
+    bool isDir{false};
+};
 
-    bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
-    bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
+bool FileSelectorParseDir(std::string& path, std::vector<FilesystemFile>& list, const std::vector<std::string>& extensions, bool showNormalFiles);
+bool FileSelector(const std::string& label, std::string& path, bool& cancelled, const std::vector<std::string>& extensions, bool showNormalFiles = true);
 }
 
 /*************/
 class GuiWidget : public ControllerObject
 {
-    public:
-        GuiWidget(std::weak_ptr<Scene> scene, std::string name = "");
-        virtual ~GuiWidget() {}
-        virtual void render() {}
-        virtual int updateWindowFlags() {return 0;}
-        virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
-        void setScene(std::weak_ptr<Scene> scene) {_scene = scene;}
+  public:
+    GuiWidget(std::weak_ptr<Scene> scene, std::string name = "");
+    virtual ~GuiWidget() {}
+    virtual void render() {}
+    virtual int updateWindowFlags() { return 0; }
+    virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
+    void setScene(std::weak_ptr<Scene> scene) { _scene = scene; }
 
-    protected:
-        std::string _name {""};
-        std::weak_ptr<Scene> _scene;
-        std::string _fileSelectorTarget {""};
+  protected:
+    std::string _name{""};
+    std::weak_ptr<Scene> _scene;
+    std::string _fileSelectorTarget{""};
 
-        /**
-         * Draws the widgets for the attributes of the given object
-         * and sends the appriorate messages to the World
-         */
-        void drawAttributes(const std::string& objName, const std::unordered_map<std::string, Values>& attributes);
+    /**
+     * Draws the widgets for the attributes of the given object
+     * and sends the appriorate messages to the World
+     */
+    void drawAttributes(const std::string& objName, const std::unordered_map<std::string, Values>& attributes);
 };
 
 } // end of namespace
