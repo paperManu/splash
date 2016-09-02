@@ -240,7 +240,7 @@ bool Image::readFile(const string& filename)
     }
 
     int w, h, c;
-    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 4);
+    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 0);
 
     if (!rawImage)
     {
@@ -249,10 +249,14 @@ bool Image::readFile(const string& filename)
     }
 
     auto spec = ImageBufferSpec(w, h, c, ImageBufferSpec::Type::UINT8);
-    if (c == 3)
+    if (c == 1)
+        spec.format = {"R"};
+    else if (c == 3)
         spec.format = {"R", "G", "B"};
-    else
+    else if (c == 4)
         spec.format = {"R", "G", "B", "A"};
+    else
+        return false;
     auto img = ImageBuffer(spec);
     memcpy(img.data(), rawImage, w * h * c);
     stbi_image_free(rawImage);
