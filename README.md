@@ -112,6 +112,14 @@ You can now try launching Splash:
 
     splash --help
 
+Lastly, if you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
+
+    sudo addgroup realtime
+    sudo adduser $USER realtime
+    sudo cp ./data/config/realtime.conf /etc/security/limits.d/
+
+Then log out and log back in.
+
 #### Mac OSX
 
 Before anything, note that you can grab the latest release version of Splash for OSX right [here](https://github.com/paperManu/splash/releases), as an application bundle.
