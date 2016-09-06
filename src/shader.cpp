@@ -748,7 +748,7 @@ void Shader::registerGraphicAttributes()
     addAttribute("fill",
         [&](const Values& args) {
             // Get additionnal shading options
-            string options = ShaderSources.VERSION_DIRECTIVE_430;
+            string options = ShaderSources.VERSION_DIRECTIVE_GL4;
             for (int i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].asString() + "\n";
 
@@ -892,7 +892,7 @@ void Shader::registerComputeAttributes()
             return false;
 
         // Get additionnal shading options
-        string options = ShaderSources.VERSION_DIRECTIVE_430;
+        string options = ShaderSources.VERSION_DIRECTIVE_GL4;
         for (int i = 1; i < args.size(); ++i)
             options += "#define " + args[i].asString() + "\n";
 
@@ -933,7 +933,7 @@ void Shader::registerFeedbackAttributes()
             return false;
 
         // Get additionnal shader options
-        string options = ShaderSources.VERSION_DIRECTIVE_430;
+        string options = ShaderSources.VERSION_DIRECTIVE_GL4;
         for (int i = 1; i < args.size(); ++i)
             options += "#define " + args[i].asString() + "\n";
 
