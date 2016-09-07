@@ -107,7 +107,6 @@ bool Image_FFmpeg::read(const string& filename)
     // Launch the loops
     _continueRead = true;
     _videoDisplayThread = thread([&]() { videoDisplayLoop(); });
-
     _readLoopThread = thread([&]() { readLoop(); });
 
     return true;
@@ -138,12 +137,20 @@ string Image_FFmpeg::tagToFourCC(unsigned int tag)
 void Image_FFmpeg::readLoop()
 {
     // Find the first video stream
-    for (int i = 0; i < (_avContext)->nb_streams; ++i)
+    for (int i = 0; i < _avContext->nb_streams; ++i)
     {
-        if ((_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
+#if HAVE_FFMPEG_3
+        if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
+#else
+        if (_avContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
+#endif
             _videoStreamIndex = i;
 #if HAVE_PORTAUDIO
-        else if ((_avContext)->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
+#if HAVE_FFMPEG_3
+        else if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
+#else
+        else if (_avContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
+#endif
             _audioStreamIndex = i;
 #endif
     }
@@ -162,19 +169,30 @@ void Image_FFmpeg::readLoop()
 #endif
 
     // Find a video decoder
-    auto videoStream = (_avContext)->streams[_videoStreamIndex];
-    auto _videoCodecContext = (_avContext)->streams[_videoStreamIndex]->codec;
-    auto videoCodec = avcodec_find_decoder(_videoCodecContext->codec_id);
+    auto videoStream = _avContext->streams[_videoStreamIndex];
+#if HAVE_FFMPEG_3
+    auto videoCodecParameters = _avContext->streams[_videoStreamIndex]->codecpar;
+    auto videoCodecContext = avcodec_alloc_context3(nullptr);
+    if (avcodec_parameters_to_context(videoCodecContext, videoCodecParameters) < 0)
+    {
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unable to create a video context from the codec parameters from file " << _filepath << Log::endl;
+        return;
+    }
+#else
+    auto videoCodecContext = _avContext->streams[_videoStreamIndex]->codec;
+#endif
+
+    auto videoCodec = avcodec_find_decoder(videoCodecContext->codec_id);
     auto isHap = false;
 
     // Check whether the video codec only has intra frames
-    auto desc = avcodec_descriptor_get(_videoCodecContext->codec_id);
+    auto desc = avcodec_descriptor_get(videoCodecContext->codec_id);
     if (desc)
         _intraOnly = !!(desc->props & AV_CODEC_PROP_INTRA_ONLY);
     else
         _intraOnly = false; // We don't know, so we consider it's not
 
-    auto fourcc = tagToFourCC(_videoCodecContext->codec_tag);
+    auto fourcc = tagToFourCC(videoCodecContext->codec_tag);
     if (fourcc.find("Hap") != string::npos)
     {
         isHap = true;
@@ -189,7 +207,7 @@ void Image_FFmpeg::readLoop()
     if (videoCodec)
     {
         AVDictionary* optionsDict = nullptr;
-        if (avcodec_open2(_videoCodecContext, videoCodec, &optionsDict) < 0)
+        if (avcodec_open2(videoCodecContext, videoCodec, &optionsDict) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open video codec for file " << _filepath << Log::endl;
             return;
@@ -198,31 +216,46 @@ void Image_FFmpeg::readLoop()
 
 #if HAVE_PORTAUDIO
     // Find an audio decoder
-    AVCodec* audioCodec = nullptr;
+    AVCodec* audioCodec{nullptr};
+#if HAVE_FFMPEG_3
+    auto audioCodecContext = avcodec_alloc_context3(nullptr);
+#else
+    AVCodecContext* audioCodecContext{nullptr};
+#endif
     if (_audioStreamIndex >= 0)
     {
-        _audioCodecContext = (_avContext)->streams[_audioStreamIndex]->codec;
-        audioCodec = avcodec_find_decoder(_audioCodecContext->codec_id);
+#if HAVE_FFMPEG_3
+        auto audioCodecParameters = _avContext->streams[_audioStreamIndex]->codecpar;
+        if (avcodec_parameters_to_context(audioCodecContext, audioCodecParameters) < 0)
+        {
+            Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unable to create an audio context from the codec parameters for file " << _filepath << Log::endl;
+            return;
+        }
+#else
+        audioCodecContext = _avContext->streams[_audioStreamIndex]->codec;
+#endif
+
+        audioCodec = avcodec_find_decoder(audioCodecContext->codec_id);
 
         if (audioCodec == nullptr)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Audio codec not supported for file " << _filepath << Log::endl;
-            _audioCodecContext = nullptr;
+            audioCodecContext = nullptr;
         }
         else
         {
             AVDictionary* audioOptionsDict = nullptr;
-            if (avcodec_open2(_audioCodecContext, audioCodec, &audioOptionsDict) < 0)
+            if (avcodec_open2(audioCodecContext, audioCodec, &audioOptionsDict) < 0)
             {
                 Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not open audio codec for file " << _filepath << Log::endl;
-                _audioCodecContext = nullptr;
+                audioCodecContext = nullptr;
             }
         }
 
-        if (_audioCodecContext)
+        if (audioCodecContext)
         {
             Speaker::SampleFormat format;
-            switch (_audioCodecContext->sample_fmt)
+            switch (audioCodecContext->sample_fmt)
             {
             default:
                 Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
@@ -257,7 +290,7 @@ void Image_FFmpeg::readLoop()
             if (!_speaker)
                 return;
 
-            _speaker->setParameters(_audioCodecContext->channels, _audioCodecContext->sample_rate, format);
+            _speaker->setParameters(audioCodecContext->channels, audioCodecContext->sample_rate, format);
         }
     }
 #endif
@@ -279,9 +312,9 @@ void Image_FFmpeg::readLoop()
     }
 
 #if HAVE_FFMPEG_3
-    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height, 1);
 #else
-    int numBytes = avpicture_get_size(PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
+    int numBytes = avpicture_get_size(PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height);
 #endif
     vector<unsigned char> buffer(numBytes);
 
@@ -289,31 +322,31 @@ void Image_FFmpeg::readLoop()
     if (!isHap)
     {
 #if HAVE_FFMPEG_3
-        swsContext = sws_getContext(_videoCodecContext->width,
-            _videoCodecContext->height,
-            _videoCodecContext->pix_fmt,
-            _videoCodecContext->width,
-            _videoCodecContext->height,
+        swsContext = sws_getContext(videoCodecContext->width,
+            videoCodecContext->height,
+            videoCodecContext->pix_fmt,
+            videoCodecContext->width,
+            videoCodecContext->height,
             AV_PIX_FMT_RGB24,
             SWS_BILINEAR,
             nullptr,
             nullptr,
             nullptr);
 
-        av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height, 1);
+        av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height, 1);
 #else
-        swsContext = sws_getContext(_videoCodecContext->width,
-            _videoCodecContext->height,
-            _videoCodecContext->pix_fmt,
-            _videoCodecContext->width,
-            _videoCodecContext->height,
+        swsContext = sws_getContext(videoCodecContext->width,
+            videoCodecContext->height,
+            videoCodecContext->pix_fmt,
+            videoCodecContext->width,
+            videoCodecContext->height,
             PIX_FMT_RGB24,
             SWS_BILINEAR,
             nullptr,
             nullptr,
             nullptr);
 
-        avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, _videoCodecContext->width, _videoCodecContext->height);
+        avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height);
 #endif
     }
 
@@ -346,14 +379,22 @@ void Image_FFmpeg::readLoop()
                 // If the codec is handled by FFmpeg
                 if (!isHap)
                 {
+#if HAVE_FFMPEG_3
+                    auto frameFinished = false;
+                    if (avcodec_send_packet(videoCodecContext, &packet) < 0)
+                        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding a frame in file " << _filepath << Log::endl;
+                    if (avcodec_receive_frame(videoCodecContext, frame) == 0)
+                        frameFinished = true;
+#else
                     int frameFinished;
-                    avcodec_decode_video2(_videoCodecContext, frame, &frameFinished, &packet);
+                    avcodec_decode_video2(videoCodecContext, frame, &frameFinished, &packet);
+#endif
 
                     if (frameFinished)
                     {
-                        sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, _videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
+                        sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                        ImageBufferSpec spec(_videoCodecContext->width, _videoCodecContext->height, 3, ImageBufferSpec::Type::UINT8);
+                        ImageBufferSpec spec(videoCodecContext->width, videoCodecContext->height, 3, ImageBufferSpec::Type::UINT8);
                         spec.format = {"R", "G", "B"};
                         img.reset(new ImageBuffer(spec));
 
@@ -384,17 +425,17 @@ void Image_FFmpeg::readLoop()
                         ImageBufferSpec spec;
                         if (textureFormat == "RGB_DXT1")
                         {
-                            spec = ImageBufferSpec(_videoCodecContext->width, (int)(ceil((float)_videoCodecContext->height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
+                            spec = ImageBufferSpec(videoCodecContext->width, (int)(ceil((float)videoCodecContext->height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
                             spec.format = {textureFormat};
                         }
                         if (textureFormat == "RGBA_DXT5")
                         {
-                            spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
+                            spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
                             spec.format = {textureFormat};
                         }
                         if (textureFormat == "YCoCg_DXT5")
                         {
-                            spec = ImageBufferSpec(_videoCodecContext->width, _videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
+                            spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
                             spec.format = {textureFormat};
                         }
                         else
@@ -452,17 +493,22 @@ void Image_FFmpeg::readLoop()
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
-            else if (packet.stream_index == _audioStreamIndex && _audioCodecContext)
+            else if (packet.stream_index == _audioStreamIndex && audioCodecContext)
             {
-                auto frame = unique_ptr<AVFrame>(new AVFrame());
-                int gotFrame = 0;
-                int length = avcodec_decode_audio4(_audioCodecContext, frame.get(), &gotFrame, &packet);
-                if (length < 0)
-                    Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding audio frame, skipping" << Log::endl;
+#if HAVE_FFMPEG_3
+                auto hasFrame = false;
+                if (avcodec_send_packet(audioCodecContext, &packet) < 0)
+                    Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
+                if (avcodec_receive_frame(audioCodecContext, frame) == 0)
+                    hasFrame = true;
+#else
+                int hasFrame = 0;
+                int length = avcodec_decode_audio4(audioCodecContext, frame, &hasFrame, &packet);
+#endif
 
-                if (gotFrame)
+                if (hasFrame)
                 {
-                    size_t dataSize = av_samples_get_buffer_size(nullptr, _audioCodecContext->channels, frame->nb_samples, _audioCodecContext->sample_fmt, 1);
+                    size_t dataSize = av_samples_get_buffer_size(nullptr, audioCodecContext->channels, frame->nb_samples, audioCodecContext->sample_fmt, 1);
                     auto buffer = ResizableArray<uint8_t>((uint8_t*)frame->data[0], (uint8_t*)frame->data[0] + dataSize);
                     _speaker->addToQueue(buffer);
                 }
@@ -497,13 +543,13 @@ void Image_FFmpeg::readLoop()
 #endif
 
     if (!isHap)
-        avcodec_close(_videoCodecContext);
+        avcodec_close(videoCodecContext);
     _videoStreamIndex = -1;
 
 #if HAVE_PORTAUDIO
-    if (_audioCodecContext)
+    if (audioCodecContext)
     {
-        avcodec_close(_audioCodecContext);
+        avcodec_close(audioCodecContext);
         _speaker.reset();
     }
     _audioStreamIndex = -1;

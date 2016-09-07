@@ -110,7 +110,6 @@ class Image_FFmpeg : public Image
 
     AVFormatContext* _avContext{nullptr};
     double _timeBase{0.033};
-    AVCodecContext* _videoCodecContext{nullptr};
     int _videoStreamIndex{-1};
 
 #if HAVE_PORTAUDIO
