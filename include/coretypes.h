@@ -124,7 +124,7 @@ class ResizableArray
             _size = a._size - a._shift;
             _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
-            memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
+            memcpy(data(), a._buffer.get(), _size);
         }
 
         /**
@@ -150,7 +150,7 @@ class ResizableArray
             _size = a._size - a._shift;
             _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
-            memcpy(_buffer.get() + a._shift, a._buffer.get(), _size);
+            memcpy(data(), a._buffer.get(), _size);
 
             return *this;
         }
@@ -195,7 +195,7 @@ class ResizableArray
         {
             if (shift < _size)
             {
-                _shift = shift;
+                _shift += shift;
                 _size -= shift;
             }
         }
@@ -204,7 +204,7 @@ class ResizableArray
          * \brief Get the size of the buffer
          * \return Return the size of the buffer
          */
-        inline size_t size() const {return _size - _shift;}
+        inline size_t size() const {return _size;}
 
         /**
          * \brief Resize the buffer
