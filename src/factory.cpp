@@ -39,6 +39,10 @@
 #endif
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./userInput_dragndrop.h"
+#include "./userInput_joystick.h"
+#include "./userInput_keyboard.h"
+#include "./userInput_mouse.h"
 #include "./warp.h"
 #include "./window.h"
 
@@ -92,13 +96,10 @@ vector<string> Factory::getObjectTypes()
 void Factory::registerObjects()
 {
     _objectBook["blender"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); };
-
     _objectBook["camera"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root)); };
-
+    _objectBook["dragndrop"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<DragNDrop>(_root)); };
     _objectBook["filter"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_root)); };
-
     _objectBook["geometry"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); };
-
     _objectBook["image"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); };
 
 #if HAVE_FFMPEG
@@ -145,6 +146,8 @@ void Factory::registerObjects()
     };
 #endif
 
+    _objectBook["joystick"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Joystick>(_root)); };
+    _objectBook["keyboard"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Keyboard>(_root)); };
     _objectBook["mesh"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); };
 
 #if HAVE_SHMDATA
@@ -158,6 +161,7 @@ void Factory::registerObjects()
     };
 #endif
 
+    _objectBook["mouse"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mouse>(_root)); };
     _objectBook["object"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); };
 
 #if HAVE_PYTHON
@@ -180,7 +184,6 @@ void Factory::registerObjects()
 #endif
 
     _objectBook["warp"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); };
-
     _objectBook["window"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); };
 }
 

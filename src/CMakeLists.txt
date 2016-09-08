@@ -97,6 +97,10 @@ target_sources(
     texture.cpp
     texture_image.cpp
     threadpool.cpp
+    userInput_dragndrop.cpp
+    userInput_joystick.cpp
+    userInput_keyboard.cpp
+    userInput_mouse.cpp
     warp.cpp
     widget.cpp
     widget_control.cpp

@@ -45,6 +45,7 @@
 #endif
 #include "./basetypes.h"
 #include "./coretypes.h"
+#include "./userInput.h"
 #include "./widget_control.h"
 #include "./widget_global_view.h"
 #include "./widget_graph.h"
@@ -159,6 +160,24 @@ class Gui : public ControllerObject
      * \param path Configuration path
      */
     void setConfigFilePath(const std::string& path) { _configurationPath = path.data(); }
+
+    /**
+     * \brief Set joysticks state
+     * \param state Joysticks state
+     */
+    void setJoystickState(const std::vector<UserInput::State>& state);
+
+    /**
+     * \brief Set the keyboard state
+     * \param state Keyboard state
+     */
+    void setKeyboardState(const std::vector<UserInput::State>& state);
+
+    /**
+     * \brief Set the mouse state
+     * \param state Mouse state
+     */
+    void setMouseState(const std::vector<UserInput::State>& state);
 
     /**
      * \brief Set the resolution of the gui

@@ -194,6 +194,65 @@ void Gui::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
 }
 
 /*************/
+void Gui::setJoystickState(const vector<UserInput::State>& state)
+{
+    vector<float> axes;
+    vector<uint8_t> buttons;
+
+    for (auto& s : state)
+    {
+        if (s.action == "joystick_0_axes")
+            for (auto& v : s.value)
+                axes.push_back(v.asFloat());
+        else if (s.action == "joystick_0_buttons")
+            for (auto& v : s.value)
+                buttons.push_back(v.asInt());
+    }
+
+    setJoystick(axes, buttons);
+}
+
+/*************/
+void Gui::setKeyboardState(const vector<UserInput::State>& state)
+{
+    for (auto& s : state)
+    {
+        if (s.action == "keyboard_unicodeChar")
+        {
+            uint32_t unicode = static_cast<uint32_t>(s.value[0].asInt());
+            unicodeChar(unicode);
+            continue;
+        }
+
+        auto key = s.value[0].asInt();
+        auto mods = s.modifiers;
+
+        if (s.action == "keyboard_press")
+            Gui::key(key, GLFW_PRESS, mods);
+        else if (s.action == "keyboard_release")
+            Gui::key(key, GLFW_RELEASE, mods);
+        else if (s.action == "keyboard_repeat")
+            Gui::key(key, GLFW_REPEAT, mods);
+    }
+}
+
+/*************/
+void Gui::setMouseState(const vector<UserInput::State>& state)
+{
+    for (auto& s : state)
+    {
+        if (s.action == "mouse_position")
+            mousePosition(s.value[0].asInt(), s.value[1].asInt());
+        else if (s.action == "mouse_press")
+            mouseButton(s.value[0].asInt(), GLFW_PRESS, s.modifiers);
+        else if (s.action == "mouse_release")
+            mouseButton(s.value[0].asInt(), GLFW_RELEASE, s.modifiers);
+        else if (s.action == "mouse_scroll")
+            mouseScroll(s.value[0].asFloat(), s.value[1].asFloat());
+    }
+}
+
+/*************/
 void Gui::key(int key, int action, int mods)
 {
     switch (key)

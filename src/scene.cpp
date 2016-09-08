@@ -18,6 +18,9 @@
 #include "./texture_image.h"
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./userInput_joystick.h"
+#include "./userInput_keyboard.h"
+#include "./userInput_mouse.h"
 #include "./warp.h"
 #include "./window.h"
 
@@ -60,7 +63,6 @@ Scene::Scene(std::string name, bool autoRun)
     init(_name);
 
     _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
-    _joystickUpdateFuture = async(std::launch::async, [&]() { joystickUpdateLoop(); });
 
     if (autoRun)
         run();
@@ -73,8 +75,6 @@ Scene::~Scene()
     _textureUploadCondition.notify_all();
     lockTexture.unlock();
     _textureUploadFuture.get();
-
-    _joystickUpdateFuture.get();
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
@@ -463,117 +463,23 @@ void Scene::run()
 /*************/
 void Scene::updateInputs()
 {
-    // Update the user events
     glfwPollEvents();
-    // Mouse position
-    {
-        GLFWwindow* win;
-        int xpos, ypos;
-        Window::getMousePos(win, xpos, ypos);
-        if (_gui != nullptr)
-            _gui->mousePosition(xpos, ypos);
-    }
 
-    // Mouse events
-    while (true)
-    {
-        GLFWwindow* win;
-        int btn, action, mods;
-        if (!Window::getMouseBtn(win, btn, action, mods))
-            break;
+    auto keyboard = dynamic_pointer_cast<Keyboard>(_keyboard);
+    if (keyboard)
+        _gui->setKeyboardState(keyboard->getState(_name));
 
-        if (_gui != nullptr)
-            _gui->mouseButton(btn, action, mods);
-    }
+    auto mouse = dynamic_pointer_cast<Mouse>(_mouse);
+    if (mouse)
+        _gui->setMouseState(mouse->getState(_name));
 
-    // Scrolling events
-    while (true)
-    {
-        GLFWwindow* win;
-        double xoffset, yoffset;
-        if (!Window::getScroll(win, xoffset, yoffset))
-            break;
+    auto joystick = dynamic_pointer_cast<Joystick>(_joystick);
+    if (joystick)
+        _gui->setJoystickState(joystick->getState(_name));
 
-        if (_gui != nullptr)
-            _gui->mouseScroll(xoffset, yoffset);
-    }
-
-    // Keyboard events
-    while (true)
-    {
-        GLFWwindow* win;
-        int key, action, mods;
-        if (!Window::getKeys(win, key, action, mods))
-            break;
-
-        // Find where this action happened
-        shared_ptr<Window> eventWindow;
-        for (auto& w : _objects)
-            if (w.second->getType() == "window")
-            {
-                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
-                if (window->isWindow(win))
-                    eventWindow = window;
-            }
-
-        if (key == GLFW_KEY_F)
-        {
-            if (mods == GLFW_MOD_ALT && action == GLFW_PRESS)
-                if (eventWindow.get() != nullptr)
-                {
-                    eventWindow->switchFullscreen();
-                    continue;
-                }
-        }
-
-        // Send the action to the GUI
-        if (_gui != nullptr)
-            _gui->key(key, action, mods);
-    }
-
-    // Unicode characters events
-    while (true)
-    {
-        GLFWwindow* win;
-        unsigned int unicodeChar;
-        if (!Window::getChars(win, unicodeChar))
-            break;
-
-        // Find where this action happened
-        shared_ptr<Window> eventWindow;
-        for (auto& w : _objects)
-            if (w.second->getType() == "window")
-            {
-                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
-                if (window->isWindow(win))
-                    eventWindow = window;
-            }
-
-        // Send the action to the GUI
-        if (_gui != nullptr)
-            _gui->unicodeChar(unicodeChar);
-    }
-
-    // Joystick state
-    if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
-    {
-        lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
-        _gui->setJoystick(_joystickAxes, _joystickButtons);
-        _joystickAxes.clear();
-    }
-
-    // Any file dropped onto the window? Then load it.
-    auto paths = Window::getPathDropped();
-    if (paths.size() != 0)
-    {
-        sendMessageToWorld("loadConfig", {paths[0]});
-    }
-
-    // Check if we should quit
+    // Check if we should quit.
     if (Window::getQuitFlag())
-    {
         sendMessageToWorld("quit");
-    }
 }
 
 /*************/
@@ -633,6 +539,19 @@ void Scene::setAsMaster(string configFilePath)
     _gui->setName("gui");
     _gui->setConfigFilePath(configFilePath);
     _mainWindow->releaseContext();
+
+    _keyboard = _factory->create("keyboard");
+    _mouse = _factory->create("mouse");
+    _joystick = _factory->create("joystick");
+    _dragndrop = _factory->create("dragndrop");
+    if (_keyboard)
+        _objects["keyboard"] = dynamic_pointer_cast<BaseObject>(_keyboard);
+    if (_mouse)
+        _objects["mouse"] = dynamic_pointer_cast<BaseObject>(_mouse);
+    if (_joystick)
+        _objects["joystick"] = dynamic_pointer_cast<BaseObject>(_joystick);
+    if (_dragndrop)
+        _objects["dragndrop"] = dynamic_pointer_cast<BaseObject>(_dragndrop);
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
@@ -858,38 +777,6 @@ void Scene::init(std::string name)
     _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
-}
-
-/*************/
-void Scene::joystickUpdateLoop()
-{
-    while (_isRunning)
-    {
-        if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
-        {
-            int count;
-            const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
-            auto axes = vector<float>(bufferAxes, bufferAxes + count);
-
-            for (auto& v : axes)
-                if (abs(v) < 0.2f)
-                    v = 0.f;
-
-            const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
-            auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
-
-            lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
-
-            // We accumulate values until they are used by the render loop
-            _joystickAxes.swap(axes);
-            for (int i = 0; i < std::min(_joystickAxes.size(), axes.size()); ++i)
-                _joystickAxes[i] += axes[i];
-
-            _joystickButtons.swap(buttons);
-        }
-
-        this_thread::sleep_for(chrono::microseconds(16667));
-    }
 }
 
 /*************/
