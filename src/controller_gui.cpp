@@ -31,7 +31,8 @@ GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
 /*************/
-Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s) : ControllerObject(s)
+Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
+    : ControllerObject(s)
 {
     _type = "gui";
 
@@ -458,6 +459,9 @@ bool Gui::render()
     if (_isVisible)
     {
         using namespace ImGui;
+
+        // Callback for dragndrop: load the dropped file
+        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].asString()}); });
 
         ImGuiIO& io = GetIO();
         io.MouseDrawCursor = true;

@@ -31,7 +31,6 @@
 #include "./config.h"
 
 #include "./basetypes.h"
-#include "./controller.h"
 #include "./coretypes.h"
 #include "./timer.h"
 #include "./window.h"
@@ -41,15 +40,25 @@ using namespace std;
 namespace Splash
 {
 
-class UserInput : public ControllerObject
+class UserInput : public BaseObject
 {
   public:
     struct State
     {
+        State() = default;
+        State(const std::string& a, const Values& v = {}, int m = 0, const std::string& w = "");
+        // This method is not bijective, due to the tests against s.value.size()
+        bool operator==(const State& s) const;
+
         std::string action{""};
         Values value{};
         int modifiers{0};
         std::string window{""};
+    };
+
+    struct StateCompare
+    {
+        bool operator()(const State& lhs, const State& rhs) const;
     };
 
   public:
@@ -57,40 +66,18 @@ class UserInput : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    UserInput(std::weak_ptr<RootObject> root) : ControllerObject(root)
-    {
-        _type = "userInput";
-        registerAttributes();
-        _updateThread = std::thread([&]() {
-            _running = true;
-            updateLoop();
-        });
-    }
+    UserInput(std::weak_ptr<RootObject> root);
 
     /**
      * \brief Destructor
      */
-    virtual ~UserInput()
-    {
-        _running = false;
-        if (_updateThread.joinable())
-            _updateThread.join();
-    }
+    virtual ~UserInput();
 
     /**
      * \brief Lock the input to the given id
      * \param id User ID to lock this input to
      */
-    bool capture(std::string id)
-    {
-        std::lock_guard<std::mutex> lock(_captureMutex);
-        if (_captured)
-            return false;
-
-        _captured = true;
-        _capturer = id;
-        return true;
-    }
+    bool capture(std::string id);
 
     /**
      * \brief Clear the input state
@@ -101,34 +88,27 @@ class UserInput : public ControllerObject
      * \brief Get the input state
      * \return Return the input state as vector of States
      */
-    std::vector<State> getState(std::string id)
-    {
-        std::lock_guard<std::mutex> lockState(_stateMutex);
-        std::lock_guard<std::mutex> lockCapture(_captureMutex);
-
-        if (_captured && _capturer != id)
-            return {};
-
-        readState();
-
-        auto state(_state);
-        _state.clear();
-        return state;
-    }
+    std::vector<State> getState(std::string id);
 
     /**
      * \brief Release the input
      * \param id User ID, used to check that the right user asks for release
      */
-    void release(std::string id)
-    {
-        std::lock_guard<std::mutex> lock(_captureMutex);
-        if (id == _capturer)
-        {
-            _captured = false;
-            _capturer = "";
-        }
-    }
+    void release(std::string id);
+
+    /**
+     * \brief Remove a callback
+     * \param state State for which to remove a callback
+     */
+    static void resetCallback(const State& state);
+
+    /**
+     * \brief Set a new callback for the given state
+     * This captures any state matching the given one.
+     * \param state State which should trigger the callback
+     * \param cb Callback
+     */
+    static void setCallback(const State& state, const std::function<void(const State&)> cb);
 
   protected:
     std::mutex _captureMutex{}; //!< Capture mutex;
@@ -142,67 +122,41 @@ class UserInput : public ControllerObject
     int _updateRate{100};        //!< Updates per second
     std::thread _updateThread{}; //!< Thread running the update loop
 
+    static std::mutex _callbackMutex;                                                   //!< Mutex to protect callbacks
+    static std::map<State, std::function<void(const State&)>, StateCompare> _callbacks; //!< Callbacks for specific events
+
     /**
      * \brief Get a window name from its GLFW handler
      * \param window GLFW window handler
      * \return Return window name
      */
-    std::string getWindowName(GLFWwindow* glfwWindow)
-    {
-        auto windows = getObjectsOfType("window");
-        for (auto& w : windows)
-        {
-            shared_ptr<Window> window = dynamic_pointer_cast<Window>(w);
-            if (window->isWindow(glfwWindow))
-                return window->getName();
-        }
-
-        return "";
-    }
+    std::string getWindowName(const GLFWwindow* glfwWindow) const;
 
     /**
      * \brief Update loop
      */
-    void updateLoop()
-    {
-        while (_running)
-        {
-            auto start = Timer::getTime();
-            {
-                std::lock_guard<std::mutex> lock(_stateMutex);
-                updateMethod();
-            }
-            auto end = Timer::getTime();
-            auto delta = end - start;
-            int64_t loopDuration = 1e6 / _updateRate;
-            std::this_thread::sleep_for(std::chrono::microseconds(loopDuration - delta));
-        }
-    }
+    void updateLoop();
+
+    /**
+     * \brief Callbacks update method
+     */
+    virtual void updateCallbacks();
 
     /**
      * \brief Input update method
      */
-    virtual void updateMethod() = 0;
+    virtual void updateMethod(){};
 
     /**
      * \brief State update method
+     * \param state State container to update
      */
     virtual void readState(){};
 
     /**
      * Register new functors to modify attributes
      */
-    void registerAttributes()
-    {
-        addAttribute("updateRate",
-            [&](const Values& args) {
-                _updateRate = std::max(10, args[0].asInt());
-                return true;
-            },
-            [&]() -> Values { return {_updateRate}; },
-            {'n'});
-        setAttributeDescription("updateRate", "Set the rate at which the inputs are updated");
-    }
+    void registerAttributes();
 };
 
 } // end of namespace

@@ -18,6 +18,7 @@
 #include "./texture_image.h"
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./userInput_dragndrop.h"
 #include "./userInput_joystick.h"
 #include "./userInput_keyboard.h"
 #include "./userInput_mouse.h"
@@ -473,10 +474,6 @@ void Scene::updateInputs()
     if (mouse)
         _gui->setMouseState(mouse->getState(_name));
 
-    auto joystick = dynamic_pointer_cast<Joystick>(_joystick);
-    if (joystick)
-        _gui->setJoystickState(joystick->getState(_name));
-
     // Check if we should quit.
     if (Window::getQuitFlag())
         sendMessageToWorld("quit");
@@ -540,10 +537,10 @@ void Scene::setAsMaster(string configFilePath)
     _gui->setConfigFilePath(configFilePath);
     _mainWindow->releaseContext();
 
-    _keyboard = _factory->create("keyboard");
-    _mouse = _factory->create("mouse");
-    _joystick = _factory->create("joystick");
-    _dragndrop = _factory->create("dragndrop");
+    _keyboard = make_shared<Keyboard>(_self);
+    _mouse = make_shared<Mouse>(_self);
+    _joystick = make_shared<Joystick>(_self);
+    _dragndrop = make_shared<DragNDrop>(_self);
     if (_keyboard)
         _objects["keyboard"] = dynamic_pointer_cast<BaseObject>(_keyboard);
     if (_mouse)

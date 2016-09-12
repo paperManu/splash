@@ -1,11 +1,14 @@
 #include "./userInput_joystick.h"
 
+#include <regex>
+
 using namespace std;
 
 namespace Splash
 {
 /*************/
-Joystick::Joystick(weak_ptr<RootObject> root) : UserInput(root)
+Joystick::Joystick(weak_ptr<RootObject> root)
+    : UserInput(root)
 {
     _type = "joystick";
 }
@@ -57,10 +60,61 @@ void Joystick::updateMethod()
 }
 
 /*************/
+void Joystick::updateCallbacks()
+{
+    for (auto& callbackIt : _callbacks)
+    {
+        const auto& targetState = callbackIt.first;
+        const auto& callback = callbackIt.second;
+
+        int joystickIndex = -1;
+        string joystickAction = "";
+
+        regex regexAction("joystick_([0-9]+)_(.+)");
+        smatch match;
+        try
+        {
+            if (regex_match(targetState.action, match, regexAction) && match.size() == 3)
+            {
+                joystickIndex = stoi(match[1].str());
+                joystickAction = match[2].str();
+            }
+        }
+        catch (...)
+        {
+            Log::get() << Log::WARNING << "Joystick::" << __FUNCTION__ << " - Error while matching regex" << Log::endl;
+            return;
+        }
+
+        if (joystickIndex != -1 && joystickAction.size() != 0 && _joysticks.size() > joystickIndex)
+        {
+            State state(targetState);
+            if (joystickAction == "buttons")
+            {
+                for (auto& b : _joysticks[joystickIndex].buttons)
+                    state.value.push_back(b);
+            }
+            else if (joystickAction == "axes")
+            {
+                for (auto& a : _joysticks[joystickIndex].axes)
+                {
+                    state.value.push_back(a);
+                    a = 0.f; // Reset joystick axis accumulation
+                }
+            }
+            else
+            {
+                return;
+            }
+
+            callback(state);
+        }
+    }
+}
+
+/*************/
 void Joystick::readState()
 {
-    _state.clear();
-
     int index = 0;
     for (auto& joystick : _joysticks)
     {

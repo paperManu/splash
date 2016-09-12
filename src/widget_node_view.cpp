@@ -11,7 +11,8 @@ namespace Splash
 {
 
 /*************/
-GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name) : GuiWidget(scene, name)
+GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name)
+    : GuiWidget(scene, name)
 {
     auto factory = Factory();
     _objectTypes = factory.getObjectTypes();
@@ -121,20 +122,30 @@ void GuiNodeView::render()
 
         // Interactions
         if (ImGui::IsItemHovered())
-        {
             _isHovered = true;
-
-            ImGuiIO& io = ImGui::GetIO();
-            if (io.MouseDownDuration[0] > 0.0)
-            {
-                float dx = io.MouseDelta.x;
-                float dy = io.MouseDelta.y;
-                _viewShift[0] += dx;
-                _viewShift[1] += dy;
-            }
-        }
         else
             _isHovered = false;
+
+        // This handles the mouse capture even when the mouse goes outside the node view widget
+        ImGuiIO& io = ImGui::GetIO();
+        static bool viewCaptured = false;
+        if (io.MouseDownDuration[1] > 0.0)
+        {
+            if (ImGui::IsItemHovered())
+                viewCaptured = true;
+        }
+        else if (viewCaptured)
+        {
+            viewCaptured = false;
+        }
+
+        if (viewCaptured)
+        {
+            float dx = io.MouseDelta.x;
+            float dy = io.MouseDelta.y;
+            _viewShift[0] += dx;
+            _viewShift[1] += dy;
+        }
     }
 
     // Combo box for adding objects
@@ -200,6 +211,7 @@ void GuiNodeView::renderNode(string name)
                 scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
             }
         }
+
         // Dragging
         if (io.MouseDownDuration[0] > 0.0)
         {

@@ -226,4 +226,10 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
         }
 }
 
+/*************/
+void ControllerObject::setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)> cb) const
+{
+    UserInput::setCallback(state, cb);
+}
+
 } // end of namespace

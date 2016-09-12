@@ -198,7 +198,10 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
 /*************/
 /*************/
-GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name) : ControllerObject(scene), _scene(scene), _name(name)
+GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name)
+    : ControllerObject(scene)
+    , _scene(scene)
+    , _name(name)
 {
 }
 
@@ -301,11 +304,18 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 // We have a special way to handle file paths
                 if (attr.first == "file")
                 {
+
                     string tmp = v.asString();
                     tmp.resize(512);
                     ImGui::PushID((objName + attr.first).c_str());
                     if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
                         scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
+
+                    // Callback for dragndrop: replace the file path in the field
+                    if (ImGui::IsItemHovered())
+                        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObject(objName, attr.first, {state.value[0].asString()}); });
+                    else // Not really necessary as the GUI sets a default dragndrop callback at each frame, but anyway
+                        UserInput::resetCallback(UserInput::State("dragndrop"));
 
                     ImGui::SameLine();
                     if (ImGui::Button("..."))

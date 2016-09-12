@@ -64,9 +64,14 @@ class Joystick : public UserInput
     void updateMethod();
 
     /**
+     * \brief Callbacks update method
+     */
+    void updateCallbacks() final;
+
+    /**
      * \brief State update method
      */
-    void readState();
+    void readState() final;
 };
 
 } // end of namespace

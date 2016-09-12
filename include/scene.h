@@ -52,6 +52,7 @@ class Scene;
 class Scene : public RootObject
 {
     friend ControllerObject;
+    friend UserInput;
 #if HAVE_GPHOTO
     friend ColorCalibrator;
 #endif
@@ -242,6 +243,12 @@ class Scene : public RootObject
     std::shared_ptr<Gui> _gui;
     bool _guiLinkedToWindow{false};
 
+    // Default input objects
+    std::shared_ptr<BaseObject> _keyboard{nullptr};
+    std::shared_ptr<BaseObject> _mouse{nullptr};
+    std::shared_ptr<BaseObject> _joystick{nullptr};
+    std::shared_ptr<BaseObject> _dragndrop{nullptr};
+
 // Objects in charge of calibration
 #if HAVE_GPHOTO
     std::shared_ptr<ColorCalibrator> _colorCalibrator;
@@ -257,12 +264,6 @@ class Scene : public RootObject
     bool _isInitialized{false};
     bool _status{false};  //< Set to true if an error occured during rendering
     int _swapInterval{1}; //< Global value for the swap interval, default for all windows
-
-    // Default input objects
-    std::shared_ptr<BaseObject> _keyboard{nullptr};
-    std::shared_ptr<BaseObject> _mouse{nullptr};
-    std::shared_ptr<BaseObject> _joystick{nullptr};
-    std::shared_ptr<BaseObject> _dragndrop{nullptr};
 
     // Texture upload context
     std::future<void> _textureUploadFuture;

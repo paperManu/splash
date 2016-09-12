@@ -30,6 +30,7 @@
 
 #include "./basetypes.h"
 #include "./coretypes.h"
+#include "./userInput.h"
 
 namespace Splash
 {
@@ -42,7 +43,10 @@ class ControllerObject : public BaseObject
      * \brief Constructor
      * \param root RootObject
      */
-    ControllerObject(std::weak_ptr<RootObject> root) : BaseObject(root) {}
+    ControllerObject(std::weak_ptr<RootObject> root)
+        : BaseObject(root)
+    {
+    }
 
     /**
      * \brief Desctructor
@@ -132,6 +136,13 @@ class ControllerObject : public BaseObject
      * \param values Value to set the attribute to
      */
     void setObjectsOfType(const std::string& type, const std::string& attr, const Values& values = {}) const;
+
+    /**
+     * \brief Set a user input callback, to capture a user event
+     * \param state State which should trigger the callback
+     * \param cb Callback
+     */
+    void setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)> cb) const;
 };
 
 } // end of namespace
