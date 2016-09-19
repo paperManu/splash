@@ -191,6 +191,10 @@ class Gui : public ControllerObject
     std::shared_ptr<GlWindow> _window;
     std::weak_ptr<Scene> _scene;
 
+    // This is needed for some GLFW callbacks, and also has to be static...
+    // There can be only one gui, so it is not such an issue
+    static GLFWwindow* _glfwWindow;
+
     GLuint _fbo{0};
     std::shared_ptr<Texture_Image> _depthTexture;
     std::shared_ptr<Texture> _outTexture;
@@ -263,6 +267,18 @@ class Gui : public ControllerObject
      * \brief Compute projectors blending
      */
     void computeBlending(bool once = false);
+
+    /**
+     * \brief Get the clipboard
+     * \return Return a pointer to the text
+     */
+    static const char* getClipboardText();
+
+    /**
+     * \brief Set the clipboard
+     * \param text Text to set the clipboard to
+     */
+    static void setClipboardText(const char* text);
 
     /**
      * \brief Make the background flash to light grey

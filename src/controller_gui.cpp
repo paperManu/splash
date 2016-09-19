@@ -30,6 +30,8 @@ GLint Gui::_imGuiColorLocation;
 GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
+GLFWwindow* Gui::_glfwWindow = nullptr;
+
 /*************/
 Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
     : ControllerObject(s)
@@ -42,9 +44,9 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
 
     _scene = s;
     _window = w;
+    _glfwWindow = _window->get();
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -850,6 +852,7 @@ void Gui::initImGui(int width, int height)
     int w, h;
     io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
 
+    // Set GL texture for font
     glDeleteTextures(1, &_imFontTextureId);
     glGenTextures(1, &_imFontTextureId);
     glBindTexture(GL_TEXTURE_2D, _imFontTextureId);
@@ -858,7 +861,25 @@ void Gui::initImGui(int width, int height)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     io.Fonts->TexID = (void*)(intptr_t)_imFontTextureId;
 
+    // Init clipboard callbacks
+    io.GetClipboardTextFn = Gui::getClipboardText;
+    io.SetClipboardTextFn = Gui::setClipboardText;
+
     _isInitialized = true;
+}
+
+/*************/
+const char* Gui::getClipboardText()
+{
+    if (_glfwWindow)
+        return glfwGetClipboardString(_glfwWindow);
+}
+
+/*************/
+void Gui::setClipboardText(const char* text)
+{
+    if (_glfwWindow)
+        glfwSetClipboardString(_glfwWindow, text);
 }
 
 /*************/
