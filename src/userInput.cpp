@@ -23,16 +23,9 @@ UserInput::State::State(const string& a, const Values& v, int m, const string& w
 bool UserInput::State::operator==(const UserInput::State& s) const
 {
     if (s.action == action && s.modifiers == modifiers)
-    {
-        if (value.size() != 0 && s.value != value)
-            return false;
-        else
-            return true;
-    }
+        return true;
     else
-    {
         return false;
-    }
 }
 
 /*************/
@@ -104,22 +97,9 @@ bool UserInput::StateCompare::operator()(const UserInput::State& lhs, const User
     else if (rhs.action == lhs.action)
     {
         if (lhs.modifiers < rhs.modifiers)
-        {
             return true;
-        }
-        else if (lhs.modifiers == rhs.modifiers)
-        {
-            if (lhs.value.size() < rhs.value.size())
-                return true;
-            else if (lhs.value.size() != 0 && rhs.value.size() != 0)
-                return lhs.value[0].asString() < rhs.value[0].asString();
-            else
-                return false;
-        }
         else
-        {
             return false;
-        }
     }
     else
     {
@@ -131,7 +111,7 @@ bool UserInput::StateCompare::operator()(const UserInput::State& lhs, const User
 void UserInput::resetCallback(const UserInput::State& state)
 {
     lock_guard<mutex> lock(_callbackMutex);
-    auto callbackIt = _callbacks.find(state);
+    const auto callbackIt = _callbacks.find(state);
     if (callbackIt != _callbacks.end())
         _callbacks.erase(callbackIt);
 }
@@ -175,11 +155,10 @@ void UserInput::updateLoop()
     {
         auto start = Timer::getTime();
         {
-            lock_guard<mutex> lock(_stateMutex);
+            lock_guard<mutex> lockStates(_stateMutex);
             updateMethod();
-        }
-        {
-            lock_guard<mutex> lock(_callbackMutex);
+
+            lock_guard<mutex> lockCallbacks(_callbackMutex);
             updateCallbacks();
         }
         auto end = Timer::getTime();
@@ -194,11 +173,7 @@ void UserInput::updateCallbacks()
 {
     for (auto stateIt = _state.begin(); stateIt != _state.end();)
     {
-        auto callbackIt = _callbacks.cbegin();
-        for (; callbackIt != _callbacks.cend(); ++callbackIt)
-            if (callbackIt->first == *stateIt)
-                break;
-
+        const auto callbackIt = _callbacks.find(*stateIt);
         if (callbackIt != _callbacks.cend())
         {
             callbackIt->second(*stateIt);

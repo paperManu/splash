@@ -47,7 +47,6 @@ class UserInput : public BaseObject
     {
         State() = default;
         State(const std::string& a, const Values& v = {}, int m = 0, const std::string& w = "");
-        // This method is not bijective, due to the tests against s.value.size()
         bool operator==(const State& s) const;
 
         std::string action{""};
@@ -56,6 +55,12 @@ class UserInput : public BaseObject
         std::string window{""};
     };
 
+    /**
+     * \brief Compares two states, only considering the action and the modifiers
+     * \param lhs First state
+     * \param rhs Second state
+     * \return Return true if the states are considered identical
+     */
     struct StateCompare
     {
         bool operator()(const State& lhs, const State& rhs) const;
@@ -104,7 +109,7 @@ class UserInput : public BaseObject
 
     /**
      * \brief Set a new callback for the given state
-     * This captures any state matching the given one.
+     * This captures any state matching the given one. Only action and modifiers attributes are used for registering callbacks
      * \param state State which should trigger the callback
      * \param cb Callback
      */
