@@ -316,7 +316,11 @@ class BaseObject
      * \brief Constructor.
      * \param root Specify the root object.
      */
-    BaseObject(std::weak_ptr<RootObject> root) : _root(root) { init(); }
+    BaseObject(std::weak_ptr<RootObject> root)
+        : _root(root)
+    {
+        init();
+    }
 
     /**
      * \brief Destructor.
@@ -824,7 +828,10 @@ class BufferObject : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    BufferObject(std::weak_ptr<RootObject> root) : BaseObject(root) {}
+    BufferObject(std::weak_ptr<RootObject> root)
+        : BaseObject(root)
+    {
+    }
 
     /**
      * \brief Destructor
@@ -1063,6 +1070,12 @@ class RootObject : public BaseObject
      * \param buffer Serialized buffer
      */
     void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) { _link->sendBuffer(name, buffer); }
+
+    /**
+     * \brief Return a lock object list modifications (addition, deletion)
+     * \return Return a lock object which unlocks the mutex upon deletion
+     */
+    std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::move(std::unique_lock<std::recursive_mutex>(_objectsMutex)); }
 
   protected:
     std::shared_ptr<Link> _link;                                           //!< Link object for communicatin between World and Scene

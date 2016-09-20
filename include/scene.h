@@ -69,7 +69,7 @@ class Scene : public RootObject
      * \param name Scene name
      * \param autoRun If true, the Scene will start without waiting for a start message from the World
      */
-    Scene(std::string name = "Splash", bool autoRun = true);
+    Scene(std::string name = "Splash");
 
     /**
      * \brief Destructor

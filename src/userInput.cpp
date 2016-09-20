@@ -131,6 +131,7 @@ string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
         return {};
 
     auto windows = list<shared_ptr<BaseObject>>();
+    auto lock = scene->getLockOnObjects();
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "window")
             windows.push_back(obj.second);

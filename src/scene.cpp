@@ -48,7 +48,7 @@ namespace Splash
 bool Scene::_isGlfwInitialized{false};
 
 /*************/
-Scene::Scene(std::string name, bool autoRun)
+Scene::Scene(std::string name)
 {
     _self = std::shared_ptr<Scene>(this, [](Scene*) {}); // A shared pointer with no deleter, how convenient
 
@@ -62,11 +62,6 @@ Scene::Scene(std::string name, bool autoRun)
     registerAttributes();
 
     init(_name);
-
-    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
-
-    if (autoRun)
-        run();
 }
 
 /*************/
@@ -79,7 +74,8 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    lock_guard<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
+    lock_guard<recursive_mutex> lockSet(_setMutex);         // We don't want our objects to be set while destroyed
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
@@ -431,6 +427,8 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
+    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
+
     while (_isRunning)
     {
         {
@@ -454,10 +452,13 @@ void Scene::run()
             _mainWindow->setAsCurrentContext();
             render();
             _mainWindow->releaseContext();
-            updateInputs();
         }
 
         Timer::get() >> "sceneLoop";
+
+        Timer::get() << "inputsUpdate";
+        updateInputs();
+        Timer::get() >> "inputsUpdate";
     }
 }
 

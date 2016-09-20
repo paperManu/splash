@@ -311,7 +311,7 @@ void World::applyConfig()
                 if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
                 {
                     Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
-                    _innerScene = make_shared<Scene>(name, false);
+                    _innerScene = make_shared<Scene>(name);
                     _innerSceneThread = thread([&]() { _innerScene->run(); });
                 }
                 else
@@ -1214,6 +1214,7 @@ void World::registerAttributes()
                     for (auto& s : _scenes)
                     {
                         sendMessage(s.first, "quit", {});
+                        _link->disconnectFrom(s.first);
                         if (s.second != -1)
                         {
                             waitpid(s.second, nullptr, 0);
@@ -1224,8 +1225,6 @@ void World::registerAttributes()
                                 _innerSceneThread.join();
                             _innerScene.reset();
                         }
-
-                        _link->disconnectFrom(s.first);
                     }
 
                     _masterSceneName = "";

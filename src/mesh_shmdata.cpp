@@ -10,7 +10,8 @@ namespace Splash
 {
 
 /*************/
-Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root) : Mesh(root)
+Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root)
+    : Mesh(root)
 {
     init();
 }
@@ -23,13 +24,8 @@ Mesh_Shmdata::~Mesh_Shmdata()
 /*************/
 bool Mesh_Shmdata::read(const string& filename)
 {
-    auto filepath = string(filename);
-    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
-        filepath = _configFilePath + filepath;
-
-    _reader.reset(new shmdata::Follower(filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
-
-    _filepath = filepath;
+    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
 
     return true;
 }
