@@ -42,9 +42,12 @@ void GuiWarp::render()
             else
                 setObject(warp->getName(), "showControlLattice", {0});
 
-            warp->update();
+            warp->render();
 
             auto warpSpec = warp->getSpec();
+            if (warpSpec.width == 0 || warpSpec.height == 0)
+                continue;
+
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
             int h = w * warpSpec.height / warpSpec.width;
 

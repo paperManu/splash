@@ -177,9 +177,8 @@ class Camera : public BaseObject
 
     /**
      * \brief Render this camera into its textures
-     * \return Return true if all went well
      */
-    bool render();
+    void render();
 
     /**
      * \brief Set the given calibration point. This point is then selected
@@ -299,7 +298,11 @@ class Camera : public BaseObject
     //! List of additional objects to draw
     struct Drawable
     {
-        Drawable(std::string name, glm::dmat4 mat) : model(name), rtMatrix(mat) {}
+        Drawable(std::string name, glm::dmat4 mat)
+            : model(name)
+            , rtMatrix(mat)
+        {
+        }
 
         std::string model;
         glm::dmat4 rtMatrix;

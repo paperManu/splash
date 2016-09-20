@@ -121,7 +121,12 @@ class Warp : public Texture
     /**
      * \brief Update the warp
      */
-    void update();
+    void render();
+
+    /**
+     * \brief Update for a warp does nothing, it is the render() job
+     */
+    void update() {}
 
   private:
     bool _isInitialized{false};

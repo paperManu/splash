@@ -107,7 +107,12 @@ class Filter : public Texture
     /**
      * \brief Render the filter
      */
-    void update();
+    void render();
+
+    /**
+     * \brief Update for a filter does nothing, it is the render() job
+     */
+    void update() {}
 
   private:
     bool _isInitialized{false};

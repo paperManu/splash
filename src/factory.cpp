@@ -5,7 +5,6 @@
 #include "./colorcalibrator.h"
 #endif
 #include "./controller_blender.h"
-#include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
 #include "./image.h"

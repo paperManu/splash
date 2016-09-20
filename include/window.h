@@ -152,7 +152,7 @@ class Window : public BaseObject
     /**
      * \brief Render this window to screen
      */
-    bool render();
+    void render();
 
     /**
      * \brief Hide / show cursor

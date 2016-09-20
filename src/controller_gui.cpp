@@ -37,6 +37,7 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
     : ControllerObject(s)
 {
     _type = "gui";
+    _renderingPriority = Priority::GUI;
 
     auto scene = s.lock();
     if (w.get() == nullptr || scene.get() == nullptr)
@@ -445,10 +446,10 @@ void Gui::unlinkFrom(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Gui::render()
+void Gui::render()
 {
     if (!_isInitialized)
-        return false;
+        return;
 
     ImageBufferSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
@@ -628,11 +629,9 @@ bool Gui::render()
     error = glGetError();
     if (error)
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
-
-    return error != 0 ? true : false;
-#else
-    return false;
 #endif
+
+    return;
 }
 
 /*************/
@@ -955,12 +954,12 @@ void Gui::initImWidgets()
         worldFps = 1e3 / std::max(1.f, wrl);
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
-        ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
-        flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
-        cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
-        wrp = wrp * 0.9 + Timer::get()["warps"] * 0.001 * 0.1;
+        ble = ble * 0.9 + Timer::get()["blender"] * 0.001 * 0.1;
+        flt = flt * 0.9 + Timer::get()["filter"] * 0.001 * 0.1;
+        cam = cam * 0.9 + Timer::get()["camera"] * 0.001 * 0.1;
+        wrp = wrp * 0.9 + Timer::get()["warp"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
-        win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
+        win = win * 0.9 + Timer::get()["window"] * 0.001 * 0.1;
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 

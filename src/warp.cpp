@@ -21,7 +21,8 @@ namespace Splash
 {
 
 /*************/
-Warp::Warp(std::weak_ptr<RootObject> root) : Texture(root)
+Warp::Warp(std::weak_ptr<RootObject> root)
+    : Texture(root)
 {
     init();
 }
@@ -30,6 +31,7 @@ Warp::Warp(std::weak_ptr<RootObject> root) : Texture(root)
 void Warp::init()
 {
     _type = "warp";
+    _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -158,7 +160,7 @@ void Warp::unlinkFrom(std::shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Warp::update()
+void Warp::render()
 {
     if (_inCamera.expired())
         return;

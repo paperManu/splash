@@ -35,9 +35,11 @@ atomic_bool Window::_quitFlag;
 atomic_int Window::_swappableWindowsCount{0};
 
 /*************/
-Window::Window(std::weak_ptr<RootObject> root) : BaseObject(root)
+Window::Window(std::weak_ptr<RootObject> root)
+    : BaseObject(root)
 {
     _type = "window";
+    _renderingPriority = Priority::WINDOW;
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -305,7 +307,7 @@ void Window::unlinkFrom(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Window::render()
+void Window::render()
 {
     // Update the FBO configuration if needed
     setupRenderFBO();
@@ -395,11 +397,7 @@ bool Window::render()
     glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-#ifdef DEBUG
-    return error != 0 ? true : false;
-#else
-    return false;
-#endif
+    return;
 }
 
 /*************/

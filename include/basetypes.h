@@ -307,6 +307,22 @@ class RootObject;
 class BaseObject
 {
   public:
+    enum class Priority
+    {
+        NO_RENDER = -1,
+        BLENDING = 10,
+        PRE_FILTER = 15,
+        FILTER = 20,
+        PRE_CAMERA = 25,
+        CAMERA = 30,
+        POST_CAMERA = 35,
+        WARP = 40,
+        GUI = 45,
+        WINDOW = 50,
+        POST_WINDOW = 55
+    };
+
+  public:
     /**
      * \brief Constructor.
      */
@@ -670,14 +686,46 @@ class BaseObject
             return AttributeFunctor::Sync::no_sync;
     }
 
+    /**
+     * \brief Get the rendering priority for this object
+     * The priorities have the following values:
+     * - negative value: object not rendered
+     * - 10 to 19: pre-cameras rendering
+     * - 20 to 29: cameras rendering
+     * - 30 to 39: post-cameras rendering
+     * - 40 to 49: windows rendering
+     * \return Return the rendering priority
+     */
+    Priority getRenderingPriority() const { return _renderingPriority; }
+
+    /**
+     * \brief Set the rendering priority for this object
+     * Set BaseObject::getRenderingPriority() for precision about priority
+     * \param int Desired priority
+     * \return Return true if the priority was set
+     */
+    bool setRenderingPriority(Priority priority)
+    {
+        if (priority < Priority::PRE_CAMERA || priority >= Priority::POST_WINDOW)
+            return false;
+        _renderingPriority = priority;
+        return true;
+    }
+
+    /**
+     * \brief Virtual method to render the object
+     */
+    virtual void render() {}
+
   public:
     bool _savable{true}; //!< True if the object should be saved
 
   protected:
-    unsigned long _id{0};            //!< Internal ID of the object
-    std::string _type{"baseobject"}; //!< Internal type
-    std::string _remoteType{""};     //!< When the object root is a Scene, this is the type of the corresponding object in the World
-    std::string _name{""};           //!< Object name
+    unsigned long _id{0};                             //!< Internal ID of the object
+    std::string _type{"baseobject"};                  //!< Internal type
+    std::string _remoteType{""};                      //!< When the object root is a Scene, this is the type of the corresponding object in the World
+    std::string _name{""};                            //!< Object name
+    Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
     std::string _configFilePath{""};  //!< Configuration path

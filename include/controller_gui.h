@@ -151,9 +151,8 @@ class Gui : public ControllerObject
 
     /**
      * \brief Render this gui
-     * \return Return true if all went well
      */
-    bool render();
+    void render();
 
     /**
      * \brief Specify the configuration path (as loaded by World)

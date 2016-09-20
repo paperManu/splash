@@ -66,7 +66,8 @@ namespace Splash
 {
 
 /*************/
-Camera::Camera(std::weak_ptr<RootObject> root) : BaseObject(root)
+Camera::Camera(std::weak_ptr<RootObject> root)
+    : BaseObject(root)
 {
     init();
 }
@@ -75,6 +76,7 @@ Camera::Camera(std::weak_ptr<RootObject> root) : BaseObject(root)
 void Camera::init()
 {
     _type = "camera";
+    _renderingPriority = Priority::CAMERA;
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -575,7 +577,7 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
 }
 
 /*************/
-bool Camera::render()
+void Camera::render()
 {
     if (_updateColorDepth)
         updateColorDepth();
@@ -592,7 +594,7 @@ bool Camera::render()
         setOutputSize(spec.width, spec.height);
 
     if (_outTextures.size() < 1)
-        return false;
+        return;
 
 #ifdef DEBUG
     glGetError();
@@ -762,10 +764,9 @@ bool Camera::render()
     GLenum error = glGetError();
     if (error)
         Log::get() << Log::WARNING << _type << "::" << __FUNCTION__ << " - Error while rendering the camera: " << error << Log::endl;
-    return error != 0 ? true : false;
-#else
-    return false;
 #endif
+
+    return;
 }
 
 /*************/

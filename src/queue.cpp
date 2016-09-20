@@ -21,7 +21,8 @@ namespace Splash
 {
 
 /*************/
-Queue::Queue(std::weak_ptr<RootObject> root) : BufferObject(root)
+Queue::Queue(std::weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     _type = "queue";
     registerAttributes();
@@ -397,9 +398,11 @@ void Queue::registerAttributes()
 /*************/
 
 /*************/
-QueueSurrogate::QueueSurrogate(std::weak_ptr<RootObject> root) : Texture(root)
+QueueSurrogate::QueueSurrogate(std::weak_ptr<RootObject> root)
+    : Texture(root)
 {
     _type = "queue";
+    _renderingPriority = Priority::PRE_CAMERA;
     _remoteType = "queue";
     _filter = make_shared<Filter>(root);
     _filter->setName("queueFilter" + to_string(_filterIndex++));

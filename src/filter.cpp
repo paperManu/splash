@@ -12,7 +12,8 @@ namespace Splash
 {
 
 /*************/
-Filter::Filter(std::weak_ptr<RootObject> root) : Texture(root)
+Filter::Filter(std::weak_ptr<RootObject> root)
+    : Texture(root)
 {
     init();
 }
@@ -21,6 +22,7 @@ Filter::Filter(std::weak_ptr<RootObject> root) : Texture(root)
 void Filter::init()
 {
     _type = "filter";
+    _renderingPriority = Priority::FILTER;
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -159,7 +161,7 @@ void Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Filter::update()
+void Filter::render()
 {
     if (_inTexture.expired())
         return;

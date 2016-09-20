@@ -356,65 +356,64 @@ void Scene::remove(string name)
 /*************/
 void Scene::render()
 {
-    bool isError{false};
-    vector<unsigned int> threadIds;
-
-    // Compute the blending
-    Timer::get() << "blending";
+    // Create lists of objects to update and to render
+    map<Priority, vector<shared_ptr<BaseObject>>> objectList{};
     for (auto& obj : _objects)
-        if (obj.second->getType() == "blender")
-            dynamic_pointer_cast<Blender>(obj.second)->render();
-    Timer::get() >> "blending";
+    {
+        auto priority = obj.second->getRenderingPriority();
+        if (priority == Priority::NO_RENDER)
+            continue;
 
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
+        auto listIt = objectList.find(priority);
+        if (listIt == objectList.end())
+        {
+            auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
+            if (entry.second == true)
+                listIt = entry.first;
+            else
+                continue;
+        }
 
-    Timer::get() << "queues";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "queue")
-            dynamic_pointer_cast<QueueSurrogate>(obj.second)->update();
-    Timer::get() >> "queues";
+        listIt->second.push_back(obj.second);
+    }
 
-    Timer::get() << "filters";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "filter")
-            dynamic_pointer_cast<Filter>(obj.second)->update();
-    Timer::get() >> "filters";
+    // Update and render the objects
+    // See BaseObject::getRenderingPriority() for precision about priorities
+    for (auto& objPriority : objectList)
+    {
+        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+            _textureUploadMutex.lock();
 
-    Timer::get() << "cameras";
-    // We wait for textures to be uploaded, and we prevent any upload while rendering
-    // cameras to prevent tearing
-    glFlush();
-    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-    glDeleteSync(_textureUploadFence);
+        // If the objects needs some Textures, we need to sync
+        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        {
+            // We wait for textures to be uploaded, and we prevent any upload while rendering
+            // cameras to prevent tearing
+            glFlush();
+            glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+            glDeleteSync(_textureUploadFence);
+        }
 
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    Timer::get() >> "cameras";
+        if (objPriority.second.size() != 0)
+            Timer::get() << objPriority.second[0]->getType();
 
-    _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        for (auto& obj : objPriority.second)
+        {
+            obj->update();
+            obj->render();
+        }
 
-    Timer::get() << "warps";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "warp")
-            dynamic_pointer_cast<Warp>(obj.second)->update();
-    Timer::get() >> "warps";
+        if (objPriority.second.size() != 0)
+            Timer::get() >> objPriority.second[0]->getType();
 
-    lockTexture.unlock(); // Unlock _textureUploadMutex
+        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        {
+            _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        }
 
-    // Update the gui
-    Timer::get() << "gui";
-    if (_gui != nullptr)
-        isError |= _gui->render();
-    Timer::get() >> "gui";
-
-    // Update the windows
-    Timer::get() << "windows";
-    glFinish();
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    Timer::get() >> "windows";
+        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+            _textureUploadMutex.unlock();
+    }
 
     // Swap all buffers at once
     Timer::get() << "swap";
@@ -534,8 +533,12 @@ void Scene::setAsMaster(string configFilePath)
 
     _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, _self);
-    _gui->setName("gui");
-    _gui->setConfigFilePath(configFilePath);
+    if (_gui)
+    {
+        _gui->setName("gui");
+        _gui->setConfigFilePath(configFilePath);
+        _objects["gui"] = _gui;
+    }
     _mainWindow->releaseContext();
 
     _keyboard = make_shared<Keyboard>(_self);
@@ -543,13 +546,13 @@ void Scene::setAsMaster(string configFilePath)
     _joystick = make_shared<Joystick>(_self);
     _dragndrop = make_shared<DragNDrop>(_self);
     if (_keyboard)
-        _objects["keyboard"] = dynamic_pointer_cast<BaseObject>(_keyboard);
+        _objects["keyboard"] = _keyboard;
     if (_mouse)
-        _objects["mouse"] = dynamic_pointer_cast<BaseObject>(_mouse);
+        _objects["mouse"] = _mouse;
     if (_joystick)
-        _objects["joystick"] = dynamic_pointer_cast<BaseObject>(_joystick);
+        _objects["joystick"] = _joystick;
     if (_dragndrop)
-        _objects["dragndrop"] = dynamic_pointer_cast<BaseObject>(_dragndrop);
+        _objects["dragndrop"] = _dragndrop;
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
