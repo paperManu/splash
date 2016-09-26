@@ -121,10 +121,10 @@ class ResizableArray
          */
         ResizableArray(const ResizableArray& a)
         {
-            _size = a._size - a._shift;
+            _size = a.size();
             _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
-            memcpy(data(), a._buffer.get(), _size);
+            memcpy(data(), a.data(), _size);
         }
 
         /**
@@ -147,10 +147,10 @@ class ResizableArray
             if (this == &a)
                 return *this;
 
-            _size = a._size - a._shift;
+            _size = a.size();
             _shift = 0;
             _buffer = std::unique_ptr<T[]>(new T[_size]);
-            memcpy(data(), a._buffer.get(), _size);
+            memcpy(data(), a.data(), _size);
 
             return *this;
         }
@@ -176,9 +176,9 @@ class ResizableArray
          * \param i Index
          * \return Return value at i
          */
-        T* operator[](unsigned int i) const
+        T& operator[](unsigned int i) const
         {
-            return data() + i;
+            return *(data() + i);
         }
 
         /**
@@ -193,7 +193,7 @@ class ResizableArray
          */
         inline void shift(size_t shift)
         {
-            if (shift < _size)
+            if (shift < _size && _shift + shift > 0)
             {
                 _shift += shift;
                 _size -= shift;
@@ -389,7 +389,7 @@ struct Value
             v
         };
 
-        Value() {_i = 0; _type = Type::i;}
+        Value() {}
         Value(int v) {_i = v; _type = Type::i;}
         Value(int64_t v) {_l = v; _type = Type::l;}
         Value(float v) {_f = v; _type = Type::f;}
@@ -462,6 +462,11 @@ struct Value
             }
             else
                 return false;
+        }
+
+        bool operator!=(Value v) const
+        {
+            return !operator==(v);
         }
 
         Value& operator[](int index)
@@ -599,7 +604,7 @@ struct Value
         }
 
     private:
-        Type _type;
+        Type _type {Type::i};
         int _i {0};
         int64_t _l {0};
         float _f {0.f};

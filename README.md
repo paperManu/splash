@@ -66,7 +66,7 @@ Splash relies on a few libraries to get the job done. These libraries are:
 A few more libraries are used as submodules in the git repository:
 
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-- [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
+- [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images,
 - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,

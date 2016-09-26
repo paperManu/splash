@@ -159,7 +159,7 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
         {
             int channel = (i / _sampleSize) / sampleNbr;
             int sample = (i / _sampleSize) % sampleNbr;
-            std::copy(buffer[i], buffer[i + _sampleSize], interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
+            std::copy(&buffer[i], &buffer[i + _sampleSize], &interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
         }
     }
 

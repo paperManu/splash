@@ -26,3 +26,6 @@
 [submodule "external/macdylibbundler"]
 	path = external/macdylibbundler
 	url = https://github.com/auriamg/macdylibbundler.git
+[submodule "external/doctest"]
+	path = external/doctest
+	url = https://github.com/onqtam/doctest
