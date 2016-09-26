@@ -13,7 +13,6 @@ sudo: required
 before_install:
     - echo $LANG
     - echo $LC_ALL
-    - sudo apt-add-repository -y ppa:irie/blender
     - sudo apt-add-repository -y ppa:sat-metalab/metalab
     - sudo apt-add-repository -y ppa:andrewrk/rucksack
     - sudo apt-get update -qq

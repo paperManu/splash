@@ -75,6 +75,7 @@ endif()
 
 target_sources(
     splash-${API_VERSION} PRIVATE
+    basetypes.cpp
     camera.cpp
     cgUtils.cpp
     controller.cpp

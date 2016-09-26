@@ -63,14 +63,7 @@ struct AttributeFunctor
      * \param setFunc Setter function.
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {})
-    {
-        _name = name;
-        _setFunc = setFunc;
-        _getFunc = std::function<const Values()>();
-        _defaultSetAndGet = false;
-        _valuesTypes = types;
-    }
+    AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {});
 
     /**
      * \brief Constructor.
@@ -79,108 +72,25 @@ struct AttributeFunctor
      * \param getFunc Getter function.
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, std::function<const Values()> getFunc, const std::vector<char>& types = {})
-    {
-        _name = name;
-        _setFunc = setFunc;
-        _getFunc = getFunc;
-        _defaultSetAndGet = false;
-        _valuesTypes = types;
-    }
+    AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, std::function<const Values()> getFunc, const std::vector<char>& types = {});
 
     AttributeFunctor(const AttributeFunctor&) = delete;
     AttributeFunctor& operator=(const AttributeFunctor&) = delete;
-
     AttributeFunctor(AttributeFunctor&& a) { operator=(std::move(a)); }
-
-    AttributeFunctor& operator=(AttributeFunctor&& a)
-    {
-        if (this != &a)
-        {
-            _name = std::move(a._name);
-            _objectName = std::move(a._objectName);
-            _setFunc = std::move(a._setFunc);
-            _getFunc = std::move(a._getFunc);
-            _description = std::move(a._description);
-            _values = std::move(a._values);
-            _valuesTypes = std::move(a._valuesTypes);
-            _defaultSetAndGet = std::move(a._defaultSetAndGet);
-            _doUpdateDistant = std::move(a._doUpdateDistant);
-            _savable = std::move(a._savable);
-        }
-
-        return *this;
-    }
+    AttributeFunctor& operator=(AttributeFunctor&& a);
 
     /**
      * \brief Parenthesis operator which calls the setter function if defined, otherwise calls a default setter function which only stores the arguments if the have the right type.
      * \param args Arguments as a queue of Value.
      * \return Returns true if the set did occur.
      */
-    bool operator()(const Values& args)
-    {
-        if (_isLocked)
-            return false;
-
-        if (!_setFunc && _defaultSetAndGet)
-        {
-            std::lock_guard<std::mutex> lock(_defaultFuncMutex);
-            _values = args;
-
-            _valuesTypes.clear();
-            for (const auto& a : args)
-                _valuesTypes.push_back(a.getTypeAsChar());
-
-            return true;
-        }
-        else if (!_setFunc)
-        {
-            return false;
-        }
-
-        // Check for arguments correctness.
-        // Some attributes may have an unlimited number of arguments, so we do not test for equality.
-        if (args.size() < _valuesTypes.size())
-        {
-            Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Wrong number of arguments (" << args.size() << " instead of " << _valuesTypes.size() << ")"
-                       << Log::endl;
-            return false;
-        }
-
-        for (int i = 0; i < _valuesTypes.size(); ++i)
-        {
-            auto type = args[i].getTypeAsChar();
-            auto expected = _valuesTypes[i];
-
-            if (type != expected)
-            {
-                Log::get() << Log::WARNING << _objectName << "~~" << _name << " - Argument " << i << " is of wrong type " << std::string(&type, &type + 1) << ", expected "
-                           << std::string(&expected, &expected + 1) << Log::endl;
-                return false;
-            }
-        }
-
-        return _setFunc(std::forward<const Values&>(args));
-    }
+    bool operator()(const Values& args);
 
     /**
      * \brief Parenthesis operator which calls the getter function if defined, otherwise simply returns the stored values.
      * \return Returns the stored values.
      */
-    Values operator()() const
-    {
-        if (!_getFunc && _defaultSetAndGet)
-        {
-            std::lock_guard<std::mutex> lock(_defaultFuncMutex);
-            return _values;
-        }
-        else if (!_getFunc)
-        {
-            return Values();
-        }
-
-        return _getFunc();
-    }
+    Values operator()() const;
 
     /**
      * \brief Tells whether the setter and getters are the default ones or not.
@@ -204,13 +114,7 @@ struct AttributeFunctor
      * \brief Get the types of the wanted arguments.
      * \return Returns the expected types in a Values.
      */
-    Values getArgsTypes() const
-    {
-        Values types{};
-        for (const auto& type : _valuesTypes)
-            types.push_back(Value(std::string(&type, 1)));
-        return types;
-    }
+    Values getArgsTypes() const;
 
     /**
      * \brief Ask whether the attribute is locked.
@@ -223,15 +127,7 @@ struct AttributeFunctor
      * \param v The value to set the attribute to. If empty, uses the stored value.
      * \return Returns true if the value could be locked.
      */
-    bool lock(Values v = {})
-    {
-        if (v.size() != 0)
-            if (!operator()(v))
-                return false;
-
-        _isLocked = true;
-        return true;
-    }
+    bool lock(Values v = {});
 
     /**
      * \brief Unlock the attribute.
@@ -353,11 +249,7 @@ class BaseObject
      * \param attr Name of the attribute.
      * \return Returns a reference to the attribute.
      */
-    AttributeFunctor& operator[](const std::string& attr)
-    {
-        auto attribFunction = _attribFunctions.find(attr);
-        return attribFunction->second;
-    }
+    AttributeFunctor& operator[](const std::string& attr);
 
     /**
      * \brief Get the real type of this BaseObject, as a std::string.
@@ -414,62 +306,19 @@ class BaseObject
      * \param obj Object to link to
      * \return Returns true if the linking succeeded
      */
-    virtual bool linkTo(std::shared_ptr<BaseObject> obj)
-    {
-        auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
-            auto object = o.lock();
-            if (!object)
-                return false;
-            if (object == obj)
-                return true;
-            return false;
-        });
-
-        if (objectIt == _linkedObjects.end())
-        {
-            _linkedObjects.push_back(obj);
-            return true;
-        }
-        return false;
-    }
+    virtual bool linkTo(std::shared_ptr<BaseObject> obj);
 
     /**
      * \brief Unlink a given object
      * \param obj Object to unlink from
      */
-    virtual void unlinkFrom(std::shared_ptr<BaseObject> obj)
-    {
-        auto objectIt = std::find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const std::weak_ptr<BaseObject>& o) {
-            auto object = o.lock();
-            if (!object)
-                return false;
-            if (object == obj)
-                return true;
-            return false;
-        });
-
-        if (objectIt != _linkedObjects.end())
-            _linkedObjects.erase(objectIt);
-    }
+    virtual void unlinkFrom(std::shared_ptr<BaseObject> obj);
 
     /**
      * \brief Return a vector of the linked objects
      * \return Returns a vector of the linked objects
      */
-    const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects()
-    {
-        std::vector<std::shared_ptr<BaseObject>> objects;
-        for (auto& o : _linkedObjects)
-        {
-            auto obj = o.lock();
-            if (!obj)
-                continue;
-
-            objects.push_back(obj);
-        }
-
-        return objects;
-    }
+    const std::vector<std::shared_ptr<BaseObject>> getLinkedObjects();
 
     /**
      * \brief Set the specified attribute
@@ -477,26 +326,7 @@ class BaseObject
      * \param args Values object which holds attribute values
      * \return Returns true if the parameter exists and was set
      */
-    bool setAttribute(const std::string& attrib, const Values& args)
-    {
-        auto attribFunction = _attribFunctions.find(attrib);
-        bool attribNotPresent = (attribFunction == _attribFunctions.end());
-
-        if (attribNotPresent)
-        {
-            auto result = _attribFunctions.emplace(attrib, AttributeFunctor());
-            if (!result.second)
-                return false;
-
-            attribFunction = result.first;
-        }
-
-        if (!attribFunction->second.isDefault())
-            _updatedParams = true;
-        bool attribResult = attribFunction->second(std::forward<const Values&>(args));
-
-        return attribResult && attribNotPresent;
-    }
+    bool setAttribute(const std::string& attrib, const Values& args);
 
     /**
      * \brief Get the specified attribute
@@ -506,61 +336,21 @@ class BaseObject
      * \param includeNonSavable Return true even if the attribute is not savable
      * \return Return true if the parameter exists
      */
-    bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false, bool includeNonSavable = false) const
-    {
-        auto attribFunction = _attribFunctions.find(attrib);
-        if (attribFunction == _attribFunctions.end())
-            return false;
-
-        args = attribFunction->second();
-
-        if ((!attribFunction->second.savable() && !includeNonSavable) || (attribFunction->second.isDefault() && !includeDistant))
-            return false;
-
-        return true;
-    }
+    bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false, bool includeNonSavable = false) const;
 
     /**
      * \brief Get all the savable attributes as a map
      * \param includeDistant Also include the distant attributes
      * \return Return the map of all the attributes
      */
-    std::unordered_map<std::string, Values> getAttributes(bool includeDistant = false) const
-    {
-        std::unordered_map<std::string, Values> attribs;
-        for (auto& attr : _attribFunctions)
-        {
-            Values values;
-            if (getAttribute(attr.first, values, includeDistant, true) == false || values.size() == 0)
-                continue;
-            attribs[attr.first] = values;
-        }
-
-        return attribs;
-    }
+    std::unordered_map<std::string, Values> getAttributes(bool includeDistant = false) const;
 
     /**
      * \brief Get the map of the attributes which should be updated from World to Scene
      * \brief This is the case when the distant object is different from the World one
      * \return Returns a map of the distant attributes
      */
-    std::unordered_map<std::string, Values> getDistantAttributes() const
-    {
-        std::unordered_map<std::string, Values> attribs;
-        for (auto& attr : _attribFunctions)
-        {
-            if (!attr.second.doUpdateDistant())
-                continue;
-
-            Values values;
-            if (getAttribute(attr.first, values, false, true) == false || values.size() == 0)
-                continue;
-
-            attribs[attr.first] = values;
-        }
-
-        return attribs;
-    }
+    std::unordered_map<std::string, Values> getDistantAttributes() const;
 
     /**
      * \brief Get the savability for this object
@@ -595,96 +385,33 @@ class BaseObject
      * \param values Value to convert
      * \return Returns a Json object
      */
-    Json::Value getValuesAsJson(const Values& values) const
-    {
-        Json::Value jsValue;
-        for (auto& v : values)
-        {
-            switch (v.getType())
-            {
-            default:
-                continue;
-            case Value::i:
-                jsValue.append(v.asInt());
-                break;
-            case Value::f:
-                jsValue.append(v.asFloat());
-                break;
-            case Value::s:
-                jsValue.append(v.asString());
-                break;
-            case Value::v:
-                jsValue.append(getValuesAsJson(v.asValues()));
-                break;
-            }
-        }
-        return jsValue;
-    }
+    Json::Value getValuesAsJson(const Values& values) const;
 
     /**
      * \brief Get the object's configuration as a Json object
      * \return Returns a Json object
      */
-    Json::Value getConfigurationAsJson() const
-    {
-        Json::Value root;
-        if (_remoteType == "")
-            root["type"] = _type;
-        else
-            root["type"] = _remoteType;
-
-        for (auto& attr : _attribFunctions)
-        {
-            Values values;
-            if (getAttribute(attr.first, values) == false || values.size() == 0)
-                continue;
-
-            Json::Value jsValue;
-            jsValue = getValuesAsJson(values);
-            root[attr.first] = jsValue;
-        }
-        return root;
-    }
+    Json::Value getConfigurationAsJson() const;
 
     /**
      * \brief Get the description for the given attribute, if it exists
      * \param name Name of the attribute
      * \return Returns the description for the attribute
      */
-    std::string getAttributeDescription(const std::string& name)
-    {
-        auto attr = _attribFunctions.find(name);
-        if (attr != _attribFunctions.end())
-            return attr->second.getDescription();
-        else
-            return {};
-    }
+    std::string getAttributeDescription(const std::string& name);
 
     /**
      * \brief Get a Values holding the description of all of this object's attributes
      * \return Returns all the descriptions as a Values
      */
-    Values getAttributesDescriptions()
-    {
-        Values descriptions;
-        for (const auto& attr : _attribFunctions)
-            descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
-        return descriptions;
-    }
+    Values getAttributesDescriptions();
 
     /**
      * \brief Get the attribute synchronization method
      * \param name Attribute name
      * \return Return the synchronization method
      */
-    AttributeFunctor::Sync getAttributeSyncMethod(const std::string& name)
-    {
-        auto attr = _attribFunctions.find(name);
-        if (attr != _attribFunctions.end())
-            return attr->second.getSyncMethod();
-        else
-            return AttributeFunctor::Sync::no_sync;
-    }
+    AttributeFunctor::Sync getAttributeSyncMethod(const std::string& name);
 
     /**
      * \brief Get the rendering priority for this object
@@ -704,13 +431,7 @@ class BaseObject
      * \param int Desired priority
      * \return Return true if the priority was set
      */
-    bool setRenderingPriority(Priority priority)
-    {
-        if (priority < Priority::PRE_CAMERA || priority >= Priority::POST_WINDOW)
-            return false;
-        _renderingPriority = priority;
-        return true;
-    }
+    bool setRenderingPriority(Priority priority);
 
     /**
      * \brief Virtual method to render the object
@@ -739,46 +460,7 @@ class BaseObject
     /**
      * \brief Initialize some generic attributes
      */
-    void init()
-    {
-        addAttribute("configFilePath",
-            [&](const Values& args) {
-                _configFilePath = args[0].asString();
-                return true;
-            },
-            {'s'});
-
-        addAttribute("setName",
-            [&](const Values& args) {
-                setName(args[0].asString());
-                return true;
-            },
-            {'s'});
-
-        addAttribute("switchLock",
-            [&](const Values& args) {
-                auto attribIterator = _attribFunctions.find(args[0].asString());
-                if (attribIterator == _attribFunctions.end())
-                    return false;
-
-                std::string status;
-                auto& attribFunctor = attribIterator->second;
-                if (attribFunctor.isLocked())
-                {
-                    status = "Unlocked";
-                    attribFunctor.unlock();
-                }
-                else
-                {
-                    status = "Locked";
-                    attribFunctor.lock();
-                }
-
-                Log::get() << Log::MESSAGE << _name << "~~" << args[0].asString() << " - " << status << Log::endl;
-                return true;
-            },
-            {'s'});
-    }
+    void init();
 
     /**
      * \brief Add a new attribute to this object
@@ -787,12 +469,7 @@ class BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {})
-    {
-        _attribFunctions[name] = AttributeFunctor(name, set, types);
-        _attribFunctions[name].setObjectName(_type);
-        return _attribFunctions[name];
-    }
+    AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {});
 
     /**
      * \brief Add a new attribute to this object
@@ -802,48 +479,26 @@ class BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {})
-    {
-        _attribFunctions[name] = AttributeFunctor(name, set, get, types);
-        _attribFunctions[name].setObjectName(_type);
-        return _attribFunctions[name];
-    }
+    AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {});
 
     /**
      * \brief Set and the description for the given attribute, if it exists
      * \param name Attribute name
      * \param description Attribute description
      */
-    void setAttributeDescription(const std::string& name, const std::string& description)
-    {
-        auto attr = _attribFunctions.find(name);
-        if (attr != _attribFunctions.end())
-        {
-            attr->second.setDescription(description);
-        }
-    }
+    void setAttributeDescription(const std::string& name, const std::string& description);
 
     /**
      * \brief Set attribute synchronization method
      * \param Method Synchronization method, can be any of the AttributeFunctor::Sync values
      */
-    void setAttributeSyncMethod(const std::string& name, const AttributeFunctor::Sync& method)
-    {
-        auto attr = _attribFunctions.find(name);
-        if (attr != _attribFunctions.end())
-            attr->second.setSyncMethod(method);
-    }
+    void setAttributeSyncMethod(const std::string& name, const AttributeFunctor::Sync& method);
 
     /**
      * \brief Remove the specified attribute
      * \param name Attribute name
      */
-    void removeAttribute(const std::string& name)
-    {
-        auto attr = _attribFunctions.find(name);
-        if (attr != _attribFunctions.end())
-            _attribFunctions.erase(attr);
-    }
+    void removeAttribute(const std::string& name);
 
     /**
      * \brief Set additional parameters for a given attribute
@@ -851,15 +506,7 @@ class BaseObject
      * \param savable Savability
      * \param updateDistant If true and the object has a World as root, updates the attribute of the corresponding Scene object
      */
-    void setAttributeParameter(const std::string& name, bool savable, bool updateDistant)
-    {
-        auto attr = _attribFunctions.find(name);
-        if (attr != _attribFunctions.end())
-        {
-            attr->second.savable(savable);
-            attr->second.doUpdateDistant(updateDistant);
-        }
-    }
+    void setAttributeParameter(const std::string& name, bool savable, bool updateDistant);
 };
 
 /*************/
@@ -895,11 +542,7 @@ class BufferObject : public BaseObject
     /**
      * \brief Set the updated buffer flag to false.
      */
-    void setNotUpdated()
-    {
-        BaseObject::setNotUpdated();
-        _updatedBuffer = false;
-    }
+    void setNotUpdated();
 
     /**
      * \brief Update the BufferObject from a serialized representation.
@@ -912,16 +555,7 @@ class BufferObject : public BaseObject
      * \brief Update the BufferObject from the inner serialized object, set with setSerializedObject
      * \return Return true if everything went well
      */
-    bool deserialize()
-    {
-        if (!_newSerializedObject)
-            return false;
-
-        bool returnValue = deserialize(_serializedObject);
-        _newSerializedObject = false;
-
-        return returnValue;
-    }
+    bool deserialize();
 
     /**
      * \brief Get the name of the distant buffer object, for those which have a different name between World and Scene (happens with Queues)
@@ -945,31 +579,12 @@ class BufferObject : public BaseObject
      * \brief Set the next serialized object to deserialize to buffer
      * \param obj Serialized object
      */
-    void setSerializedObject(std::shared_ptr<SerializedObject> obj)
-    {
-        bool expectedAtomicValue = false;
-        if (_serializedObjectWaiting.compare_exchange_strong(expectedAtomicValue, true))
-        {
-            _serializedObject = std::move(obj);
-            _newSerializedObject = true;
-
-            // Deserialize it right away, in a separate thread
-            SThread::pool.enqueueWithoutId([this]() {
-                std::lock_guard<std::mutex> lock(_writeMutex);
-                deserialize();
-                _serializedObjectWaiting = false;
-            });
-        }
-    }
+    void setSerializedObject(std::shared_ptr<SerializedObject> obj);
 
     /**
      * \brief Updates the timestamp of the object. Also, set the update flag to true.
      */
-    void updateTimestamp()
-    {
-        _timestamp = Timer::getTime();
-        _updatedBuffer = true;
-    }
+    void updateTimestamp();
 
   protected:
     mutable std::mutex _readMutex;                    //!< Read mutex locked when the object is read from
@@ -992,17 +607,7 @@ class RootObject : public BaseObject
     /**
      * \brief Constructor
      */
-    RootObject()
-    {
-        addAttribute("answerMessage", [&](const Values& args) {
-            if (args.size() == 0 || args[0].asString() != _answerExpected)
-                return false;
-            std::unique_lock<std::mutex> conditionLock(conditionMutex);
-            _lastAnswerReceived = args;
-            _answerCondition.notify_one();
-            return true;
-        });
-    }
+    RootObject();
 
     /**
      * \brief Destructor
@@ -1013,44 +618,14 @@ class RootObject : public BaseObject
      * \brief Register an object which was created elsewhere. If an object was the same name exists, it is replaced.
      * \param object Object to register
      */
-    void registerObject(std::shared_ptr<BaseObject> object)
-    {
-        if (object.get() != nullptr)
-        {
-            auto name = object->getName();
-
-            std::lock_guard<std::recursive_mutex> registerLock(_objectsMutex);
-            object->setSavable(false); // This object was created on the fly. Do not save it
-
-            // We keep the previous object on the side, to prevent double free due to operator[] behavior
-            auto previousObject = std::shared_ptr<BaseObject>();
-            auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end())
-                previousObject = objectIt->second;
-
-            _objects[name] = object;
-        }
-    }
+    void registerObject(std::shared_ptr<BaseObject> object);
 
     /**
      * \brief Unregister an object which was created elsewhere, from its name, sending back a shared_ptr for it.
      * \param name Object name
      * \return Return a shared pointer to the unregistered object
      */
-    std::shared_ptr<BaseObject> unregisterObject(const std::string& name)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_objectsMutex);
-
-        auto objectIt = _objects.find(name);
-        if (objectIt != _objects.end())
-        {
-            auto object = objectIt->second;
-            _objects.erase(objectIt);
-            return object;
-        }
-
-        return {};
-    }
+    std::shared_ptr<BaseObject> unregisterObject(const std::string& name);
 
     /**
      * \brief Set the attribute of the named object with the given args
@@ -1060,57 +635,14 @@ class RootObject : public BaseObject
      * \param async Set to true for the attribute to be set asynchronously
      * \return Return true if all went well
      */
-    bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_setMutex);
-
-        if (name == _name || name == SPLASH_ALL_PEERS)
-            return setAttribute(attrib, args);
-
-        auto objectIt = _objects.find(name);
-        if (objectIt != _objects.end() && objectIt->second->getAttributeSyncMethod(attrib) == AttributeFunctor::Sync::force_sync)
-            async = false;
-
-        if (async)
-        {
-            addTask([=]() {
-                auto objectIt = _objects.find(name);
-                if (objectIt != _objects.end())
-                    objectIt->second->setAttribute(attrib, args);
-            });
-        }
-        else
-        {
-            if (objectIt != _objects.end())
-                return objectIt->second->setAttribute(attrib, args);
-            else
-                return false;
-        }
-
-        return true;
-    }
+    bool set(const std::string& name, const std::string& attrib, const Values& args, bool async = true);
 
     /**
      * \brief Set an object from its serialized form. If non existant, it is handled by the handleSerializedObject method.
      * \param name Object name
      * \param obj Serialized object
      */
-    void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj)
-    {
-        std::lock_guard<std::recursive_mutex> lock(_setMutex);
-
-        auto objectIt = _objects.find(name);
-        if (objectIt != _objects.end())
-        {
-            auto object = std::dynamic_pointer_cast<BufferObject>(objectIt->second);
-            if (object)
-                object->setSerializedObject(std::move(obj));
-        }
-        else
-        {
-            handleSerializedObject(name, std::move(obj));
-        }
-    }
+    void setFromSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
 
     /**
      * \brief Send the given serialized buffer through the link
@@ -1153,11 +685,7 @@ class RootObject : public BaseObject
      * \brief Add a new task to the queue
      * \param task Task function
      */
-    void addTask(const std::function<void()>& task)
-    {
-        std::lock_guard<std::mutex> lock(_taskMutex);
-        _taskQueue.push_back(task);
-    }
+    void addTask(const std::function<void()>& task);
 
     /**
      * \brief Send a message to another root object
@@ -1175,30 +703,7 @@ class RootObject : public BaseObject
      * \param timeout Timeout in microseconds
      * \return Return the answer received (or an empty Values)
      */
-    Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {}, const unsigned long long timeout = 0ull)
-    {
-        if (_link == nullptr)
-            return {};
-
-        std::lock_guard<std::mutex> lock(_answerMutex);
-        _answerExpected = attribute;
-
-        std::unique_lock<std::mutex> conditionLock(conditionMutex);
-        _link->sendMessage(name, attribute, message);
-
-        auto cvStatus = std::cv_status::no_timeout;
-        if (timeout == 0ull)
-            _answerCondition.wait(conditionLock);
-        else
-            cvStatus = _answerCondition.wait_for(conditionLock, std::chrono::microseconds(timeout));
-
-        _answerExpected = "";
-
-        if (std::cv_status::no_timeout == cvStatus)
-            return _lastAnswerReceived;
-        else
-            return {};
-    }
+    Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {}, const unsigned long long timeout = 0ull);
 };
 
 } // end of namespace
