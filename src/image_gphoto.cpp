@@ -369,7 +369,7 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 void Image_GPhoto::registerAttributes()
 {
     addAttribute("aperture",
-        [&](const Values& args) { return doSetProperty("aperture", args[0].asString()); },
+        [&](const Values& args) { return doSetProperty("aperture", args[0].as<string>()); },
         [&]() -> Values {
             string value;
             if (doGetProperty("aperture", value))
@@ -381,7 +381,7 @@ void Image_GPhoto::registerAttributes()
     setAttributeDescription("aperture", "Set the aperture of the lens");
 
     addAttribute("isospeed",
-        [&](const Values& args) { return doSetProperty("iso", args[0].asString()); },
+        [&](const Values& args) { return doSetProperty("iso", args[0].as<string>()); },
         [&]() -> Values {
             string value;
             if (doGetProperty("iso", value))
@@ -394,7 +394,7 @@ void Image_GPhoto::registerAttributes()
 
     addAttribute("shutterspeed",
         [&](const Values& args) {
-            doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].asFloat()));
+            doSetProperty("shutterspeed", getShutterspeedStringFromFloat(args[0].as<float>()));
             return true;
         },
         [&]() -> Values {

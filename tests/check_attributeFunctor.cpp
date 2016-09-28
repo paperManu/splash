@@ -11,20 +11,20 @@ TEST_CASE("Testing AttributeFunctor")
     int value = 0;
     auto attr = AttributeFunctor("attribute",
         [&](const Values& args) {
-            value = args[0].asInt();
+            value = args[0].as<int>();
             return true;
         },
         [&]() -> Values { return {value}; },
         {'n'});
 
     CHECK(attr({42}) == true);
-    CHECK(attr()[0].asInt() == 42);
+    CHECK(attr()[0].as<int>() == 42);
     CHECK(attr({"Patate"}) == false);
     CHECK(attr({42, "Patate"}) == true);
 
     attr({42});
     attr.lock();
     attr({512});
-    CHECK(attr()[0].asInt() == 42);
+    CHECK(attr()[0].as<int>() == 42);
     attr.unlock();
 }

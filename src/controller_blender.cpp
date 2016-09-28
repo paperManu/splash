@@ -131,7 +131,7 @@ void Blender::registerAttributes()
 {
     addAttribute("mode",
         [&](const Values& args) {
-            auto mode = args[0].asString();
+            auto mode = args[0].as<string>();
             if (mode == "none")
             {
                 _computeBlending = false;

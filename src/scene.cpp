@@ -194,7 +194,7 @@ Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
     }
 
     // Ask the World if it knows more about this object
-    if (values.size() == 0 || values[0].asString() == "")
+    if (values.size() == 0 || values[0].as<string>() == "")
     {
         auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
         if (answer.size() != 0)
@@ -833,8 +833,8 @@ void Scene::registerAttributes()
     addAttribute("add",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].asString();
-                string name = args[1].asString();
+                string type = args[0].as<string>();
+                string name = args[1].as<string>();
                 add(type, name);
             });
 
@@ -846,8 +846,8 @@ void Scene::registerAttributes()
     addAttribute("addGhost",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].asString();
-                string name = args[1].asString();
+                string type = args[0].as<string>();
+                string name = args[1].as<string>();
                 addGhost(type, name);
             });
 
@@ -883,7 +883,7 @@ void Scene::registerAttributes()
                     blender = blenderIt->second;
                 }
 
-                std::string blendingMode = args[0].asString();
+                std::string blendingMode = args[0].as<string>();
                 blender->setAttribute("mode", args);
             });
             return true;
@@ -912,7 +912,7 @@ void Scene::registerAttributes()
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-                auto objectName = args[0].asString();
+                auto objectName = args[0].as<string>();
 
                 auto objectIt = _objects.find(objectName);
                 for (auto& localObject : _objects)
@@ -938,7 +938,7 @@ void Scene::registerAttributes()
 
     addAttribute("duration",
         [&](const Values& args) {
-            Timer::get().setDuration(args[0].asString(), args[1].asInt());
+            Timer::get().setDuration(args[0].as<string>(), args[1].as<int>());
             return true;
         },
         {'s', 'n'});
@@ -957,7 +957,7 @@ void Scene::registerAttributes()
             addTask([=]() {
                 for (auto& obj : _objects)
                     if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].as<int>())});
             });
 
             return true;
@@ -968,7 +968,7 @@ void Scene::registerAttributes()
     addAttribute("getObjectsNameByType",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].asString();
+                string type = args[0].as<string>();
                 Values list = getObjectsNameByType(type);
                 sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
             });
@@ -981,8 +981,8 @@ void Scene::registerAttributes()
     addAttribute("link",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 link(src, dst);
             });
 
@@ -994,8 +994,8 @@ void Scene::registerAttributes()
     addAttribute("linkGhost",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 linkGhost(src, dst);
             });
 
@@ -1006,7 +1006,7 @@ void Scene::registerAttributes()
 
     addAttribute("log",
         [&](const Values& args) {
-            Log::get().setLog(args[0].asString(), (Log::Priority)args[1].asInt());
+            Log::get().setLog(args[0].as<string>(), (Log::Priority)args[1].as<int>());
             return true;
         },
         {'s', 'n'});
@@ -1022,7 +1022,7 @@ void Scene::registerAttributes()
     addAttribute("remove",
         [&](const Values& args) {
             addTask([=]() {
-                string name = args[1].asString();
+                string name = args[1].as<string>();
                 remove(name);
             });
 
@@ -1033,8 +1033,8 @@ void Scene::registerAttributes()
 
     addAttribute("renameObject",
         [&](const Values& args) {
-            auto name = args[0].asString();
-            auto newName = args[1].asString();
+            auto name = args[0].as<string>();
+            auto newName = args[1].as<string>();
 
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
@@ -1056,8 +1056,8 @@ void Scene::registerAttributes()
     addAttribute("setGhost",
         [&](const Values& args) {
             addTask([=]() {
-                string name = args[0].asString();
-                string attr = args[1].asString();
+                string name = args[0].as<string>();
+                string attr = args[1].as<string>();
                 Values values;
                 for (int i = 2; i < args.size(); ++i)
                     values.push_back(args[i]);
@@ -1075,7 +1075,7 @@ void Scene::registerAttributes()
         if (args.size() == 0)
             setAsMaster();
         else
-            setAsMaster(args[0].asString());
+            setAsMaster(args[0].as<string>());
         return true;
     });
     setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
@@ -1095,7 +1095,7 @@ void Scene::registerAttributes()
 
     addAttribute("swapInterval",
         [&](const Values& args) {
-            _swapInterval = max(-1, args[0].asInt());
+            _swapInterval = max(-1, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {(int)_swapInterval}; },
@@ -1130,8 +1130,8 @@ void Scene::registerAttributes()
     addAttribute("unlink",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 unlink(src, dst);
             });
 
@@ -1146,8 +1146,8 @@ void Scene::registerAttributes()
                 return false;
 
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 unlinkGhost(src, dst);
             });
 
@@ -1161,10 +1161,10 @@ void Scene::registerAttributes()
             addTask([=]() {
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
                 for (auto& obj : _ghostObjects)
                     if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
             });
 
             return true;
@@ -1197,8 +1197,8 @@ void Scene::registerAttributes()
 #if HAVE_LINUX
     addAttribute("sceneAffinity",
         [&](const Values& args) {
-            auto core = args[0].asInt();
-            auto rootObjectCount = args[1].asInt();
+            auto core = args[0].as<int>();
+            auto rootObjectCount = args[1].as<int>();
 
             addTask([=]() {
                 if (Utils::setAffinity({core}))

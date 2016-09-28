@@ -261,7 +261,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                     _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
                     if (valueType == Value::Type::v)
-                        sendMessage(v.asValues());
+                        sendMessage(v.as<Values>());
                     else
                     {
                         int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
@@ -345,11 +345,9 @@ void Link::handleInputMessages()
                 {
                     _socketMessageIn->recv(&msg);
                     if (valueType == Value::Type::i)
-                        values.push_back(*(int*)msg.data());
-                    else if (valueType == Value::Type::l)
                         values.push_back(*(int64_t*)msg.data());
                     else if (valueType == Value::Type::f)
-                        values.push_back(*(float*)msg.data());
+                        values.push_back(*(double*)msg.data());
                     else if (valueType == Value::Type::s)
                         values.push_back(string((char*)msg.data()));
                 }

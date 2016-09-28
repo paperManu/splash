@@ -373,7 +373,7 @@ void Warp::registerAttributes()
     // Also resets the selected control point if hidden
     addAttribute("showControlLattice",
         [&](const Values& args) {
-            _showControlPoints = args[0].asInt();
+            _showControlPoints = args[0].as<int>();
             if (!_showControlPoints)
                 _selectedControlPointIndex = -1;
             return true;
@@ -384,7 +384,7 @@ void Warp::registerAttributes()
     // Show a single control point
     addAttribute("showControlPoint",
         [&](const Values& args) {
-            auto index = args[0].asInt();
+            auto index = args[0].as<int>();
             if (index < 0 || index >= _screenMesh->getControlPoints().size())
                 _selectedControlPointIndex = -1;
             else

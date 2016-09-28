@@ -143,8 +143,8 @@ void Image_OpenCV::registerAttributes()
 {
     addAttribute("size",
         [&](const Values& args) {
-            _width = args[0].asInt();
-            _height = args[1].asInt();
+            _width = args[0].as<int>();
+            _height = args[1].as<int>();
 
             _width = (_width == 0) ? 640 : _width;
             _height = (_height == 0) ? 640 : _height;
@@ -159,7 +159,7 @@ void Image_OpenCV::registerAttributes()
 
     addAttribute("framerate",
         [&](const Values& args) {
-            _framerate = (args[0].asFloat() == 0) ? 60 : args[0].asFloat();
+            _framerate = (args[0].as<float>() == 0) ? 60 : args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_framerate}; },

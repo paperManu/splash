@@ -220,9 +220,9 @@ void Filter::updateUniforms()
                 obj->getAttribute("duration", duration);
                 obj->getAttribute("remaining", remainingTime);
                 if (remainingTime.size() == 1)
-                    shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].asFloat()});
+                    shader->setAttribute("uniform", {"_filmRemaining", remainingTime[0].as<float>()});
                 if (duration.size() == 1)
-                    shader->setAttribute("uniform", {"_filmDuration", duration[0].asFloat()});
+                    shader->setAttribute("uniform", {"_filmDuration", duration[0].as<float>()});
             }
         }
     }
@@ -319,7 +319,7 @@ void Filter::registerAttributes()
 {
     addAttribute("16bits",
         [&](const Values& args) {
-            bool render16bits = args[0].asInt();
+            bool render16bits = args[0].as<int>();
             if (render16bits != _render16bits)
             {
                 _render16bits = render16bits;
@@ -333,7 +333,7 @@ void Filter::registerAttributes()
 
     addAttribute("blackLevel",
         [&](const Values& args) {
-            auto blackLevel = args[0].asFloat();
+            auto blackLevel = args[0].as<float>();
             blackLevel = std::max(0.f, std::min(1.f, blackLevel));
             _filterUniforms["_blackLevel"] = {blackLevel};
             return true;
@@ -349,7 +349,7 @@ void Filter::registerAttributes()
 
     addAttribute("brightness",
         [&](const Values& args) {
-            auto brightness = args[0].asFloat();
+            auto brightness = args[0].as<float>();
             brightness = std::max(0.f, std::min(2.f, brightness));
             _filterUniforms["_brightness"] = {brightness};
             return true;
@@ -365,7 +365,7 @@ void Filter::registerAttributes()
 
     addAttribute("contrast",
         [&](const Values& args) {
-            auto contrast = args[0].asFloat();
+            auto contrast = args[0].as<float>();
             contrast = std::max(0.f, std::min(2.f, contrast));
             _filterUniforms["_contrast"] = {contrast};
             return true;
@@ -381,7 +381,7 @@ void Filter::registerAttributes()
 
     addAttribute("colorTemperature",
         [&](const Values& args) {
-            auto colorTemperature = args[0].asFloat();
+            auto colorTemperature = args[0].as<float>();
             colorTemperature = std::max(0.f, std::min(16000.f, colorTemperature));
             _filterUniforms["_colorTemperature"] = {colorTemperature};
             auto colorBalance = colorBalanceFromTemperature(colorTemperature);
@@ -399,7 +399,7 @@ void Filter::registerAttributes()
 
     addAttribute("saturation",
         [&](const Values& args) {
-            auto saturation = args[0].asFloat();
+            auto saturation = args[0].as<float>();
             saturation = std::max(0.f, std::min(2.f, saturation));
             _filterUniforms["_saturation"] = {saturation};
             return true;
@@ -415,7 +415,7 @@ void Filter::registerAttributes()
 
     addAttribute("filterSource",
         [&](const Values& args) {
-            auto src = args[0].asString();
+            auto src = args[0].as<string>();
             if (src.size() == 0)
                 return true; // No shader specified
             _shaderSource = src;

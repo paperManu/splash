@@ -21,14 +21,14 @@ void GuiGlobalView::captureJoystick()
         lock_guard<mutex> lock(_joystickMutex);
         _joyButtons.clear();
         for (auto& b : state.value)
-            _joyButtons.push_back(b.asInt());
+            _joyButtons.push_back(b.as<int>());
     });
 
     UserInput::setCallback(UserInput::State("joystick_0_axes"), [&](const UserInput::State& state) {
         lock_guard<mutex> lock(_joystickMutex);
         _joyAxes.resize(state.value.size(), 0.f);
         for (int i = 0; i < _joyAxes.size(); ++i)
-            _joyAxes[i] += state.value[i].asFloat();
+            _joyAxes[i] += state.value[i].as<float>();
     });
 
     _joystickCaptured = true;
@@ -105,7 +105,7 @@ void GuiGlobalView::render()
             camera->getAttribute("size", size);
 
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
-            int h = w * size[1].asInt() / size[0].asInt();
+            int h = w * size[1].as<int>() / size[0].as<int>();
 
             if (ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             {
@@ -148,7 +148,7 @@ void GuiGlobalView::render()
             _camera->getAttribute("size", size);
 
             int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-            int h = w * size[1].asInt() / size[0].asInt();
+            int h = w * size[1].as<int>() / size[0].as<int>();
 
             _camWidth = w;
             _camHeight = h;
@@ -598,7 +598,7 @@ void GuiGlobalView::processMouseEvents()
         {
             Values fov;
             _camera->getAttribute("fov", fov);
-            auto camFov = fov[0].asFloat();
+            auto camFov = fov[0].as<float>();
 
             camFov += io.MouseWheel;
             camFov = std::max(2.f, std::min(180.f, camFov));
@@ -634,14 +634,14 @@ void GuiGlobalView::processMouseEvents()
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    setObject(_camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    setObject(_camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
                     setObject(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
             else
             {
                 if (_newTarget.size() == 3)
-                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
                     _camera->setAttribute("rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }

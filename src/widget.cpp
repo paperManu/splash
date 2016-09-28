@@ -217,7 +217,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         if (attr.second.size() > 4 || attr.second.size() == 0)
             continue;
 
-        if (attr.second[0].getType() == Value::Type::i || attr.second[0].getType() == Value::Type::f || attr.second[0].getType() == Value::Type::l)
+        if (attr.second[0].getTypeAsChar() == 'n')
         {
             ImGui::PushID(attr.first.c_str());
             if (ImGui::Button("L"))
@@ -233,7 +233,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 
             if (attr.second.size() == 1)
             {
-                float tmp = attr.second[0].asFloat();
+                float tmp = attr.second[0].as<float>();
                 float step = attr.second[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
                 if (ImGui::InputFloat(attr.first.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
@@ -241,46 +241,46 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             else if (attr.second.size() == 2)
             {
                 vector<float> tmp;
-                tmp.push_back(attr.second[0].asFloat());
-                tmp.push_back(attr.second[1].asFloat());
+                tmp.push_back(attr.second[0].as<float>());
+                tmp.push_back(attr.second[1].as<float>());
                 if (ImGui::InputFloat2(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp[0], tmp[1]});
             }
             else if (attr.second.size() == 3)
             {
                 vector<float> tmp;
-                tmp.push_back(attr.second[0].asFloat());
-                tmp.push_back(attr.second[1].asFloat());
-                tmp.push_back(attr.second[2].asFloat());
+                tmp.push_back(attr.second[0].as<float>());
+                tmp.push_back(attr.second[1].as<float>());
+                tmp.push_back(attr.second[2].as<float>());
                 if (ImGui::InputFloat3(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp[0], tmp[1], tmp[2]});
             }
             else if (attr.second.size() == 4)
             {
                 vector<float> tmp;
-                tmp.push_back(attr.second[0].asFloat());
-                tmp.push_back(attr.second[1].asFloat());
-                tmp.push_back(attr.second[2].asFloat());
-                tmp.push_back(attr.second[3].asFloat());
+                tmp.push_back(attr.second[0].as<float>());
+                tmp.push_back(attr.second[1].as<float>());
+                tmp.push_back(attr.second[2].as<float>());
+                tmp.push_back(attr.second[3].as<float>());
                 if (ImGui::InputFloat4(attr.first.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp[0], tmp[1], tmp[2], tmp[3]});
             }
         }
-        else if (attr.second.size() == 1 && attr.second[0].getType() == Value::Type::v)
+        else if (attr.second.size() == 1 && attr.second[0].getTypeAsChar() == 'v')
         {
             // We skip anything that looks like a vector / matrix
             // (for usefulness reasons...)
-            Values values = attr.second[0].asValues();
+            Values values = attr.second[0].as<Values>();
             if (values.size() > 16)
             {
-                if (values[0].getType() == Value::Type::i || values[0].getType() == Value::Type::f || values[0].getType() == Value::Type::l)
+                if (values[0].getTypeAsChar() == 'n')
                 {
                     float minValue = numeric_limits<float>::max();
                     float maxValue = numeric_limits<float>::min();
                     vector<float> samples;
                     for (auto& v : values)
                     {
-                        float value = v.asFloat();
+                        float value = v.as<float>();
                         maxValue = std::max(value, maxValue);
                         minValue = std::min(value, minValue);
                         samples.push_back(value);
@@ -297,7 +297,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 }
             }
         }
-        else if (attr.second[0].getType() == Value::Type::s)
+        else if (attr.second[0].getTypeAsChar() == 's')
         {
             for (auto& v : attr.second)
             {
@@ -305,7 +305,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 if (attr.first == "file")
                 {
 
-                    string tmp = v.asString();
+                    string tmp = v.as<string>();
                     tmp.resize(512);
                     ImGui::PushID((objName + attr.first).c_str());
                     if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
@@ -313,7 +313,8 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 
                     // Callback for dragndrop: replace the file path in the field
                     if (ImGui::IsItemHovered())
-                        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObject(objName, attr.first, {state.value[0].asString()}); });
+                        UserInput::setCallback(
+                            UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObject(objName, attr.first, {state.value[0].as<string>()}); });
                     else // Not really necessary as the GUI sets a default dragndrop callback at each frame, but anyway
                         UserInput::resetCallback(UserInput::State("dragndrop"));
 
@@ -343,7 +344,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 // For everything else ...
                 else
                 {
-                    string tmp = v.asString();
+                    string tmp = v.as<string>();
                     tmp.resize(256);
                     if (ImGui::InputText(attr.first.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
                         scene->sendMessageToWorld("sendAll", {objName, attr.first, tmp});
@@ -355,7 +356,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         {
             auto answer = scene->getAttributeDescriptionFromObject(objName, attr.first);
             if (answer.size() != 0)
-                ImGui::SetTooltip(answer[0].asString().c_str());
+                ImGui::SetTooltip(answer[0].as<string>().c_str());
         }
     }
 }

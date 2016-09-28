@@ -192,7 +192,7 @@ void UserInput::registerAttributes()
 {
     addAttribute("updateRate",
         [&](const Values& args) {
-            _updateRate = max(10, args[0].asInt());
+            _updateRate = max(10, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {_updateRate}; },

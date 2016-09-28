@@ -566,8 +566,8 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
         return vertex;
     else
     {
-        double vertexDist = length(screenPoint - project(dvec3(vertex[0].asFloat(), vertex[1].asFloat(), vertex[2].asFloat()), lookM, projM, viewport));
-        double pointDist = length(screenPoint - project(dvec3(point[0].asFloat(), point[1].asFloat(), point[2].asFloat()), lookM, projM, viewport));
+        double vertexDist = length(screenPoint - project(dvec3(vertex[0].as<float>(), vertex[1].as<float>(), vertex[2].as<float>()), lookM, projM, viewport));
+        double pointDist = length(screenPoint - project(dvec3(point[0].as<float>(), point[1].as<float>(), point[2].as<float>()), lookM, projM, viewport));
 
         if (pointDist <= vertexDist)
             return point;
@@ -775,7 +775,7 @@ bool Camera::addCalibrationPoint(const Values& worldPoint)
     if (worldPoint.size() < 3)
         return false;
 
-    dvec3 world(worldPoint[0].asFloat(), worldPoint[1].asFloat(), worldPoint[2].asFloat());
+    dvec3 world(worldPoint[0].as<float>(), worldPoint[1].as<float>(), worldPoint[2].as<float>());
 
     // Check if the point is already present
     for (int i = 0; i < _calibrationPoints.size(); ++i)
@@ -829,7 +829,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
 {
     if (point.size() == 2)
     {
-        dvec3 screenPoint(point[0].asFloat(), point[1].asFloat(), 0.0);
+        dvec3 screenPoint(point[0].as<float>(), point[1].as<float>(), 0.0);
 
         dmat4 lookM = lookAt(_eye, _target, _up);
         dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
@@ -865,7 +865,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
     }
     else if (point.size() == 3)
     {
-        dvec3 world(point[0].asFloat(), point[1].asFloat(), point[2].asFloat());
+        dvec3 world(point[0].as<float>(), point[1].as<float>(), point[2].as<float>());
 
         for (int i = 0; i < _calibrationPoints.size(); ++i)
             if (_calibrationPoints[i].world == world)
@@ -894,7 +894,7 @@ bool Camera::setCalibrationPoint(const Values& screenPoint)
     if (_selectedCalibrationPoint == -1)
         return false;
 
-    _calibrationPoints[_selectedCalibrationPoint].screen = glm::dvec2(screenPoint[0].asFloat(), screenPoint[1].asFloat());
+    _calibrationPoints[_selectedCalibrationPoint].screen = glm::dvec2(screenPoint[0].as<float>(), screenPoint[1].as<float>());
     _calibrationPoints[_selectedCalibrationPoint].isSet = true;
 
     _calibrationCalledOnce = false;
@@ -997,11 +997,11 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 
     // Check whether the camera parameters are locked
     if (camera["fov"].isLocked())
-        fov = camera["fov"]()[0].asFloat();
+        fov = camera["fov"]()[0].as<float>();
     if (camera["principalPoint"].isLocked())
     {
-        cx = camera["principalPoint"]()[0].asFloat();
-        cy = camera["principalPoint"]()[1].asFloat();
+        cx = camera["principalPoint"]()[0].as<float>();
+        cy = camera["principalPoint"]()[1].as<float>();
     }
 
     // Some limits for the calibration parameters
@@ -1170,7 +1170,7 @@ void Camera::registerAttributes()
 {
     addAttribute("eye",
         [&](const Values& args) {
-            _eye = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _eye = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
         [&]() -> Values {
@@ -1181,7 +1181,7 @@ void Camera::registerAttributes()
 
     addAttribute("target",
         [&](const Values& args) {
-            _target = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _target = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
         [&]() -> Values {
@@ -1192,7 +1192,7 @@ void Camera::registerAttributes()
 
     addAttribute("fov",
         [&](const Values& args) {
-            _fov = args[0].asFloat();
+            _fov = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_fov}; },
@@ -1201,7 +1201,7 @@ void Camera::registerAttributes()
 
     addAttribute("up",
         [&](const Values& args) {
-            _up = dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _up = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
         [&]() -> Values {
@@ -1212,8 +1212,8 @@ void Camera::registerAttributes()
 
     addAttribute("size",
         [&](const Values& args) {
-            _newWidth = args[0].asInt();
-            _newHeight = args[1].asInt();
+            _newWidth = args[0].as<int>();
+            _newHeight = args[1].as<int>();
             _automaticResize = false; // Automatic resize is disabled when size is specified
             return true;
         },
@@ -1225,8 +1225,8 @@ void Camera::registerAttributes()
 
     addAttribute("principalPoint",
         [&](const Values& args) {
-            _cx = args[0].asFloat();
-            _cy = args[1].asFloat();
+            _cx = args[0].as<float>();
+            _cy = args[1].as<float>();
             return true;
         },
         [&]() -> Values {
@@ -1237,7 +1237,7 @@ void Camera::registerAttributes()
 
     addAttribute("weightedCalibrationPoints",
         [&](const Values& args) {
-            _weightedCalibrationPoints = args[0].asInt();
+            _weightedCalibrationPoints = args[0].as<int>();
             return true;
         },
         [&]() -> Values { return {(int)_weightedCalibrationPoints}; },
@@ -1247,9 +1247,9 @@ void Camera::registerAttributes()
     // More advanced attributes
     addAttribute("moveEye",
         [&](const Values& args) {
-            _eye.x = _eye.x + args[0].asFloat();
-            _eye.y = _eye.y + args[1].asFloat();
-            _eye.z = _eye.z + args[2].asFloat();
+            _eye.x = _eye.x + args[0].as<float>();
+            _eye.y = _eye.y + args[1].as<float>();
+            _eye.z = _eye.z + args[2].as<float>();
             return true;
         },
         {'n', 'n', 'n'});
@@ -1257,9 +1257,9 @@ void Camera::registerAttributes()
 
     addAttribute("moveTarget",
         [&](const Values& args) {
-            _target.x = _target.x + args[0].asFloat();
-            _target.y = _target.y + args[1].asFloat();
-            _target.z = _target.z + args[2].asFloat();
+            _target.x = _target.x + args[0].as<float>();
+            _target.y = _target.y + args[1].as<float>();
+            _target.z = _target.z + args[2].as<float>();
             return true;
         },
         {'n', 'n', 'n'});
@@ -1268,12 +1268,12 @@ void Camera::registerAttributes()
     addAttribute("rotateAroundTarget",
         [&](const Values& args) {
             dvec3 direction = _target - _eye;
-            dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+            dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].as<float>(), dvec3(0.0, 0.0, 1.0));
             dvec4 newDirection = dvec4(direction, 1.0) * rotZ;
             _eye = _target - dvec3(newDirection.x, newDirection.y, newDirection.z);
 
             direction = _eye - _target;
-            direction = rotate(direction, (double)args[1].asFloat(), dvec3(direction[1], -direction[0], 0.0));
+            direction = rotate(direction, (double)args[1].as<float>(), dvec3(direction[1], -direction[0], 0.0));
             dvec3 newEye = direction + _target;
             if (angle(normalize(dvec3(newEye[0], newEye[1], std::abs(newEye[2]))), dvec3(0.0, 0.0, 1.0)) >= 0.2)
                 _eye = direction + _target;
@@ -1285,8 +1285,8 @@ void Camera::registerAttributes()
 
     addAttribute("rotateAroundPoint",
         [&](const Values& args) {
-            dvec3 point(args[3].asFloat(), args[4].asFloat(), args[5].asFloat());
-            dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].asFloat(), dvec3(0.0, 0.0, 1.0));
+            dvec3 point(args[3].as<float>(), args[4].as<float>(), args[5].as<float>());
+            dmat4 rotZ = rotate(dmat4(1.f), (double)args[0].as<float>(), dvec3(0.0, 0.0, 1.0));
 
             // Rotate the target around Z, then the eye
             dvec3 direction = point - _target;
@@ -1300,11 +1300,11 @@ void Camera::registerAttributes()
             // Rotate around the X axis
             dvec3 axis = normalize(_eye - _target);
             direction = point - _target;
-            dvec3 tmpTarget = rotate(direction, (double)args[1].asFloat(), dvec3(axis[1], -axis[0], 0.0));
+            dvec3 tmpTarget = rotate(direction, (double)args[1].as<float>(), dvec3(axis[1], -axis[0], 0.0));
             tmpTarget = point - tmpTarget;
 
             direction = point - _eye;
-            dvec3 tmpEye = rotate(direction, (double)args[1].asFloat(), dvec3(axis[1], -axis[0], 0.0));
+            dvec3 tmpEye = rotate(direction, (double)args[1].as<float>(), dvec3(axis[1], -axis[0], 0.0));
             tmpEye = point - tmpEye;
 
             direction = tmpEye - tmpTarget;
@@ -1321,7 +1321,7 @@ void Camera::registerAttributes()
 
     addAttribute("pan",
         [&](const Values& args) {
-            dvec4 panV(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), 0.f);
+            dvec4 panV(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), 0.f);
             dvec3 dirV = normalize(_eye - _target);
 
             dmat4 rotMat = inverse(computeViewMatrix());
@@ -1337,7 +1337,7 @@ void Camera::registerAttributes()
 
     addAttribute("forward",
         [&](const Values& args) {
-            float value = args[0].asFloat();
+            float value = args[0].as<float>();
             dvec3 dirV = normalize(_eye - _target);
             dirV *= value;
             _target += dirV;
@@ -1349,7 +1349,7 @@ void Camera::registerAttributes()
 
     addAttribute("addCalibrationPoint",
         [&](const Values& args) {
-            addCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
+            addCalibrationPoint({args[0].as<float>(), args[1].as<float>(), args[2].as<float>()});
             return true;
         },
         {'n', 'n', 'n'});
@@ -1363,7 +1363,7 @@ void Camera::registerAttributes()
 
     addAttribute("moveCalibrationPoint",
         [&](const Values& args) {
-            moveCalibrationPoint(args[0].asFloat(), args[1].asFloat());
+            moveCalibrationPoint(args[0].as<float>(), args[1].as<float>());
             return true;
         },
         {'n', 'n'});
@@ -1372,15 +1372,15 @@ void Camera::registerAttributes()
     addAttribute("removeCalibrationPoint",
         [&](const Values& args) {
             if (args.size() == 3)
-                removeCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()});
+                removeCalibrationPoint({args[0].as<float>(), args[1].as<float>(), args[2].as<float>()});
             else
-                removeCalibrationPoint({args[0].asFloat(), args[1].asFloat(), args[2].asFloat()}, args[3].asInt());
+                removeCalibrationPoint({args[0].as<float>(), args[1].as<float>(), args[2].as<float>()}, args[3].as<int>());
             return true;
         },
         {'n', 'n', 'n'});
     setAttributeDescription("removeCalibrationPoint", "Remove the calibration point given its 3D coordinates");
 
-    addAttribute("setCalibrationPoint", [&](const Values& args) { return setCalibrationPoint({args[0].asFloat(), args[1].asFloat()}); }, {'n', 'n'});
+    addAttribute("setCalibrationPoint", [&](const Values& args) { return setCalibrationPoint({args[0].as<float>(), args[1].as<float>()}); }, {'n', 'n'});
     setAttributeDescription("setCalibrationPoint", "Set the 2D projection of a calibration point");
 
     addAttribute("selectNextCalibrationPoint", [&](const Values& args) {
@@ -1406,14 +1406,14 @@ void Camera::registerAttributes()
                 if (arg.getType() != Value::Type::v)
                     continue;
 
-                Values v = arg.asValues();
+                Values v = arg.as<Values>();
                 CalibrationPoint c;
-                c.world[0] = v[0].asFloat();
-                c.world[1] = v[1].asFloat();
-                c.world[2] = v[2].asFloat();
-                c.screen[0] = v[3].asFloat();
-                c.screen[1] = v[4].asFloat();
-                c.isSet = v[5].asInt();
+                c.world[0] = v[0].as<float>();
+                c.world[1] = v[1].as<float>();
+                c.world[2] = v[2].as<float>();
+                c.screen[0] = v[3].as<float>();
+                c.screen[1] = v[4].as<float>();
+                c.isSet = v[5].as<int>();
 
                 _calibrationPoints.push_back(c);
             }
@@ -1436,7 +1436,7 @@ void Camera::registerAttributes()
     // Rendering options
     addAttribute("16bits",
         [&](const Values& args) {
-            bool render16bits = args[0].asInt();
+            bool render16bits = args[0].as<int>();
             if (render16bits != _render16bits)
             {
                 _render16bits = render16bits;
@@ -1450,7 +1450,7 @@ void Camera::registerAttributes()
 
     addAttribute("blendWidth",
         [&](const Values& args) {
-            _blendWidth = args[0].asFloat();
+            _blendWidth = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_blendWidth}; },
@@ -1459,7 +1459,7 @@ void Camera::registerAttributes()
 
     addAttribute("blendPrecision",
         [&](const Values& args) {
-            _blendPrecision = args[0].asFloat();
+            _blendPrecision = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_blendPrecision}; },
@@ -1470,7 +1470,7 @@ void Camera::registerAttributes()
         if (args.size() == 0)
             _clearColor = CAMERA_FLASH_COLOR;
         else if (args.size() == 4)
-            _clearColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            _clearColor = dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
         else
             return false;
 
@@ -1480,7 +1480,7 @@ void Camera::registerAttributes()
 
     addAttribute("colorTemperature",
         [&](const Values& args) {
-            _colorTemperature = args[0].asFloat();
+            _colorTemperature = args[0].as<float>();
             _colorTemperature = std::max(1000.f, std::min(15000.f, _colorTemperature));
             return true;
         },
@@ -1490,13 +1490,13 @@ void Camera::registerAttributes()
 
     addAttribute("colorLUT",
         [&](const Values& args) {
-            if (args[0].asValues().size() != 768)
+            if (args[0].as<Values>().size() != 768)
                 return false;
-            for (auto& v : args[0].asValues())
+            for (auto& v : args[0].as<Values>())
                 if (v.getType() != Value::Type::f)
                     return false;
 
-            _colorLUT = args[0].asValues();
+            _colorLUT = args[0].as<Values>();
 
             return true;
         },
@@ -1511,7 +1511,7 @@ void Camera::registerAttributes()
 
     addAttribute("colorWireframe",
         [&](const Values& args) {
-            _wireframeColor = dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            _wireframeColor = dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
         {'n', 'n', 'n', 'n'});
@@ -1519,12 +1519,12 @@ void Camera::registerAttributes()
 
     addAttribute("activateColorLUT",
         [&](const Values& args) {
-            if (args[0].asInt() == 2)
+            if (args[0].as<int>() == 2)
                 _isColorLUTActivated = (_isColorLUTActivated != true);
-            else if ((int)_isColorLUTActivated == args[0].asInt())
+            else if ((int)_isColorLUTActivated == args[0].as<int>())
                 return true;
             else
-                _isColorLUTActivated = args[0].asInt();
+                _isColorLUTActivated = args[0].as<int>();
 
             if (_isColorLUTActivated)
                 Log::get() << Log::MESSAGE << "Camera::activateColorLUT - Color lookup table activated for camera " << getName() << Log::endl;
@@ -1539,12 +1539,12 @@ void Camera::registerAttributes()
 
     addAttribute("colorMixMatrix",
         [&](const Values& args) {
-            if (args[0].asValues().size() != 9)
+            if (args[0].as<Values>().size() != 9)
                 return false;
 
             for (int u = 0; u < 3; ++u)
                 for (int v = 0; v < 3; ++v)
-                    _colorMixMatrix[u][v] = args[0].asValues()[u * 3 + v].asFloat();
+                    _colorMixMatrix[u][v] = args[0].as<Values>()[u * 3 + v].as<float>();
             return true;
         },
         [&]() -> Values {
@@ -1559,7 +1559,7 @@ void Camera::registerAttributes()
 
     addAttribute("brightness",
         [&](const Values& args) {
-            _brightness = args[0].asFloat();
+            _brightness = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_brightness}; },
@@ -1568,7 +1568,7 @@ void Camera::registerAttributes()
 
     addAttribute("frame",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _drawFrame = true;
             else
                 _drawFrame = false;
@@ -1579,9 +1579,9 @@ void Camera::registerAttributes()
 
     addAttribute("hide",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _hidden = true;
-            else if (args[0].asInt() == 0)
+            else if (args[0].as<int>() == 0)
                 _hidden = false;
             else
                 _hidden = !_hidden;
@@ -1593,7 +1593,7 @@ void Camera::registerAttributes()
     addAttribute("wireframe",
         [&](const Values& args) {
             string primitive;
-            if (args[0].asInt() == 0)
+            if (args[0].as<int>() == 0)
                 primitive = "texture";
             else
                 primitive = "wireframe";
@@ -1614,7 +1614,7 @@ void Camera::registerAttributes()
     // Various options
     addAttribute("displayCalibration",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _displayCalibration = true;
             else
                 _displayCalibration = false;
@@ -1626,7 +1626,7 @@ void Camera::registerAttributes()
     // Shows all calibration points for all cameras linked to the same objects
     addAttribute("displayAllCalibrations",
         [&](const Values& args) {
-            _displayAllCalibrations = (args[0].asInt() > 0) ? true : false;
+            _displayAllCalibrations = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         {'n'});
@@ -1646,7 +1646,7 @@ void Camera::registerAttributes()
 
     addAttribute("flashBG",
         [&](const Values& args) {
-            _flashBG = args[0].asInt();
+            _flashBG = args[0].as<int>();
             return true;
         },
         {'n'});

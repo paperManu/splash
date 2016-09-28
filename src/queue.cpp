@@ -192,7 +192,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         Values duration;
         videoSrc->getAttribute("duration", duration);
         if (duration.size() > 0)
-            source.stop = duration[0].asLong() * 1e6 + source.start;
+            source.stop = duration[0].as<long>() * 1e6 + source.start;
     }
 
     // Clean the queue, add black intermediate images, ...
@@ -300,7 +300,7 @@ void Queue::registerAttributes()
 {
     addAttribute("loop",
         [&](const Values& args) {
-            _loop = (bool)args[0].asInt();
+            _loop = (bool)args[0].as<int>();
             return true;
         },
         [&]() -> Values { return {_loop}; },
@@ -310,7 +310,7 @@ void Queue::registerAttributes()
 
     addAttribute("pause",
         [&](const Values& args) {
-            _paused = args[0].asInt();
+            _paused = args[0].as<int>();
 
             return true;
         },
@@ -326,15 +326,15 @@ void Queue::registerAttributes()
 
             for (auto& it : args)
             {
-                auto src = it.asValues();
+                auto src = it.as<Values>();
 
                 if (src.size() >= 4) // We need at least type, name, start and stop for each input
                 {
                     Source source;
-                    source.type = src[0].asString();
-                    source.filename = src[1].asString();
-                    source.start = (int64_t)(src[2].asFloat() * 1e6);
-                    source.stop = (int64_t)(src[3].asFloat() * 1e6);
+                    source.type = src[0].as<string>();
+                    source.filename = src[1].as<string>();
+                    source.start = (int64_t)(src[2].as<float>() * 1e6);
+                    source.stop = (int64_t)(src[3].as<float>() * 1e6);
                     for (auto idx = 4; idx < src.size(); ++idx)
                         source.args.push_back(src[idx]);
 
@@ -370,7 +370,7 @@ void Queue::registerAttributes()
 
     addAttribute("seek",
         [&](const Values& args) {
-            int64_t seekTime = args[0].asFloat() * 1e6;
+            int64_t seekTime = args[0].as<float>() * 1e6;
             _startTime = Timer::getTime() - seekTime;
             _seeked = true;
             return true;
@@ -382,7 +382,7 @@ void Queue::registerAttributes()
 
     addAttribute("useClock",
         [&](const Values& args) {
-            _useClock = args[0].asInt();
+            _useClock = args[0].as<int>();
             if (_currentSource)
                 _currentSource->setAttribute("useClock", {_useClock});
 
@@ -466,7 +466,7 @@ void QueueSurrogate::registerAttributes()
         lock_guard<mutex> lock(_taskMutex);
         _taskQueue.push_back([=]() {
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
-            auto type = args[0].asString();
+            auto type = args[0].as<string>();
 
             if (_source && type.find(_source->getType()) != string::npos)
             {

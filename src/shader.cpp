@@ -585,49 +585,49 @@ void Shader::updateUniforms()
             if (type == Value::Type::i)
             {
                 if (size == 1)
-                    glUniform1i(uniform.glIndex, uniform.values[0].asInt());
+                    glUniform1i(uniform.glIndex, uniform.values[0].as<int>());
                 else if (size == 2)
-                    glUniform2i(uniform.glIndex, uniform.values[0].asInt(), uniform.values[1].asInt());
+                    glUniform2i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>());
                 else if (size == 3)
-                    glUniform3i(uniform.glIndex, uniform.values[0].asInt(), uniform.values[1].asInt(), uniform.values[2].asInt());
+                    glUniform3i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>(), uniform.values[2].as<int>());
                 else if (size == 4)
-                    glUniform4i(uniform.glIndex, uniform.values[0].asInt(), uniform.values[1].asInt(), uniform.values[2].asInt(), uniform.values[3].asInt());
+                    glUniform4i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>(), uniform.values[2].as<int>(), uniform.values[3].as<int>());
             }
             else if (type == Value::Type::f)
             {
                 if (size == 1)
-                    glUniform1f(uniform.glIndex, uniform.values[0].asFloat());
+                    glUniform1f(uniform.glIndex, uniform.values[0].as<float>());
                 else if (size == 2)
-                    glUniform2f(uniform.glIndex, uniform.values[0].asFloat(), uniform.values[1].asFloat());
+                    glUniform2f(uniform.glIndex, uniform.values[0].as<float>(), uniform.values[1].as<float>());
                 else if (size == 3)
-                    glUniform3f(uniform.glIndex, uniform.values[0].asFloat(), uniform.values[1].asFloat(), uniform.values[2].asFloat());
+                    glUniform3f(uniform.glIndex, uniform.values[0].as<float>(), uniform.values[1].as<float>(), uniform.values[2].as<float>());
                 else if (size == 4)
-                    glUniform4f(uniform.glIndex, uniform.values[0].asFloat(), uniform.values[1].asFloat(), uniform.values[2].asFloat(), uniform.values[3].asFloat());
+                    glUniform4f(uniform.glIndex, uniform.values[0].as<float>(), uniform.values[1].as<float>(), uniform.values[2].as<float>(), uniform.values[3].as<float>());
                 else if (size == 9)
                 {
                     vector<float> m(9);
                     for (unsigned int i = 0; i < 9; ++i)
-                        m[i] = uniform.values[i].asFloat();
+                        m[i] = uniform.values[i].as<float>();
                     glUniformMatrix3fv(uniform.glIndex, 1, GL_FALSE, m.data());
                 }
                 else if (size == 16)
                 {
                     vector<float> m(16);
                     for (unsigned int i = 0; i < 16; ++i)
-                        m[i] = uniform.values[i].asFloat();
+                        m[i] = uniform.values[i].as<float>();
                     glUniformMatrix4fv(uniform.glIndex, 1, GL_FALSE, m.data());
                 }
             }
-            else if (type == Value::Type::v && uniform.values[0].asValues().size() > 0)
+            else if (type == Value::Type::v && uniform.values[0].as<Values>().size() > 0)
             {
-                type = uniform.values[0].asValues()[0].getType();
+                type = uniform.values[0].as<Values>()[0].getType();
                 if (type == Value::Type::i)
                 {
                     vector<int> data;
                     if (uniform.type == "buffer")
                     {
-                        for (auto& v : uniform.values[0].asValues())
-                            data.push_back(v.asInt());
+                        for (auto& v : uniform.values[0].as<Values>())
+                            data.push_back(v.as<int>());
 
                         glBindBuffer(GL_UNIFORM_BUFFER, uniform.glBuffer);
                         if (!uniform.glBufferReady)
@@ -641,8 +641,8 @@ void Shader::updateUniforms()
                     }
                     else
                     {
-                        for (auto& v : uniform.values[0].asValues())
-                            data.push_back(v.asInt());
+                        for (auto& v : uniform.values[0].as<Values>())
+                            data.push_back(v.as<int>());
 
                         if (uniform.type == "int")
                             glUniform1iv(uniform.glIndex, data.size(), data.data());
@@ -659,8 +659,8 @@ void Shader::updateUniforms()
                     vector<float> data;
                     if (uniform.type == "buffer")
                     {
-                        for (auto& v : uniform.values[0].asValues())
-                            data.push_back(v.asFloat());
+                        for (auto& v : uniform.values[0].as<Values>())
+                            data.push_back(v.as<float>());
 
                         glBindBuffer(GL_UNIFORM_BUFFER, uniform.glBuffer);
                         if (!uniform.glBufferReady)
@@ -674,8 +674,8 @@ void Shader::updateUniforms()
                     }
                     else
                     {
-                        for (auto& v : uniform.values[0].asValues())
-                            data.push_back(v.asFloat());
+                        for (auto& v : uniform.values[0].as<Values>())
+                            data.push_back(v.as<float>());
 
                         if (uniform.type == "float")
                             glUniform1fv(uniform.glIndex, data.size(), data.data());
@@ -716,7 +716,7 @@ void Shader::registerAttributes()
         if (args.size() < 2)
             return false;
 
-        string uniformName = args[0].asString();
+        string uniformName = args[0].as<string>();
         Values uniformArgs;
         if (args[1].getType() != Value::Type::v)
         {
@@ -725,7 +725,7 @@ void Shader::registerAttributes()
         }
         else
         {
-            uniformArgs = args[1].asValues();
+            uniformArgs = args[1].as<Values>();
         }
 
         // Check if the values changed from previous use
@@ -750,11 +750,11 @@ void Shader::registerGraphicAttributes()
             // Get additionnal shading options
             string options = ShaderSources.VERSION_DIRECTIVE_GL4;
             for (int i = 1; i < args.size(); ++i)
-                options += "#define " + args[i].asString() + "\n";
+                options += "#define " + args[i].as<string>() + "\n";
 
-            if (args[0].asString() == "texture" && (_fill != texture || _shaderOptions != options))
+            if (args[0].as<string>() == "texture" && (_fill != texture || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = texture;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_TEXTURE, vertex);
@@ -762,9 +762,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "filter" && (_fill != filter || _shaderOptions != options))
+            else if (args[0].as<string>() == "filter" && (_fill != filter || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = filter;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_FILTER, vertex);
@@ -772,9 +772,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "color" && (_fill != color || _shaderOptions != options))
+            else if (args[0].as<string>() == "color" && (_fill != color || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = color;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
@@ -782,9 +782,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_COLOR, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
+            else if (args[0].as<string>() == "primitiveId" && (_fill != primitiveId || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = primitiveId;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
@@ -792,9 +792,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_PRIMITIVEID, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
+            else if (args[0].as<string>() == "userDefined" && (_fill != userDefined || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = userDefined;
                 _shaderOptions = options;
                 if (_shadersSource.find(ShaderType::vertex) == _shadersSource.end())
@@ -803,9 +803,9 @@ void Shader::registerGraphicAttributes()
                     setSource(options + ShaderSources.FRAGMENT_SHADER_FILTER, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "uv" && (_fill != uv || _shaderOptions != options))
+            else if (args[0].as<string>() == "uv" && (_fill != uv || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = uv;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_DEFAULT, vertex);
@@ -813,9 +813,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_UV, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "warp" && (_fill != warp || _shaderOptions != options))
+            else if (args[0].as<string>() == "warp" && (_fill != warp || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = warp;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_WARP, vertex);
@@ -823,9 +823,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_WARP, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "warpControl" && (_fill != warp || _shaderOptions != options))
+            else if (args[0].as<string>() == "warpControl" && (_fill != warp || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = warpControl;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_WARP_WIREFRAME, vertex);
@@ -833,9 +833,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_WARP_WIREFRAME, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
+            else if (args[0].as<string>() == "wireframe" && (_fill != wireframe || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = wireframe;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_WIREFRAME, vertex);
@@ -843,9 +843,9 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_WIREFRAME, fragment);
                 compileProgram();
             }
-            else if (args[0].asString() == "window" && (_fill != window || _shaderOptions != options))
+            else if (args[0].as<string>() == "window" && (_fill != window || _shaderOptions != options))
             {
-                _currentProgramName = args[0].asString();
+                _currentProgramName = args[0].as<string>();
                 _fill = window;
                 _shaderOptions = options;
                 setSource(options + ShaderSources.VERTEX_SHADER_WINDOW, vertex);
@@ -876,10 +876,10 @@ void Shader::registerGraphicAttributes()
 
     addAttribute("sideness",
         [&](const Values& args) {
-            _sideness = (Shader::Sideness)args[0].asInt();
+            _sideness = (Shader::Sideness)args[0].as<int>();
             return true;
         },
-        [&]() -> Values { return {_sideness}; },
+        [&]() -> Values { return {(int)_sideness}; },
         {'n'});
     setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
 }
@@ -894,29 +894,29 @@ void Shader::registerComputeAttributes()
         // Get additionnal shading options
         string options = ShaderSources.VERSION_DIRECTIVE_GL4;
         for (int i = 1; i < args.size(); ++i)
-            options += "#define " + args[i].asString() + "\n";
+            options += "#define " + args[i].as<string>() + "\n";
 
-        if ("resetVisibility" == args[0].asString())
+        if ("resetVisibility" == args[0].as<string>())
         {
-            _currentProgramName = args[0].asString();
+            _currentProgramName = args[0].as<string>();
             setSource(options + ShaderSources.COMPUTE_SHADER_RESET_VISIBILITY, compute);
             compileProgram();
         }
-        else if ("resetBlending" == args[0].asString())
+        else if ("resetBlending" == args[0].as<string>())
         {
-            _currentProgramName = args[0].asString();
+            _currentProgramName = args[0].as<string>();
             setSource(options + ShaderSources.COMPUTE_SHADER_RESET_BLENDING, compute);
             compileProgram();
         }
-        else if ("computeCameraContribution" == args[0].asString())
+        else if ("computeCameraContribution" == args[0].as<string>())
         {
-            _currentProgramName = args[0].asString();
+            _currentProgramName = args[0].as<string>();
             setSource(options + ShaderSources.COMPUTE_SHADER_COMPUTE_CAMERA_CONTRIBUTION, compute);
             compileProgram();
         }
-        else if ("transferVisibilityToAttr" == args[0].asString())
+        else if ("transferVisibilityToAttr" == args[0].as<string>())
         {
-            _currentProgramName = args[0].asString();
+            _currentProgramName = args[0].as<string>();
             setSource(options + ShaderSources.COMPUTE_SHADER_TRANSFER_VISIBILITY_TO_ATTR, compute);
             compileProgram();
         }
@@ -935,11 +935,11 @@ void Shader::registerFeedbackAttributes()
         // Get additionnal shader options
         string options = ShaderSources.VERSION_DIRECTIVE_GL4;
         for (int i = 1; i < args.size(); ++i)
-            options += "#define " + args[i].asString() + "\n";
+            options += "#define " + args[i].as<string>() + "\n";
 
-        if ("tessellateFromCamera" == args[0].asString())
+        if ("tessellateFromCamera" == args[0].as<string>())
         {
-            _currentProgramName = args[0].asString();
+            _currentProgramName = args[0].as<string>();
             setSource(options + ShaderSources.VERTEX_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, vertex);
             setSource(options + ShaderSources.TESS_CTRL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_ctrl);
             setSource(options + ShaderSources.TESS_EVAL_SHADER_FEEDBACK_TESSELLATE_FROM_CAMERA, tess_eval);
@@ -958,7 +958,7 @@ void Shader::registerFeedbackAttributes()
         vector<string> varyingNames;
         for (int i = 0; i < args.size(); ++i)
         {
-            varyingNames.push_back(args[i].asString());
+            varyingNames.push_back(args[i].as<string>());
             feedbackVaryings[i] = new GLchar[256];
             strcpy(feedbackVaryings[i], varyingNames[i].c_str());
         }

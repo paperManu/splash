@@ -271,16 +271,16 @@ Json::Value BaseObject::getValuesAsJson(const Values& values) const
         default:
             continue;
         case Value::i:
-            jsValue.append(v.asInt());
+            jsValue.append(v.as<int>());
             break;
         case Value::f:
-            jsValue.append(v.asFloat());
+            jsValue.append(v.as<float>());
             break;
         case Value::s:
-            jsValue.append(v.asString());
+            jsValue.append(v.as<string>());
             break;
         case Value::v:
-            jsValue.append(getValuesAsJson(v.asValues()));
+            jsValue.append(getValuesAsJson(v.as<Values>()));
             break;
         }
     }
@@ -352,21 +352,21 @@ void BaseObject::init()
 {
     addAttribute("configFilePath",
         [&](const Values& args) {
-            _configFilePath = args[0].asString();
+            _configFilePath = args[0].as<string>();
             return true;
         },
         {'s'});
 
     addAttribute("setName",
         [&](const Values& args) {
-            setName(args[0].asString());
+            setName(args[0].as<string>());
             return true;
         },
         {'s'});
 
     addAttribute("switchLock",
         [&](const Values& args) {
-            auto attribIterator = _attribFunctions.find(args[0].asString());
+            auto attribIterator = _attribFunctions.find(args[0].as<string>());
             if (attribIterator == _attribFunctions.end())
                 return false;
 
@@ -383,7 +383,7 @@ void BaseObject::init()
                 attribFunctor.lock();
             }
 
-            Log::get() << Log::MESSAGE << _name << "~~" << args[0].asString() << " - " << status << Log::endl;
+            Log::get() << Log::MESSAGE << _name << "~~" << args[0].as<string>() << " - " << status << Log::endl;
             return true;
         },
         {'s'});
@@ -494,7 +494,7 @@ void BufferObject::updateTimestamp()
 RootObject::RootObject()
 {
     addAttribute("answerMessage", [&](const Values& args) {
-        if (args.size() == 0 || args[0].asString() != _answerExpected)
+        if (args.size() == 0 || args[0].as<string>() != _answerExpected)
             return false;
         unique_lock<mutex> conditionLock(conditionMutex);
         _lastAnswerReceived = args;

@@ -359,12 +359,12 @@ void Mesh::createDefaultMesh(int subdiv)
 /*************/
 void Mesh::registerAttributes()
 {
-    addAttribute("file", [&](const Values& args) { return read(args[0].asString()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Mesh file to load");
 
     addAttribute("benchmark",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _benchmark = true;
             else
                 _benchmark = false;

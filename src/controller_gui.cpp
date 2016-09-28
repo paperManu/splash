@@ -207,10 +207,10 @@ void Gui::setJoystickState(const vector<UserInput::State>& state)
     {
         if (s.action == "joystick_0_axes")
             for (auto& v : s.value)
-                axes.push_back(v.asFloat());
+                axes.push_back(v.as<float>());
         else if (s.action == "joystick_0_buttons")
             for (auto& v : s.value)
-                buttons.push_back(v.asInt());
+                buttons.push_back(v.as<int>());
     }
 
     setJoystick(axes, buttons);
@@ -223,12 +223,12 @@ void Gui::setKeyboardState(const vector<UserInput::State>& state)
     {
         if (s.action == "keyboard_unicodeChar")
         {
-            uint32_t unicode = static_cast<uint32_t>(s.value[0].asInt());
+            uint32_t unicode = static_cast<uint32_t>(s.value[0].as<int>());
             unicodeChar(unicode);
             continue;
         }
 
-        auto key = s.value[0].asInt();
+        auto key = s.value[0].as<int>();
         auto mods = s.modifiers;
 
         if (s.action == "keyboard_press")
@@ -246,13 +246,13 @@ void Gui::setMouseState(const vector<UserInput::State>& state)
     for (auto& s : state)
     {
         if (s.action == "mouse_position")
-            mousePosition(s.value[0].asInt(), s.value[1].asInt());
+            mousePosition(s.value[0].as<int>(), s.value[1].as<int>());
         else if (s.action == "mouse_press")
-            mouseButton(s.value[0].asInt(), GLFW_PRESS, s.modifiers);
+            mouseButton(s.value[0].as<int>(), GLFW_PRESS, s.modifiers);
         else if (s.action == "mouse_release")
-            mouseButton(s.value[0].asInt(), GLFW_RELEASE, s.modifiers);
+            mouseButton(s.value[0].as<int>(), GLFW_RELEASE, s.modifiers);
         else if (s.action == "mouse_scroll")
-            mouseScroll(s.value[0].asFloat(), s.value[1].asFloat());
+            mouseScroll(s.value[0].as<float>(), s.value[1].as<float>());
     }
 }
 
@@ -464,7 +464,7 @@ void Gui::render()
         using namespace ImGui;
 
         // Callback for dragndrop: load the dropped file
-        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].asString()}); });
+        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].as<string>()}); });
 
         ImGuiIO& io = GetIO();
         io.MouseDrawCursor = true;
@@ -968,9 +968,9 @@ void Gui::initImWidgets()
         Values clock;
         if (Timer::get().getMasterClock(clock))
         {
-            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":"
-                   << clock[5].asInt() << ":" << clock[6].asInt();
-            if (clock[7].asInt() == 1)
+            stream << "Master clock: " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>() << " - " << clock[3].as<int>() << ":" << clock[4].as<int>() << ":"
+                   << clock[5].as<int>() << ":" << clock[6].as<int>();
+            if (clock[7].as<int>() == 1)
                 stream << " - Paused";
             stream << "\n";
         }
@@ -1123,7 +1123,7 @@ void Gui::registerAttributes()
 {
     addAttribute("size",
         [&](const Values& args) {
-            setOutputSize(args[0].asInt(), args[1].asInt());
+            setOutputSize(args[0].as<int>(), args[1].as<int>());
             return true;
         },
         {'n', 'n'});

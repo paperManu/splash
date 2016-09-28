@@ -369,7 +369,7 @@ void Image::registerAttributes()
 {
     addAttribute("flip",
         [&](const Values& args) {
-            _flip = (args[0].asInt() > 0) ? true : false;
+            _flip = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         [&]() -> Values { return {_flip}; },
@@ -378,19 +378,19 @@ void Image::registerAttributes()
 
     addAttribute("flop",
         [&](const Values& args) {
-            _flop = (args[0].asInt() > 0) ? true : false;
+            _flop = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         [&]() -> Values { return {_flop}; },
         {'n'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file", [&](const Values& args) { return read(args[0].asString()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Image file to load");
 
     addAttribute("srgb",
         [&](const Values& args) {
-            _srgb = (args[0].asInt() > 0) ? true : false;
+            _srgb = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         [&]() -> Values { return {_srgb}; },
@@ -399,7 +399,7 @@ void Image::registerAttributes()
 
     addAttribute("benchmark",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _benchmark = true;
             else
                 _benchmark = false;
@@ -410,7 +410,7 @@ void Image::registerAttributes()
 
     addAttribute("pattern",
         [&](const Values& args) {
-            if (args[0].asInt() == 1)
+            if (args[0].as<int>() == 1)
                 createPattern();
             return true;
         },

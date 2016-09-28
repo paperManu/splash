@@ -61,7 +61,7 @@ void ColorCalibrator::update()
     // Check whether the camera is ready
     Values status;
     _gcamera->getAttribute("ready", status);
-    if (status.size() == 0 || status[0].asInt() == 0)
+    if (status.size() == 0 || status[0].as<int>() == 0)
     {
         Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
         return;
@@ -75,7 +75,7 @@ void ColorCalibrator::update()
     for (auto& cam : cameraList)
     {
         CalibrationParams params;
-        params.camName = cam.asString();
+        params.camName = cam.as<string>();
         _calibrationParams.push_back(params);
     }
 
@@ -125,7 +125,7 @@ void ColorCalibrator::update()
 
         // Activate all the other ones
         for (auto& otherCam : cameraList)
-            scene->sendMessageToWorld("sendAll", {otherCam.asString(), "clearColor", 1.0, 1.0, 1.0, 1.0});
+            scene->sendMessageToWorld("sendAll", {otherCam.as<string>(), "clearColor", 1.0, 1.0, 1.0, 1.0});
         scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
         shared_ptr<pic::Image> othersHdr = captureHDR(1);
         if (nullptr == othersHdr)
@@ -137,7 +137,7 @@ void ColorCalibrator::update()
         diffHdr->clamp(0.f, numeric_limits<float>::max());
         params.maskROI = getMaskROI(diffHdr);
         for (auto& otherCam : cameraList)
-            scene->sendMessageToWorld("sendAll", {otherCam.asString(), "clearColor", 0.0, 0.0, 0.0, 1.0});
+            scene->sendMessageToWorld("sendAll", {otherCam.as<string>(), "clearColor", 0.0, 0.0, 0.0, 1.0});
 
         // Save the camera center for later use
         params.whitePoint = getMeanValue(hdr, params.maskROI);
@@ -318,7 +318,7 @@ void ColorCalibrator::updateCRF()
     // Check whether the camera is ready
     Values status;
     _gcamera->getAttribute("ready", status);
-    if (status.size() == 0 || status[0].asInt() == 0)
+    if (status.size() == 0 || status[0].as<int>() == 0)
     {
         Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
         return;
@@ -341,7 +341,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     // Get the current shutterspeed
     Values res;
     _gcamera->getAttribute("shutterspeed", res);
-    double defaultSpeed = res[0].asFloat();
+    double defaultSpeed = res[0].as<float>();
     double nextSpeed = defaultSpeed;
 
     // Compute the parameters of the first capture
@@ -355,7 +355,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         _gcamera->setAttribute("shutterspeed", {nextSpeed});
         // We get the actual shutterspeed
         _gcamera->getAttribute("shutterspeed", res);
-        nextSpeed = res[0].asFloat();
+        nextSpeed = res[0].as<float>();
         actualShutterSpeeds[i] = nextSpeed;
 
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Capturing LDRI with a " << nextSpeed << "sec exposure time" << Log::endl;
@@ -535,12 +535,12 @@ float ColorCalibrator::findCorrectExposure()
 
         if (meanValue < 100.f)
         {
-            float speed = res[0].asFloat() * std::max(1.5f, 100.f / meanValue);
+            float speed = res[0].as<float>() * std::max(1.5f, 100.f / meanValue);
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else if (meanValue > 160.f)
         {
-            float speed = res[0].asFloat() / std::max(1.5f, 160.f / meanValue);
+            float speed = res[0].as<float>() / std::max(1.5f, 160.f / meanValue);
             _gcamera->setAttribute("shutterspeed", {speed});
         }
         else
@@ -551,7 +551,7 @@ float ColorCalibrator::findCorrectExposure()
     if (res.size() == 0)
         return 0.f;
     else
-        return res[0].asFloat();
+        return res[0].as<float>();
 }
 
 /*************/
@@ -833,7 +833,7 @@ void ColorCalibrator::registerAttributes()
 {
     addAttribute("colorSamples",
         [&](const Values& args) {
-            _colorCurveSamples = std::max(3, args[0].asInt());
+            _colorCurveSamples = std::max(3, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {(int)_colorCurveSamples}; },
@@ -842,7 +842,7 @@ void ColorCalibrator::registerAttributes()
 
     addAttribute("detectionThresholdFactor",
         [&](const Values& args) {
-            _displayDetectionThreshold = std::max(0.5f, args[0].asFloat());
+            _displayDetectionThreshold = std::max(0.5f, args[0].as<float>());
             return true;
         },
         [&]() -> Values { return {_displayDetectionThreshold}; },
@@ -851,7 +851,7 @@ void ColorCalibrator::registerAttributes()
 
     addAttribute("imagePerHDR",
         [&](const Values& args) {
-            _imagePerHDR = std::max(1, args[0].asInt());
+            _imagePerHDR = std::max(1, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {_imagePerHDR}; },
@@ -860,7 +860,7 @@ void ColorCalibrator::registerAttributes()
 
     addAttribute("hdrStep",
         [&](const Values& args) {
-            _hdrStep = std::max(0.3f, args[0].asFloat());
+            _hdrStep = std::max(0.3f, args[0].as<float>());
             return true;
         },
         [&]() -> Values { return {_hdrStep}; },
@@ -869,7 +869,7 @@ void ColorCalibrator::registerAttributes()
 
     addAttribute("equalizeMethod",
         [&](const Values& args) {
-            _equalizationMethod = std::max(0, std::min(2, args[0].asInt()));
+            _equalizationMethod = std::max(0, std::min(2, args[0].as<int>()));
             if (_equalizationMethod == 0)
                 equalizeWhiteBalances = std::bind(&ColorCalibrator::equalizeWhiteBalancesOnly, this);
             else if (_equalizationMethod == 1)

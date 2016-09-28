@@ -586,7 +586,7 @@ string World::getObjectsAttributesDescriptions()
         string descriptionStr = "[";
         for (int i = 0; i < argTypes.size(); ++i)
         {
-            descriptionStr += argTypes[i].asString();
+            descriptionStr += argTypes[i].as<string>();
             if (i < argTypes.size() - 1)
                 descriptionStr += ", ";
         }
@@ -609,14 +609,14 @@ string World::getObjectsAttributesDescriptions()
         {
             // We only keep attributes with a valid documentation
             // The other ones are inner attributes
-            if (d[1].asString().size() == 0)
+            if (d[1].as<string>().size() == 0)
                 continue;
 
             // We also don't keep attributes with no argument types
-            if (d[2].asValues().size() == 0)
+            if (d[2].as<Values>().size() == 0)
                 continue;
 
-            root[obj->getType()][d[0].asString()] = formatDescription(d[1].asString(), d[2].asValues());
+            root[obj->getType()][d[0].as<string>()] = formatDescription(d[1].as<string>(), d[2].as<Values>());
 
             addedAttribute++;
         }
@@ -633,7 +633,7 @@ string World::getObjectsAttributesDescriptions()
         if (d[1].size() == 0)
             continue;
 
-        root["world"][d[0].asString()] = formatDescription(d[1].asString(), d[2].asValues());
+        root["world"][d[0].as<string>()] = formatDescription(d[1].as<string>(), d[2].as<Values>());
     }
 
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -665,7 +665,7 @@ void World::saveConfig()
         // Parse the string to get a json
         Json::Value config;
         Json::Reader reader;
-        reader.parse(answer[2].asString(), config);
+        reader.parse(answer[2].as<string>(), config);
         root[s.first] = config;
     }
 
@@ -739,7 +739,7 @@ void World::saveConfig()
 Values World::getObjectsNameByType(string type)
 {
     Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
-    return answer[2].asValues();
+    return answer[2].as<Values>();
 }
 
 /*************/
@@ -1028,13 +1028,13 @@ void World::registerAttributes()
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
-                auto type = args[0].asString();
+                auto type = args[0].as<string>();
                 auto name = string();
 
                 if (args.size() == 1)
                     name = type + "_" + to_string(getId());
                 else if (args.size() == 2)
-                    name = args[1].asString();
+                    name = args[1].as<string>();
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -1063,7 +1063,7 @@ void World::registerAttributes()
 
     addAttribute("computeBlending",
         [&](const Values& args) {
-            _blendingMode = args[0].asString();
+            _blendingMode = args[0].as<string>();
             sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode});
 
             return true;
@@ -1076,7 +1076,7 @@ void World::registerAttributes()
         [&](const Values& args) {
             addTask([=]() {
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-                auto objectName = args[0].asString();
+                auto objectName = args[0].as<string>();
 
                 // Delete the object here
                 auto objectDestIt = _objectDest.find(objectName);
@@ -1098,7 +1098,7 @@ void World::registerAttributes()
 
     addAttribute("flashBG",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].asInt()}); });
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].as<int>()}); });
 
             return true;
         },
@@ -1108,7 +1108,7 @@ void World::registerAttributes()
 #if HAVE_LINUX
     addAttribute("forceRealtime",
         [&](const Values& args) {
-            _enforceCoreAffinity = args[0].asInt();
+            _enforceCoreAffinity = args[0].as<int>();
 
             if (!_enforceCoreAffinity)
                 return true;
@@ -1147,7 +1147,7 @@ void World::registerAttributes()
 
     addAttribute("framerate",
         [&](const Values& args) {
-            _worldFramerate = std::max(1, args[0].asInt());
+            _worldFramerate = std::max(1, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {(int)_worldFramerate}; },
@@ -1157,8 +1157,8 @@ void World::registerAttributes()
     addAttribute("getAttribute",
         [&](const Values& args) {
             addTask([=]() {
-                auto objectName = args[0].asString();
-                auto attrName = args[1].asString();
+                auto objectName = args[0].as<string>();
+                auto attrName = args[1].as<string>();
 
                 auto objectIt = _objects.find(objectName);
                 if (objectIt != _objects.end())
@@ -1181,8 +1181,8 @@ void World::registerAttributes()
         [&](const Values& args) {
             lock_guard<recursive_mutex> lock(_objectsMutex);
 
-            auto objectName = args[0].asString();
-            auto attrName = args[1].asString();
+            auto objectName = args[0].as<string>();
+            auto attrName = args[1].as<string>();
 
             auto objectIt = _objects.find(objectName);
             // If the object exists locally
@@ -1206,7 +1206,7 @@ void World::registerAttributes()
 
     addAttribute("loadConfig",
         [&](const Values& args) {
-            string filename = args[0].asString();
+            string filename = args[0].as<string>();
             SThread::pool.enqueueWithoutId([=]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
@@ -1241,7 +1241,7 @@ void World::registerAttributes()
 
     addAttribute("copyCameraParameters",
         [&](const Values& args) {
-            string filename = args[0].asString();
+            string filename = args[0].as<string>();
             addTask([=]() { copyCameraParameters(filename); });
             return true;
         },
@@ -1252,7 +1252,7 @@ void World::registerAttributes()
     addAttribute("clockDeviceName",
         [&](const Values& args) {
             addTask([=]() {
-                _clockDeviceName = args[0].asString();
+                _clockDeviceName = args[0].as<string>();
                 if (_clockDeviceName != "")
                     _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
                 else if (_clock)
@@ -1268,7 +1268,7 @@ void World::registerAttributes()
 
     addAttribute("pong",
         [&](const Values& args) {
-            Timer::get() >> "pingScene " + args[0].asString();
+            Timer::get() >> "pingScene " + args[0].as<string>();
             return true;
         },
         {'s'});
@@ -1282,8 +1282,8 @@ void World::registerAttributes()
 
     addAttribute("renameObject",
         [&](const Values& args) {
-            auto name = args[0].asString();
-            auto newName = args[1].asString();
+            auto name = args[0].as<string>();
+            auto newName = args[1].as<string>();
 
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
@@ -1316,11 +1316,11 @@ void World::registerAttributes()
 
     addAttribute("replaceObject",
         [&](const Values& args) {
-            auto objName = args[0].asString();
-            auto objType = args[1].asString();
+            auto objName = args[0].as<string>();
+            auto objType = args[1].as<string>();
             vector<string> targets;
             for (int i = 2; i < args.size(); ++i)
-                targets.push_back(args[i].asString());
+                targets.push_back(args[i].as<string>());
 
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName});
@@ -1338,7 +1338,7 @@ void World::registerAttributes()
 
     addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)
-            _configFilename = args[0].asString();
+            _configFilename = args[0].as<string>();
 
         addTask([=]() {
             Log::get() << "Saving configuration" << Log::endl;
@@ -1350,8 +1350,8 @@ void World::registerAttributes()
 
     addAttribute("sendAll",
         [&](const Values& args) {
-            string name = args[0].asString();
-            string attr = args[1].asString();
+            string name = args[0].as<string>();
+            string attr = args[1].as<string>();
             Values values{name, attr};
             for (int i = 2; i < args.size(); ++i)
                 values.push_back(args[i]);
@@ -1377,7 +1377,7 @@ void World::registerAttributes()
 
     addAttribute("sendAllScenes",
         [&](const Values& args) {
-            string attr = args[0].asString();
+            string attr = args[0].as<string>();
             Values values = args;
             values.erase(values.begin());
             for (auto& scene : _scenes)
@@ -1391,7 +1391,7 @@ void World::registerAttributes()
     addAttribute("sendToMasterScene",
         [&](const Values& args) {
             addTask([=]() {
-                auto attr = args[0].asString();
+                auto attr = args[0].as<string>();
                 Values values = args;
                 values.erase(values.begin());
                 sendMessage(_masterSceneName, attr, values);
@@ -1404,7 +1404,7 @@ void World::registerAttributes()
 
     addAttribute("swapTest",
         [&](const Values& args) {
-            addTask([=]() { _swapSynchronizationTesting = args[0].asInt(); });
+            addTask([=]() { _swapSynchronizationTesting = args[0].as<int>(); });
 
             return true;
         },
@@ -1413,7 +1413,7 @@ void World::registerAttributes()
 
     addAttribute("wireframe",
         [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].asInt()}); });
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "wireframe", {args[0].as<int>()}); });
 
             return true;
         },

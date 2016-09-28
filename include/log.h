@@ -102,7 +102,7 @@ class Log
     Log& operator<<(const Value& v)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-        addToString(_tempString, v.asString());
+        addToString(_tempString, v.as<std::string>());
         return *this;
     }
 

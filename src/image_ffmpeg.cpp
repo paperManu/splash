@@ -710,7 +710,7 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("loop",
         [&](const Values& args) {
-            _loopOnVideo = (bool)args[0].asInt();
+            _loopOnVideo = (bool)args[0].as<int>();
             return true;
         },
         [&]() -> Values {
@@ -733,7 +733,7 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("pause",
         [&](const Values& args) {
-            _paused = args[0].asInt();
+            _paused = args[0].as<int>();
             return true;
         },
         [&]() -> Values { return {_paused}; },
@@ -742,7 +742,7 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("seek",
         [&](const Values& args) {
-            float seconds = args[0].asFloat();
+            float seconds = args[0].as<float>();
             SThread::pool.enqueueWithoutId([=]() { seek(seconds); });
 
             _seekTime = seconds;
@@ -755,7 +755,7 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("useClock",
         [&](const Values& args) {
-            _useClock = args[0].asInt();
+            _useClock = args[0].as<int>();
             if (!_useClock)
                 _clockTime = -1;
             else
@@ -769,7 +769,7 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("timeShift",
         [&](const Values& args) {
-            _shiftTime = args[0].asFloat();
+            _shiftTime = args[0].as<float>();
 
             return true;
         },

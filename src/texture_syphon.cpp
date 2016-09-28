@@ -78,20 +78,20 @@ void Texture_Syphon::registerAttributes()
                 _serverName = "";
                 _appName = "";
             }
-            else if (args.size() == 1 && args[0].asValues().size() == 2 && args[0].asValues()[0].asString() == "servername")
+            else if (args.size() == 1 && args[0].as<Values>().size() == 2 && args[0].as<Values>()[0].as<string>() == "servername")
             {
-                _serverName = args[0].asValues()[1].asString();
+                _serverName = args[0].as<Values>()[1].as<string>();
                 _appName = "";
             }
-            else if (args.size() == 1 && args[0].asValues().size() == 2 && args[0].asValues()[0].asString() == "appname")
+            else if (args.size() == 1 && args[0].as<Values>().size() == 2 && args[0].as<Values>()[0].as<string>() == "appname")
             {
                 _serverName = "";
-                _appName = args[0].asValues()[1].asString();
+                _appName = args[0].as<Values>()[1].as<string>();
             }
-            else if (args.size() == 2 && args[0].asValues().size() == 2 && args[1].asValues().size() == 2)
+            else if (args.size() == 2 && args[0].as<Values>().size() == 2 && args[1].as<Values>().size() == 2)
             {
-                _serverName = args[0].asValues()[1].asString();
-                _appName = args[1].asValues()[1].asString();
+                _serverName = args[0].as<Values>()[1].as<string>();
+                _appName = args[1].as<Values>()[1].as<string>();
             }
 
             if (!_syphonReceiver.connect(_serverName.c_str(), _appName.c_str()))
