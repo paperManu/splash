@@ -129,7 +129,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
                                       libglfw3-dev,
                                       libgphoto2-dev,
                                       libgsl0-dev,
-                                      libshmdata-1.2-dev,
                                       libsnappy-dev,
                                       libtool,
                                       libxrandr-dev,
@@ -137,6 +136,7 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
                                       libxinerama-dev,
                                       libxcursor-dev,
                                       libzmq3-dev,
+                                      python3-dev,
                                       portaudio19-dev,
                                       mesa-common-dev,
                                       zip")

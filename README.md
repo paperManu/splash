@@ -76,22 +76,9 @@ A few more libraries are used as submodules in the git repository:
 
 #### Linux
 
-Splash has currently only been compiled and tested on Ubuntu (version 16.04 and higher) and Mint 18 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+The current release of Splash has currently only been compiled and tested on Ubuntu (version 16.04 and higher) and Mint 18 and higher. The easy way to install it is to get the Debian archive from the [release page](https://github.com/paperManu/splash/releases), and install it with :
 
-Here are some step by step commands to add these repositories on Ubuntu 16.04:
-
-    sudo apt-add-repository ppa:andrewrk/rucksack
-
-    sudo sh -c 'echo "deb http://ppa.launchpad.net/sat-metalab/metalab/ubuntu trusty main" > /etc/apt/sources.list.d/sat-metalab-metalab-trusty.list'
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 27D9A33279DF04BB
-
-    sudo apt-get update
-
-And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being... To install Splash from the PPA, type:
-
-    sudo apt-get install splash
-
-And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
+    sudo dpkg --install splash-<version>-Linux.deb
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
@@ -102,7 +89,6 @@ You can also compile Splash by hand, especially if you are curious about its int
 
     git clone git://github.com/paperManu/splash
     cd splash
-    git checkout develop
     git submodule update --init
     mkdir -p build && cd build
     cmake ..
@@ -119,6 +105,8 @@ Lastly, if you want to have access to realtime scheduling within Splash, you nee
     sudo cp ./data/config/realtime.conf /etc/security/limits.d/
 
 Then log out and log back in.
+
+And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
 
 #### Mac OSX
 
