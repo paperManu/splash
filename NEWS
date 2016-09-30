@@ -1,8 +1,21 @@
 Splash release notes
 ===================
 
-Splash 0.4.x (2016-xx-xx)
+Splash 0.4.8 (2016-09-30)
 -------------------------
+New features:
+* Refactored user inputs, now supports drag'n'drop in path fields and copy/paste
+
+Improvements:
+* Refactored render loop, to make it more generic...
+* ... which led to unexpected performance improvements.
+* Cleaned up unit tests.
+* Fixed most FFmpeg deprecation warning
+* Fixed issues with loading configuration during runtime
+* Some code and shader cleanup
+
+Bug fixed:
+* Issues in ResizableArray
 
 Splash 0.4.6 (2016-09-02)
 -------------------------

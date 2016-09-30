@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.7
+    VERSION 0.4.8
     LANGUAGES C CXX
 )
 
@@ -116,29 +116,30 @@ set(CPACK_PACKAGE_VERSION_PATCH "${PROJECT_VERSION_PATCH}")
 if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_GENERATOR "DEB")
     set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-    set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}")
+    set(CPACK_DEBIAN_PACKAGE_NAME "${CPACK_PACKAGE_NAME}-mapper")
     set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
     set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://github.com/paperManu/splash/wiki")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
-                                      libavformat-dev,
-                                      libavcodec-dev,
-                                      libavutil-dev,
-                                      libswscale-dev,
-                                      libboost-system-dev,
-                                      libglfw3-dev,
-                                      libgphoto2-dev,
-                                      libgsl0-dev,
-                                      libsnappy-dev,
-                                      libtool,
-                                      libxrandr-dev,
-                                      libxi-dev,
-                                      libxinerama-dev,
-                                      libxcursor-dev,
-                                      libzmq3-dev,
-                                      python3-dev,
-                                      portaudio19-dev,
-                                      mesa-common-dev,
+                                      libavformat-ffmpeg56,
+                                      libavcodec-ffmpeg56,
+                                      libavutil-ffmpeg54,
+                                      libswscale-ffmpeg3,
+                                      libboost-system1.58.0,
+                                      libglfw3,
+                                      libgphoto2-6,
+                                      libgsl2,
+                                      libopencv-core2.4v5,
+                                      libopencv-highgui2.4v5,
+                                      libopencv-imgproc2.4v5,
+                                      libopencv-video2.4v5,
+                                      libsnappy1v5,
+                                      libxrandr2,
+                                      libxi6,
+                                      libxinerama1,
+                                      libxcursor1,
+                                      libzmq5,
+                                      libportaudio2,
                                       zip")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@gmail.com>")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
