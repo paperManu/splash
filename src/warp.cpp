@@ -21,7 +21,8 @@ namespace Splash
 {
 
 /*************/
-Warp::Warp(std::weak_ptr<RootObject> root) : Texture(root)
+Warp::Warp(std::weak_ptr<RootObject> root)
+    : Texture(root)
 {
     init();
 }
@@ -30,6 +31,7 @@ Warp::Warp(std::weak_ptr<RootObject> root) : Texture(root)
 void Warp::init()
 {
     _type = "warp";
+    _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -158,7 +160,7 @@ void Warp::unlinkFrom(std::shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Warp::update()
+void Warp::render()
 {
     if (_inCamera.expired())
         return;
@@ -371,7 +373,7 @@ void Warp::registerAttributes()
     // Also resets the selected control point if hidden
     addAttribute("showControlLattice",
         [&](const Values& args) {
-            _showControlPoints = args[0].asInt();
+            _showControlPoints = args[0].as<int>();
             if (!_showControlPoints)
                 _selectedControlPointIndex = -1;
             return true;
@@ -382,7 +384,7 @@ void Warp::registerAttributes()
     // Show a single control point
     addAttribute("showControlPoint",
         [&](const Values& args) {
-            auto index = args[0].asInt();
+            auto index = args[0].as<int>();
             if (index < 0 || index >= _screenMesh->getControlPoints().size())
                 _selectedControlPointIndex = -1;
             else

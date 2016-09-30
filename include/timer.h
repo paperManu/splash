@@ -294,11 +294,11 @@ class Timer
         auto clock = _clock;
         lockClock.unlock();
 
-        int64_t frames = clock[6].asInt() + (clock[5].asInt() + (clock[4].asInt() + (clock[3].asInt() + clock[2].asInt() * 24ll) * 60ll) * 60ll) * 120ll;
+        int64_t frames = clock[6].as<int>() + (clock[5].as<int>() + (clock[4].as<int>() + (clock[3].as<int>() + clock[2].as<int>() * 24ll) * 60ll) * 60ll) * 120ll;
         std::chrono::microseconds useconds((frames * 1000000) / 120);
         time = std::chrono::duration_cast<T>(useconds).count();
 
-        paused = clock[7].asInt();
+        paused = clock[7].as<int>();
 
         return true;
     }

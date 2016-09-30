@@ -281,7 +281,7 @@ void Texture_Image::update()
         if (spec.channels == 4 && spec.type == ImageBufferSpec::Type::UINT8)
         {
             dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-            if (srgb[0].asInt() > 0)
+            if (srgb[0].as<int>() > 0)
                 internalFormat = GL_SRGB8_ALPHA8;
             else
                 internalFormat = GL_RGBA;
@@ -289,7 +289,7 @@ void Texture_Image::update()
         else if (spec.channels == 3 && spec.type == ImageBufferSpec::Type::UINT8)
         {
             dataFormat = GL_UNSIGNED_BYTE;
-            if (srgb[0].asInt() > 0)
+            if (srgb[0].as<int>() > 0)
                 internalFormat = GL_SRGB8_ALPHA8;
             else
                 internalFormat = GL_RGBA;
@@ -309,14 +309,14 @@ void Texture_Image::update()
     {
         if (spec.format == vector<string>({"RGB_DXT1"}))
         {
-            if (srgb[0].asInt() > 0)
+            if (srgb[0].as<int>() > 0)
                 internalFormat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
             else
                 internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
         }
         else if (spec.format == vector<string>({"RGBA_DXT5"}))
         {
-            if (srgb[0].asInt() > 0)
+            if (srgb[0].as<int>() > 0)
                 internalFormat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
             else
                 internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
@@ -524,7 +524,7 @@ void Texture_Image::registerAttributes()
 {
     addAttribute("filtering",
         [&](const Values& args) {
-            _filtering = args[0].asInt() > 0 ? true : false;
+            _filtering = args[0].as<int>() > 0 ? true : false;
             return true;
         },
         [&]() -> Values { return {_filtering}; },
@@ -533,7 +533,7 @@ void Texture_Image::registerAttributes()
 
     addAttribute("clampToEdge",
         [&](const Values& args) {
-            _glTextureWrap = args[0].asInt() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+            _glTextureWrap = args[0].as<int>() ? GL_CLAMP_TO_EDGE : GL_REPEAT;
             return true;
         },
         {'n'});
@@ -541,7 +541,7 @@ void Texture_Image::registerAttributes()
 
     addAttribute("size",
         [&](const Values& args) {
-            resize(args[0].asInt(), args[1].asInt());
+            resize(args[0].as<int>(), args[1].as<int>());
             return true;
         },
         {'n', 'n'});

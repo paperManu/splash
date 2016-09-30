@@ -42,9 +42,12 @@ void GuiWarp::render()
             else
                 setObject(warp->getName(), "showControlLattice", {0});
 
-            warp->update();
+            warp->render();
 
             auto warpSpec = warp->getSpec();
+            if (warpSpec.width == 0 || warpSpec.height == 0)
+                continue;
+
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
             int h = w * warpSpec.height / warpSpec.width;
 
@@ -67,12 +70,12 @@ void GuiWarp::render()
 
             warp->getAttribute("patchResolution", values);
             if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
-                setObject(warp->getName(), "patchResolution", {values[0].asInt()});
+                setObject(warp->getName(), "patchResolution", {values[0].as<int>()});
 
             warp->getAttribute("patchSize", values);
             vector<int> tmp;
-            tmp.push_back(values[0].asInt());
-            tmp.push_back(values[1].asInt());
+            tmp.push_back(values[0].as<int>());
+            tmp.push_back(values[1].as<int>());
 
             if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
                 setObject(warp->getName(), "patchSize", {tmp[0], tmp[1]});
@@ -164,29 +167,29 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
 
         if (io.KeysDown[262])
         {
-            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
-            point[0] = point[0].asFloat() + delta;
+            Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
+            point[0] = point[0].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             updateControlPoints(warp->getName(), controlPoints);
         }
         if (io.KeysDown[263])
         {
-            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
-            point[0] = point[0].asFloat() - delta;
+            Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
+            point[0] = point[0].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             updateControlPoints(warp->getName(), controlPoints);
         }
         if (io.KeysDown[264])
         {
-            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
-            point[1] = point[1].asFloat() - delta;
+            Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
+            point[1] = point[1].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             updateControlPoints(warp->getName(), controlPoints);
         }
         if (io.KeysDown[265])
         {
-            Values point = controlPoints[_currentControlPointIndex + 2].asValues();
-            point[1] = point[1].asFloat() + delta;
+            Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
+            point[1] = point[1].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
             updateControlPoints(warp->getName(), controlPoints);
         }
@@ -218,12 +221,12 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
         if (controlPoints.size() < _currentControlPointIndex)
             return;
 
-        Values point = controlPoints[_currentControlPointIndex + 2].asValues();
+        Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
         glm::vec2 delta = glm::vec2(mousePos.x, mousePos.y) - _previousMousePos;
         _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
 
-        point[0] = point[0].asFloat() + delta.x * 2.0;
-        point[1] = point[1].asFloat() + delta.y * 2.0;
+        point[0] = point[0].as<float>() + delta.x * 2.0;
+        point[1] = point[1].as<float>() + delta.y * 2.0;
         controlPoints[_currentControlPointIndex + 2] = point;
 
         updateControlPoints(warp->getName(), controlPoints);

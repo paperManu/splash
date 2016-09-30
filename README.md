@@ -66,7 +66,7 @@ Splash relies on a few libraries to get the job done. These libraries are:
 A few more libraries are used as submodules in the git repository:
 
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-- [bandit](https://github.com/joakinkarlsson/bandit) to do some unit testing,
+- [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images,
 - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
@@ -76,33 +76,19 @@ A few more libraries are used as submodules in the git repository:
 
 #### Linux
 
-Splash has currently only been compiled and tested on Ubuntu (version 16.04 and higher) and Mint 18 and higher. GLFW3, OpenImageIO and ShmData are packaged but not (yet) available in the core of these distributions, thus some additional repositories must be added.
+The current release of Splash has currently only been compiled and tested on Ubuntu (version 16.04 and higher) and Mint 18 and higher. The easy way to install it is to get the Debian archive from the [release page](https://github.com/paperManu/splash/releases), and install it with :
 
-Here are some step by step commands to add these repositories on Ubuntu 16.04:
-
-    sudo apt-add-repository ppa:andrewrk/rucksack
-
-    sudo sh -c 'echo "deb http://ppa.launchpad.net/sat-metalab/metalab/ubuntu trusty main" > /etc/apt/sources.list.d/sat-metalab-metalab-trusty.list'
-    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 27D9A33279DF04BB
-
-    sudo apt-get update
-
-And you are done with dependencies. If your distribution is not compatible with packages from Ubuntu, I'm afraid you will have to compile any missing library by hand for the time being... To install Splash from the PPA, type:
-
-    sudo apt-get install splash
-
-And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
+    sudo apt install <download path>/splash-<version>-Linux.deb
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
-    sudo apt-get install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev
-    sudo apt-get install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt-get install libglfw3-dev libxinerama-dev libxcursor-dev python3-dev
-    sudo apt-get install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
+    sudo apt install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev
+    sudo apt install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev
+    sudo apt install libglfw3-dev libxinerama-dev libxcursor-dev python3-dev
+    sudo apt install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
-    git checkout develop
     git submodule update --init
     mkdir -p build && cd build
     cmake ..
@@ -111,6 +97,16 @@ You can also compile Splash by hand, especially if you are curious about its int
 You can now try launching Splash:
 
     splash --help
+
+Lastly, if you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
+
+    sudo addgroup realtime
+    sudo adduser $USER realtime
+    sudo cp ./data/config/realtime.conf /etc/security/limits.d/
+
+Then log out and log back in.
+
+And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
 
 #### Mac OSX
 

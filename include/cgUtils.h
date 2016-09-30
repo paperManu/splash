@@ -44,9 +44,9 @@ struct RgbValue
     {
         if (v.size() != 3)
             return;
-        r = v[0].asFloat();
-        g = v[1].asFloat();
-        b = v[2].asFloat();
+        r = v[0].as<float>();
+        g = v[1].as<float>();
+        b = v[2].as<float>();
     }
     RgbValue(std::vector<float> v)
     {

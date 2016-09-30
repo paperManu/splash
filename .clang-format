@@ -6,6 +6,7 @@ AllowShortFunctionsOnASingleLine : Inline
 BinPackArguments : false
 BinPackParameters : false
 BreakBeforeBraces : Allman
+BreakConstructorInitializersBeforeComma : true
 ColumnLimit : 180
 IndentWidth : 4
 PointerAlignment : Left

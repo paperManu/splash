@@ -28,6 +28,8 @@
 #include <map>
 #include <string>
 
+#include "./config.h"
+
 namespace Splash
 {
 
@@ -117,16 +119,18 @@ struct ShaderSources
             }
         )"}};
 
-    /**
-     * Version directive, included at the start of all shaders
-     */
-    const std::string VERSION_DIRECTIVE_330{R"(
-        #version 330 core
+/**
+ * Version directive, included at the start of all shaders
+ */
+#if HAVE_OSX
+    const std::string VERSION_DIRECTIVE_GL4{R"(
+        #version 410 core
     )"};
-
-    const std::string VERSION_DIRECTIVE_430{R"(
+#else
+    const std::string VERSION_DIRECTIVE_GL4{R"(
         #version 430 core
     )"};
+#endif
 
     /**************************/
     // COMPUTE

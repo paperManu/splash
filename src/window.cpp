@@ -35,9 +35,11 @@ atomic_bool Window::_quitFlag;
 atomic_int Window::_swappableWindowsCount{0};
 
 /*************/
-Window::Window(std::weak_ptr<RootObject> root) : BaseObject(root)
+Window::Window(std::weak_ptr<RootObject> root)
+    : BaseObject(root)
 {
     _type = "window";
+    _renderingPriority = Priority::WINDOW;
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -305,7 +307,7 @@ void Window::unlinkFrom(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Window::render()
+void Window::render()
 {
     // Update the FBO configuration if needed
     setupRenderFBO();
@@ -367,9 +369,9 @@ bool Window::render()
     bool resize = true;
     for (int i = 0; i < _inTextures.size(); ++i)
     {
-        int value = _layout[i].asInt();
+        int value = _layout[i].as<int>();
         for (int j = i + 1; j < _inTextures.size(); ++j)
-            if (_layout[j].asInt() != value)
+            if (_layout[j].as<int>() != value)
                 resize = false;
     }
     if (resize) // We don't do this if we are directly connected to a Texture (updated from an image)
@@ -395,11 +397,7 @@ bool Window::render()
     glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-#ifdef DEBUG
-    return error != 0 ? true : false;
-#else
-    return false;
-#endif
+    return;
 }
 
 /*************/
@@ -760,7 +758,7 @@ void Window::registerAttributes()
 {
     addAttribute("fullscreen",
         [&](const Values& args) {
-            switchFullscreen(args[0].asInt());
+            switchFullscreen(args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {_screenId}; },
@@ -769,7 +767,7 @@ void Window::registerAttributes()
 
     addAttribute("decorated",
         [&](const Values& args) {
-            _withDecoration = args[0].asInt() == 0 ? false : true;
+            _withDecoration = args[0].as<int>() == 0 ? false : true;
             setWindowDecoration(_withDecoration);
             updateWindowShape();
             return true;
@@ -785,7 +783,7 @@ void Window::registerAttributes()
 
     addAttribute("srgb",
         [&](const Values& args) {
-            if (args[0].asInt() != 0)
+            if (args[0].as<int>() != 0)
                 _srgb = true;
             else
                 _srgb = false;
@@ -797,7 +795,7 @@ void Window::registerAttributes()
 
     addAttribute("gamma",
         [&](const Values& args) {
-            _gammaCorrection = args[0].asFloat();
+            _gammaCorrection = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_gammaCorrection}; },
@@ -809,7 +807,7 @@ void Window::registerAttributes()
         [&](const Values& args) {
             _layout.clear();
             for (auto& arg : args)
-                _layout.push_back(arg.asInt());
+                _layout.push_back(arg.as<int>());
 
             for (int i = _layout.size(); i < 4; ++i)
                 _layout.push_back(0);
@@ -825,8 +823,8 @@ void Window::registerAttributes()
 
     addAttribute("position",
         [&](const Values& args) {
-            _windowRect[0] = args[0].asInt();
-            _windowRect[1] = args[1].asInt();
+            _windowRect[0] = args[0].as<int>();
+            _windowRect[1] = args[1].as<int>();
             updateWindowShape();
             return true;
         },
@@ -841,15 +839,15 @@ void Window::registerAttributes()
 
     addAttribute("showCursor",
         [&](const Values& args) {
-            showCursor(args[0].asInt());
+            showCursor(args[0].as<int>());
             return true;
         },
         {'n'});
 
     addAttribute("size",
         [&](const Values& args) {
-            _windowRect[2] = args[0].asInt();
-            _windowRect[3] = args[1].asInt();
+            _windowRect[2] = args[0].as<int>();
+            _windowRect[3] = args[1].as<int>();
             updateWindowShape();
             return true;
         },
@@ -864,7 +862,7 @@ void Window::registerAttributes()
 
     addAttribute("swapInterval",
         [&](const Values& args) {
-            _swapInterval = max(-1, args[0].asInt());
+            _swapInterval = max(-1, args[0].as<int>());
             updateSwapInterval();
             return true;
         },
@@ -873,7 +871,7 @@ void Window::registerAttributes()
 
     addAttribute("swapTest",
         [&](const Values& args) {
-            _swapSynchronizationTesting = args[0].asInt();
+            _swapSynchronizationTesting = args[0].as<int>();
             return true;
         },
         {'n'});
@@ -881,7 +879,7 @@ void Window::registerAttributes()
 
     addAttribute("swapTestColor",
         [&](const Values& args) {
-            _swapSynchronizationColor = glm::vec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            _swapSynchronizationColor = glm::vec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
         {'n', 'n', 'n', 'n'});

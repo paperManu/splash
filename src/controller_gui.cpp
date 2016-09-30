@@ -30,10 +30,14 @@ GLint Gui::_imGuiColorLocation;
 GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
+GLFWwindow* Gui::_glfwWindow = nullptr;
+
 /*************/
-Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s) : ControllerObject(s)
+Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
+    : ControllerObject(s)
 {
     _type = "gui";
+    _renderingPriority = Priority::GUI;
 
     auto scene = s.lock();
     if (w.get() == nullptr || scene.get() == nullptr)
@@ -41,9 +45,9 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s) : ControllerObject(s)
 
     _scene = s;
     _window = w;
+    _glfwWindow = _window->get();
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
     glGetError();
     glGenFramebuffers(1, &_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
@@ -191,6 +195,65 @@ void Gui::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
 {
     for (auto& w : _guiWidgets)
         w->setJoystick(axes, buttons);
+}
+
+/*************/
+void Gui::setJoystickState(const vector<UserInput::State>& state)
+{
+    vector<float> axes;
+    vector<uint8_t> buttons;
+
+    for (auto& s : state)
+    {
+        if (s.action == "joystick_0_axes")
+            for (auto& v : s.value)
+                axes.push_back(v.as<float>());
+        else if (s.action == "joystick_0_buttons")
+            for (auto& v : s.value)
+                buttons.push_back(v.as<int>());
+    }
+
+    setJoystick(axes, buttons);
+}
+
+/*************/
+void Gui::setKeyboardState(const vector<UserInput::State>& state)
+{
+    for (auto& s : state)
+    {
+        if (s.action == "keyboard_unicodeChar")
+        {
+            uint32_t unicode = static_cast<uint32_t>(s.value[0].as<int>());
+            unicodeChar(unicode);
+            continue;
+        }
+
+        auto key = s.value[0].as<int>();
+        auto mods = s.modifiers;
+
+        if (s.action == "keyboard_press")
+            Gui::key(key, GLFW_PRESS, mods);
+        else if (s.action == "keyboard_release")
+            Gui::key(key, GLFW_RELEASE, mods);
+        else if (s.action == "keyboard_repeat")
+            Gui::key(key, GLFW_REPEAT, mods);
+    }
+}
+
+/*************/
+void Gui::setMouseState(const vector<UserInput::State>& state)
+{
+    for (auto& s : state)
+    {
+        if (s.action == "mouse_position")
+            mousePosition(s.value[0].as<int>(), s.value[1].as<int>());
+        else if (s.action == "mouse_press")
+            mouseButton(s.value[0].as<int>(), GLFW_PRESS, s.modifiers);
+        else if (s.action == "mouse_release")
+            mouseButton(s.value[0].as<int>(), GLFW_RELEASE, s.modifiers);
+        else if (s.action == "mouse_scroll")
+            mouseScroll(s.value[0].as<float>(), s.value[1].as<float>());
+    }
 }
 
 /*************/
@@ -383,10 +446,10 @@ void Gui::unlinkFrom(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-bool Gui::render()
+void Gui::render()
 {
     if (!_isInitialized)
-        return false;
+        return;
 
     ImageBufferSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
@@ -399,6 +462,9 @@ bool Gui::render()
     if (_isVisible)
     {
         using namespace ImGui;
+
+        // Callback for dragndrop: load the dropped file
+        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].as<string>()}); });
 
         ImGuiIO& io = GetIO();
         io.MouseDrawCursor = true;
@@ -563,11 +629,9 @@ bool Gui::render()
     error = glGetError();
     if (error)
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
-
-    return error != 0 ? true : false;
-#else
-    return false;
 #endif
+
+    return;
 }
 
 /*************/
@@ -787,6 +851,7 @@ void Gui::initImGui(int width, int height)
     int w, h;
     io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);
 
+    // Set GL texture for font
     glDeleteTextures(1, &_imFontTextureId);
     glGenTextures(1, &_imFontTextureId);
     glBindTexture(GL_TEXTURE_2D, _imFontTextureId);
@@ -795,7 +860,25 @@ void Gui::initImGui(int width, int height)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     io.Fonts->TexID = (void*)(intptr_t)_imFontTextureId;
 
+    // Init clipboard callbacks
+    io.GetClipboardTextFn = Gui::getClipboardText;
+    io.SetClipboardTextFn = Gui::setClipboardText;
+
     _isInitialized = true;
+}
+
+/*************/
+const char* Gui::getClipboardText()
+{
+    if (_glfwWindow)
+        return glfwGetClipboardString(_glfwWindow);
+}
+
+/*************/
+void Gui::setClipboardText(const char* text)
+{
+    if (_glfwWindow)
+        glfwSetClipboardString(_glfwWindow, text);
 }
 
 /*************/
@@ -871,12 +954,12 @@ void Gui::initImWidgets()
         worldFps = 1e3 / std::max(1.f, wrl);
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;
         tex = tex * 0.9 + Timer::get()["textureUpload"] * 0.001 * 0.1;
-        ble = ble * 0.9 + Timer::get()["blending"] * 0.001 * 0.1;
-        flt = flt * 0.9 + Timer::get()["filters"] * 0.001 * 0.1;
-        cam = cam * 0.9 + Timer::get()["cameras"] * 0.001 * 0.1;
-        wrp = wrp * 0.9 + Timer::get()["warps"] * 0.001 * 0.1;
+        ble = ble * 0.9 + Timer::get()["blender"] * 0.001 * 0.1;
+        flt = flt * 0.9 + Timer::get()["filter"] * 0.001 * 0.1;
+        cam = cam * 0.9 + Timer::get()["camera"] * 0.001 * 0.1;
+        wrp = wrp * 0.9 + Timer::get()["warp"] * 0.001 * 0.1;
         gui = gui * 0.9 + Timer::get()["gui"] * 0.001 * 0.1;
-        win = win * 0.9 + Timer::get()["windows"] * 0.001 * 0.1;
+        win = win * 0.9 + Timer::get()["window"] * 0.001 * 0.1;
         buf = buf * 0.9 + Timer::get()["swap"] * 0.001 * 0.1;
         evt = evt * 0.9 + Timer::get()["events"] * 0.001 * 0.1;
 
@@ -885,9 +968,9 @@ void Gui::initImWidgets()
         Values clock;
         if (Timer::get().getMasterClock(clock))
         {
-            stream << "Master clock: " << clock[0].asInt() << "/" << clock[1].asInt() << "/" << clock[2].asInt() << " - " << clock[3].asInt() << ":" << clock[4].asInt() << ":"
-                   << clock[5].asInt() << ":" << clock[6].asInt();
-            if (clock[7].asInt() == 1)
+            stream << "Master clock: " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>() << " - " << clock[3].as<int>() << ":" << clock[4].as<int>() << ":"
+                   << clock[5].as<int>() << ":" << clock[6].as<int>();
+            if (clock[7].as<int>() == 1)
                 stream << " - Paused";
             stream << "\n";
         }
@@ -1040,7 +1123,7 @@ void Gui::registerAttributes()
 {
     addAttribute("size",
         [&](const Values& args) {
-            setOutputSize(args[0].asInt(), args[1].asInt());
+            setOutputSize(args[0].as<int>(), args[1].as<int>());
             return true;
         },
         {'n', 'n'});

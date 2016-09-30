@@ -22,7 +22,8 @@ namespace Splash
 {
 
 /*************/
-Image::Image(weak_ptr<RootObject> root) : BufferObject(root)
+Image::Image(weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     init();
 
@@ -31,7 +32,8 @@ Image::Image(weak_ptr<RootObject> root) : BufferObject(root)
 }
 
 /*************/
-Image::Image(weak_ptr<RootObject> root, ImageBufferSpec spec) : BufferObject(root)
+Image::Image(weak_ptr<RootObject> root, ImageBufferSpec spec)
+    : BufferObject(root)
 {
     init();
     set(spec.width, spec.height, spec.channels, spec.type);
@@ -217,9 +219,9 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    _filepath = filename;
+    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
     if (!_isConnectedToRemote)
-        return readFile(filename);
+        return readFile(_filepath);
     else
         return true;
 }
@@ -227,24 +229,18 @@ bool Image::read(const string& filename)
 /*************/
 bool Image::readFile(const string& filename)
 {
-    auto filepath = string(filename);
-    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
-        filepath = _configFilePath + filepath;
-
-    _filepath = filepath;
-
-    if (!ifstream(_filepath).is_open())
+    if (!ifstream(filename).is_open())
     {
         Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Unable to load file " << filename << Log::endl;
         return false;
     }
 
     int w, h, c;
-    uint8_t* rawImage = stbi_load(filepath.c_str(), &w, &h, &c, 0);
+    uint8_t* rawImage = stbi_load(filename.c_str(), &w, &h, &c, 0);
 
     if (!rawImage)
     {
-        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an error while opening image file " << filepath << Log::endl;
+        Log::get() << Log::WARNING << "Image::" << __FUNCTION__ << " - Caught an error while opening image file " << filename << Log::endl;
         return false;
     }
 
@@ -373,7 +369,7 @@ void Image::registerAttributes()
 {
     addAttribute("flip",
         [&](const Values& args) {
-            _flip = (args[0].asInt() > 0) ? true : false;
+            _flip = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         [&]() -> Values { return {_flip}; },
@@ -382,19 +378,19 @@ void Image::registerAttributes()
 
     addAttribute("flop",
         [&](const Values& args) {
-            _flop = (args[0].asInt() > 0) ? true : false;
+            _flop = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         [&]() -> Values { return {_flop}; },
         {'n'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file", [&](const Values& args) { return read(args[0].asString()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Image file to load");
 
     addAttribute("srgb",
         [&](const Values& args) {
-            _srgb = (args[0].asInt() > 0) ? true : false;
+            _srgb = (args[0].as<int>() > 0) ? true : false;
             return true;
         },
         [&]() -> Values { return {_srgb}; },
@@ -403,7 +399,7 @@ void Image::registerAttributes()
 
     addAttribute("benchmark",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _benchmark = true;
             else
                 _benchmark = false;
@@ -414,7 +410,7 @@ void Image::registerAttributes()
 
     addAttribute("pattern",
         [&](const Values& args) {
-            if (args[0].asInt() == 1)
+            if (args[0].as<int>() == 1)
                 createPattern();
             return true;
         },

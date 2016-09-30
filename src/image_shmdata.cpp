@@ -27,7 +27,8 @@ namespace Splash
 {
 
 /*************/
-Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root) : Image(root)
+Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
+    : Image(root)
 {
     init();
 }
@@ -43,12 +44,8 @@ Image_Shmdata::~Image_Shmdata()
 /*************/
 bool Image_Shmdata::read(const string& filename)
 {
-    auto filepath = string(filename);
-    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
-        filepath = _configFilePath + filepath;
-
-    _reader.reset(new shmdata::Follower(filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
-    _filepath = filename;
+    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
 
     return true;
 }

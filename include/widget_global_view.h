@@ -35,7 +35,10 @@ namespace Splash
 class GuiGlobalView : public GuiWidget
 {
   public:
-    GuiGlobalView(std::weak_ptr<Scene> scene, std::string name = "") : GuiWidget(scene, name) {}
+    GuiGlobalView(std::weak_ptr<Scene> scene, std::string name = "")
+        : GuiWidget(scene, name)
+    {
+    }
     void render();
     int updateWindowFlags();
     void setCamera(const std::shared_ptr<Camera>& cam);
@@ -56,6 +59,8 @@ class GuiGlobalView : public GuiWidget
     int _camWidth{0}, _camHeight{0};
 
     // Joystick state
+    bool _joystickCaptured{false};
+    std::mutex _joystickMutex{};
     std::vector<float> _joyAxes{};
     std::vector<uint8_t> _joyButtons{};
     std::vector<uint8_t> _joyButtonsPrevious{};
@@ -71,6 +76,16 @@ class GuiGlobalView : public GuiWidget
 
     // Previous point added
     Values _previousPointAdded;
+
+    /**
+     * \brief Capture joystick
+     */
+    void captureJoystick();
+
+    /**
+     * \brief Release joystick
+     */
+    void releaseJoystick();
 
     void processJoystickState();
     void processKeyEvents();

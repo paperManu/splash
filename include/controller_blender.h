@@ -49,7 +49,7 @@ class Blender : public ControllerObject
     /**
      * \brief Update the blending
      */
-    void render();
+    void update();
 
   private:
     bool _isSceneMaster{false};        //!< True if the root Scene is master

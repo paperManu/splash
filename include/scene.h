@@ -52,6 +52,7 @@ class Scene;
 class Scene : public RootObject
 {
     friend ControllerObject;
+    friend UserInput;
 #if HAVE_GPHOTO
     friend ColorCalibrator;
 #endif
@@ -68,7 +69,7 @@ class Scene : public RootObject
      * \param name Scene name
      * \param autoRun If true, the Scene will start without waiting for a start message from the World
      */
-    Scene(std::string name = "Splash", bool autoRun = true);
+    Scene(std::string name = "Splash");
 
     /**
      * \brief Destructor
@@ -242,6 +243,12 @@ class Scene : public RootObject
     std::shared_ptr<Gui> _gui;
     bool _guiLinkedToWindow{false};
 
+    // Default input objects
+    std::shared_ptr<BaseObject> _keyboard{nullptr};
+    std::shared_ptr<BaseObject> _mouse{nullptr};
+    std::shared_ptr<BaseObject> _joystick{nullptr};
+    std::shared_ptr<BaseObject> _dragndrop{nullptr};
+
 // Objects in charge of calibration
 #if HAVE_GPHOTO
     std::shared_ptr<ColorCalibrator> _colorCalibrator;
@@ -258,12 +265,6 @@ class Scene : public RootObject
     bool _status{false};  //< Set to true if an error occured during rendering
     int _swapInterval{1}; //< Global value for the swap interval, default for all windows
 
-    // Joystick update loop and attributes
-    std::future<void> _joystickUpdateFuture;
-    std::mutex _joystickUpdateMutex;
-    std::vector<float> _joystickAxes;
-    std::vector<uint8_t> _joystickButtons;
-
     // Texture upload context
     std::future<void> _textureUploadFuture;
     std::condition_variable _textureUploadCondition;
@@ -279,7 +280,7 @@ class Scene : public RootObject
     unsigned long _nextId{0};
 
     //! Blender object
-    std::shared_ptr<BaseObject> _blender;
+    std::shared_ptr<BaseObject> _blender{nullptr};
 
     /**
      * \brief Find which OpenGL version is available (from a predefined list)
@@ -292,11 +293,6 @@ class Scene : public RootObject
      * \param name Scene name
      */
     void init(std::string name);
-
-    /**
-     * \brief Joystick loop
-     */
-    void joystickUpdateLoop();
 
     /**
      * \brief Get the next available id

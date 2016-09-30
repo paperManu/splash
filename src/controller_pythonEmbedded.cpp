@@ -126,7 +126,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
         return Py_BuildValue("s", "");
     }
 
-    auto description = result[0].asString();
+    auto description = result[0].as<string>();
     return Py_BuildValue("s", description.c_str());
 }
 
@@ -326,7 +326,7 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObje
         return Py_False;
     }
 
-    auto value = convertToValue(pyValue).asValues();
+    auto value = convertToValue(pyValue).as<Values>();
     that->setGlobal(string(attrName), value);
 
     Py_INCREF(Py_True);
@@ -372,7 +372,7 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObje
         return Py_False;
     }
 
-    auto value = convertToValue(pyValue).asValues();
+    auto value = convertToValue(pyValue).as<Values>();
     that->setObject(string(strName), string(strAttr), value);
 
     Py_INCREF(Py_True);
@@ -418,7 +418,7 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args,
         return Py_False;
     }
 
-    auto value = convertToValue(pyValue).asValues();
+    auto value = convertToValue(pyValue).as<Values>();
     that->setObjectsOfType(string(strType), string(strAttr), value);
 
     Py_INCREF(Py_True);
@@ -514,7 +514,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
             PyEval_ReleaseThread(that->_pythonGlobalThreadState);
 
             if (value.getType() == Value::Type::v)
-                return value.asValues();
+                return value.as<Values>();
             else
                 return {value};
         },
@@ -565,7 +565,8 @@ PyObject* PythonEmbedded::pythonInitSplash()
 
 /*************/
 // PythonEmbedded class definition
-PythonEmbedded::PythonEmbedded(weak_ptr<RootObject> root) : ControllerObject(root)
+PythonEmbedded::PythonEmbedded(weak_ptr<RootObject> root)
+    : ControllerObject(root)
 {
     using namespace std::placeholders;
 
@@ -762,16 +763,14 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value)
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
         if (v.getType() == Value::Type::i)
-            pyValue = Py_BuildValue("i", v.asInt());
-        else if (v.getType() == Value::Type::l)
-            pyValue = Py_BuildValue("l", v.asLong());
+            pyValue = Py_BuildValue("i", v.as<long>());
         else if (v.getType() == Value::Type::f)
-            pyValue = Py_BuildValue("f", v.asFloat());
+            pyValue = Py_BuildValue("f", v.as<float>());
         else if (v.getType() == Value::Type::s)
-            pyValue = Py_BuildValue("s", v.asString().c_str());
+            pyValue = Py_BuildValue("s", v.as<string>().c_str());
         else if (v.getType() == Value::Type::v)
         {
-            auto values = v.asValues();
+            auto values = v.as<Values>();
             pyValue = PyList_New(values.size());
             for (int i = 0; i < values.size(); ++i)
                 PyList_SetItem(pyValue, i, parseValue(values[i]));
@@ -822,7 +821,7 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
 /*************/
 void PythonEmbedded::registerAttributes()
 {
-    addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].asString()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
+    addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
 }
 

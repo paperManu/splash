@@ -11,7 +11,8 @@ namespace Splash
 {
 
 /*************/
-Mesh::Mesh(weak_ptr<RootObject> root) : BufferObject(root)
+Mesh::Mesh(weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     init();
     if (!root.expired() && root.lock()->getType() == "world")
@@ -110,22 +111,17 @@ vector<float> Mesh::getAnnexe() const
 /*************/
 bool Mesh::read(const string& filename)
 {
-    auto filepath = string(filename);
-    if (Utils::getPathFromFilePath(filepath) == "" || filepath.find(".") == 0)
-        filepath = _configFilePath + filepath;
-
-    _filepath = filepath;
+    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
 
     if (!_isConnectedToRemote)
     {
         Loader::Obj objLoader;
-        if (!objLoader.load(filepath))
+        if (!objLoader.load(_filepath))
         {
             Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
             return false;
         }
 
-        _filepath = filepath;
         MeshContainer mesh;
         mesh.vertices = objLoader.getVertices();
         mesh.uvs = objLoader.getUVs();
@@ -363,12 +359,12 @@ void Mesh::createDefaultMesh(int subdiv)
 /*************/
 void Mesh::registerAttributes()
 {
-    addAttribute("file", [&](const Values& args) { return read(args[0].asString()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Mesh file to load");
 
     addAttribute("benchmark",
         [&](const Values& args) {
-            if (args[0].asInt() > 0)
+            if (args[0].as<int>() > 0)
                 _benchmark = true;
             else
                 _benchmark = false;

@@ -45,6 +45,7 @@
 #endif
 #include "./basetypes.h"
 #include "./coretypes.h"
+#include "./userInput.h"
 #include "./widget_control.h"
 #include "./widget_global_view.h"
 #include "./widget_graph.h"
@@ -150,15 +151,32 @@ class Gui : public ControllerObject
 
     /**
      * \brief Render this gui
-     * \return Return true if all went well
      */
-    bool render();
+    void render();
 
     /**
      * \brief Specify the configuration path (as loaded by World)
      * \param path Configuration path
      */
     void setConfigFilePath(const std::string& path) { _configurationPath = path.data(); }
+
+    /**
+     * \brief Set joysticks state
+     * \param state Joysticks state
+     */
+    void setJoystickState(const std::vector<UserInput::State>& state);
+
+    /**
+     * \brief Set the keyboard state
+     * \param state Keyboard state
+     */
+    void setKeyboardState(const std::vector<UserInput::State>& state);
+
+    /**
+     * \brief Set the mouse state
+     * \param state Mouse state
+     */
+    void setMouseState(const std::vector<UserInput::State>& state);
 
     /**
      * \brief Set the resolution of the gui
@@ -171,6 +189,10 @@ class Gui : public ControllerObject
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
     std::weak_ptr<Scene> _scene;
+
+    // This is needed for some GLFW callbacks, and also has to be static...
+    // There can be only one gui, so it is not such an issue
+    static GLFWwindow* _glfwWindow;
 
     GLuint _fbo{0};
     std::shared_ptr<Texture_Image> _depthTexture;
@@ -244,6 +266,18 @@ class Gui : public ControllerObject
      * \brief Compute projectors blending
      */
     void computeBlending(bool once = false);
+
+    /**
+     * \brief Get the clipboard
+     * \return Return a pointer to the text
+     */
+    static const char* getClipboardText();
+
+    /**
+     * \brief Set the clipboard
+     * \param text Text to set the clipboard to
+     */
+    static void setClipboardText(const char* text);
 
     /**
      * \brief Make the background flash to light grey

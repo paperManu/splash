@@ -18,6 +18,10 @@
 #include "./texture_image.h"
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./userInput_dragndrop.h"
+#include "./userInput_joystick.h"
+#include "./userInput_keyboard.h"
+#include "./userInput_mouse.h"
 #include "./warp.h"
 #include "./window.h"
 
@@ -44,7 +48,7 @@ namespace Splash
 bool Scene::_isGlfwInitialized{false};
 
 /*************/
-Scene::Scene(std::string name, bool autoRun)
+Scene::Scene(std::string name)
 {
     _self = std::shared_ptr<Scene>(this, [](Scene*) {}); // A shared pointer with no deleter, how convenient
 
@@ -58,12 +62,6 @@ Scene::Scene(std::string name, bool autoRun)
     registerAttributes();
 
     init(_name);
-
-    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
-    _joystickUpdateFuture = async(std::launch::async, [&]() { joystickUpdateLoop(); });
-
-    if (autoRun)
-        run();
 }
 
 /*************/
@@ -74,11 +72,10 @@ Scene::~Scene()
     lockTexture.unlock();
     _textureUploadFuture.get();
 
-    _joystickUpdateFuture.get();
-
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    lock_guard<recursive_mutex> lockSet(_setMutex); // We don't want our objects to be set while destroyed
+    lock_guard<recursive_mutex> lockSet(_setMutex);         // We don't want our objects to be set while destroyed
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
     _objects.clear();
     _ghostObjects.clear();
     _mainWindow->releaseContext();
@@ -197,7 +194,7 @@ Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
     }
 
     // Ask the World if it knows more about this object
-    if (values.size() == 0 || values[0].asString() == "")
+    if (values.size() == 0 || values[0].as<string>() == "")
     {
         auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
         if (answer.size() != 0)
@@ -359,65 +356,64 @@ void Scene::remove(string name)
 /*************/
 void Scene::render()
 {
-    bool isError{false};
-    vector<unsigned int> threadIds;
-
-    // Compute the blending
-    Timer::get() << "blending";
+    // Create lists of objects to update and to render
+    map<Priority, vector<shared_ptr<BaseObject>>> objectList{};
     for (auto& obj : _objects)
-        if (obj.second->getType() == "blender")
-            dynamic_pointer_cast<Blender>(obj.second)->render();
-    Timer::get() >> "blending";
+    {
+        auto priority = obj.second->getRenderingPriority();
+        if (priority == Priority::NO_RENDER)
+            continue;
 
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
+        auto listIt = objectList.find(priority);
+        if (listIt == objectList.end())
+        {
+            auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
+            if (entry.second == true)
+                listIt = entry.first;
+            else
+                continue;
+        }
 
-    Timer::get() << "queues";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "queue")
-            dynamic_pointer_cast<QueueSurrogate>(obj.second)->update();
-    Timer::get() >> "queues";
+        listIt->second.push_back(obj.second);
+    }
 
-    Timer::get() << "filters";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "filter")
-            dynamic_pointer_cast<Filter>(obj.second)->update();
-    Timer::get() >> "filters";
+    // Update and render the objects
+    // See BaseObject::getRenderingPriority() for precision about priorities
+    for (auto& objPriority : objectList)
+    {
+        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+            _textureUploadMutex.lock();
 
-    Timer::get() << "cameras";
-    // We wait for textures to be uploaded, and we prevent any upload while rendering
-    // cameras to prevent tearing
-    glFlush();
-    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-    glDeleteSync(_textureUploadFence);
+        // If the objects needs some Textures, we need to sync
+        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        {
+            // We wait for textures to be uploaded, and we prevent any upload while rendering
+            // cameras to prevent tearing
+            glFlush();
+            glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+            glDeleteSync(_textureUploadFence);
+        }
 
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "camera")
-            isError |= dynamic_pointer_cast<Camera>(obj.second)->render();
-    Timer::get() >> "cameras";
+        if (objPriority.second.size() != 0)
+            Timer::get() << objPriority.second[0]->getType();
 
-    _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        for (auto& obj : objPriority.second)
+        {
+            obj->update();
+            obj->render();
+        }
 
-    Timer::get() << "warps";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "warp")
-            dynamic_pointer_cast<Warp>(obj.second)->update();
-    Timer::get() >> "warps";
+        if (objPriority.second.size() != 0)
+            Timer::get() >> objPriority.second[0]->getType();
 
-    lockTexture.unlock(); // Unlock _textureUploadMutex
+        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        {
+            _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        }
 
-    // Update the gui
-    Timer::get() << "gui";
-    if (_gui != nullptr)
-        isError |= _gui->render();
-    Timer::get() >> "gui";
-
-    // Update the windows
-    Timer::get() << "windows";
-    glFinish();
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            isError |= dynamic_pointer_cast<Window>(obj.second)->render();
-    Timer::get() >> "windows";
+        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+            _textureUploadMutex.unlock();
+    }
 
     // Swap all buffers at once
     Timer::get() << "swap";
@@ -430,6 +426,8 @@ void Scene::render()
 /*************/
 void Scene::run()
 {
+    _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
+
     while (_isRunning)
     {
         {
@@ -453,127 +451,32 @@ void Scene::run()
             _mainWindow->setAsCurrentContext();
             render();
             _mainWindow->releaseContext();
-            updateInputs();
         }
 
         Timer::get() >> "sceneLoop";
+
+        Timer::get() << "inputsUpdate";
+        updateInputs();
+        Timer::get() >> "inputsUpdate";
     }
 }
 
 /*************/
 void Scene::updateInputs()
 {
-    // Update the user events
     glfwPollEvents();
-    // Mouse position
-    {
-        GLFWwindow* win;
-        int xpos, ypos;
-        Window::getMousePos(win, xpos, ypos);
-        if (_gui != nullptr)
-            _gui->mousePosition(xpos, ypos);
-    }
 
-    // Mouse events
-    while (true)
-    {
-        GLFWwindow* win;
-        int btn, action, mods;
-        if (!Window::getMouseBtn(win, btn, action, mods))
-            break;
+    auto keyboard = dynamic_pointer_cast<Keyboard>(_keyboard);
+    if (keyboard)
+        _gui->setKeyboardState(keyboard->getState(_name));
 
-        if (_gui != nullptr)
-            _gui->mouseButton(btn, action, mods);
-    }
+    auto mouse = dynamic_pointer_cast<Mouse>(_mouse);
+    if (mouse)
+        _gui->setMouseState(mouse->getState(_name));
 
-    // Scrolling events
-    while (true)
-    {
-        GLFWwindow* win;
-        double xoffset, yoffset;
-        if (!Window::getScroll(win, xoffset, yoffset))
-            break;
-
-        if (_gui != nullptr)
-            _gui->mouseScroll(xoffset, yoffset);
-    }
-
-    // Keyboard events
-    while (true)
-    {
-        GLFWwindow* win;
-        int key, action, mods;
-        if (!Window::getKeys(win, key, action, mods))
-            break;
-
-        // Find where this action happened
-        shared_ptr<Window> eventWindow;
-        for (auto& w : _objects)
-            if (w.second->getType() == "window")
-            {
-                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
-                if (window->isWindow(win))
-                    eventWindow = window;
-            }
-
-        if (key == GLFW_KEY_F)
-        {
-            if (mods == GLFW_MOD_ALT && action == GLFW_PRESS)
-                if (eventWindow.get() != nullptr)
-                {
-                    eventWindow->switchFullscreen();
-                    continue;
-                }
-        }
-
-        // Send the action to the GUI
-        if (_gui != nullptr)
-            _gui->key(key, action, mods);
-    }
-
-    // Unicode characters events
-    while (true)
-    {
-        GLFWwindow* win;
-        unsigned int unicodeChar;
-        if (!Window::getChars(win, unicodeChar))
-            break;
-
-        // Find where this action happened
-        shared_ptr<Window> eventWindow;
-        for (auto& w : _objects)
-            if (w.second->getType() == "window")
-            {
-                shared_ptr<Window> window = dynamic_pointer_cast<Window>(w.second);
-                if (window->isWindow(win))
-                    eventWindow = window;
-            }
-
-        // Send the action to the GUI
-        if (_gui != nullptr)
-            _gui->unicodeChar(unicodeChar);
-    }
-
-    // Joystick state
-    if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
-    {
-        lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
-        _gui->setJoystick(_joystickAxes, _joystickButtons);
-        _joystickAxes.clear();
-    }
-
-    // Any file dropped onto the window? Then load it.
-    auto paths = Window::getPathDropped();
-    if (paths.size() != 0)
-    {
-        sendMessageToWorld("loadConfig", {paths[0]});
-    }
-
-    // Check if we should quit
+    // Check if we should quit.
     if (Window::getQuitFlag())
-    {
         sendMessageToWorld("quit");
-    }
 }
 
 /*************/
@@ -630,9 +533,26 @@ void Scene::setAsMaster(string configFilePath)
 
     _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, _self);
-    _gui->setName("gui");
-    _gui->setConfigFilePath(configFilePath);
+    if (_gui)
+    {
+        _gui->setName("gui");
+        _gui->setConfigFilePath(configFilePath);
+        _objects["gui"] = _gui;
+    }
     _mainWindow->releaseContext();
+
+    _keyboard = make_shared<Keyboard>(_self);
+    _mouse = make_shared<Mouse>(_self);
+    _joystick = make_shared<Joystick>(_self);
+    _dragndrop = make_shared<DragNDrop>(_self);
+    if (_keyboard)
+        _objects["keyboard"] = _keyboard;
+    if (_mouse)
+        _objects["mouse"] = _mouse;
+    if (_joystick)
+        _objects["joystick"] = _joystick;
+    if (_dragndrop)
+        _objects["dragndrop"] = _dragndrop;
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
@@ -861,38 +781,6 @@ void Scene::init(std::string name)
 }
 
 /*************/
-void Scene::joystickUpdateLoop()
-{
-    while (_isRunning)
-    {
-        if (_isMaster && glfwJoystickPresent(GLFW_JOYSTICK_1))
-        {
-            int count;
-            const float* bufferAxes = glfwGetJoystickAxes(GLFW_JOYSTICK_1, &count);
-            auto axes = vector<float>(bufferAxes, bufferAxes + count);
-
-            for (auto& v : axes)
-                if (abs(v) < 0.2f)
-                    v = 0.f;
-
-            const uint8_t* bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1, &count);
-            auto buttons = vector<uint8_t>(bufferButtons, bufferButtons + count);
-
-            lock_guard<mutex> lockJoystick(_joystickUpdateMutex);
-
-            // We accumulate values until they are used by the render loop
-            _joystickAxes.swap(axes);
-            for (int i = 0; i < std::min(_joystickAxes.size(), axes.size()); ++i)
-                _joystickAxes[i] += axes[i];
-
-            _joystickButtons.swap(buttons);
-        }
-
-        this_thread::sleep_for(chrono::microseconds(16667));
-    }
-}
-
-/*************/
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
     Log::get() << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
@@ -945,8 +833,8 @@ void Scene::registerAttributes()
     addAttribute("add",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].asString();
-                string name = args[1].asString();
+                string type = args[0].as<string>();
+                string name = args[1].as<string>();
                 add(type, name);
             });
 
@@ -958,8 +846,8 @@ void Scene::registerAttributes()
     addAttribute("addGhost",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].asString();
-                string name = args[1].asString();
+                string type = args[0].as<string>();
+                string name = args[1].as<string>();
                 addGhost(type, name);
             });
 
@@ -995,7 +883,7 @@ void Scene::registerAttributes()
                     blender = blenderIt->second;
                 }
 
-                std::string blendingMode = args[0].asString();
+                std::string blendingMode = args[0].as<string>();
                 blender->setAttribute("mode", args);
             });
             return true;
@@ -1024,7 +912,7 @@ void Scene::registerAttributes()
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-                auto objectName = args[0].asString();
+                auto objectName = args[0].as<string>();
 
                 auto objectIt = _objects.find(objectName);
                 for (auto& localObject : _objects)
@@ -1050,7 +938,7 @@ void Scene::registerAttributes()
 
     addAttribute("duration",
         [&](const Values& args) {
-            Timer::get().setDuration(args[0].asString(), args[1].asInt());
+            Timer::get().setDuration(args[0].as<string>(), args[1].as<int>());
             return true;
         },
         {'s', 'n'});
@@ -1069,7 +957,7 @@ void Scene::registerAttributes()
             addTask([=]() {
                 for (auto& obj : _objects)
                     if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].asInt())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].as<int>())});
             });
 
             return true;
@@ -1080,7 +968,7 @@ void Scene::registerAttributes()
     addAttribute("getObjectsNameByType",
         [&](const Values& args) {
             addTask([=]() {
-                string type = args[0].asString();
+                string type = args[0].as<string>();
                 Values list = getObjectsNameByType(type);
                 sendMessageToWorld("answerMessage", {"getObjectsNameByType", _name, list});
             });
@@ -1093,8 +981,8 @@ void Scene::registerAttributes()
     addAttribute("link",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 link(src, dst);
             });
 
@@ -1106,8 +994,8 @@ void Scene::registerAttributes()
     addAttribute("linkGhost",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 linkGhost(src, dst);
             });
 
@@ -1118,7 +1006,7 @@ void Scene::registerAttributes()
 
     addAttribute("log",
         [&](const Values& args) {
-            Log::get().setLog(args[0].asString(), (Log::Priority)args[1].asInt());
+            Log::get().setLog(args[0].as<string>(), (Log::Priority)args[1].as<int>());
             return true;
         },
         {'s', 'n'});
@@ -1134,7 +1022,7 @@ void Scene::registerAttributes()
     addAttribute("remove",
         [&](const Values& args) {
             addTask([=]() {
-                string name = args[1].asString();
+                string name = args[1].as<string>();
                 remove(name);
             });
 
@@ -1145,8 +1033,8 @@ void Scene::registerAttributes()
 
     addAttribute("renameObject",
         [&](const Values& args) {
-            auto name = args[0].asString();
-            auto newName = args[1].asString();
+            auto name = args[0].as<string>();
+            auto newName = args[1].as<string>();
 
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
@@ -1168,8 +1056,8 @@ void Scene::registerAttributes()
     addAttribute("setGhost",
         [&](const Values& args) {
             addTask([=]() {
-                string name = args[0].asString();
-                string attr = args[1].asString();
+                string name = args[0].as<string>();
+                string attr = args[1].as<string>();
                 Values values;
                 for (int i = 2; i < args.size(); ++i)
                     values.push_back(args[i]);
@@ -1187,7 +1075,7 @@ void Scene::registerAttributes()
         if (args.size() == 0)
             setAsMaster();
         else
-            setAsMaster(args[0].asString());
+            setAsMaster(args[0].as<string>());
         return true;
     });
     setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
@@ -1207,7 +1095,7 @@ void Scene::registerAttributes()
 
     addAttribute("swapInterval",
         [&](const Values& args) {
-            _swapInterval = max(-1, args[0].asInt());
+            _swapInterval = max(-1, args[0].as<int>());
             return true;
         },
         [&]() -> Values { return {(int)_swapInterval}; },
@@ -1242,8 +1130,8 @@ void Scene::registerAttributes()
     addAttribute("unlink",
         [&](const Values& args) {
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 unlink(src, dst);
             });
 
@@ -1258,8 +1146,8 @@ void Scene::registerAttributes()
                 return false;
 
             addTask([=]() {
-                string src = args[0].asString();
-                string dst = args[1].asString();
+                string src = args[0].as<string>();
+                string dst = args[1].as<string>();
                 unlinkGhost(src, dst);
             });
 
@@ -1273,10 +1161,10 @@ void Scene::registerAttributes()
             addTask([=]() {
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
                 for (auto& obj : _ghostObjects)
                     if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].asInt())});
+                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
             });
 
             return true;
@@ -1309,8 +1197,8 @@ void Scene::registerAttributes()
 #if HAVE_LINUX
     addAttribute("sceneAffinity",
         [&](const Values& args) {
-            auto core = args[0].asInt();
-            auto rootObjectCount = args[1].asInt();
+            auto core = args[0].as<int>();
+            auto rootObjectCount = args[1].as<int>();
 
             addTask([=]() {
                 if (Utils::setAffinity({core}))

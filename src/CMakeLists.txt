@@ -73,9 +73,9 @@ if (APPLE)
     add_dependencies(splash-${API_VERSION} Syphon)
 endif()
 
-target_compile_features(splash-${API_VERSION} PRIVATE cxx_variadic_templates)
 target_sources(
     splash-${API_VERSION} PRIVATE
+    basetypes.cpp
     camera.cpp
     cgUtils.cpp
     controller.cpp
@@ -97,6 +97,11 @@ target_sources(
     texture.cpp
     texture_image.cpp
     threadpool.cpp
+    userInput.cpp
+    userInput_dragndrop.cpp
+    userInput_joystick.cpp
+    userInput_keyboard.cpp
+    userInput_mouse.cpp
     warp.cpp
     widget.cpp
     widget_control.cpp

@@ -11,9 +11,11 @@ namespace Splash
 {
 
 /*************/
-Blender::Blender(std::weak_ptr<RootObject> root) : ControllerObject(root)
+Blender::Blender(std::weak_ptr<RootObject> root)
+    : ControllerObject(root)
 {
     _type = "blender";
+    _renderingPriority = Priority::BLENDING;
     registerAttributes();
 }
 
@@ -23,7 +25,7 @@ Blender::~Blender()
 }
 
 /*************/
-void Blender::render()
+void Blender::update()
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     auto isMaster = scene->isMaster();
@@ -129,7 +131,7 @@ void Blender::registerAttributes()
 {
     addAttribute("mode",
         [&](const Values& args) {
-            auto mode = args[0].asString();
+            auto mode = args[0].as<string>();
             if (mode == "none")
             {
                 _computeBlending = false;

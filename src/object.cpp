@@ -568,7 +568,7 @@ void Object::registerAttributes()
 {
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
-            _vertexBlendingActive = args[0].asInt();
+            _vertexBlendingActive = args[0].as<int>();
             return true;
         },
         {'n'});
@@ -576,7 +576,7 @@ void Object::registerAttributes()
 
     addAttribute("position",
         [&](const Values& args) {
-            _position = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+            _position = glm::dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
             return true;
         },
         [&]() -> Values {
@@ -587,7 +587,7 @@ void Object::registerAttributes()
 
     addAttribute("rotation",
         [&](const Values& args) {
-            _rotation = glm::dvec3(args[0].asFloat() * M_PI / 180.0, args[1].asFloat() * M_PI / 180.0, args[2].asFloat() * M_PI / 180.0);
+            _rotation = glm::dvec3(args[0].as<float>() * M_PI / 180.0, args[1].as<float>() * M_PI / 180.0, args[2].as<float>() * M_PI / 180.0);
             return true;
         },
         [&]() -> Values {
@@ -599,9 +599,9 @@ void Object::registerAttributes()
     addAttribute("scale",
         [&](const Values& args) {
             if (args.size() < 3)
-                _scale = glm::dvec3(args[0].asFloat(), args[0].asFloat(), args[0].asFloat());
+                _scale = glm::dvec3(args[0].as<float>(), args[0].as<float>(), args[0].as<float>());
             else
-                _scale = glm::dvec3(args[0].asFloat(), args[1].asFloat(), args[2].asFloat());
+                _scale = glm::dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());
 
             return true;
         },
@@ -613,7 +613,7 @@ void Object::registerAttributes()
 
     addAttribute("sideness",
         [&](const Values& args) {
-            _sideness = args[0].asInt();
+            _sideness = args[0].as<int>();
             return true;
         },
         [&]() -> Values { return {_sideness}; },
@@ -622,7 +622,7 @@ void Object::registerAttributes()
 
     addAttribute("fill",
         [&](const Values& args) {
-            _fill = args[0].asString();
+            _fill = args[0].as<string>();
             return true;
         },
         [&]() -> Values { return {_fill}; },
@@ -632,7 +632,7 @@ void Object::registerAttributes()
 
     addAttribute("color",
         [&](const Values& args) {
-            _color = glm::dvec4(args[0].asFloat(), args[1].asFloat(), args[2].asFloat(), args[3].asFloat());
+            _color = glm::dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
         {'n', 'n', 'n', 'n'});
@@ -640,7 +640,7 @@ void Object::registerAttributes()
 
     addAttribute("normalExponent",
         [&](const Values& args) {
-            _normalExponent = args[0].asFloat();
+            _normalExponent = args[0].as<float>();
             return true;
         },
         [&]() -> Values { return {_normalExponent}; },

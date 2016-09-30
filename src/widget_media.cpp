@@ -67,8 +67,8 @@ void GuiMedia::render()
                             int deleteIndex = -1;
                             for (auto& source : playlist)
                             {
-                                auto values = source.asValues();
-                                auto idStack = to_string(index) + values[0].asString();
+                                auto values = source.as<Values>();
+                                auto idStack = to_string(index) + values[0].as<string>();
 
                                 ImGui::PushID((idStack + "delete").c_str());
                                 if (ImGui::Button("-"))
@@ -80,7 +80,7 @@ void GuiMedia::render()
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
                                 ImGui::PushID((idStack + "media_type").c_str());
-                                ImGui::Text(_mediaTypesReversed[values[0].asString()].c_str());
+                                ImGui::Text(_mediaTypesReversed[values[0].as<string>()].c_str());
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media type");
                                 ImGui::PopID();
@@ -88,7 +88,7 @@ void GuiMedia::render()
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
-                                float tmp = values[2].asFloat();
+                                float tmp = values[2].as<float>();
                                 ImGui::PushID((idStack + "start").c_str());
                                 if (ImGui::InputFloat("", &tmp, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
@@ -102,7 +102,7 @@ void GuiMedia::render()
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
-                                tmp = values[3].asFloat();
+                                tmp = values[3].as<float>();
                                 ImGui::PushID((idStack + "stop").c_str());
                                 if (ImGui::InputFloat("", &tmp, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
@@ -117,7 +117,7 @@ void GuiMedia::render()
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(-0.01f);
                                 ImGui::PushID((idStack + "path").c_str());
-                                ImGui::Text(values[1].asString().c_str());
+                                ImGui::Text(values[1].as<string>().c_str());
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media path");
                                 ImGui::PopID();
@@ -177,7 +177,7 @@ void GuiMedia::render()
                         ImGui::PopID();
                         ImGui::PopItemWidth();
 
-                        string filepath = _newMedia[1].asString();
+                        string filepath = _newMedia[1].as<string>();
                         filepath.resize(512);
                         ImGui::SameLine();
                         ImGui::PushItemWidth(-32.f);

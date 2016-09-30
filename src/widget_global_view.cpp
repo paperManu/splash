@@ -12,12 +12,48 @@ namespace Splash
 {
 
 /*************/
+void GuiGlobalView::captureJoystick()
+{
+    if (_joystickCaptured)
+        return;
+
+    UserInput::setCallback(UserInput::State("joystick_0_buttons"), [&](const UserInput::State& state) {
+        lock_guard<mutex> lock(_joystickMutex);
+        _joyButtons.clear();
+        for (auto& b : state.value)
+            _joyButtons.push_back(b.as<int>());
+    });
+
+    UserInput::setCallback(UserInput::State("joystick_0_axes"), [&](const UserInput::State& state) {
+        lock_guard<mutex> lock(_joystickMutex);
+        _joyAxes.resize(state.value.size(), 0.f);
+        for (int i = 0; i < _joyAxes.size(); ++i)
+            _joyAxes[i] += state.value[i].as<float>();
+    });
+
+    _joystickCaptured = true;
+}
+
+/*************/
+void GuiGlobalView::releaseJoystick()
+{
+    if (!_joystickCaptured)
+        return;
+
+    UserInput::resetCallback(UserInput::State("joystick_0_buttons"));
+    UserInput::resetCallback(UserInput::State("joystick_0_axes"));
+
+    _joystickCaptured = false;
+}
+
+/*************/
 void GuiGlobalView::render()
 {
     ImGuiIO& io = ImGui::GetIO();
 
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
+        captureJoystick();
         if (ImGui::Button("Calibrate camera"))
             doCalibration();
         if (ImGui::IsItemHovered())
@@ -69,7 +105,7 @@ void GuiGlobalView::render()
             camera->getAttribute("size", size);
 
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
-            int h = w * size[1].asInt() / size[0].asInt();
+            int h = w * size[1].as<int>() / size[0].as<int>();
 
             if (ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             {
@@ -112,7 +148,7 @@ void GuiGlobalView::render()
             _camera->getAttribute("size", size);
 
             int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-            int h = w * size[1].asInt() / size[0].asInt();
+            int h = w * size[1].as<int>() / size[0].as<int>();
 
             _camWidth = w;
             _camHeight = h;
@@ -121,22 +157,25 @@ void GuiGlobalView::render()
 
             ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())
-            {
                 _noMove = true;
-                processKeyEvents();
-                processMouseEvents();
-                processJoystickState();
-            }
             else
-            {
                 _noMove = false;
-            }
+
+            processKeyEvents();
+            processMouseEvents();
         }
         ImGui::EndChild();
 
         // Applying options which should not be visible inside the GUI
         hideOtherCameras(_hideCameras);
         colorizeCameraWireframes(_camerasColorized);
+
+        // Joystick can be updated independently from the mouse position
+        processJoystickState();
+    }
+    else
+    {
+        releaseJoystick();
     }
 }
 
@@ -369,7 +408,7 @@ void GuiGlobalView::hideOtherCameras(bool hide)
 /*************/
 void GuiGlobalView::processJoystickState()
 {
-
+    lock_guard<mutex> lock(_joystickMutex);
     float speed = 1.f;
 
     // Buttons
@@ -428,8 +467,10 @@ void GuiGlobalView::processJoystickState()
 /*************/
 void GuiGlobalView::processKeyEvents()
 {
-    ImGuiIO& io = ImGui::GetIO();
+    if (!ImGui::IsItemHoveredRect())
+        return;
 
+    ImGuiIO& io = ImGui::GetIO();
     if (io.KeysDown[' '] && io.KeysDownDuration[' '] == 0.0)
     {
         nextCamera();
@@ -509,45 +550,80 @@ void GuiGlobalView::processMouseEvents()
     // Get mouse pos
     ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / _camWidth, -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / _camHeight);
 
-    if (io.MouseDown[0])
+    if (ImGui::IsItemHoveredRect())
     {
-        // If selected camera is guiCamera, do nothing
-        if (_camera == _guiCamera)
-            return;
+        // Vertex selection
+        if (io.MouseDown[0])
+        {
+            // If selected camera is guiCamera, do nothing
+            if (_camera == _guiCamera)
+                return;
 
-        // Set a calibration point
-        if (io.KeyCtrl && io.MouseClicked[0])
-        {
-            Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
-            if (position.size() == 3)
-                setObject(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
-        }
-        else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
-            setObject(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
-        else if (io.MouseClicked[0]) // Add a new calibration point
-        {
-            Values position = _camera->pickVertexOrCalibrationPoint(mousePos.x, mousePos.y);
-            if (position.size() == 3)
+            // Set a calibration point
+            if (io.KeyCtrl && io.MouseClicked[0])
             {
-                setObject(_camera->getName(), "addCalibrationPoint", {position[0], position[1], position[2]});
-                _previousPointAdded = position;
+                Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
+                if (position.size() == 3)
+                    setObject(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
             }
-            else
-                setObject(_camera->getName(), "deselectCalibrationPoint", {});
+            else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
+                setObject(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
+            else if (io.MouseClicked[0]) // Add a new calibration point
+            {
+                Values position = _camera->pickVertexOrCalibrationPoint(mousePos.x, mousePos.y);
+                if (position.size() == 3)
+                {
+                    setObject(_camera->getName(), "addCalibrationPoint", {position[0], position[1], position[2]});
+                    _previousPointAdded = position;
+                }
+                else
+                    setObject(_camera->getName(), "deselectCalibrationPoint", {});
+            }
+            return;
         }
-        return;
-    }
-    if (io.MouseClicked[1])
-    {
-        float fragDepth = 0.f;
-        _newTarget = _camera->pickFragment(mousePos.x, mousePos.y, fragDepth);
 
-        if (fragDepth == 0.f)
-            _newTargetDistance = 1.f;
-        else
-            _newTargetDistance = -fragDepth * 0.1f;
+        // Calibration point set
+        if (io.MouseClicked[1])
+        {
+            float fragDepth = 0.f;
+            _newTarget = _camera->pickFragment(mousePos.x, mousePos.y, fragDepth);
+
+            if (fragDepth == 0.f)
+                _newTargetDistance = 1.f;
+            else
+                _newTargetDistance = -fragDepth * 0.1f;
+        }
+
+        if (io.MouseWheel != 0)
+        {
+            Values fov;
+            _camera->getAttribute("fov", fov);
+            auto camFov = fov[0].as<float>();
+
+            camFov += io.MouseWheel;
+            camFov = std::max(2.f, std::min(180.f, camFov));
+
+            if (_camera != _guiCamera)
+                setObject(_camera->getName(), "fov", {camFov});
+            else
+                _camera->setAttribute("fov", {camFov});
+        }
     }
+
+    // This handles the mouse capture even when the mouse goes outside the view widget, which controls are defined next
+    static bool viewCaptured = false;
     if (io.MouseDownDuration[1] > 0.0)
+    {
+        if (ImGui::IsItemHovered())
+            viewCaptured = true;
+    }
+    else if (viewCaptured)
+    {
+        viewCaptured = false;
+    }
+
+    // View widget controls
+    if (viewCaptured)
     {
         // Move the camera
         if (!io.KeyCtrl && !io.KeyShift)
@@ -558,14 +634,14 @@ void GuiGlobalView::processMouseEvents()
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    setObject(_camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    setObject(_camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
                     setObject(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
             else
             {
                 if (_newTarget.size() == 3)
-                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].asFloat(), _newTarget[1].asFloat(), _newTarget[2].asFloat()});
+                    _camera->setAttribute("rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
                     _camera->setAttribute("rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
@@ -588,20 +664,6 @@ void GuiGlobalView::processMouseEvents()
             else
                 _camera->setAttribute("forward", {dy});
         }
-    }
-    if (io.MouseWheel != 0)
-    {
-        Values fov;
-        _camera->getAttribute("fov", fov);
-        float camFov = fov[0].asFloat();
-
-        camFov += io.MouseWheel;
-        camFov = std::max(2.f, std::min(180.f, camFov));
-
-        if (_camera != _guiCamera)
-            setObject(_camera->getName(), "fov", {camFov});
-        else
-            _camera->setAttribute("fov", {camFov});
     }
 }
 

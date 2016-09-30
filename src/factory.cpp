@@ -5,7 +5,6 @@
 #include "./colorcalibrator.h"
 #endif
 #include "./controller_blender.h"
-#include "./controller_gui.h"
 #include "./filter.h"
 #include "./geometry.h"
 #include "./image.h"
@@ -92,13 +91,9 @@ vector<string> Factory::getObjectTypes()
 void Factory::registerObjects()
 {
     _objectBook["blender"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); };
-
     _objectBook["camera"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root)); };
-
     _objectBook["filter"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_root)); };
-
     _objectBook["geometry"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); };
-
     _objectBook["image"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); };
 
 #if HAVE_FFMPEG
@@ -180,7 +175,6 @@ void Factory::registerObjects()
 #endif
 
     _objectBook["warp"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); };
-
     _objectBook["window"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); };
 }
 
