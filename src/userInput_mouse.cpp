@@ -52,7 +52,7 @@ void Mouse::updateMethod()
             substate.action = "mouse_release";
             break;
         }
-        substate.value = Values({btn});
+        substate.value = Values({Value(btn)});
         substate.modifiers = mods;
         substate.window = getWindowName(win);
         _state.emplace_back(std::move(substate));

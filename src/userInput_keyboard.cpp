@@ -39,7 +39,7 @@ void Keyboard::updateMethod()
             break;
         }
 
-        substate.value = Values({key});
+        substate.value = Values({Value(key)});
         substate.modifiers = mods;
         substate.window = getWindowName(win);
 
@@ -55,7 +55,7 @@ void Keyboard::updateMethod()
 
         State substate;
         substate.action = "keyboard_unicodeChar";
-        substate.value = Values({(int)unicodeChar});
+        substate.value = Values({Value(unicodeChar)});
         substate.window = getWindowName(win);
         _state.emplace_back(std::move(substate));
     }
