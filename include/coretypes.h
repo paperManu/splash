@@ -384,19 +384,22 @@ struct Value
         _type = Type::f;
     }
 
-    Value(std::string v)
+    template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
+    Value(T v)
     {
         _s = v;
         _type = Type::s;
     }
 
-    Value(const char* c)
+    template <class T, typename std::enable_if<std::is_same<T, const char*>::value>::type* = nullptr>
+    Value(T c)
     {
         _s = std::string(c);
         _type = Type::s;
     }
 
-    Value(Values v)
+    template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
+    Value(T v)
     {
         _v = std::unique_ptr<Values>(new Values());
         *_v = v;
@@ -417,6 +420,9 @@ struct Value
                 break;
             case Type::f:
                 _f = v._f;
+                break;
+            case Type::s:
+            case Type::v:
                 break;
             }
             _s = v._s;

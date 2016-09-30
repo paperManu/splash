@@ -35,6 +35,28 @@ else()
     include_directories(../external/glad/core/include)
 endif()
 
+include_directories(${GLFW_INCLUDE_DIRS})
+include_directories(${GSL_INCLUDE_DIRS})
+include_directories(${ZMQ_INCLUDE_DIRS})
+include_directories(${SHMDATA_INCLUDE_DIRS})
+include_directories(${GPHOTO_INCLUDE_DIRS})
+include_directories(${FFMPEG_INCLUDE_DIRS})
+include_directories(${PORTAUDIO_INCLUDE_DIRS})
+include_directories(${OPENCV_INCLUDE_DIRS})
+include_directories(${SNAPPY_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS})
+
+link_directories(${GLFW_LIBRARY_DIRS})
+link_directories(${GSL_LIBRARY_DIRS})
+link_directories(${ZMQ_LIBRARY_DIRS})
+link_directories(${SHMDATA_LIBRARY_DIRS})
+link_directories(${GPHOTO_LIBRARY_DIRS})
+link_directories(${FFMPEG_LIBRARY_DIRS})
+link_directories(${PORTAUDIO_LIBRARY_DIRS})
+link_directories(${OPENCV_LIBRARY_DIRS})
+link_directories(${SNAPPY_LIBRARY_DIRS})
+link_directories(${PYTHON_LIBRARIES})
+
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
     check_attributeFunctor.cpp
