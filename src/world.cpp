@@ -271,14 +271,15 @@ void World::applyConfig()
 
     for (int i = 0; i < jsScenes.size(); ++i)
     {
-        if (jsScenes[i]["address"].asString() == string("localhost"))
+        // If no address has been specified, we consider it is localhost
+        if (!jsScenes[i].isMember("address") || jsScenes[i]["address"].asString() == string("localhost"))
         {
             if (!jsScenes[i].isMember("name"))
             {
                 Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
                 return;
             }
-            int spawn = 0;
+            int spawn = 1;
             if (jsScenes[i].isMember("spawn"))
                 spawn = jsScenes[i]["spawn"].asInt();
 
