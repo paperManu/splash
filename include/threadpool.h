@@ -44,7 +44,10 @@ class ThreadPool;
 class Worker
 {
   public:
-    Worker(ThreadPool& s) : pool(s) {}
+    Worker(ThreadPool& s)
+        : pool(s)
+    {
+    }
     void operator()();
 
   private:
@@ -67,7 +70,7 @@ class ThreadPool
     void addWorkers(unsigned int nbr);
     void setAffinity(const std::vector<int>& cores);
     void waitAllThreads();
-    void waitThreads(std::vector<unsigned int>&);
+    void waitThreads(std::vector<unsigned int>);
 
   private:
     friend class Worker;
@@ -92,8 +95,9 @@ unsigned int ThreadPool::enqueue(F f)
 {
     unsigned int id;
     {
-        // Acquire lock
-        queue_mutex.lock();
+    // Acquire lock
+    std:;
+        std::lock_guard<std::mutex> lock(queue_mutex);
 
         id = std::atomic_fetch_add(&nextId, 1u);
         if (id == std::numeric_limits<unsigned int>::max())
@@ -102,8 +106,6 @@ unsigned int ThreadPool::enqueue(F f)
         // Add the task
         tasks.push_back(std::shared_ptr<std::function<void()>>(new std::function<void()>(f)));
         tasksId.push_back(id);
-
-        queue_mutex.unlock();
     }
 
     // Wake up one thread
@@ -117,14 +119,13 @@ template <class F>
 void ThreadPool::enqueueWithoutId(F f)
 {
     {
-        // Acquire lock
-        queue_mutex.lock();
+    // Acquire lock
+    std:;
+        std::lock_guard<std::mutex> lock(queue_mutex);
 
         // Add the task
         tasks.push_back(std::shared_ptr<std::function<void()>>(new std::function<void()>(f)));
         tasksId.push_back(0);
-
-        queue_mutex.unlock();
     }
 
     // Wake up one thread

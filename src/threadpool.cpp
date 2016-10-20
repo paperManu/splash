@@ -49,10 +49,9 @@ void Worker::operator()()
         pool.workingThreads--;
 
         {
-            pool.queue_mutex.lock();
+            lock_guard<mutex> lock(pool.queue_mutex);
             if (id != 0)
                 pool.tasksFinished.push_back(id);
-            pool.queue_mutex.unlock();
         }
     }
 }
@@ -93,25 +92,23 @@ void ThreadPool::waitAllThreads()
         this_thread::sleep_for(chrono::nanoseconds((unsigned long)1e5));
         if (workingThreads == 0 && tasks.size() == 0)
         {
-            queue_mutex.lock();
+            lock_guard<mutex> lock(queue_mutex);
             tasksFinished.clear();
-            queue_mutex.unlock();
             break;
         }
     }
 }
 
 /*************/
-void ThreadPool::waitThreads(vector<unsigned int>& list)
+void ThreadPool::waitThreads(vector<unsigned int> list)
 {
     while (true)
     {
         this_thread::sleep_for(chrono::microseconds(100));
 
-        queue_mutex.lock();
+        lock_guard<mutex> lock(queue_mutex);
         if (list.size() == 0 || stop == true)
         {
-            queue_mutex.unlock();
             break;
         }
 
@@ -128,7 +125,6 @@ void ThreadPool::waitThreads(vector<unsigned int>& list)
                 break;
             }
         }
-        queue_mutex.unlock();
     }
 }
 
@@ -137,9 +133,8 @@ unsigned int ThreadPool::getTasksNumber()
 {
     int size;
     {
-        queue_mutex.lock();
+        lock_guard<mutex> lock(queue_mutex);
         size = tasks.size();
-        queue_mutex.unlock();
     }
     return size;
 }
