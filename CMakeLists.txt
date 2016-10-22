@@ -31,6 +31,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
+enable_testing()
+
 #
 # Package information
 #
@@ -56,7 +58,7 @@ pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
 pkg_search_module(PORTAUDIO portaudio-2.0)
-pkg_search_module(SHMDATA shmdata-1.2)
+pkg_search_module(SHMDATA shmdata-1.3)
 
 #
 # Configuration
