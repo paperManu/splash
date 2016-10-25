@@ -367,38 +367,39 @@ void Scene::remove(string name)
 /*************/
 void Scene::render()
 {
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
     // Create lists of objects to update and to render
     map<Priority, vector<shared_ptr<BaseObject>>> objectList{};
-    for (auto& obj : _objects)
     {
-        auto priority = obj.second->getRenderingPriority();
-        if (priority == Priority::NO_RENDER)
-            continue;
-
-        auto listIt = objectList.find(priority);
-        if (listIt == objectList.end())
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        for (auto& obj : _objects)
         {
-            auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
-            if (entry.second == true)
-                listIt = entry.first;
-            else
+            auto priority = obj.second->getRenderingPriority();
+            if (priority == Priority::NO_RENDER)
                 continue;
-        }
 
-        listIt->second.push_back(obj.second);
+            auto listIt = objectList.find(priority);
+            if (listIt == objectList.end())
+            {
+                auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
+                if (entry.second == true)
+                    listIt = entry.first;
+                else
+                    continue;
+            }
+
+            listIt->second.push_back(obj.second);
+        }
     }
 
     // Update and render the objects
     // See BaseObject::getRenderingPriority() for precision about priorities
     for (auto& objPriority : objectList)
     {
-        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::WINDOW)
             _textureUploadMutex.lock();
 
         // If the objects needs some Textures, we need to sync
-        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::POST_CAMERA)
         {
             // We wait for textures to be uploaded, and we prevent any upload while rendering
             // cameras to prevent tearing
@@ -419,12 +420,12 @@ void Scene::render()
         if (objPriority.second.size() != 0)
             Timer::get() >> objPriority.second[0]->getType();
 
-        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::POST_CAMERA)
         {
             _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         }
 
-        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::WINDOW)
             _textureUploadMutex.unlock();
     }
 
