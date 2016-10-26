@@ -1550,6 +1550,7 @@ void World::registerAttributes()
             return true;
         },
         {'s'});
+    setAttributeDescription("saveProject", "Save only the configuration of images, textures and meshes");
 
     addAttribute("loadProject",
         [&](const Values& args) {
@@ -1561,6 +1562,7 @@ void World::registerAttributes()
             return true;
         },
         {'s'});
+    setAttributeDescription("loadProject", "Load only the configuration of images, textures and meshes");
 
     addAttribute("sendAll",
         [&](const Values& args) {

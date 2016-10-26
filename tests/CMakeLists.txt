@@ -57,6 +57,7 @@ link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 
+# Unit tests (executed through 'make check')
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
     check_attributeFunctor.cpp
@@ -70,3 +71,10 @@ add_test(NAME unitTests COMMAND unitTests)
 
 add_custom_command(OUTPUT tests COMMAND unitTests)
 add_custom_target(check DEPENDS tests)
+
+# Integration tests (executed by launching Splash and checking its behavior)
+add_custom_command(OUTPUT integration_tests
+    COMMAND splash ${CMAKE_CURRENT_SOURCE_DIR}/integrationTests.json
+    DEPENDS splash splash-scene
+    )
+add_custom_target(check_integration DEPENDS integration_tests)
