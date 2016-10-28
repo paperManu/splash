@@ -118,13 +118,16 @@ So, let's start with the installation of the dependencies. Firstly download and 
 
 The following steps will be using the port command from MacPorts, you may replace it with the brew equivalent if you are more of a Homebrew user. Note that compiling with the Homebrew versions of the libraries has not been tested, so please report issues (and ideally solutions as I do not have a Mac with Homebrew...).
 
-You can now install the command line tools we will need to download and compile the sources:
+With MacPorts, install the following packages:
 
-    sudo port install automake autoconf libtool cmake git pkgconfig
+    sudo port install libtool cmake git pkgconfig gstreamer1 python35 gsl zmq glfw glm ffmpeg portaudio snappy
+
+With Homebrew, install the following packages:
+    
+    brew install libtool cmake git pkgconfig gstreamer1 python45 gsl zmq homebrew/versions/glfw3 glm portaudio ffmpeg snappy libgphoto2
 
 We then install Shmdata, which depends on GStreamer. Note that Shmdata is only needed if you want Splash to communicate with other Shmdata-compatible softwares. If you want to read video files or feed Splash through Syphon, you can skip this step.
 
-    sudo port install gstreamer1 python35
     git clone https://github.com/nicobou/shmdata
     cd shmdata
     ./autogen.sh && ./configure
@@ -132,8 +135,6 @@ We then install Shmdata, which depends on GStreamer. Note that Shmdata is only n
     cd ..
 
 Install all the other dependencies:
-
-    sudo port install gsl zmq glfw glm ffmpeg portaudio snappy
 
 And then grab and install Splash:
 
