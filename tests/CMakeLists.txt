@@ -55,7 +55,7 @@ link_directories(${FFMPEG_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
-link_directories(${PYTHON_LIBRARIES})
+link_directories(${PYTHON_LIBRARY_DIRS})
 
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
