@@ -271,14 +271,15 @@ void World::applyConfig()
 
     for (int i = 0; i < jsScenes.size(); ++i)
     {
-        if (jsScenes[i]["address"].asString() == string("localhost"))
+        // If no address has been specified, we consider it is localhost
+        if (!jsScenes[i].isMember("address") || jsScenes[i]["address"].asString() == string("localhost"))
         {
             if (!jsScenes[i].isMember("name"))
             {
                 Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
                 return;
             }
-            int spawn = 0;
+            int spawn = 1;
             if (jsScenes[i].isMember("spawn"))
                 spawn = jsScenes[i]["spawn"].asInt();
 
@@ -1106,7 +1107,7 @@ void World::registerAttributes()
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
 #if HAVE_LINUX
-    addAttribute("forceRealtime",
+    addAttribute("forceCoreAffinity",
         [&](const Values& args) {
             _enforceCoreAffinity = args[0].as<int>();
 
@@ -1127,11 +1128,6 @@ void World::registerAttributes()
                 else
                     Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set World CPU core affinity" << Log::endl;
 
-                if (Utils::setRealTime())
-                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
-
                 vector<int> cores{};
                 for (int i = sceneCount + 1; i < Utils::getCoreCount(); ++i)
                     cores.push_back(i);
@@ -1142,7 +1138,27 @@ void World::registerAttributes()
         },
         [&]() -> Values { return {(int)_enforceCoreAffinity}; },
         {'n'});
-    setAttributeDescription("forceRealtime", "Enforce the World and Scene loops onto their own cores. The thread pool will use the remaining cores.");
+    setAttributeDescription("forceCoreAffinity", "Enforce the World and Scene loops onto their own cores. The thread pool will use the remaining cores.");
+
+    addAttribute("forceRealtime",
+        [&](const Values& args) {
+            _enforceRealtime = args[0].as<int>();
+
+            if (!_enforceRealtime)
+                return true;
+
+            addTask([=]() {
+                if (Utils::setRealTime())
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
+                else
+                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
+            });
+
+            return true;
+        },
+        [&]() -> Values { return {(int)_enforceRealtime}; },
+        {'n'});
+    setAttributeDescription("forceRealtime", "Ask the scheduler to run Splash with realtime priority.");
 #endif
 
     addAttribute("framerate",

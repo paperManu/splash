@@ -98,6 +98,7 @@ class World : public RootObject
     std::string _executionPath{""};
     std::mutex _configurationMutex;
     bool _enforceCoreAffinity{false}; //!< If true, World and Scenes have their affinity fixed in specific, separate cores
+    bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 
     // World parameters
     unsigned int _worldFramerate{60};

@@ -45,8 +45,9 @@ class GuiGlobalView : public GuiWidget
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
     void setScene(std::weak_ptr<Scene> scene) { _scene = scene; }
 
-  protected:
-    std::shared_ptr<Camera> _camera, _guiCamera;
+  private:
+    std::shared_ptr<Camera> _camera{nullptr};
+    std::shared_ptr<Camera> _guiCamera{nullptr};
     std::weak_ptr<Scene> _scene;
     bool _camerasHidden{false};
     bool _beginDrag{true};
@@ -54,6 +55,7 @@ class GuiGlobalView : public GuiWidget
 
     bool _hideCameras{false};
     bool _camerasColorized{false};
+    bool _camerasColorizedPreviousValue{false};
 
     // Size of the view
     int _camWidth{0}, _camHeight{0};

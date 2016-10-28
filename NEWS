@@ -1,6 +1,23 @@
 Splash release notes
 ===================
 
+Splash 0.4.10 (2016-10-28)
+-------------------------
+Improvements:
+* Separated RT scheduling and core affinity options
+* Added a template realtime.conf to be put in /etc/security/limits.d
+* Cleaned up the threadpool
+* Updated shmdata dependency to version 1.3
+
+Bug fixed:
+* Fix: issue when deleting an image_shmdata object
+* Fix: texture upload loop crash when deleting a texture object
+* Fix: freeze of the engine (not the gui) when saving configuration while having a camera selected in the calibration view
+* Fix: blending crash issue when using multiple GPUs
+* Fix: Controller::getObjectTypes returned the local type, instead of the remote type
+* Fix: localhost address is now the default option when none is specified.
+* Fix: updated default spawn value
+
 Splash 0.4.8 (2016-09-30)
 -------------------------
 New features:

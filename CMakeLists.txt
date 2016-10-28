@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.8
+    VERSION 0.4.10
     LANGUAGES C CXX
 )
 
@@ -30,6 +30,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
+
+enable_testing()
 
 #
 # Package information
@@ -49,14 +51,21 @@ pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 
 # Optional dependencies
-set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
-find_package(PythonLibs)
+if(UNIX AND NOT APPLE)
+    set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
+    find_package(PythonLibs)
+elseif(APPLE)
+    pkg_check_modules(PYTHON python3)
+    set(PYTHONLIBS_VERSION_STRING ${PYTHON_VERSION})
+    set(PYTHONLIBS_FOUND ${PYTHON_FOUND})
+endif()
+
 find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
 pkg_search_module(PORTAUDIO portaudio-2.0)
-pkg_search_module(SHMDATA shmdata-1.2)
+pkg_search_module(SHMDATA shmdata-1.3)
 
 #
 # Configuration

@@ -20,6 +20,7 @@
 #include "timer.h"
 
 #define SPLASH_SHMDATA_THREADS 2
+#define SPLASH_SHMDATA_WITH_POOL 0 // FIXME: there is an issue with the threadpool in the shmdata callback
 
 using namespace std;
 
@@ -36,6 +37,7 @@ Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
 /*************/
 Image_Shmdata::~Image_Shmdata()
 {
+    _reader.reset();
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image_Shmdata::~Image_Shmdata - Destructor" << Log::endl;
 #endif
@@ -104,52 +106,7 @@ void Image_Shmdata::onCaps(const string& dataType)
         }
         catch (const regex_error& e)
         {
-            auto errorString = string();
-            switch (e.code())
-            {
-            default:
-                errorString = "unknown error";
-                break;
-            case regex_constants::error_collate:
-                errorString = "the expression contains an invalid collating element name";
-                break;
-            case regex_constants::error_ctype:
-                errorString = "the expression contains an invalid character class name";
-                break;
-            case regex_constants::error_escape:
-                errorString = "the expression contains an invalid escaped character or a trailing escape";
-                break;
-            case regex_constants::error_backref:
-                errorString = "the expression contains an invalid back reference";
-                break;
-            case regex_constants::error_brack:
-                errorString = "the expression contains mismatched square brackets ('[' and ']')";
-                break;
-            case regex_constants::error_paren:
-                errorString = "the expression contains mismatched parentheses ('(' and ')')";
-                break;
-            case regex_constants::error_brace:
-                errorString = "the expression contains mismatched curly braces ('{' and '}')";
-                break;
-            case regex_constants::error_badbrace:
-                errorString = "the expression contains an invalid range in a {} expression";
-                break;
-            case regex_constants::error_range:
-                errorString = "the expression contains an invalid character range (e.g. [b-a])";
-                break;
-            case regex_constants::error_space:
-                errorString = "there was not enough m2emory to convert the expression into a finite state machine";
-                break;
-            case regex_constants::error_badrepeat:
-                errorString = "one of *?+{ was not preceded by a valid regular expression";
-                break;
-            case regex_constants::error_complexity:
-                errorString = "the complexity of an attempted match exceeded a predefined level";
-                break;
-            case regex_constants::error_stack:
-                errorString = "there was not enough memory to perform a match";
-                break;
-            }
+            auto errorString = e.what(); // string();
             Log::get() << Log::WARNING << "Image_Shmdata::" << __FUNCTION__ << " - Regex error: " << errorString << Log::endl;
             return;
         }
@@ -331,11 +288,11 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
     if (!_isYUV && (_channels == 3 || _channels == 4))
     {
         char* pixels = (char*)(_readerBuffer).data();
-        vector<unsigned int> threadIds;
+        vector<thread> threads;
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             int size = _width * _height * _channels * sizeof(char);
-            threadIds.push_back(SThread::pool.enqueue([=]() {
+            threads.push_back(thread([=]() {
                 int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (size - size / SPLASH_SHMDATA_THREADS * block < 2 * size / SPLASH_SHMDATA_THREADS)
                     sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
@@ -345,7 +302,9 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                 memcpy(pixels + size / SPLASH_SHMDATA_THREADS * block, (const char*)data + size / SPLASH_SHMDATA_THREADS * block, sizeOfBlock);
             }));
         }
-        SThread::pool.waitThreads(threadIds);
+        for (auto& t : threads)
+            if (t.joinable())
+                t.join();
     }
     else if (_is420)
     {
@@ -354,14 +313,22 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
         const unsigned char* V = (const unsigned char*)data + _width * _height * 5 / 4;
 
         char* pixels = (char*)(_readerBuffer).data();
-        vector<unsigned int> threadIds;
+#if SPLASH_SHMDATA_WITH_POOL
+        vector<uint32_t> threadIds;
+#else
+        vector<thread> threads;
+#endif
 #ifdef HAVE_SSE2
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             int width = _width;
             int height = _height;
 
+#if SPLASH_SHMDATA_WITH_POOL
             threadIds.push_back(SThread::pool.enqueue([=]() {
+#else
+            threads.push_back(thread([=]() {
+#endif
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
                     lastLine = _height;
@@ -415,7 +382,11 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
 #else
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
+#if SPLASH_SHMDATA_WITH_POOL
             threadIds.push_back(SThread::pool.enqueue([=]() {
+#else
+            threads.push_back(thread([=]() {
+#endif
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
                     lastLine = _height;
@@ -448,21 +419,35 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
             }));
         }
 #endif
+#if SPLASH_SHMDATA_WITH_POOL
         SThread::pool.waitThreads(threadIds);
+#else
+        for (auto& t : threads)
+            if (t.joinable())
+                t.join();
+#endif
     }
     else if (_is422)
     {
         const unsigned char* YUV = (const unsigned char*)data;
 
         char* pixels = (char*)(_readerBuffer).data();
-        vector<unsigned int> threadIds;
+#if SPLASH_SHMDATA_WITH_POOL
+        vector<uint32_t> threadIds;
+#else
+        vector<thread> threads;
+#endif
 #ifdef HAVE_SSE2
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             int width = _width;
             int height = _height;
 
+#if SPLASH_SHMDATA_WITH_POOL
             threadIds.push_back(SThread::pool.enqueue([=]() {
+#else
+            threads.push_back(thread([=]() {
+#endif
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
                     lastLine = _height;
@@ -511,7 +496,11 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
 #else
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
+#if SPLASH_SHMDATA_WITH_POOL
             threadIds.push_back(SThread::pool.enqueue([=]() {
+#else
+            threads.push_back(thread([=]() {
+#endif
                 int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
                     lastLine = _height;
@@ -544,7 +533,13 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
             }));
         }
 #endif
+#if SPLASH_SHMDATA_WITH_POOL
         SThread::pool.waitThreads(threadIds);
+#else
+        for (auto& t : threads)
+            if (t.joinable())
+                t.join();
+#endif
     }
     else
         return;

@@ -162,6 +162,7 @@ void Scene::addGhost(string type, string name)
 /*************/
 Values Scene::getAttributeFromObject(string name, string attribute)
 {
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     auto objectIt = _objects.find(name);
 
     Values values;
@@ -184,6 +185,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 /*************/
 Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
 {
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     auto objectIt = _objects.find(name);
 
     Values values;
@@ -248,6 +250,7 @@ bool Scene::link(string first, string second)
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
 
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
     if (_objects.find(second) != _objects.end())
@@ -277,6 +280,8 @@ void Scene::unlink(string first, string second)
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
 
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
     if (_objects.find(second) != _objects.end())
@@ -302,6 +307,8 @@ bool Scene::linkGhost(string first, string second)
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
 
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
     if (_ghostObjects.find(first) != _ghostObjects.end())
         source = _ghostObjects[first];
     else if (_objects.find(first) != _objects.end())
@@ -325,6 +332,8 @@ void Scene::unlinkGhost(string first, string second)
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
 
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
     if (_ghostObjects.find(first) != _ghostObjects.end())
         source = _ghostObjects[first];
     else if (_objects.find(first) != _objects.end())
@@ -347,6 +356,8 @@ void Scene::remove(string name)
 {
     std::shared_ptr<BaseObject> obj;
 
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
     if (_objects.find(name) != _objects.end())
         _objects.erase(name);
     else if (_ghostObjects.find(name) != _ghostObjects.end())
@@ -358,34 +369,37 @@ void Scene::render()
 {
     // Create lists of objects to update and to render
     map<Priority, vector<shared_ptr<BaseObject>>> objectList{};
-    for (auto& obj : _objects)
     {
-        auto priority = obj.second->getRenderingPriority();
-        if (priority == Priority::NO_RENDER)
-            continue;
-
-        auto listIt = objectList.find(priority);
-        if (listIt == objectList.end())
+        lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        for (auto& obj : _objects)
         {
-            auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
-            if (entry.second == true)
-                listIt = entry.first;
-            else
+            auto priority = obj.second->getRenderingPriority();
+            if (priority == Priority::NO_RENDER)
                 continue;
-        }
 
-        listIt->second.push_back(obj.second);
+            auto listIt = objectList.find(priority);
+            if (listIt == objectList.end())
+            {
+                auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
+                if (entry.second == true)
+                    listIt = entry.first;
+                else
+                    continue;
+            }
+
+            listIt->second.push_back(obj.second);
+        }
     }
 
     // Update and render the objects
     // See BaseObject::getRenderingPriority() for precision about priorities
     for (auto& objPriority : objectList)
     {
-        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::WINDOW)
             _textureUploadMutex.lock();
 
         // If the objects needs some Textures, we need to sync
-        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::POST_CAMERA)
         {
             // We wait for textures to be uploaded, and we prevent any upload while rendering
             // cameras to prevent tearing
@@ -406,12 +420,12 @@ void Scene::render()
         if (objPriority.second.size() != 0)
             Timer::get() >> objPriority.second[0]->getType();
 
-        if (objPriority.first >= Priority::CAMERA && objPriority.first < Priority::POST_CAMERA)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::POST_CAMERA)
         {
             _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         }
 
-        if (objPriority.first >= Priority::PRE_CAMERA && objPriority.first < Priority::WINDOW)
+        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::WINDOW)
             _textureUploadMutex.unlock();
     }
 
@@ -447,7 +461,6 @@ void Scene::run()
         Timer::get() << "sceneLoop";
 
         {
-            lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             _mainWindow->setAsCurrentContext();
             render();
             _mainWindow->releaseContext();
@@ -502,23 +515,28 @@ void Scene::textureUploadRun()
         glDeleteSync(_cameraDrawnFence);
 
         Timer::get() << "textureUpload";
-        for (auto& obj : _objects)
-            if (obj.second->getType().find("texture") != string::npos)
-                dynamic_pointer_cast<Texture>(obj.second)->update();
-        _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        lockTexture.unlock();
 
+        vector<shared_ptr<Texture>> textures;
         bool expectedAtomicValue = false;
-        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+        if (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
         {
             for (auto& obj : _objects)
                 if (obj.second->getType().find("texture") != string::npos)
-                {
-                    auto texImage = dynamic_pointer_cast<Texture_Image>(obj.second);
-                    if (texImage)
-                        texImage->flushPbo();
-                }
+                    textures.emplace_back(dynamic_pointer_cast<Texture>(obj.second));
             _objectsCurrentlyUpdated = false;
+        }
+
+        for (auto& texture : textures)
+            texture->update();
+
+        _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        lockTexture.unlock();
+
+        for (auto& texture : textures)
+        {
+            auto texImage = dynamic_pointer_cast<Texture_Image>(texture);
+            if (texImage)
+                texImage->flushPbo();
         }
 
         _textureUploadWindow->releaseContext();
@@ -529,6 +547,8 @@ void Scene::textureUploadRun()
 /*************/
 void Scene::setAsMaster(string configFilePath)
 {
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
     _isMaster = true;
 
     _mainWindow->setAsCurrentContext();
@@ -571,6 +591,7 @@ void Scene::setAsWorldScene()
     link("_camera", "_window");
 
     // Then we need to connect all Objects to the camera
+    lock_guard<recursive_mutex> lock(_objectsMutex);
     for (auto& obj : _objects)
         link(obj.first, "_camera");
 }
@@ -652,6 +673,7 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
 /*************/
 Values Scene::getObjectsNameByType(string type)
 {
+    lock_guard<recursive_mutex> lock(_objectsMutex);
     Values list;
     for (auto& obj : _objects)
         if (obj.second->getType() == type)
@@ -865,6 +887,7 @@ void Scene::registerAttributes()
     addAttribute("computeBlending",
         [&](const Values& args) {
             addTask([=]() {
+                lock_guard<recursive_mutex> lock(_objectsMutex);
                 shared_ptr<BaseObject> blender{nullptr};
                 auto blenderIt = find_if(_objects.begin(), _objects.end(), [](std::pair<std::string, std::shared_ptr<BaseObject>> obj) {
                     if (obj.second->getType() == "blender")
@@ -913,7 +936,6 @@ void Scene::registerAttributes()
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
                 auto objectName = args[0].as<string>();
-
                 auto objectIt = _objects.find(objectName);
                 for (auto& localObject : _objects)
                     unlink(objectIt->second, localObject.second);
@@ -955,6 +977,7 @@ void Scene::registerAttributes()
     addAttribute("flashBG",
         [&](const Values& args) {
             addTask([=]() {
+                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
                 for (auto& obj : _objects)
                     if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
                         dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].as<int>())});
@@ -1103,6 +1126,7 @@ void Scene::registerAttributes()
     setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
 
     addAttribute("swapTest", [&](const Values& args) {
+        lock_guard<recursive_mutex> lock(_objectsMutex);
         for (auto& obj : _objects)
             if (obj.second->getType() == "window")
                 dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
@@ -1111,6 +1135,7 @@ void Scene::registerAttributes()
     setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
     addAttribute("swapTestColor", [&](const Values& args) {
+        lock_guard<recursive_mutex> lock(_objectsMutex);
         for (auto& obj : _objects)
             if (obj.second->getType() == "window")
                 dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
@@ -1159,6 +1184,7 @@ void Scene::registerAttributes()
     addAttribute("wireframe",
         [&](const Values& args) {
             addTask([=]() {
+                lock_guard<recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
                     if (obj.second->getType() == "camera")
                         dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});

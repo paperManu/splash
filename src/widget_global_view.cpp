@@ -98,7 +98,6 @@ void GuiGlobalView::render()
         ImGui::Text("Select a camera:");
         for (auto& camera : cameras)
         {
-            colorizeCameraWireframes(false);
             camera->render();
 
             Values size;
@@ -329,8 +328,10 @@ void GuiGlobalView::showAllCamerasCalibrationPoints()
 /*************/
 void GuiGlobalView::colorizeCameraWireframes(bool colorize)
 {
-    if (_camera == _guiCamera)
+    if ((_camera == _guiCamera && colorize) || colorize == _camerasColorizedPreviousValue)
         return;
+
+    _camerasColorizedPreviousValue = colorize;
 
     if (colorize)
     {
@@ -634,7 +635,8 @@ void GuiGlobalView::processMouseEvents()
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    setObject(_camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
+                    setObject(
+                        _camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
                     setObject(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }

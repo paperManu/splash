@@ -872,6 +872,8 @@ const char* Gui::getClipboardText()
 {
     if (_glfwWindow)
         return glfwGetClipboardString(_glfwWindow);
+    else
+        return nullptr;
 }
 
 /*************/
@@ -968,8 +970,8 @@ void Gui::initImWidgets()
         Values clock;
         if (Timer::get().getMasterClock(clock))
         {
-            stream << "Master clock: " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>() << " - " << clock[3].as<int>() << ":" << clock[4].as<int>() << ":"
-                   << clock[5].as<int>() << ":" << clock[6].as<int>();
+            stream << "Master clock: " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>() << " - " << clock[3].as<int>() << ":" << clock[4].as<int>()
+                   << ":" << clock[5].as<int>() << ":" << clock[6].as<int>();
             if (clock[7].as<int>() == 1)
                 stream << " - Paused";
             stream << "\n";

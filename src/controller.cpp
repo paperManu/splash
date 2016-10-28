@@ -144,13 +144,13 @@ map<string, string> ControllerObject::getObjectTypes() const
     {
         if (!o.second->getSavable())
             continue;
-        types[o.first] = o.second->getType();
+        types[o.first] = o.second->getRemoteType();
     }
     for (auto& o : scene->_ghostObjects)
     {
         if (!o.second->getSavable())
             continue;
-        types[o.first] = o.second->getType();
+        types[o.first] = o.second->getRemoteType();
     }
 
     return types;
