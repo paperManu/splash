@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.9
+    VERSION 0.4.11
     LANGUAGES C CXX
 )
 
@@ -51,8 +51,15 @@ pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 
 # Optional dependencies
-set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
-find_package(PythonLibs)
+if(UNIX AND NOT APPLE)
+    set(Python_ADDITIONAL_VERSIONS 3.4 3.5)
+    find_package(PythonLibs)
+elseif(APPLE)
+    pkg_check_modules(PYTHON python3)
+    set(PYTHONLIBS_VERSION_STRING ${PYTHON_VERSION})
+    set(PYTHONLIBS_FOUND ${PYTHON_FOUND})
+endif()
+
 find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
