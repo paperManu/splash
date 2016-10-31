@@ -1268,11 +1268,13 @@ void World::registerAttributes()
     addAttribute("clockDeviceName",
         [&](const Values& args) {
             addTask([=]() {
-                _clockDeviceName = args[0].as<string>();
-                if (_clockDeviceName != "")
-                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
-                else if (_clock)
+                auto clockDeviceName = args[0].as<string>();
+                if (clockDeviceName != _clockDeviceName)
+                {
+                    _clockDeviceName = clockDeviceName;
                     _clock.reset();
+                    _clock = unique_ptr<LtcClock>(new LtcClock(true, _clockDeviceName));
+                }
             });
 
             return true;
