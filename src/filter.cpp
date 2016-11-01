@@ -397,6 +397,21 @@ void Filter::registerAttributes()
         {'n'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
+    addAttribute("invertChannels",
+        [&](const Values& args) {
+            auto enable = args[0].as<int>();
+            enable = std::min(1, std::max(0, enable));
+            _filterUniforms["_invertChannels"] = {enable};
+            return true;
+        },
+        [&]() -> Values {
+            auto it = _filterUniforms.find("_invertChannels");
+            if (it == _filterUniforms.end())
+                _filterUniforms["_invertChannels"] = {0};
+            return _filterUniforms["_invertChannels"];
+        },
+        {'n'});
+
     addAttribute("saturation",
         [&](const Values& args) {
             auto saturation = args[0].as<float>();

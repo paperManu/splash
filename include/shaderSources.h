@@ -803,6 +803,7 @@ struct ShaderSources
         uniform float _brightness = 1.f;
         uniform float _contrast = 1.f;
         uniform float _saturation = 1.f;
+        uniform int _invertChannels = 0;
         uniform vec2 _colorBalance = vec2(1.f, 1.f);
 
         void main(void)
@@ -830,6 +831,10 @@ struct ShaderSources
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
                 color.rgb = pow(color.rgb, vec3(2.2));
             }
+            
+            // Invert channels
+            if (_invertChannels == 1)
+                color.rgb = color.bgr;
 
             // Color balance
             float maxBalanceRatio = max(_colorBalance.r, _colorBalance.g);
