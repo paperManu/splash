@@ -445,13 +445,8 @@ void Scene::run()
 
     while (_isRunning)
     {
-        {
-            // Execute waiting tasks
-            lock_guard<mutex> lockTask(_taskMutex);
-            for (auto& task : _taskQueue)
-                task();
-            _taskQueue.clear();
-        }
+        // Execute waiting tasks
+        runTasks();
 
         if (!_started)
         {
@@ -933,11 +928,15 @@ void Scene::registerAttributes()
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
                     this_thread::sleep_for(chrono::milliseconds(1));
+                OnScopeExit { _objectsCurrentlyUpdated = false; };
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
                 auto objectName = args[0].as<string>();
                 auto objectIt = _objects.find(objectName);
+                if (objectIt == _objects.end())
+                    return;
+
                 for (auto& localObject : _objects)
                     unlink(objectIt->second, localObject.second);
                 if (objectIt != _objects.end())
@@ -950,8 +949,6 @@ void Scene::registerAttributes()
                         unlink(objectIt->second, ghostObject.second);
                     _ghostObjects.erase(objectIt);
                 }
-
-                _objectsCurrentlyUpdated = false;
             });
 
             return true;

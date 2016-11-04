@@ -1158,10 +1158,11 @@ void Camera::sendCalibrationPointsToObjects()
     for (auto& objWeakPtr : _objects)
     {
         auto object = objWeakPtr.lock();
+        if (!object)
+            continue;
+
         for (auto& point : _calibrationPoints)
-        {
             object->addCalibrationPoint(point.world);
-        }
     }
 }
 

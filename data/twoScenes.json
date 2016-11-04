@@ -1,6 +1,7 @@
 {// Default encoding for text
 
    "encoding" : "UTF-8",
+   "description" : "splashConfiguration",
    "first" : {
       "cam1" : {
          "activateColorLUT" : [ 0 ],
