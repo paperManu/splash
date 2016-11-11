@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <functional>
+#include <numeric>
 #if HAVE_LINUX
 #include <fcntl.h>
 #endif
