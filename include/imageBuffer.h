@@ -183,13 +183,19 @@ class ImageBuffer
      * \brief Return a pointer to the image data
      * \return Return a pointer to the data
      */
-    char* data() { return _buffer.data(); }
+    char* data() const { return _buffer.data(); }
 
     /**
      * \brief Get the image spec
      * \return Return image spec
      */
-    ImageBufferSpec getSpec() { return _spec; }
+    ImageBufferSpec getSpec() const { return _spec; }
+
+    /**
+     * \brief Get the image buffer size
+     * \return Return the size
+     */
+    size_t getSize() const { return _buffer.size(); }
 
     /**
      * \brief Fill all channels with the given value

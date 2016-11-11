@@ -1,8 +1,19 @@
 Splash release notes
 ===================
 
+Splash 0.4.12 (2016-11-11)
+--------------------------
+Improvements:
+* Added the possibility to save a project, which holds only media (objects and images), and leaves projectors projectors calibration as is
+* Image_FFmpeg: can now set a buffer size limit for the frame queue
+* Filter: added an invertChannel attribute, allowing for inverting R and B
+
+Bug fixed:
+* Fixed GPU sync issue
+* Fixed an issue when resetting the clock device name to an empty string
+
 Splash 0.4.10 (2016-10-28)
--------------------------
+--------------------------
 Improvements:
 * Separated RT scheduling and core affinity options
 * Added a template realtime.conf to be put in /etc/security/limits.d

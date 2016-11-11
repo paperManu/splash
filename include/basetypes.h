@@ -671,7 +671,7 @@ class RootObject : public BaseObject
     std::string _answerExpected{""};
 
     // Tasks queue
-    std::mutex _taskMutex;
+    std::recursive_mutex _taskMutex;
     std::list<std::function<void()>> _taskQueue;
 
     /**
@@ -686,6 +686,11 @@ class RootObject : public BaseObject
      * \param task Task function
      */
     void addTask(const std::function<void()>& task);
+
+    /**
+     * \brief Execute all the tasks in the queue
+     */
+    void runTasks();
 
     /**
      * \brief Send a message to another root object

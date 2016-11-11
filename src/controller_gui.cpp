@@ -169,6 +169,12 @@ void Gui::loadConfiguration()
 }
 
 /*************/
+void Gui::loadProject()
+{
+    setGlobal("loadProject", {_projectPath});
+}
+
+/*************/
 void Gui::copyCameraParameters()
 {
     setGlobal("copyCameraParameters", {_configurationPath});
@@ -178,6 +184,12 @@ void Gui::copyCameraParameters()
 void Gui::saveConfiguration()
 {
     setGlobal("save", {_configurationPath});
+}
+
+/*************/
+void Gui::saveProject()
+{
+    setGlobal("saveProject", {_projectPath});
 }
 
 /*************/
@@ -536,20 +548,19 @@ void Gui::render()
 
             ImGui::Columns(1);
 #endif
+            // Configuration load
             ImGui::Separator();
             ImGui::Text("Configuration file");
             char configurationPath[512];
             strcpy(configurationPath, _configurationPath.data());
-            ImGui::InputText("##Path", configurationPath, 512);
+            ImGui::InputText("##ConfigurationPath", configurationPath, 512);
             _configurationPath = string(configurationPath);
 
             ImGui::SameLine();
-            static bool showFileSelector{false};
-            if (ImGui::Button("..."))
-            {
-                showFileSelector = true;
-            }
-            if (showFileSelector)
+            static bool showConfigurationFileSelector{false};
+            if (ImGui::Button("...##Configuration"))
+                showConfigurationFileSelector = true;
+            if (showConfigurationFileSelector)
             {
                 static string path = Utils::getPathFromFilePath("./");
                 bool cancelled;
@@ -560,26 +571,66 @@ void Gui::render()
                         _configurationPath = path;
                         path = Utils::getPathFromFilePath("./");
                     }
-                    showFileSelector = false;
+                    showConfigurationFileSelector = false;
                 }
             }
 
-            if (ImGui::Button("Save configuration"))
+            ImGui::SameLine();
+            if (ImGui::Button("Save##Configuration"))
                 saveConfiguration();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Configuration is saved to the given path (Ctrl+S)");
 
             ImGui::SameLine();
-            if (ImGui::Button("Load configuration"))
+            if (ImGui::Button("Load##Configuration"))
                 loadConfiguration();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Load the given path");
 
             ImGui::SameLine();
-            if (ImGui::Button("Copy camera calibration"))
+            if (ImGui::Button("Copy"))
                 copyCameraParameters();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Copy the camera parameters from the given file");
+
+            // Project load
+            ImGui::Separator();
+            ImGui::Text("Project file");
+            char projectPath[512];
+            strcpy(projectPath, _projectPath.data());
+            ImGui::InputText("##ProjectPath", projectPath, 512);
+            _projectPath = string(projectPath);
+
+            ImGui::SameLine();
+            static bool showProjectFileSelector{false};
+            if (ImGui::Button("...##Project"))
+                showProjectFileSelector = true;
+            if (showProjectFileSelector)
+            {
+                static string path = Utils::getPathFromFilePath("./");
+                bool cancelled;
+                if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
+                {
+                    if (!cancelled)
+                    {
+                        _projectPath = path;
+                        path = Utils::getPathFromFilePath("./");
+                    }
+                    showProjectFileSelector = false;
+                }
+            }
+
+            ImGui::SameLine();
+            if (ImGui::Button("Save##Project"))
+                saveProject();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Save a project configuration (only media and meshes)");
+
+            ImGui::SameLine();
+            if (ImGui::Button("Load##Project"))
+                loadProject();
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Load a project configuration (only media and meshes)");
         }
 
         // Specific widgets

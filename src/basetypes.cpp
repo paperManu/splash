@@ -591,8 +591,17 @@ void RootObject::setFromSerializedObject(const string& name, shared_ptr<Serializ
 /*************/
 void RootObject::addTask(const function<void()>& task)
 {
-    lock_guard<mutex> lock(_taskMutex);
+    lock_guard<recursive_mutex> lock(_taskMutex);
     _taskQueue.push_back(task);
+}
+
+/*************/
+void RootObject::runTasks()
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    for (auto& task : _taskQueue)
+        task();
+    _taskQueue.clear();
 }
 
 /*************/

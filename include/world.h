@@ -111,8 +111,10 @@ class World : public RootObject
     std::atomic_int _nextId{0};
     std::map<std::string, std::vector<std::string>> _objectDest;
 
-    std::string _configFilename; //!< Configuration file path
-    Json::Value _config;         //!< Configuration as JSon
+    std::string _configFilename;  //!< Configuration file path
+    std::string _projectFilename; //!< Project configuration file path
+    Json::Value _config;          //!< Configuration as JSon
+    const std::vector<std::string> _partiallySavableTypes{"image", "texture", "mesh", "object", "filter", "queue"};
 
     bool _sceneLaunched{false};
     std::mutex _childProcessMutex;
@@ -153,6 +155,13 @@ class World : public RootObject
     void saveConfig();
 
     /**
+     * \brief Partially save the configuration
+     * This saves only the modifications to images, textures and meshes
+     * (in fact, all objects not related to projector calibration)
+     */
+    void saveProject();
+
+    /**
      * \brief Get the next available id
      * \return Return an available id
      */
@@ -183,12 +192,27 @@ class World : public RootObject
     static void leave(int signal_value);
 
     /**
+     * \brief Load a Json file
+     * \param filename Json file path
+     * \param configuration Holds the Json tree
+     * \return Return true if everything went well
+     */
+    bool loadJsonFile(std::string filename, Json::Value& configuration);
+
+    /**
      * \brief Load the specified configuration file
      * \param filename Configuration file path
      * \param configuration JSon where the configuration will be stored
      * \return Return true if everything went well
      */
     bool loadConfig(std::string filename, Json::Value& configuration);
+
+    /**
+     * \brief Load a partial configuration file, updating existing configuration
+     * \param filename Configuration file path
+     * \return Return true if everything went well
+     */
+    bool loadProject(std::string filename);
 
     /**
      * \brief Parse the given arguments
@@ -198,11 +222,11 @@ class World : public RootObject
     void parseArguments(int argc, char** argv);
 
     /**
-     * \brief Helper function to read Json arrays
+     * \brief Helper function to convert Json::Value to Splash::Values
      * \param values JSon to be processed
      * \return Return a Values converted from the JSon
      */
-    Values processArray(Json::Value values);
+    Values jsonToValues(const Json::Value& values);
 
     /**
      * \brief Set a parameter for an object, given its name

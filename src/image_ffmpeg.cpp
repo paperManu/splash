@@ -1,6 +1,8 @@
 #include "image_ffmpeg.h"
 
 #include <chrono>
+#include <functional>
+#include <numeric>
 #if HAVE_LINUX
 #include <fcntl.h>
 #endif
@@ -468,6 +470,9 @@ void Image_FFmpeg::readLoop()
 
                 if (hasFrame)
                 {
+                    // Add the frame size to the history
+                    _framesSize.push_back(img->getSize());
+
                     lock_guard<mutex> lockFrames(_videoQueueMutex);
                     _timedFrames.emplace_back();
                     std::swap(_timedFrames[_timedFrames.size() - 1].frame, img);
@@ -483,14 +488,22 @@ void Image_FFmpeg::readLoop()
                 av_free_packet(&packet);
 #endif
 
+                // Check the current buffer size (sum of all frames in buffer)
+                int64_t totalBufferSize = accumulate(_framesSize.begin(), _framesSize.end(), (int64_t)0);
+
                 // Do not store more than a few frames in memory
-                while (timedFramesBuffered > 30 && _continueRead)
+                // _maximumBufferSize is divided by 2 as another frame queue is held by the display loop
+                while (timedFramesBuffered > 0 && totalBufferSize > _maximumBufferSize / 2 && _continueRead)
                 {
                     this_thread::sleep_for(chrono::milliseconds(5));
                     lock_guard<mutex> lockSeek(_videoSeekMutex);
                     lock_guard<mutex> lockQueue(_videoQueueMutex);
                     timedFramesBuffered = _timedFrames.size();
                 }
+
+                // Clear the frame size history if the buffer has been swapped
+                if (timedFramesBuffered == 0)
+                    _framesSize.clear();
             }
 #if HAVE_PORTAUDIO
             // Reading the audio
@@ -697,6 +710,17 @@ void Image_FFmpeg::videoDisplayLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
+    addAttribute("bufferSize",
+        [&](const Values& args) {
+            int64_t sizeMB = max(16, args[0].as<int>());
+            _maximumBufferSize = sizeMB * (int64_t)1048576;
+            return true;
+        },
+        [&]() -> Values { return {_maximumBufferSize / (int64_t)1048576}; },
+        {'n'});
+    setAttributeParameter("bufferSize", true, true);
+    setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
+
     addAttribute("duration",
         [&](const Values& args) { return false; },
         [&]() -> Values {

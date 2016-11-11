@@ -393,19 +393,20 @@ void Scene::render()
 
     // Update and render the objects
     // See BaseObject::getRenderingPriority() for precision about priorities
+    bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
+    bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
+    auto textureLock = unique_lock<mutex>(_textureUploadMutex, defer_lock);
     for (auto& objPriority : objectList)
     {
-        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::WINDOW)
-            _textureUploadMutex.lock();
-
         // If the objects needs some Textures, we need to sync
-        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::POST_CAMERA)
+        if (firstTextureSync && objPriority.first > Priority::BLENDING && objPriority.first < Priority::POST_CAMERA)
         {
             // We wait for textures to be uploaded, and we prevent any upload while rendering
             // cameras to prevent tearing
-            glFlush();
+            textureLock.lock();
             glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
             glDeleteSync(_textureUploadFence);
+            firstTextureSync = false;
         }
 
         if (objPriority.second.size() != 0)
@@ -420,13 +421,13 @@ void Scene::render()
         if (objPriority.second.size() != 0)
             Timer::get() >> objPriority.second[0]->getType();
 
-        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::POST_CAMERA)
+        if (firstWindowSync && objPriority.first >= Priority::POST_CAMERA)
         {
             _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+            if (textureLock.owns_lock())
+                textureLock.unlock();
+            firstWindowSync = false;
         }
-
-        if (objPriority.first >= Priority::FILTER && objPriority.first < Priority::WINDOW)
-            _textureUploadMutex.unlock();
     }
 
     // Swap all buffers at once
@@ -444,13 +445,8 @@ void Scene::run()
 
     while (_isRunning)
     {
-        {
-            // Execute waiting tasks
-            lock_guard<mutex> lockTask(_taskMutex);
-            for (auto& task : _taskQueue)
-                task();
-            _taskQueue.clear();
-        }
+        // Execute waiting tasks
+        runTasks();
 
         if (!_started)
         {
@@ -932,11 +928,15 @@ void Scene::registerAttributes()
                 bool expectedAtomicValue = false;
                 while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
                     this_thread::sleep_for(chrono::milliseconds(1));
+                OnScopeExit { _objectsCurrentlyUpdated = false; };
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
                 auto objectName = args[0].as<string>();
                 auto objectIt = _objects.find(objectName);
+                if (objectIt == _objects.end())
+                    return;
+
                 for (auto& localObject : _objects)
                     unlink(objectIt->second, localObject.second);
                 if (objectIt != _objects.end())
@@ -949,8 +949,6 @@ void Scene::registerAttributes()
                         unlink(objectIt->second, ghostObject.second);
                     _ghostObjects.erase(objectIt);
                 }
-
-                _objectsCurrentlyUpdated = false;
             });
 
             return true;

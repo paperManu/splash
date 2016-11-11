@@ -41,11 +41,11 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "image.h"
+#include "./basetypes.h"
+#include "./coretypes.h"
+#include "./image.h"
 #if HAVE_PORTAUDIO
-#include "speaker.h"
+#include "./speaker.h"
 #endif
 
 namespace Splash
@@ -90,6 +90,11 @@ class Image_FFmpeg : public Image
         int64_t timing{0ull}; // in us
     };
     std::deque<TimedFrame> _timedFrames;
+
+    // Frame size history, used to keep the frame buffer smaller than _maximumBufferSize
+    std::vector<int64_t> _framesSize{};
+    int64_t _maximumBufferSize{1 << 29};
+
     std::mutex _videoQueueMutex;
     std::mutex _videoSeekMutex;
     std::condition_variable _videoQueueCondition;

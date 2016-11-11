@@ -359,6 +359,7 @@ class SplashExportNodeTree(Operator):
            "// Exported with Blender Splash add-on\n"
            "{\n"
            "    \"encoding\" : \"UTF-8\",\n"
+           "    \"description\" : \"splashConfiguration\",\n"
            "\n"
            "    \"world\" : {\n"
            "        \"framerate\" : %i\n"

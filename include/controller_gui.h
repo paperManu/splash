@@ -220,6 +220,7 @@ class Gui : public ControllerObject
 
     // Gui related attributes
     std::string _configurationPath;
+    std::string _projectPath;
     bool _isVisible{false};
     bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
     bool _wireframe{false};
@@ -295,9 +296,19 @@ class Gui : public ControllerObject
     void loadConfiguration();
 
     /**
+     * \brief Load a partial configuration, which does not contain calibration or projection parameters
+     */
+    void loadProject();
+
+    /**
      * \brief Save the configuration to the specified file
      */
     void saveConfiguration();
+
+    /**
+     * \brief Save a partial configuration, which does not contain calibration or projection parameters
+     */
+    void saveProject();
 
     /**
      * Register new functors to modify attributes

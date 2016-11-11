@@ -2,6 +2,7 @@
 {
     // Default encoding for text
     "encoding" : "UTF-8",
+    "description" : "splashConfiguration",
 
     "scenes" : [
         {
