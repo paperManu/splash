@@ -405,7 +405,11 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
+#if HAVE_FFMPEG_3 or HAVE_FFMPEG_2_8
+                            timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _timeBase * 1e6);
+#else
                             timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
+#endif
                         else
                             timing = 0.0;
                         // This handles repeated frames
