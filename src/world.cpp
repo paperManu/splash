@@ -1516,6 +1516,9 @@ void World::registerAttributes()
             for (int i = 2; i < args.size(); ++i)
                 targets.push_back(args[i].as<string>());
 
+            if (!_factory->isCreatable(objType))
+                return false;
+
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName});
             addTask([=]() {
