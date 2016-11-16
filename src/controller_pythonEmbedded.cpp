@@ -600,7 +600,7 @@ PythonEmbedded::~PythonEmbedded()
 bool PythonEmbedded::setScriptFile(const string& src)
 {
     _scriptName = Utils::getFilenameFromFilePath(src);
-    _filepath = Utils::getPathFromFilePath(src, _configFilePath);
+    _filepath = Utils::getPathFromFilePath(src, _root.lock()->getConfigurationPath());
 
     if (!ifstream(_filepath + _scriptName, ios::in | ios::binary))
     {

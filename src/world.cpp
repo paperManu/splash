@@ -417,6 +417,10 @@ void World::applyConfig()
 
                 idx++;
             }
+
+            // Set some default directories
+            sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
+            sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_configurationPath});
         }
 
         // Then we link the objects together
@@ -470,16 +474,6 @@ void World::applyConfig()
                 }
 
                 string type = obj["type"].asString();
-
-                // Before anything, all objects have the right to know what the current path is
-                if (type != "scene")
-                {
-                    auto path = Utils::getPathFromFilePath(_configFilename);
-                    sendMessage(name, "configFilePath", {path});
-                    if (s.first != _masterSceneName)
-                        sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
-                    set(name, "configFilePath", {path}, false);
-                }
 
                 // Set their attributes
                 auto objMembers = obj.getMemberNames();
@@ -985,6 +979,8 @@ bool World::loadConfig(string filename, Json::Value& configuration)
         return false;
 
     _configFilename = filename;
+    _configurationPath = Utils::getPathFromFilePath(_configFilename);
+    _mediaPath = _configurationPath; // By default, same directory
     return true;
 }
 
@@ -1636,5 +1632,25 @@ void World::registerAttributes()
         },
         {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
+
+    addAttribute("configurationPath",
+        [&](const Values& args) {
+            _configurationPath = args[0].as<string>();
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath}); });
+            return true;
+        },
+        [&]() -> Values { return {_configurationPath}; },
+        {'s'});
+    setAttributeDescription("configurationPath", "Path to the configuration files");
+
+    addAttribute("mediaPath",
+        [&](const Values& args) {
+            _mediaPath = args[0].as<string>();
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_mediaPath}); });
+            return true;
+        },
+        [&]() -> Values { return {_mediaPath}; },
+        {'s'});
+    setAttributeDescription("mediaPath", "Path to the media files");
 }
 }

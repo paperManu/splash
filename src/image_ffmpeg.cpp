@@ -76,7 +76,7 @@ bool Image_FFmpeg::read(const string& filename)
 {
     // First: cleanup
     freeFFmpegObjects();
-    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _filepath = Utils::getPathFromFilePath(filename, _root.lock()->getConfigurationPath()) + Utils::getFilenameFromFilePath(filename);
 
     if (avformat_open_input(&_avContext, _filepath.c_str(), nullptr, nullptr) != 0)
     {

@@ -158,7 +158,7 @@ class Gui : public ControllerObject
      * \brief Specify the configuration path (as loaded by World)
      * \param path Configuration path
      */
-    void setConfigFilePath(const std::string& path) { _configurationPath = path.data(); }
+    void setConfigFilePath(const std::string& path) { _configurationPath = path; }
 
     /**
      * \brief Set joysticks state

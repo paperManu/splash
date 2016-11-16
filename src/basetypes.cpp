@@ -350,13 +350,6 @@ bool BaseObject::setRenderingPriority(Priority priority)
 /*************/
 void BaseObject::init()
 {
-    addAttribute("configFilePath",
-        [&](const Values& args) {
-            _configFilePath = args[0].as<string>();
-            return true;
-        },
-        {'s'});
-
     addAttribute("setName",
         [&](const Values& args) {
             setName(args[0].as<string>());
@@ -493,14 +486,7 @@ void BufferObject::updateTimestamp()
 /*************/
 RootObject::RootObject()
 {
-    addAttribute("answerMessage", [&](const Values& args) {
-        if (args.size() == 0 || args[0].as<string>() != _answerExpected)
-            return false;
-        unique_lock<mutex> conditionLock(conditionMutex);
-        _lastAnswerReceived = args;
-        _answerCondition.notify_one();
-        return true;
-    });
+    registerAttributes();
 }
 
 /*************/
@@ -593,6 +579,19 @@ void RootObject::addTask(const function<void()>& task)
 {
     lock_guard<recursive_mutex> lock(_taskMutex);
     _taskQueue.push_back(task);
+}
+
+/*************/
+void RootObject::registerAttributes()
+{
+    addAttribute("answerMessage", [&](const Values& args) {
+        if (args.size() == 0 || args[0].as<string>() != _answerExpected)
+            return false;
+        unique_lock<mutex> conditionLock(conditionMutex);
+        _lastAnswerReceived = args;
+        _answerCondition.notify_one();
+        return true;
+    });
 }
 
 /*************/

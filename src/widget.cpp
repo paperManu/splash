@@ -111,7 +111,6 @@ bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vect
 bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
 {
     static bool filterExtension = true;
-    ;
     bool manualPath = false;
     bool selectionDone = false;
     cancelled = false;
@@ -325,7 +324,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     }
                     if (_fileSelectorTarget == objName)
                     {
-                        static string path = Utils::getPathFromFilePath("./");
+                        static string path = _root.lock()->getMediaPath();
                         bool cancelled;
                         vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}, {"obj"}};
                         if (SplashImGui::FileSelector(objName, path, cancelled, extensions))
