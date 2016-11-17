@@ -1237,11 +1237,10 @@ void World::registerAttributes()
     addAttribute("computeBlending",
         [&](const Values& args) {
             _blendingMode = args[0].as<string>();
-            sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode});
+            addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode}); });
 
             return true;
         },
-        [&]() -> Values { return {_blendingMode}; },
         {'s'});
     setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
