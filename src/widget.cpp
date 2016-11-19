@@ -332,7 +332,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                             if (!cancelled)
                             {
                                 scene->sendMessageToWorld("sendAll", {objName, attr.first, path});
-                                path = Utils::getPathFromFilePath("./");
+                                path = Utils::getPathFromFilePath(path);
                             }
                             _fileSelectorTarget = "";
                         }
