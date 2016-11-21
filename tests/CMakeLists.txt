@@ -74,7 +74,7 @@ add_custom_target(check DEPENDS tests)
 
 # Integration tests (executed by launching Splash and checking its behavior)
 add_custom_command(OUTPUT integration_tests
-    COMMAND splash ${CMAKE_CURRENT_SOURCE_DIR}/integrationTests.json
+    COMMAND ../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integrationTests.json
     DEPENDS splash splash-scene
     )
 add_custom_target(check_integration DEPENDS integration_tests)
