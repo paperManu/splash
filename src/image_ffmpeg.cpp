@@ -189,6 +189,7 @@ void Image_FFmpeg::readLoop()
     _videoFormat.resize(1024);
     avcodec_string(const_cast<char*>(_videoFormat.data()), _videoFormat.size(), videoCodecContext, 0);
 
+    videoCodecContext->thread_count = Utils::getCoreCount();
     auto videoCodec = avcodec_find_decoder(videoCodecContext->codec_id);
     auto isHap = false;
 
