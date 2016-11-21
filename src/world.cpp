@@ -93,7 +93,9 @@ void World::run()
             {
                 auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 // This prevents the map structure to be modified in the threads
-                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
+                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
+                if (!serializedObjectIt.second)
+                    continue; // Error while inserting the object in the map
 
                 threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                     // Update the local objects
@@ -123,7 +125,8 @@ void World::run()
             // Ask for the upload of the new buffers, during the next world loop
             Timer::get() << "upload";
             for (auto& o : serializedObjects)
-                _link->sendBuffer(o.first, std::move(o.second));
+                if (o.second)
+                    _link->sendBuffer(o.first, std::move(o.second));
         }
 
         // Update the distant attributes
