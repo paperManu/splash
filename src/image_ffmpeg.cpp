@@ -185,6 +185,10 @@ void Image_FFmpeg::readLoop()
     auto videoCodecContext = _avContext->streams[_videoStreamIndex]->codec;
 #endif
 
+    // Set video format info
+    _videoFormat.resize(1024);
+    avcodec_string(const_cast<char*>(_videoFormat.data()), _videoFormat.size(), videoCodecContext, 0);
+
     auto videoCodec = avcodec_find_decoder(videoCodecContext->codec_id);
     auto isHap = false;
 
@@ -794,6 +798,15 @@ void Image_FFmpeg::registerAttributes()
         [&]() -> Values { return {(int)_useClock}; },
         {'n'});
     setAttributeParameter("useClock", true, true);
+
+    addAttribute("videoFormat",
+        [&](const Values& args) {
+            // Video format string cannot be set from outside this class
+            return true;
+        },
+        [&]() -> Values { return {_videoFormat}; },
+        {'s'});
+    setAttributeParameter("videoFormat", false, true);
 
     addAttribute("timeShift",
         [&](const Values& args) {
