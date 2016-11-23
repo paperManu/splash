@@ -668,6 +668,11 @@ class RootObject : public BaseObject
      */
     std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::move(std::unique_lock<std::recursive_mutex>(_objectsMutex)); }
 
+    /**
+     * \brief Signals that a BufferObject has been updated
+     */
+    void signalBufferObjectUpdated();
+
   protected:
     std::string _configurationPath{""}; //!< Path to the configuration file
     std::string _mediaPath{""};         //!< Default path to the medias
@@ -680,13 +685,24 @@ class RootObject : public BaseObject
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
     std::condition_variable _answerCondition;
-    std::mutex conditionMutex;
+    std::mutex _conditionMutex;
     std::mutex _answerMutex;
     std::string _answerExpected{""};
+
+    // Condition variable for signaling a BufferObject update
+    std::condition_variable _bufferObjectUpdatedCondition;
+    std::mutex _bufferObjectUpdatedMutex;
 
     // Tasks queue
     std::recursive_mutex _taskMutex;
     std::list<std::function<void()>> _taskQueue;
+
+    /**
+     * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
+     * \param timeout Timeout in us
+     * \return Return false is the timeout has been reached, true otherwise
+     */
+    bool waitSignalBufferObjectUpdated(uint64_t timeout);
 
     /**
      * \brief Method to process a serialized object

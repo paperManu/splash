@@ -77,6 +77,7 @@ void World::run()
     while (true)
     {
         Timer::get() << "worldLoop";
+        Timer::get() << "innerWorldLoop";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
         // Execute waiting tasks
@@ -209,8 +210,13 @@ void World::run()
             frameIndex = (frameIndex + 1) % 60;
         }
 
-        // Get the current FPS
-        Timer::get() >> 1e6 / (float)_worldFramerate >> "worldLoop";
+        // Sync with buffer object update
+        Timer::get() >> "innerWorldLoop";
+        auto elapsed = Timer::get().getDuration("innerWorldLoop");
+        waitSignalBufferObjectUpdated(1e6 / (float)_worldFramerate - elapsed);
+
+        // Sync to world framerate
+        Timer::get() >> "worldLoop";
     }
 }
 

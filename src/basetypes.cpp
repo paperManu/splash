@@ -479,6 +479,7 @@ void BufferObject::updateTimestamp()
 {
     _timestamp = Timer::getTime();
     _updatedBuffer = true;
+    _root.lock()->signalBufferObjectUpdated();
 }
 
 /*************/
@@ -575,6 +576,20 @@ void RootObject::setFromSerializedObject(const string& name, shared_ptr<Serializ
 }
 
 /*************/
+void RootObject::signalBufferObjectUpdated()
+{
+    unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
+    _bufferObjectUpdatedCondition.notify_all();
+}
+
+/*************/
+bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
+{
+    unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
+    _bufferObjectUpdatedCondition.wait_for(lockCondition, chrono::microseconds(timeout));
+}
+
+/*************/
 void RootObject::addTask(const function<void()>& task)
 {
     lock_guard<recursive_mutex> lock(_taskMutex);
@@ -587,7 +602,7 @@ void RootObject::registerAttributes()
     addAttribute("answerMessage", [&](const Values& args) {
         if (args.size() == 0 || args[0].as<string>() != _answerExpected)
             return false;
-        unique_lock<mutex> conditionLock(conditionMutex);
+        unique_lock<mutex> conditionLock(_conditionMutex);
         _lastAnswerReceived = args;
         _answerCondition.notify_one();
         return true;
@@ -612,7 +627,7 @@ Values RootObject::sendMessageWithAnswer(string name, string attribute, const Va
     lock_guard<mutex> lock(_answerMutex);
     _answerExpected = attribute;
 
-    unique_lock<mutex> conditionLock(conditionMutex);
+    unique_lock<mutex> conditionLock(_conditionMutex);
     _link->sendMessage(name, attribute, message);
 
     auto cvStatus = cv_status::no_timeout;
