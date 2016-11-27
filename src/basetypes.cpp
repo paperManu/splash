@@ -586,7 +586,8 @@ void RootObject::signalBufferObjectUpdated()
 bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 {
     unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
-    _bufferObjectUpdatedCondition.wait_for(lockCondition, chrono::microseconds(timeout));
+    auto status = _bufferObjectUpdatedCondition.wait_for(lockCondition, chrono::microseconds(timeout));
+    return (status == cv_status::no_timeout);
 }
 
 /*************/
