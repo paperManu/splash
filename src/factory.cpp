@@ -88,6 +88,19 @@ vector<string> Factory::getObjectTypes()
 }
 
 /*************/
+bool Factory::isCreatable(string type)
+{
+    auto it = _objectBook.find(type);
+    if (it == _objectBook.end())
+    {
+        Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Object type " << type << " does not exist" << Log::endl;
+        return false;
+    }
+
+    return true;
+}
+
+/*************/
 void Factory::registerObjects()
 {
     _objectBook["blender"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); };

@@ -111,7 +111,7 @@ vector<float> Mesh::getAnnexe() const
 /*************/
 bool Mesh::read(const string& filename)
 {
-    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _filepath = Utils::getPathFromFilePath(filename, _root.lock()->getConfigurationPath()) + Utils::getFilenameFromFilePath(filename);
 
     if (!_isConnectedToRemote)
     {

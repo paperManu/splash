@@ -219,7 +219,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _filepath = Utils::getPathFromFilePath(filename, _root.lock()->getConfigurationPath()) + Utils::getFilenameFromFilePath(filename);
     if (!_isConnectedToRemote)
         return readFile(_filepath);
     else

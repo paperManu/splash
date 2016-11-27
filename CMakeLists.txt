@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.12
+    VERSION 0.4.14
     LANGUAGES C CXX
 )
 
@@ -85,8 +85,14 @@ set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
 
 if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION GREATER 57)
     set(HAVE_FFMPEG_3 1)
+    set(HAVE_FFMPEG_2_8 0)
 else()
     set(HAVE_FFMPEG_3 0)
+    if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION LESS 56)
+        set(HAVE_FFMPEG_2_8 0)
+    else()
+        set(HAVE_FFMPEG_2_8 1)
+    endif()
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -191,6 +197,7 @@ info_cfg_option(FFMPEG_libavcodec_VERSION)
 info_cfg_option(FFMPEG_libavutil_VERSION)
 info_cfg_option(FFMPEG_libswscale_VERSION)
 info_cfg_option(HAVE_FFMPEG_3)
+info_cfg_option(HAVE_FFMPEG_2_8)
 info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(SHMDATA_VERSION)

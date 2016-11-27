@@ -76,7 +76,7 @@ bool Image_FFmpeg::read(const string& filename)
 {
     // First: cleanup
     freeFFmpegObjects();
-    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _filepath = Utils::getPathFromFilePath(filename, _root.lock()->getConfigurationPath()) + Utils::getFilenameFromFilePath(filename);
 
     if (avformat_open_input(&_avContext, _filepath.c_str(), nullptr, nullptr) != 0)
     {
@@ -185,6 +185,11 @@ void Image_FFmpeg::readLoop()
     auto videoCodecContext = _avContext->streams[_videoStreamIndex]->codec;
 #endif
 
+    // Set video format info
+    _videoFormat.resize(1024);
+    avcodec_string(const_cast<char*>(_videoFormat.data()), _videoFormat.size(), videoCodecContext, 0);
+
+    videoCodecContext->thread_count = Utils::getCoreCount();
     auto videoCodec = avcodec_find_decoder(videoCodecContext->codec_id);
     auto isHap = false;
 
@@ -405,7 +410,11 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
+#if HAVE_FFMPEG_3 or HAVE_FFMPEG_2_8
+                            timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _timeBase * 1e6);
+#else
                             timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
+#endif
                         else
                             timing = 0.0;
                         // This handles repeated frames
@@ -790,6 +799,15 @@ void Image_FFmpeg::registerAttributes()
         [&]() -> Values { return {(int)_useClock}; },
         {'n'});
     setAttributeParameter("useClock", true, true);
+
+    addAttribute("videoFormat",
+        [&](const Values& args) {
+            // Video format string cannot be set from outside this class
+            return true;
+        },
+        [&]() -> Values { return {_videoFormat}; },
+        {'s'});
+    setAttributeParameter("videoFormat", false, true);
 
     addAttribute("timeShift",
         [&](const Values& args) {

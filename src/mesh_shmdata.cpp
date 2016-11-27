@@ -24,7 +24,7 @@ Mesh_Shmdata::~Mesh_Shmdata()
 /*************/
 bool Mesh_Shmdata::read(const string& filename)
 {
-    _filepath = Utils::getPathFromFilePath(filename, _configFilePath) + Utils::getFilenameFromFilePath(filename);
+    _filepath = Utils::getPathFromFilePath(filename, _root.lock()->getConfigurationPath()) + Utils::getFilenameFromFilePath(filename);
     _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
 
     return true;

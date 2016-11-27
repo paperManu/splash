@@ -552,7 +552,7 @@ void Gui::render()
             ImGui::Separator();
             ImGui::Text("Configuration file");
             char configurationPath[512];
-            strcpy(configurationPath, _configurationPath.data());
+            strncpy(configurationPath, _configurationPath.data(), 511);
             ImGui::InputText("##ConfigurationPath", configurationPath, 512);
             _configurationPath = string(configurationPath);
 
@@ -562,7 +562,7 @@ void Gui::render()
                 showConfigurationFileSelector = true;
             if (showConfigurationFileSelector)
             {
-                static string path = Utils::getPathFromFilePath("./");
+                static string path = _root.lock()->getConfigurationPath();
                 bool cancelled;
                 if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
                 {
@@ -597,7 +597,7 @@ void Gui::render()
             ImGui::Separator();
             ImGui::Text("Project file");
             char projectPath[512];
-            strcpy(projectPath, _projectPath.data());
+            strncpy(projectPath, _projectPath.data(), 511);
             ImGui::InputText("##ProjectPath", projectPath, 512);
             _projectPath = string(projectPath);
 
@@ -607,7 +607,7 @@ void Gui::render()
                 showProjectFileSelector = true;
             if (showProjectFileSelector)
             {
-                static string path = Utils::getPathFromFilePath("./");
+                static string path = _root.lock()->getConfigurationPath();
                 bool cancelled;
                 if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
                 {
@@ -631,6 +631,33 @@ void Gui::render()
                 loadProject();
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Load a project configuration (only media and meshes)");
+
+            // Media directory
+            ImGui::Separator();
+            ImGui::Text("Media directory");
+            char mediaPath[512];
+            strncpy(mediaPath, _root.lock()->getMediaPath().data(), 511);
+            if (ImGui::InputText("##MediaPath", mediaPath, 512))
+                setGlobal("mediaPath", {string(mediaPath)});
+
+            ImGui::SameLine();
+            static bool showMediaFileSelector{false};
+            if (ImGui::Button("...##Media"))
+                showMediaFileSelector = true;
+            if (showMediaFileSelector)
+            {
+                static string path = _root.lock()->getMediaPath();
+                bool cancelled;
+                if (SplashImGui::FileSelector("Media path", path, cancelled, {{"json"}}))
+                {
+                    if (!cancelled)
+                    {
+                        path = Utils::getPathFromFilePath(path).data();
+                        setGlobal("mediaPath", {string(path)});
+                    }
+                    showMediaFileSelector = false;
+                }
+            }
         }
 
         // Specific widgets

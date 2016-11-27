@@ -187,7 +187,7 @@ class Texture_Image : public Texture
     std::vector<unsigned int> _pboCopyThreadIds;
 
     // Store some texture parameters
-    bool _filtering{true};
+    bool _filtering{false};
     GLenum _texTarget{GL_TEXTURE_2D}, _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
     GLint _texLevel{0}, _texInternalFormat{GL_CLAMP_TO_EDGE}, _texBorder{0};
     GLint _glTextureWrap{GL_REPEAT};

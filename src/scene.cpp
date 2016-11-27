@@ -1246,6 +1246,22 @@ void Scene::registerAttributes()
         {'n', 'n'});
     setAttributeDescription("sceneAffinity", "Set the core for the main loop, as well as the number of root objects. The thread pool will use the remaining cores.");
 #endif
+
+    addAttribute("configurationPath",
+        [&](const Values& args) {
+            _configurationPath = args[0].as<string>();
+            return true;
+        },
+        {'s'});
+    setAttributeDescription("configurationPath", "Path to the configuration files");
+
+    addAttribute("mediaPath",
+        [&](const Values& args) {
+            _mediaPath = args[0].as<string>();
+            return true;
+        },
+        {'s'});
+    setAttributeDescription("mediaPath", "Path to the media files");
 }
 
 } // end of namespace

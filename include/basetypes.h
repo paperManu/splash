@@ -449,7 +449,6 @@ class BaseObject
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
-    std::string _configFilePath{""};  //!< Configuration path
 
     std::weak_ptr<RootObject> _root;                       //!< Root object, Scene or World
     std::vector<std::weak_ptr<BaseObject>> _linkedObjects; //!< Children of this object
@@ -615,6 +614,18 @@ class RootObject : public BaseObject
     virtual ~RootObject() {}
 
     /**
+     * \brief Get the configuration path
+     * \return Return the configuration path
+     */
+    std::string getConfigurationPath() const { return _configurationPath; }
+
+    /**
+     * \brief Get the media path
+     * \return Return the media path
+     */
+    std::string getMediaPath() const { return _mediaPath; }
+
+    /**
      * \brief Register an object which was created elsewhere. If an object was the same name exists, it is replaced.
      * \param object Object to register
      */
@@ -657,7 +668,15 @@ class RootObject : public BaseObject
      */
     std::unique_lock<std::recursive_mutex> getLockOnObjects() { return std::move(std::unique_lock<std::recursive_mutex>(_objectsMutex)); }
 
+    /**
+     * \brief Signals that a BufferObject has been updated
+     */
+    void signalBufferObjectUpdated();
+
   protected:
+    std::string _configurationPath{""}; //!< Path to the configuration file
+    std::string _mediaPath{""};         //!< Default path to the medias
+
     std::shared_ptr<Link> _link;                                           //!< Link object for communicatin between World and Scene
     mutable std::recursive_mutex _objectsMutex;                            //!< Used in registration and unregistration of objects
     std::atomic_bool _objectsCurrentlyUpdated{false};                      //!< Prevents modification of objects from multiple places at the same time
@@ -666,13 +685,24 @@ class RootObject : public BaseObject
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
     std::condition_variable _answerCondition;
-    std::mutex conditionMutex;
+    std::mutex _conditionMutex;
     std::mutex _answerMutex;
     std::string _answerExpected{""};
+
+    // Condition variable for signaling a BufferObject update
+    std::condition_variable _bufferObjectUpdatedCondition;
+    std::mutex _bufferObjectUpdatedMutex;
 
     // Tasks queue
     std::recursive_mutex _taskMutex;
     std::list<std::function<void()>> _taskQueue;
+
+    /**
+     * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
+     * \param timeout Timeout in us
+     * \return Return false is the timeout has been reached, true otherwise
+     */
+    bool waitSignalBufferObjectUpdated(uint64_t timeout);
 
     /**
      * \brief Method to process a serialized object
@@ -691,6 +721,11 @@ class RootObject : public BaseObject
      * \brief Execute all the tasks in the queue
      */
     void runTasks();
+
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
 
     /**
      * \brief Send a message to another root object

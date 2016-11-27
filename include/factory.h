@@ -62,6 +62,13 @@ class Factory
      */
     std::vector<std::string> getObjectTypes();
 
+    /**
+     * \brief Check whether a type exists
+     * \param type Type name
+     * \return Return true if the type exists
+     */
+    bool isCreatable(std::string type);
+
   private:
     std::weak_ptr<RootObject> _root;                                                 //!< Root object, used as root for all created objects
     bool _isScene{false};                                                            //!< True if the root is a Scene, false if it is a World (or if there is no root)

@@ -116,6 +116,7 @@ class Image_FFmpeg : public Image
     AVFormatContext* _avContext{nullptr};
     double _timeBase{0.033};
     int _videoStreamIndex{-1};
+    std::string _videoFormat{""}; //!< Holds the current video format information
 
 #if HAVE_PORTAUDIO
     std::unique_ptr<Speaker> _speaker;

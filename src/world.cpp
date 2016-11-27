@@ -77,6 +77,7 @@ void World::run()
     while (true)
     {
         Timer::get() << "worldLoop";
+        Timer::get() << "innerWorldLoop";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
         // Execute waiting tasks
@@ -93,7 +94,9 @@ void World::run()
             {
                 auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                 // This prevents the map structure to be modified in the threads
-                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), make_shared<SerializedObject>()));
+                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
+                if (!serializedObjectIt.second)
+                    continue; // Error while inserting the object in the map
 
                 threadIds.push_back(SThread::pool.enqueue([=, &o]() {
                     // Update the local objects
@@ -123,7 +126,8 @@ void World::run()
             // Ask for the upload of the new buffers, during the next world loop
             Timer::get() << "upload";
             for (auto& o : serializedObjects)
-                _link->sendBuffer(o.first, std::move(o.second));
+                if (o.second)
+                    _link->sendBuffer(o.first, std::move(o.second));
         }
 
         // Update the distant attributes
@@ -206,8 +210,13 @@ void World::run()
             frameIndex = (frameIndex + 1) % 60;
         }
 
-        // Get the current FPS
-        Timer::get() >> 1e6 / (float)_worldFramerate >> "worldLoop";
+        // Sync with buffer object update
+        Timer::get() >> "innerWorldLoop";
+        auto elapsed = Timer::get().getDuration("innerWorldLoop");
+        waitSignalBufferObjectUpdated(1e6 / (float)_worldFramerate - elapsed);
+
+        // Sync to world framerate
+        Timer::get() >> "worldLoop";
     }
 }
 
@@ -417,6 +426,10 @@ void World::applyConfig()
 
                 idx++;
             }
+
+            // Set some default directories
+            sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
+            sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_configurationPath});
         }
 
         // Then we link the objects together
@@ -470,16 +483,6 @@ void World::applyConfig()
                 }
 
                 string type = obj["type"].asString();
-
-                // Before anything, all objects have the right to know what the current path is
-                if (type != "scene")
-                {
-                    auto path = Utils::getPathFromFilePath(_configFilename);
-                    sendMessage(name, "configFilePath", {path});
-                    if (s.first != _masterSceneName)
-                        sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
-                    set(name, "configFilePath", {path}, false);
-                }
 
                 // Set their attributes
                 auto objMembers = obj.getMemberNames();
@@ -985,6 +988,8 @@ bool World::loadConfig(string filename, Json::Value& configuration)
         return false;
 
     _configFilename = filename;
+    _configurationPath = Utils::getPathFromFilePath(_configFilename);
+    _mediaPath = _configurationPath; // By default, same directory
     return true;
 }
 
@@ -1241,11 +1246,10 @@ void World::registerAttributes()
     addAttribute("computeBlending",
         [&](const Values& args) {
             _blendingMode = args[0].as<string>();
-            sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode});
+            addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode}); });
 
             return true;
         },
-        [&]() -> Values { return {_blendingMode}; },
         {'s'});
     setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
@@ -1516,6 +1520,9 @@ void World::registerAttributes()
             for (int i = 2; i < args.size(); ++i)
                 targets.push_back(args[i].as<string>());
 
+            if (!_factory->isCreatable(objType))
+                return false;
+
             setAttribute("deleteObject", {objName});
             setAttribute("addObject", {objType, objName});
             addTask([=]() {
@@ -1552,6 +1559,7 @@ void World::registerAttributes()
             return true;
         },
         {'s'});
+    setAttributeDescription("saveProject", "Save only the configuration of images, textures and meshes");
 
     addAttribute("loadProject",
         [&](const Values& args) {
@@ -1563,6 +1571,7 @@ void World::registerAttributes()
             return true;
         },
         {'s'});
+    setAttributeDescription("loadProject", "Load only the configuration of images, textures and meshes");
 
     addAttribute("sendAll",
         [&](const Values& args) {
@@ -1633,5 +1642,25 @@ void World::registerAttributes()
         },
         {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
+
+    addAttribute("configurationPath",
+        [&](const Values& args) {
+            _configurationPath = args[0].as<string>();
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath}); });
+            return true;
+        },
+        [&]() -> Values { return {_configurationPath}; },
+        {'s'});
+    setAttributeDescription("configurationPath", "Path to the configuration files");
+
+    addAttribute("mediaPath",
+        [&](const Values& args) {
+            _mediaPath = args[0].as<string>();
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_mediaPath}); });
+            return true;
+        },
+        [&]() -> Values { return {_mediaPath}; },
+        {'s'});
+    setAttributeDescription("mediaPath", "Path to the media files");
 }
 }

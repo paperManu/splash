@@ -1,6 +1,27 @@
 Splash release notes
 ===================
 
+Splash 0.4.14 (2016-11-27)
+--------------------------
+New features:
+* Added integration testing using Python
+* Objects now ask the configuration path from their root; Added a media path
+
+Improvements:
+* BufferObjects now force a World loop iteration, to improve sync
+* Fixed an issue in world loop, which was sending empty serialized buffers when the objects were not updated
+* Image_FFmpeg: forcing decoding thread_count, works depending on the codec
+* Image_FFmpeg: getting video codec info and setting it as an attribute
+* Limited threadpool size to 32 instead of 16
+* Disable input texture filtering by default, as the Filter class will also create mipmaps
+
+Bug fixed:
+* Fixed an issue with blending computation at startup
+* Fixed an issue when trying to replace an object with a non-existing type
+* Integration test used installed binary instead of local one
+* Fixed an issue with FileSelector, which reverted to run path after the first use
+* Image_FFmpeg: fixed read issue with some video codecs
+
 Splash 0.4.12 (2016-11-11)
 --------------------------
 Improvements:
