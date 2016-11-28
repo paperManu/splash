@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include "./factory.h"
 #include "./osUtils.h"
 #include "./queue.h"
 #include "./scene.h"
@@ -15,6 +16,11 @@ namespace Splash
 GuiMedia::GuiMedia(weak_ptr<Scene> scene, string name)
     : GuiWidget(scene, name)
 {
+    Factory factory;
+    auto types = factory.getObjectsOfCategory(BaseObject::Category::IMAGE);
+    for (auto& type : types)
+        _mediaTypes[factory.getShortDescription(type)] = type;
+
     for (auto& type : _mediaTypes)
         _mediaTypesReversed[type.second] = type.first;
 }
