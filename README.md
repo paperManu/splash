@@ -110,8 +110,6 @@ And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
 
 #### Mac OSX
 
-Before anything, note that you can grab the latest release version of Splash for OSX right [here](https://github.com/paperManu/splash/releases), as an application bundle.
-
 OSX installation is still a work in progress and has not been extensively tested (far from it!). Also, our current tests have shown that it is far easier to install on OSX version 10.9 or newer, as they switched from libstdc++ (GCC standard library) to libc++ (Clang standard library) as default which seems to solve tedious linking issues.
 
 So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php) or [Homebrew](https://brew.sh), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
