@@ -1,0 +1,6 @@
+package:
+    build: .
+    volumes:
+        - .:/pkg
+        - /tmp:/data
+    working_dir: /data
