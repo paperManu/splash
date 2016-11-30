@@ -1033,6 +1033,14 @@ void Scene::registerAttributes()
         {'s', 'n'});
     setAttributeDescription("log", "Add an entry to the logs, given its message and priority");
 
+    addAttribute("logToFile",
+        [&](const Values& args) {
+            Log::get().logToFile(args[0].as<bool>());
+            return true;
+        },
+        {'n'});
+    setAttributeDescription("logToFile", "If set to 1, the process holding the Scene will try to write log to file");
+
     addAttribute("ping", [&](const Values& args) {
         _textureUploadCondition.notify_all();
         sendMessageToWorld("pong", {_name});

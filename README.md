@@ -104,6 +104,10 @@ Lastly, if you want to have access to realtime scheduling within Splash, you nee
     sudo adduser $USER realtime
     sudo cp ./data/config/realtime.conf /etc/security/limits.d/
 
+And if you want the logs to be written to /var/log/splash.log:
+
+    sudo adduser $USER syslog
+
 Then log out and log back in.
 
 And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
