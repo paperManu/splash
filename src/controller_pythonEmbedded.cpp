@@ -4,6 +4,7 @@
 #include <functional>
 #include <mutex>
 
+#include "./log.h"
 #include "./osUtils.h"
 
 using namespace std;
@@ -20,6 +21,28 @@ PyObject* PythonEmbedded::SplashError{nullptr};
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
 {
     return static_cast<PythonEmbedded*>(PyCapsule_Import("splash.splash", 0));
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetLogs_doc__,
+    "Get the logs from Splash\n"
+    "\n"
+    "splash.get_logs()\n"
+    "\n"
+    "Returns:\n"
+    "  The logs as a list\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetLogs(PyObject* self, PyObject* args)
+{
+    auto logs = Log::get().getLogs(Log::ERROR, Log::WARNING, Log::MESSAGE);
+    PyObject* pythonLogList = PyList_New(logs.size());
+    for (int i = 0; i < logs.size(); ++i)
+        PyList_SetItem(pythonLogList, i, Py_BuildValue("s", logs[i].c_str()));
+
+    return pythonLogList;
 }
 
 /*************/
@@ -615,6 +638,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
 
 /*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {{(char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
+    {(char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
     {(char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
     {(char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
     {(char*)"get_object_attribute_description",
