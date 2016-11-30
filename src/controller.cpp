@@ -1,5 +1,8 @@
 #include "./controller.h"
 
+#include <algorithm>
+
+#include "./factory.h"
 #include "./scene.h"
 
 using namespace std;
@@ -129,6 +132,27 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
     }
 
     return reversedLinks;
+}
+
+/*************/
+string ControllerObject::getShortDescription(const string& type) const
+{
+    Factory factory;
+    return factory.getShortDescription(type);
+}
+
+/*************/
+string ControllerObject::getDescription(const string& type) const
+{
+    Factory factory;
+    return factory.getDescription(type);
+}
+
+/*************/
+vector<string> ControllerObject::getTypesFromCategory(const BaseObject::Category& category) const
+{
+    Factory factory;
+    return factory.getObjectsOfCategory(category);
 }
 
 /*************/

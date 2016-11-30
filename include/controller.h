@@ -101,6 +101,27 @@ class ControllerObject : public BaseObject
     std::map<std::string, std::string> getObjectTypes() const;
 
     /**
+     * \brief Get an object short description
+     * \param type Object type
+     * \return Return a short description
+     */
+    std::string getShortDescription(const std::string& type) const;
+
+    /**
+     * \brief Get an object description
+     * \param type Object type
+     * \return Return a description
+     */
+    std::string getDescription(const std::string& type) const;
+
+    /**
+     * \brief Get all types of given category
+     * \param category Category to look for
+     * \return Return a list of all types of the given category
+     */
+    std::vector<std::string> getTypesFromCategory(const BaseObject::Category& category) const;
+
+    /**
      * \brief Get all object of given type
      * \param type Type to look for
      * \return Return a list of all objects of the given type
