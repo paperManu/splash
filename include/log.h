@@ -294,7 +294,7 @@ class Log
         // Write to log file, if we may
         if (_logToFile)
         {
-            auto logFile = std::ofstream(SPLASH_LOG_FILE, std::ostream::out | std::ostream::app);
+            std::ofstream logFile(SPLASH_LOG_FILE, std::ostream::out | std::ostream::app);
             if (logFile.good())
             {
                 logFile << timedMsg << std::endl;
