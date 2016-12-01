@@ -1,0 +1,13 @@
+image: ubuntu:xenial
+
+build:
+  stage: build
+  before_script: 
+    - apt update -qq
+    - apt install -y build-essential git-core zip subversion cmake libtool clang libxrandr-dev libxi-dev libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev libglfw3-dev libxinerama-dev libxcursor-dev python3-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
+  script: 
+    - git submodule update --init
+    - rm -rf build && mkdir build && cd build
+    - cmake ..
+    - make -j$(nproc)
+    - make check && make package
