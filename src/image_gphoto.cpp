@@ -1,5 +1,6 @@
 #include "image_gphoto.h"
 
+#include <cmath>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -13,7 +14,8 @@ namespace Splash
 {
 
 /*************/
-Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root, std::string cameraName) : Image(root)
+Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root, std::string cameraName)
+    : Image(root)
 {
     init();
     read(cameraName);

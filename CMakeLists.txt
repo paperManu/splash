@@ -42,6 +42,7 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 #
 # Find the various libraries
 #
+set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
@@ -49,6 +50,7 @@ find_package(Snappy REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
+pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 
 # Optional dependencies
 if(UNIX AND NOT APPLE)
@@ -62,7 +64,6 @@ endif()
 
 find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
-pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)

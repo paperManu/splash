@@ -76,7 +76,7 @@ A few more libraries are used as submodules in the git repository:
 
 #### Linux
 
-The current release of Splash has currently only been compiled and tested on Ubuntu (version 16.04 and higher) and Mint 18 and higher. The easy way to install it is to get the Debian archive from the [release page](https://github.com/paperManu/splash/releases), and install it with :
+The current release of Splash has currently only been compiled and tested on Ubuntu (version 16.04) and Mint 18 and higher. The easy way to install it is to get the Debian archive from the [release page](https://github.com/paperManu/splash/releases), and install it with :
 
     sudo apt install <download path>/splash-<version>-Linux.deb
 
@@ -90,6 +90,7 @@ You can also compile Splash by hand, especially if you are curious about its int
     git clone git://github.com/paperManu/splash
     cd splash
     git submodule update --init
+    ./make_deps.sh
     mkdir -p build && cd build
     cmake ..
     make && sudo make install

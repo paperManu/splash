@@ -27,4 +27,5 @@ RUN apt install --assume-yes \
     libavutil-dev \
     libswscale-dev \
     portaudio19-dev \
-    libopencv-dev
+    libopencv-dev \
+    yasm
