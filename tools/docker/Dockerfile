@@ -1,4 +1,5 @@
 FROM ubuntu:xenial
+MAINTAINER Emmanuel Durand <emmanueldurand@protonmail.com>
 
 RUN apt update && apt upgrade -y
 RUN apt install --assume-yes \
@@ -29,3 +30,9 @@ RUN apt install --assume-yes \
     portaudio19-dev \
     libopencv-dev \
     yasm
+
+VOLUME /pkg
+
+COPY build_package.sh /tmp/
+
+ENTRYPOINT ["bash", "-c", "/tmp/build_package.sh ${*}", "--"]

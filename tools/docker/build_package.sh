@@ -7,7 +7,13 @@ if [ ! -d "/pkg" ]; then
     exit 1
 fi
 
-git clone git://github.com/paperManu/splash
+if [ ! -d "splash" ]; then
+    rm -rf splash
+fi
+
+echo "Checking out branch $git_branch"
+
+git clone git://gitlab.com/sat-metalab/splash.git
 cd splash
 git checkout $git_branch
 git submodule update --init

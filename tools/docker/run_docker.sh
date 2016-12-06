@@ -7,10 +7,10 @@ if [ ! -f "build_package.sh" ]; then
     exit 1
 fi
 
-if [ ! $(which docker-compose) ]; then
-    echo "docker.io and docker-compose have to be installed for this script to run"
+if [ ! $(which docker) ]; then
+    echo "docker.io has to be installed for this script to run"
     exit 1
 fi
 
-docker-compose build --no-cache --force-rm --pull
-docker-compose run package /pkg/build_package.sh $git_branch
+docker build -t metalab/splash:build -f Dockerfile .
+docker run -t -v ${PWD}:/pkg:rw metalab/splash:build $git_branch
