@@ -930,17 +930,26 @@ bool World::copyCameraParameters(std::string filename)
 Values World::jsonToValues(const Json::Value& values)
 {
     Values outValues;
-    for (const auto& v : values)
-    {
-        if (v.isInt())
-            outValues.emplace_back(v.asInt());
-        else if (v.isDouble())
-            outValues.emplace_back(v.asFloat());
-        else if (v.isArray())
-            outValues.emplace_back(jsonToValues(v));
-        else
-            outValues.emplace_back(v.asString());
-    }
+
+    if (values.isInt())
+        outValues.emplace_back(values.asInt());
+    else if (values.isDouble())
+        outValues.emplace_back(values.asFloat());
+    else if (values.isArray())
+        for (const auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt());
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat());
+            else if (v.isArray())
+                outValues.emplace_back(jsonToValues(v));
+            else
+                outValues.emplace_back(v.asString());
+        }
+    else
+        outValues.emplace_back(values.asString());
+
     return outValues;
 }
 
