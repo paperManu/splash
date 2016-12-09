@@ -128,13 +128,16 @@ class PythonEmbedded : public ControllerObject
 
     static PyObject* pythonInitSplash();
     static PythonEmbedded* getSplashInstance(PyObject* module);
+    static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
+    static PyObject* pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectReversedLinks(PyObject* self, PyObject* args);
+    static PyObject* pythonGetTypesFromCategory(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);

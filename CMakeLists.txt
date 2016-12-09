@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.4.14
+    VERSION 0.5.0
     LANGUAGES C CXX
 )
 
@@ -42,6 +42,7 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 #
 # Find the various libraries
 #
+set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
@@ -49,6 +50,7 @@ find_package(Snappy REQUIRED)
 pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
+pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 
 # Optional dependencies
 if(UNIX AND NOT APPLE)
@@ -62,7 +64,6 @@ endif()
 
 find_package(Doxygen)
 pkg_search_module(GPHOTO libgphoto2)
-pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
 pkg_search_module(OPENCV opencv)
 pkg_search_module(PORTAUDIO portaudio-2.0)
 pkg_search_module(SHMDATA shmdata-1.3)
@@ -83,16 +84,9 @@ set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
 set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
 
-if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION GREATER 57)
-    set(HAVE_FFMPEG_3 1)
-    set(HAVE_FFMPEG_2_8 0)
-else()
-    set(HAVE_FFMPEG_3 0)
-    if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION LESS 56)
-        set(HAVE_FFMPEG_2_8 0)
-    else()
-        set(HAVE_FFMPEG_2_8 1)
-    endif()
+if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION LESS 57)
+    message(WARNING "FFmpeg version is older than 3.1, support disabled")
+    set(FFMPEG_FOUND 0)
 endif()
 
 if(UNIX AND NOT APPLE)
@@ -136,10 +130,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://github.com/paperManu/splash/wiki")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
-                                      libavformat-ffmpeg56,
-                                      libavcodec-ffmpeg56,
-                                      libavutil-ffmpeg54,
-                                      libswscale-ffmpeg3,
                                       libboost-system1.58.0,
                                       libglfw3,
                                       libgphoto2-6,
@@ -192,12 +182,12 @@ function(info_cfg_text
 endfunction()
 
 info_cfg_option(GPHOTO_VERSION)
-info_cfg_option(FFMPEG_libavformat_VERSION)
-info_cfg_option(FFMPEG_libavcodec_VERSION)
-info_cfg_option(FFMPEG_libavutil_VERSION)
-info_cfg_option(FFMPEG_libswscale_VERSION)
-info_cfg_option(HAVE_FFMPEG_3)
-info_cfg_option(HAVE_FFMPEG_2_8)
+if (FFMPEG_FOUND)
+    info_cfg_option(FFMPEG_libavformat_VERSION)
+    info_cfg_option(FFMPEG_libavcodec_VERSION)
+    info_cfg_option(FFMPEG_libavutil_VERSION)
+    info_cfg_option(FFMPEG_libswscale_VERSION)
+endif()
 info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(SHMDATA_VERSION)

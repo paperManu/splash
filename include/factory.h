@@ -63,6 +63,27 @@ class Factory
     std::vector<std::string> getObjectTypes();
 
     /**
+     * \brief Get all objects of the given BaseObject::Category
+     * \param c Category to look for
+     * \return Return a list of object types of the given class
+     */
+    std::vector<std::string> getObjectsOfCategory(BaseObject::Category c);
+
+    /**
+     * \brief Get object type short description
+     * \param type Object type
+     * \return Return short description
+     */
+    std::string getShortDescription(const std::string& type);
+
+    /**
+     * \brief Get object type description
+     * \param type Object type
+     * \return Return description
+     */
+    std::string getDescription(const std::string& type);
+
+    /**
      * \brief Check whether a type exists
      * \param type Type name
      * \return Return true if the type exists
@@ -70,9 +91,28 @@ class Factory
     bool isCreatable(std::string type);
 
   private:
-    std::weak_ptr<RootObject> _root;                                                 //!< Root object, used as root for all created objects
-    bool _isScene{false};                                                            //!< True if the root is a Scene, false if it is a World (or if there is no root)
-    std::map<std::string, std::function<std::shared_ptr<BaseObject>()>> _objectBook; //!< List of all creatable objects
+    using BuildFuncT = std::function<std::shared_ptr<BaseObject>()>;
+
+    struct Page
+    {
+        Page() = default;
+        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, std::string sd = "none", std::string d = "none")
+            : builder(f)
+            , objectCategory(o)
+            , shortDescription(sd)
+            , description(d)
+        {
+        }
+        BuildFuncT builder{};
+        BaseObject::Category objectCategory{BaseObject::Category::MISC};
+        std::string shortDescription{"none"};
+        std::string description{"none"};
+        Values attributes{};
+    };
+
+    std::weak_ptr<RootObject> _root;         //!< Root object, used as root for all created objects
+    bool _isScene{false};                    //!< True if the root is a Scene, false if it is a World (or if there is no root)
+    std::map<std::string, Page> _objectBook; //!< List of all creatable objects
 
     /**
      * |brief Registers the available objects inside the _objectBook

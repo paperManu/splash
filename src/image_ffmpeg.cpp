@@ -14,10 +14,6 @@
 #include "./threadpool.h"
 #include "./timer.h"
 
-#if HAVE_FFMPEG_3
-#define PIX_FMT_RGB24 AV_PIX_FMT_RGB24
-#endif
-
 using namespace std;
 
 namespace Splash
@@ -142,18 +138,10 @@ void Image_FFmpeg::readLoop()
     // Find the first video stream
     for (int i = 0; i < _avContext->nb_streams; ++i)
     {
-#if HAVE_FFMPEG_3
         if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
-#else
-        if (_avContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
-#endif
             _videoStreamIndex = i;
 #if HAVE_PORTAUDIO
-#if HAVE_FFMPEG_3
         else if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
-#else
-        else if (_avContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO && _audioStreamIndex < 0)
-#endif
             _audioStreamIndex = i;
 #endif
     }
@@ -173,7 +161,6 @@ void Image_FFmpeg::readLoop()
 
     // Find a video decoder
     auto videoStream = _avContext->streams[_videoStreamIndex];
-#if HAVE_FFMPEG_3
     auto videoCodecParameters = _avContext->streams[_videoStreamIndex]->codecpar;
     auto videoCodecContext = avcodec_alloc_context3(nullptr);
     if (avcodec_parameters_to_context(videoCodecContext, videoCodecParameters) < 0)
@@ -181,9 +168,6 @@ void Image_FFmpeg::readLoop()
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unable to create a video context from the codec parameters from file " << _filepath << Log::endl;
         return;
     }
-#else
-    auto videoCodecContext = _avContext->streams[_videoStreamIndex]->codec;
-#endif
 
     // Set video format info
     _videoFormat.resize(1024);
@@ -225,23 +209,15 @@ void Image_FFmpeg::readLoop()
 #if HAVE_PORTAUDIO
     // Find an audio decoder
     AVCodec* audioCodec{nullptr};
-#if HAVE_FFMPEG_3
     auto audioCodecContext = avcodec_alloc_context3(nullptr);
-#else
-    AVCodecContext* audioCodecContext{nullptr};
-#endif
     if (_audioStreamIndex >= 0)
     {
-#if HAVE_FFMPEG_3
         auto audioCodecParameters = _avContext->streams[_audioStreamIndex]->codecpar;
         if (avcodec_parameters_to_context(audioCodecContext, audioCodecParameters) < 0)
         {
             Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unable to create an audio context from the codec parameters for file " << _filepath << Log::endl;
             return;
         }
-#else
-        audioCodecContext = _avContext->streams[_audioStreamIndex]->codec;
-#endif
 
         audioCodec = avcodec_find_decoder(audioCodecContext->codec_id);
 
@@ -305,13 +281,8 @@ void Image_FFmpeg::readLoop()
 
     // Start reading frames
     AVFrame *frame, *rgbFrame;
-#if HAVE_FFMPEG_3
     frame = av_frame_alloc();
     rgbFrame = av_frame_alloc();
-#else
-    frame = avcodec_alloc_frame();
-    rgbFrame = avcodec_alloc_frame();
-#endif
 
     if (!frame || !rgbFrame)
     {
@@ -319,17 +290,12 @@ void Image_FFmpeg::readLoop()
         return;
     }
 
-#if HAVE_FFMPEG_3
     int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height, 1);
-#else
-    int numBytes = avpicture_get_size(PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height);
-#endif
     vector<unsigned char> buffer(numBytes);
 
     struct SwsContext* swsContext;
     if (!isHap)
     {
-#if HAVE_FFMPEG_3
         swsContext = sws_getContext(videoCodecContext->width,
             videoCodecContext->height,
             videoCodecContext->pix_fmt,
@@ -342,20 +308,6 @@ void Image_FFmpeg::readLoop()
             nullptr);
 
         av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height, 1);
-#else
-        swsContext = sws_getContext(videoCodecContext->width,
-            videoCodecContext->height,
-            videoCodecContext->pix_fmt,
-            videoCodecContext->width,
-            videoCodecContext->height,
-            PIX_FMT_RGB24,
-            SWS_BILINEAR,
-            nullptr,
-            nullptr,
-            nullptr);
-
-        avpicture_fill((AVPicture*)rgbFrame, buffer.data(), PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height);
-#endif
     }
 
     AVPacket packet;
@@ -387,16 +339,11 @@ void Image_FFmpeg::readLoop()
                 // If the codec is handled by FFmpeg
                 if (!isHap)
                 {
-#if HAVE_FFMPEG_3
                     auto frameFinished = false;
                     if (avcodec_send_packet(videoCodecContext, &packet) < 0)
                         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding a frame in file " << _filepath << Log::endl;
                     if (avcodec_receive_frame(videoCodecContext, frame) == 0)
                         frameFinished = true;
-#else
-                    int frameFinished;
-                    avcodec_decode_video2(videoCodecContext, frame, &frameFinished, &packet);
-#endif
 
                     if (frameFinished)
                     {
@@ -410,11 +357,7 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
-#if HAVE_FFMPEG_3 or HAVE_FFMPEG_2_8
                             timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _timeBase * 1e6);
-#else
-                            timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
-#endif
                         else
                             timing = 0.0;
                         // This handles repeated frames
@@ -452,11 +395,7 @@ void Image_FFmpeg::readLoop()
                         }
                         else
                         {
-#if HAVE_FFMPEG_3
                             av_packet_unref(&packet);
-#else
-                            av_free_packet(&packet);
-#endif
                             return;
                         }
 
@@ -491,11 +430,7 @@ void Image_FFmpeg::readLoop()
                 int timedFramesBuffered = _timedFrames.size();
 
                 _videoSeekMutex.unlock();
-#if HAVE_FFMPEG_3
                 av_packet_unref(&packet);
-#else
-                av_free_packet(&packet);
-#endif
 
                 // Check the current buffer size (sum of all frames in buffer)
                 int64_t totalBufferSize = accumulate(_framesSize.begin(), _framesSize.end(), (int64_t)0);
@@ -518,16 +453,11 @@ void Image_FFmpeg::readLoop()
             // Reading the audio
             else if (packet.stream_index == _audioStreamIndex && audioCodecContext)
             {
-#if HAVE_FFMPEG_3
                 auto hasFrame = false;
                 if (avcodec_send_packet(audioCodecContext, &packet) < 0)
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
                 if (avcodec_receive_frame(audioCodecContext, frame) == 0)
                     hasFrame = true;
-#else
-                int hasFrame = 0;
-                int length = avcodec_decode_audio4(audioCodecContext, frame, &hasFrame, &packet);
-#endif
 
                 if (hasFrame)
                 {
@@ -536,20 +466,12 @@ void Image_FFmpeg::readLoop()
                     _speaker->addToQueue(buffer);
                 }
 
-#if HAVE_FFMPEG_3
                 av_packet_unref(&packet);
-#else
-                av_free_packet(&packet);
-#endif
             }
 #endif
             else
             {
-#if HAVE_FFMPEG_3
                 av_packet_unref(&packet);
-#else
-                av_free_packet(&packet);
-#endif
             }
         }
 
@@ -557,13 +479,8 @@ void Image_FFmpeg::readLoop()
 
     } while (_loopOnVideo && _continueRead);
 
-#if HAVE_FFMPEG_3
     av_frame_free(&rgbFrame);
     av_frame_free(&frame);
-#else
-    av_free(rgbFrame);
-    av_free(frame);
-#endif
 
     if (!isHap)
         avcodec_close(videoCodecContext);

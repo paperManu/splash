@@ -218,6 +218,13 @@ class BaseObject
         POST_WINDOW = 55
     };
 
+    enum class Category
+    {
+        MISC,
+        IMAGE,
+        MESH
+    };
+
   public:
     /**
      * \brief Constructor.

@@ -4,6 +4,7 @@
 #include <functional>
 #include <mutex>
 
+#include "./log.h"
 #include "./osUtils.h"
 
 using namespace std;
@@ -20,6 +21,28 @@ PyObject* PythonEmbedded::SplashError{nullptr};
 PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
 {
     return static_cast<PythonEmbedded*>(PyCapsule_Import("splash.splash", 0));
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetLogs_doc__,
+    "Get the logs from Splash\n"
+    "\n"
+    "splash.get_logs()\n"
+    "\n"
+    "Returns:\n"
+    "  The logs as a list\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetLogs(PyObject* self, PyObject* args)
+{
+    auto logs = Log::get().getLogs(Log::ERROR, Log::WARNING, Log::MESSAGE);
+    PyObject* pythonLogList = PyList_New(logs.size());
+    for (int i = 0; i < logs.size(); ++i)
+        PyList_SetItem(pythonLogList, i, Py_BuildValue("s", logs[i].c_str()));
+
+    return pythonLogList;
 }
 
 /*************/
@@ -82,6 +105,44 @@ PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
     }
 
     return pythonObjectDict;
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectDescription_doc__,
+    "Get the description of the given object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_description(objecttype)\n"
+    "\n"
+    "Args:\n"
+    "  objecttype (string): type of the object\n"
+    "\n"
+    "Returns:\n"
+    "  The short and long descriptions of the object type\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance(self);
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
+
+    char* strType;
+    static const char* kwlist[] = {"objecttype", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        return Py_BuildValue("ss", "", "");
+    }
+
+    auto description = that->getDescription(string(strType));
+    auto shortDescription = that->getShortDescription(string(strType));
+    return Py_BuildValue("ss", description.c_str(), shortDescription.c_str());
 }
 
 /*************/
@@ -286,6 +347,57 @@ PyObject* PythonEmbedded::pythonGetObjectReversedLinks(PyObject* self, PyObject*
     }
 
     return pythonObjectDict;
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetTypesFromCategory_doc__,
+    "Get the object types of the given category\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_types_from_category(category)\n"
+    "\n"
+    "Args:\n"
+    "  category (string): the desired category, can be misc, image or mesh currently\n"
+    "\n"
+    "Returns:\n"
+    "  A list of the types\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance(self);
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
+
+    char* strCategory;
+    static const char* kwlist[] = {"category", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strCategory))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        return PyList_New(0);
+    }
+
+    auto cat = BaseObject::Category::MISC;
+    if (strcmp(strCategory, "image") == 0)
+        cat = BaseObject::Category::IMAGE;
+    else if (strcmp(strCategory, "mesh") == 0)
+        cat = BaseObject::Category::MESH;
+    else if (strcmp(strCategory, "misc") == 0)
+        cat = BaseObject::Category::MISC;
+    else
+        return PyList_New(0);
+
+    auto types = that->getTypesFromCategory(cat);
+    PyObject* pythonObjectList = PyList_New(types.size());
+    for (int i = 0; i < types.size(); ++i)
+        PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", types[i].c_str()));
+
+    return pythonObjectList;
 }
 
 /*************/
@@ -526,7 +638,9 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
 
 /*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {{(char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
+    {(char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
     {(char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
+    {(char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
     {(char*)"get_object_attribute_description",
         (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription,
         METH_VARARGS | METH_KEYWORDS,
@@ -535,6 +649,7 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {{(char*)"get_object_list", (PyCFu
     {(char*)"get_object_attributes", (PyCFunction)PythonEmbedded::pythonGetObjectAttributes, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributes_doc__},
     {(char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},
     {(char*)"get_object_reversed_links", (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectReversedLinks_doc__},
+    {(char*)"get_types_from_category", (PyCFunction)PythonEmbedded::pythonGetTypesFromCategory, METH_VARARGS | METH_KEYWORDS, pythonGetTypesFromCategory_doc__},
     {(char*)"set_global", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
     {(char*)"set_object", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
     {(char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},

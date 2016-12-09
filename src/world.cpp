@@ -930,17 +930,26 @@ bool World::copyCameraParameters(std::string filename)
 Values World::jsonToValues(const Json::Value& values)
 {
     Values outValues;
-    for (const auto& v : values)
-    {
-        if (v.isInt())
-            outValues.emplace_back(v.asInt());
-        else if (v.isDouble())
-            outValues.emplace_back(v.asFloat());
-        else if (v.isArray())
-            outValues.emplace_back(jsonToValues(v));
-        else
-            outValues.emplace_back(v.asString());
-    }
+
+    if (values.isInt())
+        outValues.emplace_back(values.asInt());
+    else if (values.isDouble())
+        outValues.emplace_back(values.asFloat());
+    else if (values.isArray())
+        for (const auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt());
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat());
+            else if (v.isArray())
+                outValues.emplace_back(jsonToValues(v));
+            else
+                outValues.emplace_back(v.asString());
+        }
+    else
+        outValues.emplace_back(values.asString());
+
     return outValues;
 }
 
@@ -1159,6 +1168,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << endl;
             exit(0);
         }
@@ -1167,6 +1177,13 @@ void World::parseArguments(int argc, char** argv)
             auto descriptions = getObjectsAttributesDescriptions();
             cout << descriptions << endl;
             exit(0);
+        }
+        else if (string(argv[idx]) == "-l" || string(argv[idx]) == "--log2file")
+        {
+            // Called twice, once for the world, once to tell the Scenes to save log too
+            setAttribute("logToFile", {1});
+            addTask([&]() { setAttribute("logToFile", {1}); });
+            idx++;
         }
         else if (defaultFile)
         {
@@ -1572,6 +1589,15 @@ void World::registerAttributes()
         },
         {'s'});
     setAttributeDescription("loadProject", "Load only the configuration of images, textures and meshes");
+
+    addAttribute("logToFile",
+        [&](const Values& args) {
+            Log::get().logToFile(args[0].as<bool>());
+            setAttribute("sendAllScenes", {"logToFile", args[0]});
+            return true;
+        },
+        {'n'});
+    setAttributeDescription("logToFile", "If set to 1, the process holding the World will try to write log to file");
 
     addAttribute("sendAll",
         [&](const Values& args) {

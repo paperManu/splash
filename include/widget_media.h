@@ -40,16 +40,7 @@ class GuiMedia : public GuiWidget
 
   private:
     std::map<std::string, int> _mediaTypeIndex;
-    std::map<std::string, std::string> _mediaTypes
-    {
-        {"image", "image"}, {"video", "image_ffmpeg"}, {"shared memory", "image_shmdata"}, {"queue", "queue"},
-#if HAVE_OPENCV
-            {"video grabber", "image_opencv"},
-#endif
-#if HAVE_OSX
-            {"syphon", "texture_syphon"},
-#endif
-    };
+    std::map<std::string, std::string> _mediaTypes;
     std::map<std::string, std::string> _mediaTypesReversed{}; // Created from the previous map
 
     Values _newMedia{"image", "", 0.f, 0.f};

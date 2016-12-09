@@ -69,7 +69,7 @@ shared_ptr<BaseObject> Factory::create(string type)
     auto page = _objectBook.find(type);
     if (page != _objectBook.end())
     {
-        return page->second();
+        return page->second.builder();
     }
     else
     {
@@ -88,6 +88,35 @@ vector<string> Factory::getObjectTypes()
 }
 
 /*************/
+vector<string> Factory::getObjectsOfCategory(BaseObject::Category c)
+{
+    vector<string> types;
+    for (auto& page : _objectBook)
+        if (page.second.objectCategory == c)
+            types.push_back(page.first);
+
+    return types;
+}
+
+/*************/
+string Factory::getShortDescription(const string& type)
+{
+    if (!isCreatable(type))
+        return "";
+
+    return _objectBook[type].shortDescription;
+}
+
+/*************/
+string Factory::getDescription(const string& type)
+{
+    if (!isCreatable(type))
+        return "";
+
+    return _objectBook[type].description;
+}
+
+/*************/
 bool Factory::isCreatable(string type)
 {
     auto it = _objectBook.find(type);
@@ -103,92 +132,111 @@ bool Factory::isCreatable(string type)
 /*************/
 void Factory::registerObjects()
 {
-    _objectBook["blender"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); };
-    _objectBook["camera"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root)); };
-    _objectBook["filter"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_root)); };
-    _objectBook["geometry"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); };
-    _objectBook["image"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); };
+    _objectBook["blender"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); }, BaseObject::Category::MISC, "blender");
+    _objectBook["camera"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root)); }, BaseObject::Category::MISC, "camera");
+    _objectBook["filter"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_root)); }, BaseObject::Category::MISC, "filter");
+    _objectBook["geometry"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); }, BaseObject::Category::MISC, "Geometry");
+    _objectBook["image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); }, BaseObject::Category::IMAGE, "image");
 
 #if HAVE_FFMPEG
-    _objectBook["image_ffmpeg"] = [&]() {
-        shared_ptr<BaseObject> object;
-        if (!_isScene)
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_root));
-        else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-        return object;
-    };
+    _objectBook["image_ffmpeg"] = Page(
+        [&]() {
+            shared_ptr<BaseObject> object;
+            if (!_isScene)
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_root));
+            else
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
+            return object;
+        },
+        BaseObject::Category::IMAGE,
+        "video");
 #endif
 
 #if HAVE_GPHOTO
-    _objectBook["image_gphoto"] = [&]() {
-        shared_ptr<BaseObject> object;
-        if (!_isScene)
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_root));
-        else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-        return object;
-    };
+    _objectBook["image_gphoto"] = Page(
+        [&]() {
+            shared_ptr<BaseObject> object;
+            if (!_isScene)
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_root));
+            else
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
+            return object;
+        },
+        BaseObject::Category::IMAGE,
+        "digital camera");
 #endif
 
 #if HAVE_SHMDATA
-    _objectBook["image_shmdata"] = [&]() {
-        shared_ptr<BaseObject> object;
-        if (!_isScene)
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_root));
-        else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-        return object;
-    };
+    _objectBook["image_shmdata"] = Page(
+        [&]() {
+            shared_ptr<BaseObject> object;
+            if (!_isScene)
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_root));
+            else
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
+            return object;
+        },
+        BaseObject::Category::IMAGE,
+        "video through shared memory");
 #endif
 
 #if HAVE_OPENCV
-    _objectBook["image_opencv"] = [&]() {
-        shared_ptr<BaseObject> object;
-        if (!_isScene)
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_root));
-        else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
-        return object;
-    };
+    _objectBook["image_opencv"] = Page(
+        [&]() {
+            shared_ptr<BaseObject> object;
+            if (!_isScene)
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_root));
+            else
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
+            return object;
+        },
+        BaseObject::Category::IMAGE,
+        "camera through opencv");
 #endif
 
-    _objectBook["mesh"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); };
+    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); });
 
 #if HAVE_SHMDATA
-    _objectBook["mesh_shmdata"] = [&]() {
-        shared_ptr<BaseObject> object;
-        if (!_isScene)
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_root));
-        else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root));
-        return object;
-    };
+    _objectBook["mesh_shmdata"] = Page(
+        [&]() {
+            shared_ptr<BaseObject> object;
+            if (!_isScene)
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_root));
+            else
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root));
+            return object;
+        },
+        BaseObject::Category::MESH,
+        "mesh through shared memory");
 #endif
 
-    _objectBook["object"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); };
+    _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); }, BaseObject::Category::MISC, "object");
 
 #if HAVE_PYTHON
-    _objectBook["python"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root)); };
+    _objectBook["python"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root)); }, BaseObject::Category::MISC, "python");
 #endif
 
-    _objectBook["queue"] = [&]() {
-        shared_ptr<BaseObject> object;
-        if (!_isScene)
-            object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(_root));
-        else
-            object = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_root));
-        return object;
-    };
+    _objectBook["queue"] = Page(
+        [&]() {
+            shared_ptr<BaseObject> object;
+            if (!_isScene)
+                object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(_root));
+            else
+                object = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_root));
+            return object;
+        },
+        BaseObject::Category::IMAGE,
+        "video queue");
 
-    _objectBook["texture_image"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); };
+    _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); }, BaseObject::Category::MISC, "texture image");
 
 #if HAVE_OSX
-    _objectBook["texture_syphon"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root)); };
+    _objectBook["texture_syphon"] =
+        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root)); }, BaseObject::Category::IMAGE, "texture image through Syphon");
 #endif
 
-    _objectBook["warp"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); };
-    _objectBook["window"] = [&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); };
+    _objectBook["warp"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); }, BaseObject::Category::MISC, "warp");
+    _objectBook["window"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); }, BaseObject::Category::MISC, "window");
 }
 
 } // end of namespace

@@ -632,6 +632,8 @@ void GuiGlobalView::processMouseEvents()
             float dx = io.MouseDelta.x;
             float dy = io.MouseDelta.y;
 
+            // We reset the up vector. Not ideal, but prevent the camera from being unusable.
+            setObject(_camera->getName(), "up", {0.0, 0.0, 1.0});
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)

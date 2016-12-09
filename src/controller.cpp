@@ -1,5 +1,8 @@
 #include "./controller.h"
 
+#include <algorithm>
+
+#include "./factory.h"
 #include "./scene.h"
 
 using namespace std;
@@ -132,6 +135,27 @@ unordered_map<string, vector<string>> ControllerObject::getObjectReversedLinks()
 }
 
 /*************/
+string ControllerObject::getShortDescription(const string& type) const
+{
+    Factory factory;
+    return factory.getShortDescription(type);
+}
+
+/*************/
+string ControllerObject::getDescription(const string& type) const
+{
+    Factory factory;
+    return factory.getDescription(type);
+}
+
+/*************/
+vector<string> ControllerObject::getTypesFromCategory(const BaseObject::Category& category) const
+{
+    Factory factory;
+    return factory.getObjectsOfCategory(category);
+}
+
+/*************/
 map<string, string> ControllerObject::getObjectTypes() const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
@@ -144,13 +168,15 @@ map<string, string> ControllerObject::getObjectTypes() const
     {
         if (!o.second->getSavable())
             continue;
-        types[o.first] = o.second->getRemoteType();
+        auto type = o.second->getRemoteType();
+        types[o.first] = type.empty() ? o.second->getType() : type;
     }
     for (auto& o : scene->_ghostObjects)
     {
         if (!o.second->getSavable())
             continue;
-        types[o.first] = o.second->getRemoteType();
+        auto type = o.second->getRemoteType();
+        types[o.first] = type.empty() ? o.second->getType() : type;
     }
 
     return types;

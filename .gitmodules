@@ -29,3 +29,7 @@
 [submodule "external/doctest"]
 	path = external/doctest
 	url = https://github.com/onqtam/doctest
+[submodule "external/ffmpeg"]
+	path = external/ffmpeg
+	url = https://git.ffmpeg.org/ffmpeg.git
+	branch = n3.2.1

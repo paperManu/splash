@@ -28,6 +28,7 @@
 #include <chrono>
 #include <ctime>
 #include <deque>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <mutex>
@@ -38,6 +39,8 @@
 #include "config.h"
 
 #include "coretypes.h"
+
+#define SPLASH_LOG_FILE "/var/log/splash.log"
 
 namespace Splash
 {
@@ -182,6 +185,12 @@ class Log
     Priority getVerbosity() { return _verbosity; }
 
     /**
+     * \brief Activate logging to /var/log/splash.log
+     * \param active Activated if true
+     */
+    void logToFile(bool activate) { _logToFile = activate; }
+
+    /**
      * \brief Set the verbosity of the console output
      * \param p Priority
      */
@@ -224,6 +233,7 @@ class Log
   private:
     mutable std::mutex _mutex;
     std::deque<std::pair<std::string, Priority>> _logs;
+    bool _logToFile{false};
     int _logLength{500};
     int _logPointer{0};
     Priority _verbosity{MESSAGE};
@@ -281,6 +291,18 @@ class Log
 
         addToString(timedMsg, args...);
 
+        // Write to log file, if we may
+        if (_logToFile)
+        {
+            std::ofstream logFile(SPLASH_LOG_FILE, std::ostream::out | std::ostream::app);
+            if (logFile.good())
+            {
+                logFile << timedMsg << std::endl;
+                logFile.close();
+            }
+        }
+
+        // Write to console
         if (p >= _verbosity)
             toConsole(timedMsg);
 

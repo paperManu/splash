@@ -15,6 +15,10 @@ namespace Splash
 GuiMedia::GuiMedia(weak_ptr<Scene> scene, string name)
     : GuiWidget(scene, name)
 {
+    auto types = getTypesFromCategory(BaseObject::Category::IMAGE);
+    for (auto& type : types)
+        _mediaTypes[getShortDescription(type)] = type;
+
     for (auto& type : _mediaTypes)
         _mediaTypesReversed[type.second] = type.first;
 }
