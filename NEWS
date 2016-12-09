@@ -1,8 +1,27 @@
 Splash release notes
 ===================
 
-Splash 0.4.xx (2016-xx-xx)
+Splash 0.5.x (2017-xx-xx)
 --------------------------
+
+Splash 0.5.0 (2016-12-09)
+--------------------------
+New features:
+* If possible, Splash now writes logs to /var/log/splash.log
+* Added access to logs through Python
+* Added get_object_description and get_type_from_category methods to Python module
+* Added Debian package build through Docker
+
+Improvements:
+* Embedding FFmpeg and link statically to it
+* Resetting the up vector when moving the camera manually
+* Generates automatically package through Gitlab artifacts
+* Objects now have a Class, and can be listed by it by the factory
+
+Bug fixed:
+* Fixed an issue with node view
+* Fixed compilation issue on GCC 4.8
+* Fixed a bug where configuration parameters had to be arrays, even for single values
 
 Splash 0.4.14 (2016-11-27)
 --------------------------
