@@ -31,6 +31,9 @@
 /* Defined to 1 if python3.x is detected */
 #cmakedefine01 HAVE_PYTHON
 
+/* Defined to 1 if the Datapath SDK is detected */
+#cmakedefine01 HAVE_DATAPATH
+
 /* Support mmx instructions */
 #cmakedefine01 HAVE_MMX
 

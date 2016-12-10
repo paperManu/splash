@@ -97,6 +97,18 @@ elseif(APPLE)
     set(HAVE_OSX 1)
 endif()
 
+if (DATAPATH_SDK_PATH)
+    if (IS_DIRECTORY "${DATAPATH_SDK_PATH}/include" AND IS_DIRECTORY "${DATAPATH_SDK_PATH}/utils")
+        set(HAVE_DATAPATH 1)
+    else()
+        set(DATAPATH_SDK_PATH "")
+        set(HAVE_DATAPATH 0)
+    endif()
+else()
+    set(DATAPATH_SDK_PATH "")
+    set(HAVE_DATAPATH 0)
+endif()
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h")
 
 #
@@ -192,6 +204,7 @@ info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)
+info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
 
 info_cfg_text("")

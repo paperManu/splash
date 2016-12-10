@@ -31,6 +31,11 @@ include_directories(../external/piccante/include)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 
+if (HAVE_DATAPATH)
+    include_directories(${DATAPATH_SDK_PATH}/include)
+    include_directories(${DATAPATH_SDK_PATH}/utils/include)
+endif()
+
 if (APPLE)
     include_directories(../external/glad/compatibility/include)
 else()
@@ -87,6 +92,7 @@ target_sources(
     gpuBuffer.cpp
     imageBuffer.cpp
     image.cpp
+    image_v4l2.cpp
     link.cpp
     mesh_bezierPatch.cpp
     mesh.cpp
