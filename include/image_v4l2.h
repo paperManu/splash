@@ -86,6 +86,7 @@ class Image_V4L2 : public Image
 
     // Datapath specific variables
     bool _isDatapath{false};
+    bool _autosetResolution{true};
 
     // Capture parameters
     int _v4l2Index{0};

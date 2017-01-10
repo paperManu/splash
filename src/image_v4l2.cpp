@@ -35,7 +35,7 @@ Image_V4L2::~Image_V4L2()
 /*************/
 void Image_V4L2::init()
 {
-    _type = "texture_datapath";
+    _type = "image_v4l2";
     registerAttributes();
 
     // If the root object weak_ptr is expired, this means that
@@ -213,6 +213,26 @@ void Image_V4L2::captureThreadFunc()
                     }
                 }
             }
+
+#if HAVE_DATAPATH
+            // Get the source video format, for information
+            if (_isDatapath)
+            {
+                memset(&_v4l2SourceFormat, 0, sizeof(_v4l2SourceFormat));
+                _v4l2SourceFormat.type = V4L2_BUF_TYPE_CAPTURE_SOURCE;
+                if (ioctl(_deviceFd, RGB133_VIDIOC_G_SRC_FMT, &_v4l2SourceFormat) >= 0)
+                {
+                    auto sourceFormatAsString = to_string(_v4l2SourceFormat.fmt.pix.width) + "x" + to_string(_v4l2SourceFormat.fmt.pix.height) + string("@") +
+                                                to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
+                                                string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
+
+                    if (_autosetResolution && (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height))
+                        SThread::pool.enqueueWithoutId([=]() { setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height}); });
+
+                    _sourceFormatAsString = sourceFormatAsString;
+                }
+            }
+#endif
         }
 
         bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -458,22 +478,6 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
     _spec.type = ImageBufferSpec::Type::UINT8;
     _spec.format = {"R", "G", "B"};
 
-#if HAVE_DATAPATH
-    // Get the source video format, for information
-    if (_isDatapath)
-    {
-        memset(&_v4l2SourceFormat, 0, sizeof(_v4l2SourceFormat));
-        _v4l2SourceFormat.type = V4L2_BUF_TYPE_CAPTURE_SOURCE;
-        if (ioctl(_deviceFd, RGB133_VIDIOC_G_SRC_FMT, &_v4l2SourceFormat) < 0)
-            Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Failed to get current source format" << Log::endl;
-
-        _sourceFormatAsString = to_string(_v4l2SourceFormat.fmt.pix.width) + "x" + to_string(_v4l2SourceFormat.fmt.pix.height) + string("@") +
-                                to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
-                                string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
-        Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - Source format: " << _sourceFormatAsString << Log::endl;
-    }
-#endif
-
     return true;
 }
 
@@ -605,6 +609,15 @@ bool Image_V4L2::enumerateVideoStandards()
 /*************/
 void Image_V4L2::registerAttributes()
 {
+    addAttribute("autosetResolution",
+        [&](const Values& args) {
+            _autosetResolution = static_cast<bool>(args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {(int)_autosetResolution}; },
+        {'n'});
+    setAttributeParameter("autosetResolution", true, true);
+
     addAttribute("doCapture",
         [&](const Values& args) {
             if (args[0].as<int>() == 1)
