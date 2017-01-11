@@ -300,6 +300,9 @@ void World::applyConfig()
                     display += to_string(0);
 #endif
 
+                if (!_forcedDisplay.empty())
+                    display = "DISPLAY=:0." + _forcedDisplay;
+
                 string name = jsScenes[i]["name"].asString();
                 int pid = -1;
                 if (spawn > 0)
@@ -1149,6 +1152,38 @@ void World::parseArguments(int argc, char** argv)
             Log::get().setVerbosity(Log::DEBUGGING);
             idx++;
         }
+#if HAVE_LINUX
+        else if (string(argv[idx]) == "-D" || string(argv[idx]) == "--forceDisplay")
+        {
+            if (idx + 1 >= argc)
+            {
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx]) << ": argument expects a positive integer" << Log::endl;
+                exit(0);
+            }
+
+            _forcedDisplay = string(argv[idx + 1]);
+
+            try
+            {
+                if (stoi(_forcedDisplay) < 0)
+                {
+                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx]) << ": argument expects a positive integer" << Log::endl;
+                    exit(0);
+                }
+                else
+                {
+                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to 0." << _forcedDisplay << Log::endl;
+                }
+            }
+            catch (...)
+            {
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx]) << ": argument expects a positive integer" << Log::endl;
+                exit(0);
+            }
+
+            idx += 2;
+        }
+#endif
         else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
         {
             Timer::get().setDebug(true);
@@ -1166,6 +1201,9 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
+#if HAVE_LINUX
+            cout << "\t-D (--forceDisplay) : force the display on which to show all windows" << endl;
+#endif
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;

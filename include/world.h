@@ -106,6 +106,7 @@ class World : public RootObject
 
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
+    std::string _forcedDisplay{""};     //!< Set to force an output display
     bool _reloadingConfig{false};       // TODO: workaround to allow for correct reloading when an inner scene was used
 
     std::atomic_int _nextId{0};
