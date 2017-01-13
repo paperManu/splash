@@ -1,6 +1,13 @@
 Splash release notes
 ===================
 
+Splash 0.5.2 (2017-01-13)
+--------------------------
+New features:
+* Added Video4Linux2 support, as well as Datapath capture cards support
+* Added _time (in ms) as a built-in uniform for Filter
+* Added --forceDisplay command line option
+
 Splash 0.5.0 (2016-12-09)
 --------------------------
 New features:

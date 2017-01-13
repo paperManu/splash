@@ -111,7 +111,7 @@ And if you want the logs to be written to /var/log/splash.log:
 
 Then log out and log back in.
 
-And that's it, you can move on the the [Walkthrough](./Walkthrough) page.
+And that's it, you can move on the the [Walkthrough](https://github.com/paperManu/splash/wiki/Walkthrough) page.
 
 #### Mac OSX
 

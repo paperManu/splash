@@ -23,8 +23,12 @@ package:
   script:
     - make -j$(nproc)
     - make package
+    - mv *.deb ../
+    - mv addons/blender/*.tar.bz2 ../
   only:
     - tags
   artifacts:
+    name: "splash_${CI_BUILD_REF_NAME}"
     paths:
-    - "build/*.deb"
+    - "*.deb"
+    - "*.tar.bz2"

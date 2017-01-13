@@ -61,7 +61,7 @@ ThreadPool::ThreadPool(int threads)
 {
     int nprocessors = threads;
     if (threads == -1)
-        nprocessors = std::min(std::max(Splash::Utils::getCoreCount(), 2), 32);
+        nprocessors = std::min(std::max(thread::hardware_concurrency(), 2u), 32u);
     for (size_t i = 0; i < nprocessors; ++i)
         workers.emplace_back(thread(Worker(*this)));
 }

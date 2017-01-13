@@ -15,7 +15,8 @@ namespace Splash
 {
 
 /*************/
-Texture_Image::Texture_Image(std::weak_ptr<RootObject> root) : Texture(root)
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
+    : Texture(root)
 {
     init();
 }
@@ -39,6 +40,7 @@ Texture_Image::~Texture_Image()
     Log::get() << Log::DEBUGGING << "Texture_Image::~Texture_Image - Destructor" << Log::endl;
 #endif
     glDeleteTextures(1, &_glTex);
+    glDeleteBuffers(2, _pbos);
 }
 
 /*************/

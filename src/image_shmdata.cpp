@@ -124,7 +124,7 @@ void Image_Shmdata::onCaps(const string& dataType)
                 removeExtraParenthesis(substr);
                 substr = substr.substr(0, substr.find(","));
 
-                if ("RGB" == substr)
+                if ("BGR" == substr)
                 {
                     _bpp = 24;
                     _channels = 3;
@@ -132,7 +132,7 @@ void Image_Shmdata::onCaps(const string& dataType)
                     _green = 1;
                     _blue = 0;
                 }
-                else if ("BGR" == substr)
+                else if ("RGB" == substr)
                 {
                     _bpp = 24;
                     _channels = 3;
