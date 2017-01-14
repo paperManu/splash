@@ -688,7 +688,7 @@ void Image_V4L2::registerAttributes()
             if (index != -1) // Only the index is specified
                 _devicePath = "/dev/video" + to_string(index);
             else if (path.empty() || path[0] != '/') // No path specified, or an invalid one
-                _devicePath = "/dev/video0";
+                _devicePath = "";
             else
                 _devicePath = path;
 

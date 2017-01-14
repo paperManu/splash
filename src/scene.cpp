@@ -655,9 +655,9 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
         nvResult &= nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetX11Window(window), 1);
         nvResult &= nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
         if (nvResult)
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " successfully joined the NV swap group" << Log::endl;
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully joined the NV swap group" << Log::endl;
         else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't join the NV swap group" << Log::endl;
     }
 #endif
 #endif
