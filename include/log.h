@@ -274,7 +274,7 @@ class Log
         std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
         std::time_t now_c = std::chrono::system_clock::to_time_t(now);
         char time_c[64];
-        strftime(time_c, 64, "%T", std::localtime(&now_c));
+        strftime(time_c, 64, "%FT%T", std::localtime(&now_c));
 
         std::string timedMsg;
         std::string type;
