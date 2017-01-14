@@ -52,9 +52,6 @@ Installation
 Splash relies on a few libraries to get the job done. These libraries are:
 
 - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
-- [FFmpeg](http://ffmpeg.org/) to read video files,
-- [GLFW](http://glfw.org) to handle the GL context creation,
-- [GLM](http://glm.g-truc.net) to ease matrix manipulation,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
 - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
@@ -65,6 +62,9 @@ Splash relies on a few libraries to get the job done. These libraries are:
 
 A few more libraries are used as submodules in the git repository:
 
+- [FFmpeg](http://ffmpeg.org/) to read video files,
+- [GLFW](http://glfw.org) to handle the GL context creation,
+- [GLM](http://glm.g-truc.net) to ease matrix manipulation,
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
 - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images,

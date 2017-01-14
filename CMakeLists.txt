@@ -47,7 +47,6 @@ find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
 find_package(Snappy REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
@@ -112,6 +111,15 @@ endif()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h")
 
 #
+# External sources
+#
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(external/glfw)
+
+#
 # Sources
 #
 add_subdirectory(addons)
@@ -143,7 +151,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
                                       libboost-system1.58.0,
-                                      libglfw3,
                                       libgphoto2-6,
                                       libgsl2,
                                       libopencv-core2.4v5,

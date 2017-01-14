@@ -22,6 +22,7 @@ before_script:
     - git submodule update --init
 
 script: 
+    - ./make_deps.sh
     - rm -rf build && mkdir build && cd build
     - cmake ..
     - if [ "${COVERITY_SCAN_BRANCH}" !=  1 ]; then make; make check; fi
