@@ -16,7 +16,8 @@ namespace Splash
 {
 
 /*************/
-Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root) : Image(root)
+Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root)
+    : Image(root)
 {
     init();
 }
@@ -126,7 +127,7 @@ void Image_OpenCV::readLoop()
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
         copy(capture.data, capture.data + imageSize, pixels);
 
-        lock_guard<mutex> lockWrite(_writeMutex);
+        lock_guard<Spinlock> lockWrite(_writeMutex);
         if (!_bufferImage)
             _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
         std::swap(*_bufferImage, _readBuffer);

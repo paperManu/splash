@@ -267,10 +267,11 @@ class Scene : public RootObject
 
     // Texture upload context
     std::future<void> _textureUploadFuture;
+    std::mutex _textureUploadMutex;
     std::condition_variable _textureUploadCondition;
     std::shared_ptr<GlWindow> _textureUploadWindow;
     std::atomic_bool _textureUploadDone{false};
-    std::mutex _textureUploadMutex;
+    Spinlock _textureMutex; //!< Sync between texture and render loops
     GLsync _textureUploadFence, _cameraDrawnFence;
 
     // NV Swap group specific

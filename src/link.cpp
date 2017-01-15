@@ -176,7 +176,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
     {
         try
         {
-            lock_guard<mutex> lock(_bufferSendMutex);
+            lock_guard<Spinlock> lock(_bufferSendMutex);
             auto bufferPtr = buffer.get();
 
             _otgMutex.lock();
@@ -226,7 +226,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
     {
         try
         {
-            lock_guard<mutex> lock(_msgSendMutex);
+            lock_guard<Spinlock> lock(_msgSendMutex);
 
             // First we send the name of the target
             zmq::message_t msg(name.size() + 1);
@@ -300,7 +300,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
 void Link::freeOlderBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
-    lock_guard<mutex> lock(ctx->_otgMutex);
+    lock_guard<Spinlock> lock(ctx->_otgMutex);
     int index = 0;
     for (; index < ctx->_otgBuffers.size(); ++index)
         if (ctx->_otgBuffers[index]->data() == data)

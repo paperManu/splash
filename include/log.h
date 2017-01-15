@@ -80,7 +80,7 @@ class Log
     template <typename... T>
     void operator()(Priority p, T... args)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         rec(p, args...);
     }
 
@@ -92,7 +92,7 @@ class Log
     template <typename T>
     Log& operator<<(const T& msg)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         addToString(_tempString, msg);
         return *this;
     }
@@ -104,7 +104,7 @@ class Log
      */
     Log& operator<<(const Value& v)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         addToString(_tempString, v.as<std::string>());
         return *this;
     }
@@ -116,7 +116,7 @@ class Log
      */
     Log& operator<<(Log::Action action)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         if (action == endl)
         {
             if (_tempPriority >= _verbosity)
@@ -134,7 +134,7 @@ class Log
      */
     Log& operator<<(Log::Priority p)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         _tempPriority = p;
         return *this;
     }
@@ -153,7 +153,7 @@ class Log
     template <typename... T>
     std::vector<std::string> getLogs(T... args)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         std::vector<Log::Priority> priorities{args...};
         std::vector<std::string> logs;
         for (auto log : _logs)
@@ -170,7 +170,7 @@ class Log
      */
     std::vector<std::pair<std::string, Priority>> getNewLogs()
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         std::vector<std::pair<std::string, Priority>> logs;
         for (int i = _logPointer; i < _logs.size(); ++i)
             logs.push_back(_logs[i]);
@@ -203,7 +203,7 @@ class Log
      */
     void setLog(std::string log, Priority priority)
     {
-        std::lock_guard<std::mutex> lock(_mutex);
+        std::lock_guard<Spinlock> lock(_mutex);
         _logs.push_back(std::pair<std::string, Priority>(log, priority));
 
         if (_logs.size() > _logLength)
@@ -231,7 +231,7 @@ class Log
     const Log& operator=(const Log&) = delete;
 
   private:
-    mutable std::mutex _mutex;
+    mutable Spinlock _mutex;
     std::deque<std::pair<std::string, Priority>> _logs;
     bool _logToFile{false};
     int _logLength{500};

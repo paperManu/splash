@@ -467,7 +467,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 
         // Deserialize it right away, in a separate thread
         SThread::pool.enqueueWithoutId([this]() {
-            lock_guard<mutex> lock(_writeMutex);
+            lock_guard<Spinlock> lock(_writeMutex);
             deserialize();
             _serializedObjectWaiting = false;
         });

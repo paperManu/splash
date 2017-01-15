@@ -593,8 +593,8 @@ class BufferObject : public BaseObject
     void updateTimestamp();
 
   protected:
-    mutable std::mutex _readMutex;                    //!< Read mutex locked when the object is read from
-    mutable std::mutex _writeMutex;                   //!< Write mutex locked when the object is written to
+    mutable Spinlock _readMutex;                      //!< Read mutex locked when the object is read from
+    mutable Spinlock _writeMutex;                     //!< Write mutex locked when the object is written to
     std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
     int64_t _timestamp{0};                            //!< Timestamp
     bool _updatedBuffer{false};                       //!< True if the BufferObject has been updated

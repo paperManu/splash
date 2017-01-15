@@ -75,6 +75,26 @@ namespace Splash
 {
 
 /*************/
+//! Spinlock, when mutexes have too much overhead
+class Spinlock
+{
+  public:
+    void lock()
+    {
+        while (_lock.test_and_set(std::memory_order_acquire))
+        {
+        }
+    }
+
+    void unlock() { _lock.clear(std::memory_order_release); }
+
+    bool try_lock() { return !_lock.test_and_set(std::memory_order_acquire); }
+
+  private:
+    std::atomic_flag _lock = ATOMIC_FLAG_INIT;
+};
+
+/*************/
 //! Resizable array, used to hold big buffers (like raw images)
 template <typename T>
 class ResizableArray

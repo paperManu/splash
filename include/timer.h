@@ -251,7 +251,7 @@ class Timer
     {
         if (clock.size() == 8)
         {
-            std::lock_guard<std::mutex> lockClock(_clockMutex);
+            std::lock_guard<Spinlock> lockClock(_clockMutex);
             _clock = clock;
         }
     }
@@ -265,7 +265,7 @@ class Timer
     {
         if (_clock.size() > 0)
         {
-            std::lock_guard<std::mutex> lockClock(_clockMutex);
+            std::lock_guard<Spinlock> lockClock(_clockMutex);
             clock = _clock;
             return true;
         }
@@ -290,7 +290,7 @@ class Timer
             return false;
         }
 
-        std::unique_lock<std::mutex> lockClock(_clockMutex);
+        std::unique_lock<Spinlock> lockClock(_clockMutex);
         auto clock = _clock;
         lockClock.unlock();
 
@@ -321,8 +321,8 @@ class Timer
     std::atomic_ullong _currentDuration{0};
     bool _isDurationSet{false};
     std::thread::id _durationThreadId;
-    mutable std::mutex _timerMutex;
-    mutable std::mutex _clockMutex;
+    mutable Spinlock _timerMutex;
+    mutable Spinlock _clockMutex;
     bool _enabled{true};
     bool _isDebug{false};
     Values _clock;

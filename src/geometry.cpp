@@ -11,7 +11,8 @@ namespace Splash
 {
 
 /*************/
-Geometry::Geometry(weak_ptr<RootObject> root) : BufferObject(root)
+Geometry::Geometry(weak_ptr<RootObject> root)
+    : BufferObject(root)
 {
     init();
 
@@ -289,7 +290,7 @@ void Geometry::update()
     // If a serialized geometry is present, we use it as the alternative buffer
     if (!_onMasterScene && _serializedMesh.size() != 0)
     {
-        lock_guard<mutex> lock(_writeMutex);
+        lock_guard<Spinlock> lock(_writeMutex);
 
         if (_glTemporaryBuffers.size() != 4)
             _glTemporaryBuffers.resize(4);

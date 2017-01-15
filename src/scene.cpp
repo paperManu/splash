@@ -395,7 +395,7 @@ void Scene::render()
     // See BaseObject::getRenderingPriority() for precision about priorities
     bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
     bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
-    auto textureLock = unique_lock<mutex>(_textureUploadMutex, defer_lock);
+    auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
     for (auto& objPriority : objectList)
     {
         // If the objects needs some Textures, we need to sync
@@ -499,11 +499,13 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        unique_lock<mutex> lockTexture(_textureUploadMutex);
-        _textureUploadCondition.wait(lockTexture);
+        unique_lock<mutex> lockUploadTexture(_textureUploadMutex);
+        _textureUploadCondition.wait(lockUploadTexture);
 
         if (!_isRunning)
             break;
+
+        unique_lock<Spinlock> lockTexture(_textureMutex);
 
         _textureUploadWindow->setAsCurrentContext();
         glFlush();

@@ -99,7 +99,7 @@ void Image_V4L2::captureThreadFunc()
 
     if (!_hasStreamingIO)
     {
-        unique_lock<mutex> lockWrite(_writeMutex, std::defer_lock);
+        unique_lock<Spinlock> lockWrite(_writeMutex, std::defer_lock);
         while (_captureThreadRun)
         {
             if (!_bufferImage || _bufferImage->getSpec() != _imageBuffers[buffer.index]->getSpec())
@@ -151,7 +151,7 @@ void Image_V4L2::captureThreadFunc()
         }
 
         // Run the capture
-        unique_lock<mutex> lockWrite(_writeMutex, std::defer_lock);
+        unique_lock<Spinlock> lockWrite(_writeMutex, std::defer_lock);
         while (_captureThreadRun)
         {
             struct pollfd fd;

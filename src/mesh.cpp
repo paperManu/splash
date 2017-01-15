@@ -53,7 +53,7 @@ bool Mesh::operator==(Mesh& otherMesh) const
 /*************/
 vector<float> Mesh::getVertCoords() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<Spinlock> lock(_readMutex);
     vector<float> coords;
     for (auto& v : _mesh.vertices)
     {
@@ -68,7 +68,7 @@ vector<float> Mesh::getVertCoords() const
 /*************/
 vector<float> Mesh::getUVCoords() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<Spinlock> lock(_readMutex);
     vector<float> coords;
     for (auto& u : _mesh.uvs)
     {
@@ -81,7 +81,7 @@ vector<float> Mesh::getUVCoords() const
 /*************/
 vector<float> Mesh::getNormals() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<Spinlock> lock(_readMutex);
     vector<float> normals;
     for (auto& n : _mesh.normals)
     {
@@ -96,7 +96,7 @@ vector<float> Mesh::getNormals() const
 /*************/
 vector<float> Mesh::getAnnexe() const
 {
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<Spinlock> lock(_readMutex);
     vector<float> annexe;
     for (auto& a : _mesh.annexe)
     {
@@ -127,7 +127,7 @@ bool Mesh::read(const string& filename)
         mesh.uvs = objLoader.getUVs();
         mesh.normals = objLoader.getNormals();
 
-        lock_guard<mutex> lock(_writeMutex);
+        lock_guard<Spinlock> lock(_writeMutex);
         _mesh = mesh;
         updateTimestamp();
     }
@@ -150,7 +150,7 @@ shared_ptr<SerializedObject> Mesh::serialize() const
     data.push_back(getNormals());
     data.push_back(getAnnexe());
 
-    lock_guard<mutex> lock(_readMutex);
+    lock_guard<Spinlock> lock(_readMutex);
     int nbrVertices = data[0].size() / 4;
     int totalSize = sizeof(nbrVertices); // We add to all this the total number of vertices
     for (auto& d : data)
@@ -280,8 +280,8 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 void Mesh::update()
 {
-    lock_guard<mutex> lockRead(_readMutex);
-    lock_guard<mutex> lockWrite(_writeMutex);
+    lock_guard<Spinlock> lock(_readMutex);
+    lock_guard<Spinlock> lockWrite(_writeMutex);
     if (_meshUpdated)
     {
         _mesh = _bufferMesh;
@@ -350,7 +350,7 @@ void Mesh::createDefaultMesh(int subdiv)
         }
     }
 
-    lock_guard<mutex> lock(_writeMutex);
+    lock_guard<Spinlock> lock(_writeMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();
