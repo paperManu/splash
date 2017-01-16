@@ -192,7 +192,7 @@ struct ShaderSources
 
         layout (std430, binding = 3) buffer annexeBuffer
         {
-            vec4 annexe[];
+            vec4 annexe[]; // Holds camera count, blending sum, flag set to true if primitive is visible, primitive ID
         };
 
         uniform int _vertexNbr;
@@ -995,6 +995,7 @@ struct ShaderSources
 
         uniform vec2 _tex0_size = vec2(1.0);
 
+        uniform int _showCameraCount = 0;
         uniform int _sideness = 0;
         uniform int _textureNbr = 0;
         uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
@@ -1064,6 +1065,17 @@ struct ShaderSources
             }
             
             fragColor.a = 1.0;
+
+            if (_showCameraCount > 0)
+            {
+                int count = int(round(vertexIn.annexe.x));
+                int r = count - (count / 2) * 2;
+                count -= r;
+                int g = count - (count / 4) * 4;
+                count -= r * 2;
+                int b = count - (count / 8) * 8;
+                fragColor.rgba = vec4(float(r), float(g), float(b), 1.0);
+            }
         }
     )"};
 
