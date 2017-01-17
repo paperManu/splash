@@ -221,6 +221,7 @@ bool Shader::setSource(map<ShaderType, string> sources)
     for (auto& source : sources)
         status = status && setSource(source.second, source.first);
 
+    compileProgram();
     return status;
 }
 
