@@ -14,7 +14,7 @@ before_install:
     - echo $LANG
     - echo $LC_ALL
     - sudo apt-get update -qq
-    - sudo apt-get install -y build-essential git-core subversion cmake libtool clang libxrandr-dev libxi-dev libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev yasm
+    - sudo apt-get install -y build-essential git-core subversion cmake libtool clang libxrandr-dev libxi-dev libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev yasm libgl1-mesa-dev
 
 before_script:
     - git submodule update --init
