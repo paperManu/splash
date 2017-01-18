@@ -297,7 +297,7 @@ class SplashStopSelected(Operator):
 
 
 class SplashExportNodeTree(Operator):
-    """Exports the Splash node tree from the calling node"""
+    """Exports the Splash configuration (following the tree starting from this node)"""
     bl_idname = "splash.export_node_tree"
     bl_label = "Exports the node tree"
 
