@@ -207,7 +207,7 @@ void Factory::registerObjects()
         "camera through opencv");
 #endif
 
-    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); });
+    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); }, BaseObject::Category::MESH, "mesh from obj file");
 
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(

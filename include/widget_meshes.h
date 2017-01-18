@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2017 Emmanuel Durand
  *
  * This file is part of Splash.
  *
@@ -18,12 +18,12 @@
  */
 
 /*
- * @widget_media.h
- * The media widget, to modify the input media type
+ * @widget_meshes.h
+ * The Meshes widget, to update a mesh geometry source
  */
 
-#ifndef SPLASH_WIDGET_MEDIA_H
-#define SPLASH_WIDGET_MEDIA_H
+#ifndef SPLASH_WIDGET_MESHES_H
+#define SPLASH_WIDGET_MESHES_H
 
 #include "./widget.h"
 
@@ -31,26 +31,25 @@ namespace Splash
 {
 
 /*************/
-class GuiMedia : public GuiWidget
+class GuiMeshes : public GuiWidget
 {
   public:
-    GuiMedia(std::weak_ptr<Scene> scene, std::string name);
+    GuiMeshes(std::weak_ptr<Scene> scene, std::string name);
     void render();
     int updateWindowFlags();
 
   private:
-    std::map<std::string, int> _mediaTypeIndex;
-    std::map<std::string, std::string> _mediaTypes;
-    std::map<std::string, std::string> _mediaTypesReversed{}; // Created from the previous map
+    std::map<std::string, int> _meshTypeIndex;
+    std::map<std::string, std::string> _meshType;
+    std::map<std::string, std::string> _meshTypeReversed{}; // Created from the previous map
 
     Values _newMedia{"image", "", 0.f, 0.f};
     int _newMediaTypeIndex{0};
     float _newMediaStart{0.f};
     float _newMediaStop{0.f};
 
-    std::list<std::shared_ptr<BaseObject>> getSceneMedia();
-    std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);
-    void replaceMedia(std::string previousMedia, std::string type);
+    std::list<std::shared_ptr<BaseObject>> getSceneMeshes();
+    void replaceMesh(std::string previousMedia, std::string type);
 };
 
 } // end of namespace

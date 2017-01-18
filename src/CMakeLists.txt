@@ -117,6 +117,7 @@ target_sources(
     widget_graph.cpp
     widget_node_view.cpp
     widget_media.cpp
+    widget_meshes.cpp
     widget_template.cpp
     widget_text_box.cpp
     widget_warp.cpp

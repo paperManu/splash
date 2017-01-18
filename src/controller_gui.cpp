@@ -1103,6 +1103,10 @@ void Gui::initImWidgets()
     auto mediaSelector = make_shared<GuiMedia>(_scene, "Media");
     _guiWidgets.push_back(mediaSelector);
 
+    // Meshes
+    auto meshesSelector = make_shared<GuiMeshes>(_scene, "Meshes");
+    _guiWidgets.push_back(meshesSelector);
+
     // GUI camera view
     auto globalView = make_shared<GuiGlobalView>(_scene, "Cameras");
     globalView->setCamera(_guiCamera);

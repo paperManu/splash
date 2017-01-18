@@ -59,6 +59,7 @@ class Scene : public RootObject
     friend GuiControl;
     friend GuiGlobalView;
     friend GuiMedia;
+    friend GuiMeshes;
     friend GuiNodeView;
     friend GuiWarp;
     friend GuiWidget;
