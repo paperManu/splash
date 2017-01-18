@@ -84,7 +84,7 @@ You can also compile Splash by hand, especially if you are curious about its int
 
     sudo apt install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev
     sudo apt install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt install libglfw3-dev libxinerama-dev libxcursor-dev python3-dev
+    sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm
     sudo apt install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
 
     git clone git://github.com/paperManu/splash
