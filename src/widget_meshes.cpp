@@ -52,6 +52,8 @@ void GuiMeshes::render()
                 ImGui::Text("Parameters:");
                 auto attributes = mesh->getAttributes(true);
                 drawAttributes(meshName, attributes);
+
+                ImGui::TreePop();
             }
         }
     }
