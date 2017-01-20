@@ -75,6 +75,12 @@ class Filter : public Texture
     void unbind();
 
     /**
+     * Get the output texture
+     * \return Return the output texture
+     */
+    std::shared_ptr<Texture> getOutTexture() const { return _outTexture; }
+
+    /**
      * Get the shader parameters related to this texture
      * Texture should be locked first
      */
