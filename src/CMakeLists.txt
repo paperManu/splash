@@ -101,6 +101,7 @@ target_sources(
     object.cpp
     queue.cpp
     scene.cpp
+    sink.cpp
     shader.cpp
     texture.cpp
     texture_image.cpp
@@ -174,6 +175,7 @@ if (SHMDATA_FOUND)
         splash-${API_VERSION} PRIVATE
         image_shmdata.cpp
         mesh_shmdata.cpp
+        sink_shmdata.cpp
     )
 endif()
 

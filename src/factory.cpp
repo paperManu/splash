@@ -32,6 +32,7 @@
 #include "./controller_pythonEmbedded.h"
 #endif
 #include "./queue.h"
+#include "./sink_shmdata.h"
 #include "./texture.h"
 #include "./texture_image.h"
 #if HAVE_OSX
@@ -240,6 +241,9 @@ void Factory::registerObjects()
         },
         BaseObject::Category::IMAGE,
         "video queue");
+
+    _objectBook["sink_shmdata"] =
+        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); }, BaseObject::Category::MISC, "sink a texture to shmdata file");
 
     _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); }, BaseObject::Category::MISC, "texture image");
 
