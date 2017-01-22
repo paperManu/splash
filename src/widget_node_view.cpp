@@ -30,7 +30,7 @@ void GuiNodeView::render()
 
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
-            {"window", {8, 48}},
+            {"window sink_shmdata", {8, 48}},
             {"warp", {32, 88}},
             {"camera", {8, 128}},
             {"object", {32, 168}},
@@ -62,11 +62,6 @@ void GuiNodeView::render()
             type = type.substr(0, type.find("_"));
 
             // We keep count of the number of objects by type, more precisely their shifting
-            auto shiftIt = shiftByType.find(type);
-            if (shiftIt == shiftByType.end())
-                shiftByType[type] = 0;
-            auto shift = shiftByType[type];
-
             // Get the default position for the given type
             auto nodePosition = ImVec2(-1, -1);
 
@@ -76,6 +71,11 @@ void GuiNodeView::render()
                 if (position.first.find(type) != string::npos)
                     defaultPosName = position.first;
             }
+
+            auto shiftIt = shiftByType.find(defaultPosName);
+            if (shiftIt == shiftByType.end())
+                shiftByType[defaultPosName] = 0;
+            auto shift = shiftByType[defaultPosName];
 
             if (defaultPosName == "default")
             {
@@ -92,7 +92,7 @@ void GuiNodeView::render()
             ImGui::SetCursorPos(nodePosition);
             renderNode(name);
 
-            shiftByType[type] += _nodeSize[0] + 8;
+            shiftByType[defaultPosName] += _nodeSize[0] + 8;
         }
 
         // Draw lines
