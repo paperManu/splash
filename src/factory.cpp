@@ -26,13 +26,13 @@
 #include "./mesh.h"
 #if HAVE_SHMDATA
 #include "./mesh_shmdata.h"
+#include "./sink_shmdata.h"
 #endif
 #include "./object.h"
 #if HAVE_PYTHON
 #include "./controller_pythonEmbedded.h"
 #endif
 #include "./queue.h"
-#include "./sink_shmdata.h"
 #include "./texture.h"
 #include "./texture_image.h"
 #if HAVE_OSX
@@ -222,6 +222,9 @@ void Factory::registerObjects()
         },
         BaseObject::Category::MESH,
         "mesh through shared memory");
+
+    _objectBook["sink_shmdata"] =
+        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); }, BaseObject::Category::MISC, "sink a texture to shmdata file");
 #endif
 
     _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); }, BaseObject::Category::MISC, "object");
@@ -241,9 +244,6 @@ void Factory::registerObjects()
         },
         BaseObject::Category::IMAGE,
         "video queue");
-
-    _objectBook["sink_shmdata"] =
-        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); }, BaseObject::Category::MISC, "sink a texture to shmdata file");
 
     _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); }, BaseObject::Category::MISC, "texture image");
 
