@@ -64,6 +64,7 @@ void Image_FFmpeg::freeFFmpegObjects()
     {
         avformat_close_input(&_avContext);
         _avContext = nullptr;
+        _audioCodecContext = nullptr;
     }
 }
 
@@ -182,6 +183,8 @@ bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
 void Image_FFmpeg::readLoop()
 {
     // Find the first video stream
+    _videoStreamIndex = -1;
+    _audioStreamIndex = -1;
     for (int i = 0; i < _avContext->nb_streams; ++i)
     {
         if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)

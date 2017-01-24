@@ -2,16 +2,9 @@
 
 #include <algorithm>
 
-#include "image.h"
-#if HAVE_FFMPEG
-#include "image_ffmpeg.h"
-#endif
-#if HAVE_SHMDATA
-#include "image_shmdata.h"
-#endif
-#include "log.h"
-#include "timer.h"
-#include "world.h"
+#include "./log.h"
+#include "./timer.h"
+#include "./world.h"
 
 #define DISTANT_NAME_SUFFIX "_source"
 
@@ -34,6 +27,7 @@ Queue::Queue(std::weak_ptr<RootObject> root)
         return;
 
     _world = dynamic_pointer_cast<World>(root.lock());
+    _factory = make_unique<Factory>(_root);
 }
 
 /*************/
@@ -117,21 +111,23 @@ void Queue::update()
         }
 
         _currentSourceIndex = sourceIndex;
-        _currentSource.reset();
 
         if (sourceIndex >= _playlist.size())
         {
-            _currentSource = make_shared<Image>(_root);
+            _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
             _world.lock()->sendMessage(_name, "source", {"image"});
         }
         else
         {
-            _currentSource = createSource(_playlist[_currentSourceIndex].type);
+            if (!_currentSource || _currentSource->getType() != _playlist[_currentSourceIndex].type)
+                _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create(_playlist[_currentSourceIndex].type));
 
             if (_currentSource)
                 _playing = true;
             else
-                _currentSource = make_shared<Image>(_root);
+                _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
+            dynamic_pointer_cast<Image>(_currentSource)->setTo(0.f);
+            dynamic_pointer_cast<Image>(_currentSource)->setName(_name + DISTANT_NAME_SUFFIX);
 
             _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
 
@@ -187,7 +183,7 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
         if (source.stop > source.start)
             continue;
 
-        auto videoSrc = unique_ptr<Image_FFmpeg>(new Image_FFmpeg(_root));
+        auto videoSrc = _factory->create("image_ffmpeg");
         videoSrc->setAttribute("file", {source.filename});
         Values duration;
         videoSrc->getAttribute("duration", duration);
@@ -260,39 +256,6 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
     }
 
     playlist = cleanList;
-}
-
-/*************/
-shared_ptr<BufferObject> Queue::createSource(string type)
-{
-    auto source = shared_ptr<BufferObject>();
-
-    if (type == "image")
-    {
-        source = make_shared<Image>(_root);
-        dynamic_pointer_cast<Image>(source)->setTo(0.f);
-    }
-#if HAVE_FFMPEG
-    else if (type == "image_ffmpeg")
-    {
-        source = make_shared<Image_FFmpeg>(_root);
-        dynamic_pointer_cast<Image>(source)->setTo(0.f);
-    }
-#endif
-#if HAVE_SHMDATA
-    else if (type == "image_shmdata")
-    {
-        source = make_shared<Image_Shmdata>(_root);
-        dynamic_pointer_cast<Image>(source)->setTo(0.f);
-    }
-#endif
-    else
-    {
-        return {};
-    }
-
-    source->setName(_name + "_source");
-    return source;
 }
 
 /*************/
