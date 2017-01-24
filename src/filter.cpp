@@ -439,12 +439,44 @@ void Filter::registerAttributes()
             if (src.size() == 0)
                 return true; // No shader specified
             _shaderSource = src;
+            _shaderSourceFile = "";
             addTask([=]() { setFilterSource(src); });
             return true;
         },
         [&]() -> Values { return {_shaderSource}; },
         {'s'});
-    setAttributeDescription("setFilterSource", "Set the fragment shader source for the filter");
+    setAttributeDescription("filterSource", "Set the fragment shader source for the filter");
+
+    addAttribute("fileFilterSource",
+        [&](const Values& args) {
+            auto srcFile = args[0].as<string>();
+            if (srcFile.size() == 0)
+                return true; // No shader specified
+
+            ifstream in(srcFile, ios::in | ios::binary);
+            if (in)
+            {
+                string contents;
+                in.seekg(0, ios::end);
+                contents.resize(in.tellg());
+                in.seekg(0, ios::beg);
+                in.read(&contents[0], contents.size());
+                in.close();
+
+                _shaderSourceFile = srcFile;
+                _shaderSource = "";
+                addTask([=]() { setFilterSource(contents); });
+                return true;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << srcFile << Log::endl;
+                return false;
+            }
+        },
+        [&]() -> Values { return {_shaderSourceFile}; },
+        {'s'});
+    setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
 }
 
 } // end of namespace
