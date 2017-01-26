@@ -15,12 +15,22 @@ Sink::Sink(weak_ptr<RootObject> root)
     _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
 
+    if (_root.expired())
+        return;
+
     glGenBuffers(2, _pbos);
 }
 
 /*************/
 Sink::~Sink()
 {
+    lock_guard<mutex> lock(_lockPixels);
+    if (_root.expired())
+        return;
+
+    if (_handlePixelsThread.joinable())
+        _handlePixelsThread.join();
+
     glDeleteBuffers(2, _pbos);
 }
 

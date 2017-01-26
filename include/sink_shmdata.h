@@ -41,11 +41,6 @@ class Sink_Shmdata : public Sink
      */
     Sink_Shmdata(std::weak_ptr<RootObject> root);
 
-    /**
-     * Destructor
-     */
-    ~Sink_Shmdata();
-
   private:
     std::string _path{"/tmp/splash_sink"};
     std::string _caps{"application/x-raw"};
