@@ -35,8 +35,9 @@
 
 #include <portaudio.h>
 
-#include "basetypes.h"
-#include "config.h"
+#include "./basetypes.h"
+#include "./config.h"
+#include "./sound_engine.h"
 
 namespace Splash
 {
@@ -45,15 +46,6 @@ namespace Splash
 class Listener : public BaseObject
 {
   public:
-    enum SampleFormat
-    {
-        SAMPLE_FMT_UNKNOWN = -1,
-        SAMPLE_FMT_U8 = 0,
-        SAMPLE_FMT_S16,
-        SAMPLE_FMT_S32,
-        SAMPLE_FMT_FLT
-    };
-
     /**
      * \brief Constructor
      */
@@ -85,20 +77,21 @@ class Listener : public BaseObject
     /**
      * \brief Set the audio parameters
      */
-    void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const std::string& deviceName = "");
+    void setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName = "");
 
   private:
+    Sound_Engine _engine;
     bool _ready{false};
     unsigned int _channels{2};
     unsigned int _sampleRate{0};
-    SampleFormat _sampleFormat{SAMPLE_FMT_FLT};
+    Sound_Engine::SampleFormat _sampleFormat{Sound_Engine::SAMPLE_FMT_FLT};
+    bool _planar{false};
     std::string _deviceName{""};
 
     bool _useJack{false};
     size_t _sampleSize{2};
 
-    PaStream* _portAudioStream{nullptr};
-    bool _abordCallback{false};
+    bool _abortCallback{false};
 
     std::array<uint8_t, SPLASH_LISTENER_RINGBUFFER_SIZE> _ringBuffer;
     std::atomic_int _ringWritePosition{0};

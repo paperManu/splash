@@ -133,6 +133,52 @@ string Image_FFmpeg::tagToFourCC(unsigned int tag)
 }
 
 /*************/
+bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
+{
+    if (!audioCodecContext)
+        return false;
+
+    Sound_Engine::SampleFormat format;
+    switch (audioCodecContext->sample_fmt)
+    {
+    default:
+        Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
+        return false;
+    case AV_SAMPLE_FMT_U8:
+        format = Sound_Engine::SAMPLE_FMT_U8;
+        break;
+    case AV_SAMPLE_FMT_S16:
+        format = Sound_Engine::SAMPLE_FMT_S16;
+        break;
+    case AV_SAMPLE_FMT_S32:
+        format = Sound_Engine::SAMPLE_FMT_S32;
+        break;
+    case AV_SAMPLE_FMT_FLT:
+        format = Sound_Engine::SAMPLE_FMT_FLT;
+        break;
+    case AV_SAMPLE_FMT_U8P:
+        format = Sound_Engine::SAMPLE_FMT_U8P;
+        break;
+    case AV_SAMPLE_FMT_S16P:
+        format = Sound_Engine::SAMPLE_FMT_S16P;
+        break;
+    case AV_SAMPLE_FMT_S32P:
+        format = Sound_Engine::SAMPLE_FMT_S32P;
+        break;
+    case AV_SAMPLE_FMT_FLTP:
+        format = Sound_Engine::SAMPLE_FMT_FLTP;
+        break;
+    }
+
+    _speaker = unique_ptr<Speaker>(new Speaker());
+    if (!_speaker)
+        return false;
+
+    _speaker->setParameters(audioCodecContext->channels, audioCodecContext->sample_rate, format, _audioDeviceOutput);
+    return true;
+}
+
+/*************/
 void Image_FFmpeg::readLoop()
 {
     // Find the first video stream
@@ -237,45 +283,7 @@ void Image_FFmpeg::readLoop()
         }
 
         if (audioCodecContext)
-        {
-            Speaker::SampleFormat format;
-            switch (audioCodecContext->sample_fmt)
-            {
-            default:
-                Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
-                return;
-            case AV_SAMPLE_FMT_U8:
-                format = Speaker::SAMPLE_FMT_U8;
-                break;
-            case AV_SAMPLE_FMT_S16:
-                format = Speaker::SAMPLE_FMT_S16;
-                break;
-            case AV_SAMPLE_FMT_S32:
-                format = Speaker::SAMPLE_FMT_S32;
-                break;
-            case AV_SAMPLE_FMT_FLT:
-                format = Speaker::SAMPLE_FMT_FLT;
-                break;
-            case AV_SAMPLE_FMT_U8P:
-                format = Speaker::SAMPLE_FMT_U8P;
-                break;
-            case AV_SAMPLE_FMT_S16P:
-                format = Speaker::SAMPLE_FMT_S16P;
-                break;
-            case AV_SAMPLE_FMT_S32P:
-                format = Speaker::SAMPLE_FMT_S32P;
-                break;
-            case AV_SAMPLE_FMT_FLTP:
-                format = Speaker::SAMPLE_FMT_FLTP;
-                break;
-            }
-
-            _speaker = unique_ptr<Speaker>(new Speaker());
-            if (!_speaker)
-                return;
-
-            _speaker->setParameters(audioCodecContext->channels, audioCodecContext->sample_rate, format);
-        }
+            _audioDeviceOutputUpdated = true;
     }
 #endif
 
@@ -458,6 +466,13 @@ void Image_FFmpeg::readLoop()
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
                 if (avcodec_receive_frame(audioCodecContext, frame) == 0)
                     hasFrame = true;
+
+                // Check whether we were asked to connect to another output
+                if (audioCodecContext && _audioDeviceOutputUpdated)
+                {
+                    setupAudioOutput(audioCodecContext);
+                    _audioDeviceOutputUpdated = false;
+                }
 
                 if (hasFrame)
                 {
@@ -657,6 +672,17 @@ void Image_FFmpeg::registerAttributes()
             return {duration};
         });
     setAttributeParameter("duration", false, true);
+
+    addAttribute("audioDeviceOutput",
+        [&](const Values& args) {
+            _audioDeviceOutput = args[0].as<string>();
+            _audioDeviceOutputUpdated = true;
+            return true;
+        },
+        [&]() -> Values { return {_audioDeviceOutput}; },
+        {'s'});
+    setAttributeParameter("audioDeviceOutput", true, true);
+    setAttributeDescription("audioDeviceOutput", "Name of the audio device to send the audio to (i.e. Jack writable client)");
 
     addAttribute("loop",
         [&](const Values& args) {

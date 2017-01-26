@@ -33,10 +33,9 @@
 #include <mutex>
 #include <vector>
 
-#include <portaudio.h>
-
-#include "basetypes.h"
-#include "config.h"
+#include "./basetypes.h"
+#include "./config.h"
+#include "./sound_engine.h"
 
 namespace Splash
 {
@@ -45,19 +44,6 @@ namespace Splash
 class Speaker : public BaseObject
 {
   public:
-    enum SampleFormat
-    {
-        SAMPLE_FMT_UNKNOWN = -1,
-        SAMPLE_FMT_U8 = 0,
-        SAMPLE_FMT_S16,
-        SAMPLE_FMT_S32,
-        SAMPLE_FMT_FLT,
-        SAMPLE_FMT_U8P,
-        SAMPLE_FMT_S16P,
-        SAMPLE_FMT_S32P,
-        SAMPLE_FMT_FLTP
-    };
-
     /**
      * \brief Constructor
      */
@@ -98,17 +84,18 @@ class Speaker : public BaseObject
      * \param sampleRate Sample rate
      * \param format Sample format
      */
-    void setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format);
+    void setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const std::string& deviceName = "");
 
   private:
+    Sound_Engine _engine;
     bool _ready{false};
     unsigned int _channels{2};
     bool _planar{false};
     unsigned int _sampleRate{44100};
-    SampleFormat _sampleFormat{SAMPLE_FMT_S16};
+    Sound_Engine::SampleFormat _sampleFormat{Sound_Engine::SAMPLE_FMT_S16};
     size_t _sampleSize{2};
+    std::string _deviceName{""};
 
-    PaStream* _portAudioStream{nullptr};
     bool _abortCallback{false};
 
     std::array<uint8_t, SPLASH_SPEAKER_RINGBUFFER_SIZE> _ringBuffer;

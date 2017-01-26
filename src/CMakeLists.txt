@@ -163,6 +163,7 @@ if (PORTAUDIO_FOUND)
         listener.cpp
         ltcclock.cpp
         speaker.cpp
+        sound_engine.cpp
         ../external/libltc/src/decoder.c
         ../external/libltc/src/encoder.c
         ../external/libltc/src/ltc.c

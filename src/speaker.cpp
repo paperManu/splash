@@ -31,11 +31,12 @@ void Speaker::clearQueue()
 }
 
 /*************/
-void Speaker::setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format)
+void Speaker::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const string& deviceName)
 {
     _channels = std::max((uint32_t)1, channels);
     _sampleRate = std::max((uint32_t)1, sampleRate);
     _sampleFormat = format;
+    _deviceName = deviceName;
 
     initResources();
 }
@@ -47,15 +48,6 @@ void Speaker::freeResources()
         return;
 
     _abortCallback = true;
-
-    if (_portAudioStream)
-    {
-        Pa_AbortStream(_portAudioStream);
-        Pa_CloseStream(_portAudioStream);
-    }
-
-    Pa_Terminate();
-    _portAudioStream = nullptr;
 }
 
 /*************/
@@ -64,94 +56,16 @@ void Speaker::initResources()
     if (_ready)
         freeResources();
 
-    auto error = Pa_Initialize();
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not initialized PortAudio: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
+    if (!_engine.getDevice(false, _deviceName))
         return;
-    }
 
-    PaStreamParameters outputParams;
-    outputParams.device = Pa_GetDefaultOutputDevice();
-    if (outputParams.device == paNoDevice)
-    {
-        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not find default audio output device" << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
+    if (!_engine.setParameters(_sampleRate, _sampleFormat, _channels, 1024))
         return;
-    }
 
-    outputParams.channelCount = _channels;
-    switch (_sampleFormat)
-    {
-    default:
-        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
-        Pa_Terminate();
+    _engine.getParameters(_sampleRate, _sampleSize, _planar);
+
+    if (!_engine.startStream(Speaker::portAudioCallback, this))
         return;
-    case SAMPLE_FMT_U8:
-        outputParams.sampleFormat = paUInt8;
-        _sampleSize = sizeof(unsigned char);
-        _planar = false;
-        break;
-    case SAMPLE_FMT_S16:
-        outputParams.sampleFormat = paInt16;
-        _sampleSize = sizeof(short);
-        _planar = false;
-        break;
-    case SAMPLE_FMT_S32:
-        outputParams.sampleFormat = paInt32;
-        _sampleSize = sizeof(int);
-        _planar = false;
-        break;
-    case SAMPLE_FMT_FLT:
-        outputParams.sampleFormat = paFloat32;
-        _sampleSize = sizeof(float);
-        _planar = false;
-        break;
-    case SAMPLE_FMT_U8P:
-        outputParams.sampleFormat = paUInt8;
-        _planar = true;
-        _sampleSize = sizeof(unsigned char);
-        break;
-    case SAMPLE_FMT_S16P:
-        outputParams.sampleFormat = paInt16;
-        _sampleSize = sizeof(short);
-        _planar = true;
-        break;
-    case SAMPLE_FMT_S32P:
-        outputParams.sampleFormat = paInt32;
-        _sampleSize = sizeof(int);
-        _planar = true;
-        break;
-    case SAMPLE_FMT_FLTP:
-        outputParams.sampleFormat = paFloat32;
-        _sampleSize = sizeof(float);
-        _planar = true;
-        break;
-    }
-
-    outputParams.suggestedLatency = Pa_GetDeviceInfo(outputParams.device)->defaultLowOutputLatency;
-    outputParams.hostApiSpecificStreamInfo = nullptr;
-
-    error = Pa_OpenStream(&_portAudioStream, nullptr, &outputParams, _sampleRate, 1024, paClipOff, Speaker::portAudioCallback, this);
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not open PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return;
-    }
-
-    error = Pa_StartStream(_portAudioStream);
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Speaker::" << __FUNCTION__ << " - Could not start PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return;
-    }
-
-    Log::get() << Log::MESSAGE << "Speaker::" << __FUNCTION__ << " - Successfully opened PortAudio stream" << Log::endl;
-
-    _ready = true;
 }
 
 /*************/
@@ -160,6 +74,9 @@ int Speaker::portAudioCallback(
 {
     auto that = (Speaker*)userData;
     uint8_t* output = (uint8_t*)out;
+
+    if (!output)
+        return paContinue;
 
     int readPosition = that->_ringReadPosition;
     int writePosition = that->_ringWritePosition;

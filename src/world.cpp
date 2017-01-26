@@ -547,8 +547,10 @@ void World::applyConfig()
 
 // Also, enable the master clock if it was not enabled
 #if HAVE_PORTAUDIO
-    if (!_clock)
-        _clock = unique_ptr<LtcClock>(new LtcClock(true));
+    addTask([&]() {
+        if (!_clock)
+            _clock = unique_ptr<LtcClock>(new LtcClock(true));
+    });
 #endif
 
     // Send the start message for all scenes
