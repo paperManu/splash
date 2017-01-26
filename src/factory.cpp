@@ -245,8 +245,6 @@ void Factory::registerObjects()
         BaseObject::Category::IMAGE,
         "video queue");
 
-    _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); }, BaseObject::Category::MISC, "texture image");
-
 #if HAVE_OSX
     _objectBook["texture_syphon"] =
         Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root)); }, BaseObject::Category::IMAGE, "texture image through Syphon");
