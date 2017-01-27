@@ -848,9 +848,10 @@ struct ShaderSources
                 // Brightness correction
                 hsv.z *= _brightness;
                 // Saturation
-                hsv.y *= _saturation;
+                hsv.y = min(1.0, hsv.y * _saturation);
                 // Contrast correction
                 hsv.z = (hsv.z - 0.5f) * _contrast + 0.5f;
+                hsv.z = min(1.0, hsv.z);
                 color.rgb = hsv2rgb(hsv);
             }
 

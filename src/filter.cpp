@@ -378,7 +378,7 @@ void Filter::registerAttributes()
             auto it = _filterUniforms.find("_contrast");
             if (it == _filterUniforms.end())
                 _filterUniforms["_contrast"] = {1.f}; // Default value
-            return _filterUniforms["contrast"];
+            return _filterUniforms["_contrast"];
         },
         {'n'});
     setAttributeDescription("contrast", "Set the contrast for the linked texture");
