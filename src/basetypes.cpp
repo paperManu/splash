@@ -598,6 +598,28 @@ void RootObject::addTask(const function<void()>& task)
 }
 
 /*************/
+void RootObject::addRecurringTask(const string& name, const function<void()>& task)
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    auto recurringTask = _recurringTasks.find(name);
+    if (recurringTask == _recurringTasks.end())
+        _recurringTasks.emplace(make_pair(name, task));
+    else
+        recurringTask->second = task;
+
+    return;
+}
+
+/*************/
+void RootObject::removeRecurringTask(const string& name)
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    auto recurringTask = _recurringTasks.find(name);
+    if (recurringTask != _recurringTasks.end())
+        _recurringTasks.erase(recurringTask);
+}
+
+/*************/
 void RootObject::registerAttributes()
 {
     addAttribute("answerMessage", [&](const Values& args) {
@@ -617,6 +639,9 @@ void RootObject::runTasks()
     for (auto& task : _taskQueue)
         task();
     _taskQueue.clear();
+
+    for (auto& task : _recurringTasks)
+        task.second();
 }
 
 /*************/

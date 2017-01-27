@@ -703,6 +703,7 @@ class RootObject : public BaseObject
     // Tasks queue
     std::recursive_mutex _taskMutex;
     std::list<std::function<void()>> _taskQueue;
+    std::map<std::string, std::function<void()>> _recurringTasks;
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
@@ -723,6 +724,19 @@ class RootObject : public BaseObject
      * \param task Task function
      */
     void addTask(const std::function<void()>& task);
+
+    /**
+     * Add a task repeated at each frame
+     * \param name Task name
+     * \param task Task function
+     */
+    void addRecurringTask(const std::string& name, const std::function<void()>& task);
+
+    /**
+     * Remove a recurring task
+     * \param name Task name
+     */
+    void removeRecurringTask(const std::string& name);
 
     /**
      * \brief Execute all the tasks in the queue
