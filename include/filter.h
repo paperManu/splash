@@ -123,7 +123,7 @@ class Filter : public Texture
   private:
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
-    std::weak_ptr<Texture> _inTexture;
+    std::vector<std::weak_ptr<Texture>> _inTextures;
 
     GLuint _fbo{0};
     std::shared_ptr<Texture_Image> _outTexture{nullptr};

@@ -97,12 +97,12 @@ bool Filter::linkTo(std::shared_ptr<BaseObject> obj)
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
-        if (!_inTexture.expired())
-            _screen->removeTexture(_inTexture.lock());
+        if (!_inTextures.empty() && _inTextures[_inTextures.size() - 1].expired())
+            _screen->removeTexture(_inTextures[_inTextures.size() - 1].lock());
 
         auto tex = dynamic_pointer_cast<Texture>(obj);
         _screen->addTexture(tex);
-        _inTexture = tex;
+        _inTextures.push_back(tex);
 
         return true;
     }
@@ -135,15 +135,23 @@ void Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
-        if (_inTexture.expired())
-            return;
+        for (int i = 0; i < _inTextures.size();)
+        {
+            if (_inTextures[i].expired())
+                continue;
 
-        auto inTex = _inTexture.lock();
-        auto tex = dynamic_pointer_cast<Texture>(obj);
-
-        _screen->removeTexture(tex);
-        if (tex->getName() == inTex->getName())
-            _inTexture.reset();
+            auto inTex = _inTextures[i].lock();
+            auto tex = dynamic_pointer_cast<Texture>(obj);
+            if (inTex->getName() == tex->getName())
+            {
+                _screen->removeTexture(tex);
+                _inTextures.erase(_inTextures.begin() + i);
+            }
+            else
+            {
+                ++i;
+            }
+        }
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
@@ -163,7 +171,7 @@ void Filter::unlinkFrom(std::shared_ptr<BaseObject> obj)
 /*************/
 void Filter::render()
 {
-    if (_inTexture.expired())
+    if (_inTextures.empty() || _inTextures[0].expired())
         return;
 
     // Execute waiting tasks
@@ -177,7 +185,7 @@ void Filter::render()
     if (_updateColorDepth)
         updateColorDepth();
 
-    auto input = _inTexture.lock();
+    auto input = _inTextures[0].lock();
     _outTextureSpec = input->getSpec();
     _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
