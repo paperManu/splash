@@ -245,7 +245,9 @@ void Image_V4L2::captureThreadFunc()
             memset(&buffer, 0, sizeof(buffer));
             buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buffer.memory = V4L2_MEMORY_USERPTR;
-            ioctl(_deviceFd, VIDIOC_DQBUF, &buffer);
+            result = ioctl(_deviceFd, VIDIOC_DQBUF, &buffer);
+            if (result < 0)
+                Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - VIDIOC_DQBUF failed: " << result << Log::endl;
         }
     }
 
@@ -604,6 +606,8 @@ bool Image_V4L2::enumerateVideoStandards()
         Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__
                    << " - Detected video standard: " << string(reinterpret_cast<char*>(&_v4l2Standards[i].name[0]), sizeof(_v4l2Standards[i].name)) << Log::endl;
     }
+
+    return true;
 }
 
 /*************/

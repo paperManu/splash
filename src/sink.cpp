@@ -47,6 +47,8 @@ bool Sink::linkTo(shared_ptr<BaseObject> obj)
         _inputTexture = objAsTexture;
         return true;
     }
+
+    return false;
 }
 
 /*************/

@@ -40,8 +40,15 @@ Link::Link(weak_ptr<RootObject> root, string name)
 Link::~Link()
 {
     int lingerValue = 0;
-    _socketMessageOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
-    _socketBufferOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
+    try
+    {
+        _socketMessageOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
+        _socketBufferOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
+    }
+    catch (zmq::error_t e)
+    {
+        Log::get() << Log::ERROR << "Link::" << __FUNCTION__ << " - Error while closing socket: " << e.what() << Log::endl;
+    }
 
     _socketMessageOut.reset();
     _socketBufferOut.reset();
