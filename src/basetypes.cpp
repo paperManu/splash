@@ -357,6 +357,16 @@ void BaseObject::init()
         },
         {'s'});
 
+    addAttribute("priorityShift",
+        [&](const Values& args) {
+            _priorityShift = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_priorityShift}; },
+        {'n'});
+    setAttributeDescription("priorityShift",
+        "Shift to the default rendering priority value, for those cases where two objects should be rendered in a specific order. Higher value means lower priority");
+
     addAttribute("switchLock",
         [&](const Values& args) {
             auto attribIterator = _attribFunctions.find(args[0].as<string>());

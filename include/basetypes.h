@@ -430,7 +430,7 @@ class BaseObject
      * - 40 to 49: windows rendering
      * \return Return the rendering priority
      */
-    Priority getRenderingPriority() const { return _renderingPriority; }
+    Priority getRenderingPriority() const { return (Priority)((int)_renderingPriority + _priorityShift); }
 
     /**
      * \brief Set the rendering priority for this object
@@ -449,11 +449,13 @@ class BaseObject
     bool _savable{true}; //!< True if the object should be saved
 
   protected:
-    unsigned long _id{0};                             //!< Internal ID of the object
-    std::string _type{"baseobject"};                  //!< Internal type
-    std::string _remoteType{""};                      //!< When the object root is a Scene, this is the type of the corresponding object in the World
-    std::string _name{""};                            //!< Object name
+    unsigned long _id{0};            //!< Internal ID of the object
+    std::string _type{"baseobject"}; //!< Internal type
+    std::string _remoteType{""};     //!< When the object root is a Scene, this is the type of the corresponding object in the World
+    std::string _name{""};           //!< Object name
+
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
+    int _priorityShift{0};                            //!< Shift applied to rendering priority
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
