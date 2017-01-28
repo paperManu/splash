@@ -12,9 +12,7 @@
 #if HAVE_GPHOTO
 #include "./image_gphoto.h"
 #endif
-#if HAVE_FFMPEG
 #include "./image_ffmpeg.h"
-#endif
 #if HAVE_OPENCV
 #include "./image_opencv.h"
 #endif
@@ -152,7 +150,6 @@ void Factory::registerObjects()
         BaseObject::Category::IMAGE,
         "Video4Linux2 input device");
 
-#if HAVE_FFMPEG
     _objectBook["image_ffmpeg"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
@@ -164,7 +161,6 @@ void Factory::registerObjects()
         },
         BaseObject::Category::IMAGE,
         "video");
-#endif
 
 #if HAVE_GPHOTO
     _objectBook["image_gphoto"] = Page(

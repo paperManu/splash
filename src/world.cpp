@@ -8,19 +8,6 @@
 #include <unistd.h>
 
 #include "./image.h"
-#if HAVE_GPHOTO
-#include "./image_gphoto.h"
-#endif
-#if HAVE_FFMPEG
-#include "./image_ffmpeg.h"
-#endif
-#if HAVE_OPENCV
-#include "./image_opencv.h"
-#endif
-#if HAVE_SHMDATA
-#include "./image_shmdata.h"
-#include "./mesh_shmdata.h"
-#endif
 #include "./link.h"
 #include "./log.h"
 #include "./mesh.h"

@@ -7,15 +7,6 @@
 /* Apple Mac OS X operating system not detected */
 #cmakedefine01 HAVE_OSX
 
-/* Defined to 1 if ffmpeg is detected */
-#cmakedefine01 HAVE_FFMPEG
-
-/* Defined to 1 if ffmpeg 3.x is detected */
-#cmakedefine01 HAVE_FFMPEG_3
-
-/* Defined to 1 if ffmpeg 2.8 is detected */
-#cmakedefine01 HAVE_FFMPEG_2_8
-
 /* Defined to 1 if libgphoto2 is detected */
 #cmakedefine01 HAVE_GPHOTO
 
