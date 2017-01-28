@@ -2,15 +2,17 @@ image: ubuntu:xenial
 
 before_script: 
   - apt update -qq
-  - apt install -y build-essential git-core zip subversion cmake libtool clang libxrandr-dev libxi-dev libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
+  - apt install -y curl wget build-essential git-core zip subversion cmake libtool clang libxrandr-dev libxi-dev libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
   - cmake ..
+  - make glfw
 
 stages:
   - test
   - package
+  - coverity
 
 test:
   stage: test
@@ -32,3 +34,14 @@ package:
     paths:
     - "*.deb"
     - "*.tar.bz2"
+
+coverity:
+  stage: coverity
+  script:
+    - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash" -O coverity_tool.tgz
+    - tar xvzf coverity_tool.tgz
+    - $(ls | grep cov-analysis)/bin/cov-build --dir cov-int make -j$(nproc)
+    - tar caf splash-cov.bz2 cov-int
+    - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2 --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
+  only:
+    - coverity_scan

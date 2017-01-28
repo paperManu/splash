@@ -1,7 +1,7 @@
 Splash, a multi-projector video-mapping software
 ================================================
 
-[![Build status](https://travis-ci.org/paperManu/splash.svg?branch=master)](https://travis-ci.org/paperManu/splash)
+[![Build status](https://gitlab.com/sat-metalab/splash/badges/develop/build.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
 For a more complete documentation, go visit the [wiki](https://github.com/paperManu/splash/wiki).
