@@ -64,7 +64,6 @@ void Image_FFmpeg::freeFFmpegObjects()
     {
         avformat_close_input(&_avContext);
         _avContext = nullptr;
-        _audioCodecContext = nullptr;
     }
 }
 
@@ -133,6 +132,7 @@ string Image_FFmpeg::tagToFourCC(unsigned int tag)
     return fourcc;
 }
 
+#if HAVE_PORTAUDIO
 /*************/
 bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
 {
@@ -178,13 +178,16 @@ bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
     _speaker->setParameters(audioCodecContext->channels, audioCodecContext->sample_rate, format, _audioDeviceOutput);
     return true;
 }
+#endif
 
 /*************/
 void Image_FFmpeg::readLoop()
 {
     // Find the first video stream
     _videoStreamIndex = -1;
+#if HAVE_PORTAUDIO
     _audioStreamIndex = -1;
+#endif
     for (int i = 0; i < _avContext->nb_streams; ++i)
     {
         if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
@@ -676,6 +679,7 @@ void Image_FFmpeg::registerAttributes()
         });
     setAttributeParameter("duration", false, true);
 
+#if HAVE_PORTAUDIO
     addAttribute("audioDeviceOutput",
         [&](const Values& args) {
             _audioDeviceOutput = args[0].as<string>();
@@ -686,6 +690,7 @@ void Image_FFmpeg::registerAttributes()
         {'s'});
     setAttributeParameter("audioDeviceOutput", true, true);
     setAttributeDescription("audioDeviceOutput", "Name of the audio device to send the audio to (i.e. Jack writable client)");
+#endif
 
     addAttribute("loop",
         [&](const Values& args) {
