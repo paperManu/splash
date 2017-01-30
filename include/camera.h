@@ -237,6 +237,7 @@ class Camera : public BaseObject
     // Rendering parameters
     bool _drawFrame{false};
     bool _wireframe{false};
+    bool _showCameraCount{false};
     bool _hidden{false};
     bool _flashBG{false};
     bool _automaticResize{true};

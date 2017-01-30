@@ -637,6 +637,7 @@ void Camera::render()
             obj->getShader()->setAttribute("uniform", {"_wireframeColor", _wireframeColor.x, _wireframeColor.y, _wireframeColor.z, _wireframeColor.w});
             obj->getShader()->setAttribute("uniform", {"_cameraAttributes", _blendWidth, _brightness});
             obj->getShader()->setAttribute("uniform", {"_fovAndColorBalance", _fov * _width / _height * M_PI / 180.0, _fov * M_PI / 180.0, colorBalance.x, colorBalance.y});
+            obj->getShader()->setAttribute("uniform", {"_showCameraCount", (int)_showCameraCount});
             if (_colorLUT.size() == 768 && _isColorLUTActivated)
             {
                 obj->getShader()->setAttribute("uniform", {"_colorLUT", _colorLUT});
@@ -1610,6 +1611,14 @@ void Camera::registerAttributes()
         },
         {'n'});
     setAttributeDescription("wireframe", "If set to 1, draws all linked objects as wireframes");
+
+    addAttribute("showCameraCount",
+        [&](const Values& args) {
+            _showCameraCount = args[0].as<bool>();
+            return true;
+        },
+        {'n'});
+    setAttributeDescription("showCameraCount", "If set to 1, shows visually the camera count, encoded in binary in RGB (blending has to be activated)");
 
     //
     // Various options

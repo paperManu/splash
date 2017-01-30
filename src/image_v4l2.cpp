@@ -99,7 +99,7 @@ void Image_V4L2::captureThreadFunc()
 
     if (!_hasStreamingIO)
     {
-        unique_lock<mutex> lockWrite(_writeMutex, std::defer_lock);
+        unique_lock<Spinlock> lockWrite(_writeMutex, std::defer_lock);
         while (_captureThreadRun)
         {
             if (!_bufferImage || _bufferImage->getSpec() != _imageBuffers[buffer.index]->getSpec())
@@ -151,7 +151,7 @@ void Image_V4L2::captureThreadFunc()
         }
 
         // Run the capture
-        unique_lock<mutex> lockWrite(_writeMutex, std::defer_lock);
+        unique_lock<Spinlock> lockWrite(_writeMutex, std::defer_lock);
         while (_captureThreadRun)
         {
             struct pollfd fd;
@@ -245,7 +245,9 @@ void Image_V4L2::captureThreadFunc()
             memset(&buffer, 0, sizeof(buffer));
             buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
             buffer.memory = V4L2_MEMORY_USERPTR;
-            ioctl(_deviceFd, VIDIOC_DQBUF, &buffer);
+            result = ioctl(_deviceFd, VIDIOC_DQBUF, &buffer);
+            if (result < 0)
+                Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - VIDIOC_DQBUF failed: " << result << Log::endl;
         }
     }
 
@@ -604,6 +606,8 @@ bool Image_V4L2::enumerateVideoStandards()
         Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__
                    << " - Detected video standard: " << string(reinterpret_cast<char*>(&_v4l2Standards[i].name[0]), sizeof(_v4l2Standards[i].name)) << Log::endl;
     }
+
+    return true;
 }
 
 /*************/
@@ -688,7 +692,7 @@ void Image_V4L2::registerAttributes()
             if (index != -1) // Only the index is specified
                 _devicePath = "/dev/video" + to_string(index);
             else if (path.empty() || path[0] != '/') // No path specified, or an invalid one
-                _devicePath = "/dev/video0";
+                _devicePath = "";
             else
                 _devicePath = path;
 

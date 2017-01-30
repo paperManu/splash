@@ -1,6 +1,29 @@
 Splash release notes
 ===================
 
+Splash 0.5.4 (2017-01-30)
+-------------------------
+New features:
+* Added a Mesh gui panel
+* Added a Sink base class, and Sink_Shmdata
+* Added a Sound_Engine class, Speaker can now output to Jack
+* Added the possibility to visually show the camera count
+* Added a priorityShift attribute to BaseObject
+
+Improvements:
+* Timestamps now contain the date
+* Added GLFW as a submodule, statically linked
+* Filter now accepts files as shaders
+* Now using spinlocks where it makes sense
+* Improved Filter contrast and brightness settings
+* Added recurring tasks to RootObjects; moved swapTest and pingTest to recurring tasks
+* Filter now accepts multiple inputs
+
+Bug fixed:
+* Fixed jitter while reading with a queue
+* Fixed a crash when creating a texture_image from the gui
+* Fixed CI, removed Travis support
+
 Splash 0.5.2 (2017-01-13)
 --------------------------
 New features:

@@ -31,13 +31,14 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "filter.h"
-#include "image.h"
-#include "texture.h"
+#include "./basetypes.h"
+#include "./coretypes.h"
+#include "./factory.h"
+#include "./filter.h"
+#include "./image.h"
+#include "./texture.h"
 
 namespace Splash
 {
@@ -97,6 +98,7 @@ class Queue : public BufferObject
 
   private:
     std::weak_ptr<World> _world;
+    std::unique_ptr<Factory> _factory;
 
     struct Source
     {
@@ -128,13 +130,6 @@ class Queue : public BufferObject
      * \param playlist Playlist to clean
      */
     void cleanPlaylist(std::vector<Source>& playlist);
-
-    /**
-     * \brief Create a source object from the given type
-     * \param type Source type
-     * \return Return a source object
-     */
-    std::shared_ptr<BufferObject> createSource(std::string type);
 
     /**
      * Regist\brief er new functors to modify attributes

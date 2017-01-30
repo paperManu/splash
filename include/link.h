@@ -123,8 +123,8 @@ class Link
     std::weak_ptr<RootObject> _rootObject;
     std::string _name;
     std::shared_ptr<zmq::context_t> _context;
-    std::mutex _msgSendMutex;
-    std::mutex _bufferSendMutex;
+    Spinlock _msgSendMutex;
+    Spinlock _bufferSendMutex;
 
     std::vector<std::string> _connectedTargets;
     std::map<std::string, std::weak_ptr<RootObject>> _connectedTargetPointers;
@@ -138,7 +138,7 @@ class Link
     std::shared_ptr<zmq::socket_t> _socketMessageOut;
 
     std::deque<std::shared_ptr<SerializedObject>> _otgBuffers;
-    std::mutex _otgMutex;
+    Spinlock _otgMutex;
     std::atomic_int _otgNumber{0};
 
     std::thread _bufferInThread;

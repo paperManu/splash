@@ -50,6 +50,7 @@
 #include "./widget_global_view.h"
 #include "./widget_graph.h"
 #include "./widget_media.h"
+#include "./widget_meshes.h"
 #include "./widget_node_view.h"
 #include "./widget_template.h"
 #include "./widget_text_box.h"

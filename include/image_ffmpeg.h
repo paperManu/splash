@@ -120,8 +120,9 @@ class Image_FFmpeg : public Image
 
 #if HAVE_PORTAUDIO
     std::unique_ptr<Speaker> _speaker;
-    AVCodecContext* _audioCodecContext{nullptr};
     int _audioStreamIndex{-1};
+    std::string _audioDeviceOutput{""};
+    bool _audioDeviceOutputUpdated{false};
 #endif
 
     /**
@@ -151,6 +152,12 @@ class Image_FFmpeg : public Image
      * \param seconds Desired position
      */
     void seek(float seconds);
+
+    /**
+     * Set the audio output
+     * \return Return true if all went well
+     */
+    bool setupAudioOutput(AVCodecContext* audioCodecContext);
 
     /**
      * \brief Video display loop

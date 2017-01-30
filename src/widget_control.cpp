@@ -57,6 +57,13 @@ void GuiControl::render()
         if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             setObjectsOfType("camera", "blendPrecision", {blendPrecision});
 
+        static auto showCameraCount = 0;
+        if (ImGui::InputInt("Show camera count (w/ blending)", &showCameraCount, 0, 1, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            setGlobal("computeBlending", {"continuous"});
+            setObjectsOfType("camera", "showCameraCount", {showCameraCount});
+        }
+
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

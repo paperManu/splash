@@ -357,6 +357,16 @@ void BaseObject::init()
         },
         {'s'});
 
+    addAttribute("priorityShift",
+        [&](const Values& args) {
+            _priorityShift = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_priorityShift}; },
+        {'n'});
+    setAttributeDescription("priorityShift",
+        "Shift to the default rendering priority value, for those cases where two objects should be rendered in a specific order. Higher value means lower priority");
+
     addAttribute("switchLock",
         [&](const Values& args) {
             auto attribIterator = _attribFunctions.find(args[0].as<string>());
@@ -467,7 +477,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 
         // Deserialize it right away, in a separate thread
         SThread::pool.enqueueWithoutId([this]() {
-            lock_guard<mutex> lock(_writeMutex);
+            lock_guard<Spinlock> lock(_writeMutex);
             deserialize();
             _serializedObjectWaiting = false;
         });
@@ -598,6 +608,28 @@ void RootObject::addTask(const function<void()>& task)
 }
 
 /*************/
+void RootObject::addRecurringTask(const string& name, const function<void()>& task)
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    auto recurringTask = _recurringTasks.find(name);
+    if (recurringTask == _recurringTasks.end())
+        _recurringTasks.emplace(make_pair(name, task));
+    else
+        recurringTask->second = task;
+
+    return;
+}
+
+/*************/
+void RootObject::removeRecurringTask(const string& name)
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    auto recurringTask = _recurringTasks.find(name);
+    if (recurringTask != _recurringTasks.end())
+        _recurringTasks.erase(recurringTask);
+}
+
+/*************/
 void RootObject::registerAttributes()
 {
     addAttribute("answerMessage", [&](const Values& args) {
@@ -617,6 +649,9 @@ void RootObject::runTasks()
     for (auto& task : _taskQueue)
         task();
     _taskQueue.clear();
+
+    for (auto& task : _recurringTasks)
+        task.second();
 }
 
 /*************/

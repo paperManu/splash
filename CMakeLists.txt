@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.5.2
+    VERSION 0.5.4
     LANGUAGES C CXX
 )
 
@@ -47,10 +47,9 @@ find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
 find_package(Snappy REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
-pkg_check_modules(FFMPEG libavformat libavcodec libavutil libswscale)
+pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
 
 # Optional dependencies
 if(UNIX AND NOT APPLE)
@@ -78,13 +77,12 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDATADIR=\\\"${CMAKE_INSTALL_PREFIX}/sh
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSPLASHPREFIX=\\\"${CMAKE_INSTALL_PREFIX}\\\"")
 
 set(HAVE_GPHOTO ${GPHOTO_FOUND})
-set(HAVE_FFMPEG ${FFMPEG_FOUND})
 set(HAVE_OPENCV ${OPENCV_FOUND})
 set(HAVE_PORTAUDIO ${PORTAUDIO_FOUND})
 set(HAVE_SHMDATA ${SHMDATA_FOUND})
 set(HAVE_PYTHON ${PYTHONLIBS_FOUND})
 
-if (HAVE_FFMPEG AND FFMPEG_libavformat_VERSION LESS 57)
+if (FFMPEG_libavformat_VERSION LESS 57)
     message(WARNING "FFmpeg version is older than 3.1, support disabled")
     set(FFMPEG_FOUND 0)
 endif()
@@ -110,6 +108,15 @@ else()
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h")
+
+#
+# External sources
+#
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(external/glfw)
 
 #
 # Sources
@@ -143,7 +150,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
                                       libboost-system1.58.0,
-                                      libglfw3,
                                       libgphoto2-6,
                                       libgsl2,
                                       libopencv-core2.4v5,
@@ -194,12 +200,10 @@ function(info_cfg_text
 endfunction()
 
 info_cfg_option(GPHOTO_VERSION)
-if (FFMPEG_FOUND)
-    info_cfg_option(FFMPEG_libavformat_VERSION)
-    info_cfg_option(FFMPEG_libavcodec_VERSION)
-    info_cfg_option(FFMPEG_libavutil_VERSION)
-    info_cfg_option(FFMPEG_libswscale_VERSION)
-endif()
+info_cfg_option(FFMPEG_libavformat_VERSION)
+info_cfg_option(FFMPEG_libavcodec_VERSION)
+info_cfg_option(FFMPEG_libavutil_VERSION)
+info_cfg_option(FFMPEG_libswscale_VERSION)
 info_cfg_option(OPENCV_VERSION)
 info_cfg_option(PORTAUDIO_VERSION)
 info_cfg_option(SHMDATA_VERSION)

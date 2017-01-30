@@ -18,8 +18,8 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_media.h
+ * The media widget, to modify the input media type
  */
 
 #ifndef SPLASH_WIDGET_MEDIA_H

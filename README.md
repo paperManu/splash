@@ -1,7 +1,7 @@
 Splash, a multi-projector video-mapping software
 ================================================
 
-[![Build status](https://travis-ci.org/paperManu/splash.svg?branch=master)](https://travis-ci.org/paperManu/splash)
+[![Build status](https://gitlab.com/sat-metalab/splash/badges/develop/build.svg)](https://gitlab.com/sat-metalab/splash/commits/develop)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3544.svg)](https://scan.coverity.com/projects/papermanu-splash)
 
 For a more complete documentation, go visit the [wiki](https://github.com/paperManu/splash/wiki).
@@ -52,9 +52,6 @@ Installation
 Splash relies on a few libraries to get the job done. These libraries are:
 
 - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
-- [FFmpeg](http://ffmpeg.org/) to read video files,
-- [GLFW](http://glfw.org) to handle the GL context creation,
-- [GLM](http://glm.g-truc.net) to ease matrix manipulation,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
 - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
@@ -65,6 +62,9 @@ Splash relies on a few libraries to get the job done. These libraries are:
 
 A few more libraries are used as submodules in the git repository:
 
+- [FFmpeg](http://ffmpeg.org/) to read video files,
+- [GLFW](http://glfw.org) to handle the GL context creation,
+- [GLM](http://glm.g-truc.net) to ease matrix manipulation,
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
 - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images,
@@ -84,7 +84,7 @@ You can also compile Splash by hand, especially if you are curious about its int
 
     sudo apt install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev
     sudo apt install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt install libglfw3-dev libxinerama-dev libxcursor-dev python3-dev
+    sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm
     sudo apt install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
 
     git clone git://github.com/paperManu/splash

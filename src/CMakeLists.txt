@@ -53,12 +53,14 @@ include_directories(${OPENCV_INCLUDE_DIRS})
 include_directories(${SNAPPY_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
 
+# Distributed third parties first
+link_directories(${FFMPEG_LIBRARY_DIRS})
+
 link_directories(${GLFW_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
-link_directories(${FFMPEG_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
@@ -99,6 +101,7 @@ target_sources(
     object.cpp
     queue.cpp
     scene.cpp
+    sink.cpp
     shader.cpp
     texture.cpp
     texture_image.cpp
@@ -115,6 +118,7 @@ target_sources(
     widget_graph.cpp
     widget_node_view.cpp
     widget_media.cpp
+    widget_meshes.cpp
     widget_template.cpp
     widget_text_box.cpp
     widget_warp.cpp
@@ -159,6 +163,7 @@ if (PORTAUDIO_FOUND)
         listener.cpp
         ltcclock.cpp
         speaker.cpp
+        sound_engine.cpp
         ../external/libltc/src/decoder.c
         ../external/libltc/src/encoder.c
         ../external/libltc/src/ltc.c
@@ -171,6 +176,7 @@ if (SHMDATA_FOUND)
         splash-${API_VERSION} PRIVATE
         image_shmdata.cpp
         mesh_shmdata.cpp
+        sink_shmdata.cpp
     )
 endif()
 
@@ -190,10 +196,12 @@ if (APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 endif()
 
+# Distributed third parties first
 target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
+
 target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${GLFW_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} glfw)
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${ZMQ_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})

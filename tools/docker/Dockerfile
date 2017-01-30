@@ -10,7 +10,6 @@ RUN apt install --assume-yes \
     cmake \
     automake \
     libtool \
-    clang \
     libxrandr-dev \
     libxi-dev \
     libglm-dev \
@@ -19,14 +18,10 @@ RUN apt install --assume-yes \
     libzmq3-dev \
     libsnappy-dev \
     libgphoto2-dev \
-    libglfw3-dev \
+    libgl1-mesa-dev \
     libxinerama-dev \
     libxcursor-dev \
     python3-dev \
-    libavformat-dev \
-    libavcodec-dev \
-    libavutil-dev \
-    libswscale-dev \
     portaudio19-dev \
     libopencv-dev \
     yasm

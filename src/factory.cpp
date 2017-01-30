@@ -12,9 +12,7 @@
 #if HAVE_GPHOTO
 #include "./image_gphoto.h"
 #endif
-#if HAVE_FFMPEG
 #include "./image_ffmpeg.h"
-#endif
 #if HAVE_OPENCV
 #include "./image_opencv.h"
 #endif
@@ -26,6 +24,7 @@
 #include "./mesh.h"
 #if HAVE_SHMDATA
 #include "./mesh_shmdata.h"
+#include "./sink_shmdata.h"
 #endif
 #include "./object.h"
 #if HAVE_PYTHON
@@ -151,7 +150,6 @@ void Factory::registerObjects()
         BaseObject::Category::IMAGE,
         "Video4Linux2 input device");
 
-#if HAVE_FFMPEG
     _objectBook["image_ffmpeg"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
@@ -163,7 +161,6 @@ void Factory::registerObjects()
         },
         BaseObject::Category::IMAGE,
         "video");
-#endif
 
 #if HAVE_GPHOTO
     _objectBook["image_gphoto"] = Page(
@@ -207,7 +204,7 @@ void Factory::registerObjects()
         "camera through opencv");
 #endif
 
-    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); });
+    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); }, BaseObject::Category::MESH, "mesh from obj file");
 
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(
@@ -221,6 +218,9 @@ void Factory::registerObjects()
         },
         BaseObject::Category::MESH,
         "mesh through shared memory");
+
+    _objectBook["sink_shmdata"] =
+        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); }, BaseObject::Category::MISC, "sink a texture to shmdata file");
 #endif
 
     _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); }, BaseObject::Category::MISC, "object");
@@ -240,8 +240,6 @@ void Factory::registerObjects()
         },
         BaseObject::Category::IMAGE,
         "video queue");
-
-    _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); }, BaseObject::Category::MISC, "texture image");
 
 #if HAVE_OSX
     _objectBook["texture_syphon"] =

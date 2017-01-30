@@ -232,18 +232,51 @@ void GuiMedia::render()
                         drawAttributes(filterName, filterAttributes);
                         ImGui::TreePop();
                     }
+
+                    if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
+                    {
+                        auto spec = filter->getSpec();
+                        auto ratio = (float)spec.height / (float)spec.width;
+                        auto texture = dynamic_pointer_cast<Texture_Image>(filter->getOutTexture());
+
+                        double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+                        int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+                        int h = w * ratio;
+
+                        ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h));
+                        ImGui::TreePop();
+                    }
                 }
                 else
                 {
                     // Display the filters associated with this media
                     auto filters = getFiltersForImage(media);
-                    for (auto& filter : filters)
+                    for (auto& filterAsObj : filters)
                     {
-                        auto filterName = filter->getName();
+                        auto filterName = filterAsObj->getName();
                         if (ImGui::TreeNode(("Filter: " + filterName).c_str()))
                         {
-                            auto filterAttributes = filter->getAttributes(true);
+                            auto filterAttributes = filterAsObj->getAttributes(true);
                             drawAttributes(filterName, filterAttributes);
+                            ImGui::TreePop();
+                        }
+                    }
+
+                    for (auto& filterAsObj : filters)
+                    {
+                        auto filterName = filterAsObj->getName();
+                        if (ImGui::TreeNode(("Filter preview: " + filterName).c_str()))
+                        {
+                            auto filter = dynamic_pointer_cast<Filter>(filterAsObj);
+                            auto spec = filter->getSpec();
+                            auto ratio = (float)spec.height / (float)spec.width;
+                            auto texture = dynamic_pointer_cast<Texture_Image>(filter->getOutTexture());
+
+                            double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
+                            int w = ImGui::GetWindowWidth() - 2 * leftMargin;
+                            int h = w * ratio;
+
+                            ImGui::Image((void*)(intptr_t)texture->getTexId(), ImVec2(w, h));
                             ImGui::TreePop();
                         }
                     }

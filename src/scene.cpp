@@ -395,7 +395,7 @@ void Scene::render()
     // See BaseObject::getRenderingPriority() for precision about priorities
     bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
     bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
-    auto textureLock = unique_lock<mutex>(_textureUploadMutex, defer_lock);
+    auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
     for (auto& objPriority : objectList)
     {
         // If the objects needs some Textures, we need to sync
@@ -499,11 +499,13 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        unique_lock<mutex> lockTexture(_textureUploadMutex);
-        _textureUploadCondition.wait(lockTexture);
+        unique_lock<mutex> lockUploadTexture(_textureUploadMutex);
+        _textureUploadCondition.wait(lockUploadTexture);
 
         if (!_isRunning)
             break;
+
+        unique_lock<Spinlock> lockTexture(_textureMutex);
 
         _textureUploadWindow->setAsCurrentContext();
         glFlush();
@@ -655,9 +657,9 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
         nvResult &= nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetX11Window(window), 1);
         nvResult &= nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
         if (nvResult)
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " successfully joined the NV swap group" << Log::endl;
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully joined the NV swap group" << Log::endl;
         else
-            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << name << " couldn't join the NV swap group" << Log::endl;
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't join the NV swap group" << Log::endl;
     }
 #endif
 #endif

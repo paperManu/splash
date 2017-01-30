@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 Emmanuel Durand
+ * Copyright (C) 2017 Emmanuel Durand
  *
  * This file is part of Splash.
  *
@@ -18,12 +18,12 @@
  */
 
 /*
- * @widget_global_view.h
- * The global view widget, to calibrate cameras
+ * @widget_meshes.h
+ * The Meshes widget, to update a mesh geometry source
  */
 
-#ifndef SPLASH_WIDGET_CONTROL_H
-#define SPLASH_WIDGET_CONTROL_H
+#ifndef SPLASH_WIDGET_MESHES_H
+#define SPLASH_WIDGET_MESHES_H
 
 #include "./widget.h"
 
@@ -31,20 +31,25 @@ namespace Splash
 {
 
 /*************/
-class GuiControl : public GuiWidget
+class GuiMeshes : public GuiWidget
 {
   public:
-    GuiControl(std::weak_ptr<Scene> scene, std::string name)
-        : GuiWidget(scene, name)
-    {
-    }
+    GuiMeshes(std::weak_ptr<Scene> scene, std::string name);
     void render();
     int updateWindowFlags();
 
   private:
-    std::shared_ptr<GuiWidget> _nodeView;
-    int _targetIndex{-1};
-    std::string _targetObjectName{};
+    std::map<std::string, int> _meshTypeIndex;
+    std::map<std::string, std::string> _meshType;
+    std::map<std::string, std::string> _meshTypeReversed{}; // Created from the previous map
+
+    Values _newMedia{"image", "", 0.f, 0.f};
+    int _newMediaTypeIndex{0};
+    float _newMediaStart{0.f};
+    float _newMediaStop{0.f};
+
+    std::list<std::shared_ptr<BaseObject>> getSceneMeshes();
+    void replaceMesh(std::string previousMedia, std::string type);
 };
 
 } // end of namespace

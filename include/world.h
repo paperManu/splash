@@ -101,8 +101,8 @@ class World : public RootObject
     bool _enforceRealtime{false};     //!< If true, realtime scheduling is asked to the system, if possible
 
     // World parameters
-    unsigned int _worldFramerate{60};
-    std::string _blendingMode{}; //!< Blending mode: can be none, once or continuous
+    unsigned int _worldFramerate{60}; //!< World framerate, default 60, because synchronous tasks need the loop to run
+    std::string _blendingMode{};      //!< Blending mode: can be none, once or continuous
 
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene

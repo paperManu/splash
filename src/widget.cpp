@@ -301,7 +301,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             for (auto& v : attr.second)
             {
                 // We have a special way to handle file paths
-                if (attr.first == "file")
+                if (attr.first.find("file") == 0)
                 {
 
                     string tmp = v.as<string>();

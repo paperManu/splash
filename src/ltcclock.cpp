@@ -17,7 +17,7 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
     registerAttributes();
 
     _listener = unique_ptr<Listener>(new Listener());
-    _listener->setParameters(1, 0, Listener::SAMPLE_FMT_U8, deviceName);
+    _listener->setParameters(1, 0, Sound_Engine::SAMPLE_FMT_U8, deviceName);
     if (!_listener)
     {
         _listener.reset();

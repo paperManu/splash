@@ -1,12 +1,8 @@
-#include "listener.h"
+#include "./listener.h"
 
-#include "log.h"
-#include "threadpool.h"
-#include "timer.h"
-
-#if not HAVE_OSX
-#include "pa_jack.h"
-#endif
+#include "./log.h"
+#include "./threadpool.h"
+#include "./timer.h"
 
 using namespace std;
 
@@ -26,7 +22,7 @@ Listener::~Listener()
 }
 
 /*************/
-void Listener::setParameters(uint32_t channels, uint32_t sampleRate, SampleFormat format, const string& deviceName)
+void Listener::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine::SampleFormat format, const string& deviceName)
 {
     _channels = std::max((uint32_t)1, channels);
     _sampleRate = sampleRate;
@@ -42,15 +38,7 @@ void Listener::freeResources()
     if (!_ready)
         return;
 
-    _abordCallback = true;
-    if (_portAudioStream)
-    {
-        Pa_AbortStream(_portAudioStream);
-        // Pa_CloseStream(_portAudioStream);
-        _portAudioStream = nullptr;
-    }
-
-    Pa_Terminate();
+    _abortCallback = true;
 }
 
 /*************/
@@ -59,102 +47,15 @@ void Listener::initResources()
     if (_ready)
         freeResources();
 
-#if not HAVE_OSX
-    PaJack_SetClientName("splash");
-#endif
-    auto error = Pa_Initialize();
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Could not initialized PortAudio: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
+    if (!_engine.getDevice(true, _deviceName))
         return;
-    }
 
-    PaStreamParameters inputParams;
-    inputParams.device = -1;
-#if not HAVE_OSX
-    // If a JACK device name is set, we try to connect to it
-    if (_deviceName != "")
-    {
-        auto numDevices = Pa_GetDeviceCount();
-        for (int i = 0; i < numDevices; ++i)
-        {
-            auto deviceInfo = Pa_GetDeviceInfo(i);
-            if (string(deviceInfo->name) == _deviceName)
-            {
-                inputParams.device = i;
-                if (deviceInfo->hostApi == Pa_HostApiTypeIdToHostApiIndex(paJACK))
-                    _useJack = true;
-            }
-        }
-
-        if (inputParams.device >= 0)
-            Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Connecting to device " << _deviceName << Log::endl;
-    }
-#endif
-
-    if (inputParams.device < 0)
-    {
-        inputParams.device = Pa_GetDefaultInputDevice();
-        if (inputParams.device == paNoDevice)
-        {
-            Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Could not find default audio input device" << Pa_GetErrorText(error) << Log::endl;
-            Pa_Terminate();
-            return;
-        }
-    }
-
-    auto deviceInfo = Pa_GetDeviceInfo(inputParams.device);
-    Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Connected to device: " << deviceInfo->name << Log::endl;
-
-    if (_sampleRate == 0)
-        _sampleRate = deviceInfo->defaultSampleRate;
-
-    inputParams.channelCount = _channels;
-    switch (_sampleFormat)
-    {
-    default:
-        Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Unsupported sample format" << Log::endl;
-        Pa_Terminate();
+    if (!_engine.setParameters(_sampleRate, _sampleFormat, _channels, 256))
         return;
-    case SAMPLE_FMT_U8:
-        inputParams.sampleFormat = paUInt8;
-        _sampleSize = sizeof(unsigned char);
-        break;
-    case SAMPLE_FMT_S16:
-        inputParams.sampleFormat = paInt16;
-        _sampleSize = sizeof(short);
-        break;
-    case SAMPLE_FMT_S32:
-        inputParams.sampleFormat = paInt32;
-        _sampleSize = sizeof(int);
-        break;
-    case SAMPLE_FMT_FLT:
-        inputParams.sampleFormat = paFloat32;
-        _sampleSize = sizeof(float);
-        break;
-    }
 
-    inputParams.suggestedLatency = Pa_GetDeviceInfo(inputParams.device)->defaultLowInputLatency;
-    inputParams.hostApiSpecificStreamInfo = nullptr;
-
-    error = Pa_OpenStream(&_portAudioStream, &inputParams, nullptr, _sampleRate, 256, paClipOff, Listener::portAudioCallback, this);
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Could not open PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
+    _engine.getParameters(_sampleRate, _sampleSize, _planar);
+    if (!_engine.startStream(Listener::portAudioCallback, this))
         return;
-    }
-
-    error = Pa_StartStream(_portAudioStream);
-    if (error != paNoError)
-    {
-        Log::get() << Log::WARNING << "Listener::" << __FUNCTION__ << " - Could not start PortAudio stream: " << Pa_GetErrorText(error) << Log::endl;
-        Pa_Terminate();
-        return;
-    }
-
-    Log::get() << Log::MESSAGE << "Listener::" << __FUNCTION__ << " - Successfully opened PortAudio stream" << Log::endl;
 
     _ready = true;
 }
@@ -165,6 +66,9 @@ int Listener::portAudioCallback(
 {
     auto that = (Listener*)userData;
     uint8_t* input = (uint8_t*)in;
+
+    if (!input)
+        return paContinue;
 
     int readPosition = that->_ringReadPosition;
     int writePosition = that->_ringWritePosition;
@@ -192,7 +96,7 @@ int Listener::portAudioCallback(
     that->_ringUnusedSpace = spaceLeft;
     that->_ringWritePosition = writePosition;
 
-    if (that->_abordCallback)
+    if (that->_abortCallback)
         return paComplete;
     else
         return paContinue;

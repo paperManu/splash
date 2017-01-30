@@ -8,19 +8,6 @@
 #include <unistd.h>
 
 #include "./image.h"
-#if HAVE_GPHOTO
-#include "./image_gphoto.h"
-#endif
-#if HAVE_FFMPEG
-#include "./image_ffmpeg.h"
-#endif
-#if HAVE_OPENCV
-#include "./image_opencv.h"
-#endif
-#if HAVE_SHMDATA
-#include "./image_shmdata.h"
-#include "./mesh_shmdata.h"
-#endif
 #include "./link.h"
 #include "./log.h"
 #include "./mesh.h"
@@ -70,9 +57,6 @@ World::~World()
 void World::run()
 {
     applyConfig();
-
-    // We must not send the timings too often, this is what this variable is for
-    int frameIndice{0};
 
     while (true)
     {
@@ -140,36 +124,6 @@ void World::run()
             }
         }
 
-        // If swap synchronization test is enabled
-        if (_swapSynchronizationTesting)
-        {
-            sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
-
-            static auto frameNbr = 0;
-            static auto frameStatus = 0;
-            auto color = glm::vec4(0.0);
-
-            if (frameNbr == 0 && frameStatus == 0)
-            {
-                color = glm::vec4(0.0, 0.0, 0.0, 1.0);
-                frameStatus = 1;
-            }
-            else if (frameNbr == 0 && frameStatus == 1)
-            {
-                color = glm::vec4(1.0, 1.0, 1.0, 1.0);
-                frameStatus = 0;
-            }
-
-            if (frameNbr == 0)
-                sendMessage(SPLASH_ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
-
-            frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
-        }
-        else
-        {
-            sendMessage(SPLASH_ALL_PEERS, "swapTest", {0});
-        }
-
         // If the master scene is not an inner scene, we have to send it some information
         if (_scenes[_masterSceneName] != -1)
         {
@@ -193,21 +147,6 @@ void World::run()
             for (auto& s : _scenes)
                 sendMessage(s.first, "quit", {});
             break;
-        }
-
-        // Ping the clients once in a while
-        if (Timer::get().isDebug())
-        {
-            static auto frameIndex = 0;
-            if (frameIndex == 0)
-            {
-                for (auto& scene : _scenes)
-                {
-                    Timer::get() << "pingScene " + scene.first;
-                    sendMessage(scene.first, "ping", {});
-                }
-            }
-            frameIndex = (frameIndex + 1) % 60;
         }
 
         // Sync with buffer object update
@@ -547,8 +486,10 @@ void World::applyConfig()
 
 // Also, enable the master clock if it was not enabled
 #if HAVE_PORTAUDIO
-    if (!_clock)
-        _clock = unique_ptr<LtcClock>(new LtcClock(true));
+    addTask([&]() {
+        if (!_clock)
+            _clock = unique_ptr<LtcClock>(new LtcClock(true));
+    });
 #endif
 
     // Send the start message for all scenes
@@ -1525,7 +1466,6 @@ void World::registerAttributes()
             return true;
         },
         {'s'});
-    setAttributeDescription("pong", "Answer to ping");
 
     addAttribute("quit", [&](const Values& args) {
         _quit = true;
@@ -1689,10 +1629,67 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("sendToMasterScene", "Send the given message to the master Scene");
 
+    addAttribute("pingTest",
+        [&](const Values& args) {
+            auto doPing = args[0].as<int>();
+            if (doPing)
+            {
+                addRecurringTask("pingTest", [&]() {
+                    static auto frameIndex = 0;
+                    if (frameIndex == 0)
+                    {
+                        for (auto& scene : _scenes)
+                        {
+                            Timer::get() << "pingScene " + scene.first;
+                            sendMessage(scene.first, "ping", {});
+                        }
+                    }
+                    frameIndex = (frameIndex + 1) % 60;
+                });
+            }
+            else
+            {
+                removeRecurringTask("pingTest");
+            }
+
+            return true;
+        },
+        {'n'});
+    setAttributeDescription("pingTest", "Activate ping test if set to 1");
+
     addAttribute("swapTest",
         [&](const Values& args) {
-            addTask([=]() { _swapSynchronizationTesting = args[0].as<int>(); });
+            _swapSynchronizationTesting = args[0].as<int>();
+            if (_swapSynchronizationTesting)
+            {
+                addRecurringTask("swapTest", [&]() {
+                    sendMessage(SPLASH_ALL_PEERS, "swapTest", {1});
+                    static auto frameNbr = 0;
+                    static auto frameStatus = 0;
+                    auto color = glm::vec4(0.0);
 
+                    if (frameNbr == 0 && frameStatus == 0)
+                    {
+                        color = glm::vec4(0.0, 0.0, 0.0, 1.0);
+                        frameStatus = 1;
+                    }
+                    else if (frameNbr == 0 && frameStatus == 1)
+                    {
+                        color = glm::vec4(1.0, 1.0, 1.0, 1.0);
+                        frameStatus = 0;
+                    }
+
+                    if (frameNbr == 0)
+                        sendMessage(SPLASH_ALL_PEERS, "swapTestColor", {color[0], color[1], color[2], color[3]});
+
+                    frameNbr = (frameNbr + 1) % _swapSynchronizationTesting;
+                });
+            }
+            else
+            {
+                removeRecurringTask("swapTest");
+                addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "swapTest", {0}); });
+            }
             return true;
         },
         {'n'});

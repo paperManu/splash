@@ -75,6 +75,12 @@ class Filter : public Texture
     void unbind();
 
     /**
+     * Get the output texture
+     * \return Return the output texture
+     */
+    std::shared_ptr<Texture> getOutTexture() const { return _outTexture; }
+
+    /**
      * Get the shader parameters related to this texture
      * Texture should be locked first
      */
@@ -117,7 +123,7 @@ class Filter : public Texture
   private:
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
-    std::weak_ptr<Texture> _inTexture;
+    std::vector<std::weak_ptr<Texture>> _inTextures;
 
     GLuint _fbo{0};
     std::shared_ptr<Texture_Image> _outTexture{nullptr};
@@ -129,7 +135,8 @@ class Filter : public Texture
     bool _render16bits{false};                     //!< Set to true for the filter to be rendered in 16bits
     bool _updateColorDepth{false};                 //!< Set to true if the _render16bits has been updated
 
-    std::string _shaderSource{""}; //!< User defined fragment shader filter
+    std::string _shaderSource{""};     //!< User defined fragment shader filter
+    std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file
 
     // Tasks queue
     std::mutex _taskMutex;
