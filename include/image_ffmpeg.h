@@ -97,6 +97,7 @@ class Image_FFmpeg : public Image
 
     std::mutex _videoQueueMutex;
     std::mutex _videoSeekMutex;
+    std::mutex _videoEndMutex;
     std::condition_variable _videoQueueCondition;
 
     std::atomic_bool _timeJump{false};

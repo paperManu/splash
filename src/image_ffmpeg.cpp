@@ -496,8 +496,9 @@ void Image_FFmpeg::readLoop()
             }
         }
 
-        seek(0); // Go back to the beginning of the file
-
+        // This prevents looping to happen before the queue has been consumed
+        lock_guard<mutex> lockEnd(_videoEndMutex);
+        seek(0.f);
     } while (_loopOnVideo && _continueRead);
 
     av_frame_free(&rgbFrame);
@@ -569,8 +570,10 @@ void Image_FFmpeg::videoDisplayLoop()
         if (localQueue.size() > 0 && _startTime == -1)
             _startTime = Timer::getTime() - localQueue[0].timing;
 
+        lock_guard<mutex> lockEnd(_videoEndMutex);
         while (localQueue.size() > 0 && _continueRead)
         {
+
             // If seek, clear the local queue as the frames should not be shown
             if (_startTime == -1)
             {
@@ -582,7 +585,6 @@ void Image_FFmpeg::videoDisplayLoop()
             // Get the current master and local clocks
             //
             _currentTime = Timer::getTime() - _startTime;
-
             float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
 
             int64_t clockAsMs;
