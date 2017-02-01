@@ -25,7 +25,7 @@
 #ifndef SPLASH_SPEAKER_H
 #define SPLASH_SPEAKER_H
 
-#define SPLASH_SPEAKER_RINGBUFFER_SIZE (8 * 1024 * 1024)
+#define SPLASH_SPEAKER_RINGBUFFER_SIZE (32 * 1024 * 1024)
 
 #include <array>
 #include <atomic>
@@ -141,13 +141,15 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     ResizableArray<T> interleavedBuffer(buffer.size());
     if (_planar)
     {
-        int sampleNbr = (buffer.size() / _sampleSize) / _channels;
-        for (unsigned int i = 0; i < buffer.size(); i += _sampleSize)
-        {
-            int channel = (i / _sampleSize) / sampleNbr;
-            int sample = (i / _sampleSize) % sampleNbr;
-            std::copy(&buffer[i], &buffer[i + _sampleSize], &interleavedBuffer[(sample * _channels + channel) * _sampleSize]);
-        }
+        size_t step = _sampleSize / sizeof(T);
+        int sampleNbr = (buffer.size() / step) / _channels;
+        int linesize = sampleNbr * step;
+        for (auto channel = 0; channel < _channels; ++channel)
+            for (int sample = 0; sample < sampleNbr; ++sample)
+            {
+                int index = sample * step + channel * linesize;
+                std::copy(&buffer[index], &buffer[index + step], &interleavedBuffer[(sample * _channels + channel) * step]);
+            }
     }
 
     auto bufferSampleSize = sizeof(T);

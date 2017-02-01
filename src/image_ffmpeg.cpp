@@ -6,6 +6,7 @@
 #if HAVE_LINUX
 #include <fcntl.h>
 #endif
+#include <fstream>
 #include <hap.h>
 
 #include "./cgUtils.h"
@@ -147,27 +148,35 @@ bool Image_FFmpeg::setupAudioOutput(AVCodecContext* audioCodecContext)
         return false;
     case AV_SAMPLE_FMT_U8:
         format = Sound_Engine::SAMPLE_FMT_U8;
+        _planar = false;
         break;
     case AV_SAMPLE_FMT_S16:
         format = Sound_Engine::SAMPLE_FMT_S16;
+        _planar = false;
         break;
     case AV_SAMPLE_FMT_S32:
         format = Sound_Engine::SAMPLE_FMT_S32;
+        _planar = false;
         break;
     case AV_SAMPLE_FMT_FLT:
         format = Sound_Engine::SAMPLE_FMT_FLT;
+        _planar = false;
         break;
     case AV_SAMPLE_FMT_U8P:
         format = Sound_Engine::SAMPLE_FMT_U8P;
+        _planar = true;
         break;
     case AV_SAMPLE_FMT_S16P:
         format = Sound_Engine::SAMPLE_FMT_S16P;
+        _planar = true;
         break;
     case AV_SAMPLE_FMT_S32P:
         format = Sound_Engine::SAMPLE_FMT_S32P;
+        _planar = true;
         break;
     case AV_SAMPLE_FMT_FLTP:
         format = Sound_Engine::SAMPLE_FMT_FLTP;
+        _planar = true;
         break;
     }
 
@@ -379,6 +388,8 @@ void Image_FFmpeg::readLoop()
 
                         hasFrame = true;
                     }
+
+                    av_frame_unref(frame);
                 }
                 //
                 // If the codec is marked as Hap / Hap alpha / Hap Q
@@ -470,24 +481,28 @@ void Image_FFmpeg::readLoop()
                 auto hasFrame = false;
                 if (avcodec_send_packet(audioCodecContext, &packet) < 0)
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
-                if (avcodec_receive_frame(audioCodecContext, frame) == 0)
-                    hasFrame = true;
-
-                // Check whether we were asked to connect to another output
-                if (audioCodecContext && _audioDeviceOutputUpdated)
-                {
-                    setupAudioOutput(audioCodecContext);
-                    _audioDeviceOutputUpdated = false;
-                }
-
-                if (hasFrame)
-                {
-                    size_t dataSize = av_samples_get_buffer_size(nullptr, audioCodecContext->channels, frame->nb_samples, audioCodecContext->sample_fmt, 1);
-                    auto buffer = ResizableArray<uint8_t>((uint8_t*)frame->data[0], (uint8_t*)frame->data[0] + dataSize);
-                    _speaker->addToQueue(buffer);
-                }
-
                 av_packet_unref(&packet);
+
+                while (avcodec_receive_frame(audioCodecContext, frame) == 0)
+                {
+                    // Check whether we were asked to connect to another output
+                    if (audioCodecContext && _audioDeviceOutputUpdated)
+                    {
+                        setupAudioOutput(audioCodecContext);
+                        _audioDeviceOutputUpdated = false;
+                    }
+
+                    size_t dataSize = av_samples_get_buffer_size(nullptr, audioCodecContext->channels, frame->nb_samples, audioCodecContext->sample_fmt, 1);
+                    auto buffer = ResizableArray<uint8_t>(dataSize);
+                    if (_planar)
+                        for (int c = 0; c < audioCodecContext->channels; ++c)
+                            copy(frame->extended_data[c], frame->extended_data[c] + frame->linesize[0], buffer.data() + c * frame->linesize[0]);
+                    else
+                        copy(frame->extended_data[0], frame->extended_data[0] + dataSize, buffer.data());
+                    _speaker->addToQueue(buffer);
+
+                    av_frame_unref(frame);
+                }
             }
 #endif
             else

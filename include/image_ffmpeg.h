@@ -122,6 +122,7 @@ class Image_FFmpeg : public Image
 #if HAVE_PORTAUDIO
     std::unique_ptr<Speaker> _speaker;
     int _audioStreamIndex{-1};
+    bool _planar{false};
     std::string _audioDeviceOutput{""};
     bool _audioDeviceOutputUpdated{false};
 #endif
