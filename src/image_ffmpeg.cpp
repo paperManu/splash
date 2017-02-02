@@ -58,6 +58,10 @@ void Image_FFmpeg::freeFFmpegObjects()
 
     if (_videoDisplayThread.joinable())
         _videoDisplayThread.join();
+#if HAVE_PORTAUDIO
+    if (_audioThread.joinable())
+        _audioThread.join();
+#endif
     if (_readLoopThread.joinable())
         _readLoopThread.join();
 
@@ -107,6 +111,9 @@ bool Image_FFmpeg::read(const string& filename)
     // Launch the loops
     _continueRead = true;
     _videoDisplayThread = thread([&]() { videoDisplayLoop(); });
+#if HAVE_PORTAUDIO
+    _audioThread = thread([&]() { audioLoop(); });
+#endif
     _readLoopThread = thread([&]() { readLoop(); });
 
     return true;
@@ -299,6 +306,9 @@ void Image_FFmpeg::readLoop()
 
         if (audioCodecContext)
             _audioDeviceOutputUpdated = true;
+
+        auto audioStream = _avContext->streams[_audioStreamIndex];
+        _audioTimeBase = (double)audioStream->time_base.num / (double)audioStream->time_base.den;
     }
 #endif
 
@@ -336,7 +346,7 @@ void Image_FFmpeg::readLoop()
     AVPacket packet;
     av_init_packet(&packet);
 
-    _timeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
+    _videoTimeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
 
     // This implements looping
     do
@@ -380,11 +390,11 @@ void Image_FFmpeg::readLoop()
                         copy(buffer.begin(), buffer.end(), pixels);
 
                         if (packet.pts != AV_NOPTS_VALUE)
-                            timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _timeBase * 1e6);
+                            timing = static_cast<uint64_t>((double)av_frame_get_best_effort_timestamp(frame) * _videoTimeBase * 1e6);
                         else
                             timing = 0.0;
                         // This handles repeated frames
-                        timing += frame->repeat_pict * _timeBase * 0.5;
+                        timing += frame->repeat_pict * _videoTimeBase * 0.5;
 
                         hasFrame = true;
                     }
@@ -432,7 +442,7 @@ void Image_FFmpeg::readLoop()
                         if (hapDecodeFrame(packet.data, packet.size, img->data(), outputBufferBytes, textureFormat))
                         {
                             if (packet.pts != AV_NOPTS_VALUE)
-                                timing = static_cast<uint64_t>((double)packet.pts * _timeBase * 1e6);
+                                timing = static_cast<uint64_t>((double)packet.pts * _videoTimeBase * 1e6);
                             else
                                 timing = 0.0;
 
@@ -481,6 +491,7 @@ void Image_FFmpeg::readLoop()
                 auto hasFrame = false;
                 if (avcodec_send_packet(audioCodecContext, &packet) < 0)
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
+                uint64_t timing = (double)packet.pts * _audioTimeBase * 1e6;
                 av_packet_unref(&packet);
 
                 while (avcodec_receive_frame(audioCodecContext, frame) == 0)
@@ -494,12 +505,18 @@ void Image_FFmpeg::readLoop()
 
                     size_t dataSize = av_samples_get_buffer_size(nullptr, audioCodecContext->channels, frame->nb_samples, audioCodecContext->sample_fmt, 1);
                     auto buffer = ResizableArray<uint8_t>(dataSize);
+                    auto linesize = dataSize / audioCodecContext->channels;
                     if (_planar)
                         for (int c = 0; c < audioCodecContext->channels; ++c)
-                            copy(frame->extended_data[c], frame->extended_data[c] + frame->linesize[0], buffer.data() + c * frame->linesize[0]);
+                            copy(frame->extended_data[c], frame->extended_data[c] + linesize, buffer.data() + c * linesize);
                     else
                         copy(frame->extended_data[0], frame->extended_data[0] + dataSize, buffer.data());
-                    _speaker->addToQueue(buffer);
+
+                    TimedAudioFrame timedFrame;
+                    timedFrame.frame = std::move(buffer);
+                    timedFrame.timing = timing;
+                    lock_guard<mutex> lockAudio(_audioMutex);
+                    _audioQueue.push_back(std::move(timedFrame));
 
                     av_frame_unref(frame);
                 }
@@ -533,6 +550,45 @@ void Image_FFmpeg::readLoop()
 #endif
 }
 
+#if HAVE_PORTAUDIO
+/*************/
+void Image_FFmpeg::audioLoop()
+{
+    while (_continueRead)
+    {
+        auto localQueue = deque<TimedAudioFrame>();
+        {
+            lock_guard<mutex> lockAudio(_audioMutex);
+            std::swap(localQueue, _audioQueue);
+        }
+
+        if (localQueue.empty())
+            this_thread::sleep_for(chrono::milliseconds(10));
+
+        while (!localQueue.empty() && _continueRead)
+        {
+            auto currentTime = Timer::getTime() - _startTime;
+
+            if (localQueue[0].timing - currentTime < 0)
+            {
+                localQueue.pop_front();
+                continue;
+            }
+
+            while (localQueue[0].timing - currentTime > 100000)
+            {
+                this_thread::sleep_for(chrono::milliseconds(5));
+                currentTime = Timer::getTime() - _startTime;
+            }
+
+            _speaker->addToQueue(localQueue[0].frame);
+
+            localQueue.pop_front();
+        }
+    }
+}
+#endif
+
 /*************/
 void Image_FFmpeg::seek(float seconds)
 {
@@ -549,7 +605,7 @@ void Image_FFmpeg::seek(float seconds)
     else if (seconds > duration)
         seconds = duration;
 
-    int frame = static_cast<int>(floor(seconds / _timeBase));
+    int frame = static_cast<int>(floor(seconds / _videoTimeBase));
     if (avformat_seek_file(_avContext, _videoStreamIndex, 0, frame, frame, seekFlag) < 0)
     {
         Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Could not seek to timestamp " << seconds << Log::endl;
@@ -582,11 +638,11 @@ void Image_FFmpeg::videoDisplayLoop()
         }
 
         // This sets the start time after a seek
-        if (localQueue.size() > 0 && _startTime == -1)
+        if (!localQueue.empty() && _startTime == -1)
             _startTime = Timer::getTime() - localQueue[0].timing;
 
         lock_guard<mutex> lockEnd(_videoEndMutex);
-        while (localQueue.size() > 0 && _continueRead)
+        while (!localQueue.empty() && _continueRead)
         {
 
             // If seek, clear the local queue as the frames should not be shown

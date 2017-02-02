@@ -25,7 +25,7 @@
 #ifndef SPLASH_SPEAKER_H
 #define SPLASH_SPEAKER_H
 
-#define SPLASH_SPEAKER_RINGBUFFER_SIZE (32 * 1024 * 1024)
+#define SPLASH_SPEAKER_RINGBUFFER_SIZE (4 * 1024 * 1024)
 
 #include <array>
 #include <atomic>

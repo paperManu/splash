@@ -489,7 +489,9 @@ void BufferObject::updateTimestamp()
 {
     _timestamp = Timer::getTime();
     _updatedBuffer = true;
-    _root.lock()->signalBufferObjectUpdated();
+    auto root = _root.lock();
+    if (root)
+        root->signalBufferObjectUpdated();
 }
 
 /*************/
