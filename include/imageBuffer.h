@@ -43,9 +43,9 @@ class ImageBufferSpec
   public:
     enum class Type : uint32_t
     {
-        UINT8,
-        UINT16,
-        FLOAT
+        UINT8 = 1,
+        UINT16 = 2,
+        FLOAT = 4
     };
 
     /**
@@ -58,42 +58,48 @@ class ImageBufferSpec
      * \param w Width
      * \param h Height
      * \param c Channel count
-     * \param t Channel type
+     * \param b Bit per pixej
+     * \param f Format as a string
      */
-    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, ImageBufferSpec::Type t)
+    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, uint8_t b, ImageBufferSpec::Type t = Type::UINT8, std::string f = "RGBA")
     {
         width = w;
         height = h;
         channels = c;
+        bpp = b;
         type = t;
 
-        switch (channels)
+        if (f.empty())
         {
-        default:
-            format = {"R", "G", "B"};
-            break;
-        case 0:
-            break;
-        case 1:
-            format = {"R"};
-            break;
-        case 2:
-            format = {"R", "G"};
-            break;
-        case 3:
-            format = {"R", "G", "B"};
-            break;
-        case 4:
-            format = {"R", "G", "B", "A"};
-            break;
+            switch (c)
+            {
+            default:
+            case 1:
+                format = "R";
+                break;
+            case 2:
+                format = "RG";
+                break;
+            case 3:
+                format = "RGB";
+                break;
+            case 4:
+                format = "RGBA";
+                break;
+            }
+        }
+        else
+        {
+            format = f;
         }
     }
 
     uint32_t width{0};
     uint32_t height{0};
     uint32_t channels{0};
-    Type type{Type::UINT8};
-    std::vector<std::string> format{};
+    uint8_t bpp{0};
+    ImageBufferSpec::Type type{Type::UINT8};
+    std::string format{};
 
     inline bool operator==(const ImageBufferSpec& spec)
     {
@@ -102,6 +108,8 @@ class ImageBufferSpec
         if (height != spec.height)
             return false;
         if (channels != spec.channels)
+            return false;
+        if (bpp != spec.bpp)
             return false;
         if (type != spec.type)
             return false;
@@ -129,23 +137,7 @@ class ImageBufferSpec
      * \brief Get channel size in bytes
      * \return Return channel size
      */
-    int pixelBytes()
-    {
-        int bytes = channels;
-        switch (type)
-        {
-        case Type::UINT8:
-            break;
-        case Type::UINT16:
-            bytes *= 2;
-            break;
-        case Type::FLOAT:
-            bytes *= 4;
-            break;
-        }
-
-        return bytes;
-    }
+    int pixelBytes() { return bpp / 8; }
 
     /**
      * \brief Get image size in bytes
@@ -201,7 +193,7 @@ class ImageBuffer
      * \brief Fill all channels with the given value
      * \param value Value to fill the image with
      */
-    void fill(float value);
+    void zero();
 
     /**
      * \brief Set the inner raw buffer, to use with caution, its size must match the spec

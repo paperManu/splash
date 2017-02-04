@@ -135,10 +135,9 @@ class Image : public BufferObject
     virtual bool read(const std::string& filename);
 
     /**
-     * \brief Set all pixels in the image to the specified value
-     * \param value Value to set all channels to
+     * Set all pixels in the image to zero
      */
-    void setTo(float value);
+    void zero();
 
     /**
      * \brief Update the content of the image

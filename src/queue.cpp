@@ -126,7 +126,7 @@ void Queue::update()
                 _playing = true;
             else
                 _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
-            dynamic_pointer_cast<Image>(_currentSource)->setTo(0.f);
+            dynamic_pointer_cast<Image>(_currentSource)->zero();
             dynamic_pointer_cast<Image>(_currentSource)->setName(_name + DISTANT_NAME_SUFFIX);
 
             _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
@@ -447,7 +447,7 @@ void QueueSurrogate::registerAttributes()
             if (type.find("image") != string::npos)
             {
                 auto image = make_shared<Image>(_root);
-                image->setTo(0.f);
+                image->zero();
                 image->setRemoteType(type);
 
                 object = image;

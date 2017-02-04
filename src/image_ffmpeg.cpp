@@ -323,7 +323,7 @@ void Image_FFmpeg::readLoop()
         return;
     }
 
-    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height, 1);
+    int numBytes = av_image_get_buffer_size(AV_PIX_FMT_YUYV422, videoCodecContext->width, videoCodecContext->height, 1);
     vector<unsigned char> buffer(numBytes);
 
     struct SwsContext* swsContext;
@@ -334,13 +334,13 @@ void Image_FFmpeg::readLoop()
             videoCodecContext->pix_fmt,
             videoCodecContext->width,
             videoCodecContext->height,
-            AV_PIX_FMT_RGB24,
+            AV_PIX_FMT_YUYV422,
             SWS_BILINEAR,
             nullptr,
             nullptr,
             nullptr);
 
-        av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_RGB24, videoCodecContext->width, videoCodecContext->height, 1);
+        av_image_fill_arrays(rgbFrame->data, rgbFrame->linesize, buffer.data(), AV_PIX_FMT_YUYV422, videoCodecContext->width, videoCodecContext->height, 1);
     }
 
     AVPacket packet;
@@ -382,8 +382,7 @@ void Image_FFmpeg::readLoop()
                     {
                         sws_scale(swsContext, (const uint8_t* const*)frame->data, frame->linesize, 0, videoCodecContext->height, rgbFrame->data, rgbFrame->linesize);
 
-                        ImageBufferSpec spec(videoCodecContext->width, videoCodecContext->height, 3, ImageBufferSpec::Type::UINT8);
-                        spec.format = {"R", "G", "B"};
+                        ImageBufferSpec spec(videoCodecContext->width, videoCodecContext->height, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
                         img.reset(new ImageBuffer(spec));
 
                         unsigned char* pixels = reinterpret_cast<unsigned char*>(img->data());
@@ -414,20 +413,11 @@ void Image_FFmpeg::readLoop()
                         // We set the size so as to have just enough place for the given texture format
                         ImageBufferSpec spec;
                         if (textureFormat == "RGB_DXT1")
-                        {
-                            spec = ImageBufferSpec(videoCodecContext->width, (int)(ceil((float)videoCodecContext->height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
-                            spec.format = {textureFormat};
-                        }
+                            spec = ImageBufferSpec(videoCodecContext->width, (int)(ceil((float)videoCodecContext->height / 2.f)), 1, 8, ImageBufferSpec::Type::UINT8);
                         if (textureFormat == "RGBA_DXT5")
-                        {
-                            spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
-                            spec.format = {textureFormat};
-                        }
+                            spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, 8, ImageBufferSpec::Type::UINT8);
                         if (textureFormat == "YCoCg_DXT5")
-                        {
-                            spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, ImageBufferSpec::Type::UINT8);
-                            spec.format = {textureFormat};
-                        }
+                            spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, 8, ImageBufferSpec::Type::UINT8);
                         else
                         {
                             av_packet_unref(&packet);
