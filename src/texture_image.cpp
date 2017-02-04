@@ -465,6 +465,7 @@ void Texture_Image::update()
 
     _shaderUniforms["flip"] = flip;
     _shaderUniforms["flop"] = flop;
+    _shaderUniforms["size"] = {(float)_spec.width, (float)_spec.height};
 
     _timestamp = img->getTimestamp();
 

@@ -819,7 +819,11 @@ struct ShaderSources
             else
                 realCoords = texCoord;
 
+    #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, realCoords * _tex0_size);
+    #else
+            vec4 color = texture(_tex0, realCoords);
+    #endif
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
@@ -917,7 +921,11 @@ struct ShaderSources
             else
                 realCoords = texCoord;
 
+    #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, realCoords * _tex0_size);
+    #else
+            vec4 color = texture(_tex0, realCoords);
+    #endif
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
@@ -995,6 +1003,7 @@ struct ShaderSources
     #endif
 
         uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex1_size = vec2(1.0);
 
         uniform int _showCameraCount = 0;
         uniform int _sideness = 0;
@@ -1030,10 +1039,18 @@ struct ShaderSources
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
+        #ifdef TEXTURE_RECT
+            vec4 color = texture(_tex0, texCoord * _tex0_size);
+        #else
             vec4 color = texture(_tex0, texCoord);
+        #endif
 
         #ifdef TEX_2
+        #ifdef TEXTURE_RECT
+            vec4 maskColor = texture(_tex1, texCoord * _tex1_size);
+        #else
             vec4 maskColor = texture(_tex1, texCoord);
+        #endif
             color.rgb = mix(color.rgb, maskColor.rgb, maskColor.a);
         #endif
 

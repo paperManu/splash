@@ -85,6 +85,7 @@ void Filter::bind()
 unordered_map<string, Values> Filter::getShaderUniforms() const
 {
     unordered_map<string, Values> uniforms;
+    uniforms["size"] = {(float)_outTextureSpec.width, (float)_outTextureSpec.height};
     return uniforms;
 }
 
@@ -309,6 +310,10 @@ bool Filter::setFilterSource(const string& source)
     auto uniforms = shader->getUniforms();
     for (auto& u : uniforms)
     {
+        // Uniforms starting with a underscore are kept hidden
+        if (u.first.empty() || u.first[0] == '_')
+            continue;
+
         vector<char> types;
         for (auto& v : u.second)
             types.push_back(v.getTypeAsChar());

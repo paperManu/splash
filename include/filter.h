@@ -131,9 +131,9 @@ class Filter : public Texture
     ImageBufferSpec _outTextureSpec;
 
     // Filter parameters
-    std::map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
-    bool _render16bits{false};                     //!< Set to true for the filter to be rendered in 16bits
-    bool _updateColorDepth{false};                 //!< Set to true if the _render16bits has been updated
+    std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
+    bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
+    bool _updateColorDepth{false};                           //!< Set to true if the _render16bits has been updated
 
     std::string _shaderSource{""};     //!< User defined fragment shader filter
     std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file
