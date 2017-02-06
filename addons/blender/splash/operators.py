@@ -297,9 +297,10 @@ class SplashStopSelected(Operator):
 
 
 class SplashExportNodeTree(Operator):
-    """Exports the Splash configuration (following the tree starting from this node)"""
+    """Exports the Splash configuration or project (following the tree starting from this node)"""
     bl_idname = "splash.export_node_tree"
     bl_label = "Exports the node tree"
+
 
     filepath = bpy.props.StringProperty(subtype='FILE_PATH')
     filter_glob = bpy.props.StringProperty(
@@ -308,10 +309,15 @@ class SplashExportNodeTree(Operator):
         )
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
+    export_project = BoolProperty(name='export_project')
+
     world_node = None
     scene_order = []
     scene_lists = {}
     node_links = {}
+    project_accepted_types = ['SplashImageNodeType',
+                              'SplashMeshNodeType',
+                              'SplashObjectNodeType']
 
     def execute(self, context):
         self.scene_order.clear()
@@ -330,72 +336,91 @@ class SplashExportNodeTree(Operator):
         for scene in connectedScenes:
             scene_list = {}
             node_links = []
-            self.parseTree(scene, scene_list, node_links)
+            self.parseTree(scene, scene_list, node_links, self.export_project)
 
             self.scene_order.append(scene.name)
             self.scene_lists[scene.name] = scene_list
             self.node_links[scene.name] = node_links
 
-        print(self.scene_order)
-        return self.export()
+        # Merge scenes info if exporting a project
+        if self.export_project and len(self.scene_order) > 0:
+            masterSceneName = self.scene_order[0]
+            for sceneId in range(1, len(self.scene_order)):
+                sceneName = self.scene_order[sceneId]
 
-    def parseTree(self, node, scene_list, node_links):
-        scene_list[node.name] = node
+                for node in self.scene_lists[sceneName]:
+                    if node not in self.scene_lists[masterSceneName]:
+                        self.scene_lists[masterSceneName][node] = self.scene_lists[sceneName][node]
+                for link in self.node_links[sceneName]:
+                    self.node_links[masterSceneName].append(link)
+
+            self.scene_order = [self.scene_order[0]]
+            self.scene_lists = {masterSceneName : self.scene_lists[masterSceneName]}
+
+        return self.export(self.export_project)
+
+    def parseTree(self, node, scene_list, node_links, export_project=False):
+        if not export_project or node.bl_idname in self.project_accepted_types:
+            scene_list[node.name] = node
 
         connectedNodes = [socket.links[0].from_node for socket in node.inputs if socket.is_linked]
         for connectedNode in connectedNodes:
             newLink = [connectedNode.name, node.name]
             if newLink not in node_links:
                 node_links.append([connectedNode.name, node.name])
-            self.parseTree(connectedNode, scene_list, node_links)
+            self.parseTree(connectedNode, scene_list, node_links, export_project)
 
-    def export(self):
+    def export(self, export_project=False):
         file = open(self.filepath, "w", encoding="utf8", newline="\n")
         fw = file.write
 
-        # World informations
         worldArgs =  self.world_node.exportProperties(self.filepath)
         fw("// Splash configuration file\n"
            "// Exported with Blender Splash add-on\n"
-           "{\n"
-           "    \"encoding\" : \"UTF-8\",\n"
-           "    \"description\" : \"splashConfiguration\",\n"
-           "\n"
-           "    \"world\" : {\n"
-           "        \"framerate\" : %i\n"
-           "    },\n" % (worldArgs['framerate']))
+           "{\n")
 
-        # Scenes list
-        fw("    \"scenes\" : [\n")
-        sceneIndex = 0
-        for scene in self.scene_order:
-            # Find the Scene nodes
-            for node in self.scene_lists[scene]:
-                if self.scene_lists[scene][node].bl_idname == "SplashSceneNodeType":
-                    args = self.scene_lists[scene][node].exportProperties(self.filepath)
-                    fw("        {\n")
-                    valueIndex = 0
-                    for values in args:
-                        fw("            \"%s\" : %s" % (values, args[values]))
+        if export_project:
+            fw("    \"description\" : \"splashProject\",\n")
+        else:
+            fw("    \"description\" : \"splashConfiguration\",\n")
+            # World informations
+            fw("    \"world\" : {\n"
+               "        \"framerate\" : %i\n"
+               "    },\n" % (worldArgs['framerate']))
 
-                        if valueIndex < len(args) - 1:
+            # Scenes list
+            fw("    \"scenes\" : [\n")
+            sceneIndex = 0
+            for scene in self.scene_order:
+                # Find the Scene nodes
+                for node in self.scene_lists[scene]:
+                    if self.scene_lists[scene][node].bl_idname == "SplashSceneNodeType":
+                        args = self.scene_lists[scene][node].exportProperties(self.filepath)
+                        fw("        {\n")
+                        valueIndex = 0
+                        for values in args:
+                            fw("            \"%s\" : %s" % (values, args[values]))
+
+                            if valueIndex < len(args) - 1:
+                                fw(",\n")
+                            else:
+                                fw("\n")
+                            valueIndex = valueIndex + 1
+                        fw("        }")
+
+                        if sceneIndex < len(self.scene_lists) - 1:
                             fw(",\n")
                         else:
                             fw("\n")
-                        valueIndex = valueIndex + 1
-                    fw("        }")
-
-                    if sceneIndex < len(self.scene_lists) - 1:
-                        fw(",\n")
-                    else:
-                        fw("\n")
-                    sceneIndex = sceneIndex + 1
-        fw("    ],\n")
+                        sceneIndex = sceneIndex + 1
+            fw("    ],\n")
            
         # Scenes information
         sceneIndex = 0
         for scene in self.scene_order:
-            fw("    \"%s\" : {\n" % scene)
+            if not export_project:
+                fw("    \"%s\" : {\n" % scene)
+
             for node in self.scene_lists[scene]:
                 if self.scene_lists[scene][node].bl_idname != "SplashSceneNodeType":
                     args = self.scene_lists[scene][node].exportProperties(self.filepath)
@@ -429,7 +454,8 @@ class SplashExportNodeTree(Operator):
                 fw("    }\n")
             sceneIndex = sceneIndex + 1
 
-        fw("}")
+        if not export_project:
+            fw("}")
 
         return {'FINISHED'}
 
