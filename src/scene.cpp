@@ -548,6 +548,8 @@ void Scene::setAsMaster(string configFilePath)
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     _isMaster = true;
+    // We have to reset the factory to reflect this change
+    _factory.reset(new Factory(_self));
 
     _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, _self);

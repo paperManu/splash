@@ -31,6 +31,7 @@
 #include "./controller_pythonEmbedded.h"
 #endif
 #include "./queue.h"
+#include "./scene.h"
 #include "./texture.h"
 #include "./texture_image.h"
 #if HAVE_OSX
@@ -57,7 +58,11 @@ Factory::Factory(weak_ptr<RootObject> root)
 {
     _root = root;
     if (!root.expired() && root.lock()->getType() == "scene")
+    {
         _isScene = true;
+        if (dynamic_pointer_cast<Scene>(root.lock())->isMaster())
+            _isMasterScene = true;
+    }
 
     registerObjects();
 }
@@ -226,7 +231,14 @@ void Factory::registerObjects()
     _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); }, BaseObject::Category::MISC, "object");
 
 #if HAVE_PYTHON
-    _objectBook["python"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root)); }, BaseObject::Category::MISC, "python");
+    _objectBook["python"] = Page(
+        [&]() {
+            if (!_isMasterScene)
+                return shared_ptr<BaseObject>(nullptr);
+            return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
+        },
+        BaseObject::Category::MISC,
+        "python");
 #endif
 
     _objectBook["queue"] = Page(
