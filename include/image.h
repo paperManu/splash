@@ -172,6 +172,11 @@ class Image : public BufferObject
      */
     bool readFile(const std::string& filename);
 
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
+
   private:
     // Deserialization is done in this buffer, to avoid realloc
     ImageBuffer _bufferDeserialize;
@@ -180,11 +185,6 @@ class Image : public BufferObject
      * \brief Base init for the class
      */
     void init();
-
-    /**
-     * \brief Register new functors to modify attributes
-     */
-    void registerAttributes();
 };
 
 } // end of namespace

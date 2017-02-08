@@ -127,6 +127,7 @@ int Speaker::portAudioCallback(
 /*************/
 void Speaker::registerAttributes()
 {
+    BaseObject::registerAttributes();
 }
 
 } // end of namespace

@@ -852,6 +852,8 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 /*************/
 void Scene::registerAttributes()
 {
+    RootObject::registerAttributes();
+
     addAttribute("add",
         [&](const Values& args) {
             addTask([=]() {

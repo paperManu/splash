@@ -936,6 +936,8 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
 /*************/
 void PythonEmbedded::registerAttributes()
 {
+    ControllerObject::registerAttributes();
+
     addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
 }

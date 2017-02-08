@@ -490,6 +490,11 @@ class BaseObject
     AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {});
 
     /**
+     * \brief Register new attributes
+     */
+    void registerAttributes();
+
+    /**
      * \brief Set and the description for the given attribute, if it exists
      * \param name Attribute name
      * \param description Attribute description
@@ -534,6 +539,7 @@ class BufferObject : public BaseObject
     BufferObject(std::weak_ptr<RootObject> root)
         : BaseObject(root)
     {
+        registerAttributes();
     }
 
     /**
@@ -603,6 +609,11 @@ class BufferObject : public BaseObject
 
     std::shared_ptr<SerializedObject> _serializedObject; //!< Internal buffer object
     bool _newSerializedObject{false};                    //!< Set to true during serialized object processing
+
+    /**
+     * \brief Register new attributes
+     */
+    void registerAttributes() { BaseObject::registerAttributes(); }
 };
 
 /*************/

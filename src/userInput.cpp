@@ -190,6 +190,8 @@ void UserInput::updateCallbacks()
 /*************/
 void UserInput::registerAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("updateRate",
         [&](const Values& args) {
             _updateRate = max(10, args[0].as<int>());

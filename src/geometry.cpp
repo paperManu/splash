@@ -370,6 +370,7 @@ void Geometry::useAlternativeBuffers(bool isActive)
 /*************/
 void Geometry::registerAttributes()
 {
+    BufferObject::registerAttributes();
 }
 
 } // end of namespace

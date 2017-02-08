@@ -568,6 +568,8 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
             _vertexBlendingActive = args[0].as<int>();

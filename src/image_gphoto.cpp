@@ -370,6 +370,8 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
 /*************/
 void Image_GPhoto::registerAttributes()
 {
+    Image::registerAttributes();
+
     addAttribute("aperture",
         [&](const Values& args) { return doSetProperty("aperture", args[0].as<string>()); },
         [&]() -> Values {

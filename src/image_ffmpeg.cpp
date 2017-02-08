@@ -720,6 +720,8 @@ void Image_FFmpeg::videoDisplayLoop()
 /*************/
 void Image_FFmpeg::registerAttributes()
 {
+    Image::registerAttributes();
+
     addAttribute("bufferSize",
         [&](const Values& args) {
             int64_t sizeMB = max(16, args[0].as<int>());

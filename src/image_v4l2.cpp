@@ -618,6 +618,8 @@ bool Image_V4L2::enumerateVideoStandards()
 /*************/
 void Image_V4L2::registerAttributes()
 {
+    Image::registerAttributes();
+
     addAttribute("autosetResolution",
         [&](const Values& args) {
             _autosetResolution = static_cast<bool>(args[0].as<int>());

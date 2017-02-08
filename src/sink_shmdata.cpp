@@ -23,7 +23,7 @@ void Sink_Shmdata::handlePixels(const char* pixels, ImageBufferSpec spec)
     if (!_writer || spec != _previousSpec)
     {
         _previousSpec = spec;
-        _caps = "video/x-raw,format=(string)RGB,width=(int)" + to_string(spec.width) + ",height=(int)" + to_string(spec.height);
+        _caps = "video/x-raw,format=(string)" + spec.format + ",width=(int)" + to_string(spec.width) + ",height=(int)" + to_string(spec.height);
         _writer.reset(nullptr);
         _writer.reset(new shmdata::Writer(_path, size, _caps, &_logger));
     }
@@ -35,6 +35,8 @@ void Sink_Shmdata::handlePixels(const char* pixels, ImageBufferSpec spec)
 /*************/
 void Sink_Shmdata::registerAttributes()
 {
+    Sink::registerAttributes();
+
     addAttribute("socket",
         [&](const Values& args) {
             _path = args[0].as<string>();

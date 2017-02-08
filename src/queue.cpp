@@ -261,6 +261,8 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
 /*************/
 void Queue::registerAttributes()
 {
+    BufferObject::registerAttributes();
+
     addAttribute("loop",
         [&](const Values& args) {
             _loop = (bool)args[0].as<int>();
@@ -418,6 +420,8 @@ void QueueSurrogate::update()
 /*************/
 void QueueSurrogate::registerAttributes()
 {
+    Texture::registerAttributes();
+
     /*
      * Create the object for the current source type
      * Args holds the object type (Image, Texture...)

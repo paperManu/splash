@@ -142,6 +142,8 @@ void Image_OpenCV::readLoop()
 /*************/
 void Image_OpenCV::registerAttributes()
 {
+    Image::registerAttributes();
+
     addAttribute("size",
         [&](const Values& args) {
             _width = args[0].as<int>();

@@ -90,7 +90,7 @@ class Filter : public Texture
      * \brief Get specs of the texture
      * \return Return the texture specs
      */
-    ImageBufferSpec getSpec() const { return _outTextureSpec; }
+    ImageBufferSpec getSpec() const { return _outTexture->getSpec(); }
 
     /**
      * \brief Try to link the given BaseObject to this object
@@ -132,6 +132,7 @@ class Filter : public Texture
 
     // Filter parameters
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
+    std::string _pixelFormat{"RGBA"};                        //!< Output pixel format
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
     bool _updateColorDepth{false};                           //!< Set to true if the _render16bits has been updated
 

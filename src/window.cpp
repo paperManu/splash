@@ -756,6 +756,8 @@ void Window::updateWindowShape()
 /*************/
 void Window::registerAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("fullscreen",
         [&](const Values& args) {
             switchFullscreen(args[0].as<int>());

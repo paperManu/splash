@@ -367,6 +367,8 @@ void Image::createPattern()
 /*************/
 void Image::registerAttributes()
 {
+    BufferObject::registerAttributes();
+
     addAttribute("flip",
         [&](const Values& args) {
             _flip = (args[0].as<int>() > 0) ? true : false;

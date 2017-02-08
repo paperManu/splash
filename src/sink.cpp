@@ -98,7 +98,18 @@ void Sink::update()
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
         _mappedPixels = nullptr;
     }
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+
+    if (_spec.bpp == 32)
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, 0);
+    else if (_spec.bpp == 24)
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    else if (_spec.bpp == 16 && _spec.channels != 1)
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RG, GL_UNSIGNED_SHORT, 0);
+    else if (_spec.bpp == 16 && _spec.channels == 1)
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_SHORT, 0);
+    else if (_spec.bpp == 8)
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, 0);
+
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     _inputTexture->unbind();
 
@@ -122,6 +133,7 @@ void Sink::updatePbos(int width, int height, int bytes)
 /*************/
 void Sink::registerAttributes()
 {
+    BaseObject::registerAttributes();
 }
 
 } // end of namespace

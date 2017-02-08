@@ -349,5 +349,6 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
 /*************/
 void Image_Shmdata::registerAttributes()
 {
+    Image::registerAttributes();
 }
 }

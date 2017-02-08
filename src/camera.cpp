@@ -1170,6 +1170,8 @@ void Camera::sendCalibrationPointsToObjects()
 /*************/
 void Camera::registerAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("eye",
         [&](const Values& args) {
             _eye = dvec3(args[0].as<float>(), args[1].as<float>(), args[2].as<float>());

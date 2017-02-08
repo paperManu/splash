@@ -350,6 +350,12 @@ bool BaseObject::setRenderingPriority(Priority priority)
 /*************/
 void BaseObject::init()
 {
+    registerAttributes();
+}
+
+/*************/
+void BaseObject::registerAttributes()
+{
     addAttribute("setName",
         [&](const Values& args) {
             setName(args[0].as<string>());

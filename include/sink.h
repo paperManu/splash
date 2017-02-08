@@ -72,6 +72,12 @@ class Sink : public BaseObject
      */
     void render();
 
+  protected:
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
+
   private:
     std::shared_ptr<Texture> _inputTexture{nullptr};
     ImageBufferSpec _spec{};
@@ -95,11 +101,6 @@ class Sink : public BaseObject
      * \param bytes Bytes per pixel
      */
     void updatePbos(int width, int height, int bytes);
-
-    /**
-     * \brief Register new functors to modify attributes
-     */
-    void registerAttributes();
 };
 
 } // end of namespace

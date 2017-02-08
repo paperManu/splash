@@ -22,12 +22,21 @@ Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
 }
 
 /*************/
-Texture_Image::Texture_Image(
-    std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root,
+    GLenum target,
+    GLint level,
+    GLint internalFormat,
+    GLsizei width,
+    GLsizei height,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    const GLvoid* data,
+    string encoding)
     : Texture(root)
 {
     init();
-    reset(target, level, internalFormat, width, height, border, format, type, data);
+    reset(target, level, internalFormat, width, height, border, format, type, data, encoding);
 }
 
 /*************/
@@ -93,7 +102,8 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
+void Texture_Image::reset(
+    GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data, string encoding)
 {
     if (width == 0 || height == 0)
     {
@@ -132,7 +142,8 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             }
 
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            glPixelStorei(GL_PACK_ALIGNMENT, 4);
         }
 
         glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
@@ -148,29 +159,31 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
 
     _spec.width = width;
     _spec.height = height;
-    if (internalFormat == GL_RGB && type == GL_UNSIGNED_BYTE)
+    if (encoding.empty())
     {
-        _spec.channels = 3;
-        _spec.type = ImageBufferSpec::Type::UINT8;
-        _spec.format = "RGB";
+        if (internalFormat == GL_RGB && type == GL_UNSIGNED_BYTE)
+            _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+        else if (internalFormat == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
+            _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (internalFormat == GL_RGBA16 && type == GL_UNSIGNED_SHORT)
+            _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (internalFormat == GL_RED && type == GL_UNSIGNED_SHORT)
+            _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT8, "R");
     }
-    else if (internalFormat == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
+    else
     {
-        _spec.channels = 4;
-        _spec.type = ImageBufferSpec::Type::UINT8;
-        _spec.format = "RGBA";
-    }
-    else if (internalFormat == GL_RGBA16 && type == GL_UNSIGNED_SHORT)
-    {
-        _spec.channels = 4;
-        _spec.type = ImageBufferSpec::Type::UINT16;
-        _spec.format = "RGBA";
-    }
-    else if (internalFormat == GL_RED && type == GL_UNSIGNED_SHORT)
-    {
-        _spec.channels = 1;
-        _spec.type = ImageBufferSpec::Type::UINT16;
-        _spec.format = "R";
+        if (encoding == "RGBA")
+            _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (encoding == "RGBA16")
+            _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (encoding == "RGB")
+            _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+        else if (encoding == "R16")
+            _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT8, "R");
+        else if (encoding == "YUYV")
+            _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
+        else if (encoding == "UYVY")
+            _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, "UYVY");
     }
 
     _texTarget = target;
@@ -298,7 +311,7 @@ void Texture_Image::update()
             else
                 internalFormat = GL_RGBA;
         }
-        else if (spec.channels == 3 && spec.type == ImageBufferSpec::Type::UINT8)
+        else if (spec.channels == 1 && spec.type == ImageBufferSpec::Type::UINT16)
         {
             dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_R16;
@@ -539,6 +552,8 @@ void Texture_Image::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture_Image::registerAttributes()
 {
+    Texture::registerAttributes();
+
     addAttribute("filtering",
         [&](const Values& args) {
             _filtering = args[0].as<int>() > 0 ? true : false;
