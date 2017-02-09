@@ -653,17 +653,12 @@ void RootObject::registerAttributes()
 /*************/
 void RootObject::runTasks()
 {
-    unique_lock<recursive_mutex> lock(_taskMutex);
-    decltype(_taskQueue) tasks;
-    decltype(_recurringTasks) recurringTasks;
-    std::swap(tasks, _taskQueue);
-    std::swap(recurringTasks, _recurringTasks);
-    lock.unlock();
-
-    for (auto& task : tasks)
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    for (auto& task : _taskQueue)
         task();
+    _taskQueue.clear();
 
-    for (auto& task : recurringTasks)
+    for (auto& task : _recurringTasks)
         task.second();
 }
 
