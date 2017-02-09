@@ -76,8 +76,15 @@ Scene::~Scene()
     _mainWindow->setAsCurrentContext();
     lock_guard<recursive_mutex> lockSet(_setMutex);         // We don't want our objects to be set while destroyed
     lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
+
+    // Free objects cleanly
+    for (auto& obj : _objects)
+        obj.second.reset();
     _objects.clear();
+    for (auto& obj : _objects)
+        obj.second.reset();
     _ghostObjects.clear();
+
     _mainWindow->releaseContext();
 
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;

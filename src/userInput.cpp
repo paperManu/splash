@@ -126,6 +126,9 @@ void UserInput::setCallback(const UserInput::State& state, const function<void(c
 /*************/
 string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
 {
+    if (!glfwWindow)
+        return {};
+
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());
     if (!scene)
         return {};

@@ -616,11 +616,16 @@ class BufferObject : public BaseObject
     void registerAttributes() { BaseObject::registerAttributes(); }
 };
 
+class UserInput;
+class ControllerObject;
+
 /*************/
 //! Base class for root objects: World and Scene
 class RootObject : public BaseObject
 {
-    friend BaseObject; //!< Base objects can access protected members, typically _objects
+    // UserInput and ControllerObject can access protected members, typically _objects
+    friend UserInput;
+    friend ControllerObject;
 
   public:
     /**
