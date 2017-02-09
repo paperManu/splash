@@ -721,6 +721,7 @@ class RootObject : public BaseObject
     // Tasks queue
     std::recursive_mutex _taskMutex;
     std::list<std::function<void()>> _taskQueue;
+    std::mutex _recurringTaskMutex;
     std::map<std::string, std::function<void()>> _recurringTasks;
 
     /**
