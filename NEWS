@@ -1,8 +1,23 @@
 Splash release notes
 ===================
 
-Splash 0.5.x (2017-xx-xx)
+Splash 0.5.6 (2017-02-10)
 -------------------------
+New features:
+* Refactored ImageBufferSpec to add support for YUV (and other formats). Updated other classes to reflect this change
+
+Improvements:
+* Added _tex#_size uniform for Texture_Images
+* Blender addon can now export a project (and not the whole configuration)
+* Refactored ImageBufferSpec to add support for YUV (and other formats). Updated other classes to reflect this change
+
+Bug fixed:
+* Fixed videos looping before the end
+* Fixed issues with planar audio having only the first channel decoded
+* Fixed audio sync
+* Fixed GUI creating a Python interpreter in every Scene: only the master Scene is worthy
+* Fixed a segfault when quitting
+* Fixed partly deadlocks occuring when modifying heavily the configuration at runtime
 
 Splash 0.5.4 (2017-01-30)
 -------------------------
