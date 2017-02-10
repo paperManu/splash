@@ -359,6 +359,8 @@ void Mesh::createDefaultMesh(int subdiv)
 /*************/
 void Mesh::registerAttributes()
 {
+    BufferObject::registerAttributes();
+
     addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
     setAttributeDescription("file", "Mesh file to load");
 

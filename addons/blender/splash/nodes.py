@@ -489,8 +489,13 @@ class SplashWorldNode(SplashBaseNode):
         row = layout.row()
         row.prop(self, "name")
         row = layout.row()
-        operator = row.operator("splash.export_node_tree", text="Export tree")
+        operator = row.operator("splash.export_node_tree", text="Export configuration")
         operator.node_name = self.name
+        operator.export_project = False
+        row = layout.row()
+        operator = row.operator("splash.export_node_tree", text="Export project")
+        operator.node_name = self.name
+        operator.export_project = True
 
     def init(self, context):
         self.inputs.new('NodeSocketInt', 'Refresh rate').default_value = 60

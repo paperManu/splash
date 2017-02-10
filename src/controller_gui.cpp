@@ -1205,6 +1205,8 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
 /*************/
 void Gui::registerAttributes()
 {
+    ControllerObject::registerAttributes();
+
     addAttribute("size",
         [&](const Values& args) {
             setOutputSize(args[0].as<int>(), args[1].as<int>());

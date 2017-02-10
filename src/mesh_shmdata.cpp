@@ -131,6 +131,7 @@ void Mesh_Shmdata::onData(void* data, int data_size)
 /*************/
 void Mesh_Shmdata::registerAttributes()
 {
+    Mesh::registerAttributes();
 }
 
 } // end of namespace

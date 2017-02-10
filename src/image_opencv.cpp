@@ -118,8 +118,8 @@ void Image_OpenCV::readLoop()
         auto spec = _readBuffer.getSpec();
         if (spec.width != capture.rows || spec.height != capture.cols || spec.channels != capture.channels())
         {
-            ImageBufferSpec newSpec(capture.cols, capture.rows, capture.channels(), ImageBufferSpec::Type::UINT8);
-            newSpec.format = vector<string>({"B", "G", "R"});
+            ImageBufferSpec newSpec(capture.cols, capture.rows, capture.channels(), 8 * capture.channels(), ImageBufferSpec::Type::UINT8);
+            newSpec.format = "BGR";
             _readBuffer = ImageBuffer(newSpec);
         }
         unsigned char* pixels = reinterpret_cast<unsigned char*>(_readBuffer.data());
@@ -142,6 +142,8 @@ void Image_OpenCV::readLoop()
 /*************/
 void Image_OpenCV::registerAttributes()
 {
+    Image::registerAttributes();
+
     addAttribute("size",
         [&](const Values& args) {
             _width = args[0].as<int>();

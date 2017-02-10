@@ -76,8 +76,15 @@ Scene::~Scene()
     _mainWindow->setAsCurrentContext();
     lock_guard<recursive_mutex> lockSet(_setMutex);         // We don't want our objects to be set while destroyed
     lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
+
+    // Free objects cleanly
+    for (auto& obj : _objects)
+        obj.second.reset();
     _objects.clear();
+    for (auto& obj : _objects)
+        obj.second.reset();
     _ghostObjects.clear();
+
     _mainWindow->releaseContext();
 
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
@@ -548,6 +555,8 @@ void Scene::setAsMaster(string configFilePath)
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     _isMaster = true;
+    // We have to reset the factory to reflect this change
+    _factory.reset(new Factory(_self));
 
     _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, _self);
@@ -850,6 +859,8 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 /*************/
 void Scene::registerAttributes()
 {
+    RootObject::registerAttributes();
+
     addAttribute("add",
         [&](const Values& args) {
             addTask([=]() {

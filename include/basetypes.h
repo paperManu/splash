@@ -490,6 +490,11 @@ class BaseObject
     AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {});
 
     /**
+     * \brief Register new attributes
+     */
+    void registerAttributes();
+
+    /**
      * \brief Set and the description for the given attribute, if it exists
      * \param name Attribute name
      * \param description Attribute description
@@ -534,6 +539,7 @@ class BufferObject : public BaseObject
     BufferObject(std::weak_ptr<RootObject> root)
         : BaseObject(root)
     {
+        registerAttributes();
     }
 
     /**
@@ -603,13 +609,23 @@ class BufferObject : public BaseObject
 
     std::shared_ptr<SerializedObject> _serializedObject; //!< Internal buffer object
     bool _newSerializedObject{false};                    //!< Set to true during serialized object processing
+
+    /**
+     * \brief Register new attributes
+     */
+    void registerAttributes() { BaseObject::registerAttributes(); }
 };
+
+class UserInput;
+class ControllerObject;
 
 /*************/
 //! Base class for root objects: World and Scene
 class RootObject : public BaseObject
 {
-    friend BaseObject; //!< Base objects can access protected members, typically _objects
+    // UserInput and ControllerObject can access protected members, typically _objects
+    friend UserInput;
+    friend ControllerObject;
 
   public:
     /**
@@ -705,6 +721,7 @@ class RootObject : public BaseObject
     // Tasks queue
     std::recursive_mutex _taskMutex;
     std::list<std::function<void()>> _taskQueue;
+    std::mutex _recurringTaskMutex;
     std::map<std::string, std::function<void()>> _recurringTasks;
 
     /**

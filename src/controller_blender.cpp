@@ -129,6 +129,8 @@ void Blender::update()
 /*************/
 void Blender::registerAttributes()
 {
+    ControllerObject::registerAttributes();
+
     addAttribute("mode",
         [&](const Values& args) {
             auto mode = args[0].as<string>();

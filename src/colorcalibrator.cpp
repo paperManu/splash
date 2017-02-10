@@ -831,6 +831,8 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 /*************/
 void ColorCalibrator::registerAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("colorSamples",
         [&](const Values& args) {
             _colorCurveSamples = std::max(3, args[0].as<int>());

@@ -101,8 +101,10 @@ bool Sound_Engine::setParameters(double sampleRate, SampleFormat sampleFormat, i
     lock_guard<mutex> lock(_engineMutex);
 
     auto deviceInfo = Pa_GetDeviceInfo(_streamParameters.device);
-    if (sampleRate == 0)
+    if (sampleRate == 0.0)
         _sampleRate = deviceInfo->defaultSampleRate;
+    else
+        _sampleRate = sampleRate;
 
     _framesPerBuffer = framesPerBuffer;
     _sampleFormat = sampleFormat;

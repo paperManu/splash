@@ -350,6 +350,12 @@ bool BaseObject::setRenderingPriority(Priority priority)
 /*************/
 void BaseObject::init()
 {
+    registerAttributes();
+}
+
+/*************/
+void BaseObject::registerAttributes()
+{
     addAttribute("setName",
         [&](const Values& args) {
             setName(args[0].as<string>());
@@ -489,7 +495,9 @@ void BufferObject::updateTimestamp()
 {
     _timestamp = Timer::getTime();
     _updatedBuffer = true;
-    _root.lock()->signalBufferObjectUpdated();
+    auto root = _root.lock();
+    if (root)
+        root->signalBufferObjectUpdated();
 }
 
 /*************/
@@ -610,7 +618,13 @@ void RootObject::addTask(const function<void()>& task)
 /*************/
 void RootObject::addRecurringTask(const string& name, const function<void()>& task)
 {
-    lock_guard<recursive_mutex> lock(_taskMutex);
+    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+    {
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot add another recurring task" << Log::endl;
+        return;
+    }
+
     auto recurringTask = _recurringTasks.find(name);
     if (recurringTask == _recurringTasks.end())
         _recurringTasks.emplace(make_pair(name, task));
@@ -623,7 +637,13 @@ void RootObject::addRecurringTask(const string& name, const function<void()>& ta
 /*************/
 void RootObject::removeRecurringTask(const string& name)
 {
-    lock_guard<recursive_mutex> lock(_taskMutex);
+    unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);
+    if (!lock.owns_lock())
+    {
+        Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - A recurring task cannot remove a recurring task" << Log::endl;
+        return;
+    }
+
     auto recurringTask = _recurringTasks.find(name);
     if (recurringTask != _recurringTasks.end())
         _recurringTasks.erase(recurringTask);
@@ -645,11 +665,14 @@ void RootObject::registerAttributes()
 /*************/
 void RootObject::runTasks()
 {
-    lock_guard<recursive_mutex> lock(_taskMutex);
-    for (auto& task : _taskQueue)
+    unique_lock<recursive_mutex> lockTasks(_taskMutex);
+    decltype(_taskQueue) tasks;
+    std::swap(tasks, _taskQueue);
+    for (auto& task : tasks)
         task();
-    _taskQueue.clear();
+    lockTasks.unlock();
 
+    unique_lock<mutex> lockRecurrsiveTasks(_recurringTaskMutex);
     for (auto& task : _recurringTasks)
         task.second();
 }

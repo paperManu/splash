@@ -66,7 +66,8 @@ class Texture_Image : public Texture
         GLint border,
         GLenum format,
         GLenum type,
-        const GLvoid* data);
+        const GLvoid* data,
+        std::string encoding = "");
 
     /**
      * \brief Destructor
@@ -152,7 +153,8 @@ class Texture_Image : public Texture
      * \param type Texture type
      * \param data Pointer to data to use to initialize the texture
      */
-    void reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data);
+    void reset(
+        GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data, std::string encoding = "");
 
     /**
      * \brief Modify the size of the texture

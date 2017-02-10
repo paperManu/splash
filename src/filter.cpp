@@ -85,6 +85,7 @@ void Filter::bind()
 unordered_map<string, Values> Filter::getShaderUniforms() const
 {
     unordered_map<string, Values> uniforms;
+    uniforms["size"] = {(float)_outTexture->getSpec().width, (float)_outTexture->getSpec().height};
     return uniforms;
 }
 
@@ -256,7 +257,7 @@ void Filter::setOutput()
 
     _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->setAttribute("filtering", {1});
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr, "RGBA");
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -274,10 +275,26 @@ void Filter::updateColorDepth()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
     auto spec = _outTexture->getSpec();
-    if (_render16bits)
-        _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA16, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+
+    auto internalFormat = GL_RGBA;
+    if (_pixelFormat == "RGB")
+        internalFormat = _render16bits ? GL_RGB16 : GL_RGB8;
+    else if (_pixelFormat == "RG")
+        internalFormat = _render16bits ? GL_RG16 : GL_RG8;
+    else if (_pixelFormat == "R")
+        internalFormat = _render16bits ? GL_R16 : GL_R8;
+    else if (_pixelFormat == "YUYV")
+        internalFormat = GL_RG;
+    else if (_pixelFormat == "UYVY")
+        internalFormat = GL_RG;
     else
-        _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+    {
+        _pixelFormat = "RGBA";
+        internalFormat = _render16bits ? GL_RGBA16 : GL_RGBA8;
+    }
+
+    _outTexture->reset(GL_TEXTURE_2D, 0, internalFormat, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr, _pixelFormat);
+
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     _updateColorDepth = false;
@@ -309,6 +326,10 @@ bool Filter::setFilterSource(const string& source)
     auto uniforms = shader->getUniforms();
     for (auto& u : uniforms)
     {
+        // Uniforms starting with a underscore are kept hidden
+        if (u.first.empty() || u.first[0] == '_')
+            continue;
+
         vector<char> types;
         for (auto& v : u.second)
             types.push_back(v.getTypeAsChar());
@@ -329,6 +350,8 @@ bool Filter::setFilterSource(const string& source)
 /*************/
 void Filter::registerAttributes()
 {
+    Texture::registerAttributes();
+
     addAttribute("16bits",
         [&](const Values& args) {
             bool render16bits = args[0].as<int>();
@@ -342,6 +365,20 @@ void Filter::registerAttributes()
         [&]() -> Values { return {(int)_render16bits}; },
         {'n'});
     setAttributeDescription("16bits", "Set to 1 for the filter to be rendered in 16bits per component (otherwise 8bpc)");
+
+    addAttribute("pixelFormat",
+        [&](const Values& args) {
+            string p = args[0].as<string>();
+            if (p != _pixelFormat)
+            {
+                _pixelFormat = p;
+                _updateColorDepth = true;
+            }
+            return true;
+        },
+        [&]() -> Values { return {_pixelFormat}; },
+        {'s'});
+    setAttributeDescription("pixelFormat", "Set the output pixel format (defaults to RGBA)");
 
     addAttribute("blackLevel",
         [&](const Values& args) {

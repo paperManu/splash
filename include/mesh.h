@@ -134,6 +134,11 @@ class Mesh : public BufferObject
     bool _benchmark{false};
     int _planeSubdivisions{0};
 
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
+
   private:
     void init();
 
@@ -142,11 +147,6 @@ class Mesh : public BufferObject
      * \param subdiv Number of subdivision for the plane
      */
     void createDefaultMesh(int subdiv = 8);
-
-    /**
-     * \brief Register new functors to modify attributes
-     */
-    void registerAttributes();
 };
 
 } // end of namespace

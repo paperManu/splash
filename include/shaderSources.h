@@ -117,6 +117,33 @@ struct ShaderSources
                 vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
                 return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
             }
+        )"},
+        //
+        // YUV to RGB and RGB to YUV
+        {"yuv", R"(
+            vec3 yuv2rgb(vec3 c)
+            {
+                // Input colors are stored with a gamma applied to them
+                vec3 yuv = pow(c, vec3(1.0/2.2));
+                vec3 rgb = vec3((yuv.r - 16.0/255.0) + 1.403*(yuv.b - 0.5),
+                                (yuv.r - 16.0/255.0) - 0.344*(yuv.g - 0.5) - 0.714*(yuv.b - 0.5),
+                                (yuv.r - 16.0/255.0) + 1.772*(yuv.g - 0.5));
+                rgb = clamp(rgb, vec3(0.0), vec3(1.0));
+                rgb = pow(rgb, vec3(2.2));
+                return rgb;
+            }
+
+            vec3 rgb2yuv(vec3 c)
+            {
+                // Input colors are stored with a gamma applied to them
+                vec3 rgb = pow(c, vec3(1.0/2.2));
+                vec3 yuv = vec3(0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b + 16.0/255.0,
+                                -0.16874*rgb.r - 0.33126*rgb.g + 0.5*rgb.b + 0.5,
+                                0.5*rgb.r - 0.41869*rgb.g - 0.08131*rgb.b + 0.5);
+                yuv = clamp(yuv, vec3(0.0), vec3(1.0));
+                yuv = pow(yuv, vec3(2.2));
+                return yuv;
+            }
         )"}};
 
 /**
@@ -775,6 +802,7 @@ struct ShaderSources
      */
     const std::string FRAGMENT_SHADER_FILTER{R"(
         #include hsv
+        #include yuv
 
         #define PI 3.14159265359
 
@@ -791,8 +819,9 @@ struct ShaderSources
         // Texture transformation
         uniform int _tex0_flip = 0;
         uniform int _tex0_flop = 0;
-        // HapQ specific parameters
+        // Format specific parameters
         uniform int _tex0_YCoCg = 0;
+        uniform int _tex0_YUV = 0; // 1 = UYVY, 2 = YUYV
 
         // Film uniforms
         uniform float _filmDuration = 0.f;
@@ -819,7 +848,11 @@ struct ShaderSources
             else
                 realCoords = texCoord;
 
+    #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, realCoords * _tex0_size);
+    #else
+            vec4 color = texture(_tex0, realCoords);
+    #endif
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
@@ -830,6 +863,24 @@ struct ShaderSources
                 float Y = color.w;
                 color.rgba = vec4(Y + Co - Cg, Y + Cg, Y - Co - Cg, 1.0);
                 color.rgb = pow(color.rgb, vec3(2.2));
+            }
+
+            // If the color format is YUYV
+            if (_tex0_YUV > 0)
+            {
+                // Texture coord rounded to the closer even pixel
+                vec2 yuyvCoords = vec2((round((realCoords.x * _tex0_size.x + 0.5) / 2.0) * 2.0 + 0.5) / _tex0_size.x, realCoords.y);
+                vec4 yuyv;
+                yuyv.rg = texture(_tex0, yuyvCoords).rg;
+                yuyv.ba = texture(_tex0, vec2(yuyvCoords.x + 1.0 / _tex0_size.x, yuyvCoords.y)).rg;
+
+                if (_tex0_YUV == 1)
+                    yuyv = yuyv.grab;
+
+                if (realCoords.x - yuyvCoords.x < 1.0) // Even pixel
+                    color.rgb = yuv2rgb(yuyv.rga);
+                else // Odd pixel
+                    color.rgb = yuv2rgb(yuyv.bga);
             }
             
             // Invert channels
@@ -917,7 +968,11 @@ struct ShaderSources
             else
                 realCoords = texCoord;
 
+    #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, realCoords * _tex0_size);
+    #else
+            vec4 color = texture(_tex0, realCoords);
+    #endif
 
             // If the color is expressed as YCoCg (for HapQ compression), extract RGB color from it
             if (_tex0_YCoCg == 1)
@@ -995,6 +1050,7 @@ struct ShaderSources
     #endif
 
         uniform vec2 _tex0_size = vec2(1.0);
+        uniform vec2 _tex1_size = vec2(1.0);
 
         uniform int _showCameraCount = 0;
         uniform int _sideness = 0;
@@ -1030,10 +1086,18 @@ struct ShaderSources
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
+        #ifdef TEXTURE_RECT
+            vec4 color = texture(_tex0, texCoord * _tex0_size);
+        #else
             vec4 color = texture(_tex0, texCoord);
+        #endif
 
         #ifdef TEX_2
+        #ifdef TEXTURE_RECT
+            vec4 maskColor = texture(_tex1, texCoord * _tex1_size);
+        #else
             vec4 maskColor = texture(_tex1, texCoord);
+        #endif
             color.rgb = mix(color.rgb, maskColor.rgb, maskColor.a);
         #endif
 

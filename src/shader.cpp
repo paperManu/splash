@@ -929,6 +929,8 @@ void Shader::registerComputeAttributes()
 /*************/
 void Shader::registerFeedbackAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("feedbackPhase", [&](const Values& args) {
         if (args.size() < 1)
             return false;

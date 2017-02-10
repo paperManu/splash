@@ -22,12 +22,21 @@ Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
 }
 
 /*************/
-Texture_Image::Texture_Image(
-    std::weak_ptr<RootObject> root, GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root,
+    GLenum target,
+    GLint level,
+    GLint internalFormat,
+    GLsizei width,
+    GLsizei height,
+    GLint border,
+    GLenum format,
+    GLenum type,
+    const GLvoid* data,
+    string encoding)
     : Texture(root)
 {
     init();
-    reset(target, level, internalFormat, width, height, border, format, type, data);
+    reset(target, level, internalFormat, width, height, border, format, type, data, encoding);
 }
 
 /*************/
@@ -93,7 +102,8 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data)
+void Texture_Image::reset(
+    GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data, string encoding)
 {
     if (width == 0 || height == 0)
     {
@@ -132,7 +142,8 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             }
 
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            glPixelStorei(GL_PACK_ALIGNMENT, 4);
         }
 
         glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
@@ -148,29 +159,31 @@ void Texture_Image::reset(GLenum target, GLint level, GLint internalFormat, GLsi
 
     _spec.width = width;
     _spec.height = height;
-    if (internalFormat == GL_RGB && type == GL_UNSIGNED_BYTE)
+    if (encoding.empty())
     {
-        _spec.channels = 3;
-        _spec.type = ImageBufferSpec::Type::UINT8;
-        _spec.format = {"R", "G", "B"};
+        if (internalFormat == GL_RGB && type == GL_UNSIGNED_BYTE)
+            _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+        else if (internalFormat == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
+            _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (internalFormat == GL_RGBA16 && type == GL_UNSIGNED_SHORT)
+            _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (internalFormat == GL_RED && type == GL_UNSIGNED_SHORT)
+            _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT8, "R");
     }
-    else if (internalFormat == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
+    else
     {
-        _spec.channels = 4;
-        _spec.type = ImageBufferSpec::Type::UINT8;
-        _spec.format = {"R", "G", "B", "A"};
-    }
-    else if (internalFormat == GL_RGBA16 && type == GL_UNSIGNED_SHORT)
-    {
-        _spec.channels = 4;
-        _spec.type = ImageBufferSpec::Type::UINT16;
-        _spec.format = {"R", "G", "B", "A"};
-    }
-    else if (internalFormat == GL_RED && type == GL_UNSIGNED_SHORT)
-    {
-        _spec.channels = 1;
-        _spec.type = ImageBufferSpec::Type::UINT16;
-        _spec.format = {"R"};
+        if (encoding == "RGBA")
+            _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (encoding == "RGBA16")
+            _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        else if (encoding == "RGB")
+            _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+        else if (encoding == "R16")
+            _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT8, "R");
+        else if (encoding == "YUYV")
+            _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
+        else if (encoding == "UYVY")
+            _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, "UYVY");
     }
 
     _texTarget = target;
@@ -208,18 +221,20 @@ GLenum Texture_Image::getChannelOrder(const ImageBufferSpec& spec)
 {
     GLenum glChannelOrder = GL_RGB;
 
-    if (spec.format == vector<string>({"B", "G", "R"}))
+    if (spec.format == "BGR")
         glChannelOrder = GL_BGR;
-    else if (spec.format == vector<string>({"R", "G", "B"}))
+    else if (spec.format == "RGB")
         glChannelOrder = GL_RGB;
-    else if (spec.format == vector<string>({"B", "G", "R", "A"}))
+    else if (spec.format == "BGRA")
         glChannelOrder = GL_BGRA;
-    else if (spec.format == vector<string>({"R", "G", "B", "A"}))
+    else if (spec.format == "RGBA")
         glChannelOrder = GL_RGBA;
-    else if (spec.format == vector<string>({"R", "G", "B"}) || spec.format == vector<string>({"RGB_DXT1"}))
+    else if (spec.format == "RGB" || spec.format == "RGB_DXT1")
         glChannelOrder = GL_RGB;
-    else if (spec.format == vector<string>({"R", "G", "B", "A"}) || spec.format == vector<string>({"RGBA_DXT5"}))
+    else if (spec.format == "RGBA" || spec.format == "RGBA_DXT5")
         glChannelOrder = GL_RGBA;
+    else if (spec.format == "YUYV" || spec.format == "UYVY")
+        glChannelOrder = GL_RG;
     else if (spec.channels == 1)
         glChannelOrder = GL_RED;
     else if (spec.channels == 3)
@@ -259,18 +274,18 @@ void Texture_Image::update()
 
     // If the texture is compressed, we need to modify a few values
     bool isCompressed = false;
-    if (spec.format == vector<string>({"RGB_DXT1"}))
+    if (spec.format == "RGB_DXT1")
     {
         isCompressed = true;
         spec.height *= 2;
         spec.channels = 3;
     }
-    else if (spec.format == vector<string>({"RGBA_DXT5"}))
+    else if (spec.format == "RGBA_DXT5")
     {
         isCompressed = true;
         spec.channels = 4;
     }
-    else if (spec.format == vector<string>({"YCoCg_DXT5"}))
+    else if (spec.format == "YCoCg_DXT5")
     {
         isCompressed = true;
     }
@@ -296,10 +311,15 @@ void Texture_Image::update()
             else
                 internalFormat = GL_RGBA;
         }
-        else if (spec.channels == 3 && spec.type == ImageBufferSpec::Type::UINT8)
+        else if (spec.channels == 1 && spec.type == ImageBufferSpec::Type::UINT16)
         {
             dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_R16;
+        }
+        else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
+        {
+            dataFormat = GL_UNSIGNED_BYTE;
+            internalFormat = GL_RG;
         }
         else
         {
@@ -309,21 +329,21 @@ void Texture_Image::update()
     }
     else if (isCompressed)
     {
-        if (spec.format == vector<string>({"RGB_DXT1"}))
+        if (spec.format == "RGB_DXT1")
         {
             if (srgb[0].as<int>() > 0)
                 internalFormat = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;
             else
                 internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
         }
-        else if (spec.format == vector<string>({"RGBA_DXT5"}))
+        else if (spec.format == "RGBA_DXT5")
         {
             if (srgb[0].as<int>() > 0)
                 internalFormat = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
             else
                 internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
-        else if (spec.format == vector<string>({"YCoCg_DXT5"}))
+        else if (spec.format == "YCoCg_DXT5")
         {
             internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
         }
@@ -458,13 +478,21 @@ void Texture_Image::update()
 
     // If needed, specify some uniforms for the shader which will use this texture
     _shaderUniforms.clear();
-    if (spec.format == vector<string>({"YCoCg_DXT5"}))
+    if (spec.format == "YCoCg_DXT5")
         _shaderUniforms["YCoCg"] = {1};
     else
         _shaderUniforms["YCoCg"] = {0};
 
+    if (spec.format == "UYVY")
+        _shaderUniforms["YUV"] = {1};
+    else if (spec.format == "YUYV")
+        _shaderUniforms["YUV"] = {2};
+    else
+        _shaderUniforms["YUV"] = {0};
+
     _shaderUniforms["flip"] = flip;
     _shaderUniforms["flop"] = flop;
+    _shaderUniforms["size"] = {(float)_spec.width, (float)_spec.height};
 
     _timestamp = img->getTimestamp();
 
@@ -524,6 +552,8 @@ void Texture_Image::updatePbos(int width, int height, int bytes)
 /*************/
 void Texture_Image::registerAttributes()
 {
+    Texture::registerAttributes();
+
     addAttribute("filtering",
         [&](const Values& args) {
             _filtering = args[0].as<int>() > 0 ? true : false;

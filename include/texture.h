@@ -122,16 +122,16 @@ class Texture : public BaseObject
 
     int64_t _timestamp;
 
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
+
   private:
     /**
      * \brief As says its name
      */
     void init();
-
-    /**
-     * \brief Register new functors to modify attributes
-     */
-    void registerAttributes();
 };
 
 } // end of namespace

@@ -474,11 +474,16 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
     Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Capture format set to: " << _outputWidth << "x" << _outputHeight << " for format "
                << string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
 
-    _spec.width = _outputWidth;
-    _spec.height = _outputHeight;
-    _spec.channels = 3;
-    _spec.type = ImageBufferSpec::Type::UINT8;
-    _spec.format = {"R", "G", "B"};
+    switch (_outputPixelFormat)
+    {
+    default:
+    case V4L2_PIX_FMT_RGB24:
+        _spec = ImageBufferSpec(_outputWidth, _outputHeight, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+        break;
+    case V4L2_PIX_FMT_YUYV:
+        _spec = ImageBufferSpec(_outputWidth, _outputHeight, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
+        break;
+    }
 
     return true;
 }
@@ -613,6 +618,8 @@ bool Image_V4L2::enumerateVideoStandards()
 /*************/
 void Image_V4L2::registerAttributes()
 {
+    Image::registerAttributes();
+
     addAttribute("autosetResolution",
         [&](const Values& args) {
             _autosetResolution = static_cast<bool>(args[0].as<int>());
@@ -718,6 +725,45 @@ void Image_V4L2::registerAttributes()
 
     addAttribute("sourceFormat", [&](const Values& args) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
     setAttributeParameter("sourceFormat", true, true);
+
+    addAttribute("pixelFormat",
+        [&](const Values& args) {
+            auto isCapturing = _capturing;
+            if (isCapturing)
+                stopCapture();
+
+            auto format = args[0].as<string>();
+            if (format == "RGB")
+                _outputPixelFormat = V4L2_PIX_FMT_RGB24;
+            else if (format == "YUYV")
+                _outputPixelFormat = V4L2_PIX_FMT_YUYV;
+            else
+                _outputPixelFormat = V4L2_PIX_FMT_RGB24;
+
+            if (isCapturing)
+                doCapture();
+
+            return true;
+        },
+        [&]() -> Values {
+            string format;
+            switch (_outputPixelFormat)
+            {
+            default:
+                format = "RGB";
+                break;
+            case V4L2_PIX_FMT_RGB24:
+                format = "RGB";
+                break;
+            case V4L2_PIX_FMT_YUYV:
+                format = "YUYV";
+                break;
+            }
+            return {format};
+        },
+        {'s'});
+    setAttributeParameter("pixelFormat", true, true);
+    setAttributeDescription("pixelFormat", "Set the desired output format, either RGB or YUYV");
 }
 
 } // end of namespace

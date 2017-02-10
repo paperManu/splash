@@ -13,7 +13,8 @@ namespace Splash
 {
 
 /*************/
-Texture::Texture(std::weak_ptr<RootObject> root) : BaseObject(root)
+Texture::Texture(std::weak_ptr<RootObject> root)
+    : BaseObject(root)
 {
     init();
 }
@@ -51,6 +52,7 @@ bool Texture::linkTo(shared_ptr<BaseObject> obj)
 /*************/
 void Texture::registerAttributes()
 {
+    BaseObject::registerAttributes();
 }
 
 } // end of namespace

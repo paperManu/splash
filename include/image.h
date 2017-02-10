@@ -135,10 +135,9 @@ class Image : public BufferObject
     virtual bool read(const std::string& filename);
 
     /**
-     * \brief Set all pixels in the image to the specified value
-     * \param value Value to set all channels to
+     * Set all pixels in the image to zero
      */
-    void setTo(float value);
+    void zero();
 
     /**
      * \brief Update the content of the image
@@ -173,6 +172,11 @@ class Image : public BufferObject
      */
     bool readFile(const std::string& filename);
 
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes();
+
   private:
     // Deserialization is done in this buffer, to avoid realloc
     ImageBuffer _bufferDeserialize;
@@ -181,11 +185,6 @@ class Image : public BufferObject
      * \brief Base init for the class
      */
     void init();
-
-    /**
-     * \brief Register new functors to modify attributes
-     */
-    void registerAttributes();
 };
 
 } // end of namespace

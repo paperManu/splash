@@ -242,15 +242,15 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
 
         ImageBufferSpec spec;
         if (textureFormat == "RGB_DXT1")
-            spec = ImageBufferSpec(_width, (int)(ceil((float)_height / 2.f)), 1, ImageBufferSpec::Type::UINT8);
+            spec = ImageBufferSpec(_width, (int)(ceil((float)_height / 2.f)), 1, 8, ImageBufferSpec::Type::UINT8);
         else if (textureFormat == "RGBA_DXT5")
-            spec = ImageBufferSpec(_width, _height, 1, ImageBufferSpec::Type::UINT8);
+            spec = ImageBufferSpec(_width, _height, 1, 8, ImageBufferSpec::Type::UINT8);
         else if (textureFormat == "YCoCg_DXT5")
-            spec = ImageBufferSpec(_width, _height, 1, ImageBufferSpec::Type::UINT8);
+            spec = ImageBufferSpec(_width, _height, 1, 8, ImageBufferSpec::Type::UINT8);
         else
             return;
 
-        spec.format = {textureFormat};
+        spec.format = textureFormat;
         _readerBuffer = ImageBuffer(spec);
     }
 
@@ -274,13 +274,19 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
     auto bufSpec = _readerBuffer.getSpec();
     if (bufSpec.width != _width || bufSpec.height != _height || bufSpec.channels != _channels)
     {
-        ImageBufferSpec spec(_width, _height, _channels, ImageBufferSpec::Type::UINT8);
+        ImageBufferSpec spec(_width, _height, _channels, 8 * _channels, ImageBufferSpec::Type::UINT8);
         if (_green < _blue)
-            spec.format = {"B", "G", "R"};
+            spec.format = "BGR";
         else
-            spec.format = {"R", "G", "B"};
+            spec.format = "RGB";
         if (_channels == 4)
-            spec.format.push_back("A");
+            spec.format.push_back('A');
+
+        if (_is420 || _is422)
+        {
+            spec.format = "UYVY";
+            spec.bpp = 16;
+        }
 
         _readerBuffer = ImageBuffer(spec);
     }
@@ -311,235 +317,24 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
         const unsigned char* Y = (const unsigned char*)data;
         const unsigned char* U = (const unsigned char*)data + _width * _height;
         const unsigned char* V = (const unsigned char*)data + _width * _height * 5 / 4;
-
         char* pixels = (char*)(_readerBuffer).data();
-#if SPLASH_SHMDATA_WITH_POOL
-        vector<uint32_t> threadIds;
-#else
-        vector<thread> threads;
-#endif
-#ifdef HAVE_SSE2
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
+
+        for (int y = 0; y < _height; ++y)
         {
-            int width = _width;
-            int height = _height;
-
-#if SPLASH_SHMDATA_WITH_POOL
-            threadIds.push_back(SThread::pool.enqueue([=]() {
-#else
-            threads.push_back(thread([=]() {
-#endif
-                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
-                    lastLine = _height;
-                else
-                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
-
-                auto uLine = vector<unsigned char>(width / 2);
-                auto vLine = vector<unsigned char>(width / 2);
-                auto yLine = vector<unsigned char>(width);
-                auto localPixels = vector<unsigned char>(width * 3);
-                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; ++y)
-                {
-                    memcpy(uLine.data(), &U[(y / 2) * (width / 2)], width / 2 * sizeof(unsigned char));
-                    memcpy(vLine.data(), &V[(y / 2) * (width / 2)], width / 2 * sizeof(unsigned char));
-                    memcpy(yLine.data(), &Y[y * width], width * sizeof(unsigned char));
-
-                    for (int x = 0; x < width; x += 4)
-                    {
-                        const unsigned char* uPtr = &uLine[x / 2];
-                        const unsigned char* vPtr = &vLine[x / 2];
-                        const unsigned char* yPtr = &yLine[x];
-
-                        auto uValue = glm::detail::fvec4SIMD((float)uPtr[0], (float)uPtr[0], (float)uPtr[1], (float)uPtr[1]);
-                        auto vValue = glm::detail::fvec4SIMD((float)vPtr[0], (float)vPtr[0], (float)vPtr[1], (float)vPtr[1]);
-                        auto yValue = glm::detail::fvec4SIMD((float)yPtr[0], (float)yPtr[1], (float)yPtr[2], (float)yPtr[3]);
-
-                        uValue = uValue - 128.0;
-                        vValue = vValue - 128.0;
-
-                        yValue = (yValue - 16.0) * 38142.0;
-                        auto rPart = glm::clamp((yValue + vValue * 52289) / 32768.0, 0.0, 255.0);
-                        auto gPart = glm::clamp((yValue + uValue * -12846 - vValue * 36641) / 32768.0, 0.0, 255.0);
-                        auto bPart = glm::clamp((yValue + uValue * 66094) / 32768.0, 0.0, 255.0);
-
-                        auto rPixel = glm::vec4_cast(rPart);
-                        auto gPixel = glm::vec4_cast(gPart);
-                        auto bPixel = glm::vec4_cast(bPart);
-
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            localPixels[(x + i) * 3] = (unsigned char)rPixel[i];
-                            localPixels[(x + i) * 3 + 1] = (unsigned char)gPixel[i];
-                            localPixels[(x + i) * 3 + 2] = (unsigned char)bPixel[i];
-                        }
-                    }
-
-                    memcpy(&pixels[y * width * 3], localPixels.data(), width * 3 * sizeof(unsigned char));
-                }
-            }));
+            for (int x = 0; x < _width; x += 2)
+            {
+                pixels[(x + y * _width) * 2 + 0] = U[(x / 2) + (y / 2) * (_width / 2)];
+                pixels[(x + y * _width) * 2 + 1] = Y[x + y * _width];
+                pixels[(x + y * _width) * 2 + 2] = V[(x / 2) + (y / 2) * (_width / 2)];
+                pixels[(x + y * _width) * 2 + 3] = Y[x + y * _width + 1];
+            }
         }
-#else
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
-        {
-#if SPLASH_SHMDATA_WITH_POOL
-            threadIds.push_back(SThread::pool.enqueue([=]() {
-#else
-            threads.push_back(thread([=]() {
-#endif
-                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
-                    lastLine = _height;
-                else
-                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
-
-                for (int y = _height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x < _width; x += 2)
-                    {
-                        int uValue = (int)(U[(y / 2) * (_width / 2) + x / 2]) - 128;
-                        int vValue = (int)(V[(y / 2) * (_width / 2) + x / 2]) - 128;
-
-                        int rPart = 52298 * vValue;
-                        int gPart = -12846 * uValue - 36641 * vValue;
-                        int bPart = 66094 * uValue;
-
-                        int col = x;
-                        int row = y;
-                        int yValue = (int)(Y[row * _width + col] - 16) * 38142;
-                        pixels[(row * _width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(row * _width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(row * _width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
-
-                        col++;
-                        yValue = (int)(Y[row * _width + col] - 16) * 38142;
-                        pixels[(row * _width + col) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(row * _width + col) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(row * _width + col) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
-                    }
-            }));
-        }
-#endif
-#if SPLASH_SHMDATA_WITH_POOL
-        SThread::pool.waitThreads(threadIds);
-#else
-        for (auto& t : threads)
-            if (t.joinable())
-                t.join();
-#endif
     }
     else if (_is422)
     {
         const unsigned char* YUV = (const unsigned char*)data;
-
         char* pixels = (char*)(_readerBuffer).data();
-#if SPLASH_SHMDATA_WITH_POOL
-        vector<uint32_t> threadIds;
-#else
-        vector<thread> threads;
-#endif
-#ifdef HAVE_SSE2
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
-        {
-            int width = _width;
-            int height = _height;
-
-#if SPLASH_SHMDATA_WITH_POOL
-            threadIds.push_back(SThread::pool.enqueue([=]() {
-#else
-            threads.push_back(thread([=]() {
-#endif
-                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
-                    lastLine = _height;
-                else
-                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
-
-                auto line = vector<unsigned char>(width * 2);
-                auto localPixels = vector<unsigned char>(width * 3);
-
-                for (int y = height / SPLASH_SHMDATA_THREADS * block; y < lastLine; ++y)
-                {
-                    memcpy(line.data(), &YUV[y * width * 2], width * 2 * sizeof(unsigned char));
-
-                    for (int x = 0; x < width; x += 4)
-                    {
-                        const unsigned char* block = &line[x * 2];
-
-                        auto uValue = glm::detail::fvec4SIMD((float)block[0], (float)block[0], (float)block[4], (float)block[4]);
-                        auto vValue = glm::detail::fvec4SIMD((float)block[2], (float)block[2], (float)block[6], (float)block[6]);
-                        auto yValue = glm::detail::fvec4SIMD((float)block[1], (float)block[3], (float)block[5], (float)block[7]);
-
-                        uValue = uValue - 128.0;
-                        vValue = vValue - 128.0;
-
-                        yValue = (yValue - 16.0) * 38142.0;
-                        auto rPart = glm::clamp((yValue + vValue * 52289) / 32768.0, 0.0, 255.0);
-                        auto gPart = glm::clamp((yValue + uValue * -12846 - vValue * 36641) / 32768.0, 0.0, 255.0);
-                        auto bPart = glm::clamp((yValue + uValue * 66094) / 32768.0, 0.0, 255.0);
-
-                        auto rPixel = glm::vec4_cast(rPart);
-                        auto gPixel = glm::vec4_cast(gPart);
-                        auto bPixel = glm::vec4_cast(bPart);
-
-                        for (int i = 0; i < 4; ++i)
-                        {
-                            localPixels[(x + i) * 3] = (unsigned char)rPixel[i];
-                            localPixels[(x + i) * 3 + 1] = (unsigned char)gPixel[i];
-                            localPixels[(x + i) * 3 + 2] = (unsigned char)bPixel[i];
-                        }
-                    }
-
-                    memcpy(&pixels[y * width * 3], localPixels.data(), width * 3 * sizeof(unsigned char));
-                }
-            }));
-        }
-#else
-        for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
-        {
-#if SPLASH_SHMDATA_WITH_POOL
-            threadIds.push_back(SThread::pool.enqueue([=]() {
-#else
-            threads.push_back(thread([=]() {
-#endif
-                int lastLine; // We compute the last line, to handle image size non divisible by SPLASH_SHMDATA_THREADS
-                if (_height - _height / SPLASH_SHMDATA_THREADS * (block + 1) < _height / SPLASH_SHMDATA_THREADS)
-                    lastLine = _height;
-                else
-                    lastLine = _height / SPLASH_SHMDATA_THREADS * (block + 1);
-
-                for (int y = _height / SPLASH_SHMDATA_THREADS * block; y < lastLine; y++)
-                    for (int x = 0; x < _width; x += 2)
-                    {
-                        unsigned char block[4];
-                        memcpy(block, &YUV[y * _width * 2 + x * 2], 4 * sizeof(unsigned char));
-
-                        int uValue = (int)(block[0]) - 128;
-                        int vValue = (int)(block[2]) - 128;
-
-                        int rPart = 52298 * vValue;
-                        int gPart = -12846 * uValue - 36641 * vValue;
-                        int bPart = 66094 * uValue;
-
-                        int yValue = (int)(block[1] - 16) * 38142;
-                        pixels[(y * _width + x) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(y * _width + x) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(y * _width + x) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
-
-                        yValue = (int)(block[3] - 16) * 38142;
-                        pixels[(y * _width + x + 1) * 3] = (unsigned char)clamp((yValue + rPart) / 32768, 0, 255);
-                        pixels[(y * _width + x + 1) * 3 + 1] = (unsigned char)clamp((yValue + gPart) / 32768, 0, 255);
-                        pixels[(y * _width + x + 1) * 3 + 2] = (unsigned char)clamp((yValue + bPart) / 32768, 0, 255);
-                    }
-            }));
-        }
-#endif
-#if SPLASH_SHMDATA_WITH_POOL
-        SThread::pool.waitThreads(threadIds);
-#else
-        for (auto& t : threads)
-            if (t.joinable())
-                t.join();
-#endif
+        copy(YUV, YUV + _width * _height * 2, pixels);
     }
     else
         return;
@@ -554,5 +349,6 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
 /*************/
 void Image_Shmdata::registerAttributes()
 {
+    Image::registerAttributes();
 }
 }

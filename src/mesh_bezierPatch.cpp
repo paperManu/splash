@@ -8,7 +8,8 @@ namespace Splash
 {
 
 /*************/
-Mesh_BezierPatch::Mesh_BezierPatch(weak_ptr<RootObject> root) : Mesh(root)
+Mesh_BezierPatch::Mesh_BezierPatch(weak_ptr<RootObject> root)
+    : Mesh(root)
 {
     init();
 }
@@ -233,6 +234,8 @@ void Mesh_BezierPatch::updatePatch()
 /*************/
 void Mesh_BezierPatch::registerAttributes()
 {
+    Mesh::registerAttributes();
+
     addAttribute("patchControl",
         [&](const Values& args) {
             auto width = args[0].as<int>();

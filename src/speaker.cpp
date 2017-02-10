@@ -38,6 +38,8 @@ void Speaker::setParameters(uint32_t channels, uint32_t sampleRate, Sound_Engine
     _sampleFormat = format;
     _deviceName = deviceName;
 
+    Log::get() << Log::MESSAGE << "Speaker::" << __FUNCTION__ << " - Set audio output: " << _sampleRate << "kHz on " << _channels << " channels" << Log::endl;
+
     initResources();
 }
 
@@ -88,6 +90,7 @@ int Speaker::portAudioCallback(
     else
         delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - readPosition + writePosition;
     int step = framesPerBuffer * that->_channels * that->_sampleSize;
+
     if (delta < step)
     {
         for (unsigned int i = 0; i < step; ++i)
@@ -124,6 +127,7 @@ int Speaker::portAudioCallback(
 /*************/
 void Speaker::registerAttributes()
 {
+    BaseObject::registerAttributes();
 }
 
 } // end of namespace

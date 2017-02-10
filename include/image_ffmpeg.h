@@ -97,6 +97,7 @@ class Image_FFmpeg : public Image
 
     std::mutex _videoQueueMutex;
     std::mutex _videoSeekMutex;
+    std::mutex _videoEndMutex;
     std::condition_variable _videoQueueCondition;
 
     std::atomic_bool _timeJump{false};
@@ -114,15 +115,26 @@ class Image_FFmpeg : public Image
     int64_t _clockTime{-1};
 
     AVFormatContext* _avContext{nullptr};
-    double _timeBase{0.033};
+    double _videoTimeBase{0.033};
     int _videoStreamIndex{-1};
     std::string _videoFormat{""}; //!< Holds the current video format information
 
 #if HAVE_PORTAUDIO
     std::unique_ptr<Speaker> _speaker;
     int _audioStreamIndex{-1};
+    double _audioTimeBase{0.001};
+    bool _planar{false};
     std::string _audioDeviceOutput{""};
     bool _audioDeviceOutputUpdated{false};
+
+    std::thread _audioThread{};
+    struct TimedAudioFrame
+    {
+        ResizableArray<uint8_t> frame{};
+        int64_t timing{0ull}; // in us
+    };
+    std::deque<TimedAudioFrame> _audioQueue{};
+    std::mutex _audioMutex{};
 #endif
 
     /**
@@ -158,6 +170,11 @@ class Image_FFmpeg : public Image
      * \return Return true if all went well
      */
     bool setupAudioOutput(AVCodecContext* audioCodecContext);
+
+    /**
+     * Audio loop
+     */
+    void audioLoop();
 
     /**
      * \brief Video display loop

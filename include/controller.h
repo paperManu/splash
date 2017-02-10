@@ -46,6 +46,7 @@ class ControllerObject : public BaseObject
     ControllerObject(std::weak_ptr<RootObject> root)
         : BaseObject(root)
     {
+        registerAttributes();
     }
 
     /**
@@ -164,6 +165,12 @@ class ControllerObject : public BaseObject
      * \param cb Callback
      */
     void setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)> cb) const;
+
+  protected:
+    /**
+     * \brief Register new functors to modify attributes
+     */
+    void registerAttributes() { BaseObject::registerAttributes(); }
 };
 
 } // end of namespace

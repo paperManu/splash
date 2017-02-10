@@ -8,7 +8,8 @@ namespace Splash
 {
 
 /**************/
-Texture_Syphon::Texture_Syphon(weak_ptr<RootObject> root) : Texture(root)
+Texture_Syphon::Texture_Syphon(weak_ptr<RootObject> root)
+    : Texture(root)
 {
     init();
 }
@@ -71,6 +72,8 @@ void Texture_Syphon::unbind()
 /**************/
 void Texture_Syphon::registerAttributes()
 {
+    Texture::registerAttributes();
+
     addAttribute("connect",
         [&](const Values& args) {
             if (args.size() == 0)

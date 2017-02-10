@@ -85,18 +85,19 @@ void Object::activate()
     {
         if (_vertexBlendingActive)
             shaderParameters.push_back("VERTEXBLENDING");
-
         if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
             shaderParameters.push_back("TEXTURE_RECT");
-        else
-            shaderParameters.push_back("VERTEXBLENDING");
 
         shaderParameters.push_front("texture");
         _shader->setAttribute("fill", shaderParameters);
     }
     else if (_fill == "filter")
     {
-        _shader->setAttribute("fill", {"filter"});
+        if (_textures.size() > 0 && _textures[0]->getType() == "texture_syphon")
+            shaderParameters.push_back("TEXTURE_RECT");
+
+        shaderParameters.push_front("filter");
+        _shader->setAttribute("fill", shaderParameters);
     }
     else if (_fill == "window")
     {
@@ -567,6 +568,8 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
+    BaseObject::registerAttributes();
+
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
             _vertexBlendingActive = args[0].as<int>();

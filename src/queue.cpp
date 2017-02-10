@@ -126,7 +126,7 @@ void Queue::update()
                 _playing = true;
             else
                 _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
-            dynamic_pointer_cast<Image>(_currentSource)->setTo(0.f);
+            dynamic_pointer_cast<Image>(_currentSource)->zero();
             dynamic_pointer_cast<Image>(_currentSource)->setName(_name + DISTANT_NAME_SUFFIX);
 
             _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
@@ -261,6 +261,8 @@ void Queue::cleanPlaylist(vector<Source>& playlist)
 /*************/
 void Queue::registerAttributes()
 {
+    BufferObject::registerAttributes();
+
     addAttribute("loop",
         [&](const Values& args) {
             _loop = (bool)args[0].as<int>();
@@ -418,6 +420,8 @@ void QueueSurrogate::update()
 /*************/
 void QueueSurrogate::registerAttributes()
 {
+    Texture::registerAttributes();
+
     /*
      * Create the object for the current source type
      * Args holds the object type (Image, Texture...)
@@ -447,7 +451,7 @@ void QueueSurrogate::registerAttributes()
             if (type.find("image") != string::npos)
             {
                 auto image = make_shared<Image>(_root);
-                image->setTo(0.f);
+                image->zero();
                 image->setRemoteType(type);
 
                 object = image;

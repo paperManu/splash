@@ -1203,6 +1203,8 @@ void World::setAttribute(string name, string attrib, const Values& args)
 /*************/
 void World::registerAttributes()
 {
+    RootObject::registerAttributes();
+
     addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {

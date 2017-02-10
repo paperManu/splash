@@ -321,6 +321,8 @@ void Warp::setOutput()
 /*************/
 void Warp::registerAttributes()
 {
+    Texture::registerAttributes();
+
     addAttribute("patchControl",
         [&](const Values& args) {
             if (!_screenMesh)

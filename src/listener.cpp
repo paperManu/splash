@@ -105,6 +105,7 @@ int Listener::portAudioCallback(
 /*************/
 void Listener::registerAttributes()
 {
+    BaseObject::registerAttributes();
 }
 
 } // end of namespace

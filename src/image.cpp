@@ -104,7 +104,7 @@ void Image::set(const ImageBuffer& img)
 /*************/
 void Image::set(unsigned int w, unsigned int h, unsigned int channels, ImageBufferSpec::Type type)
 {
-    ImageBufferSpec spec(w, h, channels, type);
+    ImageBufferSpec spec(w, h, channels, 8 * sizeof(channels) * (int)type, type);
     ImageBuffer img(spec);
 
     lock_guard<Spinlock> lock(_readMutex);
@@ -244,13 +244,13 @@ bool Image::readFile(const string& filename)
         return false;
     }
 
-    auto spec = ImageBufferSpec(w, h, c, ImageBufferSpec::Type::UINT8);
+    auto spec = ImageBufferSpec(w, h, c, 8 * c, ImageBufferSpec::Type::UINT8);
     if (c == 1)
-        spec.format = {"R"};
+        spec.format = "R";
     else if (c == 3)
-        spec.format = {"R", "G", "B"};
+        spec.format = "RGB";
     else if (c == 4)
-        spec.format = {"R", "G", "B", "A"};
+        spec.format = "RGBA";
     else
         return false;
     auto img = ImageBuffer(spec);
@@ -269,13 +269,13 @@ bool Image::readFile(const string& filename)
 }
 
 /*************/
-void Image::setTo(float value)
+void Image::zero()
 {
     lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
         return;
 
-    _image->fill(value);
+    _image->zero();
 }
 
 /*************/
@@ -327,9 +327,9 @@ bool Image::write(const std::string& filename)
 /*************/
 void Image::createDefaultImage()
 {
-    ImageBufferSpec spec(128, 128, 4, ImageBufferSpec::Type::UINT8);
+    ImageBufferSpec spec(128, 128, 4, 32, ImageBufferSpec::Type::UINT8);
     ImageBuffer img(spec);
-    img.fill(0);
+    img.zero();
 
     lock_guard<Spinlock> lock(_readMutex);
     if (!_image)
@@ -341,7 +341,7 @@ void Image::createDefaultImage()
 /*************/
 void Image::createPattern()
 {
-    ImageBufferSpec spec(512, 512, 4, ImageBufferSpec::Type::UINT8);
+    ImageBufferSpec spec(512, 512, 4, 8 * 4, ImageBufferSpec::Type::UINT8);
     ImageBuffer img(spec);
 
     uint8_t* p = reinterpret_cast<uint8_t*>(img.data());
@@ -367,6 +367,8 @@ void Image::createPattern()
 /*************/
 void Image::registerAttributes()
 {
+    BufferObject::registerAttributes();
+
     addAttribute("flip",
         [&](const Values& args) {
             _flip = (args[0].as<int>() > 0) ? true : false;

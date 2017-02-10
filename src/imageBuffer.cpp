@@ -15,6 +15,8 @@ string ImageBufferSpec::to_string()
     spec += ";";
     spec += std::to_string(channels);
     spec += ";";
+    spec += std::to_string(bpp);
+    spec += ";";
 
     switch (type)
     {
@@ -29,15 +31,8 @@ string ImageBufferSpec::to_string()
         break;
     }
     spec += ";";
-
-    spec += std::to_string(format.size());
+    spec += format;
     spec += ";";
-
-    for (auto& c : format)
-    {
-        spec += c;
-        spec += ";";
-    }
 
     return spec;
 }
@@ -67,6 +62,13 @@ void ImageBufferSpec::from_string(const string& spec)
         return;
     channels = stoi(roi.substr(0, curr));
 
+    // Bits per pixel
+    roi = roi.substr(curr + 1);
+    curr = roi.find(";");
+    if (curr == string::npos)
+        return;
+    bpp = stoi(roi.substr(0, curr));
+
     // Type
     roi = roi.substr(curr + 1);
     curr = roi.find(";");
@@ -85,21 +87,10 @@ void ImageBufferSpec::from_string(const string& spec)
         break;
     }
 
-    // Format descriptor size
+    // Format
     roi = roi.substr(curr + 1);
     curr = roi.find(";");
-    if (curr == string::npos)
-        return;
-    int formatSize = stoi(roi.substr(0, curr));
-
-    // Format
-    format.clear();
-    for (uint32_t pos = 0; pos < formatSize; ++pos)
-    {
-        roi = roi.substr(curr + 1);
-        curr = roi.find(";");
-        format.push_back(roi.substr(0, curr));
-    }
+    format = roi.substr(0, curr);
 }
 
 /*************/
@@ -123,52 +114,15 @@ void ImageBuffer::init(const ImageBufferSpec& spec)
 {
     _spec = spec;
 
-    uint32_t size = spec.width * spec.height * spec.channels;
-    switch (spec.type)
-    {
-    case ImageBufferSpec::Type::UINT8:
-        break;
-    case ImageBufferSpec::Type::UINT16:
-        size *= 2;
-        break;
-    case ImageBufferSpec::Type::FLOAT:
-        size *= 4;
-        break;
-    }
-
+    uint32_t size = spec.width * spec.height * spec.bpp;
     _buffer.resize(size);
 }
 
 /*************/
-void ImageBuffer::fill(float value)
+void ImageBuffer::zero()
 {
-    size_t size = 1;
-    switch (_spec.type)
-    {
-    case ImageBufferSpec::Type::UINT8:
-    {
-        uint8_t* data = reinterpret_cast<uint8_t*>(_buffer.data());
-        uint8_t v = static_cast<char>(value);
-        for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
-            data[p] = v;
-    }
-    break;
-    case ImageBufferSpec::Type::UINT16:
-    {
-        uint16_t* data = reinterpret_cast<uint16_t*>(_buffer.data());
-        uint16_t v = static_cast<uint16_t>(value);
-        for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
-            data[p] = v;
-    }
-    break;
-    case ImageBufferSpec::Type::FLOAT:
-    {
-        float* data = reinterpret_cast<float*>(_buffer.data());
-        for (uint32_t p = 0; p < _spec.width * _spec.height * _spec.channels; ++p)
-            data[p] = value;
-    }
-    break;
-    }
+    if (_buffer.size())
+        memset(_buffer.data(), 0, _buffer.size());
 }
 
 } // end of namespace
