@@ -53,17 +53,18 @@ void Image_FFmpeg::freeFFmpegObjects()
 {
     _clockTime = -1;
 
-    _continueRead = false;
-    _videoQueueCondition.notify_one();
 
-    if (_videoDisplayThread.joinable())
+    if (_continueRead)
+    {
+        _continueRead = false;
+        _readLoopThread.join();
         _videoDisplayThread.join();
 #if HAVE_PORTAUDIO
-    if (_audioThread.joinable())
         _audioThread.join();
+        if (_speaker)
+            _speaker.reset();
 #endif
-    if (_readLoopThread.joinable())
-        _readLoopThread.join();
+    }
 
     if (_avContext)
     {
@@ -525,17 +526,14 @@ void Image_FFmpeg::readLoop()
 
     av_frame_free(&rgbFrame);
     av_frame_free(&frame);
-
     if (!isHap)
-        avcodec_close(videoCodecContext);
+        sws_freeContext(swsContext);
+    avcodec_close(videoCodecContext);
     _videoStreamIndex = -1;
 
 #if HAVE_PORTAUDIO
     if (audioCodecContext)
-    {
         avcodec_close(audioCodecContext);
-        _speaker.reset();
-    }
     _audioStreamIndex = -1;
 #endif
 }
@@ -555,7 +553,7 @@ void Image_FFmpeg::audioLoop()
         if (localQueue.empty())
             this_thread::sleep_for(chrono::milliseconds(10));
 
-        while (!localQueue.empty() && _continueRead)
+        while (!localQueue.empty() && _continueRead && _speaker)
         {
             auto currentTime = Timer::getTime() - _startTime;
 

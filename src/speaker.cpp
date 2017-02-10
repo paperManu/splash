@@ -50,6 +50,7 @@ void Speaker::freeResources()
         return;
 
     _abortCallback = true;
+    _ready = false;
 }
 
 /*************/
@@ -68,6 +69,8 @@ void Speaker::initResources()
 
     if (!_engine.startStream(Speaker::portAudioCallback, this))
         return;
+
+    _ready =  true;
 }
 
 /*************/
