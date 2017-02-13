@@ -298,6 +298,21 @@ inline std::string getFilenameFromFilePath(const std::string& filepath)
 }
 
 /**
+ * Get the full file path from a filename or file path
+ * \param filepath File name or path
+ * \param configurationPath Configuration path
+ * \return Return the full path
+ */
+inline std::string getFullPathFromFilePath(const std::string& filepath, const std::string& configurationPath)
+{
+    auto path = Utils::getPathFromFilePath(filepath, configurationPath);
+    auto filename = Utils::getFilenameFromFilePath(filepath);
+    if (path[path.size() - 1] != '/')
+        path += "/";
+    return path + filename;
+}
+
+/**
  * \brief Get a list of the files in a directory
  * \param path Directory path
  * \return Return the file list

@@ -53,7 +53,6 @@ void Image_FFmpeg::freeFFmpegObjects()
 {
     _clockTime = -1;
 
-
     if (_continueRead)
     {
         _continueRead = false;
@@ -78,7 +77,7 @@ bool Image_FFmpeg::read(const string& filename)
 {
     // First: cleanup
     freeFFmpegObjects();
-    _filepath = Utils::getPathFromFilePath(filename, _root.lock()->getConfigurationPath()) + Utils::getFilenameFromFilePath(filename);
+    _filepath = Utils::getFullPathFromFilePath(filename, _root.lock()->getConfigurationPath());
 
     if (avformat_open_input(&_avContext, _filepath.c_str(), nullptr, nullptr) != 0)
     {
