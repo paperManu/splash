@@ -135,6 +135,7 @@ class Filter : public Texture
     std::string _pixelFormat{"RGBA"};                        //!< Output pixel format
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
     bool _updateColorDepth{false};                           //!< Set to true if the _render16bits has been updated
+    Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
 
     std::string _shaderSource{""};     //!< User defined fragment shader filter
     std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file
@@ -179,6 +180,11 @@ class Filter : public Texture
      * \brief Updates the shader uniforms according to the textures and images the filter is connected to.
      */
     void updateUniforms();
+
+    /**
+     * Update the shader parameters, if it is the default shader
+     */
+    void updateShaderParameters();
 
     /**
      * \brief Register new functors to modify attributes

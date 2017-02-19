@@ -835,6 +835,28 @@ struct ShaderSources
         uniform int _invertChannels = 0;
         uniform vec2 _colorBalance = vec2(1.f, 1.f);
 
+    #ifdef COLOR_CURVE_COUNT
+        // This is set if Filter::_colorCurves is not empty, by Filter::updateShaderParameters
+        uniform vec3 _colorCurves[COLOR_CURVE_COUNT];
+    #endif
+
+        int factorial(int n)
+        {
+            if (n == 0 || n == 1)
+                return 1;
+            int res = 1;
+            for (int i = 2; i <= n; ++i)
+                res *= i;
+            return res;
+        }
+
+        float binomialCoeff(int n, int i)
+        {
+            if (n < i)
+                return 0.f;
+            return float(factorial(n) / (factorial(i) * factorial(n - i)));
+        }
+
         void main(void)
         {
             // Compute the real texture coordinates, according to flip / flop
@@ -912,6 +934,23 @@ struct ShaderSources
                 float blackCorrection = clamp(_blackLevel, 0.0, 1.0);
                 color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
             }
+
+            // Color curves
+    #ifdef COLOR_CURVE_COUNT
+            color = clamp(color, vec4(0.0), vec4(1.0));
+            float factors[COLOR_CURVE_COUNT];
+            for (int i = 0; i < COLOR_CURVE_COUNT; ++i)
+                factors[i] = binomialCoeff(COLOR_CURVE_COUNT - 1, i);
+
+            vec3 curvedColor = vec3(0.0);
+            for (int i = 0; i < COLOR_CURVE_COUNT; ++i)
+            {
+                // We use 0.9999 and not 1.0 because of imprecision
+                vec3 factor = factors[i] * pow(color.rgb, vec3(float(i))) * pow(vec3(0.9999) - color.rgb, vec3(float(COLOR_CURVE_COUNT) - 1.0 - float(i)));
+                curvedColor += factor * _colorCurves[i];
+            }
+            color.rgb = curvedColor.rgb;
+    #endif
 
             fragColor = color;
         }

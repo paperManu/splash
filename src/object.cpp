@@ -81,6 +81,9 @@ void Object::activate()
     for (int i = 0; i < _textures.size(); ++i)
         shaderParameters.push_back("TEX_" + to_string(i + 1));
 
+    for (auto& p : _fillParameters)
+        shaderParameters.push_back(p);
+
     if (_fill == "texture")
     {
         if (_vertexBlendingActive)
@@ -627,12 +630,16 @@ void Object::registerAttributes()
     addAttribute("fill",
         [&](const Values& args) {
             _fill = args[0].as<string>();
+            _fillParameters.clear();
+            for (int i = 1; i < args.size(); ++i)
+                _fillParameters.push_back(args[i].as<string>());
             return true;
         },
         [&]() -> Values { return {_fill}; },
         {'s'});
-    setAttributeDescription(
-        "fill", "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined manually then.");
+    setAttributeDescription("fill",
+        "Set the fill type (texture, wireframe, or color). A fourth choice is available: userDefinedFilter. The fragment shader has to be defined "
+        "manually then. Additional parameters are sent as #define directives to the shader compiler.");
 
     addAttribute("color",
         [&](const Values& args) {

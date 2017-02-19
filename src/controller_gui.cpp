@@ -12,6 +12,16 @@
 #include "./texture_image.h"
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./widget_control.h"
+#include "./widget_filters.h"
+#include "./widget_global_view.h"
+#include "./widget_graph.h"
+#include "./widget_media.h"
+#include "./widget_meshes.h"
+#include "./widget_node_view.h"
+#include "./widget_template.h"
+#include "./widget_text_box.h"
+#include "./widget_warp.h"
 #include "./window.h"
 
 using namespace std;
@@ -1102,6 +1112,10 @@ void Gui::initImWidgets()
     // Media
     auto mediaSelector = make_shared<GuiMedia>(_scene, "Media");
     _guiWidgets.push_back(mediaSelector);
+
+    // Filters
+    auto filterPanel = make_shared<GuiFilters>(_scene, "Filters");
+    _guiWidgets.push_back(filterPanel);
 
     // Meshes
     auto meshesSelector = make_shared<GuiMeshes>(_scene, "Meshes");

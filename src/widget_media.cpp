@@ -291,13 +291,11 @@ void GuiMedia::render()
 /*************/
 void GuiMedia::replaceMedia(string previousMedia, string type)
 {
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<BaseObject>>();
-    for (auto& objIt : scene->_objects)
+    auto objects = getObjectsOfType("");
+    for (auto& object : objects)
     {
-        auto& object = objIt.second;
         if (!object->getSavable())
             continue;
         auto linkedObjects = object->getLinkedObjects();
@@ -348,18 +346,17 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 list<shared_ptr<BaseObject>> GuiMedia::getFiltersForImage(const shared_ptr<BaseObject>& image)
 {
     auto filterList = list<shared_ptr<BaseObject>>();
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-
-    for (auto& obj : scene->_objects)
+    auto allFilters = getObjectsOfType("filter");
+    for (auto& obj : allFilters)
     {
-        if (obj.second->getType() != "filter")
+        if (obj->getType() != "filter")
             continue;
 
-        auto linkedImages = obj.second->getLinkedObjects();
+        auto linkedImages = obj->getLinkedObjects();
         auto matchingImage = find(linkedImages.begin(), linkedImages.end(), image);
 
         if (matchingImage != linkedImages.end())
-            filterList.push_back(obj.second);
+            filterList.push_back(obj);
     }
 
     return filterList;

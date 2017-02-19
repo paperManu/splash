@@ -218,6 +218,17 @@ void Filter::updateUniforms()
     // Built-in uniforms
     _filterUniforms["_time"] = {static_cast<int>(Timer::getTime() / 1000)};
 
+    if (!_colorCurves.empty())
+    {
+        Values tmpCurves;
+        for (int i = 0; i < _colorCurves[0].size(); ++i)
+            for (int j = 0; j < _colorCurves.size(); ++j)
+                tmpCurves.push_back(_colorCurves[j][i].as<float>());
+        Values curves;
+        curves.push_back(tmpCurves);
+        shader->setAttribute("uniform", {"_colorCurves", curves});
+    }
+
     // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
     {
@@ -267,6 +278,20 @@ void Filter::setOutput()
     _screen->setAttribute("fill", {"filter"});
     auto virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
+}
+
+/*************/
+void Filter::updateShaderParameters()
+{
+    if (!_shaderSource.empty() || !_shaderSourceFile.empty())
+        return;
+
+    if (!_colorCurves.empty()) // Validity of color curve has been checked earlier
+        _screen->setAttribute("fill", {"filter", "COLOR_CURVE_COUNT " + to_string(static_cast<int>(_colorCurves[0].size()))});
+
+    // This is a trick to force the shader compilation
+    _screen->activate();
+    _screen->deactivate();
 }
 
 /*************/
@@ -445,6 +470,56 @@ void Filter::registerAttributes()
         },
         {'n'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
+
+    addAttribute("colorCurves",
+        [&](const Values& args) {
+            int pointCount = 0;
+            for (auto& v : args)
+                if (pointCount == 0)
+                    pointCount = v.size();
+                else if (pointCount != v.size())
+                    return false;
+
+            if (pointCount < 2)
+                return false;
+
+            addTask([=]() {
+                _colorCurves = args;
+                updateShaderParameters();
+            });
+            return true;
+        },
+        [&]() -> Values { return _colorCurves; },
+        {'v', 'v', 'v'});
+
+    addAttribute("colorCurveAnchors",
+        [&](const Values& args) {
+            auto count = args[0].as<int>();
+
+            if (count < 2)
+                return false;
+            if (!_colorCurves.empty() && _colorCurves[0].size() == count)
+                return true;
+
+            Values linearCurve;
+            for (int i = 0; i < count; ++i)
+                linearCurve.push_back(static_cast<float>(i) / (static_cast<float>(count - 1)));
+
+            addTask([=]() {
+                _colorCurves.clear();
+                for (int i = 0; i < 3; ++i)
+                    _colorCurves.push_back(linearCurve);
+                updateShaderParameters();
+            });
+            return true;
+        },
+        [&]() -> Values {
+            if (_colorCurves.empty())
+                return {0};
+            else
+                return {_colorCurves[0].size()};
+        },
+        {'n'});
 
     addAttribute("invertChannels",
         [&](const Values& args) {

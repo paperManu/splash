@@ -56,13 +56,6 @@ class Scene : public RootObject
 #if HAVE_GPHOTO
     friend ColorCalibrator;
 #endif
-    friend GuiControl;
-    friend GuiGlobalView;
-    friend GuiMedia;
-    friend GuiMeshes;
-    friend GuiNodeView;
-    friend GuiWarp;
-    friend GuiWidget;
 
   public:
     /**

@@ -114,6 +114,7 @@ target_sources(
     warp.cpp
     widget.cpp
     widget_control.cpp
+    widget_filters.cpp
     widget_global_view.cpp
     widget_graph.cpp
     widget_node_view.cpp
