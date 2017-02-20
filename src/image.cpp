@@ -307,7 +307,7 @@ bool Image::write(const std::string& filename)
     lock_guard<Spinlock> lock(_readMutex);
     if (filename.substr(strSize - 3, strSize) == "png")
     {
-        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.rawSize());
+        auto result = stbi_write_png(filename.c_str(), spec.width, spec.height, spec.channels, _image->data(), spec.width * spec.channels);
         return (result != 0);
     }
     else if (filename.substr(strSize - 3, strSize) == "bmp")
