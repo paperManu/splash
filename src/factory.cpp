@@ -8,7 +8,9 @@
 #include "./filter.h"
 #include "./geometry.h"
 #include "./image.h"
+#if HAVE_LINUX
 #include "./image_v4l2.h"
+#endif
 #if HAVE_GPHOTO
 #include "./image_gphoto.h"
 #endif
@@ -143,6 +145,7 @@ void Factory::registerObjects()
     _objectBook["geometry"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); }, BaseObject::Category::MISC, "Geometry");
     _objectBook["image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); }, BaseObject::Category::IMAGE, "image");
 
+#if HAVE_LINUX
     _objectBook["image_v4l2"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
@@ -154,6 +157,7 @@ void Factory::registerObjects()
         },
         BaseObject::Category::IMAGE,
         "Video4Linux2 input device");
+#endif
 
     _objectBook["image_ffmpeg"] = Page(
         [&]() {
