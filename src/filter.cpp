@@ -216,7 +216,7 @@ void Filter::updateUniforms()
     auto shader = _screen->getShader();
 
     // Built-in uniforms
-    _filterUniforms["_time"] = Values({static_cast<int>(Timer::getTime() / 1000)});
+    _filterUniforms["_time"] = {static_cast<int>(Timer::getTime() / 1000)};
 
     // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
