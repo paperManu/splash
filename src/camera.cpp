@@ -671,19 +671,21 @@ void Camera::render()
                 auto object = objWeakPtr.lock();
                 auto points = object->getCalibrationPoints();
 
-                auto& worldMarker = _models["3d_marker"];
-
-                for (auto& point : points)
+                auto worldMarker = _models.find("3d_marker");
+                if (worldMarker != _models.end())
                 {
-                    glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
-                    worldMarker->setAttribute("scale", {WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
-                    worldMarker->setAttribute("position", {point.x, point.y, point.z});
-                    worldMarker->setAttribute("color", OBJECT_MARKER);
+                    for (auto& point : points)
+                    {
+                        glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.x, point.y, point.z, 1.0);
+                        worldMarker->second->setAttribute("scale", {WORLDMARKER_SCALE * 0.66 * std::max(transformedPoint.z, 1.0) * _fov});
+                        worldMarker->second->setAttribute("position", {point.x, point.y, point.z});
+                        worldMarker->second->setAttribute("color", OBJECT_MARKER);
 
-                    worldMarker->activate();
-                    worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
-                    worldMarker->draw();
-                    worldMarker->deactivate();
+                        worldMarker->second->activate();
+                        worldMarker->second->setViewProjectionMatrix(viewMatrix, projectionMatrix);
+                        worldMarker->second->draw();
+                        worldMarker->second->deactivate();
+                    }
                 }
             }
         }
@@ -691,42 +693,44 @@ void Camera::render()
         // Draw the calibration points
         if (_displayCalibration)
         {
-            auto& worldMarker = _models["3d_marker"];
-            auto& screenMarker = _models["2d_marker"];
-
-            for (int i = 0; i < _calibrationPoints.size(); ++i)
+            auto worldMarker = _models.find("3d_marker");
+            auto screenMarker = _models.find("2d_marker");
+            if (worldMarker != _models.end() && screenMarker != _models.end())
             {
-                auto& point = _calibrationPoints[i];
-
-                worldMarker->setAttribute("position", {point.world.x, point.world.y, point.world.z});
-                glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
-                worldMarker->setAttribute("scale", {WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
-                if (_selectedCalibrationPoint == i)
-                    worldMarker->setAttribute("color", MARKER_SELECTED);
-                else if (point.isSet)
-                    worldMarker->setAttribute("color", MARKER_SET);
-                else
-                    worldMarker->setAttribute("color", MARKER_ADDED);
-
-                worldMarker->activate();
-                worldMarker->setViewProjectionMatrix(viewMatrix, projectionMatrix);
-                worldMarker->draw();
-                worldMarker->deactivate();
-
-                if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
+                for (int i = 0; i < _calibrationPoints.size(); ++i)
                 {
+                    auto& point = _calibrationPoints[i];
 
-                    screenMarker->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
-                    screenMarker->setAttribute("scale", {SCREENMARKER_SCALE});
+                    worldMarker->second->setAttribute("position", {point.world.x, point.world.y, point.world.z});
+                    glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
+                    worldMarker->second->setAttribute("scale", {WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
                     if (_selectedCalibrationPoint == i)
-                        screenMarker->setAttribute("color", SCREEN_MARKER_SELECTED);
+                        worldMarker->second->setAttribute("color", MARKER_SELECTED);
+                    else if (point.isSet)
+                        worldMarker->second->setAttribute("color", MARKER_SET);
                     else
-                        screenMarker->setAttribute("color", SCREEN_MARKER_SET);
+                        worldMarker->second->setAttribute("color", MARKER_ADDED);
 
-                    screenMarker->activate();
-                    screenMarker->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
-                    screenMarker->draw();
-                    screenMarker->deactivate();
+                    worldMarker->second->activate();
+                    worldMarker->second->setViewProjectionMatrix(viewMatrix, projectionMatrix);
+                    worldMarker->second->draw();
+                    worldMarker->second->deactivate();
+
+                    if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
+                    {
+
+                        screenMarker->second->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
+                        screenMarker->second->setAttribute("scale", {SCREENMARKER_SCALE});
+                        if (_selectedCalibrationPoint == i)
+                            screenMarker->second->setAttribute("color", SCREEN_MARKER_SELECTED);
+                        else
+                            screenMarker->second->setAttribute("color", SCREEN_MARKER_SET);
+
+                        screenMarker->second->activate();
+                        screenMarker->second->setViewProjectionMatrix(dmat4(1.f), dmat4(1.f));
+                        screenMarker->second->draw();
+                        screenMarker->second->deactivate();
+                    }
                 }
             }
         }
@@ -1132,8 +1136,8 @@ void Camera::loadDefaultModels()
 #endif
             else
             {
-                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
-                continue;
+                Log::get() << Log::ERROR << "Camera::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
+                exit(1);
             }
         }
 
