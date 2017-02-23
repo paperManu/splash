@@ -136,6 +136,12 @@ class Shader : public BaseObject
     std::map<std::string, Values> getUniforms() const;
 
     /**
+     * Get the documentation for the uniforms based on the comments in GLSL code
+     * \return Return a map of uniforms and their documentation
+     */
+    std::unordered_map<std::string, std::string> getUniformsDocumentation() const { return _uniformsDocumentation; }
+
+    /**
      * \brief Set a shader source
      * \param src Shader string
      * \param type Shader type
@@ -197,6 +203,7 @@ class Shader : public BaseObject
         bool glBufferReady{false};
     };
     std::map<std::string, Uniform> _uniforms;
+    std::unordered_map<std::string, std::string> _uniformsDocumentation;
     std::vector<std::string> _uniformsToUpdate;
     std::vector<std::shared_ptr<Texture>> _textures; // Currently used textures
     std::string _currentProgramName{};

@@ -190,6 +190,11 @@ class Filter : public Texture
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();
+
+    /**
+     * Register attributes related to the default shader
+     */
+    void registerDefaultShaderAttributes();
 };
 
 } // end of namespace

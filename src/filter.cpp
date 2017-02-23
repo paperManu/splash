@@ -278,6 +278,9 @@ void Filter::setOutput()
     _screen->setAttribute("fill", {"filter"});
     auto virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
+
+    // Some attributes are only meant to be with the default shader
+    registerDefaultShaderAttributes();
 }
 
 /*************/
@@ -332,6 +335,7 @@ bool Filter::setFilterSource(const string& source)
 
     // Register the attributes corresponding to the shader uniforms
     auto uniforms = shader->getUniforms();
+    auto uniformsDocumentation = shader->getUniformsDocumentation();
     for (auto& u : uniforms)
     {
         // Uniforms starting with a underscore are kept hidden
@@ -350,6 +354,10 @@ bool Filter::setFilterSource(const string& source)
             },
             [=]() -> Values { return _filterUniforms[u.first]; },
             types);
+
+        auto documentation = uniformsDocumentation.find(u.first);
+        if (documentation != uniformsDocumentation.end())
+            setAttributeDescription(u.first, documentation->second);
     }
 
     return true;
@@ -388,6 +396,55 @@ void Filter::registerAttributes()
         {'s'});
     setAttributeDescription("pixelFormat", "Set the output pixel format (defaults to RGBA)");
 
+    addAttribute("filterSource",
+        [&](const Values& args) {
+            auto src = args[0].as<string>();
+            if (src.empty())
+                return true; // No shader specified
+            _shaderSource = src;
+            _shaderSourceFile = "";
+            addTask([=]() { setFilterSource(src); });
+            return true;
+        },
+        [&]() -> Values { return {_shaderSource}; },
+        {'s'});
+    setAttributeDescription("filterSource", "Set the fragment shader source for the filter");
+
+    addAttribute("fileFilterSource",
+        [&](const Values& args) {
+            auto srcFile = args[0].as<string>();
+            if (srcFile.empty())
+                return true; // No shader specified
+
+            ifstream in(srcFile, ios::in | ios::binary);
+            if (in)
+            {
+                string contents;
+                in.seekg(0, ios::end);
+                contents.resize(in.tellg());
+                in.seekg(0, ios::beg);
+                in.read(&contents[0], contents.size());
+                in.close();
+
+                _shaderSourceFile = srcFile;
+                _shaderSource = "";
+                addTask([=]() { setFilterSource(contents); });
+                return true;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << srcFile << Log::endl;
+                return false;
+            }
+        },
+        [&]() -> Values { return {_shaderSourceFile}; },
+        {'s'});
+    setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
+}
+
+/*************/
+void Filter::registerDefaultShaderAttributes()
+{
     addAttribute("blackLevel",
         [&](const Values& args) {
             auto blackLevel = args[0].as<float>();
@@ -535,51 +592,6 @@ void Filter::registerAttributes()
         },
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
-
-    addAttribute("filterSource",
-        [&](const Values& args) {
-            auto src = args[0].as<string>();
-            if (src.size() == 0)
-                return true; // No shader specified
-            _shaderSource = src;
-            _shaderSourceFile = "";
-            addTask([=]() { setFilterSource(src); });
-            return true;
-        },
-        [&]() -> Values { return {_shaderSource}; },
-        {'s'});
-    setAttributeDescription("filterSource", "Set the fragment shader source for the filter");
-
-    addAttribute("fileFilterSource",
-        [&](const Values& args) {
-            auto srcFile = args[0].as<string>();
-            if (srcFile.size() == 0)
-                return true; // No shader specified
-
-            ifstream in(srcFile, ios::in | ios::binary);
-            if (in)
-            {
-                string contents;
-                in.seekg(0, ios::end);
-                contents.resize(in.tellg());
-                in.seekg(0, ios::beg);
-                in.read(&contents[0], contents.size());
-                in.close();
-
-                _shaderSourceFile = srcFile;
-                _shaderSource = "";
-                addTask([=]() { setFilterSource(contents); });
-                return true;
-            }
-            else
-            {
-                Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << srcFile << Log::endl;
-                return false;
-            }
-        },
-        [&]() -> Values { return {_shaderSourceFile}; },
-        {'s'});
-    setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
 }
 
 } // end of namespace
