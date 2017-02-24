@@ -268,7 +268,7 @@ void Filter::setOutput()
 
     _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->setAttribute("filtering", {1});
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr, "RGBA");
+    _outTexture->reset(512, 512, "RGBA", nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -301,24 +301,7 @@ void Filter::updateColorDepth()
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
     auto spec = _outTexture->getSpec();
 
-    auto internalFormat = GL_RGBA;
-    if (_pixelFormat == "RGB")
-        internalFormat = _render16bits ? GL_RGB16 : GL_RGB8;
-    else if (_pixelFormat == "RG")
-        internalFormat = _render16bits ? GL_RG16 : GL_RG8;
-    else if (_pixelFormat == "R")
-        internalFormat = _render16bits ? GL_R16 : GL_R8;
-    else if (_pixelFormat == "YUYV")
-        internalFormat = GL_RG;
-    else if (_pixelFormat == "UYVY")
-        internalFormat = GL_RG;
-    else
-    {
-        _pixelFormat = "RGBA";
-        internalFormat = _render16bits ? GL_RGBA16 : GL_RGBA8;
-    }
-
-    _outTexture->reset(GL_TEXTURE_2D, 0, internalFormat, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr, _pixelFormat);
+    _outTexture->reset(spec.width, spec.height, _pixelFormat, nullptr);
 
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);

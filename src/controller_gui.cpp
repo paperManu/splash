@@ -64,7 +64,7 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
 
     {
         auto texture = make_shared<Texture_Image>(s);
-        texture->reset(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, _width, _height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+        texture->reset(_width, _height, "D", 0);
         texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
         _depthTexture = move(texture);
@@ -72,7 +72,7 @@ Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
 
     {
         auto texture = make_shared<Texture_Image>(s);
-        texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, _width, _height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+        texture->reset(_width, _height, "RGBA", NULL);
         texture->setResizable(1);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
         _outTexture = move(texture);

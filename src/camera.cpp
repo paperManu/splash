@@ -917,7 +917,7 @@ void Camera::setOutputNbr(int nbr)
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(_root, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(_root, 512, 512, "D", nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
 
@@ -935,7 +935,7 @@ void Camera::setOutputNbr(int nbr)
             auto texture = make_shared<Texture_Image>(_root);
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
-            texture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+            texture->reset(512, 512, "RGBA", nullptr);
             glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
             _outTextures.push_back(texture);
         }
@@ -957,9 +957,9 @@ void Camera::updateColorDepth()
         auto spec = _outTextures[i]->getSpec();
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
         if (_render16bits)
-            _outTextures[i]->reset(GL_TEXTURE_2D, 0, GL_RGBA16, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_SHORT, nullptr);
+            _outTextures[i]->reset(spec.width, spec.height, "RGBA16", nullptr);
         else
-            _outTextures[i]->reset(GL_TEXTURE_2D, 0, GL_RGBA, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+            _outTextures[i]->reset(spec.width, spec.height, "RGBA", nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures[i]->getTexId(), 0);
     }
 
