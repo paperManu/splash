@@ -42,7 +42,6 @@
 #include "./resizable_array.h"
 #include "./serialized_object.h"
 #include "./spinlock.h"
-#include "./threadpool.h"
 #include "./timer.h"
 #include "./value.h"
 

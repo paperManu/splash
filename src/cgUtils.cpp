@@ -1,6 +1,8 @@
 #include "cgUtils.h"
 
-#include "threadpool.h"
+#include <future>
+
+using namespace std;
 
 namespace Splash
 {
@@ -8,13 +10,9 @@ namespace Splash
 /*************/
 void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* info)
 {
-    std::vector<unsigned int> threadIds;
+    vector<future<void>> threads;
     for (unsigned int i = 0; i < count; ++i)
-    {
-        threadIds.push_back(SThread::pool.enqueue([=]() { func(p, i); }));
-    }
-
-    SThread::pool.waitThreads(threadIds);
+        threads.push_back(async(launch::async, [=]() { func(p, i); }));
 }
 
 /*************/

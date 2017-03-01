@@ -1,6 +1,7 @@
 #include "./camera.h"
 
 #include <fstream>
+#include <future>
 #include <limits>
 
 #include <glm/ext.hpp>
@@ -20,7 +21,6 @@
 #include "./shader.h"
 #include "./texture.h"
 #include "./texture_image.h"
-#include "./threadpool.h"
 #include "./timer.h"
 
 #define SCISSOR_WIDTH 8
@@ -218,69 +218,70 @@ bool Camera::doCalibration()
     vector<double> selectedValues(9);
 
     mutex gslMutex;
-    vector<unsigned int> threadIds;
     // First step: we try a bunch of starts and keep the best one
-    for (int index = 0; index < 4; ++index)
     {
-        threadIds.push_back(SThread::pool.enqueue([&]() {
-            gsl_multimin_fminimizer* minimizer;
-            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
+        vector<future<void>> threads;
+        for (int index = 0; index < 4; ++index)
+        {
+            threads.push_back(async(launch::async, [&]() {
+                gsl_multimin_fminimizer* minimizer;
+                minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
 
-            for (double s = 0.0; s <= 1.0; s += 0.2)
-                for (double t = 0.0; t <= 1.0; t += 0.2)
-                {
-                    gsl_vector* step = gsl_vector_alloc(9);
-                    gsl_vector_set(step, 0, 10.0);
-                    gsl_vector_set(step, 1, 0.1);
-                    gsl_vector_set(step, 2, 0.1);
-                    for (int i = 3; i < 9; ++i)
-                        gsl_vector_set(step, i, 0.1);
-
-                    gsl_vector* x = gsl_vector_alloc(9);
-                    gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
-                    gsl_vector_set(x, 1, s);
-                    gsl_vector_set(x, 2, t);
-                    for (int i = 0; i < 3; ++i)
+                for (double s = 0.0; s <= 1.0; s += 0.2)
+                    for (double t = 0.0; t <= 1.0; t += 0.2)
                     {
-                        gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                        gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * 360.f);
-                    }
+                        gsl_vector* step = gsl_vector_alloc(9);
+                        gsl_vector_set(step, 0, 10.0);
+                        gsl_vector_set(step, 1, 0.1);
+                        gsl_vector_set(step, 2, 0.1);
+                        for (int i = 3; i < 9; ++i)
+                            gsl_vector_set(step, i, 0.1);
 
-                    gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
-
-                    size_t iter = 0;
-                    int status = GSL_CONTINUE;
-                    double localMinimum = numeric_limits<double>::max();
-                    while (status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
-                    {
-                        iter++;
-                        status = gsl_multimin_fminimizer_iterate(minimizer);
-                        if (status)
+                        gsl_vector* x = gsl_vector_alloc(9);
+                        gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
+                        gsl_vector_set(x, 1, s);
+                        gsl_vector_set(x, 2, t);
+                        for (int i = 0; i < 3; ++i)
                         {
-                            Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
-                            break;
+                            gsl_vector_set(x, i + 3, eyeOriginal[i]);
+                            gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * 360.f);
                         }
 
-                        status = gsl_multimin_test_size(minimizer->size, 1e-6);
-                        localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+                        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+                        size_t iter = 0;
+                        int status = GSL_CONTINUE;
+                        double localMinimum = numeric_limits<double>::max();
+                        while (status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
+                        {
+                            iter++;
+                            status = gsl_multimin_fminimizer_iterate(minimizer);
+                            if (status)
+                            {
+                                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                                break;
+                            }
+
+                            status = gsl_multimin_test_size(minimizer->size, 1e-6);
+                            localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+                        }
+
+                        lock_guard<mutex> lock(gslMutex);
+                        if (localMinimum < minValue)
+                        {
+                            minValue = localMinimum;
+                            for (int i = 0; i < 9; ++i)
+                                selectedValues[i] = gsl_vector_get(minimizer->x, i);
+                        }
+
+                        gsl_vector_free(x);
+                        gsl_vector_free(step);
                     }
 
-                    lock_guard<mutex> lock(gslMutex);
-                    if (localMinimum < minValue)
-                    {
-                        minValue = localMinimum;
-                        for (int i = 0; i < 9; ++i)
-                            selectedValues[i] = gsl_vector_get(minimizer->x, i);
-                    }
-
-                    gsl_vector_free(x);
-                    gsl_vector_free(step);
-                }
-
-            gsl_multimin_fminimizer_free(minimizer);
-        }));
+                gsl_multimin_fminimizer_free(minimizer);
+            }));
+        }
     }
-    SThread::pool.waitThreads(threadIds);
 
     // Second step: we improve on the best result from the previous step
     for (int index = 0; index < 8; ++index)

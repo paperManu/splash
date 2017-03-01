@@ -16,7 +16,6 @@
 #include "./osUtils.h"
 #include "./queue.h"
 #include "./scene.h"
-#include "./threadpool.h"
 #include "./timer.h"
 
 // Included only for creating the documentation through the --info flag
@@ -47,9 +46,6 @@ World::~World()
 #endif
     if (_innerSceneThread.joinable())
         _innerSceneThread.join();
-
-    // This has to be done last. Any object using the threadpool should be destroyed before
-    SThread::pool.waitAllThreads();
 }
 
 /*************/
@@ -71,34 +67,35 @@ void World::run()
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
-            vector<unsigned int> threadIds;
             unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
-            for (auto& o : _objects)
             {
-                auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
-                // This prevents the map structure to be modified in the threads
-                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
-                if (!serializedObjectIt.second)
-                    continue; // Error while inserting the object in the map
+                vector<future<void>> threads;
+                for (auto& o : _objects)
+                {
+                    auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                    // This prevents the map structure to be modified in the threads
+                    auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
+                    if (!serializedObjectIt.second)
+                        continue; // Error while inserting the object in the map
 
-                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
-                    // Update the local objects
-                    o.second->update();
+                    threads.push_back(async(launch::async, [=, &o]() {
+                        // Update the local objects
+                        o.second->update();
 
-                    // Send them the their destinations
-                    if (bufferObj.get() != nullptr)
-                    {
-                        if (bufferObj->wasUpdated()) // if the buffer has been updated
+                        // Send them the their destinations
+                        if (bufferObj.get() != nullptr)
                         {
-                            auto obj = bufferObj->serialize();
-                            bufferObj->setNotUpdated();
-                            if (obj)
-                                serializedObjectIt.first->second = obj;
+                            if (bufferObj->wasUpdated()) // if the buffer has been updated
+                            {
+                                auto obj = bufferObj->serialize();
+                                bufferObj->setNotUpdated();
+                                if (obj)
+                                    serializedObjectIt.first->second = obj;
+                            }
                         }
-                    }
-                }));
+                    }));
+                }
             }
-            SThread::pool.waitThreads(threadIds);
             Timer::get() >> "serialize";
 
             // Wait for previous buffers to be uploaded
@@ -1324,39 +1321,6 @@ void World::registerAttributes()
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
 #if HAVE_LINUX
-    addAttribute("forceCoreAffinity",
-        [&](const Values& args) {
-            _enforceCoreAffinity = args[0].as<int>();
-
-            if (!_enforceCoreAffinity)
-                return true;
-
-            int sceneCount = _scenes.size();
-            int sceneAffinity = 1;
-            for (auto& s : _scenes)
-            {
-                sendMessage(s.first, "sceneAffinity", {sceneAffinity, sceneCount + 1});
-                sceneAffinity++;
-            }
-
-            addTask([=]() {
-                if (Utils::setAffinity({0}))
-                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to run on the first CPU core" << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set World CPU core affinity" << Log::endl;
-
-                vector<int> cores{};
-                for (int i = sceneCount + 1; i < Utils::getCoreCount(); ++i)
-                    cores.push_back(i);
-                SThread::pool.setAffinity(cores);
-            });
-
-            return true;
-        },
-        [&]() -> Values { return {(int)_enforceCoreAffinity}; },
-        {'n'});
-    setAttributeDescription("forceCoreAffinity", "Enforce the World and Scene loops onto their own cores. The thread pool will use the remaining cores.");
-
     addAttribute("forceRealtime",
         [&](const Values& args) {
             _enforceRealtime = args[0].as<int>();
@@ -1416,7 +1380,6 @@ void World::registerAttributes()
 
     addAttribute("getAttributeDescription",
         [&](const Values& args) {
-
             auto objectName = args[0].as<string>();
             auto attrName = args[1].as<string>();
 
@@ -1461,7 +1424,7 @@ void World::registerAttributes()
     addAttribute("loadConfig",
         [&](const Values& args) {
             string filename = args[0].as<string>();
-            SThread::pool.enqueueWithoutId([=]() {
+            runAsyncTask([=]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {

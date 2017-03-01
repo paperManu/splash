@@ -5,7 +5,6 @@
 #include <unistd.h>
 
 #include "log.h"
-#include "threadpool.h"
 #include "timer.h"
 
 using namespace std;
@@ -410,13 +409,13 @@ void Image_GPhoto::registerAttributes()
 
     // Actions
     addAttribute("capture", [&](const Values& args) {
-        SThread::pool.enqueue([&]() { capture(); });
+        runAsyncTask([=]() { capture(); });
         return true;
     });
     setAttributeDescription("capture", "Ask for the camera to shoot");
 
     addAttribute("detect", [&](const Values& args) {
-        SThread::pool.enqueue([&]() { detectCameras(); });
+        runAsyncTask([=]() { detectCameras(); });
         return true;
     });
     setAttributeDescription("detect", "Ask for camera detection");

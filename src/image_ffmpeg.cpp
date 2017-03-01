@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <functional>
+#include <future>
 #include <numeric>
 #if HAVE_LINUX
 #include <fcntl.h>
@@ -12,7 +13,6 @@
 #include "./cgUtils.h"
 #include "./log.h"
 #include "./osUtils.h"
-#include "./threadpool.h"
 #include "./timer.h"
 
 using namespace std;
@@ -617,6 +617,15 @@ void Image_FFmpeg::seek(float seconds)
 }
 
 /*************/
+void Image_FFmpeg::seek_async(float seconds)
+{
+    _seekFuture = async(launch::async, [=]() {
+        seek(seconds);
+        _timeJump = false;
+    });
+}
+
+/*************/
 void Image_FFmpeg::videoDisplayLoop()
 {
     auto previousTime = 0;
@@ -695,10 +704,7 @@ void Image_FFmpeg::videoDisplayLoop()
                         _timeJump = true;
                         _elapsedTime = _currentTime / 1e6;
                         localQueue.clear();
-                        SThread::pool.enqueueWithoutId([=]() {
-                            seek(_elapsedTime);
-                            _timeJump = false;
-                        });
+                        seek_async(_elapsedTime);
                     }
                     continue;
                 }
@@ -797,8 +803,7 @@ void Image_FFmpeg::registerAttributes()
     addAttribute("seek",
         [&](const Values& args) {
             float seconds = args[0].as<float>();
-            SThread::pool.enqueueWithoutId([=]() { seek(seconds); });
-
+            seek_async(seconds);
             _seekTime = seconds;
             return true;
         },

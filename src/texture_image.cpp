@@ -1,11 +1,10 @@
 #include "texture_image.h"
 
+#include <string>
+
 #include "image.h"
 #include "log.h"
-#include "threadpool.h"
 #include "timer.h"
-
-#include <string>
 
 #define SPLASH_TEXTURE_COPY_THREADS 2
 
@@ -102,6 +101,7 @@ bool Texture_Image::linkTo(const std::shared_ptr<BaseObject>& obj)
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         auto img = dynamic_pointer_cast<Image>(obj);
+        img->setDirty();
         _img = weak_ptr<Image>(img);
         return true;
     }
@@ -494,16 +494,15 @@ void Texture_Image::update()
         {
             img->lock();
 
-            _pboCopyThreadIds.clear();
             int stride = SPLASH_TEXTURE_COPY_THREADS;
             int size = imageDataSize;
             for (int i = 0; i < stride - 1; ++i)
             {
-                _pboCopyThreadIds.push_back(SThread::pool.enqueue(
-                    [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
+                _pboCopyThreads.push_back(
+                    async(launch::async, [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
             }
-            _pboCopyThreadIds.push_back(
-                SThread::pool.enqueue([=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
+            _pboCopyThreads.push_back(
+                async(launch::async, [=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
         }
     }
 
@@ -532,10 +531,9 @@ void Texture_Image::update()
 /*************/
 void Texture_Image::flushPbo()
 {
-    if (_pboCopyThreadIds.size() != 0)
+    if (!_pboCopyThreads.empty())
     {
-        SThread::pool.waitThreads(_pboCopyThreadIds);
-        _pboCopyThreadIds.clear();
+        _pboCopyThreads.clear(); // This waits for the threaded copies to finish
 
         glUnmapNamedBuffer(_pbos[_pboReadIndex]);
 

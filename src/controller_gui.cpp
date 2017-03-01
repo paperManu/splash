@@ -10,7 +10,6 @@
 #include "./scene.h"
 #include "./texture.h"
 #include "./texture_image.h"
-#include "./threadpool.h"
 #include "./timer.h"
 #include "./widget_control.h"
 #include "./widget_filters.h"

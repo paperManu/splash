@@ -281,6 +281,13 @@ void BaseObject::init()
 }
 
 /*************/
+void BaseObject::runAsyncTask(function<void(void)> func)
+{
+    lock_guard<mutex> lockTasks(_asyncTaskMutex);
+    _asyncTask = async(launch::async, func);
+}
+
+/*************/
 void BaseObject::registerAttributes()
 {
     addAttribute("setName",

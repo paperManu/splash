@@ -26,6 +26,9 @@
 #ifndef SPLASH_IMAGE_GPHOTO_H
 #define SPLASH_IMAGE_GPHOTO_H
 
+#include <string>
+#include <vector>
+
 #include <gphoto2/gphoto2.h>
 
 #include "config.h"

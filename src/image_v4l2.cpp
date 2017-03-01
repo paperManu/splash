@@ -225,7 +225,7 @@ void Image_V4L2::captureThreadFunc()
                                                 string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
 
                     if (_autosetResolution && (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height))
-                        SThread::pool.enqueueWithoutId([=]() { setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height}); });
+                        runAsyncTask([=]() { setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height}); });
 
                     _sourceFormatAsString = sourceFormatAsString;
                 }

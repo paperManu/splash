@@ -26,6 +26,7 @@
 #define SPLASH_TEXTURE_IMAGE_H
 
 #include <chrono>
+#include <future>
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
@@ -175,7 +176,7 @@ class Texture_Image : public Texture
     int _multisample{0};
     bool _cubemap{false};
     int _pboReadIndex{0};
-    std::vector<unsigned int> _pboCopyThreadIds;
+    std::vector<std::future<void>> _pboCopyThreads;
 
     // Store some texture parameters
     static constexpr int _texLevels{4};

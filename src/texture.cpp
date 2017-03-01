@@ -2,7 +2,6 @@
 
 #include "image.h"
 #include "log.h"
-#include "threadpool.h"
 #include "timer.h"
 
 #include <string>

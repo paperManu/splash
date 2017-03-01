@@ -108,7 +108,6 @@ target_sources(
     shader.cpp
     texture.cpp
     texture_image.cpp
-    threadpool.cpp
     userInput.cpp
     userInput_dragndrop.cpp
     userInput_joystick.cpp

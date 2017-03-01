@@ -43,7 +43,6 @@
 #if HAVE_OSX
 #include "./texture_syphon.h"
 #endif
-#include "./threadpool.h"
 #include "./timer.h"
 #include "./virtual_probe.h"
 #include "./warp.h"

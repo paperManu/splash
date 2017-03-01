@@ -17,7 +17,8 @@
 
 #include "./image_gphoto.h"
 #include "./scene.h"
-#include "./threadpool.h"
+#include "./log.h"
+#include "./timer.h"
 
 using namespace std;
 

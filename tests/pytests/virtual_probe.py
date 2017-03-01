@@ -3,7 +3,7 @@ import splash
 import os
 from time import sleep
 
-description = "Replace the Image object multiple times"
+description = "Test VirtualProbe object"
 
 def run():
     splash.set_world_attribute("addObject", ["virtual_probe", "probe"])

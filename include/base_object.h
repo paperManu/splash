@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <future>
 #include <json/json.h>
 #include <list>
 #include <map>
@@ -354,6 +355,9 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     std::unordered_map<std::string, AttributeFunctor> _attribFunctions; //!< Map of all attributes
     bool _updatedParams{true};                                          //!< True if the parameters have been updated and the object needs to reflect these changes
 
+    std::future<void> _asyncTask{};
+    std::mutex _asyncTaskMutex{};
+
     bool _ghost{false}; //!< True if the object ghosts an object in another scene
 
     /**
@@ -392,6 +396,12 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param obj Parent object
      */
     void unlinkFromParent(BaseObject* obj);
+
+    /**
+     * Run a task asynchronously, one task at a time
+     * \param func Function to run
+     */
+    void runAsyncTask(std::function<void(void)> func);
 
     /**
      * \brief Register new attributes
