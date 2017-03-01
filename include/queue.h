@@ -104,8 +104,9 @@ class Queue : public BufferObject
     {
         std::string type{"image"};
         std::string filename{""};
-        int64_t start{0}; // in useconds
-        int64_t stop{0};  // in useconds
+        int64_t start{0};    // in useconds
+        int64_t stop{0};     // in useconds
+        bool freeRun{false}; // if true, never use master clock
         Values args{};
     };
     std::vector<Source> _playlist{}; // Holds a vector of [type, filename, start, stop, args], which is also a Values

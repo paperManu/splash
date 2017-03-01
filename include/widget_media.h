@@ -43,10 +43,11 @@ class GuiMedia : public GuiWidget
     std::map<std::string, std::string> _mediaTypes;
     std::map<std::string, std::string> _mediaTypesReversed{}; // Created from the previous map
 
-    Values _newMedia{"image", "", 0.f, 0.f};
+    Values _newMedia{"image", "", 0.f, 0.f, 0};
     int _newMediaTypeIndex{0};
     float _newMediaStart{0.f};
     float _newMediaStop{0.f};
+    bool _newMediaFreeRun{false};
 
     std::list<std::shared_ptr<BaseObject>> getSceneMedia();
     std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);

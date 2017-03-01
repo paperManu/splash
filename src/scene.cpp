@@ -737,7 +737,7 @@ void Scene::init(std::string name)
     auto glVersion = findGLVersion();
     if (glVersion[0] == 0)
     {
-        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (higher than 3.2)" << Log::endl;
+        Log::get() << Log::ERROR << "Scene::" << __FUNCTION__ << " - Unable to find a suitable GL version (higher than 4.3)" << Log::endl;
         _isInitialized = false;
         return;
     }
