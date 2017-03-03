@@ -25,6 +25,7 @@
 #ifndef SPLASH_SINK_H
 #define SPLASH_SINK_H
 
+#include <future>
 #include <memory>
 #include <mutex>
 
@@ -83,9 +84,9 @@ class Sink : public BaseObject
     ImageBufferSpec _spec{};
     ImageBuffer _image{};
     std::mutex _lockPixels;
-    std::thread _handlePixelsThread{};
 
-    GLuint _pbos[2];
+    uint32_t _pboCount{3};
+    std::vector<GLuint> _pbos{};
     int _pboWriteIndex{0};
     GLubyte* _mappedPixels{nullptr};
 

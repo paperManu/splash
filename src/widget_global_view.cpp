@@ -4,8 +4,6 @@
 #include <fstream>
 #include <imgui.h>
 
-#include "scene.h"
-
 using namespace std;
 
 namespace Splash
@@ -212,14 +210,9 @@ void GuiGlobalView::setJoystick(const vector<float>& axes, const vector<uint8_t>
 vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 {
     auto rtMatrices = vector<glm::dmat4>();
-
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == "camera")
-            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == "camera")
-            rtMatrices.push_back(dynamic_pointer_cast<Camera>(obj.second)->computeViewMatrix());
+    auto cameras = getObjectsOfType("camera");
+    for (auto& camera : cameras)
+        rtMatrices.push_back(dynamic_pointer_cast<Camera>(camera)->computeViewMatrix());
 
     return rtMatrices;
 }
@@ -228,14 +221,9 @@ vector<glm::dmat4> GuiGlobalView::getCamerasRTMatrices()
 void GuiGlobalView::nextCamera()
 {
     vector<shared_ptr<Camera>> cameras;
-
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == "camera")
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == "camera")
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    auto listOfCameras = getObjectsOfType("camera");
+    for (auto& camera : listOfCameras)
+        cameras.push_back(dynamic_pointer_cast<Camera>(camera));
 
     // Empty previous camera parameters
     _previousCameraParameters.clear();
@@ -292,22 +280,11 @@ void GuiGlobalView::revertCalibration()
     if (_previousCameraParameters.size() > 1)
         _previousCameraParameters.pop_back();
 
-    _camera->setAttribute("eye", params.eye);
-    _camera->setAttribute("target", params.target);
-    _camera->setAttribute("up", params.up);
-    _camera->setAttribute("fov", params.fov);
-    _camera->setAttribute("principalPoint", params.principalPoint);
-
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    for (auto& obj : scene->_ghostObjects)
-        if (_camera->getName() == obj.second->getName())
-        {
-            setObject(_camera->getName(), "eye", {params.eye[0], params.eye[1], params.eye[2]});
-            setObject(_camera->getName(), "target", {params.target[0], params.target[1], params.target[2]});
-            setObject(_camera->getName(), "up", {params.up[0], params.up[1], params.up[2]});
-            setObject(_camera->getName(), "fov", {params.fov[0]});
-            setObject(_camera->getName(), "principalPoint", {params.principalPoint[0], params.principalPoint[1]});
-        }
+    setObject(_camera->getName(), "eye", {params.eye[0], params.eye[1], params.eye[2]});
+    setObject(_camera->getName(), "target", {params.target[0], params.target[1], params.target[2]});
+    setObject(_camera->getName(), "up", {params.up[0], params.up[1], params.up[2]});
+    setObject(_camera->getName(), "fov", {params.fov[0]});
+    setObject(_camera->getName(), "principalPoint", {params.principalPoint[0], params.principalPoint[1]});
 }
 
 /*************/
@@ -366,40 +343,22 @@ void GuiGlobalView::doCalibration()
 /*************/
 void GuiGlobalView::propagateCalibration()
 {
-    bool isDistant{false};
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    for (auto& obj : scene->_ghostObjects)
-        if (_camera->getName() == obj.second->getName())
-            isDistant = true;
-
-    if (isDistant)
+    vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
+    for (auto& p : properties)
     {
-        vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
-        for (auto& p : properties)
-        {
-            Values values;
-            _camera->getAttribute(p, values);
-            setObject(_camera->getName(), p, values);
-        }
+        Values values;
+        _camera->getAttribute(p, values);
+        setObject(_camera->getName(), p, values);
     }
 }
 
 /*************/
 void GuiGlobalView::hideOtherCameras(bool hide)
 {
-    vector<shared_ptr<Camera>> cameras;
-
     if (hide == _camerasHidden)
         return;
 
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    for (auto& obj : scene->_objects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-    for (auto& obj : scene->_ghostObjects)
-        if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-
+    auto cameras = getObjectsOfType("camera");
     for (auto& cam : cameras)
         if (cam.get() != _camera.get())
             setObject(cam->getName(), "hide", {(int)hide});
@@ -683,13 +642,9 @@ vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
         _guiCamera->drawModelOnce("camera", matrix);
     cameras.push_back(_guiCamera);
 
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-    for (auto& obj : scene->_objects)
-        if (obj.second->getType() == "camera")
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == "camera")
-            cameras.push_back(dynamic_pointer_cast<Camera>(obj.second));
+    auto listOfCameras = getObjectsOfType("camera");
+    for (auto& camera : listOfCameras)
+        cameras.push_back(dynamic_pointer_cast<Camera>(camera));
 
     return cameras;
 }

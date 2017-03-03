@@ -547,8 +547,6 @@ shared_ptr<BaseObject> RootObject::unregisterObject(const string& name)
 /*************/
 bool RootObject::set(const string& name, const string& attrib, const Values& args, bool async)
 {
-    lock_guard<recursive_mutex> lock(_setMutex);
-
     if (name == _name || name == SPLASH_ALL_PEERS)
         return setAttribute(attrib, args);
 
@@ -578,8 +576,6 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
 /*************/
 void RootObject::setFromSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
-    lock_guard<recursive_mutex> lock(_setMutex);
-
     auto objectIt = _objects.find(name);
     if (objectIt != _objects.end())
     {

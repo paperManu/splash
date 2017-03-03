@@ -94,7 +94,7 @@ target_sources(
     gpuBuffer.cpp
     imageBuffer.cpp
     image.cpp
-    image_v4l2.cpp
+    image_ffmpeg.cpp
     link.cpp
     mesh_bezierPatch.cpp
     mesh.cpp
@@ -114,6 +114,7 @@ target_sources(
     warp.cpp
     widget.cpp
     widget_control.cpp
+    widget_filters.cpp
     widget_global_view.cpp
     widget_graph.cpp
     widget_node_view.cpp
@@ -133,16 +134,16 @@ if (APPLE)
     target_sources(
         splash-${API_VERSION} PRIVATE
 	    ../external/glad/compatibility/src/glad_compatibility.c
+        texture_syphon.cpp
+        texture_syphon_client.mm
     )
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 else()
     target_sources(
         splash-${API_VERSION} PRIVATE
 	    ../external/glad/core/src/glad_core.c
+        image_v4l2.cpp
     )
-endif()
-
-if (FFMPEG_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE image_ffmpeg.cpp)
 endif()
 
 if (GPHOTO_FOUND)
@@ -185,15 +186,6 @@ if (PYTHONLIBS_FOUND)
         splash-${API_VERSION} PRIVATE
         controller_pythonEmbedded.cpp
     )
-endif()
-
-if (APPLE)
-    target_sources(
-        splash-${API_VERSION} PRIVATE
-        texture_syphon.cpp
-        texture_syphon_client.mm
-    )
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 endif()
 
 # Distributed third parties first

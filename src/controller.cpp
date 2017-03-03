@@ -191,10 +191,10 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
 
     auto objects = list<shared_ptr<BaseObject>>();
     for (auto& obj : scene->_objects)
-        if (obj.second->getType() == type)
+        if (obj.second->getType() == type || type == "")
             objects.push_back(obj.second);
     for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == type)
+        if (obj.second->getType() == type || type == "")
             objects.push_back(obj.second);
 
     return objects;

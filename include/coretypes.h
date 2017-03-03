@@ -591,7 +591,7 @@ struct Value
         }
     }
 
-    int size()
+    int size() const
     {
         switch (_type)
         {

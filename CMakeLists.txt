@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.5.6
+    VERSION 0.5.8
     LANGUAGES C CXX
 )
 
@@ -70,6 +70,8 @@ pkg_search_module(SHMDATA shmdata-1.3)
 #
 # Configuration
 #
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGLM_FORCE_RADIANS")

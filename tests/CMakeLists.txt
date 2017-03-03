@@ -80,3 +80,12 @@ add_custom_command(OUTPUT integration_tests
     DEPENDS splash splash-scene
     )
 add_custom_target(check_integration DEPENDS integration_tests)
+
+#
+# Static analysis through CppCheck
+#
+add_custom_command(OUTPUT cppcheck_analysis
+    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/build_cppcheck.sh
+    COMMAND ${CMAKE_CURRENT_BINARY_DIR}/cppcheck/cppcheck --enable=warning,performance,unusedFunction --project=${CMAKE_CURRENT_BINARY_DIR}/../compile_commands.json 2> ${CMAKE_CURRENT_BINARY_DIR}/static_analysis_result.txt
+)
+add_custom_target(static_analysis DEPENDS cppcheck_analysis)

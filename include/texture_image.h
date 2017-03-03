@@ -44,30 +44,15 @@ class Texture_Image : public Texture
 {
   public:
     /**
-     * \brief Constructor
+     * Constructor
      * \param root Root object
-     * \param target Texture target
-     * \param level Mipmap level
-     * \param internalFormat Texture internal format
      * \param width Width
      * \param height Height
-     * \param border Texture border behavior
-     * \param format Texture format
-     * \param type Texture type
+     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
      */
     Texture_Image(std::weak_ptr<RootObject> root);
-    Texture_Image(std::weak_ptr<RootObject> root,
-        GLenum target,
-        GLint level,
-        GLint internalFormat,
-        GLsizei width,
-        GLsizei height,
-        GLint border,
-        GLenum format,
-        GLenum type,
-        const GLvoid* data,
-        std::string encoding = "");
+    Texture_Image(std::weak_ptr<RootObject> root, int width, int height, std::string pixelFormat, const GLvoid* data);
 
     /**
      * \brief Destructor
@@ -142,19 +127,13 @@ class Texture_Image : public Texture
     std::shared_ptr<Image> read();
 
     /**
-     * \brief Set the buffer size / type / internal format
-     * \param target Texture target
-     * \param level Mipmap level
-     * \param internalFormat Texture internal format
+     * Set the buffer size / type / internal format
      * \param width Width
      * \param height Height
-     * \param border Texture border behavior
-     * \param format Texture format
-     * \param type Texture type
+     * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
      */
-    void reset(
-        GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data, std::string encoding = "");
+    void reset(int width, int height, std::string pixelFormat, const GLvoid* data);
 
     /**
      * \brief Modify the size of the texture
@@ -190,8 +169,9 @@ class Texture_Image : public Texture
 
     // Store some texture parameters
     bool _filtering{false};
-    GLenum _texTarget{GL_TEXTURE_2D}, _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
-    GLint _texLevel{0}, _texInternalFormat{GL_CLAMP_TO_EDGE}, _texBorder{0};
+    GLenum _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
+    std::string _pixelFormat{"RGBA"};
+    GLint _texInternalFormat{GL_RGBA};
     GLint _glTextureWrap{GL_REPEAT};
 
     // And some temporary attributes

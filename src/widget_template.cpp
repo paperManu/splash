@@ -1,4 +1,4 @@
-#include "./widget_node_view.h"
+#include "./widget_template.h"
 
 #include <array>
 #include <fstream>

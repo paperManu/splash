@@ -93,11 +93,11 @@ void GuiMedia::render()
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
-                                float tmp = values[2].as<float>();
+                                float tmpFloat = values[2].as<float>();
                                 ImGui::PushID((idStack + "start").c_str());
-                                if (ImGui::InputFloat("", &tmp, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
-                                    source[2] = tmp;
+                                    source[2] = tmpFloat;
                                     updated = true;
                                 }
                                 if (ImGui::IsItemHovered())
@@ -107,15 +107,29 @@ void GuiMedia::render()
 
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
-                                tmp = values[3].as<float>();
+                                tmpFloat = values[3].as<float>();
                                 ImGui::PushID((idStack + "stop").c_str());
-                                if (ImGui::InputFloat("", &tmp, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
+                                if (ImGui::InputFloat("", &tmpFloat, 1.0f, 1.0f, 2, ImGuiInputTextFlags_EnterReturnsTrue))
                                 {
-                                    source[3] = tmp;
+                                    source[3] = tmpFloat;
                                     updated = true;
                                 }
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Stop time (s)");
+                                ImGui::PopID();
+                                ImGui::PopItemWidth();
+
+                                ImGui::SameLine();
+                                ImGui::PushItemWidth(32);
+                                bool tmpBool = values[4].as<bool>();
+                                ImGui::PushID((idStack + "freeRun").c_str());
+                                if (ImGui::Checkbox("", &tmpBool))
+                                {
+                                    source[4] = (int)tmpBool;
+                                    updated = true;
+                                }
+                                if (ImGui::IsItemHovered())
+                                    ImGui::SetTooltip("Freerun: if true, play this media even when paused");
                                 ImGui::PopID();
                                 ImGui::PopItemWidth();
 
@@ -179,6 +193,16 @@ void GuiMedia::render()
                             _newMedia[3] = _newMediaStop;
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Stop time (s)");
+                        ImGui::PopID();
+                        ImGui::PopItemWidth();
+
+                        ImGui::SameLine();
+                        ImGui::PushItemWidth(32);
+                        ImGui::PushID("newMediaFreeRun");
+                        if (ImGui::Checkbox("", &_newMediaFreeRun))
+                            _newMedia[4] = (int)_newMediaFreeRun;
+                        if (ImGui::IsItemHovered())
+                            ImGui::SetTooltip("Freerun: if true, play this media even when paused");
                         ImGui::PopID();
                         ImGui::PopItemWidth();
 
@@ -291,13 +315,11 @@ void GuiMedia::render()
 /*************/
 void GuiMedia::replaceMedia(string previousMedia, string type)
 {
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<BaseObject>>();
-    for (auto& objIt : scene->_objects)
+    auto objects = getObjectsOfType("");
+    for (auto& object : objects)
     {
-        auto& object = objIt.second;
         if (!object->getSavable())
             continue;
         auto linkedObjects = object->getLinkedObjects();
@@ -348,18 +370,17 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 list<shared_ptr<BaseObject>> GuiMedia::getFiltersForImage(const shared_ptr<BaseObject>& image)
 {
     auto filterList = list<shared_ptr<BaseObject>>();
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-
-    for (auto& obj : scene->_objects)
+    auto allFilters = getObjectsOfType("filter");
+    for (auto& obj : allFilters)
     {
-        if (obj.second->getType() != "filter")
+        if (obj->getType() != "filter")
             continue;
 
-        auto linkedImages = obj.second->getLinkedObjects();
+        auto linkedImages = obj->getLinkedObjects();
         auto matchingImage = find(linkedImages.begin(), linkedImages.end(), image);
 
         if (matchingImage != linkedImages.end())
-            filterList.push_back(obj.second);
+            filterList.push_back(obj);
     }
 
     return filterList;

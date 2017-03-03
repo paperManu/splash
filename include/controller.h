@@ -123,7 +123,7 @@ class ControllerObject : public BaseObject
     std::vector<std::string> getTypesFromCategory(const BaseObject::Category& category) const;
 
     /**
-     * \brief Get all object of given type
+     * \brief Get all object of given type. If empty, get all objects.
      * \param type Type to look for
      * \return Return a list of all objects of the given type
      */

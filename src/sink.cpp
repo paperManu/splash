@@ -17,21 +17,23 @@ Sink::Sink(weak_ptr<RootObject> root)
 
     if (_root.expired())
         return;
-
-    glGenBuffers(2, _pbos);
 }
 
 /*************/
 Sink::~Sink()
 {
-    lock_guard<mutex> lock(_lockPixels);
     if (_root.expired())
         return;
 
-    if (_handlePixelsThread.joinable())
-        _handlePixelsThread.join();
+    if (_mappedPixels)
+    {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
+        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+        _mappedPixels = nullptr;
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+    }
 
-    glDeleteBuffers(2, _pbos);
+    glDeleteBuffers(_pbos.size(), _pbos.data());
 }
 
 /*************/
@@ -64,13 +66,7 @@ void Sink::unlinkFrom(shared_ptr<BaseObject> obj)
 /*************/
 void Sink::render()
 {
-    if (_handlePixelsThread.joinable())
-        _handlePixelsThread.join();
-
-    _handlePixelsThread = thread([&]() {
-        lock_guard<mutex> lock(_lockPixels);
-        handlePixels(reinterpret_cast<char*>(_mappedPixels), _spec);
-    });
+    handlePixels(reinterpret_cast<char*>(_mappedPixels), _spec);
 }
 
 /*************/
@@ -83,20 +79,24 @@ void Sink::update()
     if (textureSpec.rawSize() == 0)
         return;
 
-    if (_spec != textureSpec)
+    _inputTexture->bind();
+    if (!_pbos.empty())
     {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
+        if (_mappedPixels)
+        {
+            glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+            _mappedPixels = nullptr;
+        }
+    }
+
+    if (_spec != textureSpec || _pbos.size() != _pboCount)
+    {
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         updatePbos(textureSpec.width, textureSpec.height, textureSpec.pixelBytes());
         _spec = textureSpec;
         _image = ImageBuffer(_spec);
-    }
-
-    _inputTexture->bind();
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
-    if (_mappedPixels)
-    {
-        lock_guard<mutex> lock(_lockPixels); // Ensure that copy tasks are finished
-        glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
-        _mappedPixels = nullptr;
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
     }
 
     if (_spec.bpp == 32)
@@ -113,7 +113,7 @@ void Sink::update()
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     _inputTexture->unbind();
 
-    _pboWriteIndex = (_pboWriteIndex + 1) % 2;
+    _pboWriteIndex = (_pboWriteIndex + 1) % _pbos.size();
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, _pbos[_pboWriteIndex]);
     _mappedPixels = (GLubyte*)glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, _spec.rawSize(), GL_MAP_READ_BIT);
@@ -123,17 +123,35 @@ void Sink::update()
 /*************/
 void Sink::updatePbos(int width, int height, int bytes)
 {
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_READ);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_READ);
+    if (!_pbos.empty())
+        glDeleteBuffers(_pbos.size(), _pbos.data());
+
+    _pbos.resize(_pboCount);
+    glGenBuffers(_pbos.size(), _pbos.data());
+
+    for (int i = 0; i < _pbos.size(); ++i)
+    {
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[i]);
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_READ);
+    }
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    _pboWriteIndex = 0;
 }
 
 /*************/
 void Sink::registerAttributes()
 {
     BaseObject::registerAttributes();
+
+    addAttribute("bufferCount",
+        [&](const Values& args) {
+            _pboCount = max(args[0].as<int>(), 2);
+            return true;
+        },
+        [&]() -> Values { return {(int)_pboCount}; },
+        {'n'});
+    setAttributeDescription("bufferCount", "Number of GPU buffers to use for data download to CPU memory");
 }
 
 } // end of namespace

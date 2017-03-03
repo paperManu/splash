@@ -216,7 +216,18 @@ void Filter::updateUniforms()
     auto shader = _screen->getShader();
 
     // Built-in uniforms
-    _filterUniforms["_time"] = Values({static_cast<int>(Timer::getTime() / 1000)});
+    _filterUniforms["_time"] = {static_cast<int>(Timer::getTime() / 1000)};
+
+    if (!_colorCurves.empty())
+    {
+        Values tmpCurves;
+        for (int i = 0; i < _colorCurves[0].size(); ++i)
+            for (int j = 0; j < _colorCurves.size(); ++j)
+                tmpCurves.push_back(_colorCurves[j][i].as<float>());
+        Values curves;
+        curves.push_back(tmpCurves);
+        shader->setAttribute("uniform", {"_colorCurves", curves});
+    }
 
     // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
@@ -257,7 +268,7 @@ void Filter::setOutput()
 
     _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->setAttribute("filtering", {1});
-    _outTexture->reset(GL_TEXTURE_2D, 0, GL_RGBA, 512, 512, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr, "RGBA");
+    _outTexture->reset(512, 512, "RGBA", nullptr);
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -267,6 +278,23 @@ void Filter::setOutput()
     _screen->setAttribute("fill", {"filter"});
     auto virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
+
+    // Some attributes are only meant to be with the default shader
+    registerDefaultShaderAttributes();
+}
+
+/*************/
+void Filter::updateShaderParameters()
+{
+    if (!_shaderSource.empty() || !_shaderSourceFile.empty())
+        return;
+
+    if (!_colorCurves.empty()) // Validity of color curve has been checked earlier
+        _screen->setAttribute("fill", {"filter", "COLOR_CURVE_COUNT " + to_string(static_cast<int>(_colorCurves[0].size()))});
+
+    // This is a trick to force the shader compilation
+    _screen->activate();
+    _screen->deactivate();
 }
 
 /*************/
@@ -276,24 +304,7 @@ void Filter::updateColorDepth()
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
     auto spec = _outTexture->getSpec();
 
-    auto internalFormat = GL_RGBA;
-    if (_pixelFormat == "RGB")
-        internalFormat = _render16bits ? GL_RGB16 : GL_RGB8;
-    else if (_pixelFormat == "RG")
-        internalFormat = _render16bits ? GL_RG16 : GL_RG8;
-    else if (_pixelFormat == "R")
-        internalFormat = _render16bits ? GL_R16 : GL_R8;
-    else if (_pixelFormat == "YUYV")
-        internalFormat = GL_RG;
-    else if (_pixelFormat == "UYVY")
-        internalFormat = GL_RG;
-    else
-    {
-        _pixelFormat = "RGBA";
-        internalFormat = _render16bits ? GL_RGBA16 : GL_RGBA8;
-    }
-
-    _outTexture->reset(GL_TEXTURE_2D, 0, internalFormat, spec.width, spec.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr, _pixelFormat);
+    _outTexture->reset(spec.width, spec.height, _pixelFormat, nullptr);
 
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -324,6 +335,7 @@ bool Filter::setFilterSource(const string& source)
 
     // Register the attributes corresponding to the shader uniforms
     auto uniforms = shader->getUniforms();
+    auto uniformsDocumentation = shader->getUniformsDocumentation();
     for (auto& u : uniforms)
     {
         // Uniforms starting with a underscore are kept hidden
@@ -342,6 +354,10 @@ bool Filter::setFilterSource(const string& source)
             },
             [=]() -> Values { return _filterUniforms[u.first]; },
             types);
+
+        auto documentation = uniformsDocumentation.find(u.first);
+        if (documentation != uniformsDocumentation.end())
+            setAttributeDescription(u.first, documentation->second);
     }
 
     return true;
@@ -380,6 +396,55 @@ void Filter::registerAttributes()
         {'s'});
     setAttributeDescription("pixelFormat", "Set the output pixel format (defaults to RGBA)");
 
+    addAttribute("filterSource",
+        [&](const Values& args) {
+            auto src = args[0].as<string>();
+            if (src.empty())
+                return true; // No shader specified
+            _shaderSource = src;
+            _shaderSourceFile = "";
+            addTask([=]() { setFilterSource(src); });
+            return true;
+        },
+        [&]() -> Values { return {_shaderSource}; },
+        {'s'});
+    setAttributeDescription("filterSource", "Set the fragment shader source for the filter");
+
+    addAttribute("fileFilterSource",
+        [&](const Values& args) {
+            auto srcFile = args[0].as<string>();
+            if (srcFile.empty())
+                return true; // No shader specified
+
+            ifstream in(srcFile, ios::in | ios::binary);
+            if (in)
+            {
+                string contents;
+                in.seekg(0, ios::end);
+                contents.resize(in.tellg());
+                in.seekg(0, ios::beg);
+                in.read(&contents[0], contents.size());
+                in.close();
+
+                _shaderSourceFile = srcFile;
+                _shaderSource = "";
+                addTask([=]() { setFilterSource(contents); });
+                return true;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << srcFile << Log::endl;
+                return false;
+            }
+        },
+        [&]() -> Values { return {_shaderSourceFile}; },
+        {'s'});
+    setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
+}
+
+/*************/
+void Filter::registerDefaultShaderAttributes()
+{
     addAttribute("blackLevel",
         [&](const Values& args) {
             auto blackLevel = args[0].as<float>();
@@ -446,6 +511,56 @@ void Filter::registerAttributes()
         {'n'});
     setAttributeDescription("colorTemperature", "Set the color temperature correction for the linked texture");
 
+    addAttribute("colorCurves",
+        [&](const Values& args) {
+            int pointCount = 0;
+            for (auto& v : args)
+                if (pointCount == 0)
+                    pointCount = v.size();
+                else if (pointCount != v.size())
+                    return false;
+
+            if (pointCount < 2)
+                return false;
+
+            addTask([=]() {
+                _colorCurves = args;
+                updateShaderParameters();
+            });
+            return true;
+        },
+        [&]() -> Values { return _colorCurves; },
+        {'v', 'v', 'v'});
+
+    addAttribute("colorCurveAnchors",
+        [&](const Values& args) {
+            auto count = args[0].as<int>();
+
+            if (count < 2)
+                return false;
+            if (!_colorCurves.empty() && _colorCurves[0].size() == count)
+                return true;
+
+            Values linearCurve;
+            for (int i = 0; i < count; ++i)
+                linearCurve.push_back(static_cast<float>(i) / (static_cast<float>(count - 1)));
+
+            addTask([=]() {
+                _colorCurves.clear();
+                for (int i = 0; i < 3; ++i)
+                    _colorCurves.push_back(linearCurve);
+                updateShaderParameters();
+            });
+            return true;
+        },
+        [&]() -> Values {
+            if (_colorCurves.empty())
+                return {0};
+            else
+                return {_colorCurves[0].size()};
+        },
+        {'n'});
+
     addAttribute("invertChannels",
         [&](const Values& args) {
             auto enable = args[0].as<int>();
@@ -477,51 +592,6 @@ void Filter::registerAttributes()
         },
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
-
-    addAttribute("filterSource",
-        [&](const Values& args) {
-            auto src = args[0].as<string>();
-            if (src.size() == 0)
-                return true; // No shader specified
-            _shaderSource = src;
-            _shaderSourceFile = "";
-            addTask([=]() { setFilterSource(src); });
-            return true;
-        },
-        [&]() -> Values { return {_shaderSource}; },
-        {'s'});
-    setAttributeDescription("filterSource", "Set the fragment shader source for the filter");
-
-    addAttribute("fileFilterSource",
-        [&](const Values& args) {
-            auto srcFile = args[0].as<string>();
-            if (srcFile.size() == 0)
-                return true; // No shader specified
-
-            ifstream in(srcFile, ios::in | ios::binary);
-            if (in)
-            {
-                string contents;
-                in.seekg(0, ios::end);
-                contents.resize(in.tellg());
-                in.seekg(0, ios::beg);
-                in.read(&contents[0], contents.size());
-                in.close();
-
-                _shaderSourceFile = srcFile;
-                _shaderSource = "";
-                addTask([=]() { setFilterSource(contents); });
-                return true;
-            }
-            else
-            {
-                Log::get() << Log::WARNING << __FUNCTION__ << " - Unable to load file " << srcFile << Log::endl;
-                return false;
-            }
-        },
-        [&]() -> Values { return {_shaderSourceFile}; },
-        {'s'});
-    setAttributeDescription("fileFilterSource", "Set the fragment shader source for the filter from a file");
 }
 
 } // end of namespace

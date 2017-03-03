@@ -76,9 +76,12 @@ void Queue::update()
         {
             _startTime = _startTime + (_currentTime - previousTime);
             _currentTime = previousTime;
-            if (_currentSource)
-                _currentSource->setAttribute("pause", {1});
-            return;
+            if (!_playlist[_currentSourceIndex].freeRun)
+            {
+                if (_currentSource)
+                    _currentSource->setAttribute("pause", {1});
+                return;
+            }
         }
         else if (_currentSource)
             _currentSource->setAttribute("pause", {0});
@@ -119,8 +122,10 @@ void Queue::update()
         }
         else
         {
-            if (!_currentSource || _currentSource->getType() != _playlist[_currentSourceIndex].type)
-                _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create(_playlist[_currentSourceIndex].type));
+            auto& sourceParameters = _playlist[_currentSourceIndex];
+
+            if (!_currentSource || _currentSource->getType() != sourceParameters.type)
+                _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create(sourceParameters.type));
 
             if (_currentSource)
                 _playing = true;
@@ -129,23 +134,27 @@ void Queue::update()
             dynamic_pointer_cast<Image>(_currentSource)->zero();
             dynamic_pointer_cast<Image>(_currentSource)->setName(_name + DISTANT_NAME_SUFFIX);
 
-            _currentSource->setAttribute("file", {_playlist[_currentSourceIndex].filename});
+            _currentSource->setAttribute("file", {sourceParameters.filename});
 
-            if (_useClock)
+            if (_useClock && !sourceParameters.freeRun)
             {
                 // If we use the master clock, set a timeshift to be correctly placed in the video
                 // (as the source gets its clock from the same Timer)
-                _currentSource->setAttribute("timeShift", {-(float)_playlist[_currentSourceIndex].start / 1e6});
+                _currentSource->setAttribute("timeShift", {-(float)sourceParameters.start / 1e6});
                 _currentSource->setAttribute("useClock", {1});
             }
+            else
+            {
+                _currentSource->setAttribute("useClock", {0});
+            }
 
-            _world.lock()->sendMessage(_name, "source", {_playlist[_currentSourceIndex].type});
+            _world.lock()->sendMessage(_name, "source", {sourceParameters.type});
 
-            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << _playlist[_currentSourceIndex].filename << Log::endl;
+            Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << sourceParameters.filename << Log::endl;
         }
     }
 
-    if (!_useClock && _seeked)
+    if (!_useClock && !_playlist[_currentSourceIndex].freeRun && _seeked)
     {
         // If we don't use the master clock, we want to seek accordingly in the file
         _currentSource->setAttribute("seek", {(float)(_currentTime - _playlist[_currentSourceIndex].start) / 1e6});
@@ -293,14 +302,15 @@ void Queue::registerAttributes()
             {
                 auto src = it.as<Values>();
 
-                if (src.size() >= 4) // We need at least type, name, start and stop for each input
+                if (src.size() >= 5) // We need at least type, name, start and stop for each input
                 {
                     Source source;
                     source.type = src[0].as<string>();
                     source.filename = src[1].as<string>();
                     source.start = (int64_t)(src[2].as<float>() * 1e6);
                     source.stop = (int64_t)(src[3].as<float>() * 1e6);
-                    for (auto idx = 4; idx < src.size(); ++idx)
+                    source.freeRun = src[4].as<bool>();
+                    for (auto idx = 5; idx < src.size(); ++idx)
                         source.args.push_back(src[idx]);
 
                     _playlist.push_back(source);
@@ -322,6 +332,7 @@ void Queue::registerAttributes()
                 source.push_back(src.filename);
                 source.push_back((double)src.start / 1e6);
                 source.push_back((double)src.stop / 1e6);
+                source.push_back((int)src.freeRun);
                 for (auto& v : src.args)
                     source.push_back(v);
 

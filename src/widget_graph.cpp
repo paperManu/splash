@@ -1,15 +1,12 @@
-#include "./widget_text_box.h"
+#include "./widget_graph.h"
 
 #include <imgui.h>
-
-#include "./scene.h"
 
 using namespace std;
 
 namespace Splash
 {
 
-/*************/
 /*************/
 void GuiGraph::render()
 {

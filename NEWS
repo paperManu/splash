@@ -1,6 +1,26 @@
 Splash release notes
 ===================
 
+Splash 0.5.8 (2017-03-02)
+-------------------------
+New features:
+* Added support for RGB correction curves in Filter
+* Added a static_analysis target, using cppcheck. Also added cppcheck t o gitlab CI
+* Added a freerun parameter to media in queue
+
+Improvements:
+* Small performance improvements
+* Splash now exits with an error if the default 3D models can not be found
+* Attributes are now ordered in the GUI
+* Refactoring/cleanup of Texture_Image
+* Filter: comments places right after uniforms declaration are used as comments in the GUI
+* Removed _setMutex, as it was replaced with synced tasks(with addTask)
+
+Bug fixed:
+* Fixed various random issues in Image_FFmpeg
+* Fixed issue with PNG saving
+* Fixed build on OSX
+
 Splash 0.5.6 (2017-02-10)
 -------------------------
 New features:

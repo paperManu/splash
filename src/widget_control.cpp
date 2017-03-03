@@ -1,8 +1,9 @@
-#include "./widget_text_box.h"
+#include "./widget_control.h"
 
 #include <imgui.h>
 
 #include "./scene.h"
+#include "./widget_node_view.h"
 
 using namespace std;
 
@@ -99,18 +100,7 @@ void GuiControl::render()
 
         if (_targetObjectName != "")
         {
-            auto scene = dynamic_pointer_cast<Scene>(_root.lock());
-
-            bool isDistant = false;
-            if (scene->_ghostObjects.find(_targetObjectName) != scene->_ghostObjects.end())
-                isDistant = true;
-
-            unordered_map<string, Values> attributes;
-            if (!isDistant)
-                attributes = scene->_objects[_targetObjectName]->getAttributes(true);
-            else
-                attributes = scene->_ghostObjects[_targetObjectName]->getAttributes(true);
-
+            auto attributes = getObjectAttributes(_targetObjectName);
             drawAttributes(_targetObjectName, attributes);
 
             ImGui::Spacing();

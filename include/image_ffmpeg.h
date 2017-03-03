@@ -93,12 +93,11 @@ class Image_FFmpeg : public Image
 
     // Frame size history, used to keep the frame buffer smaller than _maximumBufferSize
     std::vector<int64_t> _framesSize{};
-    int64_t _maximumBufferSize{1 << 29};
+    int64_t _maximumBufferSize{(int64_t)1 << 29};
 
     std::mutex _videoQueueMutex;
     std::mutex _videoSeekMutex;
     std::mutex _videoEndMutex;
-    std::condition_variable _videoQueueCondition;
 
     std::atomic_bool _timeJump{false};
 

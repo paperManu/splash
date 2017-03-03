@@ -22,21 +22,11 @@ Texture_Image::Texture_Image(std::weak_ptr<RootObject> root)
 }
 
 /*************/
-Texture_Image::Texture_Image(std::weak_ptr<RootObject> root,
-    GLenum target,
-    GLint level,
-    GLint internalFormat,
-    GLsizei width,
-    GLsizei height,
-    GLint border,
-    GLenum format,
-    GLenum type,
-    const GLvoid* data,
-    string encoding)
+Texture_Image::Texture_Image(std::weak_ptr<RootObject> root, GLsizei width, GLsizei height, string pixelFormat, const GLvoid* data)
     : Texture(root)
 {
     init();
-    reset(target, level, internalFormat, width, height, border, format, type, data, encoding);
+    reset(width, height, pixelFormat, data);
 }
 
 /*************/
@@ -63,15 +53,15 @@ Texture_Image& Texture_Image::operator=(const shared_ptr<Image>& img)
 void Texture_Image::bind()
 {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
-    glBindTexture(_texTarget, _glTex);
+    glBindTexture(GL_TEXTURE_2D, _glTex);
 }
 
 /*************/
 void Texture_Image::generateMipmap() const
 {
-    glBindTexture(_texTarget, _glTex);
+    glBindTexture(GL_TEXTURE_2D, _glTex);
     glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(_texTarget, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 /*************/
@@ -102,8 +92,7 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(
-    GLenum target, GLint level, GLint internalFormat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* data, string encoding)
+void Texture_Image::reset(int width, int height, string pixelFormat, const GLvoid* data)
 {
     if (width == 0 || height == 0)
     {
@@ -111,15 +100,72 @@ void Texture_Image::reset(
         return;
     }
 
-    glGetError();
+    // Fill texture parameters
+    _spec.width = width;
+    _spec.height = height;
+    if (pixelFormat.empty())
+        pixelFormat = "RGBA";
+    _pixelFormat = pixelFormat;
+
+    if (pixelFormat == "RGBA")
+    {
+        _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+        _texInternalFormat = GL_RGBA;
+        _texFormat = GL_RGBA;
+        _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
+    }
+    else if (pixelFormat == "sRGBA")
+    {
+        _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+        _texInternalFormat = GL_SRGB8_ALPHA8;
+        _texFormat = GL_RGBA;
+        _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
+    }
+    else if (pixelFormat == "RGBA16")
+    {
+        _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
+        _texInternalFormat = GL_RGBA16;
+        _texFormat = GL_RGBA;
+        _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
+    }
+    else if (pixelFormat == "RGB")
+    {
+        _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
+        _texInternalFormat = GL_RGBA;
+        _texFormat = GL_RGB;
+        _texType = GL_UNSIGNED_BYTE;
+    }
+    else if (pixelFormat == "R16")
+    {
+        _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
+        _texInternalFormat = GL_R16;
+        _texFormat = GL_RED;
+        _texType = GL_UNSIGNED_SHORT;
+    }
+    else if (pixelFormat == "YUYV" || pixelFormat == "UYVY")
+    {
+        _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, pixelFormat);
+        _texInternalFormat = GL_RGBA;
+        _texFormat = GL_RGBA;
+        _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
+    }
+    else if (pixelFormat == "D")
+    {
+        _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
+        _texInternalFormat = GL_DEPTH_COMPONENT;
+        _texFormat = GL_DEPTH_COMPONENT;
+        _texType = GL_FLOAT;
+    }
+
+    // Create and initialize the texture
     if (_glTex == 0)
     {
         glGenTextures(1, &_glTex);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, _glTex);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
 
-        if (internalFormat == GL_DEPTH_COMPONENT)
+        if (_texInternalFormat == GL_DEPTH_COMPONENT)
         {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -146,52 +192,16 @@ void Texture_Image::reset(
             glPixelStorei(GL_PACK_ALIGNMENT, 4);
         }
 
-        glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-        glBindTexture(target, 0);
+        glTexImage2D(GL_TEXTURE_2D, 0, _texInternalFormat, width, height, 0, _texFormat, _texType, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     else
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(target, _glTex);
-        glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
-        glBindTexture(target, 0);
+        glBindTexture(GL_TEXTURE_2D, _glTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, _texInternalFormat, width, height, 0, _texFormat, _texType, data);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
-
-    _spec.width = width;
-    _spec.height = height;
-    if (encoding.empty())
-    {
-        if (internalFormat == GL_RGB && type == GL_UNSIGNED_BYTE)
-            _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-        else if (internalFormat == GL_RGBA && (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV))
-            _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-        else if (internalFormat == GL_RGBA16 && type == GL_UNSIGNED_SHORT)
-            _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
-        else if (internalFormat == GL_RED && type == GL_UNSIGNED_SHORT)
-            _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT8, "R");
-    }
-    else
-    {
-        if (encoding == "RGBA")
-            _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-        else if (encoding == "RGBA16")
-            _spec = ImageBufferSpec(width, height, 4, 64, ImageBufferSpec::Type::UINT8, "RGBA");
-        else if (encoding == "RGB")
-            _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-        else if (encoding == "R16")
-            _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT8, "R");
-        else if (encoding == "YUYV")
-            _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, "YUYV");
-        else if (encoding == "UYVY")
-            _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, "UYVY");
-    }
-
-    _texTarget = target;
-    _texLevel = level;
-    _texInternalFormat = internalFormat;
-    _texBorder = border;
-    _texFormat = format;
-    _texType = type;
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
@@ -204,7 +214,7 @@ void Texture_Image::resize(int width, int height)
     if (!_resizable)
         return;
     if (width != _spec.width || height != _spec.height)
-        reset(_texTarget, _texLevel, _texInternalFormat, width, height, _texBorder, _texFormat, _texType, 0);
+        reset(width, height, _pixelFormat, 0);
 }
 
 /*************/
@@ -212,7 +222,7 @@ void Texture_Image::unbind()
 {
 #ifdef DEBUG
     glActiveTexture((GLenum)_activeTexture);
-    glBindTexture(_texTarget, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 #endif
 }
 
@@ -533,8 +543,6 @@ void Texture_Image::init()
     glGetIntegerv(GL_MINOR_VERSION, &_glVersionMinor);
 
     _timestamp = Timer::getTime();
-
-    _texTarget = GL_TEXTURE_2D;
 
     glGenBuffers(2, _pbos);
 }

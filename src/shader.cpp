@@ -422,6 +422,11 @@ void Shader::parseUniforms(const std::string& src)
             if (name.find("[") != string::npos)
                 name = name.substr(0, name.find("["));
 
+            if (next.find("//") != string::npos)
+                _uniformsDocumentation[name] = next.substr(next.find("//") + 2);
+            else
+                _uniformsDocumentation[name] = "";
+
             Values values;
             if (_uniforms.find(name) != _uniforms.end())
                 values = _uniforms[name].values;

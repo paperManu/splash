@@ -499,8 +499,6 @@ class SplashSelectObject(Operator):
     bl_idname = "splash.select_object"
     bl_label = "Select an Object"
 
-    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
-
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
     current_node = None
 
@@ -523,8 +521,6 @@ class SplashSelectCamera(Operator):
     """Select a Camera"""
     bl_idname = "splash.select_camera"
     bl_label = "Select a camera"
-
-    filepath = bpy.props.StringProperty(subtype='FILE_PATH')
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
     current_node = None

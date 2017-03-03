@@ -705,7 +705,6 @@ class RootObject : public BaseObject
     std::shared_ptr<Link> _link;                                           //!< Link object for communicatin between World and Scene
     mutable std::recursive_mutex _objectsMutex;                            //!< Used in registration and unregistration of objects
     std::atomic_bool _objectsCurrentlyUpdated{false};                      //!< Prevents modification of objects from multiple places at the same time
-    mutable std::recursive_mutex _setMutex;                                //!< Attributes mutex
     std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects; //!< Map of all the objects
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link

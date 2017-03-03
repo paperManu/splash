@@ -114,7 +114,7 @@ void ImageBuffer::init(const ImageBufferSpec& spec)
 {
     _spec = spec;
 
-    uint32_t size = spec.width * spec.height * spec.bpp;
+    uint32_t size = spec.width * spec.height * spec.pixelBytes();
     _buffer.resize(size);
 }
 

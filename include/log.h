@@ -297,7 +297,7 @@ class Log
             std::ofstream logFile(SPLASH_LOG_FILE, std::ostream::out | std::ostream::app);
             if (logFile.good())
             {
-                logFile << timedMsg << std::endl;
+                logFile << timedMsg << "\n";
                 logFile.close();
             }
         }
@@ -326,7 +326,7 @@ class Log
         else if (msg.find("[ERROR]") != std::string::npos)
             msg.replace(msg.find("[ERROR]"), 7, "\033[31;1m[ERROR]\033[0m");
 
-        std::cout << msg << std::endl;
+        std::cout << msg << "\n";
     }
 };
 

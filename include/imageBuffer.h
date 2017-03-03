@@ -137,7 +137,7 @@ class ImageBufferSpec
      * \brief Get channel size in bytes
      * \return Return channel size
      */
-    int pixelBytes() { return bpp / 8; }
+    int pixelBytes() const { return bpp / 8; }
 
     /**
      * \brief Get image size in bytes

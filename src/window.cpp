@@ -409,7 +409,7 @@ void Window::setupRenderFBO()
 
     if (!_depthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(_root, GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 512, 512, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+        _depthTexture = make_shared<Texture_Image>(_root, 512, 512, "D", nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
     }
     else
@@ -423,7 +423,7 @@ void Window::setupRenderFBO()
     {
         _colorTexture = make_shared<Texture_Image>(_root);
         _colorTexture->setAttribute("filtering", {0});
-        _colorTexture->reset(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, _windowRect[2], _windowRect[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        _colorTexture->reset(_windowRect[2], _windowRect[3], "sRGBA", nullptr);
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
     }
     else
