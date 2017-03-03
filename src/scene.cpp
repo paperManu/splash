@@ -74,7 +74,6 @@ Scene::~Scene()
 
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
-    lock_guard<recursive_mutex> lockSet(_setMutex);         // We don't want our objects to be set while destroyed
     lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
 
     // Free objects cleanly
@@ -1145,19 +1144,23 @@ void Scene::registerAttributes()
     setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
 
     addAttribute("swapTest", [&](const Values& args) {
-        lock_guard<recursive_mutex> lock(_objectsMutex);
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "window")
-                dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
+        addTask([=]() {
+            lock_guard<recursive_mutex> lock(_objectsMutex);
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "window")
+                    dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTest", args);
+        });
         return true;
     });
     setAttributeDescription("swapTest", "Activate video swap test if set to 1");
 
     addAttribute("swapTestColor", [&](const Values& args) {
-        lock_guard<recursive_mutex> lock(_objectsMutex);
-        for (auto& obj : _objects)
-            if (obj.second->getType() == "window")
-                dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
+        addTask([=]() {
+            lock_guard<recursive_mutex> lock(_objectsMutex);
+            for (auto& obj : _objects)
+                if (obj.second->getType() == "window")
+                    dynamic_pointer_cast<Window>(obj.second)->setAttribute("swapTestColor", args);
+        });
         return true;
     });
     setAttributeDescription("swapTestColor", "Set the swap test color");
