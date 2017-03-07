@@ -17,18 +17,26 @@ void GuiControl::render()
     {
         // World control
         ImGui::Text("World configuration");
+        static auto looseClock = false;
+        if (ImGui::Checkbox("Loose master clock", &looseClock))
+            setGlobal("looseClock", {static_cast<int>(looseClock)});
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Loose clock: if activated, the master clock is only used as an indication, not a hard constraint");
+
         static auto worldFramerate = 60;
         if (ImGui::InputInt("World framerate", &worldFramerate, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             worldFramerate = std::max(worldFramerate, 0);
             setGlobal("framerate", {worldFramerate});
         }
+
         static auto syncTestFrameDelay = 0;
         if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
             setGlobal("swapTest", {syncTestFrameDelay});
         }
+
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

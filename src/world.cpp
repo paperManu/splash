@@ -1465,6 +1465,14 @@ void World::registerAttributes()
     setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
 #endif
 
+    addAttribute("looseClock",
+        [&](const Values& args) {
+            Timer::get().setLoose(args[0].as<bool>());
+            return true;
+        },
+        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
+        {'n'});
+
     addAttribute("pong",
         [&](const Values& args) {
             Timer::get() >> "pingScene " + args[0].as<string>();

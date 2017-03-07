@@ -66,6 +66,17 @@ class Timer
     void setDebug(bool d) { _isDebug = d; }
 
     /**
+     * \brief Set the master clock to be a loose contraint
+     * \param loose If true, the master clock is loose
+     */
+    void setLoose(bool loose) { _looseClock = loose; }
+
+    /**
+     * \brief Get whether the clock is loose or not
+     */
+    bool isLoose() const { return _looseClock; }
+
+    /**
      * \brief Start a duration measurement
      * \param name Duration name
      */
@@ -253,6 +264,9 @@ class Timer
         {
             std::lock_guard<Spinlock> lockClock(_clockMutex);
             _clock = clock;
+
+            if (_looseClock && clock[7].as<int>() != 1)
+                _lastMasterClockUpdate = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
         }
     }
 
@@ -300,6 +314,13 @@ class Timer
 
         paused = clock[7].as<int>();
 
+        if (_looseClock && paused)
+        {
+            time =
+                time + std::chrono::duration_cast<T>(std::chrono::steady_clock::now().time_since_epoch()).count() - std::chrono::duration_cast<T>(_lastMasterClockUpdate).count();
+            paused = false;
+        }
+
         return true;
     }
 
@@ -325,6 +346,8 @@ class Timer
     mutable Spinlock _clockMutex;
     bool _enabled{true};
     bool _isDebug{false};
+    bool _looseClock{false};
+    std::chrono::microseconds _lastMasterClockUpdate{};
     Values _clock;
 };
 
