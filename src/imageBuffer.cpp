@@ -33,6 +33,8 @@ string ImageBufferSpec::to_string()
     spec += ";";
     spec += format;
     spec += ";";
+    spec += std::to_string(static_cast<int>(videoFrame));
+    spec += ";";
 
     return spec;
 }
@@ -91,6 +93,11 @@ void ImageBufferSpec::from_string(const string& spec)
     roi = roi.substr(curr + 1);
     curr = roi.find(";");
     format = roi.substr(0, curr);
+
+    // Video frame
+    roi = roi.substr(curr + 1);
+    curr = roi.find(";");
+    videoFrame = static_cast<bool>(stoi(roi.substr(0, curr)));
 }
 
 /*************/

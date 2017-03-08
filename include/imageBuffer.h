@@ -100,6 +100,7 @@ class ImageBufferSpec
     uint8_t bpp{0};
     ImageBufferSpec::Type type{Type::UINT8};
     std::string format{};
+    bool videoFrame{true};
 
     inline bool operator==(const ImageBufferSpec& spec)
     {

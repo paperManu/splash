@@ -379,7 +379,7 @@ void Texture_Image::update()
     }
 
     // Update the textures if the format changed
-    if (spec != _spec)
+    if (spec != _spec || !spec.videoFrame)
     {
         // glTexStorage2D is immutable, so we have to delete the texture first
         glDeleteTextures(1, &_glTex);

@@ -247,6 +247,8 @@ bool Image::readFile(const string& filename)
     }
 
     auto spec = ImageBufferSpec(w, h, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
+    spec.videoFrame = false;
+
     auto img = ImageBuffer(spec);
     memcpy(img.data(), rawImage, w * h * 4);
     stbi_image_free(rawImage);
