@@ -315,7 +315,11 @@ void Texture_Image::update()
         }
         else if (spec.channels == 3 && spec.type == ImageBufferSpec::Type::UINT8)
         {
-            dataFormat = GL_UNSIGNED_BYTE;
+            if ((spec.width * 3) % 4 == 0)
+                dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
+            else
+                dataFormat = GL_UNSIGNED_BYTE;
+
             if (srgb[0].as<int>() > 0)
                 internalFormat = GL_SRGB8_ALPHA8;
             else
@@ -323,12 +327,22 @@ void Texture_Image::update()
         }
         else if (spec.channels == 1 && spec.type == ImageBufferSpec::Type::UINT16)
         {
-            dataFormat = GL_UNSIGNED_SHORT;
+            if (spec.width % 2 == 0)
+                dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
+            else
+                dataFormat = GL_UNSIGNED_SHORT;
+
             internalFormat = GL_R16;
         }
         else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
         {
-            dataFormat = GL_UNSIGNED_BYTE;
+            if (spec.width % 4 == 0)
+                dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
+            else if (spec.width % 2 == 0)
+                dataFormat = GL_UNSIGNED_SHORT;
+            else
+                dataFormat = GL_UNSIGNED_BYTE;
+
             internalFormat = GL_RG;
         }
         else
@@ -368,11 +382,8 @@ void Texture_Image::update()
     if (spec != _spec)
     {
         // glTexStorage2D is immutable, so we have to delete the texture first
-        if (_glVersionMajor >= 4 && _glVersionMinor >= 2)
-        {
-            glDeleteTextures(1, &_glTex);
-            glGenTextures(1, &_glTex);
-        }
+        glDeleteTextures(1, &_glTex);
+        glGenTextures(1, &_glTex);
 
         glBindTexture(GL_TEXTURE_2D, _glTex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, _glTextureWrap);
@@ -399,15 +410,8 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
             img->lock();
-            if (_glVersionMajor >= 4 && _glVersionMinor >= 2)
-            {
-                glTexStorage2D(GL_TEXTURE_2D, 3, internalFormat, spec.width, spec.height);
-                glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
-            }
-            else
-            {
-                glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, spec.width, spec.height, 0, glChannelOrder, dataFormat, img->data());
-            }
+            glTexStorage2D(GL_TEXTURE_2D, 3, internalFormat, spec.width, spec.height);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
             img->unlock();
         }
         else if (isCompressed)

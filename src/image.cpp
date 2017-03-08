@@ -236,7 +236,8 @@ bool Image::readFile(const string& filename)
     }
 
     int w, h, c;
-    uint8_t* rawImage = stbi_load(filename.c_str(), &w, &h, &c, 0);
+    // We force conversion to RGBA
+    uint8_t* rawImage = stbi_load(filename.c_str(), &w, &h, &c, 4);
 
     if (!rawImage)
     {
@@ -244,17 +245,9 @@ bool Image::readFile(const string& filename)
         return false;
     }
 
-    auto spec = ImageBufferSpec(w, h, c, 8 * c, ImageBufferSpec::Type::UINT8);
-    if (c == 1)
-        spec.format = "R";
-    else if (c == 3)
-        spec.format = "RGB";
-    else if (c == 4)
-        spec.format = "RGBA";
-    else
-        return false;
+    auto spec = ImageBufferSpec(w, h, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
     auto img = ImageBuffer(spec);
-    memcpy(img.data(), rawImage, w * h * c);
+    memcpy(img.data(), rawImage, w * h * 4);
     stbi_image_free(rawImage);
 
     lock_guard<Spinlock> lock(_writeMutex);
