@@ -54,7 +54,7 @@ class Factory
      * \param type Object type
      * \return Return a shared pointer to the created object
      */
-    std::shared_ptr<BaseObject> create(std::string type);
+    std::shared_ptr<BaseObject> create(const std::string& type);
 
     /**
      * \brief Get all creatable object types

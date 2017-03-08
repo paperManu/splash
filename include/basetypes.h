@@ -206,6 +206,7 @@ class BaseObject
     enum class Priority
     {
         NO_RENDER = -1,
+        MEDIA = 5,
         BLENDING = 10,
         PRE_FILTER = 15,
         FILTER = 20,
@@ -433,6 +434,18 @@ class BaseObject
     Priority getRenderingPriority() const { return (Priority)((int)_renderingPriority + _priorityShift); }
 
     /**
+     * Set the object's category
+     * \param category Category
+     */
+    void setCategory(Category cat) { _category = cat; }
+
+    /**
+     * Get the object's category
+     * \return Return the category
+     */
+    Category getCategory() const { return _category; }
+
+    /**
      * \brief Set the rendering priority for this object
      * Set BaseObject::getRenderingPriority() for precision about priority
      * \param int Desired priority
@@ -449,10 +462,11 @@ class BaseObject
     bool _savable{true}; //!< True if the object should be saved
 
   protected:
-    unsigned long _id{0};            //!< Internal ID of the object
-    std::string _type{"baseobject"}; //!< Internal type
-    std::string _remoteType{""};     //!< When the object root is a Scene, this is the type of the corresponding object in the World
-    std::string _name{""};           //!< Object name
+    unsigned long _id{0};               //!< Internal ID of the object
+    std::string _type{"baseobject"};    //!< Internal type
+    Category _category{Category::MISC}; //!< Object category, updated by the factory
+    std::string _remoteType{""};        //!< When the object root is a Scene, this is the type of the corresponding object in the World
+    std::string _name{""};              //!< Object name
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
     int _priorityShift{0};                            //!< Shift applied to rendering priority

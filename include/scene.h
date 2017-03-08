@@ -242,6 +242,7 @@ class Scene : public RootObject
     std::shared_ptr<BaseObject> _mouse{nullptr};
     std::shared_ptr<BaseObject> _joystick{nullptr};
     std::shared_ptr<BaseObject> _dragndrop{nullptr};
+    std::shared_ptr<BaseObject> _blender{nullptr};
 
 // Objects in charge of calibration
 #if HAVE_GPHOTO
@@ -273,9 +274,6 @@ class Scene : public RootObject
     GLuint _maxSwapBarriers{0};
 
     unsigned long _nextId{0};
-
-    //! Blender object
-    std::shared_ptr<BaseObject> _blender{nullptr};
 
     /**
      * \brief Find which OpenGL version is available (from a predefined list)

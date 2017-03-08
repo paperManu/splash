@@ -51,6 +51,11 @@ class Blender : public ControllerObject
      */
     void update();
 
+    /**
+     * Force blending computation at the next call to update()
+     */
+    void forceUpdate() { _blendingComputed = false; }
+
   private:
     bool _isSceneMaster{false};        //!< True if the root Scene is master
     std::string _blendingMode{"none"}; //!< Can be "none", "once" or "continuous"

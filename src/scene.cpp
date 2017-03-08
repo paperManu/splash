@@ -59,6 +59,13 @@ Scene::Scene(std::string name)
     _name = name;
     _factory = unique_ptr<Factory>(new Factory(_self));
 
+    _blender = make_shared<Blender>(_self);
+    if (_blender)
+    {
+        _blender->setName("blender");
+        _objects["blender"] = _blender;
+    }
+
     registerAttributes();
 
     init(_name);
@@ -421,6 +428,19 @@ void Scene::render()
         for (auto& obj : objPriority.second)
         {
             obj->update();
+
+            if (obj->getCategory() == BaseObject::Category::MESH)
+                if (obj->wasUpdated())
+                {
+                    // If a mesh has been updated, force blending update
+                    dynamic_pointer_cast<Blender>(_blender)->forceUpdate();
+                    obj->setNotUpdated();
+                }
+
+            if (obj->getCategory() == BaseObject::Category::IMAGE)
+                if (obj->wasUpdated())
+                    obj->setNotUpdated();
+
             obj->render();
         }
 
@@ -571,6 +591,7 @@ void Scene::setAsMaster(string configFilePath)
     _mouse = make_shared<Mouse>(_self);
     _joystick = make_shared<Joystick>(_self);
     _dragndrop = make_shared<DragNDrop>(_self);
+
     if (_keyboard)
         _objects["keyboard"] = _keyboard;
     if (_mouse)
@@ -891,36 +912,6 @@ void Scene::registerAttributes()
         return true;
     });
     setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
-
-    addAttribute("computeBlending",
-        [&](const Values& args) {
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-                shared_ptr<BaseObject> blender{nullptr};
-                auto blenderIt = find_if(_objects.begin(), _objects.end(), [](std::pair<std::string, std::shared_ptr<BaseObject>> obj) {
-                    if (obj.second->getType() == "blender")
-                        return true;
-                    else
-                        return false;
-                });
-
-                if (blenderIt == _objects.end())
-                {
-                    add("blender", "blender");
-                    blender = _objects["blender"];
-                }
-                else
-                {
-                    blender = blenderIt->second;
-                }
-
-                std::string blendingMode = args[0].as<string>();
-                blender->setAttribute("mode", args);
-            });
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {

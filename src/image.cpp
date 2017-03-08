@@ -26,6 +26,7 @@ Image::Image(weak_ptr<RootObject> root)
     : BufferObject(root)
 {
     init();
+    _renderingPriority = Priority::MEDIA;
 
     if (!root.expired() && root.lock()->getType() == "world")
         _worldObject = true;

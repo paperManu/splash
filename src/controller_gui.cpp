@@ -130,19 +130,24 @@ void Gui::unicodeChar(unsigned int unicodeChar)
 /*************/
 void Gui::computeBlending(bool once)
 {
-    if (_blendingActive)
+    auto blendingState = getObjectAttribute("blender", "mode");
+    string previousState = "none";
+    if (!blendingState.empty())
+        previousState = blendingState[0].as<string>();
+
+    if (previousState != "none")
     {
-        setGlobal("computeBlending", {"none"});
+        setObject("blender", "mode", {"none"});
         _blendingActive = false;
     }
     else if (once)
     {
-        setGlobal("computeBlending", {"once"});
+        setObject("blender", "mode", {"once"});
         _blendingActive = true;
     }
     else
     {
-        setGlobal("computeBlending", {"continuous"});
+        setObject("blender", "mode", {"continuous"});
         _blendingActive = true;
     }
 }

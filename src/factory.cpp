@@ -70,13 +70,16 @@ Factory::Factory(weak_ptr<RootObject> root)
 }
 
 /*************/
-shared_ptr<BaseObject> Factory::create(string type)
+shared_ptr<BaseObject> Factory::create(const string& type)
 {
     // Not all object types are listed here, only those which are available to the user are
     auto page = _objectBook.find(type);
     if (page != _objectBook.end())
     {
-        return page->second.builder();
+        auto object = page->second.builder();
+        if (object)
+            object->setCategory(page->second.objectCategory);
+        return object;
     }
     else
     {

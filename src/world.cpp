@@ -1241,16 +1241,6 @@ void World::registerAttributes()
     });
     setAttributeDescription("sceneLaunched", "Message sent by Scenes to confirm they are running");
 
-    addAttribute("computeBlending",
-        [&](const Values& args) {
-            _blendingMode = args[0].as<string>();
-            addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode}); });
-
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
-
     addAttribute("deleteObject",
         [&](const Values& args) {
             addTask([=]() {
