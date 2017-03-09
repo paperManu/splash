@@ -315,11 +315,7 @@ void Texture_Image::update()
         }
         else if (spec.channels == 3 && spec.type == ImageBufferSpec::Type::UINT8)
         {
-            if ((spec.width * 3) % 4 == 0)
-                dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-            else
-                dataFormat = GL_UNSIGNED_BYTE;
-
+            dataFormat = GL_UNSIGNED_BYTE;
             if (srgb[0].as<int>() > 0)
                 internalFormat = GL_SRGB8_ALPHA8;
             else
@@ -327,22 +323,12 @@ void Texture_Image::update()
         }
         else if (spec.channels == 1 && spec.type == ImageBufferSpec::Type::UINT16)
         {
-            if (spec.width % 2 == 0)
-                dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-            else
-                dataFormat = GL_UNSIGNED_SHORT;
-
+            dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_R16;
         }
         else if (spec.channels == 2 && spec.type == ImageBufferSpec::Type::UINT8)
         {
-            if (spec.width % 4 == 0)
-                dataFormat = GL_UNSIGNED_INT_8_8_8_8_REV;
-            else if (spec.width % 2 == 0)
-                dataFormat = GL_UNSIGNED_SHORT;
-            else
-                dataFormat = GL_UNSIGNED_BYTE;
-
+            dataFormat = GL_UNSIGNED_SHORT;
             internalFormat = GL_RG;
         }
         else
