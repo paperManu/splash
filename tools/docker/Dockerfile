@@ -6,7 +6,6 @@ RUN apt install --assume-yes \
     zip \
     build-essential \
     git-core \
-    subversion \
     cmake \
     automake \
     libtool \
@@ -16,7 +15,6 @@ RUN apt install --assume-yes \
     libgsl0-dev \
     libatlas3-base \
     libzmq3-dev \
-    libsnappy-dev \
     libgphoto2-dev \
     libgl1-mesa-dev \
     libxinerama-dev \

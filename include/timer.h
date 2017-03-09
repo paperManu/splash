@@ -277,7 +277,7 @@ class Timer
 
     /**
      * \brief Get the master clock time
-     * \param time Master clock time in us
+     * \param time Master clock time, unit based on template parameter
      * \param paused True if the clock is paused
      * \return Return true if the master clock is set
      */

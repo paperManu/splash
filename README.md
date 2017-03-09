@@ -57,7 +57,6 @@ Splash relies on a few libraries to get the job done. These libraries are:
 - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
 - [portaudio](http://portaudio.com/) to read and output audio,
 - [Python](https://python.org) for scripting capabilities,
-- [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
 - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
 
 A few more libraries are used as submodules in the git repository:
@@ -68,6 +67,7 @@ A few more libraries are used as submodules in the git repository:
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
 - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
 - [Piccante](https://github.com/banterle/piccante) to create HDR images,
+- [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
 - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - [stb_image](https://github.com/nothings/stb) to read images.
@@ -82,10 +82,9 @@ The current release of Splash has currently only been compiled and tested on Ubu
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
-    sudo apt install build-essential git-core subversion cmake automake libtool clang libxrandr-dev libxi-dev
-    sudo apt install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev
-    sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm
-    sudo apt install libavformat-dev libavcodec-dev libavutil-dev libswscale-dev portaudio19-dev
+    sudo apt install build-essential git-core cmake automake libtool clang libxrandr-dev libxi-dev
+    sudo apt install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libgphoto2-dev
+    sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev
 
     git clone git://github.com/paperManu/splash
     cd splash
@@ -123,7 +122,7 @@ The following steps will be using the port command from MacPorts, you may replac
 
 With MacPorts, install the following packages:
 
-    sudo port install libtool cmake git pkgconfig gstreamer1 python35 gsl zmq glfw glm ffmpeg portaudio snappy
+    sudo port install libtool cmake git pkgconfig gstreamer1 python35 gsl zmq glfw glm portaudio
 
 With Homebrew, install the following packages:
     

@@ -10,7 +10,8 @@ else
     CPU_COUNT=1
 fi
 
-cd ffmpeg
-./configure --enable-gpl --disable-doc --disable-ffserver --disable-ffplay --disable-ffprobe --disable-ffmpeg --prefix="$EXTERNALS_DIR/third_parties"
+cd snappy
+./autogen.sh
+./configure --prefix=${EXTERNALS_DIR}/third_parties --disable-shared
 make -j${CPU_COUNT}
 make install
