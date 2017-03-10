@@ -144,6 +144,13 @@ class ControllerObject : public BaseObject
     void setGlobal(const std::string& name, const Values& values = {}) const;
 
     /**
+     * Get the given configuration-related attribute
+     * \param attr Attribute name
+     * \return Return the attribute value
+     */
+    Values getGlobal(const std::string& attr) const;
+
+    /**
      * \brief Set the given attribute for the given object
      * \param name Object name
      * \param attr Attribute name

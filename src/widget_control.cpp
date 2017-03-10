@@ -18,6 +18,9 @@ void GuiControl::render()
         // World control
         ImGui::Text("World configuration");
         static auto looseClock = false;
+        auto looseClockValue = getGlobal("looseClock");
+        if (!looseClockValue.empty())
+            looseClock = looseClockValue[0].as<bool>();
         if (ImGui::Checkbox("Loose master clock", &looseClock))
             setGlobal("looseClock", {static_cast<int>(looseClock)});
         if (ImGui::IsItemHovered())

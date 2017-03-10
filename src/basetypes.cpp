@@ -664,9 +664,9 @@ void RootObject::runTasks()
     unique_lock<recursive_mutex> lockTasks(_taskMutex);
     decltype(_taskQueue) tasks;
     std::swap(tasks, _taskQueue);
+    lockTasks.unlock();
     for (auto& task : tasks)
         task();
-    lockTasks.unlock();
 
     unique_lock<mutex> lockRecurrsiveTasks(_recurringTaskMutex);
     for (auto& task : _recurringTasks)

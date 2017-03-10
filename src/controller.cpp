@@ -218,6 +218,21 @@ void ControllerObject::setGlobal(const string& name, const Values& values) const
 }
 
 /*************/
+Values ControllerObject::getGlobal(const string& attr) const
+{
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
+
+    // Do not lock permanently if no answer is received, if the attribute does not exist for example
+    // We wait for no more than 10000us
+    auto answer = scene->sendMessageToWorldWithAnswer("getWorldAttribute", {attr}, 10000);
+    if (!answer.empty())
+        answer.pop_front();
+    return answer;
+}
+
+/*************/
 void ControllerObject::setObject(const string& name, const string& attr, const Values& values) const
 {
     auto scene = dynamic_pointer_cast<Scene>(_root.lock());

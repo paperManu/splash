@@ -300,7 +300,7 @@ class Timer
     {
         if (_clock.size() == 0)
         {
-            paused = true;
+            paused = false;
             return false;
         }
 

@@ -1394,6 +1394,20 @@ void World::registerAttributes()
         {'s', 's'});
     setAttributeDescription("getAttributeDescription", "Ask the given object for the description of the given attribute");
 
+    addAttribute("getWorldAttribute",
+        [&](const Values& args) {
+            auto attrName = args[0].as<string>();
+            addTask([=]() {
+                Values attr;
+                getAttribute(attrName, attr);
+                attr.push_front("getWorldAttribute");
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", attr);
+            });
+            return true;
+        },
+        {'s'});
+    setAttributeDescription("getWorldAttribute", "Get a World's attribute and send it to the Scenes");
+
     addAttribute("loadConfig",
         [&](const Values& args) {
             string filename = args[0].as<string>();
