@@ -529,6 +529,9 @@ string World::getObjectsAttributesDescriptions()
     for (auto& type : types)
     {
         auto obj = localFactory.create(type);
+        if (!obj)
+            continue;
+
         auto description = obj->getAttributesDescriptions();
 
         int addedAttribute = 0;

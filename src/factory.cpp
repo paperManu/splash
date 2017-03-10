@@ -240,7 +240,7 @@ void Factory::registerObjects()
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
         [&]() {
-            if (!_isMasterScene)
+            if (!_isMasterScene && !_root.expired())
                 return shared_ptr<BaseObject>(nullptr);
             return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
         },
