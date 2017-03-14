@@ -115,6 +115,20 @@ class Factory
     bool _isMasterScene{false};              //!< True if the root is the master Scene
     std::map<std::string, Page> _objectBook; //!< List of all creatable objects
 
+    std::unordered_map<std::string, std::unordered_map<std::string, Values>> _defaults{}; //!< Default values
+
+    /**
+     * \brief Helper function to convert Json::Value to Splash::Values
+     * \param values JSon to be processed
+     * \return Return a Values converted from the JSon
+     */
+    Values jsonToValues(const Json::Value& values);
+
+    /**
+     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in coretypes.h)
+     */
+    void loadDefaults();
+
     /**
      * |brief Registers the available objects inside the _objectBook
      */

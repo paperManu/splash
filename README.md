@@ -98,7 +98,7 @@ You can now try launching Splash:
 
     splash --help
 
-Lastly, if you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
+If you want to have access to realtime scheduling within Splash, you need to create a group "realtime", add yourself to it and set some limits:
 
     sudo addgroup realtime
     sudo adduser $USER realtime
@@ -109,6 +109,8 @@ And if you want the logs to be written to /var/log/splash.log:
     sudo adduser $USER syslog
 
 Then log out and log back in.
+
+If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/splashrc](data/splashrc)
 
 And that's it, you can move on the the [Walkthrough](https://github.com/paperManu/splash/wiki/Walkthrough) page.
 

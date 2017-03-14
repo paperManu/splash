@@ -1,5 +1,7 @@
 #include "./factory.h"
 
+#include <json/json.h>
+
 #include "./camera.h"
 #if HAVE_GPHOTO
 #include "./colorcalibrator.h"
@@ -67,7 +69,84 @@ Factory::Factory(weak_ptr<RootObject> root)
             _isMasterScene = true;
     }
 
+    loadDefaults();
     registerObjects();
+}
+
+/*************/
+void Factory::loadDefaults()
+{
+    auto defaultEnv = getenv(SPLASH_DEFAULTS_FILE_ENV);
+    if (!defaultEnv)
+        return;
+
+    auto filename = string(defaultEnv);
+    ifstream in(filename, ios::in | ios::binary);
+    string contents;
+    if (in)
+    {
+        in.seekg(0, ios::end);
+        contents.resize(in.tellg());
+        in.seekg(0, ios::beg);
+        in.read(&contents[0], contents.size());
+        in.close();
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
+        return;
+    }
+
+    Json::Value config;
+    Json::Reader reader;
+
+    bool success = reader.parse(contents, config);
+    if (!success)
+    {
+        Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
+        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
+        return;
+    }
+
+    auto objNames = config.getMemberNames();
+    for (auto& name : objNames)
+    {
+        unordered_map<string, Values> defaults;
+        auto attrNames = config[name].getMemberNames();
+        for (const auto& attrName : attrNames)
+        {
+            auto value = jsonToValues(config[name][attrName]);
+            defaults[attrName] = value;
+        }
+        _defaults[name] = defaults;
+    }
+}
+
+/*************/
+Values Factory::jsonToValues(const Json::Value& values)
+{
+    Values outValues;
+
+    if (values.isInt())
+        outValues.emplace_back(values.asInt());
+    else if (values.isDouble())
+        outValues.emplace_back(values.asFloat());
+    else if (values.isArray())
+        for (const auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt());
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat());
+            else if (v.isArray())
+                outValues.emplace_back(jsonToValues(v));
+            else
+                outValues.emplace_back(v.asString());
+        }
+    else
+        outValues.emplace_back(values.asString());
+
+    return outValues;
 }
 
 /*************/
@@ -78,6 +157,12 @@ shared_ptr<BaseObject> Factory::create(const string& type)
     if (page != _objectBook.end())
     {
         auto object = page->second.builder();
+
+        auto defaultIt = _defaults.find(type);
+        if (defaultIt != _defaults.end())
+            for (auto& attr : defaultIt->second)
+                object->setAttribute(attr.first, attr.second);
+
         if (object)
             object->setCategory(page->second.objectCategory);
         return object;

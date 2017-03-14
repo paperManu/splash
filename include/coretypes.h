@@ -32,6 +32,7 @@
 #define SPLASH_SAMPLES 0
 
 #define SPLASH_ALL_PEERS "__ALL__"
+#define SPLASH_DEFAULTS_FILE_ENV "SPLASH_DEFAULTS"
 
 #include <algorithm>
 #include <atomic>
