@@ -68,7 +68,7 @@ class Mesh_Shmdata : public Mesh
 
   protected:
     std::string _caps{""};
-    Utils::ConsoleLogger _logger;
+    Utils::ShmdataLogger _logger;
     std::unique_ptr<shmdata::Follower> _reader{nullptr};
     bool _capsIsValid{false};
 

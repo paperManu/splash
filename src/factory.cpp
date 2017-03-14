@@ -27,6 +27,7 @@
 #if HAVE_SHMDATA
 #include "./mesh_shmdata.h"
 #include "./sink_shmdata.h"
+#include "./sink_shmdata_encoded.h"
 #endif
 #include "./object.h"
 #if HAVE_PYTHON
@@ -233,6 +234,10 @@ void Factory::registerObjects()
 
     _objectBook["sink_shmdata"] =
         Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); }, BaseObject::Category::MISC, "sink a texture to shmdata file");
+
+    _objectBook["sink_shmdata_encoded"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata_Encoded>(_root)); },
+        BaseObject::Category::MISC,
+        "sink a texture as an encoded video to shmdata file");
 #endif
 
     _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); }, BaseObject::Category::MISC, "object");

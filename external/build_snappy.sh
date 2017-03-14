@@ -13,5 +13,6 @@ fi
 cd snappy
 ./autogen.sh
 ./configure --prefix=${EXTERNALS_DIR}/third_parties --disable-shared
+make clean
 make -j${CPU_COUNT}
 make install

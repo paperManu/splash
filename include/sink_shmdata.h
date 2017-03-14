@@ -44,7 +44,7 @@ class Sink_Shmdata : public Sink
   private:
     std::string _path{"/tmp/splash_sink"};
     std::string _caps{"application/x-raw"};
-    Utils::ConsoleLogger _logger;
+    Utils::ShmdataLogger _logger;
     std::unique_ptr<shmdata::Writer> _writer{nullptr};
     ImageBufferSpec _previousSpec{};
 

@@ -178,6 +178,7 @@ if (SHMDATA_FOUND)
         image_shmdata.cpp
         mesh_shmdata.cpp
         sink_shmdata.cpp
+        sink_shmdata_encoded.cpp
     )
 endif()
 

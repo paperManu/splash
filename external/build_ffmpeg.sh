@@ -12,5 +12,6 @@ fi
 
 cd ffmpeg
 ./configure --enable-gpl --disable-doc --disable-ffserver --disable-ffplay --disable-ffprobe --disable-ffmpeg --prefix="$EXTERNALS_DIR/third_parties"
+make clean
 make -j${CPU_COUNT}
 make install
