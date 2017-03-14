@@ -103,6 +103,10 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
+    // If we run in background mode, don't create any window
+    if (_runInBackground && type == "window")
+        return {};
+
     // Check whether an object of this name already exists
     auto objectIt = _objects.find(name);
     if (objectIt != _objects.end())
@@ -1277,6 +1281,13 @@ void Scene::registerAttributes()
         },
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
+
+    addAttribute("runInBackground",
+        [&](const Values& args) {
+            _runInBackground = args[0].as<bool>();
+            return true;
+        },
+        {'n'});
 }
 
 } // end of namespace

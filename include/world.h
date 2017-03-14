@@ -103,6 +103,7 @@ class World : public RootObject
     // World parameters
     unsigned int _worldFramerate{60}; //!< World framerate, default 60, because synchronous tasks need the loop to run
     std::string _blendingMode{};      //!< Blending mode: can be none, once or continuous
+    bool _runInBackground{false};     //!< If true, no window will be created
 
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene

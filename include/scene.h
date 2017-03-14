@@ -251,6 +251,7 @@ class Scene : public RootObject
 
   private:
     static bool _isGlfwInitialized;
+    bool _runInBackground{false}; //!< If true, no window will be created
 
     std::shared_ptr<Scene> _self;
     bool _started{false};

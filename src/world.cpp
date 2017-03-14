@@ -372,6 +372,7 @@ void World::applyConfig()
             // Set some default directories
             sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
             sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_configurationPath});
+            sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
         }
 
         // Then we link the objects together
@@ -1150,9 +1151,15 @@ void World::parseArguments(int argc, char** argv)
 #endif
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            cout << "\t-H (--hide) : run Splash in background" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << endl;
             exit(0);
+        }
+        else if (string(argv[idx]) == "-H" || string(argv[idx]) == "--hide")
+        {
+            _runInBackground = true;
+            idx++;
         }
         else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
         {
