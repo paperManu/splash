@@ -53,7 +53,7 @@ class Queue : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Queue(std::weak_ptr<RootObject> root);
+    Queue(const std::weak_ptr<RootObject>& root);
 
     /**
      * \brief Destructor
@@ -146,7 +146,7 @@ class QueueSurrogate : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    QueueSurrogate(std::weak_ptr<RootObject> root);
+    QueueSurrogate(const std::weak_ptr<RootObject>& root);
 
     /**
      * \brief Destructor

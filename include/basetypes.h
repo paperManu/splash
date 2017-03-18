@@ -63,7 +63,7 @@ struct AttributeFunctor
      * \param setFunc Setter function.
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, const std::vector<char>& types = {});
+    AttributeFunctor(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types = {});
 
     /**
      * \brief Constructor.
@@ -72,7 +72,7 @@ struct AttributeFunctor
      * \param getFunc Getter function.
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    AttributeFunctor(const std::string& name, std::function<bool(const Values&)> setFunc, std::function<const Values()> getFunc, const std::vector<char>& types = {});
+    AttributeFunctor(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<const Values()>& getFunc, const std::vector<char>& types = {});
 
     AttributeFunctor(const AttributeFunctor&) = delete;
     AttributeFunctor& operator=(const AttributeFunctor&) = delete;
@@ -127,7 +127,7 @@ struct AttributeFunctor
      * \param v The value to set the attribute to. If empty, uses the stored value.
      * \return Returns true if the value could be locked.
      */
-    bool lock(Values v = {});
+    bool lock(const Values& v = {});
 
     /**
      * \brief Unlock the attribute.
@@ -236,7 +236,7 @@ class BaseObject
      * \brief Constructor.
      * \param root Specify the root object.
      */
-    BaseObject(std::weak_ptr<RootObject> root)
+    BaseObject(const std::weak_ptr<RootObject>& root)
         : _root(root)
     {
         init();
@@ -297,7 +297,7 @@ class BaseObject
      * \brief Set the remote type of the object. This implies that this object gets data streamed from a World object
      * \param type Remote type
      */
-    inline void setRemoteType(std::string type)
+    inline void setRemoteType(const std::string& type)
     {
         _remoteType = type;
         _isConnectedToRemote = true;
@@ -491,7 +491,7 @@ class BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, const std::vector<char> types = {});
+    AttributeFunctor& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
 
     /**
      * \brief Add a new attribute to this object
@@ -501,7 +501,8 @@ class BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    AttributeFunctor& addAttribute(const std::string& name, std::function<bool(const Values&)> set, std::function<const Values()> get, const std::vector<char>& types = {});
+    AttributeFunctor& addAttribute(
+        const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
 
     /**
      * \brief Register new attributes
@@ -550,7 +551,7 @@ class BufferObject : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    BufferObject(std::weak_ptr<RootObject> root)
+    BufferObject(const std::weak_ptr<RootObject>& root)
         : BaseObject(root)
     {
         registerAttributes();
@@ -699,7 +700,7 @@ class RootObject : public BaseObject
      * \param name Destination BufferObject name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) { _link->sendBuffer(name, buffer); }
+    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) { _link->sendBuffer(name, buffer); }
 
     /**
      * \brief Return a lock object list modifications (addition, deletion)
@@ -749,7 +750,7 @@ class RootObject : public BaseObject
      * \param name Object name to receive the serialized object
      * \param obj Serialized object
      */
-    virtual void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj) {}
+    virtual void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) {}
 
     /**
      * \brief Add a new task to the queue
@@ -786,7 +787,7 @@ class RootObject : public BaseObject
      * \param attribute Attribute name
      * \param message Message
      */
-    void sendMessage(std::string name, std::string attribute, const Values& message = {}) { _link->sendMessage(name, attribute, message); }
+    void sendMessage(const std::string& name, const std::string& attribute, const Values& message = {}) { _link->sendMessage(name, attribute, message); }
 
     /**
      * \brief Send a message to another root object, and wait for an answer. Can specify a timeout for the answer, in microseconds.
@@ -796,7 +797,7 @@ class RootObject : public BaseObject
      * \param timeout Timeout in microseconds
      * \return Return the answer received (or an empty Values)
      */
-    Values sendMessageWithAnswer(std::string name, std::string attribute, const Values& message = {}, const unsigned long long timeout = 0ull);
+    Values sendMessageWithAnswer(const std::string& name, const std::string& attribute, const Values& message = {}, const unsigned long long timeout = 0ull);
 };
 
 } // end of namespace

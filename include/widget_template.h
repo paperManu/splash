@@ -34,7 +34,10 @@ namespace Splash
 class GuiTemplate : public GuiWidget
 {
   public:
-    GuiTemplate(std::weak_ptr<Scene> scene, std::string name) : GuiWidget(scene, name) {}
+    GuiTemplate(const std::weak_ptr<Scene>& scene, const std::string& name)
+        : GuiWidget(scene, name)
+    {
+    }
     void render();
 
   private:

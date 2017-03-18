@@ -163,7 +163,7 @@ void GuiNodeView::render()
 }
 
 /*************/
-void GuiNodeView::renderNode(string name)
+void GuiNodeView::renderNode(const string& name)
 {
     auto& io = ImGui::GetIO();
 

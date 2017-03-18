@@ -129,7 +129,7 @@ class Geometry : public BufferObject
      * \brief Set the mesh for this object
      * \param mesh Mesh
      */
-    void setMesh(std::shared_ptr<Mesh> mesh) { _mesh = std::weak_ptr<Mesh>(mesh); }
+    void setMesh(const std::shared_ptr<Mesh>& mesh) { _mesh = std::weak_ptr<Mesh>(mesh); }
 
     /**
      * \brief Swap between temporary and alternative buffers

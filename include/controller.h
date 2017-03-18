@@ -43,7 +43,7 @@ class ControllerObject : public BaseObject
      * \brief Constructor
      * \param root RootObject
      */
-    ControllerObject(std::weak_ptr<RootObject> root)
+    ControllerObject(const std::weak_ptr<RootObject>& root)
         : BaseObject(root)
     {
         registerAttributes();
@@ -134,7 +134,7 @@ class ControllerObject : public BaseObject
      * \param name Object name
      * \param buffer Serialized buffer
      */
-    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const;
+    void sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) const;
 
     /**
      * \brief Set the given configuration-related attribute
@@ -171,7 +171,7 @@ class ControllerObject : public BaseObject
      * \param state State which should trigger the callback
      * \param cb Callback
      */
-    void setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)> cb) const;
+    void setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)>& cb) const;
 
   protected:
     /**

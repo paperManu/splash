@@ -7,7 +7,7 @@ namespace Splash
 /*************/
 // AttributeFunctor
 /*************/
-AttributeFunctor::AttributeFunctor(const string& name, function<bool(const Values&)> setFunc, const vector<char>& types)
+AttributeFunctor::AttributeFunctor(const string& name, const function<bool(const Values&)>& setFunc, const vector<char>& types)
     : _name(name)
     , _setFunc(setFunc)
     , _getFunc(function<const Values()>())
@@ -17,7 +17,7 @@ AttributeFunctor::AttributeFunctor(const string& name, function<bool(const Value
 }
 
 /*************/
-AttributeFunctor::AttributeFunctor(const string& name, function<bool(const Values&)> setFunc, function<const Values()> getFunc, const vector<char>& types)
+AttributeFunctor::AttributeFunctor(const string& name, const function<bool(const Values&)>& setFunc, const function<const Values()>& getFunc, const vector<char>& types)
     : _name(name)
     , _setFunc(setFunc)
     , _getFunc(getFunc)
@@ -118,7 +118,7 @@ Values AttributeFunctor::getArgsTypes() const
 }
 
 /*************/
-bool AttributeFunctor::lock(Values v)
+bool AttributeFunctor::lock(const Values& v)
 {
     if (v.size() != 0)
         if (!operator()(v))
@@ -399,7 +399,7 @@ void BaseObject::registerAttributes()
 }
 
 /*************/
-AttributeFunctor& BaseObject::addAttribute(const string& name, function<bool(const Values&)> set, const vector<char> types)
+AttributeFunctor& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
 {
     _attribFunctions[name] = AttributeFunctor(name, set, types);
     _attribFunctions[name].setObjectName(_type);
@@ -407,7 +407,7 @@ AttributeFunctor& BaseObject::addAttribute(const string& name, function<bool(con
 }
 
 /*************/
-AttributeFunctor& BaseObject::addAttribute(const string& name, function<bool(const Values&)> set, function<const Values()> get, const vector<char>& types)
+AttributeFunctor& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
 {
     _attribFunctions[name] = AttributeFunctor(name, set, get, types);
     _attribFunctions[name].setObjectName(_type);
@@ -674,7 +674,7 @@ void RootObject::runTasks()
 }
 
 /*************/
-Values RootObject::sendMessageWithAnswer(string name, string attribute, const Values& message, const unsigned long long timeout)
+Values RootObject::sendMessageWithAnswer(const string& name, const string& attribute, const Values& message, const unsigned long long timeout)
 {
     if (_link == nullptr)
         return {};

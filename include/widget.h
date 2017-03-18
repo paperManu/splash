@@ -70,7 +70,7 @@ class GuiWidget : public ControllerObject
     virtual void render() {}
     virtual int updateWindowFlags() { return 0; }
     virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
-    void setScene(std::weak_ptr<Scene> scene) { _scene = scene; }
+    void setScene(const std::weak_ptr<Scene>& scene) { _scene = scene; }
 
   protected:
     std::string _name{""};

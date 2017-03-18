@@ -187,7 +187,7 @@ string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, const str
 }
 
 /*************/
-void Sink_Shmdata_Encoded::handlePixels(const char* pixels, ImageBufferSpec spec)
+void Sink_Shmdata_Encoded::handlePixels(const char* pixels, const ImageBufferSpec& spec)
 {
     auto size = spec.rawSize();
     if (!pixels || size == 0)

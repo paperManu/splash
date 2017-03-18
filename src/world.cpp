@@ -160,37 +160,38 @@ void World::run()
 }
 
 /*************/
-void World::addLocally(string type, string name, string destination)
+void World::addLocally(const string& type, const string& name, const string& destination)
 {
     // Images and Meshes have a counterpart on this side
     if (type.find("image") == string::npos && type.find("mesh") == string::npos && type.find("queue") == string::npos)
         return;
 
     auto object = _factory->create(type);
+    auto realName = name;
     if (object.get() != nullptr)
     {
         object->setId(getId());
-        name = object->setName(name); // The real name is not necessarily the one we set (see Queues)
-        _objects[name] = object;
+        realName = object->setName(name); // The real name is not necessarily the one we set (see Queues)
+        _objects[realName] = object;
     }
 
     // If the object is not registered yet, we add it with the specified destination
     // as well as the WORLD_SCENE destination
-    if (_objectDest.find(name) == _objectDest.end())
+    if (_objectDest.find(realName) == _objectDest.end())
     {
-        _objectDest[name] = vector<string>();
-        _objectDest[name].emplace_back(destination);
+        _objectDest[realName] = vector<string>();
+        _objectDest[realName].emplace_back(destination);
     }
     // If it is, we only add the new destination
     else
     {
         bool isPresent = false;
-        for (auto d : _objectDest[name])
+        for (auto d : _objectDest[realName])
             if (d == destination)
                 isPresent = true;
         if (!isPresent)
         {
-            _objectDest[name].emplace_back(destination);
+            _objectDest[realName].emplace_back(destination);
         }
     }
 }
@@ -743,14 +744,14 @@ void World::saveProject()
 }
 
 /*************/
-Values World::getObjectsNameByType(string type)
+Values World::getObjectsNameByType(const string& type)
 {
     Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
     return answer[2].as<Values>();
 }
 
 /*************/
-void World::handleSerializedObject(const string name, shared_ptr<SerializedObject> obj)
+void World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
     _link->sendBuffer(name, std::move(obj));
 }
@@ -783,7 +784,7 @@ void World::leave(int signal_value)
 }
 
 /*************/
-bool World::copyCameraParameters(std::string filename)
+bool World::copyCameraParameters(const std::string& filename)
 {
     ifstream in(filename, ios::in | ios::binary);
     string contents;
@@ -902,7 +903,7 @@ Values World::jsonToValues(const Json::Value& values)
 }
 
 /*************/
-bool World::loadJsonFile(string filename, Json::Value& configuration)
+bool World::loadJsonFile(const string& filename, Json::Value& configuration)
 {
     ifstream in(filename, ios::in | ios::binary);
     string contents;
@@ -936,7 +937,7 @@ bool World::loadJsonFile(string filename, Json::Value& configuration)
 }
 
 /*************/
-bool World::loadConfig(string filename, Json::Value& configuration)
+bool World::loadConfig(const string& filename, Json::Value& configuration)
 {
     if (!loadJsonFile(filename, configuration))
         return false;
@@ -951,7 +952,7 @@ bool World::loadConfig(string filename, Json::Value& configuration)
 }
 
 /*************/
-bool World::loadProject(string filename)
+bool World::loadProject(const string& filename)
 {
     try
     {
@@ -1204,7 +1205,7 @@ void World::parseArguments(int argc, char** argv)
 }
 
 /*************/
-void World::setAttribute(string name, string attrib, const Values& args)
+void World::setAttribute(const string& name, const string& attrib, const Values& args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);

@@ -39,7 +39,7 @@ class Blender : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    Blender(std::weak_ptr<RootObject> root);
+    Blender(const std::weak_ptr<RootObject>& root);
 
     /**
      * \brief Destructor

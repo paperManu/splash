@@ -51,8 +51,8 @@ class Texture_Image : public Texture
      * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
      */
-    Texture_Image(std::weak_ptr<RootObject> root);
-    Texture_Image(std::weak_ptr<RootObject> root, int width, int height, std::string pixelFormat, const GLvoid* data);
+    Texture_Image(const std::weak_ptr<RootObject>& root);
+    Texture_Image(const std::weak_ptr<RootObject>& root, int width, int height, const std::string& pixelFormat, const GLvoid* data);
 
     /**
      * \brief Destructor
@@ -113,7 +113,7 @@ class Texture_Image : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(std::shared_ptr<BaseObject> obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Lock the texture for read / write operations
@@ -133,7 +133,7 @@ class Texture_Image : public Texture
      * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
      */
-    void reset(int width, int height, std::string pixelFormat, const GLvoid* data);
+    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data);
 
     /**
      * \brief Modify the size of the texture

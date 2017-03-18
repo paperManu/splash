@@ -35,7 +35,7 @@ atomic_bool Window::_quitFlag;
 atomic_int Window::_swappableWindowsCount{0};
 
 /*************/
-Window::Window(std::weak_ptr<RootObject> root)
+Window::Window(const std::weak_ptr<RootObject>& root)
     : BaseObject(root)
 {
     _type = "window";

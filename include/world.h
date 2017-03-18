@@ -131,7 +131,7 @@ class World : public RootObject
      * \param name Object name
      * \param destination Destination scene name
      */
-    void addLocally(std::string type, std::string name, std::string destination);
+    void addLocally(const std::string& type, const std::string& name, const std::string& destination);
 
     /**
      * \brief Apply the configuration
@@ -143,7 +143,7 @@ class World : public RootObject
      * \param filename Source configuration file
      * \return Return true if everything went well
      */
-    bool copyCameraParameters(std::string filename);
+    bool copyCameraParameters(const std::string& filename);
 
     /**
      * \brief Get a JSon string describing the attributes of all object types
@@ -174,14 +174,14 @@ class World : public RootObject
      * \param type Object type
      * \return Return a Values holding all the objects of the given type
      */
-    Values getObjectsNameByType(std::string type);
+    Values getObjectsNameByType(const std::string& type);
 
     /**
      * \brief Redefinition of a method from RootObject. Send the input buffers back to all pairs
      * \param name Object name
      * \param obj Serialized object
      */
-    void handleSerializedObject(const std::string name, std::shared_ptr<SerializedObject> obj);
+    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
 
     /**
      * \brief Initializes the World
@@ -199,7 +199,7 @@ class World : public RootObject
      * \param configuration Holds the Json tree
      * \return Return true if everything went well
      */
-    bool loadJsonFile(std::string filename, Json::Value& configuration);
+    bool loadJsonFile(const std::string& filename, Json::Value& configuration);
 
     /**
      * \brief Load the specified configuration file
@@ -207,14 +207,14 @@ class World : public RootObject
      * \param configuration JSon where the configuration will be stored
      * \return Return true if everything went well
      */
-    bool loadConfig(std::string filename, Json::Value& configuration);
+    bool loadConfig(const std::string& filename, Json::Value& configuration);
 
     /**
      * \brief Load a partial configuration file, updating existing configuration
      * \param filename Configuration file path
      * \return Return true if everything went well
      */
-    bool loadProject(std::string filename);
+    bool loadProject(const std::string& filename);
 
     /**
      * \brief Parse the given arguments
@@ -236,7 +236,7 @@ class World : public RootObject
      * \param attrib Attribute name
      * \param args Value to set the attribute to
      */
-    void setAttribute(std::string name, std::string attrib, const Values& args);
+    void setAttribute(const std::string& name, const std::string& attrib, const Values& args);
     using BaseObject::setAttribute;
 
     /**

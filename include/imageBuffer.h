@@ -61,14 +61,13 @@ class ImageBufferSpec
      * \param b Bit per pixej
      * \param f Format as a string
      */
-    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, uint8_t b, ImageBufferSpec::Type t = Type::UINT8, std::string f = "RGBA")
+    ImageBufferSpec(unsigned int w, unsigned int h, unsigned int c, uint8_t b, ImageBufferSpec::Type t = Type::UINT8, const std::string& f = "RGBA")
+        : width(w)
+        , height(h)
+        , channels(c)
+        , bpp(b)
+        , type(t)
     {
-        width = w;
-        height = h;
-        channels = c;
-        bpp = b;
-        type = t;
-
         if (f.empty())
         {
             switch (c)
@@ -102,7 +101,7 @@ class ImageBufferSpec
     std::string format{};
     bool videoFrame{true};
 
-    inline bool operator==(const ImageBufferSpec& spec)
+    inline bool operator==(const ImageBufferSpec& spec) const
     {
         if (width != spec.width)
             return false;
@@ -120,7 +119,7 @@ class ImageBufferSpec
         return true;
     }
 
-    inline bool operator!=(const ImageBufferSpec& spec) { return !(*this == spec); }
+    inline bool operator!=(const ImageBufferSpec& spec) const { return !(*this == spec); }
 
     /**
      * \brief Convert the spec to a string
@@ -144,7 +143,7 @@ class ImageBufferSpec
      * \brief Get image size in bytes
      * \return Return image size
      */
-    int rawSize() { return pixelBytes() * width * height; }
+    int rawSize() const { return pixelBytes() * width * height; }
 };
 
 /*************/

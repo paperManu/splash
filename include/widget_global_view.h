@@ -35,7 +35,7 @@ namespace Splash
 class GuiGlobalView : public GuiWidget
 {
   public:
-    GuiGlobalView(std::weak_ptr<Scene> scene, std::string name = "")
+    GuiGlobalView(const std::weak_ptr<Scene>& scene, const std::string& name = "")
         : GuiWidget(scene, name)
     {
     }
@@ -43,12 +43,11 @@ class GuiGlobalView : public GuiWidget
     int updateWindowFlags();
     void setCamera(const std::shared_ptr<Camera>& cam);
     void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons);
-    void setScene(std::weak_ptr<Scene> scene) { _scene = scene; }
+    void setScene(const std::weak_ptr<Scene>& scene) { _scene = scene; }
 
   private:
     std::shared_ptr<Camera> _camera{nullptr};
     std::shared_ptr<Camera> _guiCamera{nullptr};
-    std::weak_ptr<Scene> _scene;
     bool _camerasHidden{false};
     bool _beginDrag{true};
     bool _noMove{false};

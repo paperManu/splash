@@ -56,7 +56,7 @@ class Camera : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Camera(std::weak_ptr<RootObject> root);
+    Camera(const std::weak_ptr<RootObject>& root);
 
     /**
      * \brief Destructor
@@ -299,7 +299,7 @@ class Camera : public BaseObject
     //! List of additional objects to draw
     struct Drawable
     {
-        Drawable(std::string name, glm::dmat4 mat)
+        Drawable(const std::string& name, glm::dmat4 mat)
             : model(name)
             , rtMatrix(mat)
         {

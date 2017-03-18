@@ -21,7 +21,7 @@ namespace Splash
 {
 
 /*************/
-Warp::Warp(std::weak_ptr<RootObject> root)
+Warp::Warp(const std::weak_ptr<RootObject>& root)
     : Texture(root)
 {
     init();
@@ -100,7 +100,7 @@ unordered_map<string, Values> Warp::getShaderUniforms() const
 }
 
 /*************/
-bool Warp::linkTo(std::shared_ptr<BaseObject> obj)
+bool Warp::linkTo(const std::shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!obj || !Texture::linkTo(obj))
@@ -135,7 +135,7 @@ void Warp::unbind()
 }
 
 /*************/
-void Warp::unlinkFrom(std::shared_ptr<BaseObject> obj)
+void Warp::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
 {
     if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {

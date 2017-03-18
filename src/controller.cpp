@@ -201,7 +201,7 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
 }
 
 /*************/
-void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const
+void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) const
 {
     auto root = _root.lock();
     root->sendBuffer(name, buffer);
@@ -268,7 +268,7 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
 }
 
 /*************/
-void ControllerObject::setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)> cb) const
+void ControllerObject::setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)>& cb) const
 {
     UserInput::setCallback(state, cb);
 }

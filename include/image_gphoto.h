@@ -99,13 +99,13 @@ class Image_GPhoto : public Image
     /**
      * Various commands sent to the camera
      */
-    bool doSetProperty(std::string name, std::string value);
-    bool doGetProperty(std::string name, std::string& value);
+    bool doSetProperty(const std::string& name, const std::string& value);
+    bool doGetProperty(const std::string& name, std::string& value);
 
     /**
      * Conversion between float and shutterspeed (as a string)
      */
-    float getFloatFromShutterspeedString(std::string speed);
+    float getFloatFromShutterspeedString(const std::string& speed);
     std::string getShutterspeedStringFromFloat(float duration);
 
     /**
@@ -117,7 +117,7 @@ class Image_GPhoto : public Image
      * Initialize the given camera
      */
     bool initCamera(GPhotoCamera& camera);
-    void initCameraProperty(GPhotoCamera& camera, std::string property, std::vector<std::string>& values);
+    void initCameraProperty(GPhotoCamera& camera, const std::string& property, std::vector<std::string>& values);
 
     /**
      * Release the given camera

@@ -13,7 +13,7 @@ namespace Splash
 {
 
 /*************/
-Texture::Texture(std::weak_ptr<RootObject> root)
+Texture::Texture(const std::weak_ptr<RootObject>& root)
     : BaseObject(root)
 {
     init();

@@ -34,7 +34,7 @@ namespace Splash
 class GuiControl : public GuiWidget
 {
   public:
-    GuiControl(std::weak_ptr<Scene> scene, std::string name)
+    GuiControl(const std::weak_ptr<Scene>& scene, const std::string& name)
         : GuiWidget(scene, name)
     {
     }

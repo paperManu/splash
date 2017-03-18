@@ -313,7 +313,7 @@ void GuiMedia::render()
 }
 
 /*************/
-void GuiMedia::replaceMedia(string previousMedia, string type)
+void GuiMedia::replaceMedia(const string& previousMedia, const string& type)
 {
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<BaseObject>>();

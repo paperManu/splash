@@ -147,14 +147,14 @@ class Shader : public BaseObject
      * \param type Shader type
      * \return Return true if the shader was compiled successfully
      */
-    bool setSource(std::string src, const ShaderType type);
+    bool setSource(const std::string& src, const ShaderType type);
 
     /**
      * \brief Set multiple shaders at once
      * \param sources Map of shader sources
      * \return Return true if all shader could be compiled
      */
-    bool setSource(std::map<ShaderType, std::string> sources);
+    bool setSource(const std::map<ShaderType, std::string>& sources);
 
     /**
      * \brief Set a shader source from file
@@ -162,7 +162,7 @@ class Shader : public BaseObject
      * \param type Shader type
      * \return Return true if the shader was compiled successfully
      */
-    bool setSourceFromFile(const std::string filename, const ShaderType type);
+    bool setSourceFromFile(const std::string& filename, const ShaderType type);
 
     /**
      * \brief Add a new texture to use

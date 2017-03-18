@@ -48,7 +48,7 @@ namespace Splash
 bool Scene::_isGlfwInitialized{false};
 
 /*************/
-Scene::Scene(std::string name)
+Scene::Scene(const std::string& name)
 {
     _self = std::shared_ptr<Scene>(this, [](Scene*) {}); // A shared pointer with no deleter, how convenient
 
@@ -97,7 +97,7 @@ Scene::~Scene()
 }
 
 /*************/
-std::shared_ptr<BaseObject> Scene::add(string type, string name)
+std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
@@ -125,11 +125,11 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
         obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
 
         obj->setId(getId());
-        name = obj->setName(name);
-        if (name == string())
+        auto realName = obj->setName(name);
+        if (realName == string())
             _objects[to_string(obj->getId())] = obj;
         else
-            _objects[name] = obj;
+            _objects[realName] = obj;
 
         // Some objects have to be connected to the gui (if the Scene is master)
         if (_gui != nullptr)
@@ -152,7 +152,7 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
 }
 
 /*************/
-void Scene::addGhost(string type, string name)
+void Scene::addGhost(const string& type, const string& name)
 {
     // Currently, only Cameras can be ghosts
     if (type != string("camera") && type != string("warp"))
@@ -177,7 +177,7 @@ void Scene::addGhost(string type, string name)
 }
 
 /*************/
-Values Scene::getAttributeFromObject(string name, string attribute)
+Values Scene::getAttributeFromObject(const string& name, const string& attribute)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     auto objectIt = _objects.find(name);
@@ -200,7 +200,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 }
 
 /*************/
-Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
+Values Scene::getAttributeDescriptionFromObject(const string& name, const string& attribute)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     auto objectIt = _objects.find(name);
@@ -262,7 +262,7 @@ Json::Value Scene::getConfigurationAsJson()
 }
 
 /*************/
-bool Scene::link(string first, string second)
+bool Scene::link(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -280,7 +280,7 @@ bool Scene::link(string first, string second)
 }
 
 /*************/
-bool Scene::link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
+bool Scene::link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -292,7 +292,7 @@ bool Scene::link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> 
 }
 
 /*************/
-void Scene::unlink(string first, string second)
+void Scene::unlink(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -309,7 +309,7 @@ void Scene::unlink(string first, string second)
 }
 
 /*************/
-void Scene::unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
+void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -319,7 +319,7 @@ void Scene::unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject
 }
 
 /*************/
-bool Scene::linkGhost(string first, string second)
+bool Scene::linkGhost(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -344,7 +344,7 @@ bool Scene::linkGhost(string first, string second)
 }
 
 /*************/
-void Scene::unlinkGhost(string first, string second)
+void Scene::unlinkGhost(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -369,7 +369,7 @@ void Scene::unlinkGhost(string first, string second)
 }
 
 /*************/
-void Scene::remove(string name)
+void Scene::remove(const string& name)
 {
     std::shared_ptr<BaseObject> obj;
 
@@ -573,7 +573,7 @@ void Scene::textureUploadRun()
 }
 
 /*************/
-void Scene::setAsMaster(string configFilePath)
+void Scene::setAsMaster(const string& configFilePath)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -647,7 +647,7 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
+shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
@@ -702,7 +702,7 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
 }
 
 /*************/
-Values Scene::getObjectsNameByType(string type)
+Values Scene::getObjectsNameByType(const string& type)
 {
     lock_guard<recursive_mutex> lock(_objectsMutex);
     Values list;
@@ -747,7 +747,7 @@ vector<int> Scene::findGLVersion()
 }
 
 /*************/
-void Scene::init(std::string name)
+void Scene::init(const string& name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
 

@@ -112,7 +112,7 @@ class Sink_Shmdata_Encoded : public Sink
      * \param pixels Input image
      * \param spec Input image specifications
      */
-    void handlePixels(const char* pixels, ImageBufferSpec spec);
+    void handlePixels(const char* pixels, const ImageBufferSpec& spec);
 
     /**
      * Parse the options from the given string, formatted as:

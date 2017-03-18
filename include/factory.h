@@ -96,7 +96,7 @@ class Factory
     struct Page
     {
         Page() = default;
-        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, std::string sd = "none", std::string d = "none")
+        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, const std::string& sd = "none", const std::string& d = "none")
             : builder(f)
             , objectCategory(o)
             , shortDescription(sd)

@@ -51,7 +51,7 @@ class Sink_Shmdata : public Sink
     /**
      * Class to be implemented to copy the _mappedPixels somewhere
      */
-    void handlePixels(const char* pixels, ImageBufferSpec spec);
+    void handlePixels(const char* pixels, const ImageBufferSpec& spec);
 
     /**
      * \brief Register new functors to modify attributes

@@ -46,7 +46,7 @@ class Base
   public:
     virtual ~Base(){};
 
-    virtual bool load(std::string filename) = 0;
+    virtual bool load(const std::string& filename) = 0;
     virtual std::vector<glm::vec4> getVertices() const = 0;
     virtual std::vector<glm::vec2> getUVs() const = 0;
     virtual std::vector<glm::vec3> getNormals() const = 0;
@@ -60,7 +60,7 @@ class Obj : public Base
     ~Obj(){};
 
     /**/
-    bool load(std::string filename)
+    bool load(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::in);
         if (!file.is_open())

@@ -51,7 +51,7 @@ class Warp : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Warp(std::weak_ptr<RootObject> root);
+    Warp(const std::weak_ptr<RootObject>& root);
 
     /**
      * \brief Destructor
@@ -97,13 +97,13 @@ class Warp : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(std::shared_ptr<BaseObject> obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
