@@ -1,8 +1,28 @@
 Splash release notes
 ===================
 
-Splash 0.5.x (2017-xx-xx)
+Splash 0.6.0 (2017-03-19)
 -------------------------
+New features:
+* Added a looseClock parameter to control master clock effect on media
+* Added a --hide argument for running Splash in background
+* Added Sink_Shmdata_Encoded
+* Added the possibility to set default values through a configuration file
+
+Improvements:
+* Snappy is now included as a submodule
+* Image_V4L2: Removed capture rate parameter, which is unused and leads to issues
+* Forcing a (working) version number for cppcheck
+* Various improvements following static analysis results
+
+Bug fixed:
+* Blender addon: exporting a configuration exists edit mdoe (thus preventing it from crashing)
+* Fixed issues with loading image with non-standard size
+* Fixed blending issue when loading file with blending activated
+* Fixed issue where updating an image with another which has the same resolution needed to be done twice
+* Fixed texture format issue
+* Fixed issue with --info
+* Fixed loose clock behavior when no master clock has been received yet; also, GUI better reflect the loose clock setting
 
 Splash 0.5.8 (2017-03-02)
 -------------------------
