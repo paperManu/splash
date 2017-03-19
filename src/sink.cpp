@@ -66,6 +66,9 @@ void Sink::unlinkFrom(shared_ptr<BaseObject> obj)
 /*************/
 void Sink::render()
 {
+    if (!_inputTexture)
+        return;
+
     handlePixels(reinterpret_cast<char*>(_mappedPixels), _spec);
 }
 

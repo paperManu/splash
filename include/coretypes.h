@@ -32,6 +32,7 @@
 #define SPLASH_SAMPLES 0
 
 #define SPLASH_ALL_PEERS "__ALL__"
+#define SPLASH_DEFAULTS_FILE_ENV "SPLASH_DEFAULTS"
 
 #include <algorithm>
 #include <atomic>
@@ -150,10 +151,10 @@ class ResizableArray
      * \param a ResizableArray to move
      */
     ResizableArray(ResizableArray&& a)
+        : _size(a._size)
+        , _shift(a._shift)
+        , _buffer(std::move(a._buffer))
     {
-        _size = a._size;
-        _shift = a._shift;
-        _buffer = std::move(a._buffer);
     }
 
     /**
@@ -264,7 +265,10 @@ struct SerializedObject
      * \param start Begin iterator
      * \param end End iterator
      */
-    SerializedObject(char* start, char* end) { _data = ResizableArray<char>(start, end); }
+    SerializedObject(char* start, char* end)
+        : _data(ResizableArray<char>(start, end))
+    {
+    }
 
     /**
      * \brief Get the pointer to the data
@@ -392,38 +396,38 @@ struct Value
 
     template <class T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
     Value(T v)
+        : _i(v)
+        , _type(Type::i)
     {
-        _i = v;
-        _type = Type::i;
     }
 
     template <class T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
     Value(T v)
+        : _f(v)
+        , _type(Type::f)
     {
-        _f = v;
-        _type = Type::f;
     }
 
     template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
     Value(T v)
+        : _s(v)
+        , _type(Type::s)
     {
-        _s = v;
-        _type = Type::s;
     }
 
     template <class T, typename std::enable_if<std::is_same<T, const char*>::value>::type* = nullptr>
     Value(T c)
+        : _s(std::string(c))
+        , _type(Type::s)
     {
-        _s = std::string(c);
-        _type = Type::s;
     }
 
     template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
     Value(T v)
+        : _v(std::unique_ptr<Values>(new Values()))
+        , _type(Type::v)
     {
-        _v = std::unique_ptr<Values>(new Values());
         *_v = v;
-        _type = Type::v;
     }
 
     Value(const Value& v) { operator=(v); }
@@ -456,10 +460,9 @@ struct Value
 
     template <class InputIt>
     Value(InputIt first, InputIt last)
+        : _type(Type::v)
+        , _v(std::unique_ptr<Values>(new Values()))
     {
-        _type = Type::v;
-        _v = std::unique_ptr<Values>(new Values());
-
         auto it = first;
         while (it != last)
         {
@@ -468,7 +471,7 @@ struct Value
         }
     }
 
-    bool operator==(Value v) const
+    bool operator==(const Value& v) const
     {
         if (_type != v._type)
             return false;
@@ -493,7 +496,7 @@ struct Value
         }
     }
 
-    bool operator!=(Value v) const { return !operator==(v); }
+    bool operator!=(const Value& v) const { return !operator==(v); }
 
     Value& operator[](int index)
     {

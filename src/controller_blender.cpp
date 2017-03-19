@@ -11,7 +11,7 @@ namespace Splash
 {
 
 /*************/
-Blender::Blender(std::weak_ptr<RootObject> root)
+Blender::Blender(const std::weak_ptr<RootObject>& root)
     : ControllerObject(root)
 {
     _type = "blender";

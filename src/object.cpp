@@ -22,7 +22,7 @@ namespace Splash
 {
 
 /*************/
-Object::Object(std::weak_ptr<RootObject> root)
+Object::Object(const std::weak_ptr<RootObject>& root)
     : BaseObject(root)
 {
     init();

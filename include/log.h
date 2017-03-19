@@ -201,7 +201,7 @@ class Log
      * \param log Log
      * \param priority Priority
      */
-    void setLog(std::string log, Priority priority)
+    void setLog(const std::string& log, Priority priority)
     {
         std::lock_guard<Spinlock> lock(_mutex);
         _logs.push_back(std::pair<std::string, Priority>(log, priority));
@@ -315,8 +315,9 @@ class Log
     }
 
     /*****/
-    void toConsole(std::string msg)
+    void toConsole(const std::string& message)
     {
+        auto msg = message;
         if (msg.find("[MESSAGE]") != std::string::npos)
             msg.replace(msg.find("[MESSAGE]"), 9, "\033[32;1m[MESSAGE]\033[0m");
         else if (msg.find("[DEBUG]") != std::string::npos)

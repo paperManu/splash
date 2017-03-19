@@ -14,6 +14,10 @@ if [ ! -d third_parties ]; then
     mkdir third_parties
 fi
 
+# Snappy
+echo "Building Snappy..."
+./build_snappy.sh
+
 # FFmpeg
 echo "Building FFmpeg..."
 ./build_ffmpeg.sh

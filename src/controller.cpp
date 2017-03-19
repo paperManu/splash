@@ -201,7 +201,7 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
 }
 
 /*************/
-void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject> buffer) const
+void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr<SerializedObject>& buffer) const
 {
     auto root = _root.lock();
     root->sendBuffer(name, buffer);
@@ -215,6 +215,21 @@ void ControllerObject::setGlobal(const string& name, const Values& values) const
         return;
 
     scene->sendMessageToWorld(name, values);
+}
+
+/*************/
+Values ControllerObject::getGlobal(const string& attr) const
+{
+    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    if (!scene)
+        return {};
+
+    // Do not lock permanently if no answer is received, if the attribute does not exist for example
+    // We wait for no more than 10000us
+    auto answer = scene->sendMessageToWorldWithAnswer("getWorldAttribute", {attr}, 10000);
+    if (!answer.empty())
+        answer.pop_front();
+    return answer;
 }
 
 /*************/
@@ -253,7 +268,7 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
 }
 
 /*************/
-void ControllerObject::setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)> cb) const
+void ControllerObject::setUserInputCallback(const UserInput::State& state, std::function<void(const UserInput::State&)>& cb) const
 {
     UserInput::setCallback(state, cb);
 }

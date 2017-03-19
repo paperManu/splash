@@ -51,7 +51,7 @@ class GuiMedia : public GuiWidget
 
     std::list<std::shared_ptr<BaseObject>> getSceneMedia();
     std::list<std::shared_ptr<BaseObject>> getFiltersForImage(const std::shared_ptr<BaseObject>& image);
-    void replaceMedia(std::string previousMedia, std::string type);
+    void replaceMedia(const std::string& previousMedia, const std::string& type);
 };
 
 } // end of namespace

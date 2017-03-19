@@ -176,12 +176,13 @@ map<string, Values> Shader::getUniforms() const
 }
 
 /*************/
-bool Shader::setSource(std::string src, const ShaderType type)
+bool Shader::setSource(const std::string& src, const ShaderType type)
 {
     GLuint shader = _shaders[type];
 
-    parseIncludes(src);
-    const char* shaderSrc = src.c_str();
+    auto parsedSources = src;
+    parseIncludes(parsedSources);
+    const char* shaderSrc = parsedSources.c_str();
     glShaderSource(shader, 1, (const GLchar**)&shaderSrc, 0);
     glCompileShader(shader);
 
@@ -204,13 +205,13 @@ bool Shader::setSource(std::string src, const ShaderType type)
         free(log);
     }
 
-    _shadersSource[type] = src;
+    _shadersSource[type] = parsedSources;
     _isLinked = false;
     return status;
 }
 
 /*************/
-bool Shader::setSource(map<ShaderType, string> sources)
+bool Shader::setSource(const map<ShaderType, string>& sources)
 {
     resetShader(vertex);
     resetShader(geometry);
@@ -226,7 +227,7 @@ bool Shader::setSource(map<ShaderType, string> sources)
 }
 
 /*************/
-bool Shader::setSourceFromFile(const std::string filename, const ShaderType type)
+bool Shader::setSourceFromFile(const std::string& filename, const ShaderType type)
 {
     ifstream in(filename, ios::in | ios::binary);
     if (in)

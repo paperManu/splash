@@ -100,7 +100,7 @@ void ThreadPool::waitAllThreads()
 }
 
 /*************/
-void ThreadPool::waitThreads(vector<unsigned int> list)
+void ThreadPool::waitThreads(vector<unsigned int>& list)
 {
     while (true)
     {

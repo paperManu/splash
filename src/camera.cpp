@@ -66,7 +66,7 @@ namespace Splash
 {
 
 /*************/
-Camera::Camera(std::weak_ptr<RootObject> root)
+Camera::Camera(const std::weak_ptr<RootObject>& root)
     : BaseObject(root)
 {
     init();

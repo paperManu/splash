@@ -61,7 +61,7 @@ class Image_Shmdata : public Image
     bool read(const std::string& filename);
 
   private:
-    Utils::ConsoleLogger _logger;
+    Utils::ShmdataLogger _logger;
     std::unique_ptr<shmdata::Follower> _reader{nullptr};
 
     ImageBuffer _readerBuffer;

@@ -374,15 +374,15 @@ inline int getFileDescriptorForOpenedFile(const std::string& filepath)
 /**
  * \brief Shmdata logger dedicated to splash
  */
-class ConsoleLogger : public shmdata::AbstractLogger
+class ShmdataLogger : public shmdata::AbstractLogger
 {
   private:
-    void on_error(std::string&& str) final { Log::get() << Log::ERROR << "Shmdata::ConsoleLogger - " << str << Log::endl; }
-    void on_critical(std::string&& str) final { Log::get() << Log::ERROR << "Shmdata::ConsoleLogger - " << str << Log::endl; }
-    void on_warning(std::string&& str) final { Log::get() << Log::WARNING << "Shmdata::ConsoleLogger - " << str << Log::endl; }
-    void on_message(std::string&& str) final { Log::get() << Log::MESSAGE << "Shmdata::ConsoleLogger - " << str << Log::endl; }
-    void on_info(std::string&& str) final { Log::get() << Log::MESSAGE << "Shmdata::ConsoleLogger - " << str << Log::endl; }
-    void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Shmdata::ConsoleLogger - " << str << Log::endl; }
+    void on_error(std::string&& str) final { Log::get() << Log::ERROR << "Shmdata::ShmdataLogger - " << str << Log::endl; }
+    void on_critical(std::string&& str) final { Log::get() << Log::ERROR << "Shmdata::ShmdataLogger - " << str << Log::endl; }
+    void on_warning(std::string&& str) final { Log::get() << Log::WARNING << "Shmdata::ShmdataLogger - " << str << Log::endl; }
+    void on_message(std::string&& str) final { Log::get() << Log::MESSAGE << "Shmdata::ShmdataLogger - " << str << Log::endl; }
+    void on_info(std::string&& str) final { Log::get() << Log::MESSAGE << "Shmdata::ShmdataLogger - " << str << Log::endl; }
+    void on_debug(std::string&& str) final { Log::get() << Log::DEBUGGING << "Shmdata::ShmdataLogger - " << str << Log::endl; }
 };
 #endif
 } // end of namespace

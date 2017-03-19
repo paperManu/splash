@@ -160,37 +160,38 @@ void World::run()
 }
 
 /*************/
-void World::addLocally(string type, string name, string destination)
+void World::addLocally(const string& type, const string& name, const string& destination)
 {
     // Images and Meshes have a counterpart on this side
     if (type.find("image") == string::npos && type.find("mesh") == string::npos && type.find("queue") == string::npos)
         return;
 
     auto object = _factory->create(type);
+    auto realName = name;
     if (object.get() != nullptr)
     {
         object->setId(getId());
-        name = object->setName(name); // The real name is not necessarily the one we set (see Queues)
-        _objects[name] = object;
+        realName = object->setName(name); // The real name is not necessarily the one we set (see Queues)
+        _objects[realName] = object;
     }
 
     // If the object is not registered yet, we add it with the specified destination
     // as well as the WORLD_SCENE destination
-    if (_objectDest.find(name) == _objectDest.end())
+    if (_objectDest.find(realName) == _objectDest.end())
     {
-        _objectDest[name] = vector<string>();
-        _objectDest[name].emplace_back(destination);
+        _objectDest[realName] = vector<string>();
+        _objectDest[realName].emplace_back(destination);
     }
     // If it is, we only add the new destination
     else
     {
         bool isPresent = false;
-        for (auto d : _objectDest[name])
+        for (auto d : _objectDest[realName])
             if (d == destination)
                 isPresent = true;
         if (!isPresent)
         {
-            _objectDest[name].emplace_back(destination);
+            _objectDest[realName].emplace_back(destination);
         }
     }
 }
@@ -372,6 +373,7 @@ void World::applyConfig()
             // Set some default directories
             sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
             sendMessage(SPLASH_ALL_PEERS, "mediaPath", {_configurationPath});
+            sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
         }
 
         // Then we link the objects together
@@ -529,6 +531,9 @@ string World::getObjectsAttributesDescriptions()
     for (auto& type : types)
     {
         auto obj = localFactory.create(type);
+        if (!obj)
+            continue;
+
         auto description = obj->getAttributesDescriptions();
 
         int addedAttribute = 0;
@@ -739,14 +744,14 @@ void World::saveProject()
 }
 
 /*************/
-Values World::getObjectsNameByType(string type)
+Values World::getObjectsNameByType(const string& type)
 {
     Values answer = sendMessageWithAnswer(_masterSceneName, "getObjectsNameByType", {type});
     return answer[2].as<Values>();
 }
 
 /*************/
-void World::handleSerializedObject(const string name, shared_ptr<SerializedObject> obj)
+void World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
     _link->sendBuffer(name, std::move(obj));
 }
@@ -779,7 +784,7 @@ void World::leave(int signal_value)
 }
 
 /*************/
-bool World::copyCameraParameters(std::string filename)
+bool World::copyCameraParameters(const std::string& filename)
 {
     ifstream in(filename, ios::in | ios::binary);
     string contents;
@@ -898,7 +903,7 @@ Values World::jsonToValues(const Json::Value& values)
 }
 
 /*************/
-bool World::loadJsonFile(string filename, Json::Value& configuration)
+bool World::loadJsonFile(const string& filename, Json::Value& configuration)
 {
     ifstream in(filename, ios::in | ios::binary);
     string contents;
@@ -932,7 +937,7 @@ bool World::loadJsonFile(string filename, Json::Value& configuration)
 }
 
 /*************/
-bool World::loadConfig(string filename, Json::Value& configuration)
+bool World::loadConfig(const string& filename, Json::Value& configuration)
 {
     if (!loadJsonFile(filename, configuration))
         return false;
@@ -947,7 +952,7 @@ bool World::loadConfig(string filename, Json::Value& configuration)
 }
 
 /*************/
-bool World::loadProject(string filename)
+bool World::loadProject(const string& filename)
 {
     try
     {
@@ -1147,9 +1152,15 @@ void World::parseArguments(int argc, char** argv)
 #endif
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
+            cout << "\t-H (--hide) : run Splash in background" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << endl;
             exit(0);
+        }
+        else if (string(argv[idx]) == "-H" || string(argv[idx]) == "--hide")
+        {
+            _runInBackground = true;
+            idx++;
         }
         else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
         {
@@ -1194,7 +1205,7 @@ void World::parseArguments(int argc, char** argv)
 }
 
 /*************/
-void World::setAttribute(string name, string attrib, const Values& args)
+void World::setAttribute(const string& name, const string& attrib, const Values& args)
 {
     if (_objects.find(name) != _objects.end())
         _objects[name]->setAttribute(attrib, args);
@@ -1240,16 +1251,6 @@ void World::registerAttributes()
         return true;
     });
     setAttributeDescription("sceneLaunched", "Message sent by Scenes to confirm they are running");
-
-    addAttribute("computeBlending",
-        [&](const Values& args) {
-            _blendingMode = args[0].as<string>();
-            addTask([&]() { sendMessage(SPLASH_ALL_PEERS, "computeBlending", {_blendingMode}); });
-
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
     addAttribute("deleteObject",
         [&](const Values& args) {
@@ -1401,6 +1402,20 @@ void World::registerAttributes()
         {'s', 's'});
     setAttributeDescription("getAttributeDescription", "Ask the given object for the description of the given attribute");
 
+    addAttribute("getWorldAttribute",
+        [&](const Values& args) {
+            auto attrName = args[0].as<string>();
+            addTask([=]() {
+                Values attr;
+                getAttribute(attrName, attr);
+                attr.push_front("getWorldAttribute");
+                sendMessage(SPLASH_ALL_PEERS, "answerMessage", attr);
+            });
+            return true;
+        },
+        {'s'});
+    setAttributeDescription("getWorldAttribute", "Get a World's attribute and send it to the Scenes");
+
     addAttribute("loadConfig",
         [&](const Values& args) {
             string filename = args[0].as<string>();
@@ -1464,6 +1479,14 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("clockDeviceName", "Set the audio device name from which to read the LTC clock signal");
 #endif
+
+    addAttribute("looseClock",
+        [&](const Values& args) {
+            Timer::get().setLoose(args[0].as<bool>());
+            return true;
+        },
+        [&]() -> Values { return {static_cast<int>(Timer::get().isLoose())}; },
+        {'n'});
 
     addAttribute("pong",
         [&](const Values& args) {

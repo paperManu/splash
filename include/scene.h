@@ -63,7 +63,7 @@ class Scene : public RootObject
      * \param name Scene name
      * \param autoRun If true, the Scene will start without waiting for a start message from the World
      */
-    Scene(std::string name = "Splash");
+    Scene(const std::string& name = "Splash");
 
     /**
      * \brief Destructor
@@ -76,14 +76,14 @@ class Scene : public RootObject
      * \param name Object name
      * \return Return a shared pointer to the created object
      */
-    std::shared_ptr<BaseObject> add(std::string type, std::string name = std::string());
+    std::shared_ptr<BaseObject> add(const std::string& type, const std::string& name = "");
 
     /**
      * \brief Add an object ghosting one in another Scene. Used in master Scene for controlling purposes
      * \param type Object type
      * \param name Object name
      */
-    void addGhost(std::string type, std::string name = std::string());
+    void addGhost(const std::string& type, const std::string& name = "");
 
     /**
      * \brief Get an attribute for the given object. Try locally and to the World
@@ -91,7 +91,7 @@ class Scene : public RootObject
      * \param attribute Attribute
      * \return Return the attribute value
      */
-    Values getAttributeFromObject(std::string name, std::string attribute);
+    Values getAttributeFromObject(const std::string& name, const std::string& attribute);
 
     /**
      * \brief Get an attribute description. Try locally and to the World
@@ -99,7 +99,7 @@ class Scene : public RootObject
      * \param attribute Attribute
      * \return Return the attribute description
      */
-    Values getAttributeDescriptionFromObject(std::string name, std::string attribute);
+    Values getAttributeDescriptionFromObject(const std::string& name, const std::string& attribute);
 
     /**
      * \brief Get the current configuration of the scene as a json object
@@ -112,14 +112,14 @@ class Scene : public RootObject
      * \param name Window name
      * \return Return a shared pointer to the new window
      */
-    std::shared_ptr<GlWindow> getNewSharedWindow(std::string name = std::string());
+    std::shared_ptr<GlWindow> getNewSharedWindow(const std::string& name = "");
 
     /**
      * \brief Get the list of objects by their type
      * \param type Object type
      * \return Return the list of objects of the given type
      */
-    Values getObjectsNameByType(std::string type);
+    Values getObjectsNameByType(const std::string& type);
 
     /**
      * \brief Get the status of the scene
@@ -151,16 +151,16 @@ class Scene : public RootObject
      * \param second Parent object
      * \return Return true if the linking succeeded
      */
-    bool link(std::string first, std::string second);
-    bool link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second);
+    bool link(const std::string& first, const std::string& second);
+    bool link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second);
 
     /**
      * \brief Unlink two objects. This always succeeds
      * \param first Child object
      * \param second Parent object
      */
-    void unlink(std::string first, std::string second);
-    void unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second);
+    void unlink(const std::string& first, const std::string& second);
+    void unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second);
 
     /**
      * \brief Link objects, one of them being a ghost
@@ -168,20 +168,20 @@ class Scene : public RootObject
      * \param second Parent object
      * \return Return true if the linking succeeded
      */
-    bool linkGhost(std::string first, std::string second);
+    bool linkGhost(const std::string& first, const std::string& second);
 
     /**
      * \brief Unlink two objects, one of them being a ghost
      * \param first Child object
      * \param second Parent object
      */
-    void unlinkGhost(std::string first, std::string second);
+    void unlinkGhost(const std::string& first, const std::string& second);
 
     /**
      * \brief Remove an object
      * \param name Object name
      */
-    void remove(std::string name);
+    void remove(const std::string& name);
 
     /**
      * \brief Render everything
@@ -197,7 +197,7 @@ class Scene : public RootObject
      * \brief Set the Scene as the master one
      * \param configFilePath File path for the loaded configuration
      */
-    void setAsMaster(std::string configFilePath = "");
+    void setAsMaster(const std::string& configFilePath = "");
 
     /**
      * \brief Give a special behavior to the scene, making it the main window of the World
@@ -242,6 +242,7 @@ class Scene : public RootObject
     std::shared_ptr<BaseObject> _mouse{nullptr};
     std::shared_ptr<BaseObject> _joystick{nullptr};
     std::shared_ptr<BaseObject> _dragndrop{nullptr};
+    std::shared_ptr<BaseObject> _blender{nullptr};
 
 // Objects in charge of calibration
 #if HAVE_GPHOTO
@@ -250,6 +251,7 @@ class Scene : public RootObject
 
   private:
     static bool _isGlfwInitialized;
+    bool _runInBackground{false}; //!< If true, no window will be created
 
     std::shared_ptr<Scene> _self;
     bool _started{false};
@@ -274,9 +276,6 @@ class Scene : public RootObject
 
     unsigned long _nextId{0};
 
-    //! Blender object
-    std::shared_ptr<BaseObject> _blender{nullptr};
-
     /**
      * \brief Find which OpenGL version is available (from a predefined list)
      * \return Return MAJOR and MINOR
@@ -287,7 +286,7 @@ class Scene : public RootObject
      * \brief Set up the context and everything
      * \param name Scene name
      */
-    void init(std::string name);
+    void init(const std::string& name);
 
     /**
      * \brief Get the next available id

@@ -171,7 +171,7 @@ bool Image_GPhoto::capture()
 }
 
 /*************/
-bool Image_GPhoto::doSetProperty(string name, string value)
+bool Image_GPhoto::doSetProperty(const string& name, const string& value)
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
 
@@ -195,7 +195,7 @@ bool Image_GPhoto::doSetProperty(string name, string value)
 }
 
 /*************/
-bool Image_GPhoto::doGetProperty(string name, string& value)
+bool Image_GPhoto::doGetProperty(const string& name, string& value)
 {
     lock_guard<recursive_mutex> lock(_gpMutex);
 
@@ -220,7 +220,7 @@ bool Image_GPhoto::doGetProperty(string name, string& value)
 }
 
 /*************/
-float Image_GPhoto::getFloatFromShutterspeedString(std::string speed)
+float Image_GPhoto::getFloatFromShutterspeedString(const string& speed)
 {
     float num = 1.f;
     float denom = 1.f;
@@ -332,7 +332,7 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
 }
 
 /*************/
-void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, string property, vector<string>& values)
+void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, const string& property, vector<string>& values)
 {
     values.clear();
     CameraWidget* widget;

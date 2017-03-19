@@ -650,7 +650,8 @@ void Image_FFmpeg::videoDisplayLoop()
 
             int64_t clockAsMs;
             bool clockIsPaused{false};
-            if (_useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused))
+            bool useClock = _useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused);
+            if (useClock)
             {
                 float seconds = (float)clockAsMs / 1e3f + _shiftTime;
                 _clockTime = seconds * 1e6;
@@ -662,13 +663,13 @@ void Image_FFmpeg::videoDisplayLoop()
             TimedFrame& timedFrame = localQueue[0];
             if (timedFrame.timing != 0ull)
             {
-                if (_paused || (clockIsPaused && _useClock))
+                if (_paused || (clockIsPaused && useClock))
                 {
                     _startTime = Timer::getTime() - _currentTime;
                     this_thread::sleep_for(chrono::milliseconds(2));
                     continue;
                 }
-                else if (_useClock && _clockTime != -1l)
+                else if (useClock && _clockTime != -1l)
                 {
                     auto delta = abs(_currentTime - _clockTime);
                     // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock

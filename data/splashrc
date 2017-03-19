@@ -1,0 +1,15 @@
+// Sample configuration file.
+// This is a basic Json file, except that comments are allowed
+{
+    "camera" : {
+        "size" : [1920, 1080],
+        "brightness" : 0.8
+    },
+    "filter" : {
+        "saturation" : 1.5,
+        "colorTemperature" : 2700.0
+    },
+    "image_ffmpeg" : {
+        "buffer" : 2048
+    }
+}

@@ -54,7 +54,7 @@ class Factory
      * \param type Object type
      * \return Return a shared pointer to the created object
      */
-    std::shared_ptr<BaseObject> create(std::string type);
+    std::shared_ptr<BaseObject> create(const std::string& type);
 
     /**
      * \brief Get all creatable object types
@@ -96,7 +96,7 @@ class Factory
     struct Page
     {
         Page() = default;
-        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, std::string sd = "none", std::string d = "none")
+        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, const std::string& sd = "none", const std::string& d = "none")
             : builder(f)
             , objectCategory(o)
             , shortDescription(sd)
@@ -114,6 +114,20 @@ class Factory
     bool _isScene{false};                    //!< True if the root is a Scene, false if it is a World (or if there is no root)
     bool _isMasterScene{false};              //!< True if the root is the master Scene
     std::map<std::string, Page> _objectBook; //!< List of all creatable objects
+
+    std::unordered_map<std::string, std::unordered_map<std::string, Values>> _defaults{}; //!< Default values
+
+    /**
+     * \brief Helper function to convert Json::Value to Splash::Values
+     * \param values JSon to be processed
+     * \return Return a Values converted from the JSon
+     */
+    Values jsonToValues(const Json::Value& values);
+
+    /**
+     * Load default values from the file set in envvar SPLASH_DEFAULTS_FILE_ENV (set in coretypes.h)
+     */
+    void loadDefaults();
 
     /**
      * |brief Registers the available objects inside the _objectBook

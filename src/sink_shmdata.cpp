@@ -14,7 +14,7 @@ Sink_Shmdata::Sink_Shmdata(weak_ptr<RootObject> root)
 }
 
 /*************/
-void Sink_Shmdata::handlePixels(const char* pixels, ImageBufferSpec spec)
+void Sink_Shmdata::handlePixels(const char* pixels, const ImageBufferSpec& spec)
 {
     auto size = spec.rawSize();
     if (!pixels || size == 0)

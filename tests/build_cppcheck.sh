@@ -16,5 +16,6 @@ fi
 
 cd cppcheck
 if [ ! -f cppcheck ]; then
+    git checkout 1.77
     make -j${CPU_COUNT} SRCDIR=build CFGDIR=cfg HAVE_RULES=yes CXXFLAGS="-O2 -DNDEBUG -Wall -Wno-sign-compare -Wno-unused-function"
 fi

@@ -49,7 +49,7 @@ UserInput::~UserInput()
 }
 
 /*************/
-bool UserInput::capture(string id)
+bool UserInput::capture(const string& id)
 {
     lock_guard<mutex> lock(_captureMutex);
     if (_captured)
@@ -61,7 +61,7 @@ bool UserInput::capture(string id)
 }
 
 /*************/
-vector<UserInput::State> UserInput::getState(string id)
+vector<UserInput::State> UserInput::getState(const string& id)
 {
     lock_guard<mutex> lockState(_stateMutex);
     lock_guard<mutex> lockCapture(_captureMutex);
@@ -77,7 +77,7 @@ vector<UserInput::State> UserInput::getState(string id)
 }
 
 /*************/
-void UserInput::release(string id)
+void UserInput::release(const string& id)
 {
     lock_guard<mutex> lock(_captureMutex);
     if (id == _capturer)
@@ -117,7 +117,7 @@ void UserInput::resetCallback(const UserInput::State& state)
 }
 
 /*************/
-void UserInput::setCallback(const UserInput::State& state, const function<void(const UserInput::State&)> cb)
+void UserInput::setCallback(const UserInput::State& state, const function<void(const UserInput::State&)>& cb)
 {
     lock_guard<mutex> lock(_callbackMutex);
     _callbacks[state] = cb;

@@ -93,7 +93,7 @@ class Sink : public BaseObject
     /**
      * Class to be implemented to copy the _mappedPixels somewhere
      */
-    virtual void handlePixels(const char* pixels, ImageBufferSpec spec) = 0;
+    virtual void handlePixels(const char* pixels, const ImageBufferSpec& spec) = 0;
 
     /**
      * \brief Update the pbos according to the parameters

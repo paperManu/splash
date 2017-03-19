@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.5.8
+    VERSION 0.6.0
     LANGUAGES C CXX
 )
 
@@ -46,7 +46,7 @@ set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
-find_package(Snappy REQUIRED)
+pkg_search_module(SNAPPY REQUIRED snappy)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
@@ -158,7 +158,6 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
                                       libopencv-highgui2.4v5,
                                       libopencv-imgproc2.4v5,
                                       libopencv-video2.4v5,
-                                      libsnappy1v5,
                                       libxrandr2,
                                       libxi6,
                                       libxinerama1,

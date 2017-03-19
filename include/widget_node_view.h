@@ -51,7 +51,7 @@ class GuiNodeView : public GuiWidget
     std::vector<int> _viewShift{0, 0};
     std::map<std::string, std::vector<float>> _nodePositions;
 
-    void renderNode(std::string name);
+    void renderNode(const std::string& name);
 };
 
 } // end of namespace

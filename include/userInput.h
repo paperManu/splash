@@ -82,7 +82,7 @@ class UserInput : public BaseObject
      * \brief Lock the input to the given id
      * \param id User ID to lock this input to
      */
-    bool capture(std::string id);
+    bool capture(const std::string& id);
 
     /**
      * \brief Clear the input state
@@ -93,13 +93,13 @@ class UserInput : public BaseObject
      * \brief Get the input state
      * \return Return the input state as vector of States
      */
-    std::vector<State> getState(std::string id);
+    std::vector<State> getState(const std::string& id);
 
     /**
      * \brief Release the input
      * \param id User ID, used to check that the right user asks for release
      */
-    void release(std::string id);
+    void release(const std::string& id);
 
     /**
      * \brief Remove a callback
@@ -113,7 +113,7 @@ class UserInput : public BaseObject
      * \param state State which should trigger the callback
      * \param cb Callback
      */
-    static void setCallback(const State& state, const std::function<void(const State&)> cb);
+    static void setCallback(const State& state, const std::function<void(const State&)>& cb);
 
   protected:
     std::mutex _captureMutex{}; //!< Capture mutex;

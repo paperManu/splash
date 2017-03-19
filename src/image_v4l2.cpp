@@ -280,21 +280,6 @@ bool Image_V4L2::initializeCapture()
 {
     int result = 0;
 
-    if (_captureRate != 0.0)
-    {
-        _captureRate = _v4l2SourceFormat.fmt.pix.priv / 1000.f;
-        _v4l2StreamParams.parm.capture.timeperframe.numerator = NUMERATOR;
-        _v4l2StreamParams.parm.capture.timeperframe.denominator = ((NUMERATOR * DIVISOR * _captureRate) + (DIVISOR / 2)) / DIVISOR;
-        _v4l2StreamParams.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-        result = ioctl(_deviceFd, VIDIOC_S_PARM, &_v4l2StreamParams);
-        if (result < 0)
-        {
-            Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - Failed to set capture rate to " << _captureRate << Log::endl;
-            return false;
-        }
-    }
-
 #if HAVE_DATAPATH
     if (_isDatapath)
     {
@@ -641,23 +626,6 @@ void Image_V4L2::registerAttributes()
         [&]() -> Values { return {(int)_capturing}; },
         {'n'});
     setAttributeParameter("doCapture", true, true);
-
-    addAttribute("captureRate",
-        [&](const Values& args) {
-            auto isCapturing = _capturing;
-            if (isCapturing)
-                stopCapture();
-
-            _captureRate = std::max(0.0, args[0].as<double>());
-
-            if (isCapturing)
-                doCapture();
-
-            return true;
-        },
-        [&]() -> Values { return {_captureRate}; },
-        {'n'});
-    setAttributeParameter("captureRate", true, true);
 
     addAttribute("captureSize",
         [&](const Values& args) {

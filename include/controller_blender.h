@@ -39,7 +39,7 @@ class Blender : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    Blender(std::weak_ptr<RootObject> root);
+    Blender(const std::weak_ptr<RootObject>& root);
 
     /**
      * \brief Destructor
@@ -50,6 +50,11 @@ class Blender : public ControllerObject
      * \brief Update the blending
      */
     void update();
+
+    /**
+     * Force blending computation at the next call to update()
+     */
+    void forceUpdate() { _blendingComputed = false; }
 
   private:
     bool _isSceneMaster{false};        //!< True if the root Scene is master

@@ -48,7 +48,7 @@ namespace Splash
 bool Scene::_isGlfwInitialized{false};
 
 /*************/
-Scene::Scene(std::string name)
+Scene::Scene(const std::string& name)
 {
     _self = std::shared_ptr<Scene>(this, [](Scene*) {}); // A shared pointer with no deleter, how convenient
 
@@ -58,6 +58,13 @@ Scene::Scene(std::string name)
     _isRunning = true;
     _name = name;
     _factory = unique_ptr<Factory>(new Factory(_self));
+
+    _blender = make_shared<Blender>(_self);
+    if (_blender)
+    {
+        _blender->setName("blender");
+        _objects["blender"] = _blender;
+    }
 
     registerAttributes();
 
@@ -90,11 +97,15 @@ Scene::~Scene()
 }
 
 /*************/
-std::shared_ptr<BaseObject> Scene::add(string type, string name)
+std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
+    // If we run in background mode, don't create any window
+    if (_runInBackground && type == "window")
+        return {};
 
     // Check whether an object of this name already exists
     auto objectIt = _objects.find(name);
@@ -114,11 +125,11 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
         obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
 
         obj->setId(getId());
-        name = obj->setName(name);
-        if (name == string())
+        auto realName = obj->setName(name);
+        if (realName == string())
             _objects[to_string(obj->getId())] = obj;
         else
-            _objects[name] = obj;
+            _objects[realName] = obj;
 
         // Some objects have to be connected to the gui (if the Scene is master)
         if (_gui != nullptr)
@@ -141,7 +152,7 @@ std::shared_ptr<BaseObject> Scene::add(string type, string name)
 }
 
 /*************/
-void Scene::addGhost(string type, string name)
+void Scene::addGhost(const string& type, const string& name)
 {
     // Currently, only Cameras can be ghosts
     if (type != string("camera") && type != string("warp"))
@@ -166,7 +177,7 @@ void Scene::addGhost(string type, string name)
 }
 
 /*************/
-Values Scene::getAttributeFromObject(string name, string attribute)
+Values Scene::getAttributeFromObject(const string& name, const string& attribute)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     auto objectIt = _objects.find(name);
@@ -189,7 +200,7 @@ Values Scene::getAttributeFromObject(string name, string attribute)
 }
 
 /*************/
-Values Scene::getAttributeDescriptionFromObject(string name, string attribute)
+Values Scene::getAttributeDescriptionFromObject(const string& name, const string& attribute)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     auto objectIt = _objects.find(name);
@@ -251,7 +262,7 @@ Json::Value Scene::getConfigurationAsJson()
 }
 
 /*************/
-bool Scene::link(string first, string second)
+bool Scene::link(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -269,7 +280,7 @@ bool Scene::link(string first, string second)
 }
 
 /*************/
-bool Scene::link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
+bool Scene::link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -281,7 +292,7 @@ bool Scene::link(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> 
 }
 
 /*************/
-void Scene::unlink(string first, string second)
+void Scene::unlink(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -298,7 +309,7 @@ void Scene::unlink(string first, string second)
 }
 
 /*************/
-void Scene::unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject> second)
+void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -308,7 +319,7 @@ void Scene::unlink(std::shared_ptr<BaseObject> first, std::shared_ptr<BaseObject
 }
 
 /*************/
-bool Scene::linkGhost(string first, string second)
+bool Scene::linkGhost(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -333,7 +344,7 @@ bool Scene::linkGhost(string first, string second)
 }
 
 /*************/
-void Scene::unlinkGhost(string first, string second)
+void Scene::unlinkGhost(const string& first, const string& second)
 {
     std::shared_ptr<BaseObject> source(nullptr);
     std::shared_ptr<BaseObject> sink(nullptr);
@@ -358,7 +369,7 @@ void Scene::unlinkGhost(string first, string second)
 }
 
 /*************/
-void Scene::remove(string name)
+void Scene::remove(const string& name)
 {
     std::shared_ptr<BaseObject> obj;
 
@@ -421,6 +432,19 @@ void Scene::render()
         for (auto& obj : objPriority.second)
         {
             obj->update();
+
+            if (obj->getCategory() == BaseObject::Category::MESH)
+                if (obj->wasUpdated())
+                {
+                    // If a mesh has been updated, force blending update
+                    dynamic_pointer_cast<Blender>(_blender)->forceUpdate();
+                    obj->setNotUpdated();
+                }
+
+            if (obj->getCategory() == BaseObject::Category::IMAGE)
+                if (obj->wasUpdated())
+                    obj->setNotUpdated();
+
             obj->render();
         }
 
@@ -549,7 +573,7 @@ void Scene::textureUploadRun()
 }
 
 /*************/
-void Scene::setAsMaster(string configFilePath)
+void Scene::setAsMaster(const string& configFilePath)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -571,6 +595,7 @@ void Scene::setAsMaster(string configFilePath)
     _mouse = make_shared<Mouse>(_self);
     _joystick = make_shared<Joystick>(_self);
     _dragndrop = make_shared<DragNDrop>(_self);
+
     if (_keyboard)
         _objects["keyboard"] = _keyboard;
     if (_mouse)
@@ -622,7 +647,7 @@ void Scene::waitTextureUpload()
 }
 
 /*************/
-shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
+shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
 {
     string windowName;
     name.size() == 0 ? windowName = "Splash::Window" : windowName = "Splash::" + name;
@@ -677,7 +702,7 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(string name)
 }
 
 /*************/
-Values Scene::getObjectsNameByType(string type)
+Values Scene::getObjectsNameByType(const string& type)
 {
     lock_guard<recursive_mutex> lock(_objectsMutex);
     Values list;
@@ -722,7 +747,7 @@ vector<int> Scene::findGLVersion()
 }
 
 /*************/
-void Scene::init(std::string name)
+void Scene::init(const string& name)
 {
     glfwSetErrorCallback(Scene::glfwErrorCallback);
 
@@ -891,36 +916,6 @@ void Scene::registerAttributes()
         return true;
     });
     setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
-
-    addAttribute("computeBlending",
-        [&](const Values& args) {
-            addTask([=]() {
-                lock_guard<recursive_mutex> lock(_objectsMutex);
-                shared_ptr<BaseObject> blender{nullptr};
-                auto blenderIt = find_if(_objects.begin(), _objects.end(), [](std::pair<std::string, std::shared_ptr<BaseObject>> obj) {
-                    if (obj.second->getType() == "blender")
-                        return true;
-                    else
-                        return false;
-                });
-
-                if (blenderIt == _objects.end())
-                {
-                    add("blender", "blender");
-                    blender = _objects["blender"];
-                }
-                else
-                {
-                    blender = blenderIt->second;
-                }
-
-                std::string blendingMode = args[0].as<string>();
-                blender->setAttribute("mode", args);
-            });
-            return true;
-        },
-        {'s'});
-    setAttributeDescription("computeBlending", "Ask for blending computation. Parameter can be: once, continuous, or anything else to deactivate blending");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {
@@ -1286,6 +1281,13 @@ void Scene::registerAttributes()
         },
         {'s'});
     setAttributeDescription("mediaPath", "Path to the media files");
+
+    addAttribute("runInBackground",
+        [&](const Values& args) {
+            _runInBackground = args[0].as<bool>();
+            return true;
+        },
+        {'n'});
 }
 
 } // end of namespace

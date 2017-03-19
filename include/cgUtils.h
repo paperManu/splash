@@ -40,7 +40,7 @@ namespace Splash
 struct RgbValue
 {
     RgbValue(){};
-    RgbValue(Values v)
+    RgbValue(const Values& v)
     {
         if (v.size() != 3)
             return;
@@ -48,7 +48,7 @@ struct RgbValue
         g = v[1].as<float>();
         b = v[2].as<float>();
     }
-    RgbValue(std::vector<float> v)
+    RgbValue(const std::vector<float>& v)
     {
         if (v.size() != 3)
             return;
@@ -91,7 +91,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator*(const RgbValue c) const
+    RgbValue operator*(const RgbValue& c) const
     {
         RgbValue tmp = *this;
         tmp.r *= c.r;
@@ -100,7 +100,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator/(const RgbValue c) const
+    RgbValue operator/(const RgbValue& c) const
     {
         RgbValue tmp = *this;
         tmp.r /= c.r;
@@ -109,7 +109,7 @@ struct RgbValue
         return tmp;
     }
 
-    RgbValue operator+(const RgbValue c) const
+    RgbValue operator+(const RgbValue& c) const
     {
         RgbValue tmp = *this;
         tmp.r += c.r;

@@ -70,7 +70,7 @@ class ThreadPool
     void addWorkers(unsigned int nbr);
     void setAffinity(const std::vector<int>& cores);
     void waitAllThreads();
-    void waitThreads(std::vector<unsigned int>);
+    void waitThreads(std::vector<unsigned int>&);
 
   private:
     friend class Worker;

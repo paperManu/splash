@@ -320,6 +320,10 @@ class SplashExportNodeTree(Operator):
                               'SplashObjectNodeType']
 
     def execute(self, context):
+        objectIsEdited = bpy.context.edit_object is not None
+        if objectIsEdited is True:
+            bpy.ops.object.editmode_toggle()
+
         self.scene_order.clear()
         self.scene_lists.clear()
         self.node_links.clear()
