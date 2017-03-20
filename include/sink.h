@@ -84,6 +84,7 @@ class Sink : public BaseObject
     ImageBufferSpec _spec{};
     ImageBuffer _image{};
     std::mutex _lockPixels;
+    bool _opened{false};
 
     uint32_t _pboCount{3};
     std::vector<GLuint> _pbos{};

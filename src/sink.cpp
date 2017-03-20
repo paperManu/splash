@@ -66,7 +66,7 @@ void Sink::unlinkFrom(shared_ptr<BaseObject> obj)
 /*************/
 void Sink::render()
 {
-    if (!_inputTexture)
+    if (!_inputTexture || !_opened)
         return;
 
     handlePixels(reinterpret_cast<char*>(_mappedPixels), _spec);
@@ -75,7 +75,7 @@ void Sink::render()
 /*************/
 void Sink::update()
 {
-    if (!_inputTexture)
+    if (!_inputTexture || !_opened)
         return;
 
     auto textureSpec = _inputTexture->getSpec();
@@ -155,6 +155,15 @@ void Sink::registerAttributes()
         [&]() -> Values { return {(int)_pboCount}; },
         {'n'});
     setAttributeDescription("bufferCount", "Number of GPU buffers to use for data download to CPU memory");
+
+    addAttribute("opened",
+        [&](const Values& args) {
+            _opened = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {(int)_opened}; },
+        {'n'});
+    setAttributeDescription("opened", "If true, the sink lets frames through");
 }
 
 } // end of namespace
