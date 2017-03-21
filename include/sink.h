@@ -84,8 +84,11 @@ class Sink : public BaseObject
     ImageBufferSpec _spec{};
     ImageBuffer _image{};
     std::mutex _lockPixels;
-    bool _opened{false};
 
+    bool _opened{false}; //!< If true, the sink lets frames through
+    uint32_t _period{0}; //!< Minimum time between consecutive frames
+
+    uint64_t _lastFrameTiming{0};
     uint32_t _pboCount{3};
     std::vector<GLuint> _pbos{};
     int _pboWriteIndex{0};

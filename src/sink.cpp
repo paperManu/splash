@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include "./timer.h"
+
 using namespace std;
 
 namespace Splash
@@ -66,7 +68,7 @@ void Sink::unlinkFrom(shared_ptr<BaseObject> obj)
 /*************/
 void Sink::render()
 {
-    if (!_inputTexture || !_opened)
+    if (!_inputTexture || !_mappedPixels)
         return;
 
     handlePixels(reinterpret_cast<char*>(_mappedPixels), _spec);
@@ -75,7 +77,7 @@ void Sink::render()
 /*************/
 void Sink::update()
 {
-    if (!_inputTexture || !_opened)
+    if (!_inputTexture)
         return;
 
     auto textureSpec = _inputTexture->getSpec();
@@ -92,6 +94,14 @@ void Sink::update()
             _mappedPixels = nullptr;
         }
     }
+
+    if (!_opened)
+        return;
+
+    uint64_t currentTime = Timer::get().getTime() / 1000;
+    if (_period != 0 && _lastFrameTiming != 0 && currentTime - _lastFrameTiming < _period)
+        return;
+    _lastFrameTiming = currentTime;
 
     if (_spec != textureSpec || _pbos.size() != _pboCount)
     {
@@ -161,9 +171,18 @@ void Sink::registerAttributes()
             _opened = args[0].as<int>();
             return true;
         },
-        [&]() -> Values { return {(int)_opened}; },
+        [&]() -> Values { return {static_cast<int>(_opened)}; },
         {'n'});
     setAttributeDescription("opened", "If true, the sink lets frames through");
+
+    addAttribute("period",
+        [&](const Values& args) {
+            _period = args[0].as<uint32_t>();
+            return true;
+        },
+        [&]() -> Values { return {static_cast<int>(_period)}; },
+        {'n'});
+    setAttributeDescription("period", "Minimum period (in ms) between consecutive frames");
 }
 
 } // end of namespace

@@ -465,7 +465,6 @@ void Window::swapBuffers()
 {
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
 
     glFlush();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
@@ -736,7 +735,6 @@ void Window::updateSwapInterval()
 {
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
 
     glfwSwapInterval(_swapInterval);
 
