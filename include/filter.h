@@ -136,6 +136,9 @@ class Filter : public Texture
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
     bool _updateColorDepth{false};                           //!< Set to true if the _render16bits has been updated
     Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
+    float _autoBlackLevelTargetValue{0.f};                   //!< If not zero, defines the target luminance value
+    float _autoBlackLevelSpeed{0.02f};                       //!< Coefficient applied to update the black level value
+    float _autoBlackLevel{0.f};
 
     std::string _shaderSource{""};     //!< User defined fragment shader filter
     std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file

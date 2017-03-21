@@ -208,6 +208,17 @@ void Filter::render()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     _outTexture->generateMipmap();
+
+    // Automatic black level stuff
+    if (_autoBlackLevelTargetValue != 0.f)
+    {
+        auto luminance = _outTexture->getMeanValue().luminance();
+        auto deltaLuminance = _autoBlackLevelTargetValue - luminance;
+        auto newBlackLevel = _autoBlackLevel + deltaLuminance / 2.f;
+        newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
+        _autoBlackLevel = _autoBlackLevel * (1.f - _autoBlackLevelSpeed) + newBlackLevel * _autoBlackLevelSpeed;
+        _filterUniforms["_blackLevel"] = {_autoBlackLevel / 255.0};
+    }
 }
 
 /*************/
@@ -460,6 +471,21 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n'});
     setAttributeDescription("blackLevel", "Set the black level for the linked texture");
+
+    addAttribute("blackLevelAuto",
+        [&](const Values& args) {
+            _autoBlackLevelTargetValue = args[0].as<float>();
+            _autoBlackLevelSpeed = max(0.f, min(1.f, args[1].as<float>()));
+            return true;
+        },
+        [&]() -> Values {
+            return {_autoBlackLevelTargetValue, _autoBlackLevelSpeed};
+        },
+        {'n', 'n'});
+    setAttributeDescription("blackLevelAuto",
+        "If the first parameter is not zero, automatic black level is enabled to match its value if needed.\n"
+        "The second parameter defines the speed at which the black level is updated.\n"
+        "The black level will be updated so that the minimum overall luminance matches the target.");
 
     addAttribute("brightness",
         [&](const Values& args) {

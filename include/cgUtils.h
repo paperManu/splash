@@ -118,6 +118,10 @@ struct RgbValue
         return tmp;
     }
 
+    void operator+=(const RgbValue& c) { *this = *this + c; }
+
+    void operator/=(const float v) { *this = *this / v; }
+
     // Get the luminance, considering a sRGB linearized color space
     float luminance() const { return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
 
