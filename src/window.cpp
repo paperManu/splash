@@ -477,10 +477,10 @@ void Window::swapBuffers()
 #if HAVE_OSX
     glDrawBuffer(GL_BACK);
 #else
-    if (windowIndex != 0)
-        glDrawBuffer(GL_FRONT);
-    else
-        glDrawBuffer(GL_BACK);
+    auto drawBuffer = GL_BACK;
+    if (!Scene::_hasNVSwapGroup && windowIndex != 0)
+        drawBuffer = GL_FRONT;
+    glDrawBuffer(drawBuffer);
 #endif
 
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -489,7 +489,9 @@ void Window::swapBuffers()
 #if HAVE_OSX
     glfwSwapBuffers(_window->get());
 #else
-    if (windowIndex == 0)
+    if (Scene::_hasNVSwapGroup)
+        glfwSwapBuffers(_window->get());
+    else if (windowIndex == 0)
         glfwSwapBuffers(_window->get());
 #endif
 

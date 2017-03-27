@@ -166,9 +166,6 @@ class Texture_Image : public Texture
     void update();
 
   private:
-    GLint _glVersionMajor{0};
-    GLint _glVersionMinor{0};
-
     GLuint _glTex{0};
     GLuint _pbos[2];
     int _pboReadIndex{0};

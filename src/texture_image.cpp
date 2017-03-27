@@ -561,9 +561,6 @@ void Texture_Image::init()
     if (_root.expired())
         return;
 
-    glGetIntegerv(GL_MAJOR_VERSION, &_glVersionMajor);
-    glGetIntegerv(GL_MINOR_VERSION, &_glVersionMinor);
-
     _timestamp = Timer::getTime();
 
     glGenBuffers(2, _pbos);

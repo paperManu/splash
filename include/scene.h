@@ -58,6 +58,11 @@ class Scene : public RootObject
 #endif
 
   public:
+    static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
+    static bool _isGlfwInitialized;
+    static std::vector<int> _glVersion;
+
+  public:
     /**
      * \brief Constructor
      * \param name Scene name
@@ -228,7 +233,6 @@ class Scene : public RootObject
   protected:
     std::unique_ptr<Factory> _factory{nullptr};
     std::shared_ptr<GlWindow> _mainWindow;
-    std::vector<int> _glVersion{0, 0};
     bool _isRunning{false};
 
     std::unordered_map<std::string, std::shared_ptr<BaseObject>> _ghostObjects;
@@ -250,7 +254,6 @@ class Scene : public RootObject
 #endif
 
   private:
-    static bool _isGlfwInitialized;
     bool _runInBackground{false}; //!< If true, no window will be created
 
     std::shared_ptr<Scene> _self;
