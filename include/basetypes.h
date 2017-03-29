@@ -314,13 +314,13 @@ class BaseObject
      * \param obj Object to link to
      * \return Returns true if the linking succeeded
      */
-    virtual bool linkTo(std::shared_ptr<BaseObject> obj);
+    virtual bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Unlink a given object
      * \param obj Object to unlink from
      */
-    virtual void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    virtual void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Return a vector of the linked objects

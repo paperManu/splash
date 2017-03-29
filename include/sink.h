@@ -55,13 +55,13 @@ class Sink : public BaseObject
      * Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(std::shared_ptr<BaseObject> obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * Update the inner buffer of the sink

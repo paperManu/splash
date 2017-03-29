@@ -39,7 +39,7 @@ Sink::~Sink()
 }
 
 /*************/
-bool Sink::linkTo(shared_ptr<BaseObject> obj)
+bool Sink::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!BaseObject::linkTo(obj))
@@ -56,7 +56,7 @@ bool Sink::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Sink::unlinkFrom(shared_ptr<BaseObject> obj)
+void Sink::unlinkFrom(const shared_ptr<BaseObject>& obj)
 {
     auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
     if (objAsTexture)

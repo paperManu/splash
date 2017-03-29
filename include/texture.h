@@ -90,7 +90,7 @@ class Texture : public BaseObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    virtual bool linkTo(std::shared_ptr<BaseObject> obj);
+    virtual bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Lock the texture for read / write operations

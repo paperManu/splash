@@ -191,7 +191,7 @@ vector<string> Window::getPathDropped()
 }
 
 /*************/
-bool Window::linkTo(shared_ptr<BaseObject> obj)
+bool Window::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!BaseObject::linkTo(obj))
@@ -252,7 +252,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Window::unlinkFrom(shared_ptr<BaseObject> obj)
+void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {

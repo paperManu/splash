@@ -215,7 +215,7 @@ int Object::getVerticesNumber() const
 }
 
 /*************/
-bool Object::linkTo(shared_ptr<BaseObject> obj)
+bool Object::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!BaseObject::linkTo(obj))
@@ -286,7 +286,7 @@ bool Object::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Object::unlinkFrom(shared_ptr<BaseObject> obj)
+void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
