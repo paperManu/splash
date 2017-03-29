@@ -478,7 +478,7 @@ void Window::swapBuffers()
     glDrawBuffer(GL_BACK);
 #else
     auto drawBuffer = GL_BACK;
-    if (!Scene::_hasNVSwapGroup && windowIndex != 0)
+    if (!Scene::getHasNVSwapGroup() && windowIndex != 0)
         drawBuffer = GL_FRONT;
     glDrawBuffer(drawBuffer);
 #endif
@@ -489,7 +489,7 @@ void Window::swapBuffers()
 #if HAVE_OSX
     glfwSwapBuffers(_window->get());
 #else
-    if (Scene::_hasNVSwapGroup)
+    if (Scene::getHasNVSwapGroup())
         glfwSwapBuffers(_window->get());
     else if (windowIndex == 0)
         glfwSwapBuffers(_window->get());

@@ -58,11 +58,6 @@ class Scene : public RootObject
 #endif
 
   public:
-    static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
-    static bool _isGlfwInitialized;
-    static std::vector<int> _glVersion;
-
-  public:
     /**
      * \brief Constructor
      * \param name Scene name
@@ -125,6 +120,18 @@ class Scene : public RootObject
      * \return Return the list of objects of the given type
      */
     Values getObjectsNameByType(const std::string& type);
+
+    /**
+     * Get the found OpenGL version
+     * \return Return the version as a vector of {MAJOR, MINOR}
+     */
+    static std::vector<int> getGLVersion();
+
+    /**
+     * Get whether NV swap groups are available
+     * \return Return true if they are
+     */
+    static bool getHasNVSwapGroup();
 
     /**
      * \brief Get the status of the scene
@@ -254,6 +261,9 @@ class Scene : public RootObject
 #endif
 
   private:
+    static bool _hasNVSwapGroup; //!< If true, NV swap groups have been detected and are used
+    static std::vector<int> _glVersion;
+
     bool _runInBackground{false}; //!< If true, no window will be created
 
     std::shared_ptr<Scene> _self;

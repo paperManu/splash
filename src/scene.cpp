@@ -45,9 +45,20 @@ using namespace std;
 namespace Splash
 {
 
-bool Scene::_isGlfwInitialized{false};
 bool Scene::_hasNVSwapGroup{false};
 vector<int> Scene::_glVersion{0, 0};
+
+/*************/
+std::vector<int> Scene::getGLVersion()
+{
+    return _glVersion;
+}
+
+/*************/
+bool Scene::getHasNVSwapGroup()
+{
+    return _hasNVSwapGroup;
+}
 
 /*************/
 Scene::Scene(const std::string& name)
