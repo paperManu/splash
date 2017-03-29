@@ -116,6 +116,8 @@ And that's it, you can move on the the [Walkthrough](https://github.com/paperMan
 
 #### Mac OSX
 
+__DISCLAIMER:__ The port to OSX is not well maintained, mainly because of the lack of time. A maintainer would be very welcome, feel free to stand up if you are willing to help.
+
 OSX installation is still a work in progress and has not been extensively tested (far from it!). Also, our current tests have shown that it is far easier to install on OSX version 10.9 or newer, as they switched from libstdc++ (GCC standard library) to libc++ (Clang standard library) as default which seems to solve tedious linking issues.
 
 So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php) or [Homebrew](https://brew.sh), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
@@ -162,7 +164,7 @@ It is also possible to create an app bundle automatically, the resulting bundle 
     cmake ..
     make && make package_osx
 
-Remember that it is a very early port to OSX. Please report any issue you encounter!
+Remember that it is a very early port to OSX.
 
 <a name="goingforward"/></a>
 Going forward
