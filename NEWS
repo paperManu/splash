@@ -1,8 +1,19 @@
 Splash release notes
 ===================
 
-Splash 0.6.x (2017-xx-xx)
+Splash 0.6.2 (2017-03-30)
 -------------------------
+New features:
+* Added automatic black level to filters
+
+Improvements:
+* Sinks can now be opened/closed at will
+* Can now limit sinks rate, given a period between frames
+* GL version and swap group status are now read from getters
+
+Bug fixed:
+* Fixed issues with distant attributes not showing in the controls panel
+* Fixed NVSwapGroups
 
 Splash 0.6.0 (2017-03-19)
 -------------------------
