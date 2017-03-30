@@ -281,7 +281,7 @@ class Scene : public RootObject
     std::shared_ptr<GlWindow> _textureUploadWindow;
     std::atomic_bool _textureUploadDone{false};
     Spinlock _textureMutex; //!< Sync between texture and render loops
-    GLsync _textureUploadFence, _cameraDrawnFence;
+    GLsync _textureUploadFence{nullptr}, _cameraDrawnFence{nullptr};
 
     // NV Swap group specific
     GLuint _maxSwapGroups{0};
