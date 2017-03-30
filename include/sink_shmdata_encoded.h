@@ -73,7 +73,7 @@ class Sink_Shmdata_Encoded : public Sink
 
     // Codec parameters
     int64_t _startTime{0ll};
-    std::string _codecName{"H264"};
+    std::string _codecName{"h264"};
     int _bitRate{4000000};
     double _framerate{30.0};
     std::string _options{"profile=baseline"};

@@ -45,7 +45,20 @@ using namespace std;
 namespace Splash
 {
 
-bool Scene::_isGlfwInitialized{false};
+bool Scene::_hasNVSwapGroup{false};
+vector<int> Scene::_glVersion{0, 0};
+
+/*************/
+std::vector<int> Scene::getGLVersion()
+{
+    return _glVersion;
+}
+
+/*************/
+bool Scene::getHasNVSwapGroup()
+{
+    return _hasNVSwapGroup;
+}
 
 /*************/
 Scene::Scene(const std::string& name)
@@ -687,12 +700,17 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
         PFNGLXBINDSWAPBARRIERNVPROC nvGLBindSwapBarrier = (PFNGLXBINDSWAPBARRIERNVPROC)glfwGetProcAddress("glXBindSwapBarrierNV");
 
         bool nvResult = true;
-        nvResult &= nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetX11Window(window), 1);
-        nvResult &= nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
+        nvResult = nvGLJoinSwapGroup(glfwGetX11Display(), glfwGetGLXWindow(window), 1);
         if (nvResult)
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully joined the NV swap group" << Log::endl;
         else
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't join the NV swap group" << Log::endl;
+
+        nvResult = nvGLBindSwapBarrier(glfwGetX11Display(), 1, 1);
+        if (nvResult)
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " successfully bind the NV swap barrier" << Log::endl;
+        else
+            Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Window " << windowName << " couldn't bind the NV swap barrier" << Log::endl;
     }
 #endif
 #endif
@@ -820,6 +838,9 @@ void Scene::init(const string& name)
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Unable to get NV max swap groups / barriers" << Log::endl;
         else
             Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - NV max swap groups: " << _maxSwapGroups << " / barriers: " << _maxSwapBarriers << Log::endl;
+
+        if (_maxSwapGroups != 0)
+            _hasNVSwapGroup = true;
     }
 #endif
 #endif

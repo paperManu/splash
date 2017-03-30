@@ -134,13 +134,13 @@ class Camera : public BaseObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(std::shared_ptr<BaseObject> obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(std::shared_ptr<BaseObject> obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point

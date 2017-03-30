@@ -414,7 +414,7 @@ void Camera::drawModelOnce(const std::string& modelName, const glm::dmat4& rtMat
 }
 
 /*************/
-bool Camera::linkTo(shared_ptr<BaseObject> obj)
+bool Camera::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!BaseObject::linkTo(obj))
@@ -433,7 +433,7 @@ bool Camera::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Camera::unlinkFrom(shared_ptr<BaseObject> obj)
+void Camera::unlinkFrom(const shared_ptr<BaseObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())

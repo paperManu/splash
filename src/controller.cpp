@@ -69,7 +69,7 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
     if (objectIt == scene->_objects.end())
         return {};
 
-    return objectIt->second->getAttributes();
+    return objectIt->second->getAttributes(true);
 }
 
 /*************/

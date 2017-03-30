@@ -65,6 +65,37 @@ void Texture_Image::generateMipmap() const
 }
 
 /*************/
+RgbValue Texture_Image::getMeanValue() const
+{
+    glBindTexture(GL_TEXTURE_2D, _glTex);
+    int level = _texLevels - 1;
+    int width, height;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_WIDTH, &width);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &height);
+    auto size = width * height * 4;
+    ResizableArray<uint8_t> buffer(size);
+    glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    RgbValue meanColor;
+    for (int y = 0; y < height; ++y)
+    {
+        RgbValue rowMeanColor;
+        for (int x = 0; x < width; ++x)
+        {
+            auto index = (x + y * width) * 4;
+            RgbValue color(buffer[index], buffer[index + 1], buffer[index + 2]);
+            rowMeanColor += color;
+        }
+        rowMeanColor /= static_cast<float>(width);
+        meanColor += rowMeanColor;
+    }
+    meanColor /= height;
+
+    return meanColor;
+}
+
+/*************/
 bool Texture_Image::linkTo(const std::shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
@@ -397,7 +428,7 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
             img->lock();
-            glTexStorage2D(GL_TEXTURE_2D, 3, internalFormat, spec.width, spec.height);
+            glTexStorage2D(GL_TEXTURE_2D, _texLevels, internalFormat, spec.width, spec.height);
             glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
             img->unlock();
         }
@@ -529,9 +560,6 @@ void Texture_Image::init()
     // This is used for getting documentation "offline"
     if (_root.expired())
         return;
-
-    glGetIntegerv(GL_MAJOR_VERSION, &_glVersionMajor);
-    glGetIntegerv(GL_MINOR_VERSION, &_glVersionMinor);
 
     _timestamp = Timer::getTime();
 

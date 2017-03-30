@@ -84,7 +84,7 @@ class Texture_Syphon : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(std::shared_ptr<BaseObject> obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj);
 
     /**
      * \brief Update the texture according to the owned Image

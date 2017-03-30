@@ -138,7 +138,7 @@ AttributeFunctor& BaseObject::operator[](const string& attr)
 }
 
 /*************/
-bool BaseObject::linkTo(shared_ptr<BaseObject> obj)
+bool BaseObject::linkTo(const shared_ptr<BaseObject>& obj)
 {
     auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<BaseObject>& o) {
         auto object = o.lock();
@@ -158,7 +158,7 @@ bool BaseObject::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void BaseObject::unlinkFrom(shared_ptr<BaseObject> obj)
+void BaseObject::unlinkFrom(const shared_ptr<BaseObject>& obj)
 {
     auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<BaseObject>& o) {
         auto object = o.lock();

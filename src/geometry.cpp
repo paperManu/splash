@@ -170,7 +170,7 @@ bool Geometry::deserialize(const shared_ptr<SerializedObject>& obj)
 }
 
 /*************/
-bool Geometry::linkTo(shared_ptr<BaseObject> obj)
+bool Geometry::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!BaseObject::linkTo(obj))

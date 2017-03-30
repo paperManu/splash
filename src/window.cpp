@@ -191,7 +191,7 @@ vector<string> Window::getPathDropped()
 }
 
 /*************/
-bool Window::linkTo(shared_ptr<BaseObject> obj)
+bool Window::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     if (!BaseObject::linkTo(obj))
@@ -252,7 +252,7 @@ bool Window::linkTo(shared_ptr<BaseObject> obj)
 }
 
 /*************/
-void Window::unlinkFrom(shared_ptr<BaseObject> obj)
+void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -465,7 +465,6 @@ void Window::swapBuffers()
 {
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
 
     glFlush();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
@@ -478,10 +477,10 @@ void Window::swapBuffers()
 #if HAVE_OSX
     glDrawBuffer(GL_BACK);
 #else
-    if (windowIndex != 0)
-        glDrawBuffer(GL_FRONT);
-    else
-        glDrawBuffer(GL_BACK);
+    auto drawBuffer = GL_BACK;
+    if (!Scene::getHasNVSwapGroup() && windowIndex != 0)
+        drawBuffer = GL_FRONT;
+    glDrawBuffer(drawBuffer);
 #endif
 
     glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -490,7 +489,9 @@ void Window::swapBuffers()
 #if HAVE_OSX
     glfwSwapBuffers(_window->get());
 #else
-    if (windowIndex == 0)
+    if (Scene::getHasNVSwapGroup())
+        glfwSwapBuffers(_window->get());
+    else if (windowIndex == 0)
         glfwSwapBuffers(_window->get());
 #endif
 
@@ -736,7 +737,6 @@ void Window::updateSwapInterval()
 {
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
 
     glfwSwapInterval(_swapInterval);
 

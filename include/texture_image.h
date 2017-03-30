@@ -30,12 +30,13 @@
 #include <memory>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "image.h"
-#include "texture.h"
+#include "./basetypes.h"
+#include "./cgUtils.h"
+#include "./coretypes.h"
+#include "./image.h"
+#include "./texture.h"
 
 namespace Splash
 {
@@ -90,6 +91,12 @@ class Texture_Image : public Texture
      * \brief Generate the mipmaps for the texture
      */
     void generateMipmap() const;
+
+    /**
+     * Computed the mean value for the image
+     * \return Return the mean RGB value
+     */
+    RgbValue getMeanValue() const;
 
     /**
      * \brief Get the id of the gl texture
@@ -159,15 +166,13 @@ class Texture_Image : public Texture
     void update();
 
   private:
-    GLint _glVersionMajor{0};
-    GLint _glVersionMinor{0};
-
     GLuint _glTex{0};
     GLuint _pbos[2];
     int _pboReadIndex{0};
     std::vector<unsigned int> _pboCopyThreadIds;
 
     // Store some texture parameters
+    static constexpr int _texLevels{4};
     bool _filtering{false};
     GLenum _texFormat{GL_RGB}, _texType{GL_UNSIGNED_BYTE};
     std::string _pixelFormat{"RGBA"};

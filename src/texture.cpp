@@ -43,7 +43,7 @@ void Texture::init()
 }
 
 /*************/
-bool Texture::linkTo(shared_ptr<BaseObject> obj)
+bool Texture::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
     return BaseObject::linkTo(obj);
