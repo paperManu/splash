@@ -147,6 +147,7 @@ And then grab and install Splash:
     git clone https://github.com/paperManu/splash
     cd splash
     git submodule update --init
+    ./make_deps.sh
     mkdir -p build && cd build
     cmake ..
     make && sudo make install
@@ -160,6 +161,7 @@ It is also possible to create an app bundle automatically, the resulting bundle 
     git clone https://github.com/paperManu/splash
     cd splash
     git submodule update --init
+    ./make_deps.sh
     mkdir -p build && cd build
     cmake ..
     make && make package_osx
