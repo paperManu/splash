@@ -60,7 +60,7 @@ class ColorCalibrator : public BaseObject
     /**
      * \brief Destructor
      */
-    ~ColorCalibrator();
+    ~ColorCalibrator() override;
 
     /**
      * No copy constructor
@@ -71,7 +71,7 @@ class ColorCalibrator : public BaseObject
     /**
      * \brief Update the color calibration of all cameras
      */
-    void update();
+    void update() override;
 
     /**
      * \brief Update the color response function of the physical camera

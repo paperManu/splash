@@ -35,8 +35,8 @@ class GuiMeshes : public GuiWidget
 {
   public:
     GuiMeshes(std::weak_ptr<Scene> scene, std::string name);
-    void render();
-    int updateWindowFlags();
+    void render() final;
+    int updateWindowFlags() final;
 
   private:
     std::map<std::string, int> _meshTypeIndex;

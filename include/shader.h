@@ -92,7 +92,7 @@ class Shader : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Shader();
+    ~Shader() final;
 
     /**
      * No copy constructor, but a move one

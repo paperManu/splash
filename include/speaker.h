@@ -52,7 +52,7 @@ class Speaker : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Speaker();
+    ~Speaker() final;
 
     /**
      * \brief Safe bool idiom

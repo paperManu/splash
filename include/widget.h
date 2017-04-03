@@ -66,8 +66,8 @@ class GuiWidget : public ControllerObject
 {
   public:
     GuiWidget(std::weak_ptr<Scene> scene, std::string name = "");
-    virtual ~GuiWidget() {}
-    virtual void render() {}
+    virtual ~GuiWidget() override {}
+    virtual void render() override {}
     virtual int updateWindowFlags() { return 0; }
     virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
     void setScene(const std::weak_ptr<Scene>& scene) { _scene = scene; }

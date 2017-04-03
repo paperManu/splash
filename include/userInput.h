@@ -76,7 +76,7 @@ class UserInput : public BaseObject
     /**
      * \brief Destructor
      */
-    virtual ~UserInput();
+    virtual ~UserInput() override;
 
     /**
      * \brief Lock the input to the given id

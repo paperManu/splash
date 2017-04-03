@@ -42,7 +42,7 @@ class Joystick : public UserInput
     /**
      * \brief Destructor
      */
-    ~Joystick();
+    ~Joystick() final;
 
   private:
     struct Stick
@@ -61,7 +61,7 @@ class Joystick : public UserInput
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 
     /**
      * \brief Callbacks update method

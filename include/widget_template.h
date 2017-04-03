@@ -38,7 +38,7 @@ class GuiTemplate : public GuiWidget
         : GuiWidget(scene, name)
     {
     }
-    void render();
+    void render() final;
 
   private:
     bool _templatesLoaded{false};

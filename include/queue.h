@@ -58,7 +58,7 @@ class Queue : public BufferObject
     /**
      * \brief Destructor
      */
-    ~Queue();
+    ~Queue() override;
 
     /**
      * No copy constructor, but a move one
@@ -71,7 +71,7 @@ class Queue : public BufferObject
      * \brief The Queue does not exist on the Scene side, there is the QueueSurrogate for this. So deserialization has no meaning
      * \return Return always false
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj) { return false; }
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override { return false; }
 
     /**
      * \brief Return the name of the distant buffer object
@@ -83,7 +83,7 @@ class Queue : public BufferObject
      * \brief Serialize the underlying source
      * \return Return the serialized object
      */
-    std::shared_ptr<SerializedObject> serialize() const;
+    std::shared_ptr<SerializedObject> serialize() const override;
 
     /**
      * \brief Returns always true, the Queue object handles update itself
@@ -151,7 +151,7 @@ class QueueSurrogate : public Texture
     /**
      * \brief Destructor
      */
-    ~QueueSurrogate();
+    ~QueueSurrogate() final;
 
     /**
      * No copy constructor, but a move one
@@ -163,12 +163,12 @@ class QueueSurrogate : public Texture
     /**
      * \brief Bind this texture of this filter
      */
-    void bind();
+    void bind() final;
 
     /**
      * \brief Unbind this texture of this filter
      */
-    void unbind();
+    void unbind() final;
 
     /**
      * \brief Get the shader parameters related to this texture. Texture should be locked first.
@@ -197,7 +197,7 @@ class QueueSurrogate : public Texture
     /**
      * \brief Update the texture according to the owned Image
      */
-    void update();
+    void update() final;
 
   private:
     int _filterIndex{0};

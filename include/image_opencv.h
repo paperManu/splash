@@ -54,7 +54,7 @@ class Image_OpenCV : public Image
     /**
      * Destructor
      */
-    ~Image_OpenCV();
+    ~Image_OpenCV() final;
 
     /**
      * No copy, but some move constructors
@@ -65,7 +65,7 @@ class Image_OpenCV : public Image
     /**
      * Set the path to read from
      */
-    bool read(const std::string& filename);
+    bool read(const std::string& filename) final;
 
   private:
     std::unique_ptr<cv::VideoCapture> _videoCapture;

@@ -38,7 +38,7 @@ class GuiTextBox : public GuiWidget
         : GuiWidget(scene, name)
     {
     }
-    void render();
+    void render() final;
     void setTextFunc(const std::function<std::string()>& func) { getText = func; }
 
   private:

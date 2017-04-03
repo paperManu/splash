@@ -53,7 +53,7 @@ class PythonEmbedded : public ControllerObject
     /**
      * \brief Destructor
      */
-    ~PythonEmbedded();
+    ~PythonEmbedded() final;
 
     /**
      * \brief Set the path to the source Python file

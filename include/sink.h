@@ -49,7 +49,7 @@ class Sink : public BaseObject
     /**
      * Destructor
      */
-    virtual ~Sink();
+    virtual ~Sink() override;
 
     /**
      * Try to link the given BaseObject to this object
@@ -66,12 +66,12 @@ class Sink : public BaseObject
     /**
      * Update the inner buffer of the sink
      */
-    void update();
+    void update() override;
 
     /**
      * Send the inner buffer to the sink's output
      */
-    void render();
+    void render() override;
 
   protected:
     /**

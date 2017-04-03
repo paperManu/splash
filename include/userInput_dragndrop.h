@@ -42,13 +42,13 @@ class DragNDrop : public UserInput
     /**
      * \brief Destructor
      */
-    ~DragNDrop();
+    ~DragNDrop() final;
 
   private:
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 };
 
 } // end of namespace

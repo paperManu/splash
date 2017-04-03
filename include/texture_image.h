@@ -58,7 +58,7 @@ class Texture_Image : public Texture
     /**
      * \brief Destructor
      */
-    ~Texture_Image();
+    ~Texture_Image() final;
 
     /**
      * No copy constructor, but a move one
@@ -75,12 +75,12 @@ class Texture_Image : public Texture
     /**
      * \brief Bind this texture
      */
-    void bind();
+    void bind() override;
 
     /**
      * \brief Unbind this texture
      */
-    void unbind();
+    void unbind() override;
 
     /**
      * \brief Flush the PBO copy which may still be happening. Do this before closing the current context!
@@ -120,7 +120,7 @@ class Texture_Image : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Lock the texture for read / write operations
@@ -163,7 +163,7 @@ class Texture_Image : public Texture
     /**
      * \brief Update the texture according to the owned Image
      */
-    void update();
+    void update() final;
 
   private:
     GLuint _glTex{0};

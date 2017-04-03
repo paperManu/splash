@@ -68,7 +68,7 @@ class Scene : public RootObject
     /**
      * \brief Destructor
      */
-    ~Scene();
+    ~Scene() override;
 
     /**
      * \brief Add an object of the given type, with the given name

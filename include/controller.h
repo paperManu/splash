@@ -52,7 +52,7 @@ class ControllerObject : public BaseObject
     /**
      * \brief Desctructor
      */
-    virtual ~ControllerObject(){};
+    virtual ~ControllerObject() override {}
 
     /**
      * \brief Get a list of the object names

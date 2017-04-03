@@ -38,7 +38,7 @@ class GuiGraph : public GuiWidget
         : GuiWidget(scene, name)
     {
     }
-    void render();
+    void render() final;
 
   private:
     unsigned int _maxHistoryLength{300};

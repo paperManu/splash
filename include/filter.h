@@ -55,7 +55,7 @@ class Filter : public Texture
     /**
      * \brief Destructor
      */
-    ~Filter();
+    ~Filter() override;
 
     /**
      * No copy constructor, but a move one
@@ -96,13 +96,13 @@ class Filter : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Filters should always be saved as it holds user-modifiable parameters
@@ -113,12 +113,12 @@ class Filter : public Texture
     /**
      * \brief Render the filter
      */
-    void render();
+    void render() override;
 
     /**
      * \brief Update for a filter does nothing, it is the render() job
      */
-    void update() {}
+    void update() override {}
 
   private:
     bool _isInitialized{false};

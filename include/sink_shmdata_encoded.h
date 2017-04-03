@@ -54,7 +54,7 @@ class Sink_Shmdata_Encoded : public Sink
     /**
      * Destructor
      */
-    ~Sink_Shmdata_Encoded();
+    ~Sink_Shmdata_Encoded() final;
 
   private:
     std::string _path{"/tmp/splash_sink"};
@@ -112,7 +112,7 @@ class Sink_Shmdata_Encoded : public Sink
      * \param pixels Input image
      * \param spec Input image specifications
      */
-    void handlePixels(const char* pixels, const ImageBufferSpec& spec);
+    void handlePixels(const char* pixels, const ImageBufferSpec& spec) final;
 
     /**
      * Parse the options from the given string, formatted as:

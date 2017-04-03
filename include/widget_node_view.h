@@ -35,9 +35,9 @@ class GuiNodeView : public GuiWidget
 {
   public:
     GuiNodeView(std::weak_ptr<Scene> scene, std::string name);
-    void render();
+    void render() final;
     std::string getClickedNode() { return _clickedNode; }
-    int updateWindowFlags();
+    int updateWindowFlags() final;
 
   private:
     bool _isHovered{false};

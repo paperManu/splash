@@ -35,7 +35,7 @@ class GuiFilters : public GuiWidget
 {
   public:
     GuiFilters(std::weak_ptr<Scene> scene, std::string name);
-    void render();
+    void render() final;
 
   private:
     std::map<std::string, int> _meshTypeIndex;

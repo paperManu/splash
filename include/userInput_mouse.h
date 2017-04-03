@@ -42,13 +42,13 @@ class Mouse : public UserInput
     /**
      * \brief Destructor
      */
-    ~Mouse();
+    ~Mouse() final;
 
   private:
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 };
 
 } // end of namespace

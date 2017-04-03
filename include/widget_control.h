@@ -38,8 +38,8 @@ class GuiControl : public GuiWidget
         : GuiWidget(scene, name)
     {
     }
-    void render();
-    int updateWindowFlags();
+    void render() final;
+    int updateWindowFlags() final;
 
   private:
     std::shared_ptr<GuiWidget> _nodeView;

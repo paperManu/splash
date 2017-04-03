@@ -68,7 +68,7 @@ class Gui : public ControllerObject
     /**
      * \brief Destructor
      */
-    ~Gui();
+    ~Gui() final;
 
     /**
      * No copy constructor, but a move one
@@ -135,13 +135,13 @@ class Gui : public ControllerObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Render this gui

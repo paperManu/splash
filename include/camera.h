@@ -61,7 +61,7 @@ class Camera : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Camera();
+    ~Camera() override;
 
     /**
      * No copy constructor, but a move one
@@ -134,13 +134,13 @@ class Camera : public BaseObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -178,7 +178,7 @@ class Camera : public BaseObject
     /**
      * \brief Render this camera into its textures
      */
-    void render();
+    void render() override;
 
     /**
      * \brief Set the given calibration point. This point is then selected

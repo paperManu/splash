@@ -42,13 +42,13 @@ class Keyboard : public UserInput
     /**
      * \brief Destructor
      */
-    ~Keyboard();
+    ~Keyboard() final;
 
   private:
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 };
 
 } // end of namespace

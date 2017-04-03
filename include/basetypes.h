@@ -560,7 +560,7 @@ class BufferObject : public BaseObject
     /**
      * \brief Destructor
      */
-    virtual ~BufferObject() {}
+    virtual ~BufferObject() override {}
 
     /**
      * \brief Check whether the object has been updated
@@ -651,7 +651,7 @@ class RootObject : public BaseObject
     /**
      * \brief Destructor
      */
-    virtual ~RootObject() {}
+    virtual ~RootObject() override {}
 
     /**
      * \brief Get the configuration path

@@ -52,7 +52,7 @@ class Mesh_BezierPatch : public Mesh
     /**
      * \brief Destructor
      */
-    virtual ~Mesh_BezierPatch();
+    virtual ~Mesh_BezierPatch() final;
 
     /**
      * No copy constructor, but a copy operator
@@ -76,7 +76,7 @@ class Mesh_BezierPatch : public Mesh
     /**
      * \brief Update the content of the mesh
      */
-    virtual void update();
+    virtual void update() final;
 
   private:
     struct Patch

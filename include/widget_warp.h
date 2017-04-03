@@ -39,9 +39,9 @@ class GuiWarp : public GuiWidget
         : GuiWidget(scene, name)
     {
     }
-    void render();
+    void render() final;
     void setScene(const std::weak_ptr<Scene>& scene) { _scene = scene; }
-    int updateWindowFlags();
+    int updateWindowFlags() final;
 
   private:
     bool _noMove{false};

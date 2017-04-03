@@ -53,7 +53,7 @@ class Geometry : public BufferObject
     /**
      * \brief Destructor
      */
-    ~Geometry();
+    ~Geometry() override;
 
     /**
      * No copy constructor, but a move one
@@ -96,14 +96,14 @@ class Geometry : public BufferObject
      * \brief Get the geometry as serialized
      * \return Return the serialized geometry
      */
-    std::shared_ptr<SerializedObject> serialize() const;
+    std::shared_ptr<SerializedObject> serialize() const override;
 
     /**
      * \brief Deserialize the geometry
      * \param obj Serialized object
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
      * \brief Get whether the alternative buffers have been resized during the last feedback call
@@ -115,7 +115,7 @@ class Geometry : public BufferObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -139,7 +139,7 @@ class Geometry : public BufferObject
     /**
      * \brief Updates the object
      */
-    void update();
+    void update() override;
 
     /**
      * \brief Activate alternative buffers for draw

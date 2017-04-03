@@ -66,7 +66,7 @@ class World : public RootObject
     /**
      * \brief Destructor
      */
-    ~World();
+    ~World() override;
 
     /**
      * \brief Get the status of the world after begin ran
@@ -181,7 +181,7 @@ class World : public RootObject
      * \param name Object name
      * \param obj Serialized object
      */
-    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
+    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) override;
 
     /**
      * \brief Initializes the World

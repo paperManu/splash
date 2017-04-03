@@ -44,12 +44,12 @@ class Blender : public ControllerObject
     /**
      * \brief Destructor
      */
-    ~Blender();
+    ~Blender() final;
 
     /**
      * \brief Update the blending
      */
-    void update();
+    void update() final;
 
     /**
      * Force blending computation at the next call to update()

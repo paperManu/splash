@@ -48,7 +48,7 @@ class Image_GPhoto : public Image
     /**
      * Destructor
      */
-    ~Image_GPhoto();
+    ~Image_GPhoto() override;
 
     /**
      * No copy constructor, only move
@@ -64,7 +64,7 @@ class Image_GPhoto : public Image
     /**
      * Set the camera to read from
      */
-    bool read(const std::string& cameraName);
+    bool read(const std::string& cameraName) final;
 
   private:
     struct GPhotoCamera

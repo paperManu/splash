@@ -46,7 +46,7 @@ class Image_V4L2 : public Image
     /**
      * \brief Destructor
      */
-    ~Image_V4L2();
+    ~Image_V4L2() final;
 
     /**
      * No copy constructor, but a copy operator

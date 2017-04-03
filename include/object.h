@@ -53,7 +53,7 @@ class Object : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Object();
+    ~Object() override;
 
     /**
      * No copy constructor, but some moves
@@ -136,13 +136,13 @@ class Object : public BaseObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point

@@ -56,7 +56,7 @@ class Image : public BufferObject
     /**
      * \brief Destructor
      */
-    virtual ~Image();
+    virtual ~Image() override;
 
     /**
      * No copy constructor, but a copy operator
@@ -118,14 +118,14 @@ class Image : public BufferObject
      * \brief Serialize the image
      * \return Return the serialized image
      */
-    std::shared_ptr<SerializedObject> serialize() const;
+    std::shared_ptr<SerializedObject> serialize() const override;
 
     /**
      * \brief Update the Image from a serialized representation
      * \param obj Serialized image
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
      * \brief Set the path to read from

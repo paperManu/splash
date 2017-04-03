@@ -54,7 +54,7 @@ class Listener : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Listener();
+    ~Listener() override;
 
     /**
      * \brief Safe bool idiom
