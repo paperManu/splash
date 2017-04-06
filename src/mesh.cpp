@@ -1,9 +1,10 @@
 #include "mesh.h"
 
-#include "log.h"
-#include "meshLoader.h"
-#include "osUtils.h"
-#include "timer.h"
+#include "./log.h"
+#include "./meshLoader.h"
+#include "./osUtils.h"
+#include "./root_object.h"
+#include "./timer.h"
 
 using namespace std;
 

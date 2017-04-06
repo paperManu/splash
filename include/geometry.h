@@ -33,10 +33,11 @@
 
 #include "config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "gpuBuffer.h"
-#include "mesh.h"
+#include "./attribute.h"
+#include "./buffer_object.h"
+#include "./coretypes.h"
+#include "./gpuBuffer.h"
+#include "./mesh.h"
 
 namespace Splash
 {

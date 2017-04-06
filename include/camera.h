@@ -38,7 +38,7 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./geometry.h"
 #include "./image.h"

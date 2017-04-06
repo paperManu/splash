@@ -28,7 +28,8 @@
 #include <memory>
 #include <vector>
 
-#include "./basetypes.h"
+#include "./base_object.h"
+#include "./attribute.h"
 
 namespace Splash
 {

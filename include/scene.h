@@ -36,11 +36,13 @@
 #if HAVE_GPHOTO
 #include "./colorcalibrator.h"
 #endif
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./controller.h"
 #include "./controller_gui.h"
 #include "./coretypes.h"
 #include "./factory.h"
+#include "./root_object.h"
+#include "./spinlock.h"
 
 namespace Splash
 {

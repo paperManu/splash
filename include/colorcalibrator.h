@@ -30,7 +30,7 @@
 
 #include "config.h"
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "cgUtils.h"
 #include "coretypes.h"
 #include "image_gphoto.h"

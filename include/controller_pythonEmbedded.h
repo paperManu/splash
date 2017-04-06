@@ -33,7 +33,7 @@
 
 #include <Python.h>
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./controller.h"
 #include "./coretypes.h"
 

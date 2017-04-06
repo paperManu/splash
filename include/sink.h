@@ -31,7 +31,8 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./base_object.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./texture.h"
 

@@ -1,8 +1,9 @@
-#include "mesh_shmdata.h"
+#include "./mesh_shmdata.h"
 
-#include "log.h"
-#include "osUtils.h"
-#include "timer.h"
+#include "./log.h"
+#include "./osUtils.h"
+#include "./root_object.h"
+#include "./timer.h"
 
 using namespace std;
 

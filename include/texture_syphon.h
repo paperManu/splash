@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "config.h"
 #include "coretypes.h"
 #include "texture.h"

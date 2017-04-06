@@ -1,0 +1,331 @@
+#include "./base_object.h"
+
+#include <algorithm>
+
+#include "./log.h"
+
+using namespace std;
+
+namespace Splash
+{
+
+AttributeFunctor& BaseObject::operator[](const string& attr)
+{
+    auto attribFunction = _attribFunctions.find(attr);
+    return attribFunction->second;
+}
+
+/*************/
+bool BaseObject::linkTo(const shared_ptr<BaseObject>& obj)
+{
+    auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<BaseObject>& o) {
+        auto object = o.lock();
+        if (!object)
+            return false;
+        if (object == obj)
+            return true;
+        return false;
+    });
+
+    if (objectIt == _linkedObjects.end())
+    {
+        _linkedObjects.push_back(obj);
+        return true;
+    }
+    return false;
+}
+
+/*************/
+void BaseObject::unlinkFrom(const shared_ptr<BaseObject>& obj)
+{
+    auto objectIt = find_if(_linkedObjects.begin(), _linkedObjects.end(), [&](const weak_ptr<BaseObject>& o) {
+        auto object = o.lock();
+        if (!object)
+            return false;
+        if (object == obj)
+            return true;
+        return false;
+    });
+
+    if (objectIt != _linkedObjects.end())
+        _linkedObjects.erase(objectIt);
+}
+
+/*************/
+const vector<shared_ptr<BaseObject>> BaseObject::getLinkedObjects()
+{
+    vector<shared_ptr<BaseObject>> objects;
+    for (auto& o : _linkedObjects)
+    {
+        auto obj = o.lock();
+        if (!obj)
+            continue;
+
+        objects.push_back(obj);
+    }
+
+    return objects;
+}
+
+/*************/
+bool BaseObject::setAttribute(const string& attrib, const Values& args)
+{
+    auto attribFunction = _attribFunctions.find(attrib);
+    bool attribNotPresent = (attribFunction == _attribFunctions.end());
+
+    if (attribNotPresent)
+    {
+        auto result = _attribFunctions.emplace(attrib, AttributeFunctor());
+        if (!result.second)
+            return false;
+
+        attribFunction = result.first;
+    }
+
+    if (!attribFunction->second.isDefault())
+        _updatedParams = true;
+    bool attribResult = attribFunction->second(forward<const Values&>(args));
+
+    return attribResult && attribNotPresent;
+}
+
+/*************/
+bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDistant, bool includeNonSavable) const
+{
+    auto attribFunction = _attribFunctions.find(attrib);
+    if (attribFunction == _attribFunctions.end())
+        return false;
+
+    args = attribFunction->second();
+
+    if ((!attribFunction->second.savable() && !includeNonSavable) || (attribFunction->second.isDefault() && !includeDistant))
+        return false;
+
+    return true;
+}
+
+/*************/
+unordered_map<string, Values> BaseObject::getAttributes(bool includeDistant) const
+{
+    unordered_map<string, Values> attribs;
+    for (auto& attr : _attribFunctions)
+    {
+        Values values;
+        if (getAttribute(attr.first, values, includeDistant, true) == false || values.size() == 0)
+            continue;
+        attribs[attr.first] = values;
+    }
+
+    return attribs;
+}
+
+/*************/
+unordered_map<string, Values> BaseObject::getDistantAttributes() const
+{
+    unordered_map<string, Values> attribs;
+    for (auto& attr : _attribFunctions)
+    {
+        if (!attr.second.doUpdateDistant())
+            continue;
+
+        Values values;
+        if (getAttribute(attr.first, values, false, true) == false || values.size() == 0)
+            continue;
+
+        attribs[attr.first] = values;
+    }
+
+    return attribs;
+}
+
+/*************/
+Json::Value BaseObject::getValuesAsJson(const Values& values) const
+{
+    Json::Value jsValue;
+    for (auto& v : values)
+    {
+        switch (v.getType())
+        {
+        default:
+            continue;
+        case Value::i:
+            jsValue.append(v.as<int>());
+            break;
+        case Value::f:
+            jsValue.append(v.as<float>());
+            break;
+        case Value::s:
+            jsValue.append(v.as<string>());
+            break;
+        case Value::v:
+            jsValue.append(getValuesAsJson(v.as<Values>()));
+            break;
+        }
+    }
+    return jsValue;
+}
+
+/*************/
+Json::Value BaseObject::getConfigurationAsJson() const
+{
+    Json::Value root;
+    if (_remoteType == "")
+        root["type"] = _type;
+    else
+        root["type"] = _remoteType;
+
+    for (auto& attr : _attribFunctions)
+    {
+        Values values;
+        if (getAttribute(attr.first, values) == false || values.size() == 0)
+            continue;
+
+        Json::Value jsValue;
+        jsValue = getValuesAsJson(values);
+        root[attr.first] = jsValue;
+    }
+    return root;
+}
+
+/*************/
+string BaseObject::getAttributeDescription(const string& name)
+{
+    auto attr = _attribFunctions.find(name);
+    if (attr != _attribFunctions.end())
+        return attr->second.getDescription();
+    else
+        return {};
+}
+
+/*************/
+Values BaseObject::getAttributesDescriptions()
+{
+    Values descriptions;
+    for (const auto& attr : _attribFunctions)
+        descriptions.push_back(Values({attr.first, attr.second.getDescription(), attr.second.getArgsTypes()}));
+    return descriptions;
+}
+
+/*************/
+AttributeFunctor::Sync BaseObject::getAttributeSyncMethod(const string& name)
+{
+    auto attr = _attribFunctions.find(name);
+    if (attr != _attribFunctions.end())
+        return attr->second.getSyncMethod();
+    else
+        return AttributeFunctor::Sync::no_sync;
+}
+
+/*************/
+bool BaseObject::setRenderingPriority(Priority priority)
+{
+    if (priority < Priority::PRE_CAMERA || priority >= Priority::POST_WINDOW)
+        return false;
+    _renderingPriority = priority;
+    return true;
+}
+
+/*************/
+void BaseObject::init()
+{
+    registerAttributes();
+}
+
+/*************/
+void BaseObject::registerAttributes()
+{
+    addAttribute("setName",
+        [&](const Values& args) {
+            setName(args[0].as<string>());
+            return true;
+        },
+        {'s'});
+
+    addAttribute("priorityShift",
+        [&](const Values& args) {
+            _priorityShift = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_priorityShift}; },
+        {'n'});
+    setAttributeDescription("priorityShift",
+        "Shift to the default rendering priority value, for those cases where two objects should be rendered in a specific order. Higher value means lower priority");
+
+    addAttribute("switchLock",
+        [&](const Values& args) {
+            auto attribIterator = _attribFunctions.find(args[0].as<string>());
+            if (attribIterator == _attribFunctions.end())
+                return false;
+
+            string status;
+            auto& attribFunctor = attribIterator->second;
+            if (attribFunctor.isLocked())
+            {
+                status = "Unlocked";
+                attribFunctor.unlock();
+            }
+            else
+            {
+                status = "Locked";
+                attribFunctor.lock();
+            }
+
+            Log::get() << Log::MESSAGE << _name << "~~" << args[0].as<string>() << " - " << status << Log::endl;
+            return true;
+        },
+        {'s'});
+}
+
+/*************/
+AttributeFunctor& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
+{
+    _attribFunctions[name] = AttributeFunctor(name, set, types);
+    _attribFunctions[name].setObjectName(_type);
+    return _attribFunctions[name];
+}
+
+/*************/
+AttributeFunctor& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+{
+    _attribFunctions[name] = AttributeFunctor(name, set, get, types);
+    _attribFunctions[name].setObjectName(_type);
+    return _attribFunctions[name];
+}
+
+/*************/
+void BaseObject::setAttributeDescription(const string& name, const string& description)
+{
+    auto attr = _attribFunctions.find(name);
+    if (attr != _attribFunctions.end())
+    {
+        attr->second.setDescription(description);
+    }
+}
+
+/*************/
+void BaseObject::setAttributeSyncMethod(const string& name, const AttributeFunctor::Sync& method)
+{
+    auto attr = _attribFunctions.find(name);
+    if (attr != _attribFunctions.end())
+        attr->second.setSyncMethod(method);
+}
+
+/*************/
+void BaseObject::removeAttribute(const string& name)
+{
+    auto attr = _attribFunctions.find(name);
+    if (attr != _attribFunctions.end())
+        _attribFunctions.erase(attr);
+}
+
+/*************/
+void BaseObject::setAttributeParameter(const string& name, bool savable, bool updateDistant)
+{
+    auto attr = _attribFunctions.find(name);
+    if (attr != _attribFunctions.end())
+    {
+        attr->second.savable(savable);
+        attr->second.doUpdateDistant(updateDistant);
+    }
+}
+}

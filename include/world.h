@@ -35,13 +35,14 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./factory.h"
 #if HAVE_PORTAUDIO
 #include "./ltcclock.h"
 #endif
 #include "./queue.h"
+#include "./root_object.h"
 
 namespace Splash
 {

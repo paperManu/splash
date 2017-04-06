@@ -41,7 +41,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./image.h"
 #if HAVE_PORTAUDIO

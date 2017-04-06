@@ -34,8 +34,9 @@
 #include <thread>
 #include <unordered_map>
 
-#include "config.h"
-#include "coretypes.h"
+#include "./config.h"
+#include "./coretypes.h"
+#include "./spinlock.h"
 
 namespace Splash
 {

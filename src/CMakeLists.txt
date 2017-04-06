@@ -82,7 +82,9 @@ endif()
 
 target_sources(
     splash-${API_VERSION} PRIVATE
-    basetypes.cpp
+    attribute.cpp
+    base_object.cpp
+    buffer_object.cpp
     camera.cpp
     cgUtils.cpp
     controller.cpp
@@ -100,6 +102,7 @@ target_sources(
     mesh.cpp
     object.cpp
     queue.cpp
+    root_object.cpp
     scene.cpp
     sink.cpp
     shader.cpp

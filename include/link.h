@@ -35,8 +35,8 @@
 #include <vector>
 #include <zmq.hpp>
 
-#include "config.h"
-#include "coretypes.h"
+#include "./config.h"
+#include "./coretypes.h"
 
 namespace Splash
 {

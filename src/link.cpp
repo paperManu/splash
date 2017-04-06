@@ -2,9 +2,11 @@
 
 #include <algorithm>
 
-#include "basetypes.h"
-#include "log.h"
-#include "timer.h"
+#include "./attribute.h"
+#include "./buffer_object.h"
+#include "./log.h"
+#include "./root_object.h"
+#include "./timer.h"
 
 using namespace std;
 

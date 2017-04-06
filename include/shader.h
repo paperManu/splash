@@ -34,7 +34,7 @@
 
 #include "config.h"
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "coretypes.h"
 #include "texture.h"
 

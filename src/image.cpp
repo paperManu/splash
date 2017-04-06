@@ -8,10 +8,10 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "log.h"
-#include "osUtils.h"
-#include "threadpool.h"
-#include "timer.h"
+#include "./log.h"
+#include "./osUtils.h"
+#include "./threadpool.h"
+#include "./timer.h"
 
 #define SPLASH_IMAGE_COPY_THREADS 2
 #define SPLASH_IMAGE_SERIALIZED_HEADER_SIZE 4096

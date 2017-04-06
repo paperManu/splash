@@ -39,7 +39,7 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./controller.h"
 #include "./coretypes.h"
 #include "./image.h"

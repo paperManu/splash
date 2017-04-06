@@ -32,9 +32,10 @@
 
 #include "config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "imageBuffer.h"
+#include "./base_object.h"
+#include "./attribute.h"
+#include "./coretypes.h"
+#include "./imageBuffer.h"
 
 namespace Splash
 {

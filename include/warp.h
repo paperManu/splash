@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "camera.h"
 #include "coretypes.h"
 #include "mesh_bezierPatch.h"

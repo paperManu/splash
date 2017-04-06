@@ -43,7 +43,7 @@
 #if HAVE_GPHOTO
 #include "./colorcalibrator.h"
 #endif
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./camera.h"
 #include "./coretypes.h"
 #include "./userInput.h"

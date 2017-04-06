@@ -33,8 +33,9 @@
 
 #include "config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
+#include "./attribute.h"
+#include "./buffer_object.h"
+#include "./coretypes.h"
 
 namespace Splash
 {
