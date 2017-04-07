@@ -759,8 +759,6 @@ void World::handleSerializedObject(const string& name, shared_ptr<SerializedObje
 /*************/
 void World::init()
 {
-    _self = shared_ptr<World>(this, [](World*) {}); // A shared pointer with no deleter, how convenient
-
     _type = "world";
     _name = "world";
 
@@ -770,8 +768,7 @@ void World::init()
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
 
-    _link = make_shared<Link>(weak_ptr<World>(_self), _name);
-    _factory = unique_ptr<Factory>(new Factory(_self));
+    _link = make_shared<Link>(_self, _name);
 
     registerAttributes();
 }

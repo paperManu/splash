@@ -240,7 +240,6 @@ class Scene : public RootObject
     void waitTextureUpload();
 
   protected:
-    std::unique_ptr<Factory> _factory{nullptr};
     std::shared_ptr<GlWindow> _mainWindow;
     bool _isRunning{false};
 
@@ -267,8 +266,6 @@ class Scene : public RootObject
     static std::vector<int> _glVersion;
 
     bool _runInBackground{false}; //!< If true, no window will be created
-
-    std::shared_ptr<Scene> _self;
     bool _started{false};
 
     bool _isMaster{false}; //< Set to true if this is the master Scene of the current config

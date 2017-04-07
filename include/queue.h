@@ -149,11 +149,6 @@ class QueueSurrogate : public Texture
     QueueSurrogate(const std::weak_ptr<RootObject>& root);
 
     /**
-     * \brief Destructor
-     */
-    ~QueueSurrogate() final;
-
-    /**
      * No copy constructor, but a move one
      */
     QueueSurrogate(const QueueSurrogate&) = delete;

@@ -81,13 +81,10 @@ class World : public RootObject
     void run();
 
   private:
-    std::shared_ptr<World> _self;
 #if HAVE_PORTAUDIO
     std::unique_ptr<LtcClock> _clock{nullptr}; //!< Master clock from a LTC signal
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
 #endif
-
-    std::unique_ptr<Factory> _factory{nullptr}; //!< Object factory
 
     std::shared_ptr<Scene> _innerScene{}; //!< Inner Scene if the specified DISPLAY is available from this process
     std::thread _innerSceneThread;        //!< Inner Scene thread
