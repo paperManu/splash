@@ -63,7 +63,7 @@ class Gui : public ControllerObject
      * \param w Window to display the gui
      * \param s Root scene
      */
-    Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
+    Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<RootObject> s);
 
     /**
      * \brief Destructor

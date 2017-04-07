@@ -109,17 +109,11 @@ bool Filter::linkTo(const std::shared_ptr<BaseObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = make_shared<Texture_Image>(_root);
-        tex->setName(getName() + "_" + obj->getName() + "_tex");
+        auto tex = dynamic_pointer_cast<Texture_Image>(_root.lock()->createObject("texture_image", getName() + "_" + obj->getName() + "_tex"));
         if (tex->linkTo(obj))
-        {
-            _root.lock()->registerObject(tex);
             return linkTo(tex);
-        }
         else
-        {
             return false;
-        }
     }
 
     return true;
@@ -156,14 +150,16 @@ void Filter::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
+        auto root = _root.lock();
         auto textureName = getName() + "_" + obj->getName() + "_tex";
-        auto tex = _root.lock()->unregisterObject(textureName);
 
-        if (tex)
+        if (auto tex = root->getObject(textureName))
         {
             tex->unlinkFrom(obj);
             unlinkFrom(tex);
         }
+
+        root->disposeObject(textureName);
     }
 
     Texture::unlinkFrom(obj);

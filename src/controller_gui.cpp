@@ -43,17 +43,17 @@ size_t Gui::_imGuiVboMaxSize = 20000;
 GLFWwindow* Gui::_glfwWindow = nullptr;
 
 /*************/
-Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<Scene> s)
+Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<RootObject> s)
     : ControllerObject(s)
 {
     _type = "gui";
     _renderingPriority = Priority::GUI;
 
-    auto scene = s.lock();
+    auto scene = dynamic_pointer_cast<Scene>(s.lock());
     if (w.get() == nullptr || scene.get() == nullptr)
         return;
 
-    _scene = s;
+    _scene = scene;
     _window = w;
     _glfwWindow = _window->get();
     if (!_window->setAsCurrentContext())
@@ -167,6 +167,8 @@ void Gui::activateLUT()
 void Gui::calibrateColorResponseFunction()
 {
     auto scene = _scene.lock();
+    if (!scene)
+        return;
     scene->setAttribute("calibrateColorResponseFunction", {});
 }
 
@@ -174,6 +176,8 @@ void Gui::calibrateColorResponseFunction()
 void Gui::calibrateColors()
 {
     auto scene = _scene.lock();
+    if (!scene)
+        return;
     scene->setAttribute("calibrateColor", {});
 }
 

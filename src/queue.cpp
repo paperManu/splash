@@ -378,17 +378,10 @@ QueueSurrogate::QueueSurrogate(const std::weak_ptr<RootObject>& root)
     : Texture(root)
     , _filter(make_shared<Filter>(root))
 {
-    _filter->setName("queueFilter" + to_string(_filterIndex++));
-    _root.lock()->registerObject(_filter);
+    _filter = dynamic_pointer_cast<Filter>(_root.lock()->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)));
     _filter->_savable = false;
 
     registerAttributes();
-}
-
-/*************/
-QueueSurrogate::~QueueSurrogate()
-{
-    _root.lock()->unregisterObject(_filter->getName());
 }
 
 /*************/
@@ -450,18 +443,17 @@ void QueueSurrogate::registerAttributes()
             else if (_source)
             {
                 _filter->unlinkFrom(_source);
-                _root.lock()->unregisterObject(_source->getName());
                 _source.reset();
+                _root.lock()->disposeObject(_name + "_source");
             }
 
             auto object = shared_ptr<BaseObject>();
 
             if (type.find("image") != string::npos)
             {
-                auto image = make_shared<Image>(_root);
+                auto image = dynamic_pointer_cast<Image>(_root.lock()->createObject("image", _name + "_source"));
                 image->zero();
                 image->setRemoteType(type);
-
                 object = image;
             }
             // TODO: add Texture_Syphon type
@@ -476,7 +468,6 @@ void QueueSurrogate::registerAttributes()
 
             object->setName(sourceName);
             _source.swap(object);
-            _root.lock()->registerObject(_source);
             _filter->linkTo(_source);
         });
 

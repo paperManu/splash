@@ -9,44 +9,62 @@ namespace Splash
 
 /**************/
 RootObject::RootObject()
+    : _self(shared_ptr<RootObject>(this, [](RootObject*) {}))
+    , _factory(unique_ptr<Factory>(new Factory(_self)))
 {
     registerAttributes();
 }
 
 /*************/
-void RootObject::registerObject(shared_ptr<BaseObject> object)
+shared_ptr<BaseObject> RootObject::createObject(const string& type, const string& name)
 {
-    if (object.get() != nullptr)
-    {
-        auto name = object->getName();
-
-        lock_guard<recursive_mutex> registerLock(_objectsMutex);
-        object->setSavable(false); // This object was created on the fly. Do not save it
-
-        // We keep the previous object on the side, to prevent double free due to operator[] behavior
-        auto previousObject = shared_ptr<BaseObject>();
-        auto objectIt = _objects.find(name);
-        if (objectIt != _objects.end())
-            previousObject = objectIt->second;
-
-        _objects[name] = object;
-    }
-}
-
-/*************/
-shared_ptr<BaseObject> RootObject::unregisterObject(const string& name)
-{
-    lock_guard<recursive_mutex> lock(_objectsMutex);
+    lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
     auto objectIt = _objects.find(name);
     if (objectIt != _objects.end())
     {
         auto object = objectIt->second;
-        _objects.erase(objectIt);
+        auto objectType = object->getType();
+        if (objectType != type)
+        {
+            Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - Object with name " << name << " already exists, but with a different type (" << objectType
+                       << " instead of " << type << ")" << Log::endl;
+            return {nullptr};
+        }
+
         return object;
     }
 
-    return {};
+    auto object = _factory->create(type);
+    if (!object)
+        return {nullptr};
+
+    object->setName(name);
+    object->setSavable(false);
+    _objects[name] = object;
+    return object;
+}
+
+/*************/
+void RootObject::disposeObject(const string& name)
+{
+    lock_guard<recursive_mutex> registerLock(_objectsMutex);
+
+    auto objectIt = _objects.find(name);
+    if (objectIt != _objects.end() && objectIt->second.unique())
+        _objects.erase(objectIt);
+}
+
+/*************/
+shared_ptr<BaseObject> RootObject::getObject(const string& name)
+{
+    lock_guard<recursive_mutex> registerLock(_objectsMutex);
+
+    auto objectIt = _objects.find(name);
+    if (objectIt != _objects.end())
+        return objectIt->second;
+
+    return {nullptr};
 }
 
 /*************/

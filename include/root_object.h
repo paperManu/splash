@@ -33,6 +33,7 @@
 #include <unordered_map>
 
 #include "./base_object.h"
+#include "./factory.h"
 #include "./link.h"
 
 namespace Splash
@@ -60,6 +61,27 @@ class RootObject : public BaseObject
     virtual ~RootObject() override {}
 
     /**
+     * Create and return an object given its type and name
+     * \param type Object type
+     * \param name Object name
+     * \return Return a shared_ptr to the object
+     */
+    std::shared_ptr<BaseObject> createObject(const std::string& type, const std::string& name);
+
+    /**
+     * Delete the given object based given its name, and whether it is the last shared_ptr managing it
+     * \param name Object name
+     */
+    void disposeObject(const std::string& name);
+
+    /**
+     * Get the object of the given name
+     * \param name Object name
+     * \return Return the object name
+     */
+    std::shared_ptr<BaseObject> getObject(const std::string& name);
+
+    /**
      * \brief Get the configuration path
      * \return Return the configuration path
      */
@@ -70,19 +92,6 @@ class RootObject : public BaseObject
      * \return Return the media path
      */
     std::string getMediaPath() const { return _mediaPath; }
-
-    /**
-     * \brief Register an object which was created elsewhere. If an object was the same name exists, it is replaced.
-     * \param object Object to register
-     */
-    void registerObject(std::shared_ptr<BaseObject> object);
-
-    /**
-     * \brief Unregister an object which was created elsewhere, from its name, sending back a shared_ptr for it.
-     * \param name Object name
-     * \return Return a shared pointer to the unregistered object
-     */
-    std::shared_ptr<BaseObject> unregisterObject(const std::string& name);
 
     /**
      * \brief Set the attribute of the named object with the given args
@@ -122,6 +131,9 @@ class RootObject : public BaseObject
   protected:
     std::string _configurationPath{""}; //!< Path to the configuration file
     std::string _mediaPath{""};         //!< Default path to the medias
+
+    std::shared_ptr<RootObject> _self;
+    std::unique_ptr<Factory> _factory; //!< Object factory
 
     std::shared_ptr<Link> _link;                                           //!< Link object for communicatin between World and Scene
     mutable std::recursive_mutex _objectsMutex;                            //!< Used in registration and unregistration of objects

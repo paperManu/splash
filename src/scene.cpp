@@ -63,14 +63,11 @@ bool Scene::getHasNVSwapGroup()
 /*************/
 Scene::Scene(const std::string& name)
 {
-    _self = std::shared_ptr<Scene>(this, [](Scene*) {}); // A shared pointer with no deleter, how convenient
-
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
     _type = "scene";
     _isRunning = true;
     _name = name;
-    _factory = unique_ptr<Factory>(new Factory(_self));
 
     _blender = make_shared<Blender>(_self);
     if (_blender)
@@ -849,7 +846,7 @@ void Scene::init(const string& name)
     _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
-    _link = make_shared<Link>(weak_ptr<Scene>(_self), name);
+    _link = make_shared<Link>(_self, name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
 }

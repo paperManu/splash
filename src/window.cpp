@@ -205,14 +205,10 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = make_shared<Texture_Image>(_root);
-        tex->setName(getName() + "_" + obj->getName() + "_tex");
+        auto tex = dynamic_pointer_cast<Texture_Image>(_root.lock()->createObject("texture_image", getName() + "_" + obj->getName() + "_tex"));
         tex->setResizable(0);
         if (tex->linkTo(obj))
-        {
-            _root.lock()->registerObject(tex);
             return linkTo(tex);
-        }
         else
             return false;
     }
@@ -228,13 +224,9 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
             scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", warpName, _name});
         }
 
-        auto warp = make_shared<Warp>(_root);
-        warp->setName(getName() + "_" + obj->getName() + "_warp");
+        auto warp = dynamic_pointer_cast<Warp>(_root.lock()->createObject("warp", getName() + "_" + obj->getName() + "_warp"));
         if (warp->linkTo(obj))
-        {
-            _root.lock()->registerObject(warp);
             return linkTo(warp);
-        }
 
         return false;
     }
@@ -276,18 +268,22 @@ void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
         {
             tex->unlinkFrom(obj);
             unsetTexture(tex);
+            tex.reset();
+            _root.lock()->disposeObject(texName);
         }
     }
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
+        auto root = _root.lock();
         auto warpName = getName() + "_" + obj->getName() + "_warp";
-        auto warp = _root.lock()->unregisterObject(warpName);
 
-        if (warp)
+        if (auto warp = root->getObject(warpName))
         {
             warp->unlinkFrom(obj);
             unlinkFrom(warp);
         }
+
+        root->disposeObject(warpName);
 
         auto cam = dynamic_pointer_cast<Camera>(obj);
         for (auto& tex : cam->getTextures())
