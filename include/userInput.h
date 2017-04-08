@@ -71,7 +71,7 @@ class UserInput : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    UserInput(std::weak_ptr<RootObject> root);
+    UserInput(RootObject* root);
 
     /**
      * \brief Destructor

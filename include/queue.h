@@ -53,7 +53,7 @@ class Queue : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Queue(const std::weak_ptr<RootObject>& root);
+    Queue(RootObject* root);
 
     /**
      * \brief Destructor
@@ -97,7 +97,7 @@ class Queue : public BufferObject
     void update();
 
   private:
-    std::weak_ptr<World> _world;
+    World* _world;
     std::unique_ptr<Factory> _factory;
 
     struct Source
@@ -146,7 +146,7 @@ class QueueSurrogate : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    QueueSurrogate(const std::weak_ptr<RootObject>& root);
+    QueueSurrogate(RootObject* root);
 
     /**
      * No copy constructor, but a move one

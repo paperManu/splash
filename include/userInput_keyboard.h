@@ -37,7 +37,7 @@ class Keyboard : public UserInput
      * \brief Constructor
      * \param root Root object
      */
-    Keyboard(std::weak_ptr<RootObject> root);
+    Keyboard(RootObject* root);
 
     /**
      * \brief Destructor

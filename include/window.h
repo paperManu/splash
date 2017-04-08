@@ -55,7 +55,7 @@ class Window : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Window(const std::weak_ptr<RootObject>& root);
+    Window(RootObject* root);
 
     /**
      * \brief Destructor

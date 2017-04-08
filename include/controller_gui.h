@@ -63,7 +63,7 @@ class Gui : public ControllerObject
      * \param w Window to display the gui
      * \param s Root scene
      */
-    Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<RootObject> s);
+    Gui(std::shared_ptr<GlWindow> w, RootObject* s);
 
     /**
      * \brief Destructor
@@ -182,7 +182,7 @@ class Gui : public ControllerObject
   private:
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
-    std::weak_ptr<Scene> _scene;
+    Scene* _scene;
 
     // This is needed for some GLFW callbacks, and also has to be static...
     // There can be only one gui, so it is not such an issue

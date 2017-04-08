@@ -37,7 +37,7 @@ class Mouse : public UserInput
      * \brief Constructor
      * \param root Root object
      */
-    Mouse(std::weak_ptr<RootObject> root);
+    Mouse(RootObject* root);
 
     /**
      * \brief Destructor

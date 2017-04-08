@@ -34,7 +34,10 @@ namespace Splash
 class GuiFilters : public GuiWidget
 {
   public:
-    GuiFilters(std::weak_ptr<Scene> scene, std::string name);
+    GuiFilters(Scene* scene, std::string name)
+        : GuiWidget(scene, name)
+    {
+    }
     void render() final;
 
   private:

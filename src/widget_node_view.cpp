@@ -11,7 +11,7 @@ namespace Splash
 {
 
 /*************/
-GuiNodeView::GuiNodeView(weak_ptr<Scene> scene, string name)
+GuiNodeView::GuiNodeView(Scene* scene, string name)
     : GuiWidget(scene, name)
 {
     auto factory = Factory();
@@ -200,13 +200,13 @@ void GuiNodeView::renderNode(const string& name)
         {
             if (io.KeyShift)
             {
-                auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+                auto scene = dynamic_cast<Scene*>(_root);
                 scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
                 scene->sendMessageToWorld("sendAllScenes", {"linkGhost", _sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
-                auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+                auto scene = dynamic_cast<Scene*>(_root);
                 scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
                 scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
             }

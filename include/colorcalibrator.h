@@ -54,7 +54,7 @@ class ColorCalibrator : public BaseObject
      * \brief Constructor
      * \param scene Root scene
      */
-    ColorCalibrator(std::weak_ptr<RootObject> scene);
+    ColorCalibrator(RootObject* scene);
 
     /**
      * \brief Destructor
@@ -101,7 +101,7 @@ class ColorCalibrator : public BaseObject
     //
     // Attributes
     //
-    std::weak_ptr<RootObject> _scene;
+    RootObject* _scene; // TODO: use _root instead
     std::shared_ptr<Image_GPhoto> _gcamera;
     std::shared_ptr<pic::CameraResponseFunction> _crf{nullptr};
 

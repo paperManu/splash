@@ -54,18 +54,19 @@ namespace Splash
 
 /*************/
 Factory::Factory()
+    : _root(nullptr)
 {
     registerObjects();
 }
 
 /*************/
-Factory::Factory(weak_ptr<RootObject> root)
+Factory::Factory(RootObject* root)
+    : _root(root)
 {
-    _root = root;
-    if (!root.expired() && root.lock()->getType() == "scene")
+    if (_root && _root->getType() == "scene")
     {
         _isScene = true;
-        if (dynamic_pointer_cast<Scene>(root.lock())->isMaster())
+        if (dynamic_cast<Scene*>(_root)->isMaster())
             _isMasterScene = true;
     }
 
@@ -356,7 +357,7 @@ void Factory::registerObjects()
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
         [&]() {
-            if (!_isMasterScene && !_root.expired())
+            if (!_isMasterScene && _root)
                 return shared_ptr<BaseObject>(nullptr);
             return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
         },

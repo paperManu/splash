@@ -73,13 +73,13 @@ class BaseObject
     /**
      * \brief Constructor.
      */
-    BaseObject() { init(); }
+    BaseObject(): _root(nullptr) { init(); }
 
     /**
      * \brief Constructor.
      * \param root Specify the root object.
      */
-    BaseObject(const std::weak_ptr<RootObject>& root)
+    BaseObject(RootObject* root)
         : _root(root)
     {
         init();
@@ -316,7 +316,7 @@ class BaseObject
 
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
-    std::weak_ptr<RootObject> _root;                       //!< Root object, Scene or World
+    RootObject* _root;                                     //!< Root object, Scene or World
     std::vector<std::weak_ptr<BaseObject>> _linkedObjects; //!< Children of this object
 
     std::unordered_map<std::string, AttributeFunctor> _attribFunctions; //!< Map of all attributes

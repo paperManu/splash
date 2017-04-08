@@ -12,7 +12,7 @@ namespace Splash
 {
 
 /*************/
-GuiMedia::GuiMedia(weak_ptr<Scene> scene, string name)
+GuiMedia::GuiMedia(Scene* scene, string name)
     : GuiWidget(scene, name)
 {
     auto types = getTypesFromCategory(BaseObject::Category::IMAGE);
@@ -224,7 +224,7 @@ void GuiMedia::render()
                         }
                         if (_fileSelectorTarget == mediaName)
                         {
-                            static string path = _root.lock()->getMediaPath();
+                            static string path = _root->getMediaPath();
                             bool cancelled;
                             vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
                             if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))

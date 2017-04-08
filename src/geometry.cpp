@@ -11,12 +11,12 @@ namespace Splash
 {
 
 /*************/
-Geometry::Geometry(weak_ptr<RootObject> root)
+Geometry::Geometry(RootObject* root)
     : BufferObject(root)
 {
     init();
 
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    auto scene = dynamic_cast<Scene*>(_root);
     if (scene)
         _onMasterScene = scene->isMaster();
 }
@@ -27,10 +27,8 @@ void Geometry::init()
     _type = "geometry";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     glGenQueries(1, &_feedbackQuery);
@@ -44,7 +42,7 @@ void Geometry::init()
 /*************/
 Geometry::~Geometry()
 {
-    if (_root.expired())
+    if (!_root)
         return;
 
     for (auto v : _vertexArray)

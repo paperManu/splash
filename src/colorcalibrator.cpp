@@ -32,7 +32,7 @@ void gslErrorHandler(const char* reason, const char* file, int line, int gsl_err
 }
 
 /*************/
-ColorCalibrator::ColorCalibrator(std::weak_ptr<RootObject> scene)
+ColorCalibrator::ColorCalibrator(RootObject* scene)
 {
     _type = "colorCalibrator";
 
@@ -65,7 +65,7 @@ void ColorCalibrator::update()
         return;
     }
 
-    auto scene = dynamic_pointer_cast<Scene>(_scene.lock());
+    auto scene = dynamic_cast<Scene*>(_scene);
     if (!scene)
         return;
 

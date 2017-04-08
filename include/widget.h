@@ -65,16 +65,16 @@ bool FileSelector(const std::string& label, std::string& path, bool& cancelled, 
 class GuiWidget : public ControllerObject
 {
   public:
-    GuiWidget(std::weak_ptr<Scene> scene, std::string name = "");
+    GuiWidget(Scene* scene, std::string name = "");
     virtual ~GuiWidget() override {}
     virtual void render() override {}
     virtual int updateWindowFlags() { return 0; }
     virtual void setJoystick(const std::vector<float>& axes, const std::vector<uint8_t>& buttons) {}
-    void setScene(const std::weak_ptr<Scene>& scene) { _scene = scene; }
+    void setScene(Scene* scene) { _scene = scene; }
 
   protected:
     std::string _name{""};
-    std::weak_ptr<Scene> _scene;
+    Scene* _scene;
     std::string _fileSelectorTarget{""};
 
     /**

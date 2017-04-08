@@ -39,7 +39,7 @@ class Sink_Shmdata : public Sink
     /**
      * Constructor
      */
-    Sink_Shmdata(std::weak_ptr<RootObject> root);
+    Sink_Shmdata(RootObject* root);
 
   private:
     std::string _path{"/tmp/splash_sink"};

@@ -21,9 +21,6 @@
 #include "./geometry.h"
 #include "./window.h"
 
-#define SPLASH_FILE_CONFIGURATION "splashConfiguration"
-#define SPLASH_FILE_PROJECT "splashProject"
-
 using namespace glm;
 using namespace std;
 
@@ -308,7 +305,7 @@ void World::applyConfig()
 
                 // Initialize the communication
                 if (pid == -1 && spawn)
-                    _link->connectTo(name, _innerScene);
+                    _link->connectTo(name, _innerScene.get());
                 else
                     _link->connectTo(name);
 
@@ -770,7 +767,7 @@ void World::init()
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
 
-    _link = make_shared<Link>(_self, _name);
+    _link = make_shared<Link>(this, _name);
 
     registerAttributes();
 }

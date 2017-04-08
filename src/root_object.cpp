@@ -9,8 +9,7 @@ namespace Splash
 
 /**************/
 RootObject::RootObject()
-    : _self(shared_ptr<RootObject>(this, [](RootObject*) {}))
-    , _factory(unique_ptr<Factory>(new Factory(_self)))
+    : _factory(unique_ptr<Factory>(new Factory(this)))
 {
     registerAttributes();
 }

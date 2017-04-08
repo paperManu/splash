@@ -48,7 +48,7 @@ class PythonEmbedded : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    PythonEmbedded(std::weak_ptr<RootObject> root);
+    PythonEmbedded(RootObject* root);
 
     /**
      * \brief Destructor

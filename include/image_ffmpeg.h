@@ -58,7 +58,7 @@ class Image_FFmpeg : public Image
      * \brief Constructor
      * \param root Root object
      */
-    Image_FFmpeg(std::weak_ptr<RootObject> root);
+    Image_FFmpeg(RootObject* root);
 
     /**
      * \brief Destructor

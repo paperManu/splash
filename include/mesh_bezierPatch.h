@@ -47,7 +47,7 @@ class Mesh_BezierPatch : public Mesh
      * \brief Constructor
      * \param root Root object
      */
-    Mesh_BezierPatch(std::weak_ptr<RootObject> root);
+    Mesh_BezierPatch(RootObject* root);
 
     /**
      * \brief Destructor

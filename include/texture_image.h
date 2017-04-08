@@ -52,8 +52,8 @@ class Texture_Image : public Texture
      * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
      */
-    Texture_Image(const std::weak_ptr<RootObject>& root);
-    Texture_Image(const std::weak_ptr<RootObject>& root, int width, int height, const std::string& pixelFormat, const GLvoid* data);
+    Texture_Image(RootObject* root);
+    Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data);
 
     /**
      * \brief Destructor

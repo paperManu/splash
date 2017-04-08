@@ -45,7 +45,7 @@ class Sink : public BaseObject
     /**
      * Constructor
      */
-    Sink(std::weak_ptr<RootObject> root);
+    Sink(RootObject* root);
 
     /**
      * Destructor

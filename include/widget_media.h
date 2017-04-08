@@ -34,7 +34,7 @@ namespace Splash
 class GuiMedia : public GuiWidget
 {
   public:
-    GuiMedia(std::weak_ptr<Scene> scene, std::string name);
+    GuiMedia(Scene* scene, std::string name);
     void render() final;
     int updateWindowFlags() final;
 

@@ -16,7 +16,7 @@ namespace Splash
 {
 
 /*************/
-Image_OpenCV::Image_OpenCV(weak_ptr<RootObject> root)
+Image_OpenCV::Image_OpenCV(RootObject* root)
     : Image(root)
 {
     init();
@@ -64,10 +64,8 @@ void Image_OpenCV::init()
     _type = "image_opencv";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     _videoCapture = unique_ptr<cv::VideoCapture>(new cv::VideoCapture());

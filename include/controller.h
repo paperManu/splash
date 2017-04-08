@@ -43,7 +43,7 @@ class ControllerObject : public BaseObject
      * \brief Constructor
      * \param root RootObject
      */
-    ControllerObject(const std::weak_ptr<RootObject>& root)
+    ControllerObject(RootObject* root)
         : BaseObject(root)
     {
         registerAttributes();

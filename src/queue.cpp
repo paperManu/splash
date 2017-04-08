@@ -14,19 +14,17 @@ namespace Splash
 {
 
 /*************/
-Queue::Queue(const std::weak_ptr<RootObject>& root)
+Queue::Queue(RootObject* root)
     : BufferObject(root)
 {
     _type = "queue";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
-    _world = dynamic_pointer_cast<World>(root.lock());
+    _world = dynamic_cast<World*>(_root);
     _factory = make_unique<Factory>(_root);
 }
 
@@ -118,7 +116,7 @@ void Queue::update()
         if (sourceIndex >= _playlist.size())
         {
             _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
-            _world.lock()->sendMessage(_name, "source", {"image"});
+            _world->sendMessage(_name, "source", {"image"});
         }
         else
         {
@@ -148,7 +146,7 @@ void Queue::update()
                 _currentSource->setAttribute("useClock", {0});
             }
 
-            _world.lock()->sendMessage(_name, "source", {sourceParameters.type});
+            _world->sendMessage(_name, "source", {sourceParameters.type});
 
             Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << sourceParameters.filename << Log::endl;
         }
@@ -374,11 +372,11 @@ void Queue::registerAttributes()
 /*************/
 
 /*************/
-QueueSurrogate::QueueSurrogate(const std::weak_ptr<RootObject>& root)
+QueueSurrogate::QueueSurrogate(RootObject* root)
     : Texture(root)
     , _filter(make_shared<Filter>(root))
 {
-    _filter = dynamic_pointer_cast<Filter>(_root.lock()->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)));
+    _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)));
     _filter->_savable = false;
 
     registerAttributes();
@@ -444,14 +442,14 @@ void QueueSurrogate::registerAttributes()
             {
                 _filter->unlinkFrom(_source);
                 _source.reset();
-                _root.lock()->disposeObject(_name + "_source");
+                _root->disposeObject(_name + "_source");
             }
 
             auto object = shared_ptr<BaseObject>();
 
             if (type.find("image") != string::npos)
             {
-                auto image = dynamic_pointer_cast<Image>(_root.lock()->createObject("image", _name + "_source"));
+                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source"));
                 image->zero();
                 image->setRemoteType(type);
                 object = image;

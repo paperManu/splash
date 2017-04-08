@@ -29,7 +29,7 @@ bool UserInput::State::operator==(const UserInput::State& s) const
 }
 
 /*************/
-UserInput::UserInput(weak_ptr<RootObject> root)
+UserInput::UserInput(RootObject* root)
     : BaseObject(root)
 {
     _type = "userInput";
@@ -129,7 +129,7 @@ string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
     if (!glfwWindow)
         return {};
 
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
         return {};
 

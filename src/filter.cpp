@@ -12,7 +12,7 @@ namespace Splash
 {
 
 /*************/
-Filter::Filter(const std::weak_ptr<RootObject>& root)
+Filter::Filter(RootObject* root)
     : Texture(root)
 {
     init();
@@ -25,10 +25,8 @@ void Filter::init()
     _renderingPriority = Priority::FILTER;
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
@@ -65,7 +63,7 @@ void Filter::init()
 /*************/
 Filter::~Filter()
 {
-    if (_root.expired())
+    if (!_root)
         return;
 
 #ifdef DEBUG
@@ -109,7 +107,7 @@ bool Filter::linkTo(const std::shared_ptr<BaseObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = dynamic_pointer_cast<Texture_Image>(_root.lock()->createObject("texture_image", getName() + "_" + obj->getName() + "_tex"));
+        auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex"));
         if (tex->linkTo(obj))
             return linkTo(tex);
         else
@@ -150,16 +148,15 @@ void Filter::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto root = _root.lock();
         auto textureName = getName() + "_" + obj->getName() + "_tex";
 
-        if (auto tex = root->getObject(textureName))
+        if (auto tex = _root->getObject(textureName))
         {
             tex->unlinkFrom(obj);
             unlinkFrom(tex);
         }
 
-        root->disposeObject(textureName);
+        _root->disposeObject(textureName);
     }
 
     Texture::unlinkFrom(obj);
@@ -239,7 +236,7 @@ void Filter::updateUniforms()
     // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
     {
-        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+        auto scene = dynamic_cast<Scene*>(_root);
 
         auto obj = weakObject.lock();
         if (obj)
