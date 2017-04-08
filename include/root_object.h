@@ -132,7 +132,6 @@ class RootObject : public BaseObject
     std::string _configurationPath{""}; //!< Path to the configuration file
     std::string _mediaPath{""};         //!< Default path to the medias
 
-    std::shared_ptr<RootObject> _self;
     std::unique_ptr<Factory> _factory; //!< Object factory
 
     std::shared_ptr<Link> _link;                                           //!< Link object for communicatin between World and Scene

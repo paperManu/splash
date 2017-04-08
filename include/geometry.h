@@ -49,7 +49,7 @@ class Geometry : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Geometry(std::weak_ptr<RootObject> root);
+    Geometry(RootObject* root);
 
     /**
      * \brief Destructor

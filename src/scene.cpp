@@ -69,7 +69,7 @@ Scene::Scene(const std::string& name)
     _isRunning = true;
     _name = name;
 
-    _blender = make_shared<Blender>(_self);
+    _blender = make_shared<Blender>(this);
     if (_blender)
     {
         _blender->setName("blender");
@@ -589,10 +589,10 @@ void Scene::setAsMaster(const string& configFilePath)
 
     _isMaster = true;
     // We have to reset the factory to reflect this change
-    _factory.reset(new Factory(_self));
+    _factory.reset(new Factory(this));
 
     _mainWindow->setAsCurrentContext();
-    _gui = make_shared<Gui>(_mainWindow, _self);
+    _gui = make_shared<Gui>(_mainWindow, this);
     if (_gui)
     {
         _gui->setName("gui");
@@ -601,10 +601,10 @@ void Scene::setAsMaster(const string& configFilePath)
     }
     _mainWindow->releaseContext();
 
-    _keyboard = make_shared<Keyboard>(_self);
-    _mouse = make_shared<Mouse>(_self);
-    _joystick = make_shared<Joystick>(_self);
-    _dragndrop = make_shared<DragNDrop>(_self);
+    _keyboard = make_shared<Keyboard>(this);
+    _mouse = make_shared<Mouse>(this);
+    _joystick = make_shared<Joystick>(this);
+    _dragndrop = make_shared<DragNDrop>(this);
 
     if (_keyboard)
         _objects["keyboard"] = _keyboard;
@@ -617,7 +617,7 @@ void Scene::setAsMaster(const string& configFilePath)
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
-    _colorCalibrator = make_shared<ColorCalibrator>(_self);
+    _colorCalibrator = make_shared<ColorCalibrator>(this);
     _colorCalibrator->setName("colorCalibrator");
     _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
 #endif
@@ -846,7 +846,7 @@ void Scene::init(const string& name)
     _textureUploadWindow = getNewSharedWindow();
 
     // Create the link and connect to the World
-    _link = make_shared<Link>(_self, name);
+    _link = make_shared<Link>(this, name);
     _link->connectTo("world");
     sendMessageToWorld("sceneLaunched", {});
 }

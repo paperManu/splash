@@ -47,7 +47,7 @@ class Mesh : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Mesh(std::weak_ptr<RootObject> root);
+    Mesh(RootObject* root);
 
     /**
      * \brief Destructor

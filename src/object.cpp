@@ -22,7 +22,7 @@ namespace Splash
 {
 
 /*************/
-Object::Object(const std::weak_ptr<RootObject>& root)
+Object::Object(RootObject* root)
     : BaseObject(root)
 {
     init();
@@ -34,10 +34,8 @@ void Object::init()
     _type = "object";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     _shader = make_shared<Shader>();
@@ -223,7 +221,7 @@ bool Object::linkTo(const shared_ptr<BaseObject>& obj)
 
     if (obj->getType().find("texture") != string::npos)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root.lock()->createObject("filter", getName() + "_" + obj->getName() + "_filter"));
+        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter"));
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -243,7 +241,7 @@ bool Object::linkTo(const shared_ptr<BaseObject>& obj)
     }
     else if (obj->getType().find("image") != string::npos)
     {
-        auto filter = dynamic_pointer_cast<Filter>(_root.lock()->createObject("filter", getName() + "_" + obj->getName() + "_filter"));
+        auto filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", getName() + "_" + obj->getName() + "_filter"));
         if (filter->linkTo(obj))
             return linkTo(filter);
         else
@@ -251,7 +249,7 @@ bool Object::linkTo(const shared_ptr<BaseObject>& obj)
     }
     else if (obj->getType().find("mesh") != string::npos)
     {
-        auto geom = dynamic_pointer_cast<Geometry>(_root.lock()->createObject("geometry", getName() + "_" + obj->getName() + "_geom"));
+        auto geom = dynamic_pointer_cast<Geometry>(_root->createObject("geometry", getName() + "_" + obj->getName() + "_geom"));
         if (geom->linkTo(obj))
             return linkTo(geom);
         else
@@ -273,29 +271,27 @@ void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
     {
-        auto root = _root.lock();
         auto filterName = getName() + "_" + obj->getName() + "_filter";
 
-        if (auto filter = root->getObject(filterName))
+        if (auto filter = _root->getObject(filterName))
         {
             filter->unlinkFrom(obj);
             unlinkFrom(filter);
         }
 
-        root->disposeObject(filterName);
+        _root->disposeObject(filterName);
     }
     else if (type.find("image") != string::npos)
     {
-        auto root = _root.lock();
         auto filterName = getName() + "_" + obj->getName() + "_filter";
 
-        if (auto filter = root->getObject(filterName))
+        if (auto filter = _root->getObject(filterName))
         {
             filter->unlinkFrom(obj);
             unlinkFrom(filter);
         }
 
-        root->disposeObject(filterName);
+        _root->disposeObject(filterName);
     }
     else if (type.find("filter") != string::npos)
     {
@@ -304,16 +300,15 @@ void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
     }
     else if (type.find("mesh") != string::npos)
     {
-        auto root = _root.lock();
         auto geomName = getName() + "_" + obj->getName() + "_geom";
 
-        if (auto geom = root->getObject(geomName))
+        if (auto geom = _root->getObject(geomName))
         {
             geom->unlinkFrom(obj);
             unlinkFrom(geom);
         }
 
-        root->disposeObject(geomName);
+        _root->disposeObject(geomName);
     }
     else if (type.find("geometry") != string::npos)
     {

@@ -5,7 +5,8 @@ using namespace std;
 namespace Splash
 {
 /*************/
-Keyboard::Keyboard(weak_ptr<RootObject> root) : UserInput(root)
+Keyboard::Keyboard(RootObject* root)
+    : UserInput(root)
 {
     _type = "keyboard";
 }

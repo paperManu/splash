@@ -49,7 +49,7 @@ class Sink_Shmdata_Encoded : public Sink
     /**
      * Constructor
      */
-    Sink_Shmdata_Encoded(std::weak_ptr<RootObject> root);
+    Sink_Shmdata_Encoded(RootObject* root);
 
     /**
      * Destructor

@@ -46,14 +46,14 @@ class Image : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Image(std::weak_ptr<RootObject> root);
+    Image(RootObject* root);
 
     /**
      * \brief Constructor
      * \param root Root object
      * \param spec Image specifications
      */
-    Image(std::weak_ptr<RootObject> root, ImageBufferSpec spec);
+    Image(RootObject* root, ImageBufferSpec spec);
 
     /**
      * \brief Destructor

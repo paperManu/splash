@@ -51,7 +51,7 @@ class Warp : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Warp(const std::weak_ptr<RootObject>& root);
+    Warp(RootObject* root);
 
     /**
      * \brief Destructor

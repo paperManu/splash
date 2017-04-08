@@ -12,13 +12,13 @@ namespace Splash
 {
 
 /*************/
-Mesh::Mesh(weak_ptr<RootObject> root)
+Mesh::Mesh(RootObject* root)
     : BufferObject(root)
 {
     init();
     _renderingPriority = Priority::MEDIA;
 
-    if (!root.expired() && root.lock()->getType() == "world")
+    if (root && root->getType() == "world")
         _worldObject = true;
 }
 
@@ -36,10 +36,8 @@ void Mesh::init()
     _type = "mesh";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     createDefaultMesh();
@@ -114,7 +112,7 @@ vector<float> Mesh::getAnnexe() const
 /*************/
 bool Mesh::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root.lock()->getConfigurationPath());
+    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
 
     if (!_isConnectedToRemote)
     {

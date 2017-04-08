@@ -11,7 +11,7 @@ namespace Splash
 {
 
 /*************/
-Sink_Shmdata_Encoded::Sink_Shmdata_Encoded(weak_ptr<RootObject> root)
+Sink_Shmdata_Encoded::Sink_Shmdata_Encoded(RootObject* root)
     : Sink(root)
 {
     _type = "sink_shmdata_encoded";

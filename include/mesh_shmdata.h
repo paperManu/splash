@@ -47,7 +47,7 @@ class Mesh_Shmdata : public Mesh
      * \brief Constructor
      * \param root Root object
      */
-    Mesh_Shmdata(std::weak_ptr<RootObject> root);
+    Mesh_Shmdata(RootObject* root);
 
     /**
      * \brief Destructor

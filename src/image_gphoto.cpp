@@ -14,7 +14,7 @@ namespace Splash
 {
 
 /*************/
-Image_GPhoto::Image_GPhoto(weak_ptr<RootObject> root, std::string cameraName)
+Image_GPhoto::Image_GPhoto(RootObject* root, std::string cameraName)
     : Image(root)
 {
     init();
@@ -267,10 +267,8 @@ void Image_GPhoto::init()
     _type = "image_gphoto";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     lock_guard<recursive_mutex> lock(_gpMutex);

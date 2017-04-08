@@ -50,7 +50,7 @@ class Filter : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Filter(const std::weak_ptr<RootObject>& root);
+    Filter(RootObject* root);
 
     /**
      * \brief Destructor

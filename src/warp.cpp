@@ -21,7 +21,7 @@ namespace Splash
 {
 
 /*************/
-Warp::Warp(const std::weak_ptr<RootObject>& root)
+Warp::Warp(RootObject* root)
     : Texture(root)
 {
     init();
@@ -34,10 +34,8 @@ void Warp::init()
     _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
@@ -76,7 +74,7 @@ void Warp::init()
 /*************/
 Warp::~Warp()
 {
-    if (_root.expired())
+    if (!_root)
         return;
 
 #ifdef DEBUG

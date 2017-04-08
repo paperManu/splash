@@ -48,7 +48,7 @@ class Object : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Object(const std::weak_ptr<RootObject>& root);
+    Object(RootObject* root);
 
     /**
      * \brief Destructor

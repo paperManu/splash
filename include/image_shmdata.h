@@ -42,7 +42,7 @@ class Image_Shmdata : public Image
     /**
      * Constructor
      */
-    Image_Shmdata(std::weak_ptr<RootObject> root);
+    Image_Shmdata(RootObject* root);
 
     /**
      * Destructor

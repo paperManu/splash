@@ -680,7 +680,7 @@ PyObject* PythonEmbedded::pythonInitSplash()
 
 /*************/
 // PythonEmbedded class definition
-PythonEmbedded::PythonEmbedded(weak_ptr<RootObject> root)
+PythonEmbedded::PythonEmbedded(RootObject* root)
     : ControllerObject(root)
 {
     using namespace std::placeholders;
@@ -715,7 +715,7 @@ PythonEmbedded::~PythonEmbedded()
 bool PythonEmbedded::setScriptFile(const string& src)
 {
     _scriptName = Utils::getFilenameFromFilePath(src);
-    _filepath = Utils::getPathFromFilePath(src, _root.lock()->getConfigurationPath());
+    _filepath = Utils::getPathFromFilePath(src, _root->getConfigurationPath());
 
     if (!ifstream(_filepath + _scriptName, ios::in | ios::binary))
     {

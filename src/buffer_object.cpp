@@ -49,9 +49,8 @@ void BufferObject::updateTimestamp()
 {
     _timestamp = Timer::getTime();
     _updatedBuffer = true;
-    auto root = _root.lock();
-    if (root)
-        root->signalBufferObjectUpdated();
+    if (_root)
+        _root->signalBufferObjectUpdated();
 }
 
 } // end of namespace

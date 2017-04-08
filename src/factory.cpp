@@ -59,13 +59,13 @@ Factory::Factory()
 }
 
 /*************/
-Factory::Factory(weak_ptr<RootObject> root)
+Factory::Factory(RootObject* root)
 {
     _root = root;
-    if (!root.expired() && root.lock()->getType() == "scene")
+    if (root && root->getType() == "scene")
     {
         _isScene = true;
-        if (dynamic_pointer_cast<Scene>(root.lock())->isMaster())
+        if (dynamic_cast<Scene*>(root)->isMaster())
             _isMasterScene = true;
     }
 
@@ -330,7 +330,7 @@ void Factory::registerObjects()
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
         [&]() {
-            if (!_isMasterScene && !_root.expired())
+            if (!_isMasterScene && _root)
                 return shared_ptr<BaseObject>(nullptr);
             return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
         },

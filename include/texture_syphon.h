@@ -45,7 +45,7 @@ class Texture_Syphon : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Texture_Syphon(std::weak_ptr<RootObject> root);
+    Texture_Syphon(RootObject* root);
 
     /**
      * \brief Destructor

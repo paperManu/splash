@@ -13,7 +13,7 @@ namespace Splash
 {
 
 /*************/
-Texture::Texture(const std::weak_ptr<RootObject>& root)
+Texture::Texture(RootObject* root)
     : BaseObject(root)
 {
     init();
@@ -33,10 +33,8 @@ void Texture::init()
     _type = "texture";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     _timestamp = Timer::getTime();

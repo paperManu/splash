@@ -46,7 +46,7 @@ class BufferObject : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    BufferObject(const std::weak_ptr<RootObject>& root)
+    BufferObject(RootObject* root)
         : BaseObject(root)
     {
         registerAttributes();

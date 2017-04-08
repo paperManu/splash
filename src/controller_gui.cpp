@@ -43,14 +43,14 @@ size_t Gui::_imGuiVboMaxSize = 20000;
 GLFWwindow* Gui::_glfwWindow = nullptr;
 
 /*************/
-Gui::Gui(shared_ptr<GlWindow> w, std::weak_ptr<RootObject> s)
+Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     : ControllerObject(s)
 {
     _type = "gui";
     _renderingPriority = Priority::GUI;
 
-    auto scene = dynamic_pointer_cast<Scene>(s.lock());
-    if (w.get() == nullptr || scene.get() == nullptr)
+    auto scene = dynamic_cast<Scene*>(s);
+    if (w.get() == nullptr || scene == nullptr)
         return;
 
     _scene = scene;
@@ -166,19 +166,17 @@ void Gui::activateLUT()
 /*************/
 void Gui::calibrateColorResponseFunction()
 {
-    auto scene = _scene.lock();
-    if (!scene)
+    if (!_scene)
         return;
-    scene->setAttribute("calibrateColorResponseFunction", {});
+    _scene->setAttribute("calibrateColorResponseFunction", {});
 }
 
 /*************/
 void Gui::calibrateColors()
 {
-    auto scene = _scene.lock();
-    if (!scene)
+    if (!_scene)
         return;
-    scene->setAttribute("calibrateColor", {});
+    _scene->setAttribute("calibrateColor", {});
 }
 
 /*************/
@@ -581,7 +579,7 @@ void Gui::render()
                 showConfigurationFileSelector = true;
             if (showConfigurationFileSelector)
             {
-                static string path = _root.lock()->getConfigurationPath();
+                static string path = _root->getConfigurationPath();
                 bool cancelled;
                 if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
                 {
@@ -626,7 +624,7 @@ void Gui::render()
                 showProjectFileSelector = true;
             if (showProjectFileSelector)
             {
-                static string path = _root.lock()->getConfigurationPath();
+                static string path = _root->getConfigurationPath();
                 bool cancelled;
                 if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
                 {
@@ -655,7 +653,7 @@ void Gui::render()
             ImGui::Separator();
             ImGui::Text("Media directory");
             char mediaPath[512];
-            strncpy(mediaPath, _root.lock()->getMediaPath().data(), 511);
+            strncpy(mediaPath, _root->getMediaPath().data(), 511);
             if (ImGui::InputText("##MediaPath", mediaPath, 512))
                 setGlobal("mediaPath", {string(mediaPath)});
 
@@ -665,7 +663,7 @@ void Gui::render()
                 showMediaFileSelector = true;
             if (showMediaFileSelector)
             {
-                static string path = _root.lock()->getMediaPath();
+                static string path = _root->getMediaPath();
                 bool cancelled;
                 if (SplashImGui::FileSelector("Media path", path, cancelled, {{"json"}}))
                 {

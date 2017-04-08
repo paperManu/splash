@@ -31,6 +31,9 @@
 #define SPLASH_ALL_PEERS "__ALL__"
 #define SPLASH_DEFAULTS_FILE_ENV "SPLASH_DEFAULTS"
 
+#define SPLASH_FILE_CONFIGURATION "splashConfiguration"
+#define SPLASH_FILE_PROJECT "splashProject"
+
 #include <ostream>
 
 #include "./gl_window.h"

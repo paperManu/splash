@@ -47,7 +47,7 @@ class Texture : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Texture(const std::weak_ptr<RootObject>& root);
+    Texture(RootObject* root);
 
     /**
      * \brief Destructor

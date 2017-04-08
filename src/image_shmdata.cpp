@@ -28,7 +28,7 @@ namespace Splash
 {
 
 /*************/
-Image_Shmdata::Image_Shmdata(weak_ptr<RootObject> root)
+Image_Shmdata::Image_Shmdata(RootObject* root)
     : Image(root)
 {
     init();
@@ -46,7 +46,7 @@ Image_Shmdata::~Image_Shmdata()
 /*************/
 bool Image_Shmdata::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root.lock()->getConfigurationPath());
+    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
 
     return true;
@@ -66,10 +66,8 @@ void Image_Shmdata::init()
     _type = "image_shmdata";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 }
 

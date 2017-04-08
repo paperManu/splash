@@ -35,12 +35,12 @@ namespace Splash
 class GuiWarp : public GuiWidget
 {
   public:
-    GuiWarp(const std::weak_ptr<Scene>& scene, const std::string& name)
+    GuiWarp(Scene* scene, const std::string& name)
         : GuiWidget(scene, name)
     {
     }
     void render() final;
-    void setScene(const std::weak_ptr<Scene>& scene) { _scene = scene; }
+    void setScene(Scene* scene) { _scene = scene; }
     int updateWindowFlags() final;
 
   private:

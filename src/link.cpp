@@ -14,7 +14,7 @@ namespace Splash
 {
 
 /*************/
-Link::Link(weak_ptr<RootObject> root, string name)
+Link::Link(RootObject* root, string name)
 {
     try
     {
@@ -91,9 +91,9 @@ void Link::connectTo(const string& name)
 }
 
 /*************/
-void Link::connectTo(const std::string& name, const weak_ptr<RootObject>& peer)
+void Link::connectTo(const std::string& name, RootObject* peer)
 {
-    if (peer.expired())
+    if (!peer)
         return;
 
     auto rootObjectIt = _connectedTargetPointers.find(name);
@@ -165,7 +165,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
     {
         for (auto& rootObjectIt : _connectedTargetPointers)
         {
-            auto rootObject = rootObjectIt.second.lock();
+            auto rootObject = rootObjectIt.second;
             // If there is also a connection to another process,
             // we make a copy of the buffer right now
             if (rootObject && _connectedToOuter)
@@ -225,7 +225,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
     {
         for (auto& rootObjectIt : _connectedTargetPointers)
         {
-            auto rootObject = rootObjectIt.second.lock();
+            auto rootObject = rootObjectIt.second;
             if (rootObject)
                 rootObject->set(name, attribute, message);
         }
@@ -373,9 +373,8 @@ void Link::handleInputMessages()
 
             Values values = recvMessage();
 
-            auto root = _rootObject.lock();
-            if (root)
-                root->set(name, attribute, values);
+            if (_rootObject)
+                _rootObject->set(name, attribute, values);
 // We don't display broadcast messages, for visibility
 #ifdef DEBUG
             if (name != SPLASH_ALL_PEERS)
@@ -415,9 +414,8 @@ void Link::handleInputBuffers()
             _socketBufferIn->recv(&msg);
             shared_ptr<SerializedObject> buffer = make_shared<SerializedObject>((char*)msg.data(), (char*)msg.data() + msg.size());
 
-            auto root = _rootObject.lock();
-            if (root)
-                root->setFromSerializedObject(name, std::move(buffer));
+            if (_rootObject)
+                _rootObject->setFromSerializedObject(name, std::move(buffer));
         }
     }
     catch (const zmq::error_t& e)

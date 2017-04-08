@@ -56,7 +56,7 @@ class Camera : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Camera(const std::weak_ptr<RootObject>& root);
+    Camera(RootObject* root);
 
     /**
      * \brief Destructor

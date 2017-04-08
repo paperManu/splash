@@ -7,7 +7,7 @@ using namespace std;
 namespace Splash
 {
 /*************/
-DragNDrop::DragNDrop(weak_ptr<RootObject> root)
+DragNDrop::DragNDrop(RootObject* root)
     : UserInput(root)
 {
     _type = "dragndrop";

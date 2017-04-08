@@ -66,7 +66,7 @@ namespace Splash
 {
 
 /*************/
-Camera::Camera(const std::weak_ptr<RootObject>& root)
+Camera::Camera(RootObject* root)
     : BaseObject(root)
 {
     init();
@@ -79,10 +79,8 @@ void Camera::init()
     _renderingPriority = Priority::CAMERA;
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
@@ -126,7 +124,7 @@ Camera::~Camera()
     Log::get() << Log::DEBUGGING << "Camera::~Camera - Destructor" << Log::endl;
 #endif
 
-    if (!_root.expired())
+    if (_root)
         glDeleteFramebuffers(1, &_fbo);
 }
 

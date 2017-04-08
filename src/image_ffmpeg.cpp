@@ -21,7 +21,7 @@ namespace Splash
 {
 
 /*************/
-Image_FFmpeg::Image_FFmpeg(weak_ptr<RootObject> root)
+Image_FFmpeg::Image_FFmpeg(RootObject* root)
     : Image(root)
 {
     init();
@@ -39,10 +39,8 @@ void Image_FFmpeg::init()
     _type = "image_ffmpeg";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     av_register_all();
@@ -77,7 +75,7 @@ bool Image_FFmpeg::read(const string& filename)
 {
     // First: cleanup
     freeFFmpegObjects();
-    _filepath = Utils::getFullPathFromFilePath(filename, _root.lock()->getConfigurationPath());
+    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
 
     if (avformat_open_input(&_avContext, _filepath.c_str(), nullptr, nullptr) != 0)
     {

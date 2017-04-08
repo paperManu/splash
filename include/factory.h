@@ -28,8 +28,8 @@
 #include <memory>
 #include <vector>
 
-#include "./base_object.h"
 #include "./attribute.h"
+#include "./base_object.h"
 
 namespace Splash
 {
@@ -48,7 +48,7 @@ class Factory
      * \brief Constructor
      * \param root Root object
      */
-    Factory(std::weak_ptr<RootObject> root);
+    Factory(RootObject* root);
 
     /**
      * \brief Creates a BaseObject given its type
@@ -111,7 +111,7 @@ class Factory
         Values attributes{};
     };
 
-    std::weak_ptr<RootObject> _root;         //!< Root object, used as root for all created objects
+    RootObject* _root;                       //!< Root object, used as root for all created objects
     bool _isScene{false};                    //!< True if the root is a Scene, false if it is a World (or if there is no root)
     bool _isMasterScene{false};              //!< True if the root is the master Scene
     std::map<std::string, Page> _objectBook; //!< List of all creatable objects
