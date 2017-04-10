@@ -21,11 +21,27 @@ if __name__ == "__main__":
     io = StringIO(jsonString)
     json = json.load(io)
 
+    objectsDescription = dict()
+    objectsAttributes = dict()
+
     for data in json:
+        if type(json[data]) == str:
+            objType = data[:data.find("_description")]
+            objectsDescription[objType] = json[data]
+        elif type(json[data]) == dict:
+            attributes = "Attributes:\n"
+            for attr in json[data]:
+                if json[data][attr] == "":
+                    continue
+                attributes += "- " + attr + ": " + json[data][attr] + "\n"
+            attributes += "\n"
+            objectsAttributes[data] = attributes
+
+    for data in json:
+        if data.find("_description") != -1:
+            continue
         print("### " + data)
-        print("Attributes:")
-        for attr in json[data]:
-            if json[data][attr] == "":
-                continue
-            print("- " + attr + ": " + json[data][attr])
-        print("")
+        description = objectsDescription.get(data)
+        if description is not None:
+            print(description)
+        print(objectsAttributes[data])

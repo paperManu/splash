@@ -534,11 +534,13 @@ string World::getObjectsAttributesDescriptions()
         if (!obj)
             continue;
 
-        auto description = obj->getAttributesDescriptions();
+        auto objectDescription = localFactory.getDescription(type);
+        root[obj->getType() + "_description"] = objectDescription;
 
+        auto attributesDescriptions = obj->getAttributesDescriptions();
         int addedAttribute = 0;
         root[obj->getType()] = Json::Value();
-        for (auto& d : description)
+        for (auto& d : attributesDescriptions)
         {
             // We only keep attributes with a valid documentation
             // The other ones are inner attributes

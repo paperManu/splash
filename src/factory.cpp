@@ -228,11 +228,22 @@ bool Factory::isCreatable(string type)
 /*************/
 void Factory::registerObjects()
 {
-    _objectBook["blender"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); }, BaseObject::Category::MISC, "blender");
-    _objectBook["camera"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root)); }, BaseObject::Category::MISC, "camera");
-    _objectBook["filter"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_root)); }, BaseObject::Category::MISC, "filter");
-    _objectBook["geometry"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); }, BaseObject::Category::MISC, "Geometry");
-    _objectBook["image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); }, BaseObject::Category::IMAGE, "image");
+    _objectBook["blender"] =
+        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Blender>(_root)); }, BaseObject::Category::MISC, "blender", "Controls the blending of all the cameras.");
+    _objectBook["camera"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Camera>(_root)); },
+        BaseObject::Category::MISC,
+        "camera",
+        "Virtual camera which corresponds to a given videoprojector.");
+    _objectBook["filter"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Filter>(_root)); },
+        BaseObject::Category::MISC,
+        "filter",
+        "Filter applied to textures. The default filter allows for standard image manipulation, the user can set his own GLSL shader.");
+    _objectBook["geometry"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Geometry>(_root)); },
+        BaseObject::Category::MISC,
+        "Geometry",
+        "Intermediary object holding vertices, UV and normal coordinates of a projection surface.");
+    _objectBook["image"] =
+        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root)); }, BaseObject::Category::IMAGE, "image", "Static image read from a file.");
 
 #if HAVE_LINUX
     _objectBook["image_v4l2"] = Page(
@@ -245,7 +256,8 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::IMAGE,
-        "Video4Linux2 input device");
+        "Video4Linux2 input device",
+        "Image object reading frames from a Video4Linux2 compatible input.");
 #endif
 
     _objectBook["image_ffmpeg"] = Page(
@@ -258,7 +270,8 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::IMAGE,
-        "video");
+        "video",
+        "Image object reading frames from a video file.");
 
 #if HAVE_GPHOTO
     _objectBook["image_gphoto"] = Page(
@@ -271,7 +284,8 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::IMAGE,
-        "digital camera");
+        "digital camera",
+        "Image object reading from from a GPhoto2 compatible camera.");
 #endif
 
 #if HAVE_SHMDATA
@@ -285,7 +299,8 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::IMAGE,
-        "video through shared memory");
+        "video through shared memory",
+        "Image object reading frames from a Shmdata shared memory.");
 #endif
 
 #if HAVE_OPENCV
@@ -299,10 +314,14 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::IMAGE,
-        "camera through opencv");
+        "camera through opencv",
+        "Image object reading frames from a OpenCV compatible camera.");
 #endif
 
-    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); }, BaseObject::Category::MESH, "mesh from obj file");
+    _objectBook["mesh"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root)); },
+        BaseObject::Category::MESH,
+        "mesh from obj file",
+        "Mesh (vertices and UVs) describing a projection surface, read from a .obj file.");
 
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(
@@ -315,17 +334,24 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::MESH,
-        "mesh through shared memory");
+        "mesh through shared memory",
+        "Mesh object reading data from a Shmdata shared memory.");
 
-    _objectBook["sink_shmdata"] =
-        Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); }, BaseObject::Category::MISC, "sink a texture to shmdata file");
+    _objectBook["sink_shmdata"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata>(_root)); },
+        BaseObject::Category::MISC,
+        "sink a texture to shmdata file",
+        "Outputs connected texture to a Shmdata shared memory.");
 
     _objectBook["sink_shmdata_encoded"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink_Shmdata_Encoded>(_root)); },
         BaseObject::Category::MISC,
-        "sink a texture as an encoded video to shmdata file");
+        "sink a texture as an encoded video to shmdata file",
+        "Outputs texture as a compressed frame to a Shmdata shared memory.");
 #endif
 
-    _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); }, BaseObject::Category::MISC, "object");
+    _objectBook["object"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Object>(_root)); },
+        BaseObject::Category::MISC,
+        "object",
+        "Utility class used for specify which image is mapped onto which mesh.");
 
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
@@ -335,7 +361,8 @@ void Factory::registerObjects()
             return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
         },
         BaseObject::Category::MISC,
-        "python");
+        "python",
+        "Allows for controlling Splash through a Python script.");
 #endif
 
     _objectBook["queue"] = Page(
@@ -348,9 +375,13 @@ void Factory::registerObjects()
             return object;
         },
         BaseObject::Category::IMAGE,
-        "video queue");
+        "video queue",
+        "Allows for creating a timed playlist of image sources.");
 
-    _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); }, BaseObject::Category::IMAGE, "texture image");
+    _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); },
+        BaseObject::Category::IMAGE,
+        "texture image",
+        "Texture object created from an Image object.");
 
 #if HAVE_OSX
     _objectBook["texture_syphon"] = Page(
@@ -361,11 +392,18 @@ void Factory::registerObjects()
                 return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root));
         },
         BaseObject::Category::IMAGE,
-        "texture image through Syphon");
+        "texture image through Syphon",
+        "Texture object synchronized through Syphon.");
 #endif
 
-    _objectBook["warp"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); }, BaseObject::Category::MISC, "warp");
-    _objectBook["window"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); }, BaseObject::Category::MISC, "window");
+    _objectBook["warp"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); },
+        BaseObject::Category::MISC,
+        "warp",
+        "Warping object, allows for deforming the output of a Camera.");
+    _objectBook["window"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); },
+        BaseObject::Category::MISC,
+        "window",
+        "Window object, set to be shown on one or multiple physical outputs.");
 }
 
 } // end of namespace
