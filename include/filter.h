@@ -131,6 +131,7 @@ class Filter : public Texture
     ImageBufferSpec _outTextureSpec;
 
     // Filter parameters
+    int _sizeOverride[2]{-1, -1};                            //!< If set to positive values, overrides the size given by input textures
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
     std::string _pixelFormat{"RGBA"};                        //!< Output pixel format
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits

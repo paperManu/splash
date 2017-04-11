@@ -181,6 +181,11 @@ void Filter::render()
 
     auto input = _inTextures[0].lock();
     _outTextureSpec = input->getSpec();
+    if (_sizeOverride[0] > 0 && _sizeOverride[1] > 0)
+    {
+        _outTextureSpec.width = _sizeOverride[0];
+        _outTextureSpec.height = _sizeOverride[1];
+    }
     _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
@@ -611,6 +616,18 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
+
+    addAttribute("sizeOverride",
+        [&](const Values& args) {
+            _sizeOverride[0] = args[0].as<int>();
+            _sizeOverride[1] = args[1].as<int>();
+            return true;
+        },
+        [&]() -> Values {
+            return {_sizeOverride[0], _sizeOverride[1]};
+        },
+        {'n', 'n'});
+    setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
 }
 
 } // end of namespace
