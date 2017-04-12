@@ -53,7 +53,7 @@ class Link
      * \param root Root object
      * \param name Name of the link
      */
-    Link(RootObject* root, std::string name);
+    Link(RootObject* root, const std::string& name);
 
     /**
      * \brief Destructor

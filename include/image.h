@@ -53,7 +53,7 @@ class Image : public BufferObject
      * \param root Root object
      * \param spec Image specifications
      */
-    Image(RootObject* root, ImageBufferSpec spec);
+    Image(RootObject* root, const ImageBufferSpec& spec);
 
     /**
      * \brief Destructor

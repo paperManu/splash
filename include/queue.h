@@ -97,7 +97,6 @@ class Queue : public BufferObject
     void update();
 
   private:
-    World* _world;
     std::unique_ptr<Factory> _factory;
 
     struct Source

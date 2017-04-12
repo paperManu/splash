@@ -12,7 +12,7 @@ namespace Splash
 {
 
 /*************/
-GuiMedia::GuiMedia(Scene* scene, string name)
+GuiMedia::GuiMedia(Scene* scene, const string& name)
     : GuiWidget(scene, name)
 {
     auto types = getTypesFromCategory(BaseObject::Category::IMAGE);

@@ -34,7 +34,7 @@ namespace Splash
 class GuiMeshes : public GuiWidget
 {
   public:
-    GuiMeshes(Scene* scene, std::string name);
+    GuiMeshes(Scene* scene, const std::string& name);
     void render() final;
     int updateWindowFlags() final;
 

@@ -49,11 +49,10 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     _type = "gui";
     _renderingPriority = Priority::GUI;
 
-    auto scene = dynamic_cast<Scene*>(s);
-    if (w.get() == nullptr || scene == nullptr)
+    _scene = dynamic_cast<Scene*>(s);
+    if (w.get() == nullptr || _scene == nullptr)
         return;
 
-    _scene = scene;
     _window = w;
     _glfwWindow = _window->get();
     if (!_window->setAsCurrentContext())

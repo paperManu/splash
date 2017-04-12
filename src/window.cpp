@@ -46,12 +46,14 @@ Window::Window(RootObject* root)
     if (!_root)
         return;
 
-    auto scene = dynamic_cast<Scene*>(root);
-    auto w = scene->getNewSharedWindow();
-    if (w.get() == nullptr)
-        return;
+    if (auto scene = dynamic_cast<Scene*>(root))
+    {
+        auto w = scene->getNewSharedWindow();
+        if (w.get() == nullptr)
+            return;
+        _window = w;
+    }
 
-    _window = w;
     _isInitialized = setProjectionSurface();
     if (!_isInitialized)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while creating the Window" << Log::endl;

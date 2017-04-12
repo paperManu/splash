@@ -14,7 +14,7 @@ namespace Splash
 {
 
 /*************/
-Image_GPhoto::Image_GPhoto(RootObject* root, std::string cameraName)
+Image_GPhoto::Image_GPhoto(RootObject* root, const std::string& cameraName)
     : Image(root)
 {
     init();

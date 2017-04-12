@@ -34,7 +34,7 @@ namespace Splash
 class GuiNodeView : public GuiWidget
 {
   public:
-    GuiNodeView(Scene* scene, std::string name);
+    GuiNodeView(Scene* scene, const std::string& name);
     void render() final;
     std::string getClickedNode() { return _clickedNode; }
     int updateWindowFlags() final;

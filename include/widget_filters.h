@@ -34,7 +34,7 @@ namespace Splash
 class GuiFilters : public GuiWidget
 {
   public:
-    GuiFilters(Scene* scene, std::string name)
+    GuiFilters(Scene* scene, const std::string& name)
         : GuiWidget(scene, name)
     {
     }

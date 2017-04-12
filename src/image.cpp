@@ -33,7 +33,7 @@ Image::Image(RootObject* root)
 }
 
 /*************/
-Image::Image(RootObject* root, ImageBufferSpec spec)
+Image::Image(RootObject* root, const ImageBufferSpec& spec)
     : BufferObject(root)
 {
     init();

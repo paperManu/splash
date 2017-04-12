@@ -39,15 +39,17 @@
 namespace Splash
 {
 
-class UserInput;
 class ControllerObject;
+class Queue;
+class UserInput;
 
 /*************/
 class RootObject : public BaseObject
 {
     // UserInput and ControllerObject can access protected members, typically _objects
-    friend UserInput;
     friend ControllerObject;
+    friend Queue;
+    friend UserInput;
 
   public:
     /**

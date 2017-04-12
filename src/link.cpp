@@ -14,7 +14,7 @@ namespace Splash
 {
 
 /*************/
-Link::Link(RootObject* root, string name)
+Link::Link(RootObject* root, const string& name)
 {
     try
     {
@@ -174,7 +174,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
                 *copiedBuffer = *buffer;
                 rootObject->setFromSerializedObject(name, copiedBuffer);
             }
-            else
+            else if (rootObject)
             {
                 rootObject->setFromSerializedObject(name, buffer);
             }

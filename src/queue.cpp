@@ -18,14 +18,13 @@ Queue::Queue(RootObject* root)
     : BufferObject(root)
 {
     _type = "queue";
-    registerAttributes();
+    _factory = make_unique<Factory>(_root);
 
     // This is used for getting documentation "offline"
     if (!_root)
         return;
 
-    _world = dynamic_cast<World*>(_root);
-    _factory = make_unique<Factory>(_root);
+    registerAttributes();
 }
 
 /*************/
@@ -116,7 +115,7 @@ void Queue::update()
         if (sourceIndex >= _playlist.size())
         {
             _currentSource = dynamic_pointer_cast<BufferObject>(_factory->create("image"));
-            _world->sendMessage(_name, "source", {"image"});
+            _root->sendMessage(_name, "source", {"image"});
         }
         else
         {
@@ -146,7 +145,7 @@ void Queue::update()
                 _currentSource->setAttribute("useClock", {0});
             }
 
-            _world->sendMessage(_name, "source", {sourceParameters.type});
+            _root->sendMessage(_name, "source", {sourceParameters.type});
 
             Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << sourceParameters.filename << Log::endl;
         }

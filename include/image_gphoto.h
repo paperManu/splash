@@ -43,7 +43,7 @@ class Image_GPhoto : public Image
     /**
      * Constructor
      */
-    Image_GPhoto(RootObject* root, std::string cameraName = "");
+    Image_GPhoto(RootObject* root, const std::string& cameraName = "");
 
     /**
      * Destructor
