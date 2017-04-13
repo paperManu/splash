@@ -30,7 +30,7 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./timer.h"
 #include "./window.h"
@@ -71,12 +71,12 @@ class UserInput : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    UserInput(std::weak_ptr<RootObject> root);
+    UserInput(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    virtual ~UserInput();
+    virtual ~UserInput() override;
 
     /**
      * \brief Lock the input to the given id

@@ -30,9 +30,11 @@
 
 #include "config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "imageBuffer.h"
+#include "./attribute.h"
+#include "./buffer_object.h"
+#include "./coretypes.h"
+#include "./imageBuffer.h"
+#include "./root_object.h"
 
 namespace Splash
 {
@@ -44,19 +46,19 @@ class Image : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Image(std::weak_ptr<RootObject> root);
+    Image(RootObject* root);
 
     /**
      * \brief Constructor
      * \param root Root object
      * \param spec Image specifications
      */
-    Image(std::weak_ptr<RootObject> root, ImageBufferSpec spec);
+    Image(RootObject* root, const ImageBufferSpec& spec);
 
     /**
      * \brief Destructor
      */
-    virtual ~Image();
+    virtual ~Image() override;
 
     /**
      * No copy constructor, but a copy operator
@@ -118,14 +120,14 @@ class Image : public BufferObject
      * \brief Serialize the image
      * \return Return the serialized image
      */
-    std::shared_ptr<SerializedObject> serialize() const;
+    std::shared_ptr<SerializedObject> serialize() const override;
 
     /**
      * \brief Update the Image from a serialized representation
      * \param obj Serialized image
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
      * \brief Set the path to read from

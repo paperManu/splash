@@ -41,12 +41,12 @@ class Image_V4L2 : public Image
      * \brief Constructor
      * \param root Root object
      */
-    Image_V4L2(std::weak_ptr<RootObject> root);
+    Image_V4L2(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Image_V4L2();
+    ~Image_V4L2() final;
 
     /**
      * No copy constructor, but a copy operator

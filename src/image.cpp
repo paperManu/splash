@@ -8,10 +8,10 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "log.h"
-#include "osUtils.h"
-#include "threadpool.h"
-#include "timer.h"
+#include "./log.h"
+#include "./osUtils.h"
+#include "./threadpool.h"
+#include "./timer.h"
 
 #define SPLASH_IMAGE_COPY_THREADS 2
 #define SPLASH_IMAGE_SERIALIZED_HEADER_SIZE 4096
@@ -22,18 +22,18 @@ namespace Splash
 {
 
 /*************/
-Image::Image(weak_ptr<RootObject> root)
+Image::Image(RootObject* root)
     : BufferObject(root)
 {
     init();
     _renderingPriority = Priority::MEDIA;
 
-    if (!root.expired() && root.lock()->getType() == "world")
+    if (root && root->getType() == "world")
         _worldObject = true;
 }
 
 /*************/
-Image::Image(weak_ptr<RootObject> root, ImageBufferSpec spec)
+Image::Image(RootObject* root, const ImageBufferSpec& spec)
     : BufferObject(root)
 {
     init();
@@ -46,10 +46,8 @@ void Image::init()
     _type = "image";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     createDefaultImage();
@@ -220,7 +218,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root.lock()->getConfigurationPath());
+    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     if (!_isConnectedToRemote)
         return readFile(_filepath);
     else

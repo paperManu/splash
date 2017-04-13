@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./userInput.h"
 
@@ -43,7 +43,7 @@ class ControllerObject : public BaseObject
      * \brief Constructor
      * \param root RootObject
      */
-    ControllerObject(const std::weak_ptr<RootObject>& root)
+    ControllerObject(RootObject* root)
         : BaseObject(root)
     {
         registerAttributes();
@@ -52,7 +52,7 @@ class ControllerObject : public BaseObject
     /**
      * \brief Desctructor
      */
-    virtual ~ControllerObject(){};
+    virtual ~ControllerObject() override {}
 
     /**
      * \brief Get a list of the object names

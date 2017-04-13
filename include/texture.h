@@ -32,9 +32,10 @@
 
 #include "config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
-#include "imageBuffer.h"
+#include "./base_object.h"
+#include "./attribute.h"
+#include "./coretypes.h"
+#include "./imageBuffer.h"
 
 namespace Splash
 {
@@ -46,7 +47,7 @@ class Texture : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Texture(const std::weak_ptr<RootObject>& root);
+    Texture(RootObject* root);
 
     /**
      * \brief Destructor

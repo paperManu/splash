@@ -10,12 +10,6 @@ namespace Splash
 {
 
 /*************/
-GuiFilters::GuiFilters(weak_ptr<Scene> scene, string name)
-    : GuiWidget(scene, name)
-{
-}
-
-/*************/
 void GuiFilters::render()
 {
     if (ImGui::CollapsingHeader(_name.c_str()))

@@ -33,7 +33,7 @@
 
 #include <Python.h>
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./controller.h"
 #include "./coretypes.h"
 
@@ -48,12 +48,12 @@ class PythonEmbedded : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    PythonEmbedded(std::weak_ptr<RootObject> root);
+    PythonEmbedded(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~PythonEmbedded();
+    ~PythonEmbedded() final;
 
     /**
      * \brief Set the path to the source Python file

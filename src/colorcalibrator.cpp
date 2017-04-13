@@ -15,11 +15,9 @@
 #include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtx/simd_vec4.hpp>
 
-#include "image_gphoto.h"
-#include "log.h"
-#include "scene.h"
-#include "threadpool.h"
-#include "timer.h"
+#include "./image_gphoto.h"
+#include "./scene.h"
+#include "./threadpool.h"
 
 using namespace std;
 
@@ -34,7 +32,7 @@ void gslErrorHandler(const char* reason, const char* file, int line, int gsl_err
 }
 
 /*************/
-ColorCalibrator::ColorCalibrator(std::weak_ptr<Scene> scene)
+ColorCalibrator::ColorCalibrator(RootObject* scene)
 {
     _type = "colorCalibrator";
 
@@ -67,7 +65,10 @@ void ColorCalibrator::update()
         return;
     }
 
-    auto scene = _scene.lock();
+    auto scene = dynamic_cast<Scene*>(_scene);
+    if (!scene)
+        return;
+
     // Get the Camera list
     Values cameraList = scene->getObjectsNameByType("camera");
 

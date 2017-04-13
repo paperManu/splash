@@ -37,12 +37,12 @@ class Joystick : public UserInput
      * \brief Constructor
      * \param root Root object
      */
-    Joystick(std::weak_ptr<RootObject> root);
+    Joystick(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Joystick();
+    ~Joystick() final;
 
   private:
     struct Stick
@@ -61,7 +61,7 @@ class Joystick : public UserInput
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 
     /**
      * \brief Callbacks update method

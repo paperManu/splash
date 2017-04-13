@@ -5,7 +5,7 @@ using namespace std;
 namespace Splash
 {
 /*************/
-Mouse::Mouse(weak_ptr<RootObject> root)
+Mouse::Mouse(RootObject* root)
     : UserInput(root)
 {
     _type = "mouse";

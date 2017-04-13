@@ -33,7 +33,8 @@
 #include <mutex>
 #include <vector>
 
-#include "./basetypes.h"
+#include "./base_object.h"
+#include "./attribute.h"
 #include "./config.h"
 #include "./sound_engine.h"
 
@@ -52,7 +53,7 @@ class Speaker : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Speaker();
+    ~Speaker() final;
 
     /**
      * \brief Safe bool idiom

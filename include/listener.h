@@ -35,7 +35,8 @@
 
 #include <portaudio.h>
 
-#include "./basetypes.h"
+#include "./base_object.h"
+#include "./attribute.h"
 #include "./config.h"
 #include "./sound_engine.h"
 
@@ -54,7 +55,7 @@ class Listener : public BaseObject
     /**
      * \brief Destructor
      */
-    ~Listener();
+    ~Listener() override;
 
     /**
      * \brief Safe bool idiom

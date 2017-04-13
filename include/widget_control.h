@@ -34,12 +34,12 @@ namespace Splash
 class GuiControl : public GuiWidget
 {
   public:
-    GuiControl(const std::weak_ptr<Scene>& scene, const std::string& name)
+    GuiControl(Scene* scene, const std::string& name)
         : GuiWidget(scene, name)
     {
     }
-    void render();
-    int updateWindowFlags();
+    void render() final;
+    int updateWindowFlags() final;
 
   private:
     std::shared_ptr<GuiWidget> _nodeView;

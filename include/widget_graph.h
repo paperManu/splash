@@ -34,11 +34,11 @@ namespace Splash
 class GuiGraph : public GuiWidget
 {
   public:
-    GuiGraph(const std::weak_ptr<Scene>& scene, const std::string& name)
+    GuiGraph(Scene* scene, const std::string& name)
         : GuiWidget(scene, name)
     {
     }
-    void render();
+    void render() final;
 
   private:
     unsigned int _maxHistoryLength{300};

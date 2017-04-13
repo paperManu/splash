@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "camera.h"
 #include "coretypes.h"
 #include "mesh_bezierPatch.h"
@@ -51,12 +51,12 @@ class Warp : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Warp(const std::weak_ptr<RootObject>& root);
+    Warp(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Warp();
+    ~Warp() final;
 
     /**
      * No copy constructor, but a move one
@@ -68,12 +68,12 @@ class Warp : public Texture
     /**
      * \brier Bind this warp
      */
-    void bind();
+    void bind() final;
 
     /**
      * \brier Unbind this warp
      */
-    void unbind();
+    void unbind() final;
 
     /**
      * \brief Get the shader parameters related to this warp. Texture should be locked first.
@@ -97,13 +97,13 @@ class Warp : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -121,12 +121,12 @@ class Warp : public Texture
     /**
      * \brief Update the warp
      */
-    void render();
+    void render() final;
 
     /**
      * \brief Update for a warp does nothing, it is the render() job
      */
-    void update() {}
+    void update() final {}
 
   private:
     bool _isInitialized{false};

@@ -31,7 +31,8 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./base_object.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./texture.h"
 
@@ -44,12 +45,12 @@ class Sink : public BaseObject
     /**
      * Constructor
      */
-    Sink(std::weak_ptr<RootObject> root);
+    Sink(RootObject* root);
 
     /**
      * Destructor
      */
-    virtual ~Sink();
+    virtual ~Sink() override;
 
     /**
      * Try to link the given BaseObject to this object
@@ -66,12 +67,12 @@ class Sink : public BaseObject
     /**
      * Update the inner buffer of the sink
      */
-    void update();
+    void update() override;
 
     /**
      * Send the inner buffer to the sink's output
      */
-    void render();
+    void render() override;
 
   protected:
     /**

@@ -1,8 +1,9 @@
-#include "mesh_shmdata.h"
+#include "./mesh_shmdata.h"
 
-#include "log.h"
-#include "osUtils.h"
-#include "timer.h"
+#include "./log.h"
+#include "./osUtils.h"
+#include "./root_object.h"
+#include "./timer.h"
 
 using namespace std;
 
@@ -10,7 +11,7 @@ namespace Splash
 {
 
 /*************/
-Mesh_Shmdata::Mesh_Shmdata(weak_ptr<RootObject> root)
+Mesh_Shmdata::Mesh_Shmdata(RootObject* root)
     : Mesh(root)
 {
     init();
@@ -24,7 +25,7 @@ Mesh_Shmdata::~Mesh_Shmdata()
 /*************/
 bool Mesh_Shmdata::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root.lock()->getConfigurationPath());
+    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
 
     return true;
@@ -36,10 +37,8 @@ void Mesh_Shmdata::init()
     _type = "mesh_shmdata";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 }
 

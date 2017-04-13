@@ -28,12 +28,12 @@
 #include <glm/glm.hpp>
 #include <utility>
 
-#include "config.h"
+#include "./config.h"
 
-#include "basetypes.h"
-#include "cgUtils.h"
-#include "coretypes.h"
-#include "image_gphoto.h"
+#include "./attribute.h"
+#include "./cgUtils.h"
+#include "./coretypes.h"
+#include "./image_gphoto.h"
 
 namespace pic
 {
@@ -44,7 +44,6 @@ class CameraResponseFunction;
 namespace Splash
 {
 
-class World;
 class Scene;
 
 /*************/
@@ -55,12 +54,12 @@ class ColorCalibrator : public BaseObject
      * \brief Constructor
      * \param scene Root scene
      */
-    ColorCalibrator(std::weak_ptr<Scene> scene);
+    ColorCalibrator(RootObject* scene);
 
     /**
      * \brief Destructor
      */
-    ~ColorCalibrator();
+    ~ColorCalibrator() override;
 
     /**
      * No copy constructor
@@ -71,7 +70,7 @@ class ColorCalibrator : public BaseObject
     /**
      * \brief Update the color calibration of all cameras
      */
-    void update();
+    void update() override;
 
     /**
      * \brief Update the color response function of the physical camera
@@ -102,7 +101,7 @@ class ColorCalibrator : public BaseObject
     //
     // Attributes
     //
-    std::weak_ptr<Scene> _scene;
+    RootObject* _scene; // TODO: use _root instead
     std::shared_ptr<Image_GPhoto> _gcamera;
     std::shared_ptr<pic::CameraResponseFunction> _crf{nullptr};
 

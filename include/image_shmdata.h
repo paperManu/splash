@@ -42,12 +42,12 @@ class Image_Shmdata : public Image
     /**
      * Constructor
      */
-    Image_Shmdata(std::weak_ptr<RootObject> root);
+    Image_Shmdata(RootObject* root);
 
     /**
      * Destructor
      */
-    ~Image_Shmdata();
+    ~Image_Shmdata() final;
 
     /**
      * No copy constructor, only move
@@ -58,7 +58,7 @@ class Image_Shmdata : public Image
     /**
      * Set the path to read from
      */
-    bool read(const std::string& filename);
+    bool read(const std::string& filename) final;
 
   private:
     Utils::ShmdataLogger _logger;

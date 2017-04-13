@@ -6,7 +6,7 @@ namespace Splash
 {
 
 /*************/
-Sink_Shmdata::Sink_Shmdata(weak_ptr<RootObject> root)
+Sink_Shmdata::Sink_Shmdata(RootObject* root)
     : Sink(root)
 {
     _type = "sink_shmdata";

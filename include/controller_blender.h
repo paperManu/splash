@@ -39,17 +39,17 @@ class Blender : public ControllerObject
      * \brief Constructor
      * \param root Root object
      */
-    Blender(const std::weak_ptr<RootObject>& root);
+    Blender(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Blender();
+    ~Blender() final;
 
     /**
      * \brief Update the blending
      */
-    void update();
+    void update() final;
 
     /**
      * Force blending computation at the next call to update()

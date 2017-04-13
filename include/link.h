@@ -35,8 +35,8 @@
 #include <vector>
 #include <zmq.hpp>
 
-#include "config.h"
-#include "coretypes.h"
+#include "./config.h"
+#include "./coretypes.h"
 
 namespace Splash
 {
@@ -53,7 +53,7 @@ class Link
      * \param root Root object
      * \param name Name of the link
      */
-    Link(std::weak_ptr<RootObject> root, std::string name);
+    Link(RootObject* root, const std::string& name);
 
     /**
      * \brief Destructor
@@ -71,7 +71,7 @@ class Link
      * \param name Peer name
      * \param peer Pointer to an inner peer
      */
-    void connectTo(const std::string& name, const std::weak_ptr<RootObject>& peer);
+    void connectTo(const std::string& name, RootObject* peer);
 
     /**
      * \brief Disconnect from a pair given its name
@@ -120,14 +120,14 @@ class Link
     bool waitForBufferSending(std::chrono::milliseconds maximumWait);
 
   private:
-    std::weak_ptr<RootObject> _rootObject;
+    RootObject* _rootObject;
     std::string _name;
     std::shared_ptr<zmq::context_t> _context;
     Spinlock _msgSendMutex;
     Spinlock _bufferSendMutex;
 
     std::vector<std::string> _connectedTargets;
-    std::map<std::string, std::weak_ptr<RootObject>> _connectedTargetPointers;
+    std::map<std::string, RootObject*> _connectedTargetPointers;
 
     bool _connectedToInner{false};
     bool _connectedToOuter{false};

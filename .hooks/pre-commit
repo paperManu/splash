@@ -1,0 +1,86 @@
+#!/bin/bash
+#######################################################################################################
+#                                   GIT PRECOMMIT HOOK                                                #
+# This script checks if the formatting of .cpp and .hpp files is correct and                          #
+# proposes to fix it automatically, let the user do it or ignore the formatting (don't do it!).       #
+#                                                                                                     #
+# This file has been entirely copied from Switcher's sources: https://github.com/sat-metalab/switcher #
+#                                                                                                     #
+#######################################################################################################
+
+##################################
+# Global variables
+CLANG_FORMAT="clang-format"
+CLANG_FORMAT_DIFF="clang-format-diff"
+files_unformatted=""
+cpp_files=()
+###################################
+
+##################################
+# Helpers
+
+reformat_file() {
+  while true
+  do
+    read -p "Do you want to do the reformatting (M)anually or let it be done (A)utomatically? [m/A]" reply < /dev/tty
+    case $reply in
+      [Mm]) echo -e "Commit will be aborted, awaiting reformatting of \e[0;32m${file}\e[0m."; files_unformatted+="\t\e[0;32m$1\e[0m\n"; return;;
+      "") ;& # Fallthrough default behaviour, the reformatting is automatic.
+      [Aa]) echo -e "Automatic reformatting of \e[0;32m${file}\e[0m will be done now."; git diff --cached -U0 $1 | ${CLANG_FORMAT_DIFF} -i -p1; git add $1; return;;
+      *) echo "Unrecognized option." ;;
+    esac
+  done
+}
+
+final_check() {
+  echo -e "\n\nThe following files are not correctly formatted:"
+  echo -e $files_unformatted
+
+  while true
+  do
+    read -p "Do you want to (I)gnore the formatting and commit anyway (not recommended) or do the reformatting (Y)ourself ? [i/Y]" reply < /dev/tty
+    case $reply in
+      [Ii]) echo "Ignoring the formatting and committing files as-is."; exit 0;;
+      "") ;& # Fallthrough default behaviour, the commit is aborted.
+      [Yy]) echo "Commit aborted, awaiting reformatting of the previously listed files."; exit 1;;
+      *) echo "Unrecognized option." ;;
+    esac
+  done
+}
+
+check_command() {
+  if ! type $1 > /dev/null
+  then
+    echo "Error: $1 executable not found."
+    exit 1
+  fi
+}
+##################################
+
+##################################
+# Main
+
+check_command $CLANG_FORMAT
+check_command $CLANG_FORMAT_DIFF
+
+cpp_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cpp$\|\.hpp$')
+
+# Nothing to test if no file was added, changed or modified.
+[ -z "$cpp_files" ] && exit 0
+
+for file in $cpp_files
+do
+  output=$(${CLANG_FORMAT} ${file} -style=file -output-replacements-xml | grep "<replacement " > /dev/null)
+  if [ $? -ne 1 ]
+  then
+    echo -e "\e[0;31m${file} does not conform to coding standards, here are the changes needed:\n\n\e[0m$(git diff --cached -U0 ${file} | ${CLANG_FORMAT_DIFF} -p1)"
+    reformat_file $file
+  fi
+done
+
+## All .[c|h]pp files are properly formatted.
+[ -z "$files_unformatted" ] && exit 0
+
+final_check
+
+##################################

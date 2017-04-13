@@ -198,7 +198,7 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
 /*************/
 /*************/
-GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name)
+GuiWidget::GuiWidget(Scene* scene, string name)
     : ControllerObject(scene)
     , _scene(scene)
     , _name(name)
@@ -208,7 +208,7 @@ GuiWidget::GuiWidget(weak_ptr<Scene> scene, string name)
 /*************/
 void GuiWidget::drawAttributes(const string& objName, const unordered_map<string, Values>& attributes)
 {
-    auto scene = dynamic_pointer_cast<Scene>(_scene.lock());
+    auto scene = dynamic_cast<Scene*>(_scene);
     if (!scene)
         return;
 
@@ -345,7 +345,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     }
                     if (_fileSelectorTarget == objName)
                     {
-                        static string path = _root.lock()->getMediaPath();
+                        static string path = _root->getMediaPath();
                         bool cancelled;
                         vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}, {"obj"}};
                         if (SplashImGui::FileSelector(objName, path, cancelled, extensions))

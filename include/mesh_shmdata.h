@@ -47,12 +47,12 @@ class Mesh_Shmdata : public Mesh
      * \brief Constructor
      * \param root Root object
      */
-    Mesh_Shmdata(std::weak_ptr<RootObject> root);
+    Mesh_Shmdata(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Mesh_Shmdata();
+    ~Mesh_Shmdata() final;
 
     /**
      * No copy constructor, only move
@@ -64,7 +64,7 @@ class Mesh_Shmdata : public Mesh
      * \brief Set the path to read from
      * \param filename File to read
      */
-    bool read(const std::string& filename);
+    bool read(const std::string& filename) final;
 
   protected:
     std::string _caps{""};

@@ -39,7 +39,7 @@ class Sink_Shmdata : public Sink
     /**
      * Constructor
      */
-    Sink_Shmdata(std::weak_ptr<RootObject> root);
+    Sink_Shmdata(RootObject* root);
 
   private:
     std::string _path{"/tmp/splash_sink"};
@@ -51,7 +51,7 @@ class Sink_Shmdata : public Sink
     /**
      * Class to be implemented to copy the _mappedPixels somewhere
      */
-    void handlePixels(const char* pixels, const ImageBufferSpec& spec);
+    void handlePixels(const char* pixels, const ImageBufferSpec& spec) final;
 
     /**
      * \brief Register new functors to modify attributes

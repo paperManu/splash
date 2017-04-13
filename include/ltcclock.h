@@ -33,7 +33,7 @@
 #include <ltc.h>
 #include <portaudio.h>
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "config.h"
 #include "coretypes.h"
 #include "listener.h"

@@ -17,6 +17,17 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+add_custom_command(
+    OUTPUT splash-launcher.desktop
+    COMMAND sed -i 's/Version=.*/Version=${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}/g' ${CMAKE_CURRENT_SOURCE_DIR}/config/splash-launcher.desktop
+    COMMAND sed -i 's!Icon=.*!Icon=${CMAKE_INSTALL_PREFIX}/share/splash/splash-icon-512.png!g' ${CMAKE_CURRENT_SOURCE_DIR}/config/splash-launcher.desktop
+)
+
+if(UNIX AND NOT APPLE)
+    add_custom_target(splash-launcher ALL DEPENDS splash-launcher.desktop)
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config/splash-launcher.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/share/applications)
+endif()
+
 install(FILES 
     3d_marker.obj
     2d_marker.obj
@@ -26,6 +37,7 @@ install(FILES
     plane.obj
     sphere.obj
     splash.json
+    splash-icon-512.png
     templates.txt
     DESTINATION "share/splash/")
 

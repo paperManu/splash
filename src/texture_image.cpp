@@ -15,14 +15,14 @@ namespace Splash
 {
 
 /*************/
-Texture_Image::Texture_Image(const weak_ptr<RootObject>& root)
+Texture_Image::Texture_Image(RootObject* root)
     : Texture(root)
 {
     init();
 }
 
 /*************/
-Texture_Image::Texture_Image(const weak_ptr<RootObject>& root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data)
+Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data)
     : Texture(root)
 {
     init();
@@ -32,7 +32,7 @@ Texture_Image::Texture_Image(const weak_ptr<RootObject>& root, GLsizei width, GL
 /*************/
 Texture_Image::~Texture_Image()
 {
-    if (_root.expired())
+    if (!_root)
         return;
 
 #ifdef DEBUG
@@ -555,10 +555,8 @@ void Texture_Image::init()
     _type = "texture_image";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     _timestamp = Timer::getTime();

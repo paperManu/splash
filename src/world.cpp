@@ -21,9 +21,6 @@
 #include "./geometry.h"
 #include "./window.h"
 
-#define SPLASH_FILE_CONFIGURATION "splashConfiguration"
-#define SPLASH_FILE_PROJECT "splashProject"
-
 using namespace glm;
 using namespace std;
 
@@ -308,7 +305,7 @@ void World::applyConfig()
 
                 // Initialize the communication
                 if (pid == -1 && spawn)
-                    _link->connectTo(name, _innerScene);
+                    _link->connectTo(name, _innerScene.get());
                 else
                     _link->connectTo(name);
 
@@ -534,11 +531,13 @@ string World::getObjectsAttributesDescriptions()
         if (!obj)
             continue;
 
-        auto description = obj->getAttributesDescriptions();
+        auto objectDescription = localFactory.getDescription(type);
+        root[obj->getType() + "_description"] = objectDescription;
 
+        auto attributesDescriptions = obj->getAttributesDescriptions();
         int addedAttribute = 0;
         root[obj->getType()] = Json::Value();
-        for (auto& d : description)
+        for (auto& d : attributesDescriptions)
         {
             // We only keep attributes with a valid documentation
             // The other ones are inner attributes
@@ -759,8 +758,6 @@ void World::handleSerializedObject(const string& name, shared_ptr<SerializedObje
 /*************/
 void World::init()
 {
-    _self = shared_ptr<World>(this, [](World*) {}); // A shared pointer with no deleter, how convenient
-
     _type = "world";
     _name = "world";
 
@@ -770,8 +767,7 @@ void World::init()
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
 
-    _link = make_shared<Link>(weak_ptr<World>(_self), _name);
-    _factory = unique_ptr<Factory>(new Factory(_self));
+    _link = make_shared<Link>(this, _name);
 
     registerAttributes();
 }

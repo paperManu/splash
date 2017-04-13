@@ -11,7 +11,7 @@ namespace Splash
 {
 
 /*************/
-Blender::Blender(const std::weak_ptr<RootObject>& root)
+Blender::Blender(RootObject* root)
     : ControllerObject(root)
 {
     _type = "blender";
@@ -27,7 +27,10 @@ Blender::~Blender()
 /*************/
 void Blender::update()
 {
-    auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return;
+
     auto isMaster = scene->isMaster();
 
     if (_computeBlending && (!_blendingComputed || _continuousBlending))

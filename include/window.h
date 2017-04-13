@@ -37,7 +37,7 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./object.h"
 #include "./texture.h"
@@ -55,12 +55,12 @@ class Window : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    Window(const std::weak_ptr<RootObject>& root);
+    Window(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Window();
+    ~Window() final;
 
     /**
      * No copy constructor, but a move one
@@ -141,18 +141,18 @@ class Window : public BaseObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Render this window to screen
      */
-    void render();
+    void render() final;
 
     /**
      * \brief Hide / show cursor

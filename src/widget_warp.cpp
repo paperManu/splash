@@ -152,7 +152,7 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
     }
     // Arrow keys
     {
-        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+        auto scene = dynamic_cast<Scene*>(_root);
 
         Values controlPoints;
         warp->getAttribute("patchControl", controlPoints);

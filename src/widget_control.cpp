@@ -47,7 +47,7 @@ void GuiControl::render()
         // Node view
         if (!_nodeView)
         {
-            auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+            auto scene = dynamic_cast<Scene*>(_root);
             auto nodeView = make_shared<GuiNodeView>(scene, "Nodes");
             nodeView->setScene(_scene);
             _nodeView = dynamic_pointer_cast<GuiWidget>(nodeView);

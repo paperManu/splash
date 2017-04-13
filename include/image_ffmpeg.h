@@ -41,7 +41,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 }
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./image.h"
 #if HAVE_PORTAUDIO
@@ -58,12 +58,12 @@ class Image_FFmpeg : public Image
      * \brief Constructor
      * \param root Root object
      */
-    Image_FFmpeg(std::weak_ptr<RootObject> root);
+    Image_FFmpeg(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Image_FFmpeg();
+    ~Image_FFmpeg() final;
 
     /**
      * No copy, but some move constructors
@@ -76,7 +76,7 @@ class Image_FFmpeg : public Image
      * \param filename File to read
      * \bool Return true if all went well
      */
-    bool read(const std::string& filename);
+    bool read(const std::string& filename) final;
 
   private:
     std::thread _readLoopThread;

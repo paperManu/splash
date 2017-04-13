@@ -7,7 +7,7 @@ using namespace std;
 namespace Splash
 {
 /*************/
-Joystick::Joystick(weak_ptr<RootObject> root)
+Joystick::Joystick(RootObject* root)
     : UserInput(root)
 {
     _type = "joystick";

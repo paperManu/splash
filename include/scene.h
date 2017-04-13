@@ -36,11 +36,13 @@
 #if HAVE_GPHOTO
 #include "./colorcalibrator.h"
 #endif
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./controller.h"
 #include "./controller_gui.h"
 #include "./coretypes.h"
 #include "./factory.h"
+#include "./root_object.h"
+#include "./spinlock.h"
 
 namespace Splash
 {
@@ -68,7 +70,7 @@ class Scene : public RootObject
     /**
      * \brief Destructor
      */
-    ~Scene();
+    ~Scene() override;
 
     /**
      * \brief Add an object of the given type, with the given name
@@ -238,7 +240,6 @@ class Scene : public RootObject
     void waitTextureUpload();
 
   protected:
-    std::unique_ptr<Factory> _factory{nullptr};
     std::shared_ptr<GlWindow> _mainWindow;
     bool _isRunning{false};
 
@@ -265,8 +266,6 @@ class Scene : public RootObject
     static std::vector<int> _glVersion;
 
     bool _runInBackground{false}; //!< If true, no window will be created
-
-    std::shared_ptr<Scene> _self;
     bool _started{false};
 
     bool _isMaster{false}; //< Set to true if this is the master Scene of the current config

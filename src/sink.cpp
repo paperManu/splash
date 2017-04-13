@@ -10,21 +10,21 @@ namespace Splash
 {
 
 /*************/
-Sink::Sink(weak_ptr<RootObject> root)
+Sink::Sink(RootObject* root)
     : BaseObject(root)
 {
     _type = "sink";
     _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
 
-    if (_root.expired())
+    if (!_root)
         return;
 }
 
 /*************/
 Sink::~Sink()
 {
-    if (_root.expired())
+    if (!_root)
         return;
 
     if (_mappedPixels)

@@ -43,7 +43,7 @@
 #if HAVE_GPHOTO
 #include "./colorcalibrator.h"
 #endif
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./camera.h"
 #include "./coretypes.h"
 #include "./userInput.h"
@@ -63,12 +63,12 @@ class Gui : public ControllerObject
      * \param w Window to display the gui
      * \param s Root scene
      */
-    Gui(std::shared_ptr<GlWindow> w, std::weak_ptr<Scene> s);
+    Gui(std::shared_ptr<GlWindow> w, RootObject* s);
 
     /**
      * \brief Destructor
      */
-    ~Gui();
+    ~Gui() final;
 
     /**
      * No copy constructor, but a move one
@@ -135,13 +135,13 @@ class Gui : public ControllerObject
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Render this gui
@@ -182,7 +182,7 @@ class Gui : public ControllerObject
   private:
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
-    std::weak_ptr<Scene> _scene;
+    Scene* _scene;
 
     // This is needed for some GLFW callbacks, and also has to be static...
     // There can be only one gui, so it is not such an issue

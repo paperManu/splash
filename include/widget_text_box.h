@@ -34,11 +34,11 @@ namespace Splash
 class GuiTextBox : public GuiWidget
 {
   public:
-    GuiTextBox(const std::weak_ptr<Scene>& scene, const std::string& name = "")
+    GuiTextBox(Scene* scene, const std::string& name = "")
         : GuiWidget(scene, name)
     {
     }
-    void render();
+    void render() final;
     void setTextFunc(const std::function<std::string()>& func) { getText = func; }
 
   private:

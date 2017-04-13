@@ -33,7 +33,7 @@
 
 #include "config.h"
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "coretypes.h"
 #include "mesh.h"
 
@@ -47,12 +47,12 @@ class Mesh_BezierPatch : public Mesh
      * \brief Constructor
      * \param root Root object
      */
-    Mesh_BezierPatch(std::weak_ptr<RootObject> root);
+    Mesh_BezierPatch(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    virtual ~Mesh_BezierPatch();
+    virtual ~Mesh_BezierPatch() final;
 
     /**
      * No copy constructor, but a copy operator
@@ -76,7 +76,7 @@ class Mesh_BezierPatch : public Mesh
     /**
      * \brief Update the content of the mesh
      */
-    virtual void update();
+    virtual void update() final;
 
   private:
     struct Patch

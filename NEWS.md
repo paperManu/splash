@@ -1,6 +1,20 @@
 Splash release notes
 ===================
 
+Splash 0.6.4 (2017-04-13)
+-------------------------
+New features:
+- Added a desktop entry
+
+Improvements:
+- Some code cleanup, refactored some base classes
+- Added object description to the output of splash --info
+- Filter: output size can now be overridden
+
+Bug fixed:
+- Fixed installation instructions
+- Fixed Debian package
+
 Splash 0.6.2 (2017-03-30)
 -------------------------
 New features:

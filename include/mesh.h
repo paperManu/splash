@@ -33,8 +33,9 @@
 
 #include "config.h"
 
-#include "basetypes.h"
-#include "coretypes.h"
+#include "./attribute.h"
+#include "./buffer_object.h"
+#include "./coretypes.h"
 
 namespace Splash
 {
@@ -46,12 +47,12 @@ class Mesh : public BufferObject
      * \brief Constructor
      * \param root Root object
      */
-    Mesh(std::weak_ptr<RootObject> root);
+    Mesh(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    virtual ~Mesh();
+    virtual ~Mesh() override;
 
     /**
      * No copy constructor, but a copy operator
@@ -102,14 +103,14 @@ class Mesh : public BufferObject
      * \brief Get a serialized representation of the mesh
      * \return Return a serialized object
      */
-    std::shared_ptr<SerializedObject> serialize() const;
+    std::shared_ptr<SerializedObject> serialize() const override;
 
     /**
      * \brief Set the mesh from a serialized representation
      * \param obj Serialized object
      * \return Return true if all went well
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj);
+    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override;
 
     /**
      * \brief Update the content of the mesh

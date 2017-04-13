@@ -37,18 +37,18 @@ class Mouse : public UserInput
      * \brief Constructor
      * \param root Root object
      */
-    Mouse(std::weak_ptr<RootObject> root);
+    Mouse(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Mouse();
+    ~Mouse() final;
 
   private:
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 };
 
 } // end of namespace

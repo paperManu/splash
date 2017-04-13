@@ -12,7 +12,7 @@ namespace Splash
 {
 
 /*************/
-Filter::Filter(const std::weak_ptr<RootObject>& root)
+Filter::Filter(RootObject* root)
     : Texture(root)
 {
     init();
@@ -25,10 +25,8 @@ void Filter::init()
     _renderingPriority = Priority::FILTER;
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     // Intialize FBO, textures and everything OpenGL
@@ -65,7 +63,7 @@ void Filter::init()
 /*************/
 Filter::~Filter()
 {
-    if (_root.expired())
+    if (!_root)
         return;
 
 #ifdef DEBUG
@@ -109,17 +107,11 @@ bool Filter::linkTo(const std::shared_ptr<BaseObject>& obj)
     }
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
-        auto tex = make_shared<Texture_Image>(_root);
-        tex->setName(getName() + "_" + obj->getName() + "_tex");
+        auto tex = dynamic_pointer_cast<Texture_Image>(_root->createObject("texture_image", getName() + "_" + obj->getName() + "_tex"));
         if (tex->linkTo(obj))
-        {
-            _root.lock()->registerObject(tex);
             return linkTo(tex);
-        }
         else
-        {
             return false;
-        }
     }
 
     return true;
@@ -157,13 +149,14 @@ void Filter::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
     else if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         auto textureName = getName() + "_" + obj->getName() + "_tex";
-        auto tex = _root.lock()->unregisterObject(textureName);
 
-        if (tex)
+        if (auto tex = _root->getObject(textureName))
         {
             tex->unlinkFrom(obj);
             unlinkFrom(tex);
         }
+
+        _root->disposeObject(textureName);
     }
 
     Texture::unlinkFrom(obj);
@@ -188,6 +181,11 @@ void Filter::render()
 
     auto input = _inTextures[0].lock();
     _outTextureSpec = input->getSpec();
+    if (_sizeOverride[0] > 0 && _sizeOverride[1] > 0)
+    {
+        _outTextureSpec.width = _sizeOverride[0];
+        _outTextureSpec.height = _sizeOverride[1];
+    }
     _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
@@ -243,7 +241,7 @@ void Filter::updateUniforms()
     // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
     {
-        auto scene = dynamic_pointer_cast<Scene>(_root.lock());
+        auto scene = dynamic_cast<Scene*>(_root);
 
         auto obj = weakObject.lock();
         if (obj)
@@ -618,6 +616,18 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
+
+    addAttribute("sizeOverride",
+        [&](const Values& args) {
+            _sizeOverride[0] = args[0].as<int>();
+            _sizeOverride[1] = args[1].as<int>();
+            return true;
+        },
+        [&]() -> Values {
+            return {_sizeOverride[0], _sizeOverride[1]};
+        },
+        {'n', 'n'});
+    setAttributeDescription("sizeOverride", "Sets the filter output to a different resolution than its input");
 }
 
 } // end of namespace

@@ -12,7 +12,7 @@ namespace Splash
 {
 
 /*************/
-GuiMeshes::GuiMeshes(weak_ptr<Scene> scene, string name)
+GuiMeshes::GuiMeshes(Scene* scene, const string& name)
     : GuiWidget(scene, name)
 {
     auto types = getTypesFromCategory(BaseObject::Category::MESH);

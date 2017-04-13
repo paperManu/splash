@@ -32,7 +32,7 @@
 
 #include "config.h"
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "coretypes.h"
 #include "image.h"
 #include "object.h"
@@ -50,12 +50,12 @@ class Filter : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Filter(const std::weak_ptr<RootObject>& root);
+    Filter(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Filter();
+    ~Filter() override;
 
     /**
      * No copy constructor, but a move one
@@ -96,13 +96,13 @@ class Filter : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Try to unlink the given BaseObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
      * \brief Filters should always be saved as it holds user-modifiable parameters
@@ -113,12 +113,12 @@ class Filter : public Texture
     /**
      * \brief Render the filter
      */
-    void render();
+    void render() override;
 
     /**
      * \brief Update for a filter does nothing, it is the render() job
      */
-    void update() {}
+    void update() override {}
 
   private:
     bool _isInitialized{false};
@@ -131,6 +131,7 @@ class Filter : public Texture
     ImageBufferSpec _outTextureSpec;
 
     // Filter parameters
+    int _sizeOverride[2]{-1, -1};                            //!< If set to positive values, overrides the size given by input textures
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
     std::string _pixelFormat{"RGBA"};                        //!< Output pixel format
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits

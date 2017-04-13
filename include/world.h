@@ -35,13 +35,14 @@
 
 #include "./config.h"
 
-#include "./basetypes.h"
+#include "./attribute.h"
 #include "./coretypes.h"
 #include "./factory.h"
 #if HAVE_PORTAUDIO
 #include "./ltcclock.h"
 #endif
 #include "./queue.h"
+#include "./root_object.h"
 
 namespace Splash
 {
@@ -66,7 +67,7 @@ class World : public RootObject
     /**
      * \brief Destructor
      */
-    ~World();
+    ~World() override;
 
     /**
      * \brief Get the status of the world after begin ran
@@ -80,13 +81,10 @@ class World : public RootObject
     void run();
 
   private:
-    std::shared_ptr<World> _self;
 #if HAVE_PORTAUDIO
     std::unique_ptr<LtcClock> _clock{nullptr}; //!< Master clock from a LTC signal
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
 #endif
-
-    std::unique_ptr<Factory> _factory{nullptr}; //!< Object factory
 
     std::shared_ptr<Scene> _innerScene{}; //!< Inner Scene if the specified DISPLAY is available from this process
     std::thread _innerSceneThread;        //!< Inner Scene thread
@@ -181,7 +179,7 @@ class World : public RootObject
      * \param name Object name
      * \param obj Serialized object
      */
-    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj);
+    void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) override;
 
     /**
      * \brief Initializes the World

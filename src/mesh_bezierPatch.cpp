@@ -8,7 +8,7 @@ namespace Splash
 {
 
 /*************/
-Mesh_BezierPatch::Mesh_BezierPatch(weak_ptr<RootObject> root)
+Mesh_BezierPatch::Mesh_BezierPatch(RootObject* root)
     : Mesh(root)
 {
     init();
@@ -52,10 +52,8 @@ void Mesh_BezierPatch::init()
     _type = "mesh_bezierPatch";
     registerAttributes();
 
-    // If the root object weak_ptr is expired, this means that
-    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
-    if (_root.expired())
+    if (!_root)
         return;
 
     createPatch();

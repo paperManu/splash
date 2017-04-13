@@ -28,7 +28,7 @@
 #include <string>
 #include <vector>
 
-#include "basetypes.h"
+#include "attribute.h"
 #include "config.h"
 #include "coretypes.h"
 #include "texture.h"
@@ -45,12 +45,12 @@ class Texture_Syphon : public Texture
      * \brief Constructor
      * \param root Root object
      */
-    Texture_Syphon(std::weak_ptr<RootObject> root);
+    Texture_Syphon(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Texture_Syphon();
+    ~Texture_Syphon() final;
 
     /**
      * No copy constructor, but a move one
@@ -61,12 +61,12 @@ class Texture_Syphon : public Texture
     /**
      * \brief Bind this texture
      */
-    void bind();
+    void bind() final;
 
     /**
      * \brief Unbind this texture
      */
-    void unbind();
+    void unbind() final;
 
     /**
      * \brief Get the shader parameters related to this texture. Texture should be locked first.
@@ -84,12 +84,12 @@ class Texture_Syphon : public Texture
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
 
     /**
      * \brief Update the texture according to the owned Image
      */
-    void update(){};
+    void update() final{};
 
   private:
     SyphonReceiver _syphonReceiver;

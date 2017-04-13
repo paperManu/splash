@@ -37,18 +37,18 @@ class Keyboard : public UserInput
      * \brief Constructor
      * \param root Root object
      */
-    Keyboard(std::weak_ptr<RootObject> root);
+    Keyboard(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~Keyboard();
+    ~Keyboard() final;
 
   private:
     /**
      * \brief Input update method
      */
-    void updateMethod();
+    void updateMethod() final;
 };
 
 } // end of namespace

@@ -43,12 +43,12 @@ class Image_GPhoto : public Image
     /**
      * Constructor
      */
-    Image_GPhoto(std::weak_ptr<RootObject> root, std::string cameraName = "");
+    Image_GPhoto(RootObject* root, const std::string& cameraName = "");
 
     /**
      * Destructor
      */
-    ~Image_GPhoto();
+    ~Image_GPhoto() override;
 
     /**
      * No copy constructor, only move
@@ -64,7 +64,7 @@ class Image_GPhoto : public Image
     /**
      * Set the camera to read from
      */
-    bool read(const std::string& cameraName);
+    bool read(const std::string& cameraName) final;
 
   private:
     struct GPhotoCamera

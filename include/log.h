@@ -36,9 +36,10 @@
 #include <tuple>
 #include <utility>
 
-#include "config.h"
+#include "./config.h"
 
-#include "coretypes.h"
+#include "./coretypes.h"
+#include "./spinlock.h"
 
 #define SPLASH_LOG_FILE "/var/log/splash.log"
 
