@@ -98,8 +98,9 @@ void Sink::update()
     if (!_opened)
         return;
 
-    uint64_t currentTime = Timer::get().getTime() / 1000;
-    if (_period != 0 && _lastFrameTiming != 0 && currentTime - _lastFrameTiming < _period)
+    uint64_t currentTime = Timer::get().getTime();
+    uint64_t period = static_cast<uint64_t>(1e6 / (double)_framerate);
+    if (period != 0 && _lastFrameTiming != 0 && currentTime - _lastFrameTiming < period)
         return;
     _lastFrameTiming = currentTime;
 
@@ -166,6 +167,15 @@ void Sink::registerAttributes()
         {'n'});
     setAttributeDescription("bufferCount", "Number of GPU buffers to use for data download to CPU memory");
 
+    addAttribute("framerate",
+        [&](const Values& args) {
+            _framerate = max(1, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {(int)_framerate}; },
+        {'n'});
+    setAttributeDescription("framerate", "Maximum framerate, additional frames are dropped");
+
     addAttribute("opened",
         [&](const Values& args) {
             _opened = args[0].as<int>();
@@ -174,15 +184,6 @@ void Sink::registerAttributes()
         [&]() -> Values { return {static_cast<int>(_opened)}; },
         {'n'});
     setAttributeDescription("opened", "If true, the sink lets frames through");
-
-    addAttribute("period",
-        [&](const Values& args) {
-            _period = args[0].as<uint32_t>();
-            return true;
-        },
-        [&]() -> Values { return {static_cast<int>(_period)}; },
-        {'n'});
-    setAttributeDescription("period", "Minimum period (in ms) between consecutive frames");
 }
 
 } // end of namespace

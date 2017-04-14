@@ -75,6 +75,8 @@ class Sink : public BaseObject
     void render() override;
 
   protected:
+    uint32_t _framerate{30}; //!< Maximum framerate
+
     /**
      * \brief Register new functors to modify attributes
      */
@@ -87,7 +89,6 @@ class Sink : public BaseObject
     std::mutex _lockPixels;
 
     bool _opened{false}; //!< If true, the sink lets frames through
-    uint32_t _period{0}; //!< Minimum time between consecutive frames
 
     uint64_t _lastFrameTiming{0};
     uint32_t _pboCount{3};

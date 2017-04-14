@@ -47,6 +47,7 @@ class Sink_Shmdata : public Sink
     Utils::ShmdataLogger _logger;
     std::unique_ptr<shmdata::Writer> _writer{nullptr};
     ImageBufferSpec _previousSpec{};
+    uint32_t _previousFramerate{0};
 
     /**
      * Class to be implemented to copy the _mappedPixels somewhere
