@@ -830,7 +830,7 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_WARP, fragment);
                 compileProgram();
             }
-            else if (args[0].as<string>() == "warpControl" && (_fill != warp || _shaderOptions != options))
+            else if (args[0].as<string>() == "warpControl" && (_fill != warpControl || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<string>();
                 _fill = warpControl;

@@ -25,6 +25,8 @@ Mesh_BezierPatch::~Mesh_BezierPatch()
 /*************/
 void Mesh_BezierPatch::switchMeshes(bool control)
 {
+    lock_guard<mutex> lockPatch(_patchMutex);
+
     if (control)
         _bufferMesh = _bezierControl;
     else
@@ -43,6 +45,7 @@ void Mesh_BezierPatch::update()
         _patchUpdated = false;
     }
 
+    lock_guard<mutex> lockPatch(_patchMutex);
     Mesh::update();
 }
 
@@ -62,6 +65,8 @@ void Mesh_BezierPatch::init()
 /*************/
 void Mesh_BezierPatch::createPatch(int width, int height)
 {
+    unique_lock<mutex> lock(_patchMutex);
+
     width = std::max(2, width);
     height = std::max(2, height);
 
@@ -88,6 +93,7 @@ void Mesh_BezierPatch::createPatch(int width, int height)
         }
     }
 
+    lock.unlock();
     createPatch(patch);
 }
 
@@ -96,6 +102,8 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
 {
     if (patch.size.x * patch.size.y != patch.vertices.size())
         return;
+
+    lock_guard<mutex> lock(_patchMutex);
 
     int width = patch.size.x;
     int height = patch.size.y;
@@ -146,6 +154,8 @@ void Mesh_BezierPatch::createPatch(Patch& patch)
 /*************/
 void Mesh_BezierPatch::updatePatch()
 {
+    lock_guard<mutex> lock(_patchMutex);
+
     vector<glm::vec2> vertices;
     vector<glm::vec2> uvs;
 

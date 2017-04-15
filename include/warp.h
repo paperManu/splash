@@ -164,11 +164,6 @@ class Warp : public Texture
     void setOutput();
 
     /**
-     * \brief Updates the shader uniforms according to the textures and images the warp is connected to.
-     */
-    void updateUniforms();
-
-    /**
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();

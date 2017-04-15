@@ -173,13 +173,11 @@ void Warp::render()
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
     glDrawBuffers(1, fboBuffers);
-    glDisable(GL_DEPTH_TEST);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _screen->activate();
-    updateUniforms();
     _screen->draw();
     _screen->deactivate();
 
@@ -189,7 +187,6 @@ void Warp::render()
         _screenMesh->switchMeshes(true);
 
         _screen->activate();
-        updateUniforms();
         _screen->draw();
         _screen->deactivate();
 
@@ -213,17 +210,11 @@ void Warp::render()
         }
     }
 
-    glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     _outTexture->generateMipmap();
 }
 
-/*************/
-void Warp::updateUniforms()
-{
-    auto shader = _screen->getShader();
-}
 /*************/
 int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 {
@@ -336,6 +327,7 @@ void Warp::registerAttributes()
             return v;
         });
     setAttributeDescription("patchControl", "Set the control points positions");
+    setAttributeSyncMethod("patchControl", AttributeFunctor::Sync::force_sync);
 
     addAttribute("patchResolution",
         [&](const Values& args) {
@@ -350,14 +342,16 @@ void Warp::registerAttributes()
             Values v;
             _screenMesh->getAttribute("patchResolution", v);
             return v;
-        });
+        },
+        {'n'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
     addAttribute("patchSize",
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
-            return _screenMesh->setAttribute("patchSize", args);
+            Values size = {min(8, args[0].as<int>()), min(8, args[1].as<int>())};
+            return _screenMesh->setAttribute("patchSize", size);
         },
         [&]() -> Values {
             if (!_screenMesh)
@@ -366,7 +360,8 @@ void Warp::registerAttributes()
             Values v;
             _screenMesh->getAttribute("patchSize", v);
             return v;
-        });
+        },
+        {'n', 'n'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     // Show the Bezier patch describing the warp

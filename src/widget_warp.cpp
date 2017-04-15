@@ -170,28 +170,28 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[0] = point[0].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            updateControlPoints(warp->getName(), controlPoints);
+            setObject(warp->getName(), "patchControl", controlPoints);
         }
         if (io.KeysDown[263])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[0] = point[0].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            updateControlPoints(warp->getName(), controlPoints);
+            setObject(warp->getName(), "patchControl", controlPoints);
         }
         if (io.KeysDown[264])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[1] = point[1].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            updateControlPoints(warp->getName(), controlPoints);
+            setObject(warp->getName(), "patchControl", controlPoints);
         }
         if (io.KeysDown[265])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[1] = point[1].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            updateControlPoints(warp->getName(), controlPoints);
+            setObject(warp->getName(), "patchControl", controlPoints);
         }
 
         return;
@@ -205,14 +205,23 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
 
     // Get mouse pos
     ImVec2 mousePos = ImVec2((io.MousePos.x - ImGui::GetCursorScreenPos().x) / warpWidth, -(io.MousePos.y - ImGui::GetCursorScreenPos().y) / warpHeight);
+    mousePos.x = mousePos.x * 2.0 - 1.0;
+    mousePos.y = mousePos.y * 2.0 - 1.0;
 
     if (io.MouseDownDuration[0] == 0.0)
     {
         // Select a control point
         glm::vec2 picked;
-        _currentControlPointIndex = warp->pickControlPoint(glm::vec2(mousePos.x * 2.0 - 1.0, mousePos.y * 2.0 - 1.0), picked);
+        _currentControlPointIndex = warp->pickControlPoint(glm::vec2(mousePos.x, mousePos.y), picked);
         setObject(warp->getName(), "showControlPoint", {_currentControlPointIndex});
-        _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
+
+        // Get the distance between the mouse and the point
+        Values controlPoints;
+        warp->getAttribute("patchControl", controlPoints);
+        if (controlPoints.size() < _currentControlPointIndex)
+            return;
+        Value point = controlPoints[_currentControlPointIndex + 2].as<Values>();
+        _deltaAtPicking = glm::vec2(point[0].as<float>() - mousePos.x, point[1].as<float>() - mousePos.y);
     }
     else if (io.MouseDownDuration[0] > 0.0)
     {
@@ -222,21 +231,12 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
             return;
 
         Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
-        glm::vec2 delta = glm::vec2(mousePos.x, mousePos.y) - _previousMousePos;
-        _previousMousePos = glm::vec2(mousePos.x, mousePos.y);
-
-        point[0] = point[0].as<float>() + delta.x * 2.0;
-        point[1] = point[1].as<float>() + delta.y * 2.0;
+        point[0] = mousePos.x + _deltaAtPicking.x;
+        point[1] = mousePos.y + _deltaAtPicking.y;
         controlPoints[_currentControlPointIndex + 2] = point;
 
-        updateControlPoints(warp->getName(), controlPoints);
+        setObject(warp->getName(), "patchControl", controlPoints);
     }
-}
-
-/*************/
-void GuiWarp::updateControlPoints(const string& warpName, const Values& controlPoints)
-{
-    setObject(warpName, "patchControl", controlPoints);
 }
 
 } // end of namespace
