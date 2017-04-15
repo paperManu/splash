@@ -513,17 +513,15 @@ bool Window::switchFullscreen(int screenId)
     if (_window.get() == nullptr)
         return false;
 
-    if (screenId != -1)
-        _screenId = screenId;
-    else if (screenId == _screenId)
+    if (screenId == _screenId)
         return true;
-
-    const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
+    _screenId = screenId;
 
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
-    if (glfwGetWindowMonitor(_window->get()) == NULL)
+    if (_screenId != -1 && glfwGetWindowMonitor(_window->get()) == NULL)
     {
+        const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
         glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
         glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
         glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
@@ -532,7 +530,11 @@ bool Window::switchFullscreen(int screenId)
         window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), monitors[_screenId], _window->getMainWindow());
     }
     else
-        window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
+    {
+        int width, height;
+        glfwGetWindowSize(_window->get(), &width, &height);
+        window = glfwCreateWindow(width, height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
+    }
 
     if (!window)
     {
@@ -769,12 +771,7 @@ void Window::registerAttributes()
             updateWindowShape();
             return true;
         },
-        [&]() -> Values {
-            if (_screenId != -1)
-                return Values();
-            else
-                return {(int)_withDecoration};
-        },
+        [&]() -> Values { return {static_cast<int>(_withDecoration)}; },
         {'n'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
@@ -826,10 +823,7 @@ void Window::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            if (_screenId != -1)
-                return {};
-            else
-                return {_windowRect[0], _windowRect[1]};
+            return {_windowRect[0], _windowRect[1]};
         },
         {'n', 'n'});
     setAttributeDescription("position", "Set the window position");
@@ -849,10 +843,7 @@ void Window::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            if (_screenId != -1)
-                return {};
-            else
-                return {_windowRect[2], _windowRect[3]};
+            return {_windowRect[2], _windowRect[3]};
         },
         {'n', 'n'});
     setAttributeDescription("size", "Set the window dimensions");
