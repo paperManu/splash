@@ -297,6 +297,10 @@ void Gui::key(int key, int action, int mods)
         // Numpad enter is converted to regular enter
         if (key == GLFW_KEY_KP_ENTER)
             key = GLFW_KEY_ENTER;
+        else if (key == GLFW_KEY_ESCAPE)
+            key = ImGuiKey_Escape;
+        else if (key == GLFW_KEY_ENTER)
+            key = ImGuiKey_Enter;
 
         ImGuiIO& io = GetIO();
         if (action == GLFW_PRESS)
@@ -500,7 +504,7 @@ void Gui::render()
         ImGui::NewFrame();
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 900), 0.95f, _windowFlags);
-        _windowFlags = 0;
+        _windowFlags = ImGuiWindowFlags_NoBringToFrontOnFocus;
 
         // Check whether the GUI is alone in its window
         auto objReversedLinks = getObjectReversedLinks();
@@ -583,10 +587,9 @@ void Gui::render()
                 if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
                 {
                     if (!cancelled)
-                    {
                         _configurationPath = path;
-                        path = Utils::getPathFromFilePath("./");
-                    }
+                    else
+                        path = _root->getConfigurationPath();
                     showConfigurationFileSelector = false;
                 }
             }
@@ -628,10 +631,9 @@ void Gui::render()
                 if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
                 {
                     if (!cancelled)
-                    {
                         _projectPath = path;
-                        path = Utils::getPathFromFilePath("./");
-                    }
+                    else
+                        path = _root->getConfigurationPath();
                     showProjectFileSelector = false;
                 }
             }
@@ -668,8 +670,12 @@ void Gui::render()
                 {
                     if (!cancelled)
                     {
-                        path = Utils::getPathFromFilePath(path).data();
-                        setGlobal("mediaPath", {string(path)});
+                        path = Utils::getPathFromFilePath(path);
+                        setGlobal("mediaPath", {Utils::getPathFromFilePath(path)});
+                    }
+                    else
+                    {
+                        path = _root->getMediaPath();
                     }
                     showMediaFileSelector = false;
                 }
@@ -884,12 +890,6 @@ void Gui::initImGui(int width, int height)
     io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
     io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
     io.RenderDrawListsFn = Gui::imGuiRenderDrawLists;
 

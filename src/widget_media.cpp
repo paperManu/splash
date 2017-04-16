@@ -230,10 +230,8 @@ void GuiMedia::render()
                             if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))
                             {
                                 if (!cancelled)
-                                {
                                     _newMedia[1] = path;
-                                    path = Utils::getPathFromFilePath("./");
-                                }
+                                path = _root->getMediaPath();
                                 _fileSelectorTarget = "";
                             }
                         }
