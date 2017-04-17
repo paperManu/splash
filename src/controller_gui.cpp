@@ -271,16 +271,29 @@ void Gui::setKeyboardState(const vector<UserInput::State>& state)
 /*************/
 void Gui::setMouseState(const vector<UserInput::State>& state)
 {
+    if (!_window)
+        return;
+
     for (auto& s : state)
     {
-        if (s.action == "mouse_position")
-            mousePosition(s.value[0].as<int>(), s.value[1].as<int>());
-        else if (s.action == "mouse_press")
-            mouseButton(s.value[0].as<int>(), GLFW_PRESS, s.modifiers);
-        else if (s.action == "mouse_release")
-            mouseButton(s.value[0].as<int>(), GLFW_RELEASE, s.modifiers);
-        else if (s.action == "mouse_scroll")
-            mouseScroll(s.value[0].as<float>(), s.value[1].as<float>());
+        auto parentIt = find_if(_parents.begin(), _parents.end(), [&](const BaseObject* p) { return s.window == p->getName(); });
+        if (parentIt == _parents.end())
+        {
+            _mouseHoveringWindow = false;
+        }
+        else
+        {
+            _mouseHoveringWindow = true;
+
+            if (s.action == "mouse_position")
+                mousePosition(s.value[0].as<int>(), s.value[1].as<int>());
+            else if (s.action == "mouse_press")
+                mouseButton(s.value[0].as<int>(), GLFW_PRESS, s.modifiers);
+            else if (s.action == "mouse_release")
+                mouseButton(s.value[0].as<int>(), GLFW_RELEASE, s.modifiers);
+            else if (s.action == "mouse_scroll")
+                mouseScroll(s.value[0].as<float>(), s.value[1].as<float>());
+        }
     }
 }
 
@@ -499,7 +512,7 @@ void Gui::render()
         UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].as<string>()}); });
 
         ImGuiIO& io = GetIO();
-        io.MouseDrawCursor = true;
+        io.MouseDrawCursor = _mouseHoveringWindow;
 
         ImGui::NewFrame();
 

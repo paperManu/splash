@@ -215,6 +215,7 @@ class Gui : public ControllerObject
     // Gui related attributes
     std::string _configurationPath;
     std::string _projectPath;
+    bool _mouseHoveringWindow{false};
     bool _isVisible{false};
     bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
     bool _wireframe{false};
