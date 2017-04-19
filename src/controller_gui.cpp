@@ -58,14 +58,13 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
     glGetError();
-    glGenFramebuffers(1, &_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    glCreateFramebuffers(1, &_fbo);
 
     {
         auto texture = make_shared<Texture_Image>(s);
         texture->reset(_width, _height, "D", 0);
         texture->setResizable(1);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, texture->getTexId(), 0);
         _depthTexture = move(texture);
     }
 
@@ -73,17 +72,18 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
         auto texture = make_shared<Texture_Image>(s);
         texture->reset(_width, _height, "RGBA", NULL);
         texture->setResizable(1);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, texture->getTexId(), 0);
         _outTexture = move(texture);
     }
 
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+
+    GLenum status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
     else
         Log::get() << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     _window->releaseContext();
 
@@ -709,27 +709,22 @@ void Gui::render()
         time = currentTime;
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, fboBuffers);
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
-
         ImGui::Render();
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
     else
     {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, fboBuffers);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
 
     glDisable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    glActiveTexture(GL_TEXTURE0);
     auto outTexture_asImage = dynamic_pointer_cast<Texture_Image>(_outTexture);
     if (outTexture_asImage)
         outTexture_asImage->generateMipmap();
@@ -844,12 +839,10 @@ void Gui::initImGui(int width, int height)
     _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
     _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
 
-    glGenBuffers(1, &_imGuiVboHandle);
-    glGenBuffers(1, &_imGuiElementsHandle);
-    // glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-    // glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
+    glCreateBuffers(1, &_imGuiVboHandle);
+    glCreateBuffers(1, &_imGuiElementsHandle);
 
-    glGenVertexArrays(1, &_imGuiVaoHandle);
+    glCreateVertexArrays(1, &_imGuiVaoHandle);
     glBindVertexArray(_imGuiVaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
     glEnableVertexAttribArray(_imGuiPositionLocation);
@@ -1184,25 +1177,23 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
         // const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
         const ImDrawIdx* idx_buffer_offset = 0;
 
-        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-        // glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
-
         int needed_vtx_size = cmd_list->VtxBuffer.size() * sizeof(ImDrawVert);
         if (_imGuiVboMaxSize < needed_vtx_size)
         {
             _imGuiVboMaxSize = needed_vtx_size + 2000 * sizeof(ImDrawVert);
-            glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)_imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
+            glNamedBufferData(_imGuiVboHandle, (GLsizeiptr)_imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
         }
 
-        unsigned char* vtx_data = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, needed_vtx_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        unsigned char* vtx_data = (unsigned char*)glMapNamedBufferRange(_imGuiVboHandle, 0, needed_vtx_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
         if (!vtx_data)
             continue;
         memcpy(vtx_data, &cmd_list->VtxBuffer[0], cmd_list->VtxBuffer.size() * sizeof(ImDrawVert));
-        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glUnmapNamedBuffer(_imGuiVboHandle);
 
+        glNamedBufferData(_imGuiElementsHandle, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imGuiElementsHandle);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
-
         for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); ++pcmd)
         {
             if (pcmd->UserCallback)

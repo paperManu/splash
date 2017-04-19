@@ -27,11 +27,13 @@ void Geometry::init()
     _type = "geometry";
     registerAttributes();
 
+    // If the root object weak_ptr is expired, this means that
+    // this object has been created outside of a World or Scene.
     // This is used for getting documentation "offline"
     if (!_root)
         return;
 
-    glGenQueries(1, &_feedbackQuery);
+    glCreateQueries(GL_PRIMITIVES_GENERATED, 1, &_feedbackQuery);
 
     _defaultMesh = make_shared<Mesh>(_root);
     _mesh = weak_ptr<Mesh>(_defaultMesh);
@@ -129,7 +131,15 @@ void Geometry::deactivateFeedback()
 #endif
 
     glEndQuery(GL_PRIMITIVES_GENERATED);
-    int drawnPrimitives;
+    int drawnPrimitives = 0;
+    while (true)
+    {
+        glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT_AVAILABLE, &drawnPrimitives);
+        if (drawnPrimitives != 0)
+            break;
+        this_thread::sleep_for(chrono::microseconds(500));
+    }
+
     glGetQueryObjectiv(_feedbackQuery, GL_QUERY_RESULT, &drawnPrimitives);
     _feedbackMaxNbrPrimitives = std::max(_feedbackMaxNbrPrimitives, drawnPrimitives);
     _temporaryVerticesNumber = drawnPrimitives * 3;
@@ -331,7 +341,7 @@ void Geometry::update()
         {
             vertexArrayIt = (_vertexArray.emplace(make_pair(context, 0))).first;
             vertexArrayIt->second = 0;
-            glGenVertexArrays(1, &(vertexArrayIt->second));
+            glCreateVertexArrays(1, &(vertexArrayIt->second));
         }
 
         glBindVertexArray(vertexArrayIt->second);

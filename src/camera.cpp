@@ -85,12 +85,11 @@ void Camera::init()
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
-    glGenFramebuffers(1, &_fbo);
+    glCreateFramebuffers(1, &_fbo);
 
     setOutputNbr(1);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_DRAW_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
     {
         Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
@@ -98,8 +97,6 @@ void Camera::init()
     }
     else
         Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
@@ -598,14 +595,9 @@ void Camera::render()
     glGetError();
 #endif
     glViewport(0, 0, _width, _height);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum fboBuffers[_outTextures.size()];
-    for (int i = 0; i < _outTextures.size(); ++i)
-        fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
-    glDrawBuffers(_outTextures.size(), fboBuffers);
     glEnable(GL_DEPTH_TEST);
 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     if (_drawFrame)
     {
         glClearColor(1.0, 0.5, 0.0, 1.0);
@@ -911,18 +903,16 @@ void Camera::setOutputNbr(int nbr)
     if (nbr < 1 || nbr == _outTextures.size())
         return;
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-
     if (!_depthTexture)
     {
         _depthTexture = make_shared<Texture_Image>(_root, 512, 512, "D", nullptr);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     }
 
     if (nbr < _outTextures.size())
     {
         for (int i = nbr; i < _outTextures.size(); ++i)
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+            glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0 + i, 0, 0);
 
         _outTextures.resize(nbr);
     }
@@ -934,34 +924,36 @@ void Camera::setOutputNbr(int nbr)
             texture->setAttribute("clampToEdge", {1});
             texture->setAttribute("filtering", {0});
             texture->reset(512, 512, "RGBA", nullptr);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
+            glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0 + i, texture->getTexId(), 0);
             _outTextures.push_back(texture);
         }
     }
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    GLenum fboBuffers[_outTextures.size()];
+    for (int i = 0; i < _outTextures.size(); ++i)
+        fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    glNamedFramebufferDrawBuffers(_fbo, _outTextures.size(), fboBuffers);
 }
 
 /*************/
 void Camera::updateColorDepth()
 {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-
     for (int i = 0; i < _outTextures.size(); ++i)
     {
         auto spec = _outTextures[i]->getSpec();
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0 + i, 0, 0);
         if (_render16bits)
             _outTextures[i]->reset(spec.width, spec.height, "RGBA16", nullptr);
         else
             _outTextures[i]->reset(spec.width, spec.height, "RGBA", nullptr);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures[i]->getTexId(), 0);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0 + i, _outTextures[i]->getTexId(), 0);
     }
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    GLenum fboBuffers[_outTextures.size()];
+    for (int i = 0; i < _outTextures.size(); ++i)
+        fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+    glNamedFramebufferDrawBuffers(_fbo, _outTextures.size(), fboBuffers);
+
     _updateColorDepth = false;
 }
 

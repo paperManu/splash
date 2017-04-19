@@ -39,33 +39,19 @@ void Warp::init()
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    glGetError();
-    glGenFramebuffers(1, &_fbo);
+    glCreateFramebuffers(1, &_fbo);
 
     setOutput();
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
     {
         Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
         return;
     }
     else
+    {
         Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    GLenum error = glGetError();
-    if (error)
-    {
-        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
-        _isInitialized = false;
-    }
-    else
-    {
-        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Warp correctly initialized" << Log::endl;
-        _isInitialized = true;
     }
 
     loadDefaultModels();
@@ -290,13 +276,9 @@ void Warp::loadDefaultModels()
 /*************/
 void Warp::setOutput()
 {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-
     _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->reset(512, 512, "RGBA", nullptr);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
