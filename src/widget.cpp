@@ -188,9 +188,9 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     if (ImGui::IsRootWindowOrAnyChildFocused())
     {
         ImGuiIO& io = ImGui::GetIO();
-        if (io.KeysDown[ImGuiKey_Escape] && io.KeysDownDuration[ImGuiKey_Escape] == 0.0)
+        if (io.KeysDown[io.KeyMap[ImGuiKey_Escape]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Escape]] == 0.0)
             cancelled = true;
-        else if (io.KeysDown[ImGuiKey_Enter] && io.KeysDownDuration[ImGuiKey_Enter] == 0.0)
+        else if (io.KeysDown[io.KeyMap[ImGuiKey_Enter]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Enter]] == 0.0)
             selectionDone = true;
     }
 

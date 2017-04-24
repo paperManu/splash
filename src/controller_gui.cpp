@@ -310,10 +310,6 @@ void Gui::key(int key, int action, int mods)
         // Numpad enter is converted to regular enter
         if (key == GLFW_KEY_KP_ENTER)
             key = GLFW_KEY_ENTER;
-        else if (key == GLFW_KEY_ESCAPE)
-            key = ImGuiKey_Escape;
-        else if (key == GLFW_KEY_ENTER)
-            key = ImGuiKey_Enter;
 
         ImGuiIO& io = GetIO();
         if (action == GLFW_PRESS)
