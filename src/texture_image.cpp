@@ -137,7 +137,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     if (realPixelFormat == "RGBA")
     {
         _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-        _texInternalFormat = GL_RGBA;
+        _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
@@ -158,7 +158,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     else if (realPixelFormat == "RGB")
     {
         _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-        _texInternalFormat = GL_RGBA;
+        _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGB;
         _texType = GL_UNSIGNED_BYTE;
     }
@@ -172,63 +172,54 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     else if (realPixelFormat == "YUYV" || realPixelFormat == "UYVY")
     {
         _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, realPixelFormat);
-        _texInternalFormat = GL_RGBA;
+        _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
     else if (realPixelFormat == "D")
     {
-        _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
-        _texInternalFormat = GL_DEPTH_COMPONENT;
+        _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::UINT16, "R");
+        _texInternalFormat = GL_DEPTH_COMPONENT24;
         _texFormat = GL_DEPTH_COMPONENT;
         _texType = GL_FLOAT;
     }
 
     // Create and initialize the texture
-    if (_glTex == 0)
+    if (glIsTexture(_glTex))
+        glDeleteTextures(1, &_glTex);
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
+
+    if (_texInternalFormat == GL_DEPTH_COMPONENT)
     {
-        glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
-
-        if (_texInternalFormat == GL_DEPTH_COMPONENT)
-        {
-            glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        }
-        else
-        {
-            glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
-            glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);
-
-            if (_filtering)
-            {
-                glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-            else
-            {
-                glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-            glPixelStorei(GL_PACK_ALIGNMENT, 4);
-        }
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTextureUnit(0, _glTex);
-        // TODO: this has to be replaced with a glTextureStorage2D, but this needs some additional work everywhere a texture is used in a FBO
-        glTexImage2D(GL_TEXTURE_2D, 0, _texInternalFormat, width, height, 0, _texFormat, _texType, data);
-        glBindTextureUnit(0, 0);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     else
     {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTextureUnit(0, _glTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, _texInternalFormat, width, height, 0, _texFormat, _texType, data);
-        glBindTextureUnit(0, 0);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);
+
+        if (_filtering)
+        {
+            glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        else
+        {
+            glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glPixelStorei(GL_PACK_ALIGNMENT, 4);
     }
+
+    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
+    if (data)
+        glTextureSubImage2D(_glTex, 0, 0, 0, width, height, _texFormat, _texType, data);
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
@@ -450,11 +441,6 @@ void Texture_Image::update()
 
         // And copy it to the second PBO
         glCopyNamedBufferSubData(_pbos[0], _pbos[1], 0, 0, imageDataSize);
-
-#ifdef DEBUG
-        glBindTexture(GL_TEXTURE_2D, 0);
-#endif
-
         _spec = spec;
     }
     // Update the content of the texture, i.e the image
