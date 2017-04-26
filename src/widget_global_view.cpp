@@ -104,7 +104,7 @@ void GuiGlobalView::render()
             int w = ImGui::GetWindowWidth() - 4 * leftMargin;
             int h = w * size[1].as<int>() / size[0].as<int>();
 
-            if (ImGui::ImageButton((void*)(intptr_t)camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
+            if (ImGui::ImageButton((void*)(intptr_t)camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0)))
             {
                 // If shift is pressed, we hide / unhide this camera
                 if (io.KeyCtrl)
@@ -152,7 +152,7 @@ void GuiGlobalView::render()
 
             ImGui::Text(("Current camera: " + _camera->getName()).c_str());
 
-            ImGui::Image((void*)(intptr_t)_camera->getTextures()[0]->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())
                 _noMove = true;
             else

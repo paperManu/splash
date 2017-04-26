@@ -119,10 +119,10 @@ class Camera : public BaseObject
     void drawModelOnce(const std::string& modelName, const glm::dmat4& rtMatrix);
 
     /**
-     * \brief Get the output textures for this camera
-     * \return Return a vector of pointers to the output textures
+     * \brief Get the output texture for this camera
+     * \return Return a pointer to the output textures
      */
-    std::vector<std::shared_ptr<Texture_Image>> getTextures() const { return _outTextures; }
+    std::shared_ptr<Texture_Image> getTexture() const { return _outTexture; }
 
     /**
      * \brief Check whether the camera is initialized
@@ -213,10 +213,9 @@ class Camera : public BaseObject
     bool setCalibrationPoint(const Values& screenPoint);
 
     /**
-     * \brief Set the number of output buffers for this camera
-     * \param nbr Number of outputs
+     * \brief Set the output framebuffer
      */
-    void setOutputNbr(int nbr);
+    void setupFBO();
 
     /**
      * \brief Set the resolution of this camera
@@ -231,7 +230,7 @@ class Camera : public BaseObject
 
     GLuint _fbo{0};
     std::shared_ptr<Texture_Image> _depthTexture;
-    std::vector<std::shared_ptr<Texture_Image>> _outTextures;
+    std::shared_ptr<Texture_Image> _outTexture;
     std::vector<std::weak_ptr<Object>> _objects;
 
     // Rendering parameters

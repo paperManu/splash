@@ -39,20 +39,7 @@ void Warp::init()
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    glCreateFramebuffers(1, &_fbo);
-
-    setOutput();
-
-    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-        return;
-    }
-    else
-    {
-        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-    }
+    setupFBO();
 
     loadDefaultModels();
 }
@@ -94,16 +81,10 @@ bool Warp::linkTo(const std::shared_ptr<BaseObject>& obj)
     {
         auto camera = _inCamera.lock();
         if (camera)
-        {
-            auto textures = camera->getTextures();
-            for (auto& tex : textures)
-                _screen->removeTexture(tex);
-        }
+            _screen->removeTexture(camera->getTexture());
 
         camera = dynamic_pointer_cast<Camera>(obj);
-        auto textures = camera->getTextures();
-        for (auto& tex : textures)
-            _screen->addTexture(tex);
+        _screen->addTexture(camera->getTexture());
         _inCamera = camera;
 
         return true;
@@ -130,10 +111,7 @@ void Warp::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
 
             if (inCamera == camera)
             {
-                auto textures = camera->getTextures();
-                for (auto& tex : textures)
-                    _screen->removeTexture(tex);
-
+                _screen->removeTexture(camera->getTexture());
                 if (camera->getName() == inCamera->getName())
                     _inCamera.reset();
             }
@@ -150,15 +128,20 @@ void Warp::render()
         return;
 
     auto camera = _inCamera.lock();
-    auto input = camera->getTextures()[0];
+    auto input = camera->getTexture();
 
-    _outTextureSpec = input->getSpec();
-    _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
-    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
+    auto inputSpec = input->getSpec();
+    if (inputSpec != _outTextureSpec)
+    {
+        _outTextureSpec = inputSpec;
+        _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+    }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
+    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -274,11 +257,25 @@ void Warp::loadDefaultModels()
 }
 
 /*************/
-void Warp::setOutput()
+void Warp::setupFBO()
 {
+    if (glIsFramebuffer(_fbo) == GL_FALSE)
+        glCreateFramebuffers(1, &_fbo);
+
     _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->reset(512, 512, "RGBA", nullptr);
     glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+
+    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
+        return;
+    }
+    else
+    {
+        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+    }
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);

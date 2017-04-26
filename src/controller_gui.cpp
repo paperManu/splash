@@ -61,19 +61,17 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     glCreateFramebuffers(1, &_fbo);
 
     {
-        auto texture = make_shared<Texture_Image>(s);
-        texture->reset(_width, _height, "D", 0);
-        texture->setResizable(1);
-        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, texture->getTexId(), 0);
-        _depthTexture = move(texture);
+        _depthTexture = make_shared<Texture_Image>(s);
+        _depthTexture->reset(_width, _height, "D", 0);
+        _depthTexture->setResizable(1);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     }
 
     {
-        auto texture = make_shared<Texture_Image>(s);
-        texture->reset(_width, _height, "RGBA", NULL);
-        texture->setResizable(1);
-        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, texture->getTexId(), 0);
-        _outTexture = move(texture);
+        _outTexture = make_shared<Texture_Image>(s);
+        _outTexture->reset(_width, _height, "RGBA", NULL);
+        _outTexture->setResizable(1);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
     }
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
@@ -725,9 +723,7 @@ void Gui::render()
 
     glDisable(GL_DEPTH_TEST);
 
-    auto outTexture_asImage = dynamic_pointer_cast<Texture_Image>(_outTexture);
-    if (outTexture_asImage)
-        outTexture_asImage->generateMipmap();
+    _outTexture->generateMipmap();
 
 #ifdef DEBUG
     error = glGetError();
@@ -746,9 +742,11 @@ void Gui::setOutputSize(int width, int height)
 
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
+
     _depthTexture->setAttribute("size", {width, height});
     _outTexture->setAttribute("size", {width, height});
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
     _width = width;
     _height = height;
