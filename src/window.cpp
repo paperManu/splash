@@ -68,22 +68,6 @@ Window::Window(RootObject* root)
     // Get the default window size and position
     glfwGetWindowPos(_window->get(), &_windowRect[0], &_windowRect[1]);
     glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
-
-    // Create the render FBO
-    glGetError();
-    glGenFramebuffers(1, &_renderFbo);
-    setupRenderFBO();
-
-    glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
-    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
-    else
-        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // And the read framebuffer
-    setupReadFBO();
 }
 
 /*************/
@@ -285,8 +269,7 @@ void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
         _root->disposeObject(warpName);
 
         auto cam = dynamic_pointer_cast<Camera>(obj);
-        for (auto& tex : cam->getTextures())
-            unsetTexture(tex);
+        unsetTexture(cam->getTexture());
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
@@ -304,10 +287,23 @@ void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
 /*************/
 void Window::render()
 {
-    // Update the FBO configuration if needed
-    setupRenderFBO();
-
+    // Get the current window size
     int w, h;
+    glfwGetFramebufferSize(_window->get(), &w, &h);
+    if (w != _windowRect[2] || h != _windowRect[3])
+    {
+        _resized = true;
+        _windowRect[2] = w;
+        _windowRect[3] = h;
+    }
+
+    // Update the FBO configuration if needed
+    if (_resized)
+    {
+        setupFBOs();
+        _resized = false;
+    }
+
     glfwGetFramebufferSize(_window->get(), &w, &h);
     glViewport(0, 0, w, h);
 
@@ -315,14 +311,12 @@ void Window::render()
     glGetError();
 #endif
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     if (_srgb)
         glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -396,63 +390,48 @@ void Window::render()
 }
 
 /*************/
-void Window::setupRenderFBO()
+void Window::setupFBOs()
 {
-    glfwGetFramebufferSize(_window->get(), &_windowRect[2], &_windowRect[3]);
+    // Render FBO
+    if (glIsFramebuffer(_renderFbo) == GL_FALSE)
+        glCreateFramebuffers(1, &_renderFbo);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, _renderFbo);
+    glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, 0, 0);
+    _depthTexture = make_shared<Texture_Image>(_root, _windowRect[2], _windowRect[3], "D", nullptr);
+    glNamedFramebufferTexture(_renderFbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
 
-    if (!_depthTexture)
-    {
-        _depthTexture = make_shared<Texture_Image>(_root, 512, 512, "D", nullptr);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
-    }
+    glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, 0, 0);
+    _colorTexture = make_shared<Texture_Image>(_root);
+    _colorTexture->setAttribute("filtering", {0});
+    _colorTexture->reset(_windowRect[2], _windowRect[3], "sRGBA", nullptr);
+    glNamedFramebufferTexture(_renderFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glNamedFramebufferDrawBuffers(_renderFbo, 1, fboBuffers);
+
+    GLenum _status = glCheckNamedFramebufferStatus(_renderFbo, GL_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
     else
-    {
-        _depthTexture->setResizable(1);
-        _depthTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
-        _depthTexture->setResizable(0);
-    }
+        Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Render framebuffer object successfully initialized" << Log::endl;
 
-    if (!_colorTexture)
-    {
-        _colorTexture = make_shared<Texture_Image>(_root);
-        _colorTexture->setAttribute("filtering", {0});
-        _colorTexture->reset(_windowRect[2], _windowRect[3], "sRGBA", nullptr);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
-    }
-    else
-    {
-        _colorTexture->setResizable(1);
-        _colorTexture->setAttribute("size", {_windowRect[2], _windowRect[3]});
-        _colorTexture->setResizable(0);
-    }
-
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _renderFbo);
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-/*************/
-void Window::setupReadFBO()
-{
-    _window->setAsCurrentContext();
-
+    // Read FBO
     if (_readFbo != 0)
         glDeleteFramebuffers(1, &_readFbo);
 
-    glGenFramebuffers(1, &_readFbo);
+    glCreateFramebuffers(1, &_readFbo);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, _readFbo);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _colorTexture->getTexId(), 0);
-    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    glNamedFramebufferTexture(_readFbo, GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
+    _status = glCheckNamedFramebufferStatus(_readFbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Error while initializing read framebuffer object: " << _status << Log::endl;
     else
-        Log::get() << Log::MESSAGE << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    _window->releaseContext();
+        Log::get() << Log::DEBUGGING << "Window::" << __FUNCTION__ << " - Read framebuffer object successfully initialized" << Log::endl;
 }
 
 /*************/
@@ -466,7 +445,6 @@ void Window::swapBuffers()
 
     // Only one window will wait for vblank, the others draws directly into front buffer
     auto windowIndex = _swappableWindowsCount.fetch_add(1);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _readFbo);
 
 // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
 #if HAVE_OSX
@@ -478,8 +456,7 @@ void Window::swapBuffers()
     glDrawBuffer(drawBuffer);
 #endif
 
-    glBlitFramebuffer(0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
 #if HAVE_OSX
     glfwSwapBuffers(_window->get());
@@ -513,17 +490,15 @@ bool Window::switchFullscreen(int screenId)
     if (_window.get() == nullptr)
         return false;
 
-    if (screenId != -1)
-        _screenId = screenId;
-    else if (screenId == _screenId)
+    if (screenId == _screenId)
         return true;
-
-    const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
+    _screenId = screenId;
 
     glfwWindowHint(GLFW_VISIBLE, true);
     GLFWwindow* window;
-    if (glfwGetWindowMonitor(_window->get()) == NULL)
+    if (_screenId != -1 && glfwGetWindowMonitor(_window->get()) == NULL)
     {
+        const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
         glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
         glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
         glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
@@ -532,7 +507,11 @@ bool Window::switchFullscreen(int screenId)
         window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), monitors[_screenId], _window->getMainWindow());
     }
     else
-        window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
+    {
+        int width, height;
+        glfwGetWindowSize(_window->get(), &width, &height);
+        window = glfwCreateWindow(width, height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
+    }
 
     if (!window)
     {
@@ -542,7 +521,7 @@ bool Window::switchFullscreen(int screenId)
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
-    setupReadFBO();
+    _resized = true;
 
     setEventsCallbacks();
     showCursor(false);
@@ -718,8 +697,7 @@ void Window::setWindowDecoration(bool hasDecoration)
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
     updateSwapInterval();
-    setupRenderFBO();
-    setupReadFBO();
+    _resized = true;
 
     setEventsCallbacks();
     showCursor(false);
@@ -769,12 +747,7 @@ void Window::registerAttributes()
             updateWindowShape();
             return true;
         },
-        [&]() -> Values {
-            if (_screenId != -1)
-                return Values();
-            else
-                return {(int)_withDecoration};
-        },
+        [&]() -> Values { return {static_cast<int>(_withDecoration)}; },
         {'n'});
     setAttributeDescription("decorated", "If set to 0, the window is drawn without decoration");
 
@@ -826,10 +799,7 @@ void Window::registerAttributes()
             return true;
         },
         [&]() -> Values {
-            if (_screenId != -1)
-                return {};
-            else
-                return {_windowRect[0], _windowRect[1]};
+            return {_windowRect[0], _windowRect[1]};
         },
         {'n', 'n'});
     setAttributeDescription("position", "Set the window position");
@@ -845,14 +815,12 @@ void Window::registerAttributes()
         [&](const Values& args) {
             _windowRect[2] = args[0].as<int>();
             _windowRect[3] = args[1].as<int>();
+            _resized = true;
             updateWindowShape();
             return true;
         },
         [&]() -> Values {
-            if (_screenId != -1)
-                return {};
-            else
-                return {_windowRect[2], _windowRect[3]};
+            return {_windowRect[2], _windowRect[3]};
         },
         {'n', 'n'});
     setAttributeDescription("size", "Set the window dimensions");

@@ -58,32 +58,30 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
     glGetError();
-    glGenFramebuffers(1, &_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, _fbo);
+    glCreateFramebuffers(1, &_fbo);
 
     {
-        auto texture = make_shared<Texture_Image>(s);
-        texture->reset(_width, _height, "D", 0);
-        texture->setResizable(1);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->getTexId(), 0);
-        _depthTexture = move(texture);
+        _depthTexture = make_shared<Texture_Image>(s);
+        _depthTexture->reset(_width, _height, "D", 0);
+        _depthTexture->setResizable(1);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     }
 
     {
-        auto texture = make_shared<Texture_Image>(s);
-        texture->reset(_width, _height, "RGBA", NULL);
-        texture->setResizable(1);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture->getTexId(), 0);
-        _outTexture = move(texture);
+        _outTexture = make_shared<Texture_Image>(s);
+        _outTexture->reset(_width, _height, "RGBA", NULL);
+        _outTexture->setResizable(1);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
     }
 
-    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+
+    GLenum status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
     if (status != GL_FRAMEBUFFER_COMPLETE)
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
     else
         Log::get() << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     _window->releaseContext();
 
@@ -271,16 +269,29 @@ void Gui::setKeyboardState(const vector<UserInput::State>& state)
 /*************/
 void Gui::setMouseState(const vector<UserInput::State>& state)
 {
+    if (!_window)
+        return;
+
     for (auto& s : state)
     {
-        if (s.action == "mouse_position")
-            mousePosition(s.value[0].as<int>(), s.value[1].as<int>());
-        else if (s.action == "mouse_press")
-            mouseButton(s.value[0].as<int>(), GLFW_PRESS, s.modifiers);
-        else if (s.action == "mouse_release")
-            mouseButton(s.value[0].as<int>(), GLFW_RELEASE, s.modifiers);
-        else if (s.action == "mouse_scroll")
-            mouseScroll(s.value[0].as<float>(), s.value[1].as<float>());
+        auto parentIt = find_if(_parents.begin(), _parents.end(), [&](const BaseObject* p) { return s.window == p->getName(); });
+        if (parentIt == _parents.end())
+        {
+            _mouseHoveringWindow = false;
+        }
+        else
+        {
+            _mouseHoveringWindow = true;
+
+            if (s.action == "mouse_position")
+                mousePosition(s.value[0].as<int>(), s.value[1].as<int>());
+            else if (s.action == "mouse_press")
+                mouseButton(s.value[0].as<int>(), GLFW_PRESS, s.modifiers);
+            else if (s.action == "mouse_release")
+                mouseButton(s.value[0].as<int>(), GLFW_RELEASE, s.modifiers);
+            else if (s.action == "mouse_scroll")
+                mouseScroll(s.value[0].as<float>(), s.value[1].as<float>());
+        }
     }
 }
 
@@ -495,12 +506,12 @@ void Gui::render()
         UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].as<string>()}); });
 
         ImGuiIO& io = GetIO();
-        io.MouseDrawCursor = true;
+        io.MouseDrawCursor = _mouseHoveringWindow;
 
         ImGui::NewFrame();
 
         ImGui::Begin("Splash Control Panel", nullptr, ImVec2(700, 900), 0.95f, _windowFlags);
-        _windowFlags = 0;
+        _windowFlags = ImGuiWindowFlags_NoBringToFrontOnFocus;
 
         // Check whether the GUI is alone in its window
         auto objReversedLinks = getObjectReversedLinks();
@@ -583,10 +594,9 @@ void Gui::render()
                 if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
                 {
                     if (!cancelled)
-                    {
                         _configurationPath = path;
-                        path = Utils::getPathFromFilePath("./");
-                    }
+                    else
+                        path = _root->getConfigurationPath();
                     showConfigurationFileSelector = false;
                 }
             }
@@ -628,10 +638,9 @@ void Gui::render()
                 if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
                 {
                     if (!cancelled)
-                    {
                         _projectPath = path;
-                        path = Utils::getPathFromFilePath("./");
-                    }
+                    else
+                        path = _root->getConfigurationPath();
                     showProjectFileSelector = false;
                 }
             }
@@ -668,8 +677,12 @@ void Gui::render()
                 {
                     if (!cancelled)
                     {
-                        path = Utils::getPathFromFilePath(path).data();
-                        setGlobal("mediaPath", {string(path)});
+                        path = Utils::getPathFromFilePath(path);
+                        setGlobal("mediaPath", {Utils::getPathFromFilePath(path)});
+                    }
+                    else
+                    {
+                        path = _root->getMediaPath();
                     }
                     showMediaFileSelector = false;
                 }
@@ -694,30 +707,23 @@ void Gui::render()
         time = currentTime;
 
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, fboBuffers);
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
-
         ImGui::Render();
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
     else
     {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glDrawBuffers(1, fboBuffers);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     }
 
     glDisable(GL_DEPTH_TEST);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
-    glActiveTexture(GL_TEXTURE0);
-    auto outTexture_asImage = dynamic_pointer_cast<Texture_Image>(_outTexture);
-    if (outTexture_asImage)
-        outTexture_asImage->generateMipmap();
+    _outTexture->generateMipmap();
 
 #ifdef DEBUG
     error = glGetError();
@@ -736,9 +742,11 @@ void Gui::setOutputSize(int width, int height)
 
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-    ;
+
     _depthTexture->setAttribute("size", {width, height});
     _outTexture->setAttribute("size", {width, height});
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
     _width = width;
     _height = height;
@@ -829,12 +837,10 @@ void Gui::initImGui(int width, int height)
     _imGuiUVLocation = glGetAttribLocation(_imGuiShaderHandle, "UV");
     _imGuiColorLocation = glGetAttribLocation(_imGuiShaderHandle, "Color");
 
-    glGenBuffers(1, &_imGuiVboHandle);
-    glGenBuffers(1, &_imGuiElementsHandle);
-    // glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-    // glBufferData(GL_ARRAY_BUFFER, _imGuiVboMaxSize, NULL, GL_DYNAMIC_DRAW);
+    glCreateBuffers(1, &_imGuiVboHandle);
+    glCreateBuffers(1, &_imGuiElementsHandle);
 
-    glGenVertexArrays(1, &_imGuiVaoHandle);
+    glCreateVertexArrays(1, &_imGuiVaoHandle);
     glBindVertexArray(_imGuiVaoHandle);
     glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
     glEnableVertexAttribArray(_imGuiPositionLocation);
@@ -884,12 +890,6 @@ void Gui::initImGui(int width, int height)
     io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
     io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
     io.RenderDrawListsFn = Gui::imGuiRenderDrawLists;
 
@@ -1175,25 +1175,23 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
         // const ImDrawIdx* idx_buffer = &cmd_list->IdxBuffer.front();
         const ImDrawIdx* idx_buffer_offset = 0;
 
-        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
-        // glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)cmd_list->VtxBuffer.size() * sizeof(ImDrawVert), (GLvoid*)&cmd_list->VtxBuffer.front(), GL_STREAM_DRAW);
-
         int needed_vtx_size = cmd_list->VtxBuffer.size() * sizeof(ImDrawVert);
         if (_imGuiVboMaxSize < needed_vtx_size)
         {
             _imGuiVboMaxSize = needed_vtx_size + 2000 * sizeof(ImDrawVert);
-            glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)_imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
+            glNamedBufferData(_imGuiVboHandle, (GLsizeiptr)_imGuiVboMaxSize, NULL, GL_STREAM_DRAW);
         }
 
-        unsigned char* vtx_data = (unsigned char*)glMapBufferRange(GL_ARRAY_BUFFER, 0, needed_vtx_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        unsigned char* vtx_data = (unsigned char*)glMapNamedBufferRange(_imGuiVboHandle, 0, needed_vtx_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
         if (!vtx_data)
             continue;
         memcpy(vtx_data, &cmd_list->VtxBuffer[0], cmd_list->VtxBuffer.size() * sizeof(ImDrawVert));
-        glUnmapBuffer(GL_ARRAY_BUFFER);
+        glUnmapNamedBuffer(_imGuiVboHandle);
 
+        glNamedBufferData(_imGuiElementsHandle, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, _imGuiVboHandle);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _imGuiElementsHandle);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, (GLsizeiptr)cmd_list->IdxBuffer.size() * sizeof(ImDrawIdx), (GLvoid*)&cmd_list->IdxBuffer.front(), GL_STREAM_DRAW);
-
         for (const ImDrawCmd* pcmd = cmd_list->CmdBuffer.begin(); pcmd != cmd_list->CmdBuffer.end(); ++pcmd)
         {
             if (pcmd->UserCallback)

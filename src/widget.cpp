@@ -147,10 +147,12 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     }
 
     ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
-    static int selectedId = 0;
+    static unordered_map<string, int> selectedId{};
+    if (selectedId.find(label) == selectedId.end())
+        selectedId[label] = 0;
     for (int i = 0; i < fileList.size(); ++i)
     {
-        bool isSelected = (selectedId == i);
+        bool isSelected = (selectedId[label] == i);
 
         auto filename = fileList[i].filename;
         if (fileList[i].isDir)
@@ -158,14 +160,14 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
         if (ImGui::Selectable(filename.c_str(), isSelected))
         {
-            selectedId = i;
+            selectedId[label] = i;
             manualPath = false;
         }
     }
 
     if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0))
     {
-        path = path + "/" + fileList[selectedId].filename;
+        path = path + "/" + fileList[selectedId[label]].filename;
         if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
             selectionDone = true;
     }
@@ -176,17 +178,23 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     if (ImGui::Button("Select path"))
     {
         if (!manualPath)
-            path = path + "/" + fileList[selectedId].filename;
+            path = path + "/" + fileList[selectedId[label]].filename;
         selectionDone = true;
-        ;
     }
     ImGui::SameLine();
     if (ImGui::Button("Cancel"))
         cancelled = true;
-    ;
+
+    if (ImGui::IsRootWindowOrAnyChildFocused())
+    {
+        ImGuiIO& io = ImGui::GetIO();
+        if (io.KeysDown[io.KeyMap[ImGuiKey_Escape]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Escape]] == 0.0)
+            cancelled = true;
+        else if (io.KeysDown[io.KeyMap[ImGuiKey_Enter]] && io.KeysDownDuration[io.KeyMap[ImGuiKey_Enter]] == 0.0)
+            selectionDone = true;
+    }
 
     ImGui::End();
-
     ImGui::PopID();
 
     if (selectionDone || cancelled)
@@ -194,7 +202,8 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
     return false;
 }
-}
+
+} // end of namespace SplashImGui
 
 /*************/
 /*************/
@@ -351,10 +360,8 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                         if (SplashImGui::FileSelector(objName, path, cancelled, extensions))
                         {
                             if (!cancelled)
-                            {
                                 scene->sendMessageToWorld("sendAll", {objName, attrName, path});
-                                path = Utils::getPathFromFilePath(path);
-                            }
+                            path = _root->getMediaPath();
                             _fileSelectorTarget = "";
                         }
                     }

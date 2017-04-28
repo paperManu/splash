@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.6.4
+    VERSION 0.6.6
     LANGUAGES C CXX
 )
 
@@ -95,6 +95,10 @@ if(UNIX AND NOT APPLE)
 elseif(APPLE)
     set(HAVE_LINUX 0)
     set(HAVE_OSX 1)
+endif()
+
+if (DEBUG_OPENGL EQUAL 1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
 endif()
 
 if (DATAPATH_SDK_PATH)
@@ -211,6 +215,7 @@ info_cfg_option(SHMDATA_VERSION)
 info_cfg_option(PYTHONLIBS_VERSION_STRING)
 info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
+info_cfg_option(DEBUG_OPENGL)
 
 info_cfg_text("")
 message("${_config_msg}")

@@ -53,29 +53,26 @@ Texture_Image& Texture_Image::operator=(const shared_ptr<Image>& img)
 void Texture_Image::bind()
 {
     glGetIntegerv(GL_ACTIVE_TEXTURE, &_activeTexture);
-    glBindTexture(GL_TEXTURE_2D, _glTex);
+    _activeTexture = _activeTexture - GL_TEXTURE0; // TODO: handle texture units in a modern fashion
+    glBindTextureUnit(_activeTexture, _glTex);
 }
 
 /*************/
 void Texture_Image::generateMipmap() const
 {
-    glBindTexture(GL_TEXTURE_2D, _glTex);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glGenerateTextureMipmap(_glTex);
 }
 
 /*************/
 RgbValue Texture_Image::getMeanValue() const
 {
-    glBindTexture(GL_TEXTURE_2D, _glTex);
     int level = _texLevels - 1;
     int width, height;
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_WIDTH, &width);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, level, GL_TEXTURE_HEIGHT, &height);
+    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_WIDTH, &width);
+    glGetTextureLevelParameteriv(_glTex, level, GL_TEXTURE_HEIGHT, &height);
     auto size = width * height * 4;
     ResizableArray<uint8_t> buffer(size);
-    glGetTexImage(GL_TEXTURE_2D, level, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer.data());
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glGetTextureImage(_glTex, level, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, buffer.size(), buffer.data());
 
     RgbValue meanColor;
     for (int y = 0; y < height; ++y)
@@ -116,9 +113,7 @@ bool Texture_Image::linkTo(const std::shared_ptr<BaseObject>& obj)
 shared_ptr<Image> Texture_Image::read()
 {
     auto img = make_shared<Image>(_root, _spec);
-    glBindTexture(GL_TEXTURE_2D, _glTex);
-    glGetTexImage(GL_TEXTURE_2D, 0, _texFormat, _texType, (GLvoid*)img->data());
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glGetTextureImage(_glTex, 0, _texFormat, _texType, img->getSpec().rawSize(), (GLvoid*)img->data());
     return img;
 }
 
@@ -142,7 +137,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     if (realPixelFormat == "RGBA")
     {
         _spec = ImageBufferSpec(width, height, 4, 32, ImageBufferSpec::Type::UINT8, "RGBA");
-        _texInternalFormat = GL_RGBA;
+        _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
@@ -163,7 +158,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     else if (realPixelFormat == "RGB")
     {
         _spec = ImageBufferSpec(width, height, 3, 24, ImageBufferSpec::Type::UINT8, "RGB");
-        _texInternalFormat = GL_RGBA;
+        _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGB;
         _texType = GL_UNSIGNED_BYTE;
     }
@@ -177,63 +172,54 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     else if (realPixelFormat == "YUYV" || realPixelFormat == "UYVY")
     {
         _spec = ImageBufferSpec(width, height, 3, 16, ImageBufferSpec::Type::UINT8, realPixelFormat);
-        _texInternalFormat = GL_RGBA;
+        _texInternalFormat = GL_RGBA8;
         _texFormat = GL_RGBA;
         _texType = GL_UNSIGNED_INT_8_8_8_8_REV;
     }
     else if (realPixelFormat == "D")
     {
-        _spec = ImageBufferSpec(width, height, 1, 16, ImageBufferSpec::Type::UINT16, "R");
-        _texInternalFormat = GL_DEPTH_COMPONENT;
+        _spec = ImageBufferSpec(width, height, 1, 24, ImageBufferSpec::Type::UINT16, "R");
+        _texInternalFormat = GL_DEPTH_COMPONENT24;
         _texFormat = GL_DEPTH_COMPONENT;
         _texType = GL_FLOAT;
     }
 
     // Create and initialize the texture
-    if (_glTex == 0)
+    if (glIsTexture(_glTex))
+        glDeleteTextures(1, &_glTex);
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
+
+    if (_texInternalFormat == GL_DEPTH_COMPONENT)
     {
-        glGenTextures(1, &_glTex);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-
-        if (_texInternalFormat == GL_DEPTH_COMPONENT)
-        {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        }
-        else
-        {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, _glTextureWrap);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, _glTextureWrap);
-
-            if (_filtering)
-            {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-            else
-            {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            }
-
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-            glPixelStorei(GL_PACK_ALIGNMENT, 4);
-        }
-
-        glTexImage2D(GL_TEXTURE_2D, 0, _texInternalFormat, width, height, 0, _texFormat, _texType, data);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     else
     {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, _texInternalFormat, width, height, 0, _texFormat, _texType, data);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);
+
+        if (_filtering)
+        {
+            glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+        else
+        {
+            glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        }
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+        glPixelStorei(GL_PACK_ALIGNMENT, 4);
     }
+
+    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
+    if (data)
+        glTextureSubImage2D(_glTex, 0, 0, 0, width, height, _texFormat, _texType, data);
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
@@ -253,8 +239,7 @@ void Texture_Image::resize(int width, int height)
 void Texture_Image::unbind()
 {
 #ifdef DEBUG
-    glActiveTexture((GLenum)_activeTexture);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTextureUnit(_activeTexture, 0);
 #endif
 }
 
@@ -308,7 +293,7 @@ void Texture_Image::update()
     img->getAttribute("flop", flop);
 
     if (!(bool)glIsTexture(_glTex))
-        glGenTextures(1, &_glTex);
+        glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
 
     // Store the image data size
     int imageDataSize = spec.rawSize();
@@ -401,24 +386,23 @@ void Texture_Image::update()
     {
         // glTexStorage2D is immutable, so we have to delete the texture first
         glDeleteTextures(1, &_glTex);
-        glGenTextures(1, &_glTex);
+        glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
 
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, _glTextureWrap);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, _glTextureWrap);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
+        glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);
 
         if (_filtering)
         {
             if (isCompressed)
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             else
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         }
         else
         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTextureParameteri(_glTex, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
 
         // Create or update the texture parameters
@@ -428,8 +412,8 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
             img->lock();
-            glTexStorage2D(GL_TEXTURE_2D, _texLevels, internalFormat, spec.width, spec.height);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
+            glTextureStorage2D(_glTex, _texLevels, internalFormat, spec.width, spec.height);
+            glTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
             img->unlock();
         }
         else if (isCompressed)
@@ -439,57 +423,41 @@ void Texture_Image::update()
 #endif
 
             img->lock();
-            glCompressedTexImage2D(GL_TEXTURE_2D, 0, internalFormat, spec.width, spec.height, 0, imageDataSize, img->data());
+            glTextureStorage2D(_glTex, _texLevels, internalFormat, spec.width, spec.height);
+            glCompressedTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
             img->unlock();
         }
         updatePbos(spec.width, spec.height, spec.pixelBytes());
 
         // Fill one of the PBOs right now
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-        GLubyte* pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+        GLubyte* pixels = (GLubyte*)glMapNamedBufferRange(_pbos[0], 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (pixels != NULL)
         {
             img->lock();
             memcpy((void*)pixels, img->data(), imageDataSize);
-            glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+            glUnmapNamedBuffer(_pbos[0]);
             img->unlock();
         }
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
         // And copy it to the second PBO
-        glBindBuffer(GL_COPY_READ_BUFFER, _pbos[0]);
-        glBindBuffer(GL_COPY_WRITE_BUFFER, _pbos[1]);
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, imageDataSize);
-        glBindBuffer(GL_COPY_READ_BUFFER, 0);
-        glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-
-#ifdef DEBUG
-        glBindTexture(GL_TEXTURE_2D, 0);
-#endif
-
+        glCopyNamedBufferSubData(_pbos[0], _pbos[1], 0, 0, imageDataSize);
         _spec = spec;
     }
     // Update the content of the texture, i.e the image
     else
     {
-        glBindTexture(GL_TEXTURE_2D, _glTex);
-
         // Copy the pixels from the current PBO to the texture
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
         if (!isCompressed)
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
+            glTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, 0);
         else
-            glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, 0);
+            glCompressedTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, 0);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-#ifdef DEBUG
-        glBindTexture(GL_TEXTURE_2D, 0);
-#endif
 
         _pboReadIndex = (_pboReadIndex + 1) % 2;
 
         // Fill the next PBO with the image pixels
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
-        GLubyte* pixels = (GLubyte*)glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+        GLubyte* pixels = (GLubyte*)glMapNamedBufferRange(_pbos[_pboReadIndex], 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (pixels != NULL)
         {
             img->lock();
@@ -505,7 +473,6 @@ void Texture_Image::update()
             _pboCopyThreadIds.push_back(
                 SThread::pool.enqueue([=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
         }
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
 
     // If needed, specify some uniforms for the shader which will use this texture
@@ -540,12 +507,10 @@ void Texture_Image::flushPbo()
         SThread::pool.waitThreads(_pboCopyThreadIds);
         _pboCopyThreadIds.clear();
 
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[_pboReadIndex]);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+        glUnmapNamedBuffer(_pbos[_pboReadIndex]);
 
         if (!_img.expired())
             _img.lock()->unlock();
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
 }
 
@@ -561,17 +526,14 @@ void Texture_Image::init()
 
     _timestamp = Timer::getTime();
 
-    glGenBuffers(2, _pbos);
+    glCreateBuffers(2, _pbos);
 }
 
 /*************/
 void Texture_Image::updatePbos(int width, int height, int bytes)
 {
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[0]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pbos[1]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER, width * height * bytes, 0, GL_STREAM_DRAW);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    glNamedBufferData(_pbos[0], width * height * bytes, 0, GL_STREAM_DRAW);
+    glNamedBufferData(_pbos[1], width * height * bytes, 0, GL_STREAM_DRAW);
 }
 
 /*************/

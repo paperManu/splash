@@ -85,12 +85,11 @@ void Camera::init()
 
     // Intialize FBO, textures and everything OpenGL
     glGetError();
-    glGenFramebuffers(1, &_fbo);
+    glCreateFramebuffers(1, &_fbo);
 
-    setOutputNbr(1);
+    setupFBO();
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_DRAW_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
     {
         Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
@@ -98,8 +97,6 @@ void Camera::init()
     }
     else
         Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     GLenum error = glGetError();
     if (error)
@@ -183,7 +180,7 @@ void Camera::computeVertexVisibility()
 
     // Update the vertices visibility based on the result
     glActiveTexture(GL_TEXTURE0);
-    _outTextures[0]->bind();
+    _outTexture->bind();
     primitiveIdShift = 0;
     for (auto& o : _objects)
     {
@@ -194,7 +191,7 @@ void Camera::computeVertexVisibility()
         obj->transferVisibilityFromTexToAttr(_width, _height, primitiveIdShift);
         primitiveIdShift += obj->getVerticesNumber() / 3;
     }
-    _outTextures[0]->unbind();
+    _outTexture->unbind();
 }
 
 /*************/
@@ -587,25 +584,20 @@ void Camera::render()
         _newHeight = 0;
     }
 
-    ImageBufferSpec spec = _outTextures[0]->getSpec();
+    ImageBufferSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
-    if (_outTextures.size() < 1)
+    if (!_outTexture)
         return;
 
 #ifdef DEBUG
     glGetError();
 #endif
     glViewport(0, 0, _width, _height);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum fboBuffers[_outTextures.size()];
-    for (int i = 0; i < _outTextures.size(); ++i)
-        fboBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
-    glDrawBuffers(_outTextures.size(), fboBuffers);
     glEnable(GL_DEPTH_TEST);
 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     if (_drawFrame)
     {
         glClearColor(1.0, 0.5, 0.0, 1.0);
@@ -906,62 +898,41 @@ bool Camera::setCalibrationPoint(const Values& screenPoint)
 }
 
 /*************/
-void Camera::setOutputNbr(int nbr)
+void Camera::setupFBO()
 {
-    if (nbr < 1 || nbr == _outTextures.size())
-        return;
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-
     if (!_depthTexture)
     {
         _depthTexture = make_shared<Texture_Image>(_root, 512, 512, "D", nullptr);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depthTexture->getTexId(), 0);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
     }
 
-    if (nbr < _outTextures.size())
+    if (!_outTexture)
     {
-        for (int i = nbr; i < _outTextures.size(); ++i)
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
-
-        _outTextures.resize(nbr);
-    }
-    else
-    {
-        for (int i = _outTextures.size(); i < nbr; ++i)
-        {
-            auto texture = make_shared<Texture_Image>(_root);
-            texture->setAttribute("clampToEdge", {1});
-            texture->setAttribute("filtering", {0});
-            texture->reset(512, 512, "RGBA", nullptr);
-            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, texture->getTexId(), 0);
-            _outTextures.push_back(texture);
-        }
+        _outTexture = make_shared<Texture_Image>(_root);
+        _outTexture->setAttribute("clampToEdge", {1});
+        _outTexture->setAttribute("filtering", {0});
+        _outTexture->reset(512, 512, "RGBA", nullptr);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
     }
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
 }
 
 /*************/
 void Camera::updateColorDepth()
 {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    auto spec = _outTexture->getSpec();
 
-    for (int i = 0; i < _outTextures.size(); ++i)
-    {
-        auto spec = _outTextures[i]->getSpec();
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0);
-        if (_render16bits)
-            _outTextures[i]->reset(spec.width, spec.height, "RGBA16", nullptr);
-        else
-            _outTextures[i]->reset(spec.width, spec.height, "RGBA", nullptr);
-        glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, _outTextures[i]->getTexId(), 0);
-    }
+    if (_render16bits)
+        _outTexture->reset(spec.width, spec.height, "RGBA16", nullptr);
+    else
+        _outTexture->reset(spec.width, spec.height, "RGBA", nullptr);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+
     _updateColorDepth = false;
 }
 
@@ -974,13 +945,12 @@ void Camera::setOutputSize(int width, int height)
     _depthTexture->setResizable(1);
     _depthTexture->setAttribute("size", {width, height});
     _depthTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
 
-    for (auto tex : _outTextures)
-    {
-        tex->setResizable(1);
-        tex->setAttribute("size", {width, height});
-        tex->setResizable(_automaticResize);
-    }
+    _outTexture->setResizable(1);
+    _outTexture->setAttribute("size", {width, height});
+    _outTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
     _width = width;
     _height = height;

@@ -39,34 +39,7 @@ void Warp::init()
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    glGetError();
-    glGenFramebuffers(1, &_fbo);
-
-    setOutput();
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum _status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-        return;
-    }
-    else
-        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-
-    GLenum error = glGetError();
-    if (error)
-    {
-        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
-        _isInitialized = false;
-    }
-    else
-    {
-        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Warp correctly initialized" << Log::endl;
-        _isInitialized = true;
-    }
+    setupFBO();
 
     loadDefaultModels();
 }
@@ -108,16 +81,10 @@ bool Warp::linkTo(const std::shared_ptr<BaseObject>& obj)
     {
         auto camera = _inCamera.lock();
         if (camera)
-        {
-            auto textures = camera->getTextures();
-            for (auto& tex : textures)
-                _screen->removeTexture(tex);
-        }
+            _screen->removeTexture(camera->getTexture());
 
         camera = dynamic_pointer_cast<Camera>(obj);
-        auto textures = camera->getTextures();
-        for (auto& tex : textures)
-            _screen->addTexture(tex);
+        _screen->addTexture(camera->getTexture());
         _inCamera = camera;
 
         return true;
@@ -144,10 +111,7 @@ void Warp::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
 
             if (inCamera == camera)
             {
-                auto textures = camera->getTextures();
-                for (auto& tex : textures)
-                    _screen->removeTexture(tex);
-
+                _screen->removeTexture(camera->getTexture());
                 if (camera->getName() == inCamera->getName())
                     _inCamera.reset();
             }
@@ -164,22 +128,25 @@ void Warp::render()
         return;
 
     auto camera = _inCamera.lock();
-    auto input = camera->getTextures()[0];
+    auto input = camera->getTexture();
 
-    _outTextureSpec = input->getSpec();
-    _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
-    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
+    auto inputSpec = input->getSpec();
+    if (inputSpec != _outTextureSpec)
+    {
+        _outTextureSpec = inputSpec;
+        _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+        glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+    }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glDrawBuffers(1, fboBuffers);
-    glDisable(GL_DEPTH_TEST);
+    glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _screen->activate();
-    updateUniforms();
     _screen->draw();
     _screen->deactivate();
 
@@ -189,7 +156,6 @@ void Warp::render()
         _screenMesh->switchMeshes(true);
 
         _screen->activate();
-        updateUniforms();
         _screen->draw();
         _screen->deactivate();
 
@@ -213,17 +179,11 @@ void Warp::render()
         }
     }
 
-    glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     _outTexture->generateMipmap();
 }
 
-/*************/
-void Warp::updateUniforms()
-{
-    auto shader = _screen->getShader();
-}
 /*************/
 int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 {
@@ -297,15 +257,25 @@ void Warp::loadDefaultModels()
 }
 
 /*************/
-void Warp::setOutput()
+void Warp::setupFBO()
 {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    if (glIsFramebuffer(_fbo) == GL_FALSE)
+        glCreateFramebuffers(1, &_fbo);
 
     _outTexture = make_shared<Texture_Image>(_root);
     _outTexture->reset(512, 512, "RGBA", nullptr);
-    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _outTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+    {
+        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
+        return;
+    }
+    else
+    {
+        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+    }
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
@@ -336,6 +306,7 @@ void Warp::registerAttributes()
             return v;
         });
     setAttributeDescription("patchControl", "Set the control points positions");
+    setAttributeSyncMethod("patchControl", AttributeFunctor::Sync::force_sync);
 
     addAttribute("patchResolution",
         [&](const Values& args) {
@@ -350,14 +321,16 @@ void Warp::registerAttributes()
             Values v;
             _screenMesh->getAttribute("patchResolution", v);
             return v;
-        });
+        },
+        {'n'});
     setAttributeDescription("patchResolution", "Set the Bezier patch final resolution");
 
     addAttribute("patchSize",
         [&](const Values& args) {
             if (!_screenMesh)
                 return false;
-            return _screenMesh->setAttribute("patchSize", args);
+            Values size = {min(8, args[0].as<int>()), min(8, args[1].as<int>())};
+            return _screenMesh->setAttribute("patchSize", size);
         },
         [&]() -> Values {
             if (!_screenMesh)
@@ -366,7 +339,8 @@ void Warp::registerAttributes()
             Values v;
             _screenMesh->getAttribute("patchSize", v);
             return v;
-        });
+        },
+        {'n', 'n'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     // Show the Bezier patch describing the warp

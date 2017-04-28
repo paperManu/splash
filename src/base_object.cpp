@@ -9,10 +9,29 @@ using namespace std;
 namespace Splash
 {
 
+/*************/
 AttributeFunctor& BaseObject::operator[](const string& attr)
 {
     auto attribFunction = _attribFunctions.find(attr);
     return attribFunction->second;
+}
+
+/*************/
+void BaseObject::linkToParent(BaseObject* obj)
+{
+    auto parentIt = find(_parents.begin(), _parents.end(), obj);
+    if (parentIt == _parents.end())
+        _parents.push_back(obj);
+    return;
+}
+
+/*************/
+void BaseObject::unlinkFromParent(BaseObject* obj)
+{
+    auto parentIt = find(_parents.begin(), _parents.end(), obj);
+    if (parentIt != _parents.end())
+        _parents.erase(parentIt);
+    return;
 }
 
 /*************/
@@ -30,6 +49,7 @@ bool BaseObject::linkTo(const shared_ptr<BaseObject>& obj)
     if (objectIt == _linkedObjects.end())
     {
         _linkedObjects.push_back(obj);
+        obj->linkToParent(this);
         return true;
     }
     return false;
@@ -48,7 +68,10 @@ void BaseObject::unlinkFrom(const shared_ptr<BaseObject>& obj)
     });
 
     if (objectIt != _linkedObjects.end())
+    {
         _linkedObjects.erase(objectIt);
+        obj->unlinkFromParent(this);
+    }
 }
 
 /*************/

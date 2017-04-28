@@ -73,7 +73,11 @@ class BaseObject
     /**
      * \brief Constructor.
      */
-    BaseObject(): _root(nullptr) { init(); }
+    BaseObject()
+        : _root(nullptr)
+    {
+        init();
+    }
 
     /**
      * \brief Constructor.
@@ -305,11 +309,12 @@ class BaseObject
     bool _savable{true}; //!< True if the object should be saved
 
   protected:
-    unsigned long _id{0};               //!< Internal ID of the object
-    std::string _type{"baseobject"};    //!< Internal type
-    Category _category{Category::MISC}; //!< Object category, updated by the factory
-    std::string _remoteType{""};        //!< When the object root is a Scene, this is the type of the corresponding object in the World
-    std::string _name{""};              //!< Object name
+    unsigned long _id{0};                //!< Internal ID of the object
+    std::string _type{"baseobject"};     //!< Internal type
+    Category _category{Category::MISC};  //!< Object category, updated by the factory
+    std::string _remoteType{""};         //!< When the object root is a Scene, this is the type of the corresponding object in the World
+    std::string _name{""};               //!< Object name
+    std::vector<BaseObject*> _parents{}; //!< Objects parents
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
     int _priorityShift{0};                            //!< Shift applied to rendering priority
@@ -346,6 +351,18 @@ class BaseObject
      */
     AttributeFunctor& addAttribute(
         const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
+
+    /**
+     * Inform that the given object is a parent
+     * \param obj Parent object
+     */
+    void linkToParent(BaseObject* obj);
+
+    /**
+     * Remove the given object as a parent
+     * \param obj Parent object
+     */
+    void unlinkFromParent(BaseObject* obj);
 
     /**
      * \brief Register new attributes

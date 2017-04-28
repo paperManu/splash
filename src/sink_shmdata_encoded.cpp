@@ -156,7 +156,7 @@ void Sink_Shmdata_Encoded::freeFFmpegObjects()
 }
 
 /*************/
-string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, const string& optionString, const string& codecName, AVCodecContext* ctx)
+string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, uint32_t framerate, const string& optionString, const string& codecName, AVCodecContext* ctx)
 {
     if (!ctx)
         return "video/x-raw";
@@ -181,7 +181,7 @@ string Sink_Shmdata_Encoded::generateCaps(const ImageBufferSpec& spec, const str
     }
 
     auto caps = "video/" + codec + ",stream-format=(string)byte_stream,alignment=(string)au,profile=(string)" + profile + ",width=(int)" + to_string(spec.width) + ",height=(int)" +
-                to_string(spec.height) + ",pixel-aspect-ratio=(fraction)1/1,framerate=(fraction)30/1";
+                to_string(spec.height) + ",pixel-aspect-ratio=(fraction)1/1,framerate=(fraction)" + to_string(framerate) + "/1";
 
     return caps;
 }
@@ -193,7 +193,7 @@ void Sink_Shmdata_Encoded::handlePixels(const char* pixels, const ImageBufferSpe
     if (!pixels || size == 0)
         return;
 
-    if (_resetEncoding || !_context || !_writer || spec != _previousSpec)
+    if (_resetEncoding || !_context || !_writer || spec != _previousSpec || _previousFramerate != _framerate)
     {
         _resetEncoding = false;
 
@@ -203,7 +203,7 @@ void Sink_Shmdata_Encoded::handlePixels(const char* pixels, const ImageBufferSpe
             return;
 
         // Reset shmdata writer
-        _caps = generateCaps(spec, _options, _codecName, _context);
+        _caps = generateCaps(spec, _framerate, _options, _codecName, _context);
         _writer.reset(nullptr);
         _writer.reset(new shmdata::Writer(_path, size, _caps, &_logger));
 

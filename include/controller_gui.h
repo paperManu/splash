@@ -190,7 +190,7 @@ class Gui : public ControllerObject
 
     GLuint _fbo{0};
     std::shared_ptr<Texture_Image> _depthTexture;
-    std::shared_ptr<Texture> _outTexture;
+    std::shared_ptr<Texture_Image> _outTexture;
     float _width{512}, _height{512};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
@@ -215,6 +215,7 @@ class Gui : public ControllerObject
     // Gui related attributes
     std::string _configurationPath;
     std::string _projectPath;
+    bool _mouseHoveringWindow{false};
     bool _isVisible{false};
     bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
     bool _wireframe{false};

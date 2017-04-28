@@ -62,6 +62,7 @@ class Sink_Shmdata_Encoded : public Sink
     Utils::ShmdataLogger _logger;
     std::unique_ptr<shmdata::Writer> _writer{nullptr};
     ImageBufferSpec _previousSpec{};
+    uint32_t _previousFramerate{0};
     bool _resetEncoding{false};
 
     // FFmpeg objects
@@ -100,12 +101,13 @@ class Sink_Shmdata_Encoded : public Sink
     /**
      * Generate the caps from the spec, the context and the options
      * \param spec Input image specifications
+     * \param framerate Expected framerate
      * \param optionString String of the options sent to the encoder
      * \param codecName Codec name
      * \param ctx FFmpeg codec context
      * \return Return a caps describing the output
      */
-    std::string generateCaps(const ImageBufferSpec& spec, const std::string& optionString, const std::string& codecName, AVCodecContext* ctx);
+    std::string generateCaps(const ImageBufferSpec& spec, uint32_t framerate, const std::string& optionString, const std::string& codecName, AVCodecContext* ctx);
 
     /**
      * Class to be implemented to copy the _mappedPixels somewhere

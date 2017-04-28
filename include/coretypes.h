@@ -35,6 +35,7 @@
 #define SPLASH_FILE_PROJECT "splashProject"
 
 #include <ostream>
+#include <execinfo.h>
 
 #include "./gl_window.h"
 #include "./log.h"

@@ -88,6 +88,7 @@ class Mesh_BezierPatch : public Mesh
 
     Patch _patch{};
     int _patchResolution{64};
+    std::mutex _patchMutex{};
 
     bool _patchUpdated{true};
     MeshContainer _bezierControl;

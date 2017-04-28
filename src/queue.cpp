@@ -16,9 +16,9 @@ namespace Splash
 /*************/
 Queue::Queue(RootObject* root)
     : BufferObject(root)
+    , _factory(make_unique<Factory>(_root))
 {
     _type = "queue";
-    _factory = make_unique<Factory>(_root);
 
     // This is used for getting documentation "offline"
     if (!_root)
