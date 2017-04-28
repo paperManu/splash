@@ -1,6 +1,18 @@
 Splash release notes
 ===================
 
+Splash 0.6.6 (2017-04-28)
+-------------------------
+Improvements:
+- Converted to OpenGL 4.5
+- Improved the file selector
+- Sinks now use framerate as a parameter (instead of period), shmdata sinks fill the caps with this parameter
+- Moving mouse over a window which does not hold the GUI does not move the mouse on the GUI window anymore
+
+Bug fixed:
+- Fixed warp jittery movement. Still some undesired visual glitches when editing warps
+- Fixed window fullscreen behavior
+
 Splash 0.6.4 (2017-04-13)
 -------------------------
 New features:
