@@ -32,7 +32,7 @@ bool hapDecodeFrame(void* in, unsigned int inSize, void* out, unsigned int outSi
     if (textureFormat == HapTextureFormat_RGB_DXT1)
         format = "RGB_DXT1";
     else if (textureFormat == HapTextureFormat_RGBA_DXT5)
-        format = "RGB_DXT5";
+        format = "RGBA_DXT5";
     else if (textureFormat == HapTextureFormat_YCoCg_DXT5)
         format = "YCoCg_DXT5";
     else
