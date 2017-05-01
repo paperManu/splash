@@ -130,7 +130,7 @@ With MacPorts, install the following packages:
 
 With Homebrew, install the following packages:
     
-    brew install libtool cmake git pkgconfig gstreamer1 python45 gsl zmq homebrew/versions/glfw3 glm portaudio ffmpeg snappy libgphoto2
+    brew install libtool cmake git pkgconfig gstreamer python3 gsl zeromq homebrew/versions/glfw3 glm portaudio ffmpeg snappy libgphoto2
 
 We then install Shmdata, which depends on GStreamer. Note that Shmdata is only needed if you want Splash to communicate with other Shmdata-compatible softwares. If you want to read video files or feed Splash through Syphon, you can skip this step.
 
