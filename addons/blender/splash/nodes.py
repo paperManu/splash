@@ -103,6 +103,9 @@ class SplashBaseNode(Node, SplashTreeNode):
     def exportProperties(self, exportPath):
         pass
 
+    def validate(self):
+        return True, ""
+
 
 class SplashCameraNode(SplashBaseNode):
     '''Splash Camera node'''
@@ -276,6 +279,12 @@ class SplashImageNode(SplashBaseNode):
     def update(self):
         pass
 
+    def validate(self):
+        if self.inputs['File'].default_value == "":
+            return False, "No object has been selected for node " + self.name
+        else:
+            return True, ""
+
 
 class SplashMeshNode(SplashBaseNode):
     '''Splash Mesh node'''
@@ -346,6 +355,15 @@ class SplashMeshNode(SplashBaseNode):
 
     def update(self):
         pass
+
+    def validate(self):
+        object_name = self.inputs['Object'].default_value
+        if object_name == "":
+            return False, "No object has been selected for node " + self.name
+        elif len(bpy.data.objects[object_name].data.uv_layers) == 0:
+            return False, "Object " + object_name + " does not have any UV coordinates"
+        else:
+            return True, ""
 
 
 class SplashObjectNode(SplashBaseNode):

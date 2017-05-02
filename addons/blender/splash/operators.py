@@ -340,7 +340,12 @@ class SplashExportNodeTree(Operator):
         for scene in connectedScenes:
             scene_list = {}
             node_links = []
-            self.parseTree(scene, scene_list, node_links, self.export_project)
+            tree_valid, tree_error = self.parseTree(scene, scene_list, node_links, self.export_project)
+            if not tree_valid:
+                message = "Splash tree exporting error: " + tree_error
+                print(message)
+                return {'CANCELLED'}
+            print(tree_error)
 
             self.scene_order.append(scene.name)
             self.scene_lists[scene.name] = scene_list
@@ -361,9 +366,14 @@ class SplashExportNodeTree(Operator):
             self.scene_order = [self.scene_order[0]]
             self.scene_lists = {masterSceneName : self.scene_lists[masterSceneName]}
 
-        return self.export(self.export_project)
+        self.export(self.export_project)
+        return {'FINISHED'}
 
     def parseTree(self, node, scene_list, node_links, export_project=False):
+        node_valid, node_error = node.validate()
+        if not node_valid:
+            return node_valid, node_error
+
         if not export_project or node.bl_idname in self.project_accepted_types:
             scene_list[node.name] = node
 
@@ -372,7 +382,11 @@ class SplashExportNodeTree(Operator):
             newLink = [connectedNode.name, node.name]
             if newLink not in node_links:
                 node_links.append([connectedNode.name, node.name])
-            self.parseTree(connectedNode, scene_list, node_links, export_project)
+            node_valid, node_error = self.parseTree(connectedNode, scene_list, node_links, export_project)
+            if not node_valid:
+                return node_valid, node_error
+
+        return True, "Splash tree parsing successful"
 
     def export(self, export_project=False):
         file = open(self.filepath, "w", encoding="utf8", newline="\n")
@@ -460,8 +474,6 @@ class SplashExportNodeTree(Operator):
 
         if not export_project:
             fw("}")
-
-        return {'FINISHED'}
 
     def invoke(self, context, event):
         self.filepath = os.path.splitext(bpy.data.filepath)[0] + ".json"
