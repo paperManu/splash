@@ -135,27 +135,28 @@ class RootObject : public BaseObject
     std::string _mediaPath{""};         //!< Default path to the medias
 
     std::unique_ptr<Factory> _factory; //!< Object factory
-
-    std::shared_ptr<Link> _link;                                           //!< Link object for communicatin between World and Scene
-    mutable std::recursive_mutex _objectsMutex;                            //!< Used in registration and unregistration of objects
-    std::atomic_bool _objectsCurrentlyUpdated{false};                      //!< Prevents modification of objects from multiple places at the same time
-    std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects; //!< Map of all the objects
+    std::shared_ptr<Link> _link;       //!< Link object for communicatin between World and Scene
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
-    std::condition_variable _answerCondition;
-    std::mutex _conditionMutex;
-    std::mutex _answerMutex;
+    std::condition_variable _answerCondition{};
+    std::mutex _conditionMutex{};
+    std::mutex _answerMutex{};
     std::string _answerExpected{""};
 
     // Condition variable for signaling a BufferObject update
-    std::condition_variable _bufferObjectUpdatedCondition;
-    std::mutex _bufferObjectUpdatedMutex;
+    std::condition_variable _bufferObjectUpdatedCondition{};
+    std::mutex _bufferObjectUpdatedMutex{};
+    Spinlock _bufferObjectSingleMutex{};
 
     // Tasks queue
-    std::recursive_mutex _taskMutex;
-    std::list<std::function<void()>> _taskQueue;
-    std::mutex _recurringTaskMutex;
-    std::map<std::string, std::function<void()>> _recurringTasks;
+    std::recursive_mutex _taskMutex{};
+    std::list<std::function<void()>> _taskQueue{};
+    std::mutex _recurringTaskMutex{};
+    std::map<std::string, std::function<void()>> _recurringTasks{};
+
+    mutable std::recursive_mutex _objectsMutex{};                            //!< Used in registration and unregistration of objects
+    std::atomic_bool _objectsCurrentlyUpdated{false};                        //!< Prevents modification of objects from multiple places at the same time
+    std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects{}; //!< Map of all the objects
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.

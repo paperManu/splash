@@ -114,6 +114,11 @@ void RootObject::setFromSerializedObject(const string& name, shared_ptr<Serializ
 /*************/
 void RootObject::signalBufferObjectUpdated()
 {
+    // Only a single buffer has to wave for update at a time
+    unique_lock<Spinlock> lockSingle(_bufferObjectSingleMutex, std::try_to_lock);
+    if (!lockSingle.owns_lock())
+        return;
+
     unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
     _bufferObjectUpdatedCondition.notify_all();
 }
