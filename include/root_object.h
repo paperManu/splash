@@ -60,7 +60,7 @@ class RootObject : public BaseObject
     /**
      * \brief Destructor
      */
-    virtual ~RootObject() override {}
+    virtual ~RootObject() override;
 
     /**
      * Create and return an object given its type and name
