@@ -297,7 +297,7 @@ class SplashStopSelected(Operator):
 
 
 class SplashExportNodeTree(Operator):
-    """Exports the Splash configuration or project (following the tree starting from this node)"""
+    """Exports Splash whole configuration, project (only geometry and image data), or 3D models"""
     bl_idname = "splash.export_node_tree"
     bl_label = "Exports the node tree"
 
@@ -309,7 +309,8 @@ class SplashExportNodeTree(Operator):
         )
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
-    export_project = BoolProperty(name='export_project')
+    export_project = BoolProperty(name='export_project', description='If True, the tree will contain only meshes and images data', default=False)
+    export_only_nodes = BoolProperty(name='export_only_nodes', description='If True, the tree is not exported, but nodes are evaluated anyway', default=False)
 
     world_node = None
     scene_order = []
@@ -350,6 +351,12 @@ class SplashExportNodeTree(Operator):
             self.scene_order.append(scene.name)
             self.scene_lists[scene.name] = scene_list
             self.node_links[scene.name] = node_links
+
+        # If we only wanted to export meshes, the previous loop did the job
+        if self.export_only_nodes is True:
+            for scene in self.scene_lists:
+                for node in self.scene_lists[scene]:
+                    self.scene_lists[scene][node].exportProperties(self.filepath)
 
         # Merge scenes info if exporting a project
         if self.export_project and len(self.scene_order) > 0:
