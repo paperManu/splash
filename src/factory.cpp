@@ -171,7 +171,7 @@ shared_ptr<BaseObject> Factory::create(const string& type)
     else
     {
         Log::get() << Log::WARNING << "Factory::" << __FUNCTION__ << " - Object type " << type << " does not exist" << Log::endl;
-        return {nullptr};
+        return shared_ptr<BaseObject>(nullptr);
     }
 }
 
@@ -388,7 +388,7 @@ void Factory::registerObjects()
     _objectBook["texture_syphon"] = Page(
         [&]() {
             if (!_isScene)
-                return { nullptr }
+                return shared_ptr<BaseObject>(nullptr);
             else
                 return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root));
         },
