@@ -12,3 +12,4 @@ def run():
     splash.set_object("image", "captureSize", [640, 480])
     sleep(1.0)
     splash.set_object("image", "doCapture", 0)
+    splash.set_global("replaceObject", ["image", "image", "object"])

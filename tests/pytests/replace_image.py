@@ -12,3 +12,4 @@ def run():
         sleep(1.0)
         splash.set_global("replaceObject", ["image", "image_ffmpeg", "object"])
         sleep(1.0)
+        splash.set_global("replaceObject", ["image", "image", "object"])
