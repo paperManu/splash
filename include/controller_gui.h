@@ -195,7 +195,8 @@ class Gui : public ControllerObject
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
     // GUI specific camera
-    std::shared_ptr<Camera> _guiCamera;
+    std::shared_ptr<Camera> _guiCamera{nullptr};
+    std::shared_ptr<Texture_Image> _splashLogo{nullptr};
 
     // ImGUI related attributes
     static GLuint _imFontTextureId;
@@ -220,6 +221,7 @@ class Gui : public ControllerObject
     bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
     bool _wireframe{false};
     bool _blendingActive{false};
+    bool _showAbout{false};
 
     /**
      * \brief Initialize ImGui
@@ -291,9 +293,19 @@ class Gui : public ControllerObject
     void loadConfiguration();
 
     /**
+     * Load the icon image
+     */
+    void loadIcon();
+
+    /**
      * \brief Load a partial configuration, which does not contain calibration or projection parameters
      */
     void loadProject();
+
+    /**
+     * Render the splash screen
+     */
+    void renderSplashScreen();
 
     /**
      * \brief Save the configuration to the specified file
