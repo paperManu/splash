@@ -3,6 +3,24 @@ Splash release notes
 
 Splash 0.6.6 (2017-04-28)
 -------------------------
+New features:
+- Blender: World node can export only 3D models
+- Added uninstall target
+- Added a splash / about screen
+
+Improvements:
+- Can now set any display identifier
+- Improved buffer updated signaling
+
+Bug fixed:
+- Fixed issue with Hap and HapAlpha format
+- Partially fixed OSX installation instructions
+- Fixed a random freeze when exiting while a video is playing
+- Fixed throwing error at exit
+- Fixed clang compilation error on OSX
+
+Splash 0.6.6 (2017-04-28)
+-------------------------
 Improvements:
 - Converted to OpenGL 4.5
 - Improved the file selector

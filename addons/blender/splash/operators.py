@@ -297,7 +297,7 @@ class SplashStopSelected(Operator):
 
 
 class SplashExportNodeTree(Operator):
-    """Exports the Splash configuration or project (following the tree starting from this node)"""
+    """Exports Splash whole configuration, project (only geometry and image data), or 3D models"""
     bl_idname = "splash.export_node_tree"
     bl_label = "Exports the node tree"
 
@@ -309,7 +309,8 @@ class SplashExportNodeTree(Operator):
         )
 
     node_name = StringProperty(name='Node name', description='Name of the calling node', default='')
-    export_project = BoolProperty(name='export_project')
+    export_project = BoolProperty(name='export_project', description='If True, the tree will contain only meshes and images data', default=False)
+    export_only_nodes = BoolProperty(name='export_only_nodes', description='If True, the tree is not exported, but nodes are evaluated anyway', default=False)
 
     world_node = None
     scene_order = []
@@ -340,11 +341,22 @@ class SplashExportNodeTree(Operator):
         for scene in connectedScenes:
             scene_list = {}
             node_links = []
-            self.parseTree(scene, scene_list, node_links, self.export_project)
+            tree_valid, tree_error = self.parseTree(scene, scene_list, node_links, self.export_project)
+            if not tree_valid:
+                message = "Splash tree exporting error: " + tree_error
+                print(message)
+                return {'CANCELLED'}
+            print(tree_error)
 
             self.scene_order.append(scene.name)
             self.scene_lists[scene.name] = scene_list
             self.node_links[scene.name] = node_links
+
+        # If we only wanted to export meshes, the previous loop did the job
+        if self.export_only_nodes is True:
+            for scene in self.scene_lists:
+                for node in self.scene_lists[scene]:
+                    self.scene_lists[scene][node].exportProperties(self.filepath)
 
         # Merge scenes info if exporting a project
         if self.export_project and len(self.scene_order) > 0:
@@ -361,9 +373,14 @@ class SplashExportNodeTree(Operator):
             self.scene_order = [self.scene_order[0]]
             self.scene_lists = {masterSceneName : self.scene_lists[masterSceneName]}
 
-        return self.export(self.export_project)
+        self.export(self.export_project)
+        return {'FINISHED'}
 
     def parseTree(self, node, scene_list, node_links, export_project=False):
+        node_valid, node_error = node.validate()
+        if not node_valid:
+            return node_valid, node_error
+
         if not export_project or node.bl_idname in self.project_accepted_types:
             scene_list[node.name] = node
 
@@ -372,7 +389,11 @@ class SplashExportNodeTree(Operator):
             newLink = [connectedNode.name, node.name]
             if newLink not in node_links:
                 node_links.append([connectedNode.name, node.name])
-            self.parseTree(connectedNode, scene_list, node_links, export_project)
+            node_valid, node_error = self.parseTree(connectedNode, scene_list, node_links, export_project)
+            if not node_valid:
+                return node_valid, node_error
+
+        return True, "Splash tree parsing successful"
 
     def export(self, export_project=False):
         file = open(self.filepath, "w", encoding="utf8", newline="\n")
@@ -460,8 +481,6 @@ class SplashExportNodeTree(Operator):
 
         if not export_project:
             fw("}")
-
-        return {'FINISHED'}
 
     def invoke(self, context, event):
         self.filepath = os.path.splitext(bpy.data.filepath)[0] + ".json"

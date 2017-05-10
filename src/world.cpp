@@ -3,6 +3,7 @@
 #include <chrono>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
+#include <regex>
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -229,16 +230,30 @@ void World::applyConfig()
                 if (jsScenes[i].isMember("spawn"))
                     spawn = jsScenes[i]["spawn"].asInt();
 
-                string display = "DISPLAY=:0.";
+                string display{""};
 #if HAVE_LINUX
+                auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
+                auto regDisplayInt = regex("[0-9]", regex_constants::extended);
+                smatch match;
+
+                display = "DISPLAY=:0.0";
                 if (jsScenes[i].isMember("display"))
-                    display += to_string(jsScenes[i]["display"].asInt());
-                else
-                    display += to_string(0);
-#endif
+                {
+                    auto displayParameter = jsScenes[i]["display"].asString();
+                    if (regex_match(displayParameter, match, regDisplayFull))
+                        display = "DISPLAY=" + displayParameter;
+                    else if (regex_match(displayParameter, match, regDisplayInt))
+                        display = "DISPLAY=:0." + displayParameter;
+                }
 
                 if (!_forcedDisplay.empty())
-                    display = "DISPLAY=:0." + _forcedDisplay;
+                {
+                    if (regex_match(_forcedDisplay, match, regDisplayFull))
+                        display = "DISPLAY=" + _forcedDisplay;
+                    else if (regex_match(_forcedDisplay, match, regDisplayInt))
+                        display = "DISPLAY=:0." + _forcedDisplay;
+                }
+#endif
 
                 string name = jsScenes[i]["name"].asString();
                 int pid = -1;
@@ -1097,29 +1112,23 @@ void World::parseArguments(int argc, char** argv)
 #if HAVE_LINUX
         else if (string(argv[idx]) == "-D" || string(argv[idx]) == "--forceDisplay")
         {
-            if (idx + 1 >= argc)
-            {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx]) << ": argument expects a positive integer" << Log::endl;
-                exit(0);
-            }
+            auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
+            auto regDisplayInt = regex("[0-9]", regex_constants::extended);
+            smatch match;
 
             _forcedDisplay = string(argv[idx + 1]);
-
-            try
+            if (regex_match(_forcedDisplay, match, regDisplayFull))
             {
-                if (stoi(_forcedDisplay) < 0)
-                {
-                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx]) << ": argument expects a positive integer" << Log::endl;
-                    exit(0);
-                }
-                else
-                {
-                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to 0." << _forcedDisplay << Log::endl;
-                }
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to " << _forcedDisplay << Log::endl;
             }
-            catch (...)
+            else if (regex_match(_forcedDisplay, match, regDisplayInt))
             {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx]) << ": argument expects a positive integer" << Log::endl;
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to :0." << _forcedDisplay << Log::endl;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx])
+                           << ": argument expects a positive integer, or a string in the form of \":x.y\"" << Log::endl;
                 exit(0);
             }
 

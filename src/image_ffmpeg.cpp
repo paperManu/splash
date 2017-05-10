@@ -411,11 +411,17 @@ void Image_FFmpeg::readLoop()
                         // We set the size so as to have just enough place for the given texture format
                         ImageBufferSpec spec;
                         if (textureFormat == "RGB_DXT1")
+                        {
                             spec = ImageBufferSpec(videoCodecContext->width, (int)(ceil((float)videoCodecContext->height / 2.f)), 1, 8, ImageBufferSpec::Type::UINT8);
-                        if (textureFormat == "RGBA_DXT5")
+                        }
+                        else if (textureFormat == "RGBA_DXT5")
+                        {
                             spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, 8, ImageBufferSpec::Type::UINT8);
-                        if (textureFormat == "YCoCg_DXT5")
+                        }
+                        else if (textureFormat == "YCoCg_DXT5")
+                        {
                             spec = ImageBufferSpec(videoCodecContext->width, videoCodecContext->height, 1, 8, ImageBufferSpec::Type::UINT8);
+                        }
                         else
                         {
                             av_packet_unref(&packet);
