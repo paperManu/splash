@@ -214,11 +214,6 @@ class Scene : public RootObject
     void setAsMaster(const std::string& configFilePath = "");
 
     /**
-     * \brief Give a special behavior to the scene, making it the main window of the World
-     */
-    void setAsWorldScene();
-
-    /**
      * \brief Set a message to be sent to the world
      * \param message Message type to send, which should correspond to a World attribute
      * \param value Message content
