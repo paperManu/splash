@@ -1009,7 +1009,7 @@ void Gui::initImGui(int width, int height)
 }
 
 /*************/
-const char* Gui::getClipboardText()
+const char* Gui::getClipboardText(void* userData)
 {
     if (_glfwWindow)
         return glfwGetClipboardString(_glfwWindow);
@@ -1018,7 +1018,7 @@ const char* Gui::getClipboardText()
 }
 
 /*************/
-void Gui::setClipboardText(const char* text)
+void Gui::setClipboardText(void* userData, const char* text)
 {
     if (_glfwWindow)
         glfwSetClipboardString(_glfwWindow, text);
