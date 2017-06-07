@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <getopt.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <regex>
 #include <spawn.h>
@@ -33,9 +34,9 @@ World* World::_that;
 /*************/
 World::World(int argc, char** argv)
 {
-    init();
-
     parseArguments(argc, argv);
+
+    init();
 }
 
 /*************/
@@ -276,7 +277,7 @@ void World::applyConfig()
                     if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
                     {
                         Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
-                        _innerScene = make_shared<Scene>(name);
+                        _innerScene = make_shared<Scene>(name, _linkSocketPrefix);
                         _innerSceneThread = thread([&]() { _innerScene->run(); });
                     }
                     else
@@ -293,9 +294,17 @@ void World::applyConfig()
                         string timer = Timer::get().isDebug() ? "-t" : "";
                         string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
-                        char* argv[] = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str(), (char*)name.c_str(), NULL};
-                        char* env[] = {(char*)display.c_str(), (char*)xauth.c_str(), NULL};
-                        int status = posix_spawn(&pid, cmd.c_str(), NULL, NULL, argv, env);
+                        vector<char*> argv = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str()};
+                        if (!_linkSocketPrefix.empty())
+                        {
+                            argv.push_back((char*)"--prefix");
+                            argv.push_back(const_cast<char*>(_linkSocketPrefix.c_str()));
+                        }
+                        argv.push_back((char*)name.c_str());
+                        argv.push_back(nullptr);
+                        vector<char*> env = {(char*)display.c_str(), (char*)xauth.c_str(), nullptr};
+
+                        int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
                         if (status != 0)
                             Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
                     }
@@ -782,6 +791,8 @@ void World::init()
     sigaction(SIGINT, &_signals, NULL);
     sigaction(SIGTERM, &_signals, NULL);
 
+    if (_linkSocketPrefix.empty())
+        _linkSocketPrefix = to_string(static_cast<int>(getpid()));
     _link = make_shared<Link>(this, _name);
 
     registerAttributes();
@@ -1093,59 +1104,37 @@ void World::parseArguments(int argc, char** argv)
     _executionPath = Utils::getPathFromExecutablePath(executable);
 
     // Parse the other args
-    int idx = 1;
     string filename = string(DATADIR) + "splash.json";
     bool defaultFile = true;
-    while (idx < argc)
+
+    while (true)
     {
-        if ((string(argv[idx]) == "-o" || string(argv[idx]) == "--open") && idx + 1 < argc)
-        {
-            defaultFile = false;
-            filename = string(argv[idx + 1]);
-            idx += 2;
-        }
-        else if (string(argv[idx]) == "-d" || string(argv[idx]) == "--debug")
-        {
-            Log::get().setVerbosity(Log::DEBUGGING);
-            idx++;
-        }
+        static struct option longOptions[] = {
+            {"debug", no_argument, 0, 'd'},
 #if HAVE_LINUX
-        else if (string(argv[idx]) == "-D" || string(argv[idx]) == "--forceDisplay")
-        {
-            auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
-            auto regDisplayInt = regex("[0-9]", regex_constants::extended);
-            smatch match;
-
-            _forcedDisplay = string(argv[idx + 1]);
-            if (regex_match(_forcedDisplay, match, regDisplayFull))
-            {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to " << _forcedDisplay << Log::endl;
-            }
-            else if (regex_match(_forcedDisplay, match, regDisplayInt))
-            {
-                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to :0." << _forcedDisplay << Log::endl;
-            }
-            else
-            {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(argv[idx])
-                           << ": argument expects a positive integer, or a string in the form of \":x.y\"" << Log::endl;
-                exit(0);
-            }
-
-            idx += 2;
-        }
+            {"forceDisplay", required_argument, 0, 'D'},
 #endif
-        else if (string(argv[idx]) == "-t" || string(argv[idx]) == "--timer")
+            {"help", no_argument, 0, 'h'},
+            {"hide", no_argument, 0, 'H'},
+            {"info", no_argument, 0, 'i'},
+            {"log2file", no_argument, 0, 'l'},
+            {"open", required_argument, 0, 'o'},
+            {"prefix", required_argument, 0, 'p'},
+            {"silent", no_argument, 0, 's'},
+            {"timer", no_argument, 0, 't'},
+            {0, 0, 0, 0}
+        };
+
+        int optionIndex = 0;
+        auto ret = getopt_long(argc, argv, "dD:hHilo:p:st", longOptions, &optionIndex);
+
+        if (ret == -1)
+            break;
+
+        switch (ret)
         {
-            Timer::get().setDebug(true);
-            idx++;
-        }
-        else if (string(argv[idx]) == "-s" || string(argv[idx]) == "--silent")
-        {
-            Log::get().setVerbosity(Log::NONE);
-            idx++;
-        }
-        else if (string(argv[idx]) == "-h" || string(argv[idx]) == "--help")
+        default:
+        case 'h':
         {
             cout << "Basic usage: splash [config.json]" << endl;
             cout << "Options:" << endl;
@@ -1159,37 +1148,85 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
             cout << "\t-H (--hide) : run Splash in background" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
+            cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
             cout << endl;
             exit(0);
+            break;
         }
-        else if (string(argv[idx]) == "-H" || string(argv[idx]) == "--hide")
+        case 'd':
+        {
+            Log::get().setVerbosity(Log::DEBUGGING);
+            break;
+        }
+        case 'D':
+        {
+            auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
+            auto regDisplayInt = regex("[0-9]", regex_constants::extended);
+            smatch match;
+
+            _forcedDisplay = string(optarg);
+            if (regex_match(_forcedDisplay, match, regDisplayFull))
+            {
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to " << _forcedDisplay << Log::endl;
+            }
+            else if (regex_match(_forcedDisplay, match, regDisplayInt))
+            {
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display forced to :0." << _forcedDisplay << Log::endl;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg)
+                           << ": argument expects a positive integer, or a string in the form of \":x.y\"" << Log::endl;
+                exit(0);
+            }
+            break;
+        }
+        case 'H':
         {
             _runInBackground = true;
-            idx++;
+            break;
         }
-        else if (string(argv[idx]) == "-i" || string(argv[idx]) == "--info")
+        case 'i':
         {
             auto descriptions = getObjectsAttributesDescriptions();
             cout << descriptions << endl;
             exit(0);
+            break;
         }
-        else if (string(argv[idx]) == "-l" || string(argv[idx]) == "--log2file")
+        case 'l':
         {
-            // Called twice, once for the world, once to tell the Scenes to save log too
             setAttribute("logToFile", {1});
             addTask([&]() { setAttribute("logToFile", {1}); });
-            idx++;
+            break;
         }
-        else if (defaultFile)
+        case 'o':
         {
-            filename = string(argv[idx]);
             defaultFile = false;
-            idx++;
+            filename = string(optarg);
+            break;
         }
-        else
+        case 'p':
         {
-            idx++;
+            _linkSocketPrefix = string(optarg);
+            break;
         }
+        case 's':
+        {
+            Log::get().setVerbosity(Log::NONE);
+            break;
+        }
+        case 't':
+        {
+            Timer::get().setDebug(true);
+            break;
+        }
+        }
+    }
+
+    if (optind < argc)
+    {
+        filename = string(argv[argc - 1]);
+        defaultFile = false;
     }
 
     if (defaultFile)

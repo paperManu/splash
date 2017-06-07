@@ -84,6 +84,12 @@ class RootObject : public BaseObject
     std::shared_ptr<BaseObject> getObject(const std::string& name);
 
     /**
+     * Get the socket prefix
+     * \return Return the socket prefx
+     */
+    std::string getSocketPrefix() const { return _linkSocketPrefix; }
+
+    /**
      * \brief Get the configuration path
      * \return Return the configuration path
      */
@@ -136,6 +142,7 @@ class RootObject : public BaseObject
 
     std::unique_ptr<Factory> _factory; //!< Object factory
     std::shared_ptr<Link> _link;       //!< Link object for communicatin between World and Scene
+    std::string _linkSocketPrefix{""}; //!< Prefix to add to shared memory socket paths
 
     Values _lastAnswerReceived{}; //!< Holds the last answer received through the link
     std::condition_variable _answerCondition{};

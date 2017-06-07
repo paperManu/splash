@@ -61,13 +61,14 @@ bool Scene::getHasNVSwapGroup()
 }
 
 /*************/
-Scene::Scene(const std::string& name)
+Scene::Scene(const string& name, const string& socketPrefix)
 {
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
     _type = "scene";
     _isRunning = true;
     _name = name;
+    _linkSocketPrefix = socketPrefix;
 
     _blender = make_shared<Blender>(this);
     if (_blender)
@@ -102,6 +103,8 @@ Scene::~Scene()
     _ghostObjects.clear();
 
     _mainWindow->releaseContext();
+
+    _link->disconnectFrom("world");
 
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
 }

@@ -121,7 +121,8 @@ class Link
 
   private:
     RootObject* _rootObject;
-    std::string _name;
+    std::string _basePath{""};
+    std::string _name{""};
     std::shared_ptr<zmq::context_t> _context;
     Spinlock _msgSendMutex;
     Spinlock _bufferSendMutex;
