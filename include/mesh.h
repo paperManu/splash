@@ -147,7 +147,7 @@ class Mesh : public BufferObject
      * \brief Create a plane mesh, subdivided according to the parameter
      * \param subdiv Number of subdivision for the plane
      */
-    void createDefaultMesh(int subdiv = 8);
+    void createDefaultMesh(int subdiv = 0);
 };
 
 } // end of namespace

@@ -172,17 +172,12 @@ void Filter::render()
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
-    glDisable(GL_DEPTH_TEST);
-
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _screen->activate();
     updateUniforms();
     _screen->draw();
     _screen->deactivate();
 
-    glDisable(GL_DEPTH_TEST);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     _outTexture->generateMipmap();

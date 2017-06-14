@@ -750,8 +750,8 @@ void Camera::render()
         _drawables.clear();
     }
 
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_SCISSOR_TEST);
+    if (_drawFrame)
+        glDisable(GL_SCISSOR_TEST);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 

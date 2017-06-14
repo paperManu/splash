@@ -762,13 +762,16 @@ void Gui::render()
     io.DeltaTime = static_cast<float>(currentTime - time);
     time = currentTime;
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
-    glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui::Render();
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glDisable(GL_DEPTH_TEST);
+    if (_isVisible || _showAbout || _wasVisible)
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        if (_isVisible || _showAbout)
+            ImGui::Render();
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    }
 
     _outTexture->generateMipmap();
 
@@ -1250,7 +1253,6 @@ void Gui::imGuiRenderDrawLists(ImDrawData* draw_data)
     glBindTexture(GL_TEXTURE_2D, 0);
 
     glDisable(GL_SCISSOR_TEST);
-    glEnable(GL_DEPTH_TEST);
     glDisable(GL_BLEND);
 }
 
