@@ -306,7 +306,6 @@ void Warp::registerAttributes()
             return v;
         });
     setAttributeDescription("patchControl", "Set the control points positions");
-    setAttributeSyncMethod("patchControl", AttributeFunctor::Sync::force_sync);
 
     addAttribute("patchResolution",
         [&](const Values& args) {
