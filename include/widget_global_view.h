@@ -53,6 +53,7 @@ class GuiGlobalView : public GuiWidget
     bool _noMove{false};
 
     bool _hideCameras{false};
+    bool _showCalibrationPoints{true};
     bool _camerasColorized{false};
     bool _camerasColorizedPreviousValue{false};
 
@@ -110,7 +111,7 @@ class GuiGlobalView : public GuiWidget
 
     void nextCamera();
     void revertCalibration();
-    void showAllCalibrationPoints();
+    void showAllCalibrationPoints(Camera::CalibrationPointsVisibility showPoints = Camera::CalibrationPointsVisibility::switchVisibility);
     void showAllCamerasCalibrationPoints();
 
     // Other

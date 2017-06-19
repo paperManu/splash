@@ -52,6 +52,13 @@ namespace Splash
 class Camera : public BaseObject
 {
   public:
+    enum CalibrationPointsVisibility
+    {
+        switchVisibility = -1,
+        viewSelectedOnly = 0,
+        viewAll = 1
+    };
+
     /**
      * \brief Constructor
      * \param root Root object
@@ -273,7 +280,7 @@ class Camera : public BaseObject
     bool _calibrationCalledOnce{false};
     bool _displayCalibration{false};
     bool _displayAllCalibrations{false};
-    bool _showAllCalibrationPoints{false};
+    bool _showAllCalibrationPoints{true};
     struct CalibrationPoint
     {
         CalibrationPoint() {}
