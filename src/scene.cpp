@@ -70,6 +70,8 @@ Scene::Scene(const string& name, const string& socketPrefix)
     _name = name;
     _linkSocketPrefix = socketPrefix;
 
+    // We have to reset the factory to create a Scene factory
+    _factory.reset(new Factory(this));
     _blender = make_shared<Blender>(this);
     if (_blender)
     {
@@ -584,8 +586,6 @@ void Scene::setAsMaster(const string& configFilePath)
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     _isMaster = true;
-    // We have to reset the factory to reflect this change
-    _factory.reset(new Factory(this));
 
     _gui = make_shared<Gui>(_mainWindow, this);
     if (_gui)
