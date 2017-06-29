@@ -33,8 +33,12 @@ Link::Link(RootObject* root, const string& name)
             Log::get() << Log::WARNING << "Link::" << __FUNCTION__ << " - Exception: " << e.what() << Log::endl;
     }
 
-    _bufferInThread = thread([&]() { handleInputBuffers(); });
+    auto socketPrefix = _rootObject->getSocketPrefix();
+    _basePath = "ipc:///tmp/splash_";
+    if (!socketPrefix.empty())
+        _basePath += socketPrefix + string("_");
 
+    _bufferInThread = thread([&]() { handleInputBuffers(); });
     _messageInThread = thread([&]() { handleInputMessages(); });
 }
 
@@ -76,8 +80,8 @@ void Link::connectTo(const string& name)
         _socketBufferOut->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
 
         // TODO: for now, all connections are through IPC.
-        _socketMessageOut->connect((string("ipc:///tmp/splash_msg_") + name).c_str());
-        _socketBufferOut->connect((string("ipc:///tmp/splash_buf_") + name).c_str());
+        _socketMessageOut->connect((_basePath + "msg_" + name).c_str());
+        _socketBufferOut->connect((_basePath + "buf_" + name).c_str());
     }
     catch (const zmq::error_t& e)
     {
@@ -122,8 +126,8 @@ void Link::disconnectFrom(const std::string& name)
         try
         {
             _connectedTargets.erase(targetIt);
-            _socketMessageOut->disconnect((string("ipc:///tmp/splash_msg_") + name).c_str());
-            _socketBufferOut->disconnect((string("ipc:///tmp/splash_msg_") + name).c_str());
+            _socketMessageOut->disconnect((_basePath + "msg_" + name).c_str());
+            _socketBufferOut->disconnect((_basePath + "buf_" + name).c_str());
         }
         catch (const zmq::error_t& e)
         {
@@ -333,7 +337,7 @@ void Link::handleInputMessages()
         int hwm = 1000;
         _socketMessageIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
-        _socketMessageIn->bind((string("ipc:///tmp/splash_msg_") + _name).c_str());
+        _socketMessageIn->bind((_basePath + "msg_" + _name).c_str());
         _socketMessageIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         // Helper function to receive messages
@@ -401,7 +405,7 @@ void Link::handleInputBuffers()
         int hwm = 1;
         _socketBufferIn->setsockopt(ZMQ_RCVHWM, &hwm, sizeof(hwm));
 
-        _socketBufferIn->bind((string("ipc:///tmp/splash_buf_") + _name).c_str());
+        _socketBufferIn->bind((_basePath + "buf_" + _name).c_str());
         _socketBufferIn->setsockopt(ZMQ_SUBSCRIBE, NULL, 0); // We subscribe to all incoming messages
 
         while (true)

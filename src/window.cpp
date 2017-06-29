@@ -311,8 +311,8 @@ void Window::render()
     glGetError();
 #endif
 
-    glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
+    glDisable(GL_DEPTH_TEST);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -382,7 +382,6 @@ void Window::render()
 #endif
 
     glDisable(GL_BLEND);
-    glDisable(GL_DEPTH_TEST);
     glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
@@ -440,20 +439,19 @@ void Window::swapBuffers()
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-    glFlush();
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer
     auto windowIndex = _swappableWindowsCount.fetch_add(1);
 
 // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
-#if HAVE_OSX
-    glDrawBuffer(GL_BACK);
-#else
-    auto drawBuffer = GL_BACK;
+#if not HAVE_OSX
+    bool drawToFront = false;
     if (!Scene::getHasNVSwapGroup() && windowIndex != 0)
-        drawBuffer = GL_FRONT;
-    glDrawBuffer(drawBuffer);
+    {
+        drawToFront = true;
+        glDrawBuffer(GL_FRONT);
+    }
 #endif
 
     glBlitNamedFramebuffer(_readFbo, 0, 0, 0, _windowRect[2], _windowRect[3], 0, 0, _windowRect[2], _windowRect[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -466,6 +464,9 @@ void Window::swapBuffers()
     else if (windowIndex == 0)
         glfwSwapBuffers(_window->get());
 #endif
+
+    if (drawToFront)
+        glDrawBuffer(GL_BACK);
 
     _window->releaseContext();
 }

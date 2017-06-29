@@ -61,14 +61,17 @@ bool Scene::getHasNVSwapGroup()
 }
 
 /*************/
-Scene::Scene(const std::string& name)
+Scene::Scene(const string& name, const string& socketPrefix)
 {
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
     _type = "scene";
     _isRunning = true;
     _name = name;
+    _linkSocketPrefix = socketPrefix;
 
+    // We have to reset the factory to create a Scene factory
+    _factory.reset(new Factory(this));
     _blender = make_shared<Blender>(this);
     if (_blender)
     {
@@ -103,6 +106,8 @@ Scene::~Scene()
 
     _mainWindow->releaseContext();
 
+    _link->disconnectFrom("world");
+
     Log::get() << Log::DEBUGGING << "Scene::~Scene - Destructor" << Log::endl;
 }
 
@@ -123,11 +128,7 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
         return {};
 
     // Create the wanted object
-    if (!_mainWindow->setAsCurrentContext())
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
-
     auto obj = _factory->create(type);
-    _mainWindow->releaseContext();
 
     // Add the object to the objects list
     if (obj.get() != nullptr)
@@ -294,9 +295,7 @@ bool Scene::link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-    glfwMakeContextCurrent(_mainWindow->get());
     bool result = second->linkTo(first);
-    glfwMakeContextCurrent(NULL);
 
     return result;
 }
@@ -323,9 +322,7 @@ void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_p
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-    glfwMakeContextCurrent(_mainWindow->get());
     second->unlinkFrom(first);
-    glfwMakeContextCurrent(NULL);
 }
 
 /*************/
@@ -486,6 +483,7 @@ void Scene::run()
 {
     _textureUploadFuture = async(std::launch::async, [&]() { textureUploadRun(); });
 
+    _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
         // Execute waiting tasks
@@ -498,19 +496,14 @@ void Scene::run()
         }
 
         Timer::get() << "sceneLoop";
-
-        {
-            _mainWindow->setAsCurrentContext();
-            render();
-            _mainWindow->releaseContext();
-        }
-
+        render();
         Timer::get() >> "sceneLoop";
 
         Timer::get() << "inputsUpdate";
         updateInputs();
         Timer::get() >> "inputsUpdate";
     }
+    _mainWindow->releaseContext();
 }
 
 /*************/
@@ -534,6 +527,7 @@ void Scene::updateInputs()
 /*************/
 void Scene::textureUploadRun()
 {
+    _textureUploadWindow->setAsCurrentContext();
     while (_isRunning)
     {
         if (!_started)
@@ -550,7 +544,6 @@ void Scene::textureUploadRun()
 
         unique_lock<Spinlock> lockTexture(_textureMutex);
 
-        _textureUploadWindow->setAsCurrentContext();
         if (glIsSync(_cameraDrawnFence) == GL_TRUE)
         {
             glWaitSync(_cameraDrawnFence, 0, GL_TIMEOUT_IGNORED);
@@ -582,9 +575,9 @@ void Scene::textureUploadRun()
                 texImage->flushPbo();
         }
 
-        _textureUploadWindow->releaseContext();
         Timer::get() >> "textureUpload";
     }
+    _textureUploadWindow->releaseContext();
 }
 
 /*************/
@@ -593,10 +586,7 @@ void Scene::setAsMaster(const string& configFilePath)
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     _isMaster = true;
-    // We have to reset the factory to reflect this change
-    _factory.reset(new Factory(this));
 
-    _mainWindow->setAsCurrentContext();
     _gui = make_shared<Gui>(_mainWindow, this);
     if (_gui)
     {
@@ -604,7 +594,6 @@ void Scene::setAsMaster(const string& configFilePath)
         _gui->setConfigFilePath(configFilePath);
         _objects["gui"] = _gui;
     }
-    _mainWindow->releaseContext();
 
     _keyboard = make_shared<Keyboard>(this);
     _mouse = make_shared<Mouse>(this);
@@ -626,20 +615,6 @@ void Scene::setAsMaster(const string& configFilePath)
     _colorCalibrator->setName("colorCalibrator");
     _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
 #endif
-}
-
-/*************/
-void Scene::setAsWorldScene()
-{
-    // First we create a single camera linked to a single window
-    add("camera", "_camera");
-    add("window", "_window");
-    link("_camera", "_window");
-
-    // Then we need to connect all Objects to the camera
-    lock_guard<recursive_mutex> lock(_objectsMutex);
-    for (auto& obj : _objects)
-        link(obj.first, "_camera");
 }
 
 /*************/
@@ -1131,10 +1106,12 @@ void Scene::registerAttributes()
     setAttributeDescription("setGhost", "Set a given object the given attribute");
 
     addAttribute("setMaster", [&](const Values& args) {
-        if (args.size() == 0)
-            setAsMaster();
-        else
-            setAsMaster(args[0].as<string>());
+        addTask([=]() {
+            if (args.empty())
+                setAsMaster();
+            else
+                setAsMaster(args[0].as<string>());
+        });
         return true;
     });
     setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");

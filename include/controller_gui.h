@@ -218,6 +218,7 @@ class Gui : public ControllerObject
     std::string _projectPath;
     bool _mouseHoveringWindow{false};
     bool _isVisible{false};
+    bool _wasVisible{true};
     bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
     bool _wireframe{false};
     bool _blendingActive{false};
@@ -269,13 +270,13 @@ class Gui : public ControllerObject
      * \brief Get the clipboard
      * \return Return a pointer to the text
      */
-    static const char* getClipboardText();
+    static const char* getClipboardText(void* userData);
 
     /**
      * \brief Set the clipboard
      * \param text Text to set the clipboard to
      */
-    static void setClipboardText(const char* text);
+    static void setClipboardText(void* userData, const char* text);
 
     /**
      * \brief Make the background flash to light grey

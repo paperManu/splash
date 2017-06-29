@@ -750,8 +750,8 @@ void Camera::render()
         _drawables.clear();
     }
 
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_SCISSOR_TEST);
+    if (_drawFrame)
+        glDisable(GL_SCISSOR_TEST);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
@@ -1616,11 +1616,17 @@ void Camera::registerAttributes()
         {'n'});
     setAttributeDescription("displayAllCalibrations", "If set to 1, display all calibration points from other cameras");
 
-    addAttribute("switchShowAllCalibrationPoints", [&](const Values& args) {
-        _showAllCalibrationPoints = !_showAllCalibrationPoints;
+    addAttribute("showAllCalibrationPoints", [&](const Values& args) {
+        auto state = args[0].as<int>();
+        if (state == CalibrationPointsVisibility::viewSelectedOnly)
+            _showAllCalibrationPoints = false;
+        else if (state == CalibrationPointsVisibility::viewAll)
+            _showAllCalibrationPoints = true;
+        else
+            _showAllCalibrationPoints = !_showAllCalibrationPoints;
         return true;
-    });
-    setAttributeDescription("switchShowAllCalibrationPoints", "Switch whether to show all calibration points");
+    }, {'n'});
+    setAttributeDescription("showAllCalibrationPoints", "Switch whether to show all calibration points");
 
     addAttribute("switchDisplayAllCalibration", [&](const Values& args) {
         _displayAllCalibrations = !_displayAllCalibrations;

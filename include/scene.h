@@ -65,7 +65,7 @@ class Scene : public RootObject
      * \param name Scene name
      * \param autoRun If true, the Scene will start without waiting for a start message from the World
      */
-    Scene(const std::string& name = "Splash");
+    Scene(const std::string& name = "Splash", const std::string& socketPrefix = "");
 
     /**
      * \brief Destructor
@@ -212,11 +212,6 @@ class Scene : public RootObject
      * \param configFilePath File path for the loaded configuration
      */
     void setAsMaster(const std::string& configFilePath = "");
-
-    /**
-     * \brief Give a special behavior to the scene, making it the main window of the World
-     */
-    void setAsWorldScene();
 
     /**
      * \brief Set a message to be sent to the world

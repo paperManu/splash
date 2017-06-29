@@ -208,6 +208,7 @@ void Sink_Shmdata_Encoded::handlePixels(const char* pixels, const ImageBufferSpe
         _writer.reset(new shmdata::Writer(_path, size, _caps, &_logger));
 
         _previousSpec = spec;
+        _previousFramerate = _framerate;
     }
 
     // Encoding

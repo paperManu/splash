@@ -68,9 +68,8 @@ void GuiGlobalView::render()
             ImGui::SetTooltip("Hide all but the selected camera\n(H while hovering the view)");
         ImGui::SameLine();
 
-        static bool showCalibrationPoints = false;
-        if (ImGui::Checkbox("Show targets", &showCalibrationPoints))
-            showAllCalibrationPoints();
+        if (ImGui::Checkbox("Show targets", &_showCalibrationPoints))
+            showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Show the target positions for the calibration points\n(A while hovering the view)");
         ImGui::SameLine();
@@ -129,6 +128,7 @@ void GuiGlobalView::render()
 
                     setObject(_camera->getName(), "frame", {1});
                     setObject(_camera->getName(), "displayCalibration", {1});
+                    showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
                 }
             }
 
@@ -288,9 +288,11 @@ void GuiGlobalView::revertCalibration()
 }
 
 /*************/
-void GuiGlobalView::showAllCalibrationPoints()
+void GuiGlobalView::showAllCalibrationPoints(Camera::CalibrationPointsVisibility showPoints)
 {
-    setObject(_camera->getName(), "switchShowAllCalibrationPoints", {});
+    if (showPoints == Camera::CalibrationPointsVisibility::switchVisibility)
+        _showCalibrationPoints = !_showCalibrationPoints;
+    setObject(_camera->getName(), "showAllCalibrationPoints", {static_cast<int>(showPoints)});
 }
 
 /*************/

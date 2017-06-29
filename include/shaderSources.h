@@ -891,15 +891,15 @@ struct ShaderSources
             if (_tex0_YUV > 0)
             {
                 // Texture coord rounded to the closer even pixel
-                vec2 yuyvCoords = vec2((round((realCoords.x * _tex0_size.x + 0.5) / 2.0) * 2.0 + 0.5) / _tex0_size.x, realCoords.y);
+                ivec2 yuyvCoords = ivec2((int(realCoords.x * _tex0_size.x) / 2) * 2, int(realCoords.y * _tex0_size.y));
                 vec4 yuyv;
-                yuyv.rg = texture(_tex0, yuyvCoords).rg;
-                yuyv.ba = texture(_tex0, vec2(yuyvCoords.x + 1.0 / _tex0_size.x, yuyvCoords.y)).rg;
+                yuyv.rg = texelFetch(_tex0, yuyvCoords, 0).rg;
+                yuyv.ba = texelFetch(_tex0, ivec2(yuyvCoords.x + 1, yuyvCoords.y), 0).rg;
 
                 if (_tex0_YUV == 1)
                     yuyv = yuyv.grab;
 
-                if (realCoords.x - yuyvCoords.x < 1.0) // Even pixel
+                if (int(realCoords.x * _tex0_size.x) - (yuyvCoords.x / 2) * 2 == 0) // Even pixel
                     color.rgb = yuv2rgb(yuyv.rga);
                 else // Odd pixel
                     color.rgb = yuv2rgb(yuyv.bga);

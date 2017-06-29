@@ -1,7 +1,25 @@
 Splash release notes
 ===================
 
-Splash 0.6.6 (2017-04-28)
+Splash 0.7.0 (2017-06-29)
+-------------------------
+New features:
+- Added --prefix option, to add a prefix to shared memories
+
+Improvements:
+- Updated ImGui version
+- Cleaned up OpenGL context switching
+- Added video codecs integration tests
+- GL cleanup - removed non useful state changes
+- Calibration points targets are now shown by default
+
+Bug fixed:
+- Fixed issue with Sink_Shmdata_Encoded reconnecting ad vitam
+- Fixed warp rednering jitter when editing control points
+- Fixed a multi-GPU issue
+- Fixed GLSL YUV to RGB conversion
+
+Splash 0.6.8 (2017-04-28)
 -------------------------
 New features:
 - Blender: World node can export only 3D models
