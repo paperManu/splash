@@ -417,7 +417,6 @@ void GuiGlobalView::processJoystickState()
 
         if (xValue != 0.f || yValue != 0.f)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {xValue * speed, yValue * speed});
             _camera->moveCalibrationPoint(0.0, 0.0);
             propagateCalibration();
         }
@@ -481,24 +480,24 @@ void GuiGlobalView::processKeyEvents()
         else if (io.KeyCtrl)
             delta = 10.f;
 
-        if (io.KeysDown[262])
+        if (io.KeysDownDuration[262] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {delta, 0});
+            _camera->moveCalibrationPoint(delta, 0);
             propagateCalibration();
         }
-        if (io.KeysDown[263])
+        if (io.KeysDownDuration[263] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
+            _camera->moveCalibrationPoint(-delta, 0);
             propagateCalibration();
         }
-        if (io.KeysDown[264])
+        if (io.KeysDownDuration[264] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {0, -delta});
+            _camera->moveCalibrationPoint(0, -delta);
             propagateCalibration();
         }
-        if (io.KeysDown[265])
+        if (io.KeysDownDuration[265] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {0, delta});
+            _camera->moveCalibrationPoint(0, delta);
             propagateCalibration();
         }
 
