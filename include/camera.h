@@ -301,6 +301,7 @@ class Camera : public BaseObject
     };
     std::vector<CalibrationPoint> _calibrationPoints;
     int _selectedCalibrationPoint{-1};
+    float _calibrationReprojectionError{0.f};
 
     //! List of additional objects to draw
     struct Drawable

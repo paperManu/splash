@@ -150,7 +150,9 @@ void GuiGlobalView::render()
             _camWidth = w;
             _camHeight = h;
 
-            ImGui::Text(("Current camera: " + _camera->getName()).c_str());
+            Values reprojectionError;
+            _camera->getAttribute("getReprojectionError", reprojectionError);
+            ImGui::Text(("Current camera: " + _camera->getName() + " - Reprojection error: " + reprojectionError[0].as<string>()).c_str());
 
             ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())
