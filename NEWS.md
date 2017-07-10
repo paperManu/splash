@@ -1,6 +1,17 @@
 Splash release notes
 ===================
 
+Splash 0.7.2 (2017-07-10)
+-------------------------
+Improvements:
+- Added the reprojection error in the gui
+- Updated 2D marker to show the up direction
+- Texture upload thread destruction is now at the same place as its creation
+
+Bug fixed:
+- Fixed stopping v4l2 capture
+- Fixed live calibration update
+
 Splash 0.7.0 (2017-06-29)
 -------------------------
 New features:
