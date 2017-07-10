@@ -153,7 +153,7 @@ class ImageBuffer
     /**
      * \brief Constructor
      */
-    ImageBuffer();
+    ImageBuffer() = default;
 
     /**
      * \brief Constructor

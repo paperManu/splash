@@ -101,11 +101,6 @@ void ImageBufferSpec::from_string(const string& spec)
 }
 
 /*************/
-ImageBuffer::ImageBuffer()
-{
-}
-
-/*************/
 ImageBuffer::ImageBuffer(const ImageBufferSpec& spec)
 {
     init(spec);

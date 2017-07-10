@@ -250,7 +250,8 @@ void Image_V4L2::captureThreadFunc()
     }
 
     // Reset to a default image
-    _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
+    _bufferImage = make_unique<ImageBuffer>(ImageBufferSpec(512, 512, 4, 32));
+    _bufferImage->zero();
     _imageUpdated = true;
     updateTimestamp();
 }

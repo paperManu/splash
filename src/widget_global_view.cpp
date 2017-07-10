@@ -150,7 +150,9 @@ void GuiGlobalView::render()
             _camWidth = w;
             _camHeight = h;
 
-            ImGui::Text(("Current camera: " + _camera->getName()).c_str());
+            Values reprojectionError;
+            _camera->getAttribute("getReprojectionError", reprojectionError);
+            ImGui::Text(("Current camera: " + _camera->getName() + " - Reprojection error: " + reprojectionError[0].as<string>()).c_str());
 
             ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())
@@ -415,7 +417,6 @@ void GuiGlobalView::processJoystickState()
 
         if (xValue != 0.f || yValue != 0.f)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {xValue * speed, yValue * speed});
             _camera->moveCalibrationPoint(0.0, 0.0);
             propagateCalibration();
         }
@@ -479,24 +480,24 @@ void GuiGlobalView::processKeyEvents()
         else if (io.KeyCtrl)
             delta = 10.f;
 
-        if (io.KeysDown[262])
+        if (io.KeysDownDuration[262] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {delta, 0});
+            _camera->moveCalibrationPoint(delta, 0);
             propagateCalibration();
         }
-        if (io.KeysDown[263])
+        if (io.KeysDownDuration[263] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
+            _camera->moveCalibrationPoint(-delta, 0);
             propagateCalibration();
         }
-        if (io.KeysDown[264])
+        if (io.KeysDownDuration[264] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {0, -delta});
+            _camera->moveCalibrationPoint(0, -delta);
             propagateCalibration();
         }
-        if (io.KeysDown[265])
+        if (io.KeysDownDuration[265] == 0.0)
         {
-            setObject(_camera->getName(), "moveCalibrationPoint", {0, delta});
+            _camera->moveCalibrationPoint(0, delta);
             propagateCalibration();
         }
 

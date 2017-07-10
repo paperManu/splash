@@ -399,6 +399,8 @@ bool Camera::doCalibration()
         _updatedParams = true;
     }
 
+    _calibrationReprojectionError = minValue;
+
     return true;
 }
 
@@ -1616,16 +1618,18 @@ void Camera::registerAttributes()
         {'n'});
     setAttributeDescription("displayAllCalibrations", "If set to 1, display all calibration points from other cameras");
 
-    addAttribute("showAllCalibrationPoints", [&](const Values& args) {
-        auto state = args[0].as<int>();
-        if (state == CalibrationPointsVisibility::viewSelectedOnly)
-            _showAllCalibrationPoints = false;
-        else if (state == CalibrationPointsVisibility::viewAll)
-            _showAllCalibrationPoints = true;
-        else
-            _showAllCalibrationPoints = !_showAllCalibrationPoints;
-        return true;
-    }, {'n'});
+    addAttribute("showAllCalibrationPoints",
+        [&](const Values& args) {
+            auto state = args[0].as<int>();
+            if (state == CalibrationPointsVisibility::viewSelectedOnly)
+                _showAllCalibrationPoints = false;
+            else if (state == CalibrationPointsVisibility::viewAll)
+                _showAllCalibrationPoints = true;
+            else
+                _showAllCalibrationPoints = !_showAllCalibrationPoints;
+            return true;
+        },
+        {'n'});
     setAttributeDescription("showAllCalibrationPoints", "Switch whether to show all calibration points");
 
     addAttribute("switchDisplayAllCalibration", [&](const Values& args) {
@@ -1641,6 +1645,9 @@ void Camera::registerAttributes()
         },
         {'n'});
     setAttributeDescription("flashBG", "If set to 1, switch background to light gray");
+
+    addAttribute("getReprojectionError", [&](const Values& args) { return true; }, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
+    setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
 }
 
 } // end of namespace

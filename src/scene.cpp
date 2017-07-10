@@ -87,11 +87,6 @@ Scene::Scene(const string& name, const string& socketPrefix)
 /*************/
 Scene::~Scene()
 {
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
-    _textureUploadCondition.notify_all();
-    lockTexture.unlock();
-    _textureUploadFuture.get();
-
     // Cleanup every object
     _mainWindow->setAsCurrentContext();
     lock_guard<recursive_mutex> lockObjects(_objectsMutex); // We don't want any friend to try accessing the objects
@@ -504,6 +499,12 @@ void Scene::run()
         Timer::get() >> "inputsUpdate";
     }
     _mainWindow->releaseContext();
+
+    unique_lock<mutex> lockTexture(_textureUploadMutex);
+    _textureUploadCondition.notify_all();
+    lockTexture.unlock();
+    _textureUploadFuture.get();
+
 }
 
 /*************/

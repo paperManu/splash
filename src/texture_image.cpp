@@ -284,7 +284,9 @@ void Texture_Image::update()
 
     if (img->getTimestamp() == _timestamp)
         return;
+
     img->update();
+    _timestamp = img->getTimestamp();
 
     auto spec = img->getSpec();
     Values srgb, flip, flop;
@@ -492,8 +494,6 @@ void Texture_Image::update()
     _shaderUniforms["flip"] = flip;
     _shaderUniforms["flop"] = flop;
     _shaderUniforms["size"] = {(float)_spec.width, (float)_spec.height};
-
-    _timestamp = img->getTimestamp();
 
     if (_filtering && !isCompressed)
         generateMipmap();
