@@ -1,8 +1,5 @@
 image: ubuntu:xenial
 
-variables:
-  DOCKER_DRIVER: overlay
-
 before_script: 
   - apt update -qq
   - apt install -y curl wget build-essential git-core zip cmake automake libtool clang libxrandr-dev libxi-dev libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libsnappy-dev libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev
@@ -41,6 +38,11 @@ package:
 static_analysis:
   stage: static_analysis
   script:
+    - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash" -O coverity_tool.tgz
+    - tar xvzf coverity_tool.tgz
+    - $(ls | grep cov-analysis)/bin/cov-build --dir cov-int make -j$(nproc)
+    - tar caf splash-cov.bz2 cov-int
+    - curl --form token=zkRfEWYxyAeJDlYYg9Hkkg --form email=emmanueldurand@gmail.com --form file=@splash-cov.bz2 --form description="Splash" https://scan.coverity.com/builds?project=paperManu%2Fsplash
     - apt install -y libpcre3-dev
     - make static_analysis
     - mv tests/static_analysis_result.txt ../
