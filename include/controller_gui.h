@@ -216,6 +216,7 @@ class Gui : public ControllerObject
     // Gui related attributes
     std::string _configurationPath;
     std::string _projectPath;
+    bool _firstRender{true};
     bool _mouseHoveringWindow{false};
     bool _isVisible{false};
     bool _wasVisible{true};
