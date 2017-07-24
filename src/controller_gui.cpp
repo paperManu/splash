@@ -785,7 +785,7 @@ void Gui::render()
     io.DeltaTime = static_cast<float>(currentTime - time);
     time = currentTime;
 
-    if (_isVisible || _showAbout || _wasVisible)
+    if (_isVisible || _showAbout || _wasVisible || _resized)
     {
         _wasVisible = _isVisible;
 
@@ -807,6 +807,8 @@ void Gui::render()
 #endif
 
     _firstRender = false;
+    _resized = false;
+
     return;
 }
 
@@ -826,6 +828,7 @@ void Gui::setOutputSize(int width, int height)
 
     _width = width;
     _height = height;
+    _resized = true;
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize.x = width;

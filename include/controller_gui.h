@@ -192,6 +192,7 @@ class Gui : public ControllerObject
     std::shared_ptr<Texture_Image> _depthTexture;
     std::shared_ptr<Texture_Image> _outTexture;
     float _width{512}, _height{512};
+    bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup
 
     // GUI specific camera
