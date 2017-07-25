@@ -84,31 +84,7 @@ void Camera::init()
         return;
 
     // Intialize FBO, textures and everything OpenGL
-    glGetError();
-    glCreateFramebuffers(1, &_fbo);
-
     setupFBO();
-
-    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_DRAW_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-        return;
-    }
-    else
-        Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    GLenum error = glGetError();
-    if (error)
-    {
-        Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - Error while binding framebuffer" << Log::endl;
-        _isInitialized = false;
-    }
-    else
-    {
-        Log::get() << Log::MESSAGE << "Camera::" << __FUNCTION__ << " - Camera correctly initialized" << Log::endl;
-        _isInitialized = true;
-    }
 
     // Load some models
     loadDefaultModels();
@@ -122,7 +98,10 @@ Camera::~Camera()
 #endif
 
     if (_root)
+    {
         glDeleteFramebuffers(1, &_fbo);
+        glDeleteFramebuffers(1, &_blitFbo);
+    }
 }
 
 /*************/
@@ -180,7 +159,7 @@ void Camera::computeVertexVisibility()
 
     // Update the vertices visibility based on the result
     glActiveTexture(GL_TEXTURE0);
-    _outTexture->bind();
+    _outColorTexture->bind();
     primitiveIdShift = 0;
     for (auto& o : _objects)
     {
@@ -191,7 +170,7 @@ void Camera::computeVertexVisibility()
         obj->transferVisibilityFromTexToAttr(_width, _height, primitiveIdShift);
         primitiveIdShift += obj->getVerticesNumber() / 3;
     }
-    _outTexture->unbind();
+    _outColorTexture->unbind();
 }
 
 /*************/
@@ -455,7 +434,7 @@ Values Camera::pickVertex(float x, float y)
     float realY = y * _height;
 
     // Get the depth at the given point
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _blitFbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -495,7 +474,7 @@ Values Camera::pickFragment(float x, float y, float& fragDepth)
     float realY = y * _height;
 
     // Get the depth at the given point
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, _fbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, _blitFbo);
     float depth;
     glReadPixels(realX, realY, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
@@ -586,11 +565,11 @@ void Camera::render()
         _newHeight = 0;
     }
 
-    ImageBufferSpec spec = _outTexture->getSpec();
+    ImageBufferSpec spec = _renderColorTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
-    if (!_outTexture)
+    if (!_renderColorTexture)
         return;
 
 #ifdef DEBUG
@@ -598,6 +577,7 @@ void Camera::render()
 #endif
     glViewport(0, 0, _width, _height);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_MULTISAMPLE);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
     if (_drawFrame)
@@ -754,8 +734,13 @@ void Camera::render()
 
     if (_drawFrame)
         glDisable(GL_SCISSOR_TEST);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_MULTISAMPLE);
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+    // Blit the result to resolve the multisampling
+    glBlitNamedFramebuffer(_fbo, _blitFbo, 0, 0, _width, _height, 0, 0, _width, _height, GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -902,38 +887,79 @@ bool Camera::setCalibrationPoint(const Values& screenPoint)
 /*************/
 void Camera::setupFBO()
 {
-    if (!_depthTexture)
+    glCreateFramebuffers(1, &_fbo);
+    glCreateFramebuffers(1, &_blitFbo);
+
+    if (!_renderDepthTexture)
     {
-        _depthTexture = make_shared<Texture_Image>(_root, 512, 512, "D", nullptr);
-        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+        _renderDepthTexture = make_unique<Texture_Image>(_root, 512, 512, "D", nullptr, _multisample);
+        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _renderDepthTexture->getTexId(), 0);
     }
 
-    if (!_outTexture)
+    if (!_renderColorTexture)
     {
-        _outTexture = make_shared<Texture_Image>(_root);
-        _outTexture->setAttribute("clampToEdge", {1});
-        _outTexture->setAttribute("filtering", {0});
-        _outTexture->reset(512, 512, "RGBA", nullptr);
-        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+        _renderColorTexture = make_unique<Texture_Image>(_root);
+        _renderColorTexture->setAttribute("clampToEdge", {1});
+        _renderColorTexture->setAttribute("filtering", {0});
+        _renderColorTexture->reset(512, 512, "RGBA", nullptr, _multisample);
+        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _renderColorTexture->getTexId(), 0);
+    }
+
+    if (!_outDepthTexture)
+    {
+        _outDepthTexture = make_unique<Texture_Image>(_root, 512, 512, "D", nullptr, false);
+        glNamedFramebufferTexture(_blitFbo, GL_DEPTH_ATTACHMENT, _outDepthTexture->getTexId(), 0);
+    }
+
+    if (!_outColorTexture)
+    {
+        _outColorTexture = make_shared<Texture_Image>(_root);
+        _outColorTexture->setAttribute("clampToEdge", {1});
+        _outColorTexture->setAttribute("filtering", {0});
+        _outColorTexture->reset(512, 512, "RGBA", nullptr, false);
+        glNamedFramebufferTexture(_blitFbo, GL_COLOR_ATTACHMENT0, _outColorTexture->getTexId(), 0);
     }
 
     GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+
     glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_DRAW_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+        Log::get() << Log::ERROR << "Camera::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << _status << Log::endl;
+    else
+        Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+
+    glNamedFramebufferDrawBuffers(_blitFbo, 1, fboBuffers);
+    _status = glCheckNamedFramebufferStatus(_blitFbo, GL_DRAW_FRAMEBUFFER);
+    if (_status != GL_FRAMEBUFFER_COMPLETE)
+        Log::get() << Log::ERROR << "Camera::" << __FUNCTION__ << " - Error while initializing blitting framebuffer object: " << _status << Log::endl;
+    else
+        Log::get() << Log::DEBUGGING << "Camera::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
 }
 
 /*************/
 void Camera::updateColorDepth()
 {
-    auto spec = _outTexture->getSpec();
+    auto spec = _renderColorTexture->getSpec();
+
+    _renderDepthTexture->reset(spec.width, spec.height, "D", nullptr, _multisample);
+    _outDepthTexture->reset(spec.width, spec.height, "D", nullptr);
 
     if (_render16bits)
-        _outTexture->reset(spec.width, spec.height, "RGBA16", nullptr);
+    {
+        _renderColorTexture->reset(spec.width, spec.height, "RGBA16", nullptr, _multisample);
+        _outColorTexture->reset(spec.width, spec.height, "RGBA16", nullptr);
+    }
     else
-        _outTexture->reset(spec.width, spec.height, "RGBA", nullptr);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+    {
+        _renderColorTexture->reset(spec.width, spec.height, "RGBA", nullptr, _multisample);
+        _outColorTexture->reset(spec.width, spec.height, "RGBA", nullptr);
+    }
 
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _renderDepthTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _renderColorTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_blitFbo, GL_DEPTH_ATTACHMENT, _outDepthTexture->getTexId(), 0);
+    glNamedFramebufferTexture(_blitFbo, GL_COLOR_ATTACHMENT0, _outColorTexture->getTexId(), 0);
 
     _updateColorDepth = false;
 }
@@ -944,15 +970,25 @@ void Camera::setOutputSize(int width, int height)
     if (width == 0 || height == 0)
         return;
 
-    _depthTexture->setResizable(1);
-    _depthTexture->setAttribute("size", {width, height});
-    _depthTexture->setResizable(_automaticResize);
-    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
+    _renderDepthTexture->setResizable(1);
+    _renderDepthTexture->setAttribute("size", {width, height});
+    _renderDepthTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _renderDepthTexture->getTexId(), 0);
 
-    _outTexture->setResizable(1);
-    _outTexture->setAttribute("size", {width, height});
-    _outTexture->setResizable(_automaticResize);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+    _renderColorTexture->setResizable(1);
+    _renderColorTexture->setAttribute("size", {width, height});
+    _renderColorTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _renderColorTexture->getTexId(), 0);
+
+    _outDepthTexture->setResizable(1);
+    _outDepthTexture->setAttribute("size", {width, height});
+    _outDepthTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_blitFbo, GL_DEPTH_ATTACHMENT, _outDepthTexture->getTexId(), 0);
+
+    _outColorTexture->setResizable(1);
+    _outColorTexture->setAttribute("size", {width, height});
+    _outColorTexture->setResizable(_automaticResize);
+    glNamedFramebufferTexture(_blitFbo, GL_COLOR_ATTACHMENT0, _outColorTexture->getTexId(), 0);
 
     _width = width;
     _height = height;
@@ -1425,6 +1461,30 @@ void Camera::registerAttributes()
         [&]() -> Values { return {(int)_render16bits}; },
         {'n'});
     setAttributeDescription("16bits", "Set to 1 for the camera to render in 16bits per component (otherwise 8bpc)");
+
+    addAttribute("multisampling",
+        [&](const Values& args) {
+            static vector<int> validSampleValues{0, 2, 4, 8, 16};
+
+            auto multisample = args[0].as<int>();
+            int selectedValue;
+            for (const auto& validValue : validSampleValues)
+            {
+                if (multisample >= validValue)
+                    selectedValue = validValue;
+            }
+            multisample = selectedValue;
+
+            if (multisample != _multisample)
+            {
+                _multisample = multisample;
+                _updateColorDepth = true;
+            }
+            return true;
+        },
+        [&]() -> Values { return {_multisample}; },
+        {'n'});
+    setAttributeDescription("multisampling", "Set the sample count for the multisampling antialiasing");
 
     addAttribute("blendWidth",
         [&](const Values& args) {

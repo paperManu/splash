@@ -129,7 +129,7 @@ class Camera : public BaseObject
      * \brief Get the output texture for this camera
      * \return Return a pointer to the output textures
      */
-    std::shared_ptr<Texture_Image> getTexture() const { return _outTexture; }
+    std::shared_ptr<Texture_Image> getTexture() const { return _outColorTexture; }
 
     /**
      * \brief Check whether the camera is initialized
@@ -236,8 +236,11 @@ class Camera : public BaseObject
     std::shared_ptr<GlWindow> _window;
 
     GLuint _fbo{0};
-    std::shared_ptr<Texture_Image> _depthTexture;
-    std::shared_ptr<Texture_Image> _outTexture;
+    GLuint _blitFbo{0};
+    std::unique_ptr<Texture_Image> _renderDepthTexture;
+    std::unique_ptr<Texture_Image> _renderColorTexture;
+    std::unique_ptr<Texture_Image> _outDepthTexture;
+    std::shared_ptr<Texture_Image> _outColorTexture;
     std::vector<std::weak_ptr<Object>> _objects;
 
     // Rendering parameters
@@ -248,6 +251,7 @@ class Camera : public BaseObject
     bool _flashBG{false};
     bool _automaticResize{true};
     bool _render16bits{false};
+    int _multisample{0};
     bool _updateColorDepth{false}; // Set to true if the _render16bits has been updated
     glm::dvec4 _clearColor{0.6, 0.6, 0.6, 1.0};
     glm::dvec4 _wireframeColor{1.0, 1.0, 1.0, 1.0};
