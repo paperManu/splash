@@ -206,6 +206,12 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
         glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
         glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);
 
+        // Anisotropic filtering. Not in core, but available on any GPU capable of running Splash
+        // See https://www.khronos.org/opengl/wiki/Sampler_Object#Anisotropic_filtering
+        float maxAnisoFiltering;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisoFiltering);
+        glTextureParameterf(_glTex, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisoFiltering);
+
         if (_filtering)
         {
             glTextureParameteri(_glTex, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
