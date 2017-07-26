@@ -808,6 +808,9 @@ void World::leave(int signal_value)
 /*************/
 bool World::copyCameraParameters(const std::string& filename)
 {
+    // List of copyable types
+    static vector<string> copyableTypes{"camera", "warp"};
+
     ifstream in(filename, ios::in | ios::binary);
     string contents;
     if (in)
@@ -860,7 +863,7 @@ bool World::copyCameraParameters(const std::string& filename)
                 continue;
             }
 
-            if (obj["type"].asString() != "camera")
+            if (find(copyableTypes.begin(), copyableTypes.end(), obj["type"].asString()) == copyableTypes.end())
             {
                 idx++;
                 continue;
