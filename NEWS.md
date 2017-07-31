@@ -1,6 +1,20 @@
 Splash release notes
 ===================
 
+Splash 0.7.4 (2017-07-31)
+-------------------------
+New features:
+- Added multisampling to camera rendering
+- Added anisotropic filtering to Texture_Image
+
+Improvements:
+- GUI visible by default when on its own window
+
+Bug fixed:
+- Controller_Gui: fixed clear issue when resizing
+- Fixed copy parameters not copying warps
+
+
 Splash 0.7.2 (2017-07-10)
 -------------------------
 Improvements:
