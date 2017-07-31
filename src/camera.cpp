@@ -1467,7 +1467,7 @@ void Camera::registerAttributes()
             static vector<int> validSampleValues{0, 2, 4, 8, 16};
 
             auto multisample = args[0].as<int>();
-            int selectedValue;
+            int selectedValue = 0;
             for (const auto& validValue : validSampleValues)
             {
                 if (multisample >= validValue)
