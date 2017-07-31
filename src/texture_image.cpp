@@ -22,11 +22,11 @@ Texture_Image::Texture_Image(RootObject* root)
 }
 
 /*************/
-Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data)
+Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data, int multisample)
     : Texture(root)
 {
     init();
-    reset(width, height, pixelFormat, data);
+    reset(width, height, pixelFormat, data, multisample);
 }
 
 /*************/
@@ -118,7 +118,7 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data)
+void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data, int multisample)
 {
     if (width == 0 || height == 0)
     {
@@ -133,6 +133,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     if (realPixelFormat.empty())
         realPixelFormat = "RGBA";
     _pixelFormat = realPixelFormat;
+    _multisample = multisample;
 
     if (realPixelFormat == "RGBA")
     {
@@ -188,7 +189,10 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     if (glIsTexture(_glTex))
         glDeleteTextures(1, &_glTex);
 
-    glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
+    if (_multisample > 1)
+        glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_glTex);
+    else
+        glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
 
     if (_texInternalFormat == GL_DEPTH_COMPONENT)
     {
@@ -201,6 +205,12 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     {
         glTextureParameteri(_glTex, GL_TEXTURE_WRAP_S, _glTextureWrap);
         glTextureParameteri(_glTex, GL_TEXTURE_WRAP_T, _glTextureWrap);
+
+        // Anisotropic filtering. Not in core, but available on any GPU capable of running Splash
+        // See https://www.khronos.org/opengl/wiki/Sampler_Object#Anisotropic_filtering
+        float maxAnisoFiltering;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAnisoFiltering);
+        glTextureParameterf(_glTex, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxAnisoFiltering);
 
         if (_filtering)
         {
@@ -217,9 +227,16 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
         glPixelStorei(GL_PACK_ALIGNMENT, 4);
     }
 
-    glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
-    if (data)
-        glTextureSubImage2D(_glTex, 0, 0, 0, width, height, _texFormat, _texType, data);
+    if (_multisample > 1)
+    {
+        glTextureStorage2DMultisample(_glTex, _multisample, _texInternalFormat, width, height, false);
+    }
+    else
+    {
+        glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
+        if (data)
+            glTextureSubImage2D(_glTex, 0, 0, 0, width, height, _texFormat, _texType, data);
+    }
 
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Reset the texture to size " << width << "x" << height << Log::endl;
@@ -232,7 +249,7 @@ void Texture_Image::resize(int width, int height)
     if (!_resizable)
         return;
     if (width != _spec.width || height != _spec.height)
-        reset(width, height, _pixelFormat, 0);
+        reset(width, height, _pixelFormat, 0, _multisample);
 }
 
 /*************/
@@ -287,6 +304,12 @@ void Texture_Image::update()
 
     img->update();
     _timestamp = img->getTimestamp();
+
+    if (_multisample > 1)
+    {
+        Log::get() << Log::ERROR << "Texture_Image::" << __FUNCTION__ << " - Texture " << _name << " is multisampled, and can not be set from an image" << Log::endl;
+        return;
+    }
 
     auto spec = img->getSpec();
     Values srgb, flip, flop;

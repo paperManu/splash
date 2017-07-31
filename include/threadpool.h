@@ -34,6 +34,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <functional>
 
 #include "config.h"
 

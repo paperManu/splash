@@ -85,13 +85,13 @@ class ControllerObject : public BaseObject
 
     /**
      * \brief Get the links between all objects, from parents to children
-     * \return Return an unordered_map the links, from one to many
+     * \return Return an unordered_map of the links, from one object to potentially many others
      */
     std::unordered_map<std::string, std::vector<std::string>> getObjectLinks() const;
 
     /**
      * \brief Get the reversed links between all objects, from children to parents
-     * \return Return an unordered_map the links, from one to many
+     * \return Return an unordered_map the links, from one object to potentially many others
      */
     std::unordered_map<std::string, std::vector<std::string>> getObjectReversedLinks() const;
 

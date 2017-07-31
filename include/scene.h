@@ -263,10 +263,10 @@ class Scene : public RootObject
     bool _runInBackground{false}; //!< If true, no window will be created
     bool _started{false};
 
-    bool _isMaster{false}; //< Set to true if this is the master Scene of the current config
+    bool _isMaster{false}; //!< Set to true if this is the master Scene of the current config
     bool _isInitialized{false};
-    bool _status{false};  //< Set to true if an error occured during rendering
-    int _swapInterval{1}; //< Global value for the swap interval, default for all windows
+    bool _status{false};  //!< Set to true if an error occured during rendering
+    int _swapInterval{1}; //!< Global value for the swap interval, default for all windows
 
     // Texture upload context
     std::future<void> _textureUploadFuture;

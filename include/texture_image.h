@@ -51,9 +51,10 @@ class Texture_Image : public Texture
      * \param height Height
      * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
+     * \param multisample Sample count for MSAA
      */
     Texture_Image(RootObject* root);
-    Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data);
+    Texture_Image(RootObject* root, int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisample = 0);
 
     /**
      * \brief Destructor
@@ -139,8 +140,9 @@ class Texture_Image : public Texture
      * \param height Height
      * \param pixelFormat String describing the pixel format. Accepted values are RGB, RGBA, sRGBA, RGBA16, R16, YUYV, UYVY, D
      * \param data Pointer to data to use to initialize the texture
+     * \param multisample Sample count for MSAA
      */
-    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data);
+    void reset(int width, int height, const std::string& pixelFormat, const GLvoid* data, int multisampled = 0);
 
     /**
      * \brief Modify the size of the texture
@@ -168,6 +170,7 @@ class Texture_Image : public Texture
   private:
     GLuint _glTex{0};
     GLuint _pbos[2];
+    int _multisample{0};
     int _pboReadIndex{0};
     std::vector<unsigned int> _pboCopyThreadIds;
 

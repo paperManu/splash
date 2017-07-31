@@ -650,7 +650,6 @@ shared_ptr<GlWindow> Scene::getNewSharedWindow(const string& name)
     }
 
     // The GL version is the same as in the initialization, so we don't have to reset it here
-    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_VISIBLE, false);
     GLFWwindow* window = glfwCreateWindow(512, 512, windowName.c_str(), NULL, _mainWindow->get());
@@ -725,7 +724,6 @@ vector<int> Scene::findGLVersion()
 #if HAVE_OSX
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
-        glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
         glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
         glfwWindowHint(GLFW_DEPTH_BITS, 24);
         glfwWindowHint(GLFW_VISIBLE, false);
@@ -774,7 +772,6 @@ void Scene::init(const string& name)
 #else
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, false);
 #endif
-    glfwWindowHint(GLFW_SAMPLES, SPLASH_SAMPLES);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GL_TRUE);
     glfwWindowHint(GLFW_DEPTH_BITS, 24);
     glfwWindowHint(GLFW_VISIBLE, false);
@@ -1289,6 +1286,7 @@ void Scene::registerAttributes()
             return true;
         },
         {'n'});
+    setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
 }
 
 } // end of namespace

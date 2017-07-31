@@ -483,7 +483,7 @@ void Gui::mouseScroll(double xoffset, double yoffset)
 bool Gui::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
-    if (!BaseObject::linkTo(obj))
+    if (!ControllerObject::linkTo(obj))
         return false;
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
@@ -541,6 +541,29 @@ void Gui::render()
     ImageBufferSpec spec = _outTexture->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
+
+    // If the gui is alone in its window, make it visible at startup
+    if (_firstRender)
+    {
+        auto reversedLinks = getObjectReversedLinks();
+        // If the GUI has multiple parents, hide it anyway
+        if (reversedLinks[_name].size() == 1)
+        {
+            auto parent = reversedLinks[_name][0];
+            auto allLinks = getObjectLinks();
+            auto linksIt = allLinks.find(parent);
+            if (linksIt != allLinks.end())
+            {
+                auto links = linksIt->second;
+                bool hasOwnWindow = true;
+                for (const auto& link : links)
+                    if (link != _name)
+                        hasOwnWindow = false;
+                if (hasOwnWindow)
+                    _isVisible = true;
+            }
+        }
+    }
 
 #ifdef DEBUG
     GLenum error = glGetError();
@@ -762,8 +785,10 @@ void Gui::render()
     io.DeltaTime = static_cast<float>(currentTime - time);
     time = currentTime;
 
-    if (_isVisible || _showAbout || _wasVisible)
+    if (_isVisible || _showAbout || _wasVisible || _resized)
     {
+        _wasVisible = _isVisible;
+
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -780,6 +805,9 @@ void Gui::render()
     if (error)
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while rendering the gui: " << error << Log::endl;
 #endif
+
+    _firstRender = false;
+    _resized = false;
 
     return;
 }
@@ -800,6 +828,7 @@ void Gui::setOutputSize(int width, int height)
 
     _width = width;
     _height = height;
+    _resized = true;
 
     ImGuiIO& io = ImGui::GetIO();
     io.DisplaySize.x = width;

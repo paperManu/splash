@@ -194,7 +194,7 @@
          "fullscreen" : [ -1 ],
          "gamma" : [ 2.200000047683716 ],
          "layout" : [ 0, 0, 0, 0 ],
-         "position" : [ 1920, 25 ],
+         "position" : [ 0, 0 ],
          "size" : [ 959, 1148 ],
          "srgb" : [ 1 ],
          "type" : "window"
