@@ -843,6 +843,7 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 #endif
 {
     string typeString{"OTHER"};
+    string severityString{""};
     Log::Priority logType{Log::MESSAGE};
 
     switch (type)
@@ -873,7 +874,23 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
         break;
     }
 
-    Log::get() << logType << "GL::debug - [" << typeString << "] - " << message << Log::endl;
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_LOW:
+        severityString = "low";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severityString = "medium";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severityString = "high";
+        break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        severityString = "notification";
+        break;
+    }
+
+    Log::get() << logType << "GL::debug - [" << typeString << "::" << severityString << "] - " << message << Log::endl;
 }
 
 /*************/

@@ -69,12 +69,6 @@ namespace Splash
 Camera::Camera(RootObject* root)
     : BaseObject(root)
 {
-    init();
-}
-
-/*************/
-void Camera::init()
-{
     _type = "camera";
     _renderingPriority = Priority::CAMERA;
     registerAttributes();
@@ -496,7 +490,7 @@ Values Camera::pickCalibrationPoint(float x, float y)
     dvec3 screenPoint(x * _width, y * _height, 0.0);
 
     dmat4 lookM = lookAt(_eye, _target, _up);
-    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dmat4 projM = computeProjectionMatrix();
     dvec4 viewport(0, 0, _width, _height);
 
     double minDist = numeric_limits<double>::max();
@@ -531,7 +525,7 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
     dvec3 screenPoint(x * _width, y * _height, 0.0);
 
     dmat4 lookM = lookAt(_eye, _target, _up);
-    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dmat4 projM = computeProjectionMatrix();
     dvec4 viewport(0, 0, _width, _height);
 
     if (vertex.size() == 0 && point.size() == 0)
@@ -599,9 +593,9 @@ void Camera::render()
         // Draw the objects
         for (auto& o : _objects)
         {
-            if (o.expired())
-                continue;
             auto obj = o.lock();
+            if (!obj)
+                continue;
 
             obj->activate();
 
@@ -814,7 +808,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
         dvec3 screenPoint(point[0].as<float>(), point[1].as<float>(), 0.0);
 
         dmat4 lookM = lookAt(_eye, _target, _up);
-        dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+        dmat4 projM = computeProjectionMatrix();
         dvec4 viewport(0, 0, _width, _height);
 
         double minDist = numeric_limits<double>::max();
@@ -1057,7 +1051,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
-    dmat4 projM = dmat4(camera.computeProjectionMatrix(fov, cx, cy));
+    dmat4 projM = dmat4(getProjectionMatrix(fov, camera._near, camera._far, camera._width, camera._height, cx, cy));
     dmat4 modelM(1.0);
     dvec4 viewport(0, 0, camera._width, camera._height);
 
@@ -1086,28 +1080,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 /*************/
 dmat4 Camera::computeProjectionMatrix()
 {
-    return computeProjectionMatrix(_fov, _cx, _cy);
-}
-
-/*************/
-dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
-{
-    double l, r, t, b, n, f;
-    // Near and far are obvious
-    n = _near;
-    f = _far;
-    // Up and down
-    double tTemp = n * tan(fov * M_PI / 360.0);
-    double bTemp = -tTemp;
-    t = tTemp - (cy - 0.5) * (tTemp - bTemp);
-    b = bTemp - (cy - 0.5) * (tTemp - bTemp);
-    // Left and right
-    double rTemp = tTemp * _width / _height;
-    double lTemp = bTemp * _width / _height;
-    r = rTemp - (cx - 0.5) * (rTemp - lTemp);
-    l = lTemp - (cx - 0.5) * (rTemp - lTemp);
-
-    return frustum(l, r, b, t, n, f);
+    return getProjectionMatrix(_fov, _near, _far, _width, _height, _cx, _cy);
 }
 
 /*************/
@@ -1128,7 +1101,7 @@ dmat4 Camera::computeViewMatrix()
 /*************/
 void Camera::loadDefaultModels()
 {
-    map<string, string> files{{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}, {"camera", "camera.obj"}};
+    map<string, string> files{{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}, {"camera", "camera.obj"}, {"probe", "probe.obj"}};
 
     for (auto& file : files)
     {

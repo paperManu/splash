@@ -24,12 +24,6 @@ namespace Splash
 Warp::Warp(RootObject* root)
     : Texture(root)
 {
-    init();
-}
-
-/*************/
-void Warp::init()
-{
     _type = "warp";
     _renderingPriority = Priority::POST_CAMERA;
     registerAttributes();
@@ -40,8 +34,6 @@ void Warp::init()
 
     // Intialize FBO, textures and everything OpenGL
     setupFBO();
-
-    loadDefaultModels();
 }
 
 /*************/
@@ -61,6 +53,12 @@ Warp::~Warp()
 void Warp::bind()
 {
     _outTexture->bind();
+}
+
+/*************/
+void Warp::unbind()
+{
+    _outTexture->unbind();
 }
 
 /*************/
@@ -91,12 +89,6 @@ bool Warp::linkTo(const std::shared_ptr<BaseObject>& obj)
     }
 
     return true;
-}
-
-/*************/
-void Warp::unbind()
-{
-    _outTexture->unbind();
 }
 
 /*************/
@@ -211,49 +203,6 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
     _screenMesh->switchMeshes(false);
 
     return index;
-}
-
-/*************/
-void Warp::loadDefaultModels()
-{
-    map<string, string> files{{"3d_marker", "3d_marker.obj"}};
-
-    for (auto& file : files)
-    {
-        if (!ifstream(file.second, ios::in | ios::binary))
-        {
-            if (ifstream(string(DATADIR) + file.second, ios::in | ios::binary))
-                file.second = string(DATADIR) + file.second;
-#if HAVE_OSX
-            else if (ifstream("../Resources/" + file.second, ios::in | ios::binary))
-                file.second = "../Resources/" + file.second;
-#endif
-            else
-            {
-                Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
-                continue;
-            }
-        }
-
-        shared_ptr<Mesh> mesh = make_shared<Mesh>(_root);
-        mesh->setName(file.first);
-        mesh->setAttribute("file", {file.second});
-        _modelMeshes.push_back(mesh);
-
-        auto geom = make_shared<Geometry>(_root);
-        geom->setName(file.first);
-        geom->linkTo(mesh);
-        _modelGeometries.push_back(geom);
-
-        shared_ptr<Object> obj = make_shared<Object>(_root);
-        obj->setName(file.first);
-        obj->setAttribute("scale", {WORLDMARKER_SCALE});
-        obj->setAttribute("fill", {"color"});
-        obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(geom);
-
-        _models[file.first] = obj;
-    }
 }
 
 /*************/

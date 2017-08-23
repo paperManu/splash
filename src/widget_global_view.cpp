@@ -4,6 +4,8 @@
 #include <fstream>
 #include <imgui.h>
 
+#include "./virtual_probe.h"
+
 using namespace std;
 
 namespace Splash
@@ -90,6 +92,7 @@ void GuiGlobalView::render()
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 
         auto cameras = getCameras();
+        drawVirtualProbes();
 
         ImGui::BeginChild("Cameras", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
         ImGui::Text("Select a camera:");
@@ -651,4 +654,14 @@ vector<shared_ptr<Camera>> GuiGlobalView::getCameras()
 
     return cameras;
 }
+
+/*************/
+void GuiGlobalView::drawVirtualProbes()
+{
+    auto rtMatrices = vector<glm::dmat4>();
+    auto probes = getObjectsOfType("virtual_probe");
+    for (auto& probe : probes)
+        _guiCamera->drawModelOnce("probe", dynamic_pointer_cast<VirtualProbe>(probe)->computeViewMatrix());
+}
+
 } // end of namespace

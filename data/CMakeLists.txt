@@ -35,6 +35,7 @@ install(FILES
     color_map.png
     cubes.obj
     plane.obj
+    probe.obj
     sphere.obj
     splash.json
     splash-icon-512.png

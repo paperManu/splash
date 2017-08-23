@@ -22,11 +22,11 @@ Texture_Image::Texture_Image(RootObject* root)
 }
 
 /*************/
-Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data, int multisample)
+Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
     : Texture(root)
 {
     init();
-    reset(width, height, pixelFormat, data, multisample);
+    reset(width, height, pixelFormat, data, multisample, cubemap);
 }
 
 /*************/
@@ -118,7 +118,7 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data, int multisample)
+void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
 {
     if (width == 0 || height == 0)
     {
@@ -134,6 +134,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
         realPixelFormat = "RGBA";
     _pixelFormat = realPixelFormat;
     _multisample = multisample;
+    _cubemap = multisample == 0 ? cubemap : false;
 
     if (realPixelFormat == "RGBA")
     {
@@ -191,6 +192,8 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
 
     if (_multisample > 1)
         glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_glTex);
+    else if (_cubemap)
+        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &_glTex);
     else
         glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
 
@@ -231,6 +234,10 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     {
         glTextureStorage2DMultisample(_glTex, _multisample, _texInternalFormat, width, height, false);
     }
+    else if (_cubemap == true)
+    {
+        glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
+    }
     else
     {
         glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
@@ -249,7 +256,7 @@ void Texture_Image::resize(int width, int height)
     if (!_resizable)
         return;
     if (width != _spec.width || height != _spec.height)
-        reset(width, height, _pixelFormat, 0, _multisample);
+        reset(width, height, _pixelFormat, 0, _multisample, _cubemap);
 }
 
 /*************/

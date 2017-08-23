@@ -34,7 +34,7 @@ void GuiNodeView::render()
             {"warp", {32, 88}},
             {"camera", {8, 128}},
             {"object", {32, 168}},
-            {"texture filter queue", {8, 208}},
+            {"texture filter queue virtual_screen", {8, 208}},
             {"image", {32, 248}},
             {"mesh", {8, 288}},
             {"python", {32, 328}}});

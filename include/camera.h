@@ -98,15 +98,6 @@ class Camera : public BaseObject
     glm::dmat4 computeProjectionMatrix();
 
     /**
-     * \brief Get the projection matrix given the fov and shift (0.5 meaning no shift, 0.0 and 1.0 meaning 100% on one direction or the other)
-     * \param fov Field of view, in degrees
-     * \param cx Center shift along X
-     * \param cy Center shift along Y
-     * \return Return the projection matrix
-     */
-    glm::dmat4 computeProjectionMatrix(float fov, float cx, float cy);
-
-    /**
      * \brief Get the view matrix
      * \return Return the view matrix
      */
@@ -130,12 +121,6 @@ class Camera : public BaseObject
      * \return Return a pointer to the output textures
      */
     std::shared_ptr<Texture_Image> getTexture() const { return _outColorTexture; }
-
-    /**
-     * \brief Check whether the camera is initialized
-     * \return Return true if the camera is initialized
-     */
-    bool isInitialized() const { return _isInitialized; }
 
     /**
      * \brief Try to link the given BaseObject to this object
@@ -232,15 +217,12 @@ class Camera : public BaseObject
     void setOutputSize(int width, int height);
 
   private:
-    bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _window;
-
     GLuint _fbo{0};
     GLuint _blitFbo{0};
-    std::unique_ptr<Texture_Image> _renderDepthTexture;
-    std::unique_ptr<Texture_Image> _renderColorTexture;
-    std::unique_ptr<Texture_Image> _outDepthTexture;
-    std::shared_ptr<Texture_Image> _outColorTexture;
+    std::unique_ptr<Texture_Image> _renderDepthTexture{nullptr};
+    std::unique_ptr<Texture_Image> _renderColorTexture{nullptr};
+    std::unique_ptr<Texture_Image> _outDepthTexture{nullptr};
+    std::shared_ptr<Texture_Image> _outColorTexture{nullptr};
     std::vector<std::weak_ptr<Object>> _objects;
 
     // Rendering parameters
@@ -323,11 +305,6 @@ class Camera : public BaseObject
 
     // Function used for the calibration (camera parameters optimization)
     static double cameraCalibration_f(const gsl_vector* v, void* params);
-
-    /**
-     * \brief Init function called in constructors
-     */
-    void init();
 
     /**
      * \brief Load some defaults models, like the locator for calibration

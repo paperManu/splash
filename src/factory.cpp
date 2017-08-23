@@ -44,6 +44,7 @@
 #endif
 #include "./threadpool.h"
 #include "./timer.h"
+#include "./virtual_probe.h"
 #include "./warp.h"
 #include "./window.h"
 
@@ -397,10 +398,22 @@ void Factory::registerObjects()
         "Texture object synchronized through Syphon.");
 #endif
 
+    _objectBook["virtual_probe"] = Page(
+        [&]() {
+            if (!_isScene)
+                return dynamic_pointer_cast<BaseObject>(make_shared<VirtualProbe>(nullptr));
+            else
+                return dynamic_pointer_cast<BaseObject>(make_shared<VirtualProbe>(_root));
+        },
+        BaseObject::Category::MISC,
+        "virtual probe to simulate a virtual projection surface",
+        "Virtual screen used to simulate a virtual projection surface.");
+
     _objectBook["warp"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); },
         BaseObject::Category::MISC,
         "warp",
         "Warping object, allows for deforming the output of a Camera.");
+
     _objectBook["window"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); },
         BaseObject::Category::MISC,
         "window",

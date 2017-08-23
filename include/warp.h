@@ -30,15 +30,15 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "attribute.h"
-#include "camera.h"
-#include "coretypes.h"
-#include "mesh_bezierPatch.h"
-#include "object.h"
-#include "texture.h"
-#include "texture_image.h"
+#include "./attribute.h"
+#include "./camera.h"
+#include "./coretypes.h"
+#include "./mesh_bezierPatch.h"
+#include "./object.h"
+#include "./texture.h"
+#include "./texture_image.h"
 
 namespace Splash
 {
@@ -129,8 +129,6 @@ class Warp : public Texture
     void update() final {}
 
   private:
-    bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _window;
     std::weak_ptr<Camera> _inCamera;
 
     GLuint _fbo{0};
@@ -152,11 +150,6 @@ class Warp : public Texture
      * \brief Init function called in constructors
      */
     void init();
-
-    /**
-     * \brief Load some defaults models
-     */
-    void loadDefaultModels();
 
     /**
      * \brief Setup the output texture

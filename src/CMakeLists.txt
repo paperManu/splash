@@ -114,6 +114,7 @@ target_sources(
     userInput_joystick.cpp
     userInput_keyboard.cpp
     userInput_mouse.cpp
+    virtual_probe.cpp
     warp.cpp
     widget.cpp
     widget_control.cpp
