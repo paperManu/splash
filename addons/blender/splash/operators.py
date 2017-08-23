@@ -357,6 +357,7 @@ class SplashExportNodeTree(Operator):
             for scene in self.scene_lists:
                 for node in self.scene_lists[scene]:
                     self.scene_lists[scene][node].exportProperties(self.filepath)
+            return {'FINISHED'}
 
         # Merge scenes info if exporting a project
         if self.export_project and len(self.scene_order) > 0:
