@@ -64,12 +64,7 @@ Factory::Factory()
 Factory::Factory(RootObject* root)
     : _root(root)
 {
-    if (_root && _root->getType() == "scene")
-    {
-        _isScene = true;
-        if (dynamic_cast<Scene*>(_root)->isMaster())
-            _isMasterScene = true;
-    }
+    _scene = dynamic_cast<Scene*>(_root);
 
     loadDefaults();
     registerObjects();
@@ -251,7 +246,7 @@ void Factory::registerObjects()
     _objectBook["image_v4l2"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_V4L2>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -265,7 +260,7 @@ void Factory::registerObjects()
     _objectBook["image_ffmpeg"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -279,7 +274,7 @@ void Factory::registerObjects()
     _objectBook["image_gphoto"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -294,7 +289,7 @@ void Factory::registerObjects()
     _objectBook["image_shmdata"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -309,7 +304,7 @@ void Factory::registerObjects()
     _objectBook["image_opencv"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -329,7 +324,7 @@ void Factory::registerObjects()
     _objectBook["mesh_shmdata"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root));
@@ -358,7 +353,7 @@ void Factory::registerObjects()
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
         [&]() {
-            if (!_isMasterScene && _root)
+            if (!_root || (_scene && !_scene->isMaster()))
                 return shared_ptr<BaseObject>(nullptr);
             return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
         },
@@ -370,7 +365,7 @@ void Factory::registerObjects()
     _objectBook["queue"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_root));
@@ -388,7 +383,7 @@ void Factory::registerObjects()
 #if HAVE_OSX
     _objectBook["texture_syphon"] = Page(
         [&]() {
-            if (!_isScene)
+            if (!_scene)
                 return shared_ptr<BaseObject>(nullptr);
             else
                 return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root));
