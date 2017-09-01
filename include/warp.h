@@ -152,6 +152,11 @@ class Warp : public Texture
     void init();
 
     /**
+     * \brief Load some defaults models
+     */
+    void loadDefaultModels();
+
+    /**
      * \brief Setup the output texture
      */
     void setupFBO();
