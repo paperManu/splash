@@ -353,17 +353,15 @@ void World::applyConfig()
 
         // Configure each scenes
         // The first scene is the master one, and also receives some ghost objects
-        // First, we create the objects
+        // First, set the master scene
+        sendMessage(_masterSceneName, "setMaster", {_configFilename});
+        // Then, we create the objects
         for (auto& s : _scenes)
         {
             if (!_config.isMember(s.first))
                 continue;
 
             const Json::Value jsScene = _config[s.first];
-
-            // Set if master
-            if (s.first == _masterSceneName)
-                sendMessage(_masterSceneName, "setMaster", {_configFilename});
 
             // Create the objects
             auto sceneMembers = jsScene.getMemberNames();
@@ -380,10 +378,7 @@ void World::applyConfig()
                 string type = obj["type"].asString();
                 if (type != "scene")
                 {
-                    sendMessage(s.first, "add", {type, name});
-                    if (s.first != _masterSceneName)
-                        sendMessage(_masterSceneName, "addGhost", {type, name});
-
+                    sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
                     // Some objects are also created on this side, and linked with the distant one
                     addLocally(type, name, s.first);
                 }
@@ -419,9 +414,7 @@ void World::applyConfig()
                 {
                     if (link.size() < 2)
                         continue;
-                    sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
-                    if (s.first != _masterSceneName)
-                        sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
+                    sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
                 }
                 idx++;
             }
@@ -468,14 +461,6 @@ void World::applyConfig()
                     {
                         // We also the attribute locally, if the object exists
                         set(name, objMembers[idxAttr], values, false);
-
-                        // The attribute is also sent to the master scene
-                        if (s.first != _masterSceneName)
-                        {
-                            values.push_front(objMembers[idxAttr]);
-                            values.push_front(name);
-                            sendMessage(_masterSceneName, "setGhost", values);
-                        }
                     }
 
                     idxAttr++;
@@ -885,11 +870,6 @@ bool World::copyCameraParameters(const std::string& filename)
                 // Send the new values for this attribute
                 sendMessage(name, objMembers[idxAttr], values);
 
-                // Also send it to a ghost if it exists
-                values.push_front(objMembers[idxAttr]);
-                values.push_front(name);
-                sendMessage(_masterSceneName, "setGhost", values);
-
                 idxAttr++;
             }
 
@@ -1041,7 +1021,6 @@ bool World::loadProject(const string& filename)
 
                 addTask([=]() {
                     sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
-                    sendMessage(SPLASH_ALL_PEERS, "linkGhost", {link[0].asString(), link[1].asString()});
                 });
             }
         }
@@ -1061,7 +1040,6 @@ bool World::loadProject(const string& filename)
             // Before anything, all objects have the right to know what the current path is
             auto path = Utils::getPathFromFilePath(_configFilename);
             sendMessage(name, "configFilePath", {path});
-            sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
             set(name, "configFilePath", {path}, false);
 
             // Set their attributes
@@ -1276,7 +1254,7 @@ void World::registerAttributes()
 
                 for (auto& s : _scenes)
                 {
-                    sendMessage(s.first, "add", {type, name});
+                    sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
                     addLocally(type, name, s.first);
                 }
 
@@ -1595,10 +1573,7 @@ void World::registerAttributes()
             setAttribute("addObject", {objType, objName});
             addTask([=]() {
                 for (const auto& t : targets)
-                {
                     setAttribute("sendAllScenes", {"link", objName, t});
-                    setAttribute("sendAllScenes", {"linkGhost", objName, t});
-                }
             });
             return true;
         },
@@ -1656,9 +1631,6 @@ void World::registerAttributes()
                 string name = args[0].as<string>();
                 string attr = args[1].as<string>();
                 auto values = args;
-
-                // Ask for update of the ghost object if needed
-                sendMessage(_masterSceneName, "setGhost", values);
 
                 // Send the updated values to all scenes
                 values.erase(values.begin());

@@ -26,13 +26,6 @@ vector<string> ControllerObject::getObjectNames() const
         objNames.push_back(o.first);
     }
 
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        objNames.push_back(o.first);
-    }
-
     return objNames;
 }
 
@@ -65,8 +58,6 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
 
     auto objectIt = scene->_objects.find(name);
     if (objectIt == scene->_objects.end())
-        objectIt = scene->_ghostObjects.find(name);
-    if (objectIt == scene->_objects.end())
         return {};
 
     return objectIt->second->getAttributes(true);
@@ -82,17 +73,6 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
     auto links = unordered_map<string, vector<string>>();
 
     for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-        {
-            links[o.first].push_back(link->getName());
-        }
-    }
-    for (auto& o : scene->_ghostObjects)
     {
         if (!o.second->getSavable())
             continue;
@@ -171,14 +151,6 @@ map<string, string> ControllerObject::getObjectTypes() const
         auto type = o.second->getRemoteType();
         types[o.first] = type.empty() ? o.second->getType() : type;
     }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        auto type = o.second->getRemoteType();
-        types[o.first] = type.empty() ? o.second->getType() : type;
-    }
-
     return types;
 }
 
@@ -191,9 +163,6 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
 
     auto objects = list<shared_ptr<BaseObject>>();
     for (auto& obj : scene->_objects)
-        if (obj.second->getType() == type || type == "")
-            objects.push_back(obj.second);
-    for (auto& obj : scene->_ghostObjects)
         if (obj.second->getType() == type || type == "")
             objects.push_back(obj.second);
 
@@ -254,12 +223,7 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
 
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type)
-            obj.second->setAttribute(attr, values);
-
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == type)
         {
-            obj.second->setAttribute(attr, values);
             auto msg = values;
             msg.push_front(attr);
             msg.push_front(obj.first);

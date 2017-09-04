@@ -177,21 +177,6 @@ class Scene : public RootObject
     void unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second);
 
     /**
-     * \brief Link objects, one of them being a ghost
-     * \param first Child object
-     * \param second Parent object
-     * \return Return true if the linking succeeded
-     */
-    bool linkGhost(const std::string& first, const std::string& second);
-
-    /**
-     * \brief Unlink two objects, one of them being a ghost
-     * \param first Child object
-     * \param second Parent object
-     */
-    void unlinkGhost(const std::string& first, const std::string& second);
-
-    /**
      * \brief Remove an object
      * \param name Object name
      */
@@ -238,8 +223,6 @@ class Scene : public RootObject
     std::shared_ptr<GlWindow> _mainWindow;
     bool _isRunning{false};
 
-    std::unordered_map<std::string, std::shared_ptr<BaseObject>> _ghostObjects;
-
     // Gui exists in master scene whatever the configuration
     std::shared_ptr<Gui> _gui;
     bool _guiLinkedToWindow{false};
@@ -282,6 +265,8 @@ class Scene : public RootObject
     GLuint _maxSwapBarriers{0};
 
     unsigned long _nextId{0};
+
+    static std::vector<std::string> _ghostableTypes;
 
     /**
      * \brief Find which OpenGL version is available (from a predefined list)

@@ -231,6 +231,18 @@ class BaseObject
     inline virtual void setSavable(bool savable) { _savable = savable; }
 
     /**
+     * Set the object as a ghost, meaning it mimics an object in another scene
+     * \param ghost If true, set as ghost
+     */
+    inline bool setGhost(bool ghost) { _ghost = ghost; }
+
+    /**
+     * Get whether the object ghosts an object in another scene
+     * \return Return true if this object is a ghost
+     */
+    inline bool isGhost() const { return _ghost; }
+
+    /**
      * \brief Update the content of the object
      */
     virtual void update() {}
@@ -326,6 +338,8 @@ class BaseObject
 
     std::unordered_map<std::string, AttributeFunctor> _attribFunctions; //!< Map of all attributes
     bool _updatedParams{true};                                          //!< True if the parameters have been updated and the object needs to reflect these changes
+
+    bool _ghost{false}; //!< True if the object ghosts an object in another scene
 
     /**
      * \brief Initialize some generic attributes
