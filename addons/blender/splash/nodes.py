@@ -21,7 +21,7 @@
 import numpy
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
-from math import floor
+from math import floor, pi
 from mathutils import Vector, Matrix
 
 import imp
@@ -103,6 +103,9 @@ class SplashBaseNode(Node, SplashTreeNode):
     def exportProperties(self, exportPath):
         pass
 
+    def update(self):
+        self.updateSockets()
+
     def validate(self):
         return True, ""
 
@@ -161,7 +164,7 @@ class SplashCameraNode(SplashBaseNode):
         return values
 
     def update(self):
-        self.updateSockets()
+        super().update()
 
 
 class SplashGuiNode(SplashBaseNode):
@@ -191,7 +194,7 @@ class SplashGuiNode(SplashBaseNode):
         return values
 
     def update(self):
-        pass
+        super().update()
 
 
 class SplashImageNode(SplashBaseNode):
@@ -277,7 +280,7 @@ class SplashImageNode(SplashBaseNode):
         return values
 
     def update(self):
-        pass
+        super().update()
 
     def validate(self):
         if self.inputs['File'].default_value == "":
@@ -354,7 +357,7 @@ class SplashMeshNode(SplashBaseNode):
         return values
 
     def update(self):
-        pass
+        super().update()
 
     def validate(self):
         object_name = self.inputs['Object'].default_value
@@ -374,6 +377,7 @@ class SplashObjectNode(SplashBaseNode):
     sp_acceptedLinks = [
         'SplashImageNodeType',
         'SplashMeshNodeType',
+        'SplashProbeNodeType'
         ]
 
     sp_cullingModes = [
@@ -405,6 +409,61 @@ class SplashObjectNode(SplashBaseNode):
                            self.inputs['Color'].default_value[2],
                            self.inputs['Color'].default_value[3]]
         values['sideness'] = int(self.sp_cullingModeProperty)
+
+        return values
+
+    def update(self):
+        super().update()
+
+
+class SplashProbeNode(SplashBaseNode):
+    '''Splash virtual probe node'''
+    bl_idname = 'SplashProbeNodeType'
+    bl_label = 'Probe'
+
+    sp_acceptedLinks = ['SplashObjectNodeType']
+
+    sp_projectionType = [
+        ("0", "equirectangular", "Equirectangular"),
+        ("1", "spherical", "Spherical")
+    ]
+    sp_projectionTypeProperty = bpy.props.EnumProperty(name="Projection",
+        description="Projection type",
+        items=sp_projectionType,
+        default="0")
+
+    def draw_buttons(self, context, layout):
+        layout.prop(self, "name")
+        row = layout.row()
+        row.prop(self, "sp_projectionTypeProperty")
+        row = layout.row()
+        operator = row.operator("splash.select_object", text="Select probing object")
+        operator.node_name = self.name
+
+    def init(self, context):
+        self.inputs.new('NodeSocketInt', 'Render width').default_value = 2048
+        self.inputs.new('NodeSocketInt', 'Render height').default_value = 2048
+        self.inputs.new('NodeSocketString', 'Object').default_value = ""
+        self.inputs.new('SplashLinkSocket', "Input link")
+        self.outputs.new('SplashLinkSocket', "Output link")
+
+    def exportProperties(self, exportPath):
+        values = {}
+        values['type'] = "\"virtual_probe\""
+        values['size'] = [self.inputs['Render width'].default_value, self.inputs['Render height'].default_value]
+        values['projection'] = "\"{}\"".format(self.sp_projectionType[int(self.sp_projectionTypeProperty)][1])
+
+        selected_object = bpy.data.objects.get(self.inputs['Object'].default_value)
+        if selected_object is None:
+            values['position'] = [0.0, 0.0, 0.0]
+            values['rotation'] = [0.0, 0.0, 0.0]
+        else:
+            values['position'] = [selected_object.location.x,
+                                  selected_object.location.y,
+                                  selected_object.location.z]
+            values['rotation'] = [selected_object.rotation_euler.x / pi * 180.0,
+                                  selected_object.rotation_euler.y / pi * 180.0,
+                                  selected_object.rotation_euler.z / pi * 180.0]
 
         return values
 
@@ -445,7 +504,7 @@ class SplashSceneNode(SplashBaseNode):
         return values
 
     def update(self):
-        self.updateSockets()
+        super().update()
 
 
 class SplashWindowNode(SplashBaseNode):
@@ -491,7 +550,7 @@ class SplashWindowNode(SplashBaseNode):
         return values
 
     def update(self):
-        self.updateSockets()
+        super().update()
 
 
 class SplashWorldNode(SplashBaseNode):
@@ -530,7 +589,7 @@ class SplashWorldNode(SplashBaseNode):
         return values
 
     def update(self):
-        self.updateSockets()
+        super().update()
 
 
 import nodeitems_utils
@@ -549,6 +608,7 @@ node_categories = [
         NodeItem("SplashImageNodeType"),
         NodeItem("SplashMeshNodeType"),
         NodeItem("SplashObjectNodeType"),
+        NodeItem("SplashProbeNodeType"),
         NodeItem("SplashSceneNodeType"),
         NodeItem("SplashWindowNodeType"),
         NodeItem("SplashWorldNodeType"),

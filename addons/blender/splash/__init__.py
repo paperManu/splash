@@ -132,6 +132,7 @@ classes = (
     nodes.SplashGuiNode,
     nodes.SplashImageNode,
     nodes.SplashMeshNode,
+    nodes.SplashProbeNode,
     nodes.SplashObjectNode,
     nodes.SplashSceneNode,
     nodes.SplashWindowNode,

@@ -395,7 +395,7 @@ void Factory::registerObjects()
 
     _objectBook["virtual_probe"] = Page(
         [&]() {
-            if (!_isScene)
+            if (!_scene)
                 return dynamic_pointer_cast<BaseObject>(make_shared<VirtualProbe>(nullptr));
             else
                 return dynamic_pointer_cast<BaseObject>(make_shared<VirtualProbe>(_root));
