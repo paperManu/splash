@@ -52,6 +52,7 @@ Window::Window(RootObject* root)
         if (w.get() == nullptr)
             return;
         _window = w;
+        updateSwapInterval(scene->getSwapInterval());
     }
 
     _isInitialized = setProjectionSurface();
@@ -517,7 +518,7 @@ bool Window::switchFullscreen(int screenId)
     }
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
-    updateSwapInterval();
+    updateSwapInterval(_swapInterval);
     _resized = true;
 
     setEventsCallbacks();
@@ -693,7 +694,7 @@ void Window::setWindowDecoration(bool hasDecoration)
     }
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
-    updateSwapInterval();
+    updateSwapInterval(_swapInterval);
     _resized = true;
 
     setEventsCallbacks();
@@ -703,11 +704,12 @@ void Window::setWindowDecoration(bool hasDecoration)
 }
 
 /*************/
-void Window::updateSwapInterval()
+void Window::updateSwapInterval(int swapInterval)
 {
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
+    _swapInterval = max<int>(-1, swapInterval);
     glfwSwapInterval(_swapInterval);
 
     _window->releaseContext();
@@ -824,8 +826,7 @@ void Window::registerAttributes()
 
     addAttribute("swapInterval",
         [&](const Values& args) {
-            _swapInterval = max(-1, args[0].as<int>());
-            updateSwapInterval();
+            updateSwapInterval(args[0].as<int>());
             return true;
         },
         {'n'});

@@ -265,8 +265,9 @@ class Window : public BaseObject
 
     /**
      * \brief Update the swap interval. Call this when the _swapInterval has been changed
+     * \param swapInterval Desired swap interval
      */
-    void updateSwapInterval();
+    void updateSwapInterval(int swapInterval);
 
     /**
      * \brief Update the window size and position to reflect its attributes

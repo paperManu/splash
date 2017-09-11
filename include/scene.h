@@ -142,6 +142,12 @@ class Scene : public RootObject
     bool getStatus() const { return _status; }
 
     /**
+     * Get the swap interval for this whole scene
+     * \return Return the swap interval
+     */
+    int getSwapInterval() const { return _swapInterval; }
+
+    /**
      * \brief Check whether it is initialized
      * \return Return true if the Scene is initialized
      */

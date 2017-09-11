@@ -151,10 +151,6 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
                 _guiLinkedToWindow = true;
             }
         }
-
-        // Special treatment for the windows
-        if (type == "window")
-            obj->setAttribute("swapInterval", {_swapInterval});
     }
 
     return obj;
@@ -1058,7 +1054,7 @@ void Scene::registerAttributes()
         },
         [&]() -> Values { return {(int)_swapInterval}; },
         {'n'});
-    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible ");
 
     addAttribute("swapTest", [&](const Values& args) {
         addTask([=]() {
