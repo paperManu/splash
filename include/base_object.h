@@ -234,7 +234,7 @@ class BaseObject
      * Set the object as a ghost, meaning it mimics an object in another scene
      * \param ghost If true, set as ghost
      */
-    inline bool setGhost(bool ghost) { _ghost = ghost; }
+    inline void setGhost(bool ghost) { _ghost = ghost; }
 
     /**
      * Get whether the object ghosts an object in another scene

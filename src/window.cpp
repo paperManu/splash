@@ -199,6 +199,8 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         auto scene = dynamic_cast<Scene*>(_root);
+        if (!scene)
+            return false;
         // Warps need to be duplicated in the master scene, to be available in the gui
         // So we create them asynchronously
         auto warpName = getName() + "_" + obj->getName() + "_warp";
