@@ -1299,6 +1299,22 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("deleteObject", "Delete an object given its name");
 
+    addAttribute("link",
+        [&](const Values& args) {
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", args); });
+            return true;
+        },
+        {'s', 's'});
+    setAttributeDescription("link", "Link the two given objects");
+
+    addAttribute("unlink",
+        [&](const Values& args) {
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "unlink", args); });
+            return true;
+        },
+        {'s', 's'});
+    setAttributeDescription("unlink", "Unlink the two given objects");
+
     addAttribute("flashBG",
         [&](const Values& args) {
             addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].as<int>()}); });

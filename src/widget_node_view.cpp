@@ -201,12 +201,12 @@ void GuiNodeView::renderNode(const string& name)
             if (io.KeyShift)
             {
                 if (auto scene = dynamic_cast<Scene*>(_root))
-                    scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
+                    setGlobal("link", {_sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
                 if (auto scene = dynamic_cast<Scene*>(_root))
-                    scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
+                    setGlobal("unlink", {_sourceNode, name});
             }
         }
 
