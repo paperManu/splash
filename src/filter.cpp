@@ -264,7 +264,7 @@ void Filter::setOutput()
     }
     else
     {
-        Log::get() << Log::MESSAGE << "Filter::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Filter::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
     }
 
     // Setup the virtual screen

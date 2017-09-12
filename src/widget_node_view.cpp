@@ -30,7 +30,7 @@ void GuiNodeView::render()
 
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
-            {"window sink_shmdata", {8, 48}},
+            {"window sink", {8, 48}},
             {"warp", {32, 88}},
             {"camera", {8, 128}},
             {"object", {32, 168}},

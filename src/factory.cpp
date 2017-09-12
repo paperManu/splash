@@ -28,6 +28,7 @@
 #include "./mesh.h"
 #if HAVE_SHMDATA
 #include "./mesh_shmdata.h"
+#include "./sink.h"
 #include "./sink_shmdata.h"
 #include "./sink_shmdata_encoded.h"
 #endif
@@ -319,6 +320,11 @@ void Factory::registerObjects()
         BaseObject::Category::MESH,
         "mesh from obj file",
         "Mesh (vertices and UVs) describing a projection surface, read from a .obj file.");
+
+    _objectBook["sink"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink>(_root)); },
+        BaseObject::Category::MISC,
+        "sink a texture to a host buffer",
+        "Get the texture content to a host buffer. Only used internally.");
 
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(

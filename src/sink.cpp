@@ -37,6 +37,13 @@ Sink::~Sink()
 }
 
 /*************/
+string Sink::getCaps() const
+{
+    return "video/x-raw,format=(string)" + _spec.format + ",width=(int)" + to_string(_spec.width) + ",height=(int)" + to_string(_spec.height) + ",framerate=(fraction)" +
+           to_string(_framerate) + "/1,pixel-aspect-ratio=(fraction)1/1";
+}
+
+/*************/
 bool Sink::linkTo(const shared_ptr<BaseObject>& obj)
 {
     // Mandatory before trying to link
@@ -124,6 +131,16 @@ void Sink::update()
     _pboWriteIndex = (_pboWriteIndex + 1) % _pbos.size();
 
     _mappedPixels = (GLubyte*)glMapNamedBufferRange(_pbos[_pboWriteIndex], 0, _spec.rawSize(), GL_MAP_READ_BIT);
+}
+
+/*************/
+void Sink::handlePixels(const char* pixels, const ImageBufferSpec& spec)
+{
+    auto size = spec.rawSize();
+    if (size != _buffer.size())
+        _buffer.resize(size);
+
+    memcpy(_buffer.data(), pixels, size);
 }
 
 /*************/

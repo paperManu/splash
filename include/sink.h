@@ -34,6 +34,7 @@
 #include "./base_object.h"
 #include "./attribute.h"
 #include "./coretypes.h"
+#include "./resizable_array.h"
 #include "./texture.h"
 
 namespace Splash
@@ -51,6 +52,18 @@ class Sink : public BaseObject
      * Destructor
      */
     virtual ~Sink() override;
+
+    /**
+     * Get the current buffer as a resizable array
+     * \return Return the buffer
+     */
+    ResizableArray<uint8_t> getBuffer() const { return _buffer; };
+
+    /**
+     * Generate a caps from the input texture spec
+     * \return Return the generated caps
+     */
+    std::string getCaps() const;
 
     /**
      * Try to link the given BaseObject to this object
@@ -86,7 +99,8 @@ class Sink : public BaseObject
     std::shared_ptr<Texture> _inputTexture{nullptr};
     ImageBufferSpec _spec{};
     ImageBuffer _image{};
-    std::mutex _lockPixels;
+    std::mutex _lockPixels{};
+    ResizableArray<uint8_t> _buffer{};
 
     bool _opened{false}; //!< If true, the sink lets frames through
 
@@ -99,7 +113,7 @@ class Sink : public BaseObject
     /**
      * Class to be implemented to copy the _mappedPixels somewhere
      */
-    virtual void handlePixels(const char* pixels, const ImageBufferSpec& spec) = 0;
+    virtual void handlePixels(const char* pixels, const ImageBufferSpec& spec);
 
     /**
      * \brief Update the pbos according to the parameters

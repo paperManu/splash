@@ -11,6 +11,16 @@ namespace Splash
 {
 
 /*************/
+shared_ptr<BaseObject> ControllerObject::getObject(const string& name) const
+{
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return {nullptr};
+
+    return scene->getObject(name);
+}
+
+/*************/
 vector<string> ControllerObject::getObjectNames() const
 {
     auto scene = dynamic_cast<Scene*>(_root);
@@ -184,6 +194,16 @@ void ControllerObject::setGlobal(const string& name, const Values& values) const
         return;
 
     scene->sendMessageToWorld(name, values);
+}
+
+/*************/
+void ControllerObject::setInScene(const string& name, const Values& values) const
+{
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return;
+
+    scene->setAttribute(name, values);
 }
 
 /*************/
