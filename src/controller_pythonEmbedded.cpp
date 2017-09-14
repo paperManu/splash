@@ -290,7 +290,7 @@ PyTypeObject PythonEmbedded::pythonSinkType = {
 /*******************/
 PythonEmbedded* PythonEmbedded::getSplashInstance()
 {
-    return static_cast<PythonEmbedded*>(PyCapsule_Import("splash.splash", 0));
+    return static_cast<PythonEmbedded*>(PyCapsule_Import("splash._splash", 0));
 }
 
 /*************/
@@ -1059,8 +1059,8 @@ void PythonEmbedded::loop()
 
     // Set the current instance in a capsule
     auto module = PyImport_ImportModule("splash");
-    auto capsule = PyCapsule_New((void*)this, "splash.splash", nullptr);
-    PyDict_SetItemString(PyModule_GetDict(module), "splash", capsule);
+    auto capsule = PyCapsule_New((void*)this, "splash._splash", nullptr);
+    PyDict_SetItemString(PyModule_GetDict(module), "_splash", capsule);
     Py_DECREF(capsule);
 
     PyRun_SimpleString("import sys");
