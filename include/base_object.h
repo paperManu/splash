@@ -189,7 +189,7 @@ class BaseObject
      * \param args Values object which will hold the attribute values
      * \param includeDistant Return true even if the attribute is distant
      * \param includeNonSavable Return true even if the attribute is not savable
-     * \return Return true if the parameter exists
+     * \return Return true if the parameter exists and is savable
      */
     bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false, bool includeNonSavable = false) const;
 

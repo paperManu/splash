@@ -47,11 +47,17 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
 {
     auto that = getSplashInstance();
     if (!that)
+    {
+        PyErr_SetString(SplashError, "Can not access the Python embedded interpreter. Something is very wrong here...");
         return -1;
+    }
 
     auto root = that->_root;
     if (!root)
+    {
+        PyErr_SetString(SplashError, "Can not access the root object");
         return -1;
+    }
 
     char* source = nullptr;
     int width = 512;
@@ -62,9 +68,14 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
         return -1;
 
     if (source)
+    {
         self->sourceName = string(source);
+    }
     else
+    {
+        PyErr_SetString(SplashError, "No source object specified");
         return -1;
+    }
 
     self->width = width;
     self->height = height;
@@ -73,7 +84,10 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
     auto objects = that->getObjectNames();
     auto objectIt = std::find(objects.begin(), objects.end(), self->sourceName);
     if (objectIt == objects.end())
+    {
+        PyErr_SetString(SplashError, "The specified source object does not exist");
         return -1;
+    }
 
     self->sinkName = that->getName() + "_sink_" + self->sourceName;
     self->filterName = that->getName() + "_filter_" + self->sourceName;
@@ -290,7 +304,18 @@ PyTypeObject PythonEmbedded::pythonSinkType = {
 /*******************/
 PythonEmbedded* PythonEmbedded::getSplashInstance()
 {
-    return static_cast<PythonEmbedded*>(PyCapsule_Import("splash._splash", 0));
+    auto that = static_cast<PythonEmbedded*>(PyCapsule_Import("splash._splash", 0));
+    if (!that->_pythonModule)
+    {
+        // If _pythonModule is not set, it is most certainly because the Splash Python method
+        // is called during the module load.
+        PyErr_SetString(SplashError, "Splash method called in the global scope");
+        return nullptr;
+    }
+    else
+    {
+        return that;
+    }
 }
 
 /*************/
@@ -854,6 +879,12 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
         return Py_False;
     }
 
+    // Get the value of the attribute if it has already been set during a previous setAttribute
+    // (as attributes are not loaded in any order, the file may have been loaded after the other attributes are set)
+    auto previousValue = that->getObjectAttribute(that->getName(), attributeName);
+
+    // Add the attribute to the Python interpreter object
+    // This will replace any previous (or default) attribute (setter and getter included)
     that->addAttribute(attributeName,
         [=](const Values& args) {
             PyEval_AcquireThread(that->_pythonGlobalThreadState);
@@ -901,6 +932,10 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
                 return {value};
         },
         {});
+
+    // Set the previous attribute if needed
+    if (!previousValue.empty())
+        that->setObject(that->getName(), attributeName, previousValue);
 
     Py_INCREF(Py_True);
     return Py_True;

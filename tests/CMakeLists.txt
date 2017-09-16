@@ -63,6 +63,7 @@ link_directories(${PYTHON_LIBRARY_DIRS})
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
     check_attributeFunctor.cpp
+    check_base_object.cpp
     check_resizableArray.cpp
     check_value.cpp
 )

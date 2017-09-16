@@ -117,7 +117,10 @@ bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDi
 {
     auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
+    {
+        args.clear();
         return false;
+    }
 
     args = attribFunction->second();
 
