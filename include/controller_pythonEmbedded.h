@@ -80,7 +80,7 @@ class PythonEmbedded : public ControllerObject
     std::string _scriptName{""}; //!< Name of the module (filename minus .py)
 
     bool _doLoop{false};                     //!< Set to false to stop the Python loop
-    int _loopDurationMs{5};                  //!< Time between loops in ms
+    int _updateRate{200};                    //!< Loops per second
     std::thread _loopThread{};               //!< Python thread loop
     std::promise<bool> _loopThreadPromise{}; //!< Holds the output result from the threading loop
 

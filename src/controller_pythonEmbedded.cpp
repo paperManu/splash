@@ -1106,7 +1106,7 @@ void PythonEmbedded::loop()
             PyThreadState_Swap(_pythonGlobalThreadState);
             PyEval_ReleaseThread(_pythonGlobalThreadState);
 
-            Timer::get() >> _loopDurationMs * 1000 >> timerName;
+            Timer::get() >> 1.f / static_cast<float>(_updateRate) * 1000.f >> timerName;
         }
 
         PyEval_AcquireThread(_pythonGlobalThreadState);
@@ -1235,6 +1235,15 @@ void PythonEmbedded::registerAttributes()
 
     addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
+
+    addAttribute("loopRate",
+        [&](const Values& args) {
+            _updateRate = max(1, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_updateRate}; },
+        {'n'});
+    setAttributeDescription("loopRate", "Set the rate at which the loop is called");
 }
 
 } // end of namespace
