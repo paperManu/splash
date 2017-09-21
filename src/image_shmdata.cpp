@@ -3,7 +3,7 @@
 #include <hap.h>
 #include <regex>
 
-#ifdef HAVE_SSE2
+#if HAVE_SSE2
 #define GLM_FORCE_SSE2
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
