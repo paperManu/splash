@@ -435,6 +435,10 @@ void Scene::run()
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
+        // This gets the whole loop duration
+        Timer::get() >> "loop_scene";
+        Timer::get() << "loop_scene";
+
         // Execute waiting tasks
         runTasks();
 
@@ -444,9 +448,9 @@ void Scene::run()
             continue;
         }
 
-        Timer::get() << "sceneLoop";
+        Timer::get() << "rendering";
         render();
-        Timer::get() >> "sceneLoop";
+        Timer::get() >> "rendering";
 
         Timer::get() << "inputsUpdate";
         updateInputs();
@@ -454,9 +458,7 @@ void Scene::run()
     }
     _mainWindow->releaseContext();
 
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
-    _textureUploadCondition.notify_all();
-    lockTexture.unlock();
+    signalBufferObjectUpdated();
     _textureUploadFuture.get();
 }
 
@@ -490,8 +492,9 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        unique_lock<mutex> lockUploadTexture(_textureUploadMutex);
-        _textureUploadCondition.wait(lockUploadTexture);
+        waitSignalBufferObjectUpdated();
+        Timer::get() >> "loop_texture";
+        Timer::get() << "loop_texture";
 
         if (!_isRunning)
             break;
@@ -508,7 +511,7 @@ void Scene::textureUploadRun()
 
         vector<shared_ptr<Texture>> textures;
         bool expectedAtomicValue = false;
-        if (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
         {
             for (auto& obj : _objects)
                 if (obj.second->getType().find("texture") != string::npos)
@@ -531,6 +534,7 @@ void Scene::textureUploadRun()
 
         Timer::get() >> "textureUpload";
     }
+
     _textureUploadWindow->releaseContext();
 }
 
@@ -581,13 +585,6 @@ void Scene::sendMessageToWorld(const string& message, const Values& value)
 Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value, const unsigned long long timeout)
 {
     return sendMessageWithAnswer("world", message, value, timeout);
-}
-
-/*************/
-void Scene::waitTextureUpload()
-{
-    lock_guard<mutex> lockTexture(_textureUploadMutex);
-    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/
@@ -866,12 +863,6 @@ void Scene::registerAttributes()
         {'s', 's'});
     setAttributeDescription("add", "Add an object of the given name, type, and optionally the target scene");
 
-    addAttribute("bufferUploaded", [&](const Values& args) {
-        _textureUploadCondition.notify_all();
-        return true;
-    });
-    setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
-
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {
             setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
@@ -983,7 +974,7 @@ void Scene::registerAttributes()
     setAttributeDescription("logToFile", "If set to 1, the process holding the Scene will try to write log to file");
 
     addAttribute("ping", [&](const Values& args) {
-        _textureUploadCondition.notify_all();
+        signalBufferObjectUpdated();
         sendMessageToWorld("pong", {_name});
         return true;
     });

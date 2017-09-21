@@ -1123,8 +1123,8 @@ void Gui::initImWidgets()
         static float buf{0.f};
         static float evt{0.f};
 
-        sce = sce * 0.9 + Timer::get()["sceneLoop"] * 0.001 * 0.1;
-        wrl = wrl * 0.9 + Timer::get()["worldLoop"] * 0.001 * 0.1;
+        sce = sce * 0.9 + Timer::get()["loop_scene"] * 0.001 * 0.1;
+        wrl = wrl * 0.9 + Timer::get()["loop_world"] * 0.001 * 0.1;
         fps = 1e3 / std::max(1.f, sce);
         worldFps = 1e3 / std::max(1.f, wrl);
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;

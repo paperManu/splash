@@ -59,8 +59,8 @@ void World::run()
 
     while (true)
     {
-        Timer::get() << "worldLoop";
-        Timer::get() << "innerWorldLoop";
+        Timer::get() << "loop_world";
+        Timer::get() << "loop_world_inner";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
         // Execute waiting tasks
@@ -102,8 +102,7 @@ void World::run()
             Timer::get() >> "serialize";
 
             // Wait for previous buffers to be uploaded
-            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 30))); // Maximum time to wait for frames to arrive
-            sendMessage(SPLASH_ALL_PEERS, "bufferUploaded", {});
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3))); // Maximum time to wait for frames to arrive
             Timer::get() >> "upload";
 
             // Ask for the upload of the new buffers, during the next world loop
@@ -149,12 +148,12 @@ void World::run()
         }
 
         // Sync with buffer object update
-        Timer::get() >> "innerWorldLoop";
-        auto elapsed = Timer::get().getDuration("innerWorldLoop");
+        Timer::get() >> "loop_world_inner";
+        auto elapsed = Timer::get().getDuration("loop_world_inner");
         waitSignalBufferObjectUpdated(1e6 / (float)_worldFramerate - elapsed);
 
         // Sync to world framerate
-        Timer::get() >> "worldLoop";
+        Timer::get() >> "loop_world";
     }
 }
 
@@ -1386,7 +1385,7 @@ void World::registerAttributes()
         },
         [&]() -> Values { return {(int)_worldFramerate}; },
         {'n'});
-    setAttributeDescription("framerate", "Set the refresh rate for the world (no relation to video framerate)");
+    setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
 
     addAttribute("getAttribute",
         [&](const Values& args) {

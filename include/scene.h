@@ -220,11 +220,6 @@ class Scene : public RootObject
      */
     Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
-    /**
-     * \brief Wait for synchronization with texture upload. This must to be called from a GL context
-     */
-    void waitTextureUpload();
-
   protected:
     std::shared_ptr<GlWindow> _mainWindow;
     bool _isRunning{false};
@@ -259,8 +254,6 @@ class Scene : public RootObject
 
     // Texture upload context
     std::future<void> _textureUploadFuture;
-    std::mutex _textureUploadMutex;
-    std::condition_variable _textureUploadCondition;
     std::shared_ptr<GlWindow> _textureUploadWindow;
     std::atomic_bool _textureUploadDone{false};
     Spinlock _textureMutex; //!< Sync between texture and render loops

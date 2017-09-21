@@ -119,13 +119,14 @@ void RootObject::setFromSerializedObject(const string& name, shared_ptr<Serializ
 /*************/
 void RootObject::signalBufferObjectUpdated()
 {
+    unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
+
+    _bufferObjectUpdated = true;
     // Only a single buffer has to wave for update at a time
     if (!_bufferObjectSingleMutex.try_lock())
         return;
 
-    unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
     _bufferObjectUpdatedCondition.notify_all();
-
     _bufferObjectSingleMutex.unlock();
 }
 
@@ -133,8 +134,26 @@ void RootObject::signalBufferObjectUpdated()
 bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 {
     unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
-    auto status = _bufferObjectUpdatedCondition.wait_for(lockCondition, chrono::microseconds(timeout));
-    return (status == cv_status::no_timeout);
+
+    bool expectedValue = true;
+    auto bufferWasUpdated = _bufferObjectUpdated;
+
+    if (bufferWasUpdated == true)
+    {
+        _bufferObjectUpdated = false;
+        return true;
+    }
+    else if (timeout != 0)
+    {
+        auto status = _bufferObjectUpdatedCondition.wait_for(lockCondition, chrono::microseconds(timeout));
+        _bufferObjectUpdated = false;
+        return (status == cv_status::no_timeout);
+    }
+    else
+    {
+        _bufferObjectUpdatedCondition.wait(lockCondition);
+        return true;
+    }
 }
 
 /*************/

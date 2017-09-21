@@ -42,7 +42,7 @@ class GuiGraph : public GuiWidget
 
   private:
     unsigned int _maxHistoryLength{300};
-    std::unordered_map<std::string, std::deque<unsigned long long>> _durationGraph;
+    std::map<std::string, std::deque<unsigned long long>> _durationGraph;
 };
 
 } // end of namespace
