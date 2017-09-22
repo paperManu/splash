@@ -157,7 +157,7 @@ void GuiNodeView::render()
         ImGui::Text("Select a type to add an object:");
         ImGui::PushID("addObject");
         if (ImGui::Combo("", &itemIndex, items.data(), items.size()))
-            setGlobal("addObject", {_objectTypes[itemIndex]});
+            setWorldAttribute("addObject", {_objectTypes[itemIndex]});
         ImGui::PopID();
     }
 }
@@ -201,12 +201,12 @@ void GuiNodeView::renderNode(const string& name)
             if (io.KeyShift)
             {
                 if (auto scene = dynamic_cast<Scene*>(_root))
-                    setGlobal("link", {_sourceNode, name});
+                    setWorldAttribute("link", {_sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
                 if (auto scene = dynamic_cast<Scene*>(_root))
-                    setGlobal("unlink", {_sourceNode, name});
+                    setWorldAttribute("unlink", {_sourceNode, name});
             }
         }
 

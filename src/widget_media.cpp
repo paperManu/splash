@@ -239,7 +239,7 @@ void GuiMedia::render()
 
                         if (updated)
                         {
-                            setObject(mediaName, "playlist", playlist);
+                            setObjectAttribute(mediaName, "playlist", playlist);
                         }
 
                         ImGui::TreePop();
@@ -337,7 +337,7 @@ void GuiMedia::replaceMedia(const string& previousMedia, const string& type)
         msg.push_back(object->getName());
     }
 
-    setGlobal("replaceObject", msg);
+    setWorldAttribute("replaceObject", msg);
 }
 
 /*************/

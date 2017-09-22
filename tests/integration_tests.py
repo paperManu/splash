@@ -54,4 +54,4 @@ def runTests():
         print("Press a key to continue")
         input()
 
-    splash.set_global("quit", [])
+    splash.set_world_attribute("quit", [])

@@ -343,7 +343,8 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 
                     // Callback for dragndrop: replace the file path in the field
                     if (ImGui::IsItemHovered())
-                        UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObject(objName, attrName, {state.value[0].as<string>()}); });
+                        UserInput::setCallback(
+                            UserInput::State("dragndrop"), [=](const UserInput::State& state) { setObjectAttribute(objName, attrName, {state.value[0].as<string>()}); });
                     else // Not really necessary as the GUI sets a default dragndrop callback at each frame, but anyway
                         UserInput::resetCallback(UserInput::State("dragndrop"));
 

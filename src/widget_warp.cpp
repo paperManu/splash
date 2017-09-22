@@ -38,9 +38,9 @@ void GuiWarp::render()
                     dynamic_pointer_cast<Camera>(obj)->render();
 
             if (_currentWarp == i)
-                setObject(warp->getName(), "showControlLattice", {1});
+                setObjectAttribute(warp->getName(), "showControlLattice", {1});
             else
-                setObject(warp->getName(), "showControlLattice", {0});
+                setObjectAttribute(warp->getName(), "showControlLattice", {0});
 
             warp->render();
 
@@ -70,7 +70,7 @@ void GuiWarp::render()
 
             warp->getAttribute("patchResolution", values);
             if (ImGui::InputInt("patchResolution", (int*)values[0].data(), 1, 32, ImGuiInputTextFlags_EnterReturnsTrue))
-                setObject(warp->getName(), "patchResolution", {values[0].as<int>()});
+                setObjectAttribute(warp->getName(), "patchResolution", {values[0].as<int>()});
 
             warp->getAttribute("patchSize", values);
             vector<int> tmp;
@@ -78,7 +78,7 @@ void GuiWarp::render()
             tmp.push_back(values[1].as<int>());
 
             if (ImGui::InputInt2("patchSize", tmp.data(), ImGuiInputTextFlags_EnterReturnsTrue))
-                setObject(warp->getName(), "patchSize", {tmp[0], tmp[1]});
+                setObjectAttribute(warp->getName(), "patchSize", {tmp[0], tmp[1]});
 
             if (auto texture = warp->getTexture())
             {
@@ -107,7 +107,7 @@ void GuiWarp::render()
     {
         if (_currentWarpName != "")
         {
-            setObject(_currentWarpName, "showControlLattice", {0});
+            setObjectAttribute(_currentWarpName, "showControlLattice", {0});
             _currentWarpName = "";
         }
     }
@@ -148,7 +148,7 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
                 _currentControlPointIndex = 0;
         }
 
-        setObject(warp->getName(), "showControlPoint", {_currentControlPointIndex});
+        setObjectAttribute(warp->getName(), "showControlPoint", {_currentControlPointIndex});
     }
     // Arrow keys
     {
@@ -170,28 +170,28 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[0] = point[0].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            setObject(warp->getName(), "patchControl", controlPoints);
+            setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
         if (io.KeysDown[263])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[0] = point[0].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            setObject(warp->getName(), "patchControl", controlPoints);
+            setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
         if (io.KeysDown[264])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[1] = point[1].as<float>() - delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            setObject(warp->getName(), "patchControl", controlPoints);
+            setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
         if (io.KeysDown[265])
         {
             Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();
             point[1] = point[1].as<float>() + delta;
             controlPoints[_currentControlPointIndex + 2] = point;
-            setObject(warp->getName(), "patchControl", controlPoints);
+            setObjectAttribute(warp->getName(), "patchControl", controlPoints);
         }
 
         return;
@@ -213,7 +213,7 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
         // Select a control point
         glm::vec2 picked;
         _currentControlPointIndex = warp->pickControlPoint(glm::vec2(mousePos.x, mousePos.y), picked);
-        setObject(warp->getName(), "showControlPoint", {_currentControlPointIndex});
+        setObjectAttribute(warp->getName(), "showControlPoint", {_currentControlPointIndex});
 
         // Get the distance between the mouse and the point
         Values controlPoints;
@@ -235,7 +235,7 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
         point[1] = mousePos.y + _deltaAtPicking.y;
         controlPoints[_currentControlPointIndex + 2] = point;
 
-        setObject(warp->getName(), "patchControl", controlPoints);
+        setObjectAttribute(warp->getName(), "patchControl", controlPoints);
     }
 }
 

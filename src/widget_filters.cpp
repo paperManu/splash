@@ -64,7 +64,7 @@ void GuiFilters::render()
 
                                 auto newCurves = colorCurves->second;
                                 newCurves[curveId][id] = max(0.f, min(1.f, newCurves[curveId][id].as<float>() - deltaY));
-                                setObject(filterName, colorCurves->first, newCurves);
+                                setObjectAttribute(filterName, colorCurves->first, newCurves);
                             }
                         }
 

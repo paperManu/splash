@@ -187,7 +187,7 @@ void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr
 }
 
 /*************/
-void ControllerObject::setGlobal(const string& name, const Values& values) const
+void ControllerObject::setWorldAttribute(const string& name, const Values& values) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -207,7 +207,7 @@ void ControllerObject::setInScene(const string& name, const Values& values) cons
 }
 
 /*************/
-Values ControllerObject::getGlobal(const string& attr) const
+Values ControllerObject::getWorldAttribute(const string& attr) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -222,7 +222,7 @@ Values ControllerObject::getGlobal(const string& attr) const
 }
 
 /*************/
-void ControllerObject::setObject(const string& name, const string& attr, const Values& values) const
+void ControllerObject::setObjectAttribute(const string& name, const string& attr, const Values& values) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)

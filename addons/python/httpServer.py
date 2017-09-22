@@ -53,7 +53,7 @@ class SplashServer(BaseHTTPRequestHandler):
         elif match[0] == "getObjectLinks":
             result = splash.get_object_links()
             self.sendResult(result)
-        elif match[0] == "setObject":
+        elif match[0] == "setObjectAttribute":
             obj = match[1]
             attr = match[2]
             value = match[3].split('&')
@@ -71,7 +71,7 @@ class SplashServer(BaseHTTPRequestHandler):
                     except:
                         pass
 
-            if splash.set_object(obj, attr, value):
+            if splash.set_object_attribute(obj, attr, value):
                 self.sendResult("OK")
             else:
                 self.sendResult("")

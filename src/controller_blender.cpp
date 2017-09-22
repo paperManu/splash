@@ -82,7 +82,7 @@ void Blender::update()
                 sendBuffer(geometry->getName(), std::move(serializedGeometry));
             }
 
-            setObject(_name, "blendingUpdated", {});
+            setObjectAttribute(_name, "blendingUpdated", {});
         }
         // The non-master scenes only need to activate blending
         else

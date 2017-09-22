@@ -111,7 +111,7 @@ void GuiGlobalView::render()
                 // If shift is pressed, we hide / unhide this camera
                 if (io.KeyCtrl)
                 {
-                    setObject(camera->getName(), "hide", {-1});
+                    setObjectAttribute(camera->getName(), "hide", {-1});
                 }
                 else
                 {
@@ -122,15 +122,15 @@ void GuiGlobalView::render()
                     _camerasHidden = false;
                     _camerasColorized = false;
                     for (auto& cam : cameras)
-                        setObject(cam->getName(), "hide", {0});
+                        setObjectAttribute(cam->getName(), "hide", {0});
 
-                    setObject(_camera->getName(), "frame", {0});
-                    setObject(_camera->getName(), "displayCalibration", {0});
+                    setObjectAttribute(_camera->getName(), "frame", {0});
+                    setObjectAttribute(_camera->getName(), "displayCalibration", {0});
 
                     _camera = camera;
 
-                    setObject(_camera->getName(), "frame", {1});
-                    setObject(_camera->getName(), "displayCalibration", {1});
+                    setObjectAttribute(_camera->getName(), "frame", {1});
+                    setObjectAttribute(_camera->getName(), "displayCalibration", {1});
                     showAllCalibrationPoints(static_cast<Camera::CalibrationPointsVisibility>(_showCalibrationPoints));
                 }
             }
@@ -237,10 +237,10 @@ void GuiGlobalView::nextCamera()
     _camerasHidden = false;
     _camerasColorized = false;
     for (auto& cam : cameras)
-        setObject(cam->getName(), "hide", {0});
+        setObjectAttribute(cam->getName(), "hide", {0});
 
-    setObject(_camera->getName(), "frame", {0});
-    setObject(_camera->getName(), "displayCalibration", {0});
+    setObjectAttribute(_camera->getName(), "frame", {0});
+    setObjectAttribute(_camera->getName(), "displayCalibration", {0});
 
     if (cameras.size() == 0)
         _camera = _guiCamera;
@@ -265,8 +265,8 @@ void GuiGlobalView::nextCamera()
 
     if (_camera != _guiCamera)
     {
-        setObject(_camera->getName(), "frame", {1});
-        setObject(_camera->getName(), "displayCalibration", {1});
+        setObjectAttribute(_camera->getName(), "frame", {1});
+        setObjectAttribute(_camera->getName(), "displayCalibration", {1});
     }
 
     return;
@@ -285,11 +285,11 @@ void GuiGlobalView::revertCalibration()
     if (_previousCameraParameters.size() > 1)
         _previousCameraParameters.pop_back();
 
-    setObject(_camera->getName(), "eye", {params.eye[0], params.eye[1], params.eye[2]});
-    setObject(_camera->getName(), "target", {params.target[0], params.target[1], params.target[2]});
-    setObject(_camera->getName(), "up", {params.up[0], params.up[1], params.up[2]});
-    setObject(_camera->getName(), "fov", {params.fov[0]});
-    setObject(_camera->getName(), "principalPoint", {params.principalPoint[0], params.principalPoint[1]});
+    setObjectAttribute(_camera->getName(), "eye", {params.eye[0], params.eye[1], params.eye[2]});
+    setObjectAttribute(_camera->getName(), "target", {params.target[0], params.target[1], params.target[2]});
+    setObjectAttribute(_camera->getName(), "up", {params.up[0], params.up[1], params.up[2]});
+    setObjectAttribute(_camera->getName(), "fov", {params.fov[0]});
+    setObjectAttribute(_camera->getName(), "principalPoint", {params.principalPoint[0], params.principalPoint[1]});
 }
 
 /*************/
@@ -297,7 +297,7 @@ void GuiGlobalView::showAllCalibrationPoints(Camera::CalibrationPointsVisibility
 {
     if (showPoints == Camera::CalibrationPointsVisibility::switchVisibility)
         _showCalibrationPoints = !_showCalibrationPoints;
-    setObject(_camera->getName(), "showAllCalibrationPoints", {static_cast<int>(showPoints)});
+    setObjectAttribute(_camera->getName(), "showAllCalibrationPoints", {static_cast<int>(showPoints)});
 }
 
 /*************/
@@ -306,7 +306,7 @@ void GuiGlobalView::showAllCamerasCalibrationPoints()
     if (_camera == _guiCamera)
         _guiCamera->setAttribute("switchDisplayAllCalibration", {});
     else
-        setObject(_camera->getName(), "switchDisplayAllCalibration", {});
+        setObjectAttribute(_camera->getName(), "switchDisplayAllCalibration", {});
 }
 
 /*************/
@@ -320,7 +320,7 @@ void GuiGlobalView::colorizeCameraWireframes(bool colorize)
     if (colorize)
     {
         setObjectsOfType("camera", "colorWireframe", {1.0, 0.0, 1.0, 1.0});
-        setObject(_camera->getName(), "colorWireframe", {0.0, 1.0, 0.0, 1.0});
+        setObjectAttribute(_camera->getName(), "colorWireframe", {0.0, 1.0, 0.0, 1.0});
     }
     else
     {
@@ -355,7 +355,7 @@ void GuiGlobalView::propagateCalibration()
     {
         Values values;
         _camera->getAttribute(p, values);
-        setObject(_camera->getName(), p, values);
+        setObjectAttribute(_camera->getName(), p, values);
     }
 }
 
@@ -368,7 +368,7 @@ void GuiGlobalView::hideOtherCameras(bool hide)
     auto cameras = getObjectsOfType("camera");
     for (auto& cam : cameras)
         if (cam.get() != _camera.get())
-            setObject(cam->getName(), "hide", {(int)hide});
+            setObjectAttribute(cam->getName(), "hide", {(int)hide});
     _camerasHidden = hide;
 }
 
@@ -383,11 +383,11 @@ void GuiGlobalView::processJoystickState()
     {
         if (_joyButtons[0] == 1 && _joyButtons[0] != _joyButtonsPrevious[0])
         {
-            setObject(_camera->getName(), "selectPreviousCalibrationPoint", {});
+            setObjectAttribute(_camera->getName(), "selectPreviousCalibrationPoint", {});
         }
         else if (_joyButtons[1] == 1 && _joyButtons[1] != _joyButtonsPrevious[1])
         {
-            setObject(_camera->getName(), "selectNextCalibrationPoint", {});
+            setObjectAttribute(_camera->getName(), "selectNextCalibrationPoint", {});
         }
         else if (_joyButtons[2] == 1)
         {
@@ -530,20 +530,20 @@ void GuiGlobalView::processMouseEvents()
             {
                 Values position = _camera->pickCalibrationPoint(mousePos.x, mousePos.y);
                 if (position.size() == 3)
-                    setObject(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
+                    setObjectAttribute(_camera->getName(), "removeCalibrationPoint", {position[0], position[1], position[2]});
             }
             else if (io.KeyShift) // Define the screenpoint corresponding to the selected calibration point
-                setObject(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
+                setObjectAttribute(_camera->getName(), "setCalibrationPoint", {mousePos.x * 2.f - 1.f, mousePos.y * 2.f - 1.f});
             else if (io.MouseClicked[0]) // Add a new calibration point
             {
                 Values position = _camera->pickVertexOrCalibrationPoint(mousePos.x, mousePos.y);
                 if (position.size() == 3)
                 {
-                    setObject(_camera->getName(), "addCalibrationPoint", {position[0], position[1], position[2]});
+                    setObjectAttribute(_camera->getName(), "addCalibrationPoint", {position[0], position[1], position[2]});
                     _previousPointAdded = position;
                 }
                 else
-                    setObject(_camera->getName(), "deselectCalibrationPoint", {});
+                    setObjectAttribute(_camera->getName(), "deselectCalibrationPoint", {});
             }
             return;
         }
@@ -570,7 +570,7 @@ void GuiGlobalView::processMouseEvents()
             camFov = std::max(2.f, std::min(180.f, camFov));
 
             if (_camera != _guiCamera)
-                setObject(_camera->getName(), "fov", {camFov});
+                setObjectAttribute(_camera->getName(), "fov", {camFov});
             else
                 _camera->setAttribute("fov", {camFov});
         }
@@ -598,14 +598,14 @@ void GuiGlobalView::processMouseEvents()
             float dy = io.MouseDelta.y;
 
             // We reset the up vector. Not ideal, but prevent the camera from being unusable.
-            setObject(_camera->getName(), "up", {0.0, 0.0, 1.0});
+            setObjectAttribute(_camera->getName(), "up", {0.0, 0.0, 1.0});
             if (_camera != _guiCamera)
             {
                 if (_newTarget.size() == 3)
-                    setObject(
+                    setObjectAttribute(
                         _camera->getName(), "rotateAroundPoint", {dx / 100.f, dy / 100.f, 0, _newTarget[0].as<float>(), _newTarget[1].as<float>(), _newTarget[2].as<float>()});
                 else
-                    setObject(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
+                    setObjectAttribute(_camera->getName(), "rotateAroundTarget", {dx / 100.f, dy / 100.f, 0});
             }
             else
             {
@@ -621,7 +621,7 @@ void GuiGlobalView::processMouseEvents()
             float dx = io.MouseDelta.x * _newTargetDistance;
             float dy = io.MouseDelta.y * _newTargetDistance;
             if (_camera != _guiCamera)
-                setObject(_camera->getName(), "pan", {-dx / 100.f, dy / 100.f, 0.f});
+                setObjectAttribute(_camera->getName(), "pan", {-dx / 100.f, dy / 100.f, 0.f});
             else
                 _camera->setAttribute("pan", {-dx / 100.f, dy / 100.f, 0});
         }
@@ -629,7 +629,7 @@ void GuiGlobalView::processMouseEvents()
         {
             float dy = io.MouseDelta.y * _newTargetDistance / 100.f;
             if (_camera != _guiCamera)
-                setObject(_camera->getName(), "forward", {dy});
+                setObjectAttribute(_camera->getName(), "forward", {dy});
             else
                 _camera->setAttribute("forward", {dy});
         }

@@ -97,8 +97,8 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
     that->setInScene("add", {"filter", self->filterName, root->getName()});
     that->setInScene("link", {self->sourceName, self->filterName});
     that->setInScene("link", {self->filterName, self->sinkName});
-    that->setObject(self->sinkName, "framerate", {self->framerate});
-    that->setObject(self->filterName, "sizeOverride", {self->width, self->height});
+    that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
+    that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
 
     return 0;
 }
@@ -156,7 +156,7 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
 
     self->width = width;
     self->height = height;
-    that->setObject(self->filterName, "sizeOverride", {self->width, self->height});
+    that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -182,7 +182,7 @@ PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObjec
     }
 
     self->framerate = framerate;
-    that->setObject(self->sinkName, "framerate", {self->framerate});
+    that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -198,7 +198,7 @@ PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
         return Py_False;
     }
 
-    that->setObject(self->sinkName, "opened", {1});
+    that->setObjectAttribute(self->sinkName, "opened", {1});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -214,7 +214,7 @@ PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
         return Py_False;
     }
 
-    that->setObject(self->sinkName, "opened", {0});
+    that->setObjectAttribute(self->sinkName, "opened", {0});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -701,7 +701,7 @@ PyDoc_STRVAR(pythonSetGlobal_doc__,
     "These attributes are listed in the \"world\" object type\n"
     "\n"
     "Signature:\n"
-    "  splash.set_global(attribute, value)\n"
+    "  splash.set_world_attribute(attribute, value)\n"
     "\n"
     "Args:\n"
     "  attribute (string): global attribute to set\n"
@@ -734,7 +734,7 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObje
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setGlobal(string(attrName), value);
+    that->setWorldAttribute(string(attrName), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -745,7 +745,7 @@ PyDoc_STRVAR(pythonSetObject_doc__,
     "Set the attribute for the object to the given value\n"
     "\n"
     "Signature:\n"
-    "  splash.set_object(objectname, attribute, value)\n"
+    "  splash.set_object_attribute(objectname, attribute, value)\n"
     "\n"
     "Args:\n"
     "  objectname (string): object name\n"
@@ -780,7 +780,7 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObje
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setObject(string(strName), string(strAttr), value);
+    that->setObjectAttribute(string(strName), string(strAttr), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -935,7 +935,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
 
     // Set the previous attribute if needed
     if (!previousValue.empty())
-        that->setObject(that->getName(), attributeName, previousValue);
+        that->setObjectAttribute(that->getName(), attributeName, previousValue);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -957,8 +957,8 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},
     {(const char*)"get_object_reversed_links", (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectReversedLinks_doc__},
     {(const char*)"get_types_from_category", (PyCFunction)PythonEmbedded::pythonGetTypesFromCategory, METH_VARARGS | METH_KEYWORDS, pythonGetTypesFromCategory_doc__},
-    {(const char*)"set_global", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
-    {(const char*)"set_object", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
+    {(const char*)"set_world_attribute", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
+    {(const char*)"set_object_attribute", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
     {(const char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},
     {(const char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
     {nullptr, nullptr, 0, nullptr}
