@@ -48,15 +48,15 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
+link_directories(${SNAPPY_LIBRARY_DIRS})
+link_directories(${ZMQ_LIBRARY_DIRS})
 
 link_directories(${GLFW_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
-link_directories(${ZMQ_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
-link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 
 # Unit tests (executed through 'make check')

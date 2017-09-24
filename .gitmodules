@@ -39,3 +39,6 @@
 [submodule "external/snappy"]
 	path = external/snappy
 	url = https://github.com/google/snappy.git
+[submodule "external/zmq"]
+	path = external/zmq
+	url = https://github.com/zeromq/libzmq.git
