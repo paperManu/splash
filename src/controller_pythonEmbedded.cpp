@@ -341,6 +341,32 @@ PyObject* PythonEmbedded::pythonGetLogs(PyObject* self, PyObject* args)
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetTimings_doc__,
+    "Get the timings from Splash\n"
+    "\n"
+    "splash.get_timings()\n"
+    "\n"
+    "Returns:\n"
+    "  The timers as a dict\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetTimings(PyObject* self, PyObject* args)
+{
+    auto& timings = Timer::get().getDurationMap();
+    PyObject* pythonTimerDict = PyDict_New();
+    for (auto& t : timings)
+    {
+        PyObject* val = Py_BuildValue("K", static_cast<uint64_t>(t.second));
+        PyDict_SetItemString(pythonTimerDict, t.first.c_str(), val);
+        Py_DECREF(val);
+    }
+
+    return pythonTimerDict;
+}
+
+/*************/
 PyDoc_STRVAR(pythonGetObjectList_doc__,
     "Get the list of objects from Splash\n"
     "\n"
@@ -946,6 +972,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
 PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
+    {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
     {(const char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
     {(const char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
     {(const char*)"get_object_attribute_description",
