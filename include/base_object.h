@@ -43,7 +43,7 @@ namespace Splash
 class RootObject;
 
 /*************/
-class BaseObject
+class BaseObject : public std::enable_shared_from_this<BaseObject>
 {
   public:
     enum class Priority
@@ -279,6 +279,21 @@ class BaseObject
      * \return Return the synchronization method
      */
     AttributeFunctor::Sync getAttributeSyncMethod(const std::string& name);
+
+    /**
+     * Register a callback to any call to the setter
+     * \param attr Attribute to add a callback to
+     * \param cb Callback function
+     * \return Return a callback handle
+     */
+    CallbackHandle registerCallback(std::string attr, AttributeFunctor::Callback cb);
+
+    /**
+     * Unregister a callback
+     * \param handle A handle to the callback to remove
+     * \return True if the callback has been successfully removed
+     */
+    bool unregisterCallback(const CallbackHandle& handle);
 
     /**
      * \brief Get the rendering priority for this object

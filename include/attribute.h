@@ -30,6 +30,7 @@
 #include <json/json.h>
 #include <list>
 #include <map>
+#include <string>
 #include <unordered_map>
 
 #include "./coretypes.h"
@@ -37,10 +38,55 @@
 namespace Splash
 {
 
+class BaseObject;
+
 /*************/
-struct AttributeFunctor
+// Handle to a callback for an attribute modification
+// Destroying this automatically destroys the callback
+class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
 {
   public:
+    CallbackHandle()
+        : _isValid(false)
+    {
+    }
+
+    CallbackHandle(std::weak_ptr<BaseObject> owner, std::string attr)
+        : _owner(owner)
+        , _attribute(attr)
+        , _isValid(true)
+        , _callbackId(_nextCallbackId.fetch_add(1))
+    {
+    }
+
+    ~CallbackHandle();
+
+    CallbackHandle(const CallbackHandle&) = delete;
+    CallbackHandle& operator=(const CallbackHandle&) = delete;
+    CallbackHandle(CallbackHandle&&) = default;
+    CallbackHandle& operator=(CallbackHandle&&) = default;
+
+    bool operator<(const CallbackHandle& cb) const { return _callbackId < cb._callbackId; }
+    explicit operator bool() const { return _isValid; }
+
+    std::string getAttribute() const { return _attribute; }
+    uint32_t getId() const { return _callbackId; }
+
+  private:
+    static std::atomic_uint _nextCallbackId;
+
+    uint32_t _callbackId{0};
+    bool _isValid{false};
+    std::weak_ptr<BaseObject> _owner;
+    std::string _attribute{""};
+};
+
+/*************/
+class AttributeFunctor
+{
+  public:
+    using Callback = std::function<void(const std::string&, const std::string&)>;
+
     enum class Sync
     {
         no_sync,
@@ -51,7 +97,9 @@ struct AttributeFunctor
     /**
      * \brief Default constructor.
      */
-    AttributeFunctor(){};
+    AttributeFunctor() = default;
+    AttributeFunctor(const std::string& name)
+        : _name(name){};
 
     /**
      * \brief Constructor.
@@ -143,6 +191,20 @@ struct AttributeFunctor
     void savable(bool save) { _savable = save; }
 
     /**
+     * Register a callback to any call to the setter
+     * \param cb Callback function
+     * \return Return a callback handle
+     */
+    CallbackHandle registerCallback(std::weak_ptr<BaseObject> caller, Callback cb);
+
+    /**
+     * Unregister a callback
+     * \param handle A handle to the callback to remove
+     * \return True if the callback has been successfully removed
+     */
+    bool unregisterCallback(const CallbackHandle& handle);
+
+    /**
      * \brief Set the description.
      * \param desc Description.
      */
@@ -183,6 +245,9 @@ struct AttributeFunctor
     Values _values{};                 // Holds the values for the default set and get functions
     std::vector<char> _valuesTypes{}; // List of the types held in _values
     Sync _syncMethod{Sync::no_sync};  //!< Synchronization to consider while setting this attribute
+
+    std::mutex _callbackMutex{};
+    std::map<uint32_t, Callback> _callbacks{};
 
     bool _isLocked{false};
 

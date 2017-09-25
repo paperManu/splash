@@ -87,6 +87,9 @@ class PythonEmbedded : public ControllerObject
     PyObject* _pythonModule{nullptr};                //!< Loaded module (from the specified script)
     PyThreadState* _pythonLocalThreadState{nullptr}; //!< Local Python thread state, for the sub-interpreter
 
+    std::mutex _attributeCallbackMutex{};
+    std::map<uint32_t, CallbackHandle> _attributeCallbackHandles{};
+
     /**
      * \brief Python interpreter main loop
      */
@@ -145,8 +148,10 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonRegisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonUnregisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds);
 
-  // Sink wrapper-specific stuff
+    // Sink wrapper-specific stuff
   public:
     typedef struct
     {

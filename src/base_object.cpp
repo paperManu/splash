@@ -98,7 +98,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 
     if (attribNotPresent)
     {
-        auto result = _attribFunctions.emplace(attrib, AttributeFunctor());
+        auto result = _attribFunctions.emplace(attrib, AttributeFunctor(attrib));
         if (!result.second)
             return false;
 
@@ -240,6 +240,29 @@ AttributeFunctor::Sync BaseObject::getAttributeSyncMethod(const string& name)
         return attr->second.getSyncMethod();
     else
         return AttributeFunctor::Sync::no_sync;
+}
+
+/*************/
+CallbackHandle BaseObject::registerCallback(string attr, AttributeFunctor::Callback cb)
+{
+    auto attribute = _attribFunctions.find(attr);
+    if (attribute == _attribFunctions.end())
+        return CallbackHandle();
+
+    return attribute->second.registerCallback(shared_from_this(), cb);
+}
+
+/*************/
+bool BaseObject::unregisterCallback(const CallbackHandle& handle)
+{
+    if (!handle)
+        return false;
+
+    auto attribute = _attribFunctions.find(handle.getAttribute());
+    if (attribute == _attribFunctions.end())
+        return false;
+
+    return attribute->second.unregisterCallback(handle);
 }
 
 /*************/

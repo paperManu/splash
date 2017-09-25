@@ -1,11 +1,22 @@
 #include "./attribute.h"
 
+#include "./base_object.h"
 #include "./log.h"
 
 using namespace std;
 
 namespace Splash
 {
+
+atomic_uint CallbackHandle::_nextCallbackId{1};
+
+/*************/
+CallbackHandle::~CallbackHandle()
+{
+    auto owner = _owner.lock();
+    if (owner)
+        owner->unregisterCallback(*this);
+}
 
 /*************/
 AttributeFunctor::AttributeFunctor(const string& name, const function<bool(const Values&)>& setFunc, const vector<char>& types)
@@ -52,6 +63,13 @@ bool AttributeFunctor::operator()(const Values& args)
 {
     if (_isLocked)
         return false;
+
+    // Run all set callbacks
+    {
+        lock_guard<mutex> lockCb(_callbackMutex);
+        for (auto& cb : _callbacks)
+            cb.second(_objectName, _name);
+    }
 
     if (!_setFunc && _defaultSetAndGet)
     {
@@ -126,6 +144,27 @@ bool AttributeFunctor::lock(const Values& v)
             return false;
 
     _isLocked = true;
+    return true;
+}
+
+/*************/
+CallbackHandle AttributeFunctor::registerCallback(weak_ptr<BaseObject> caller, Callback cb)
+{
+    lock_guard<mutex> lockCb(_callbackMutex);
+    auto handle = CallbackHandle(caller, _name);
+    _callbacks[handle.getId()] = cb;
+    return handle;
+}
+
+/*************/
+bool AttributeFunctor::unregisterCallback(const CallbackHandle& handle)
+{
+    lock_guard<mutex> lockCb(_callbackMutex);
+    auto callback = _callbacks.find(handle.getId());
+    if (callback == _callbacks.end())
+        return false;
+
+    _callbacks.erase(callback);
     return true;
 }
 

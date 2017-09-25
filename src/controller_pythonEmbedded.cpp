@@ -985,6 +985,139 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
     return Py_True;
 }
 
+/*************/
+PyDoc_STRVAR(pythonRegisterAttributeCallback_doc__,
+    "Register a callback to the attribute of the given Splash object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.register_attribute_callback(object_name, attribute, callback)\n"
+    "\n"
+    "Args:\n"
+    "  object (string): Splash object name\n"
+    "  attribute (string): Object attribute name\n"
+    "  callback (callable): Callable to be used as a callback\n"
+    "\n"
+    "Returns:\n"
+    "  The ID of the registered callback, 0 if it failed\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available, or parameters are wrong");
+
+PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return Py_BuildValue("I", 0);
+    }
+
+    char* objectName{nullptr};
+    char* attributeName{nullptr};
+    PyObject* callable{nullptr};
+    static const char* kwlist[] = {"object", "attribute", "callable", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &objectName, &attributeName, &callable))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        return Py_BuildValue("I", 0);
+    }
+
+    if (!PyCallable_Check(callable))
+    {
+        PyErr_SetString(SplashError, "The object provided is not callable");
+        return Py_BuildValue("I", 0);
+    }
+
+    auto splashObject = that->getObject(objectName);
+    if (!splashObject)
+    {
+        PyErr_SetString(SplashError, "There is no Splash object with the given name");
+        return Py_BuildValue("I", 0);
+    }
+
+    auto callbackFunc = [=](const string& obj, const string& attr) {
+        lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+
+        PyEval_AcquireThread(that->_pythonGlobalThreadState);
+        PyThreadState_Swap(that->_pythonLocalThreadState);
+
+        auto pyTuple = PyTuple_New(2);
+        PyTuple_SetItem(pyTuple, 0, Py_BuildValue("s", obj.c_str()));
+        PyTuple_SetItem(pyTuple, 1, Py_BuildValue("s", attr.c_str()));
+
+        PyObject_CallObject(callable, pyTuple);
+        if (PyErr_Occurred())
+            PyErr_Print();
+
+        Py_DECREF(pyTuple);
+
+        PyThreadState_Swap(that->_pythonGlobalThreadState);
+        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+    };
+
+    lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    auto handle = splashObject->registerCallback(attributeName, callbackFunc);
+    auto pyHandleId = Py_BuildValue("I", handle.getId());
+    that->_attributeCallbackHandles[handle.getId()] = std::move(handle);
+
+    return pyHandleId;
+}
+
+/*************/
+PyDoc_STRVAR(pythonUnregisterAttributeCallback_doc__,
+    "Unregister an attribute callback given its ID\n"
+    "\n"
+    "Signature:\n"
+    "  splash.unregister_attribute_callback(callback_id)\n"
+    "\n"
+    "Args:\n"
+    "  callback_id (unsigned int): Callback ID\n"
+    "\n"
+    "Returns:\n"
+    "  True if the callback has been unregistered, False otherwise\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available, or parameters are wrong");
+
+PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    uint32_t callbackId{0};
+    static const char* kwlist[] = {"callback_id", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", const_cast<char**>(kwlist), &callbackId))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    if (callbackId == 0)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    auto callbackIt = that->_attributeCallbackHandles.find(callbackId);
+    if (callbackIt == that->_attributeCallbackHandles.end())
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->_attributeCallbackHandles.erase(callbackIt);
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {
@@ -1006,6 +1139,8 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"set_object_attribute", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
     {(const char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},
     {(const char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
+    {(const char*)"register_attribute_callback", (PyCFunction)PythonEmbedded::pythonRegisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonRegisterAttributeCallback_doc__},
+    {(const char*)"unregister_attribute_callback", (PyCFunction)PythonEmbedded::pythonUnregisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonUnregisterAttributeCallback_doc__},
     {nullptr, nullptr, 0, nullptr}
 };
 

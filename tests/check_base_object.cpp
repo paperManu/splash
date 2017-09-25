@@ -87,3 +87,26 @@ TEST_CASE("Testing BaseObject class")
     CHECK(object->getAttribute("inexistingAttribute", value) == false);
     CHECK(value.empty());
 }
+
+/*************/
+TEST_CASE("Testing BaseObject attribute registering")
+{
+    auto object = make_shared<BaseObjectMock>(nullptr);
+    auto someString = string("What are you waiting for? Christmas?");
+    auto otherString = string("Show me the money!");
+
+    object->setAttribute("someAttribute", {42});
+    auto handle = object->registerCallback("someAttribute", [&](const string& obj, const string& attr) { someString = otherString; });
+    CHECK(static_cast<bool>(handle));
+    object->setAttribute("someAttribute", {1337});
+    CHECK(someString == otherString);
+
+    object->unregisterCallback(handle);
+    otherString = "I've got a flying machine!";
+    object->setAttribute("someAttribute", {42});
+    CHECK(someString != otherString);
+
+    object->registerCallback("someAttribute", [&](const string& obj, const string& attr) { someString = otherString; });
+    object->setAttribute("someAttribute", {1337});
+    CHECK(someString != otherString);
+}
