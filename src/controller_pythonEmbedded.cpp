@@ -913,8 +913,14 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
     // This will replace any previous (or default) attribute (setter and getter included)
     that->addAttribute(attributeName,
         [=](const Values& args) {
-            PyEval_AcquireThread(that->_pythonGlobalThreadState);
-            PyThreadState_Swap(that->_pythonLocalThreadState);
+            bool calledFromPython = false;
+            auto pyThreadDict = PyThreadState_GetDict();
+            if (!pyThreadDict)
+            {
+                PyEval_AcquireThread(that->_pythonGlobalThreadState);
+                PyThreadState_Swap(that->_pythonLocalThreadState);
+                calledFromPython = true;
+            }
 
             auto moduleDict = PyModule_GetDict(that->_pythonModule);
             PyObject* object = nullptr;
@@ -931,14 +937,23 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
 
             Py_DECREF(object);
 
-            PyThreadState_Swap(that->_pythonGlobalThreadState);
-            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            if (calledFromPython)
+            {
+                PyThreadState_Swap(that->_pythonGlobalThreadState);
+                PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            }
 
             return true;
         },
         [=]() -> Values {
-            PyEval_AcquireThread(that->_pythonGlobalThreadState);
-            PyThreadState_Swap(that->_pythonLocalThreadState);
+            bool calledFromPython = false;
+            auto pyThreadDict = PyThreadState_GetDict();
+            if (!pyThreadDict)
+            {
+                PyEval_AcquireThread(that->_pythonGlobalThreadState);
+                PyThreadState_Swap(that->_pythonLocalThreadState);
+                calledFromPython = true;
+            }
 
             auto moduleDict = PyModule_GetDict(that->_pythonModule);
             auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
@@ -949,8 +964,11 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
                 return {};
             }
 
-            PyThreadState_Swap(that->_pythonGlobalThreadState);
-            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            if (calledFromPython)
+            {
+                PyThreadState_Swap(that->_pythonGlobalThreadState);
+                PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            }
 
             if (value.getType() == Value::Type::v)
                 return value.as<Values>();

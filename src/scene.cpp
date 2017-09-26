@@ -192,7 +192,7 @@ Values Scene::getAttributeFromObject(const string& name, const string& attribute
     // Ask the World if it knows more about this object
     else
     {
-        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute});
+        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute}, 1e4);
         for (unsigned int i = 1; i < answer.size(); ++i)
             values.push_back(answer[i]);
     }

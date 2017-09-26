@@ -1403,6 +1403,10 @@ void World::registerAttributes()
                     values.push_front("getAttribute");
                     sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
                 }
+                else
+                {
+                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", {});
+                }
             });
 
             return true;
