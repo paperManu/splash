@@ -435,8 +435,16 @@ void Scene::run()
     while (_isRunning)
     {
         // This gets the whole loop duration
+        if (_runInBackground && _swapInterval != 0)
+        {
+          // Artificial synchronization to avoid overloading the GPU in hidden mode
+          Timer::get() >> _targetFrameDuration >> "swap_sync";
+          Timer::get() << "swap_sync";
+        }
+
         Timer::get() >> "loop_scene";
         Timer::get() << "loop_scene";
+
 
         // Execute waiting tasks
         runTasks();
@@ -775,6 +783,20 @@ void Scene::init(const string& name)
     sendMessageToWorld("sceneLaunched", {});
 }
 
+unsigned long long Scene::updateTargetFrameDuration()
+{
+    auto mon = glfwGetPrimaryMonitor();
+    if (!mon) return 0ull;
+
+    auto vidMode = glfwGetVideoMode(mon);
+    if (!vidMode) return 0ull;
+
+    auto refreshRate = vidMode->refreshRate;
+    if (!refreshRate) return 0ull;
+
+    return static_cast<unsigned long long>(1e6 / refreshRate);
+}
+
 /*************/
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
@@ -1040,6 +1062,7 @@ void Scene::registerAttributes()
     addAttribute("swapInterval",
         [&](const Values& args) {
             _swapInterval = max(-1, args[0].as<int>());
+            _targetFrameDuration = updateTargetFrameDuration();
             return true;
         },
         [&]() -> Values { return {(int)_swapInterval}; },

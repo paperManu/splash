@@ -251,6 +251,8 @@ class Scene : public RootObject
     bool _isInitialized{false};
     bool _status{false};  //!< Set to true if an error occured during rendering
     int _swapInterval{1}; //!< Global value for the swap interval, default for all windows
+    unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the
+                                                //!< primary monitor
 
     // Texture upload context
     std::future<void> _textureUploadFuture;
@@ -284,6 +286,12 @@ class Scene : public RootObject
      * \return Returns a new id
      */
     unsigned long getId() { return ++_nextId; }
+
+    /**
+     * \brief Computes and store the duration of a frame at the refresh rate of the primary monitor
+     * \return The duration of a frame at the refresh rate of the primary monitor in microseconds
+     */
+    unsigned long long updateTargetFrameDuration();
 
     /**
      * \brief Callback for GLFW errors
