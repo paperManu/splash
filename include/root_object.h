@@ -154,6 +154,7 @@ class RootObject : public BaseObject
     std::condition_variable _bufferObjectUpdatedCondition{};
     std::mutex _bufferObjectUpdatedMutex{};
     Spinlock _bufferObjectSingleMutex{};
+    bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
     // Tasks queue
     std::recursive_mutex _taskMutex{};
@@ -167,10 +168,10 @@ class RootObject : public BaseObject
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
-     * \param timeout Timeout in us
+     * \param timeout Timeout in us. If 0, wait indefinitely.
      * \return Return false is the timeout has been reached, true otherwise
      */
-    bool waitSignalBufferObjectUpdated(uint64_t timeout);
+    bool waitSignalBufferObjectUpdated(uint64_t timeout = 0ull);
 
     /**
      * \brief Method to process a serialized object

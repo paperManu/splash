@@ -21,3 +21,7 @@ echo "Building Snappy..."
 # FFmpeg
 echo "Building FFmpeg..."
 ./build_ffmpeg.sh
+
+# ZMQ
+echo "Building ZMQ..."
+./build_zmq.sh

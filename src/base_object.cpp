@@ -98,7 +98,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 
     if (attribNotPresent)
     {
-        auto result = _attribFunctions.emplace(attrib, AttributeFunctor());
+        auto result = _attribFunctions.emplace(attrib, AttributeFunctor(attrib));
         if (!result.second)
             return false;
 
@@ -117,7 +117,10 @@ bool BaseObject::getAttribute(const string& attrib, Values& args, bool includeDi
 {
     auto attribFunction = _attribFunctions.find(attrib);
     if (attribFunction == _attribFunctions.end())
+    {
+        args.clear();
         return false;
+    }
 
     args = attribFunction->second();
 
@@ -240,6 +243,29 @@ AttributeFunctor::Sync BaseObject::getAttributeSyncMethod(const string& name)
 }
 
 /*************/
+CallbackHandle BaseObject::registerCallback(const string& attr, AttributeFunctor::Callback cb)
+{
+    auto attribute = _attribFunctions.find(attr);
+    if (attribute == _attribFunctions.end())
+        return CallbackHandle();
+
+    return attribute->second.registerCallback(shared_from_this(), cb);
+}
+
+/*************/
+bool BaseObject::unregisterCallback(const CallbackHandle& handle)
+{
+    if (!handle)
+        return false;
+
+    auto attribute = _attribFunctions.find(handle.getAttribute());
+    if (attribute == _attribFunctions.end())
+        return false;
+
+    return attribute->second.unregisterCallback(handle);
+}
+
+/*************/
 bool BaseObject::setRenderingPriority(Priority priority)
 {
     if (priority < Priority::PRE_CAMERA || priority >= Priority::POST_WINDOW)
@@ -252,6 +278,13 @@ bool BaseObject::setRenderingPriority(Priority priority)
 void BaseObject::init()
 {
     registerAttributes();
+}
+
+/*************/
+void BaseObject::runAsyncTask(const function<void(void)>& func)
+{
+    lock_guard<mutex> lockTasks(_asyncTaskMutex);
+    _asyncTask = async(launch::async, func);
 }
 
 /*************/

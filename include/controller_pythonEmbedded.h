@@ -36,6 +36,8 @@
 #include "./attribute.h"
 #include "./controller.h"
 #include "./coretypes.h"
+#include "./filter.h"
+#include "./sink.h"
 
 namespace Splash
 {
@@ -78,12 +80,15 @@ class PythonEmbedded : public ControllerObject
     std::string _scriptName{""}; //!< Name of the module (filename minus .py)
 
     bool _doLoop{false};                     //!< Set to false to stop the Python loop
-    int _loopDurationMs{5};                  //!< Time between loops in ms
+    int _updateRate{200};                    //!< Loops per second
     std::thread _loopThread{};               //!< Python thread loop
     std::promise<bool> _loopThreadPromise{}; //!< Holds the output result from the threading loop
 
     PyObject* _pythonModule{nullptr};                //!< Loaded module (from the specified script)
     PyThreadState* _pythonLocalThreadState{nullptr}; //!< Local Python thread state, for the sub-interpreter
+
+    std::mutex _attributeCallbackMutex{};
+    std::map<uint32_t, CallbackHandle> _attributeCallbackHandles{};
 
     /**
      * \brief Python interpreter main loop
@@ -127,8 +132,9 @@ class PythonEmbedded : public ControllerObject
     static PyObject* SplashError;
 
     static PyObject* pythonInitSplash();
-    static PythonEmbedded* getSplashInstance(PyObject* module);
+    static PythonEmbedded* getSplashInstance();
     static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
+    static PyObject* pythonGetTimings(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds);
@@ -142,6 +148,38 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonRegisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonUnregisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds);
+
+    // Sink wrapper-specific stuff
+  public:
+    typedef struct
+    {
+        PyObject_HEAD std::string sourceName{""};
+        uint32_t width{512};
+        uint32_t height{512};
+        uint32_t framerate{30};
+        std::string sinkName{""};
+        std::string filterName{""};
+        std::shared_ptr<Splash::Sink> sink{nullptr};
+        PyObject* lastBuffer{nullptr};
+    } pythonSinkObject;
+
+    // Sink wrapper methods. They are in this class to be able to access the Splash capsule
+    static void pythonSinkDealloc(pythonSinkObject* self);
+    static PyObject* pythonSinkNew(PyTypeObject* type, PyObject* args, PyObject* kwds);
+    static int pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkGrab(pythonSinkObject* self);
+    static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkOpen(pythonSinkObject* self);
+    static PyObject* pythonSinkClose(pythonSinkObject* self);
+    static PyObject* pythonSinkGetCaps(pythonSinkObject* self);
+
+    static PyMethodDef SinkMethods[];
+
+  private:
+    static PyTypeObject pythonSinkType;
 };
 
 } // end of namespace

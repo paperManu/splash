@@ -55,15 +55,15 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 
 # Distributed third parties first
 link_directories(${FFMPEG_LIBRARY_DIRS})
+link_directories(${SNAPPY_LIBRARY_DIRS})
+link_directories(${ZMQ_LIBRARY_DIRS})
 
 link_directories(${GLFW_LIBRARY_DIRS})
 link_directories(${GSL_LIBRARY_DIRS})
-link_directories(${ZMQ_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
 link_directories(${PORTAUDIO_LIBRARY_DIRS})
 link_directories(${OPENCV_LIBRARY_DIRS})
-link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 
 #
@@ -108,12 +108,12 @@ target_sources(
     shader.cpp
     texture.cpp
     texture_image.cpp
-    threadpool.cpp
     userInput.cpp
     userInput_dragndrop.cpp
     userInput_joystick.cpp
     userInput_keyboard.cpp
     userInput_mouse.cpp
+    virtual_probe.cpp
     warp.cpp
     widget.cpp
     widget_control.cpp
@@ -127,6 +127,7 @@ target_sources(
     widget_text_box.cpp
     widget_warp.cpp
     window.cpp
+    ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp
 	../external/jsoncpp/jsoncpp.cpp
@@ -194,17 +195,17 @@ endif()
 
 # Distributed third parties first
 target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${SNAPPY_LIBRARIES})
 
 target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} glfw)
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${ZMQ_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} zmq.a)
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${SNAPPY_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 
 #

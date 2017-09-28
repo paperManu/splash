@@ -16,7 +16,6 @@
 #include "./osUtils.h"
 #include "./queue.h"
 #include "./scene.h"
-#include "./threadpool.h"
 #include "./timer.h"
 
 // Included only for creating the documentation through the --info flag
@@ -47,9 +46,6 @@ World::~World()
 #endif
     if (_innerSceneThread.joinable())
         _innerSceneThread.join();
-
-    // This has to be done last. Any object using the threadpool should be destroyed before
-    SThread::pool.waitAllThreads();
 }
 
 /*************/
@@ -59,8 +55,8 @@ void World::run()
 
     while (true)
     {
-        Timer::get() << "worldLoop";
-        Timer::get() << "innerWorldLoop";
+        Timer::get() << "loop_world";
+        Timer::get() << "loop_world_inner";
         lock_guard<mutex> lockConfiguration(_configurationMutex);
 
         // Execute waiting tasks
@@ -71,39 +67,39 @@ void World::run()
 
             // Read and serialize new buffers
             Timer::get() << "serialize";
-            vector<unsigned int> threadIds;
             unordered_map<string, shared_ptr<SerializedObject>> serializedObjects;
-            for (auto& o : _objects)
             {
-                auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
-                // This prevents the map structure to be modified in the threads
-                auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
-                if (!serializedObjectIt.second)
-                    continue; // Error while inserting the object in the map
+                vector<future<void>> threads;
+                for (auto& o : _objects)
+                {
+                    auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
+                    // This prevents the map structure to be modified in the threads
+                    auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
+                    if (!serializedObjectIt.second)
+                        continue; // Error while inserting the object in the map
 
-                threadIds.push_back(SThread::pool.enqueue([=, &o]() {
-                    // Update the local objects
-                    o.second->update();
+                    threads.push_back(async(launch::async, [=, &o]() {
+                        // Update the local objects
+                        o.second->update();
 
-                    // Send them the their destinations
-                    if (bufferObj.get() != nullptr)
-                    {
-                        if (bufferObj->wasUpdated()) // if the buffer has been updated
+                        // Send them the their destinations
+                        if (bufferObj.get() != nullptr)
                         {
-                            auto obj = bufferObj->serialize();
-                            bufferObj->setNotUpdated();
-                            if (obj)
-                                serializedObjectIt.first->second = obj;
+                            if (bufferObj->wasUpdated()) // if the buffer has been updated
+                            {
+                                auto obj = bufferObj->serialize();
+                                bufferObj->setNotUpdated();
+                                if (obj)
+                                    serializedObjectIt.first->second = obj;
+                            }
                         }
-                    }
-                }));
+                    }));
+                }
             }
-            SThread::pool.waitThreads(threadIds);
             Timer::get() >> "serialize";
 
             // Wait for previous buffers to be uploaded
-            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3 / 30))); // Maximum time to wait for frames to arrive
-            sendMessage(SPLASH_ALL_PEERS, "bufferUploaded", {});
+            _link->waitForBufferSending(chrono::milliseconds((unsigned long long)(1e3))); // Maximum time to wait for frames to arrive
             Timer::get() >> "upload";
 
             // Ask for the upload of the new buffers, during the next world loop
@@ -149,12 +145,12 @@ void World::run()
         }
 
         // Sync with buffer object update
-        Timer::get() >> "innerWorldLoop";
-        auto elapsed = Timer::get().getDuration("innerWorldLoop");
+        Timer::get() >> "loop_world_inner";
+        auto elapsed = Timer::get().getDuration("loop_world_inner");
         waitSignalBufferObjectUpdated(1e6 / (float)_worldFramerate - elapsed);
 
         // Sync to world framerate
-        Timer::get() >> "worldLoop";
+        Timer::get() >> "loop_world";
     }
 }
 
@@ -353,17 +349,15 @@ void World::applyConfig()
 
         // Configure each scenes
         // The first scene is the master one, and also receives some ghost objects
-        // First, we create the objects
+        // First, set the master scene
+        sendMessage(_masterSceneName, "setMaster", {_configFilename});
+        // Then, we create the objects
         for (auto& s : _scenes)
         {
             if (!_config.isMember(s.first))
                 continue;
 
             const Json::Value jsScene = _config[s.first];
-
-            // Set if master
-            if (s.first == _masterSceneName)
-                sendMessage(_masterSceneName, "setMaster", {_configFilename});
 
             // Create the objects
             auto sceneMembers = jsScene.getMemberNames();
@@ -380,10 +374,7 @@ void World::applyConfig()
                 string type = obj["type"].asString();
                 if (type != "scene")
                 {
-                    sendMessage(s.first, "add", {type, name});
-                    if (s.first != _masterSceneName)
-                        sendMessage(_masterSceneName, "addGhost", {type, name});
-
+                    sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
                     // Some objects are also created on this side, and linked with the distant one
                     addLocally(type, name, s.first);
                 }
@@ -419,9 +410,7 @@ void World::applyConfig()
                 {
                     if (link.size() < 2)
                         continue;
-                    sendMessage(s.first, "link", {link[0].asString(), link[1].asString()});
-                    if (s.first != _masterSceneName)
-                        sendMessage(_masterSceneName, "linkGhost", {link[0].asString(), link[1].asString()});
+                    sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
                 }
                 idx++;
             }
@@ -468,14 +457,6 @@ void World::applyConfig()
                     {
                         // We also the attribute locally, if the object exists
                         set(name, objMembers[idxAttr], values, false);
-
-                        // The attribute is also sent to the master scene
-                        if (s.first != _masterSceneName)
-                        {
-                            values.push_front(objMembers[idxAttr]);
-                            values.push_front(name);
-                            sendMessage(_masterSceneName, "setGhost", values);
-                        }
                     }
 
                     idxAttr++;
@@ -885,11 +866,6 @@ bool World::copyCameraParameters(const std::string& filename)
                 // Send the new values for this attribute
                 sendMessage(name, objMembers[idxAttr], values);
 
-                // Also send it to a ghost if it exists
-                values.push_front(objMembers[idxAttr]);
-                values.push_front(name);
-                sendMessage(_masterSceneName, "setGhost", values);
-
                 idxAttr++;
             }
 
@@ -1041,7 +1017,6 @@ bool World::loadProject(const string& filename)
 
                 addTask([=]() {
                     sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
-                    sendMessage(SPLASH_ALL_PEERS, "linkGhost", {link[0].asString(), link[1].asString()});
                 });
             }
         }
@@ -1061,7 +1036,6 @@ bool World::loadProject(const string& filename)
             // Before anything, all objects have the right to know what the current path is
             auto path = Utils::getPathFromFilePath(_configFilename);
             sendMessage(name, "configFilePath", {path});
-            sendMessage(_masterSceneName, "setGhost", {name, "configFilePath", path});
             set(name, "configFilePath", {path}, false);
 
             // Set their attributes
@@ -1276,7 +1250,7 @@ void World::registerAttributes()
 
                 for (auto& s : _scenes)
                 {
-                    sendMessage(s.first, "add", {type, name});
+                    sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
                     addLocally(type, name, s.first);
                 }
 
@@ -1321,6 +1295,22 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("deleteObject", "Delete an object given its name");
 
+    addAttribute("link",
+        [&](const Values& args) {
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", args); });
+            return true;
+        },
+        {'s', 's'});
+    setAttributeDescription("link", "Link the two given objects");
+
+    addAttribute("unlink",
+        [&](const Values& args) {
+            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "unlink", args); });
+            return true;
+        },
+        {'s', 's'});
+    setAttributeDescription("unlink", "Unlink the two given objects");
+
     addAttribute("flashBG",
         [&](const Values& args) {
             addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].as<int>()}); });
@@ -1331,39 +1321,6 @@ void World::registerAttributes()
     setAttributeDescription("flashBG", "Switches the background color from black to light grey");
 
 #if HAVE_LINUX
-    addAttribute("forceCoreAffinity",
-        [&](const Values& args) {
-            _enforceCoreAffinity = args[0].as<int>();
-
-            if (!_enforceCoreAffinity)
-                return true;
-
-            int sceneCount = _scenes.size();
-            int sceneAffinity = 1;
-            for (auto& s : _scenes)
-            {
-                sendMessage(s.first, "sceneAffinity", {sceneAffinity, sceneCount + 1});
-                sceneAffinity++;
-            }
-
-            addTask([=]() {
-                if (Utils::setAffinity({0}))
-                    Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Set to run on the first CPU core" << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to set World CPU core affinity" << Log::endl;
-
-                vector<int> cores{};
-                for (int i = sceneCount + 1; i < Utils::getCoreCount(); ++i)
-                    cores.push_back(i);
-                SThread::pool.setAffinity(cores);
-            });
-
-            return true;
-        },
-        [&]() -> Values { return {(int)_enforceCoreAffinity}; },
-        {'n'});
-    setAttributeDescription("forceCoreAffinity", "Enforce the World and Scene loops onto their own cores. The thread pool will use the remaining cores.");
-
     addAttribute("forceRealtime",
         [&](const Values& args) {
             _enforceRealtime = args[0].as<int>();
@@ -1392,7 +1349,7 @@ void World::registerAttributes()
         },
         [&]() -> Values { return {(int)_worldFramerate}; },
         {'n'});
-    setAttributeDescription("framerate", "Set the refresh rate for the world (no relation to video framerate)");
+    setAttributeDescription("framerate", "Set the minimum refresh rate for the world (adapted to video framerate)");
 
     addAttribute("getAttribute",
         [&](const Values& args) {
@@ -1410,6 +1367,10 @@ void World::registerAttributes()
                     values.push_front("getAttribute");
                     sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
                 }
+                else
+                {
+                    sendMessage(SPLASH_ALL_PEERS, "answerMessage", {});
+                }
             });
 
             return true;
@@ -1419,7 +1380,6 @@ void World::registerAttributes()
 
     addAttribute("getAttributeDescription",
         [&](const Values& args) {
-
             auto objectName = args[0].as<string>();
             auto attrName = args[1].as<string>();
 
@@ -1464,7 +1424,7 @@ void World::registerAttributes()
     addAttribute("loadConfig",
         [&](const Values& args) {
             string filename = args[0].as<string>();
-            SThread::pool.enqueueWithoutId([=]() {
+            runAsyncTask([=]() {
                 Json::Value config;
                 if (loadConfig(filename, config))
                 {
@@ -1595,10 +1555,7 @@ void World::registerAttributes()
             setAttribute("addObject", {objType, objName});
             addTask([=]() {
                 for (const auto& t : targets)
-                {
                     setAttribute("sendAllScenes", {"link", objName, t});
-                    setAttribute("sendAllScenes", {"linkGhost", objName, t});
-                }
             });
             return true;
         },
@@ -1656,9 +1613,6 @@ void World::registerAttributes()
                 string name = args[0].as<string>();
                 string attr = args[1].as<string>();
                 auto values = args;
-
-                // Ask for update of the ghost object if needed
-                sendMessage(_masterSceneName, "setGhost", values);
 
                 // Send the updated values to all scenes
                 values.erase(values.begin());

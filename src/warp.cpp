@@ -231,7 +231,7 @@ void Warp::loadDefaultModels()
             else
             {
                 Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - File " << file.second << " does not seem to be readable." << Log::endl;
-                continue;
+                exit(1);
             }
         }
 

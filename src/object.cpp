@@ -233,6 +233,12 @@ bool Object::linkTo(const shared_ptr<BaseObject>& obj)
         addTexture(tex);
         return true;
     }
+    else if (obj->getType().find("virtual_probe") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        addTexture(tex);
+        return true;
+    }
     else if (obj->getType().find("queue") != string::npos)
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
@@ -294,6 +300,11 @@ void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
         _root->disposeObject(filterName);
     }
     else if (type.find("filter") != string::npos)
+    {
+        auto tex = dynamic_pointer_cast<Texture>(obj);
+        removeTexture(tex);
+    }
+    else if (obj->getType().find("virtual_screen") != string::npos)
     {
         auto tex = dynamic_pointer_cast<Texture>(obj);
         removeTexture(tex);

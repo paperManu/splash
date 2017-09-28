@@ -138,9 +138,6 @@ string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "window")
             windows.push_back(obj.second);
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == "window")
-            windows.push_back(obj.second);
 
     for (auto& w : windows)
     {

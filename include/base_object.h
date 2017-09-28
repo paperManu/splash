@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <future>
 #include <json/json.h>
 #include <list>
 #include <map>
@@ -43,7 +44,7 @@ namespace Splash
 class RootObject;
 
 /*************/
-class BaseObject
+class BaseObject : public std::enable_shared_from_this<BaseObject>
 {
   public:
     enum class Priority
@@ -189,7 +190,7 @@ class BaseObject
      * \param args Values object which will hold the attribute values
      * \param includeDistant Return true even if the attribute is distant
      * \param includeNonSavable Return true even if the attribute is not savable
-     * \return Return true if the parameter exists
+     * \return Return true if the parameter exists and is savable
      */
     bool getAttribute(const std::string& attrib, Values& args, bool includeDistant = false, bool includeNonSavable = false) const;
 
@@ -231,6 +232,18 @@ class BaseObject
     inline virtual void setSavable(bool savable) { _savable = savable; }
 
     /**
+     * Set the object as a ghost, meaning it mimics an object in another scene
+     * \param ghost If true, set as ghost
+     */
+    inline void setGhost(bool ghost) { _ghost = ghost; }
+
+    /**
+     * Get whether the object ghosts an object in another scene
+     * \return Return true if this object is a ghost
+     */
+    inline bool isGhost() const { return _ghost; }
+
+    /**
      * \brief Update the content of the object
      */
     virtual void update() {}
@@ -267,6 +280,21 @@ class BaseObject
      * \return Return the synchronization method
      */
     AttributeFunctor::Sync getAttributeSyncMethod(const std::string& name);
+
+    /**
+     * Register a callback to any call to the setter
+     * \param attr Attribute to add a callback to
+     * \param cb Callback function
+     * \return Return a callback handle
+     */
+    CallbackHandle registerCallback(const std::string& attr, AttributeFunctor::Callback cb);
+
+    /**
+     * Unregister a callback
+     * \param handle A handle to the callback to remove
+     * \return True if the callback has been successfully removed
+     */
+    bool unregisterCallback(const CallbackHandle& handle);
 
     /**
      * \brief Get the rendering priority for this object
@@ -327,6 +355,11 @@ class BaseObject
     std::unordered_map<std::string, AttributeFunctor> _attribFunctions; //!< Map of all attributes
     bool _updatedParams{true};                                          //!< True if the parameters have been updated and the object needs to reflect these changes
 
+    std::future<void> _asyncTask{};
+    std::mutex _asyncTaskMutex{};
+
+    bool _ghost{false}; //!< True if the object ghosts an object in another scene
+
     /**
      * \brief Initialize some generic attributes
      */
@@ -363,6 +396,12 @@ class BaseObject
      * \param obj Parent object
      */
     void unlinkFromParent(BaseObject* obj);
+
+    /**
+     * Run a task asynchronously, one task at a time
+     * \param func Function to run
+     */
+    void runAsyncTask(const std::function<void(void)>& func);
 
     /**
      * \brief Register new attributes

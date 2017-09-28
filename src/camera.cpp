@@ -1,6 +1,7 @@
 #include "./camera.h"
 
 #include <fstream>
+#include <future>
 #include <limits>
 
 #include <glm/ext.hpp>
@@ -20,7 +21,6 @@
 #include "./shader.h"
 #include "./texture.h"
 #include "./texture_image.h"
-#include "./threadpool.h"
 #include "./timer.h"
 
 #define SCISSOR_WIDTH 8
@@ -68,12 +68,6 @@ namespace Splash
 /*************/
 Camera::Camera(RootObject* root)
     : BaseObject(root)
-{
-    init();
-}
-
-/*************/
-void Camera::init()
 {
     _type = "camera";
     _renderingPriority = Priority::CAMERA;
@@ -224,69 +218,70 @@ bool Camera::doCalibration()
     vector<double> selectedValues(9);
 
     mutex gslMutex;
-    vector<unsigned int> threadIds;
     // First step: we try a bunch of starts and keep the best one
-    for (int index = 0; index < 4; ++index)
     {
-        threadIds.push_back(SThread::pool.enqueue([&]() {
-            gsl_multimin_fminimizer* minimizer;
-            minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
+        vector<future<void>> threads;
+        for (int index = 0; index < 4; ++index)
+        {
+            threads.push_back(async(launch::async, [&]() {
+                gsl_multimin_fminimizer* minimizer;
+                minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
 
-            for (double s = 0.0; s <= 1.0; s += 0.2)
-                for (double t = 0.0; t <= 1.0; t += 0.2)
-                {
-                    gsl_vector* step = gsl_vector_alloc(9);
-                    gsl_vector_set(step, 0, 10.0);
-                    gsl_vector_set(step, 1, 0.1);
-                    gsl_vector_set(step, 2, 0.1);
-                    for (int i = 3; i < 9; ++i)
-                        gsl_vector_set(step, i, 0.1);
-
-                    gsl_vector* x = gsl_vector_alloc(9);
-                    gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
-                    gsl_vector_set(x, 1, s);
-                    gsl_vector_set(x, 2, t);
-                    for (int i = 0; i < 3; ++i)
+                for (double s = 0.0; s <= 1.0; s += 0.2)
+                    for (double t = 0.0; t <= 1.0; t += 0.2)
                     {
-                        gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                        gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * 360.f);
-                    }
+                        gsl_vector* step = gsl_vector_alloc(9);
+                        gsl_vector_set(step, 0, 10.0);
+                        gsl_vector_set(step, 1, 0.1);
+                        gsl_vector_set(step, 2, 0.1);
+                        for (int i = 3; i < 9; ++i)
+                            gsl_vector_set(step, i, 0.1);
 
-                    gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
-
-                    size_t iter = 0;
-                    int status = GSL_CONTINUE;
-                    double localMinimum = numeric_limits<double>::max();
-                    while (status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
-                    {
-                        iter++;
-                        status = gsl_multimin_fminimizer_iterate(minimizer);
-                        if (status)
+                        gsl_vector* x = gsl_vector_alloc(9);
+                        gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
+                        gsl_vector_set(x, 1, s);
+                        gsl_vector_set(x, 2, t);
+                        for (int i = 0; i < 3; ++i)
                         {
-                            Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
-                            break;
+                            gsl_vector_set(x, i + 3, eyeOriginal[i]);
+                            gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * 360.f);
                         }
 
-                        status = gsl_multimin_test_size(minimizer->size, 1e-6);
-                        localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+                        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+
+                        size_t iter = 0;
+                        int status = GSL_CONTINUE;
+                        double localMinimum = numeric_limits<double>::max();
+                        while (status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
+                        {
+                            iter++;
+                            status = gsl_multimin_fminimizer_iterate(minimizer);
+                            if (status)
+                            {
+                                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                                break;
+                            }
+
+                            status = gsl_multimin_test_size(minimizer->size, 1e-6);
+                            localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+                        }
+
+                        lock_guard<mutex> lock(gslMutex);
+                        if (localMinimum < minValue)
+                        {
+                            minValue = localMinimum;
+                            for (int i = 0; i < 9; ++i)
+                                selectedValues[i] = gsl_vector_get(minimizer->x, i);
+                        }
+
+                        gsl_vector_free(x);
+                        gsl_vector_free(step);
                     }
 
-                    lock_guard<mutex> lock(gslMutex);
-                    if (localMinimum < minValue)
-                    {
-                        minValue = localMinimum;
-                        for (int i = 0; i < 9; ++i)
-                            selectedValues[i] = gsl_vector_get(minimizer->x, i);
-                    }
-
-                    gsl_vector_free(x);
-                    gsl_vector_free(step);
-                }
-
-            gsl_multimin_fminimizer_free(minimizer);
-        }));
+                gsl_multimin_fminimizer_free(minimizer);
+            }));
+        }
     }
-    SThread::pool.waitThreads(threadIds);
 
     // Second step: we improve on the best result from the previous step
     for (int index = 0; index < 8; ++index)
@@ -496,7 +491,7 @@ Values Camera::pickCalibrationPoint(float x, float y)
     dvec3 screenPoint(x * _width, y * _height, 0.0);
 
     dmat4 lookM = lookAt(_eye, _target, _up);
-    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dmat4 projM = computeProjectionMatrix();
     dvec4 viewport(0, 0, _width, _height);
 
     double minDist = numeric_limits<double>::max();
@@ -531,7 +526,7 @@ Values Camera::pickVertexOrCalibrationPoint(float x, float y)
     dvec3 screenPoint(x * _width, y * _height, 0.0);
 
     dmat4 lookM = lookAt(_eye, _target, _up);
-    dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+    dmat4 projM = computeProjectionMatrix();
     dvec4 viewport(0, 0, _width, _height);
 
     if (vertex.size() == 0 && point.size() == 0)
@@ -599,9 +594,9 @@ void Camera::render()
         // Draw the objects
         for (auto& o : _objects)
         {
-            if (o.expired())
-                continue;
             auto obj = o.lock();
+            if (!obj)
+                continue;
 
             obj->activate();
 
@@ -814,7 +809,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
         dvec3 screenPoint(point[0].as<float>(), point[1].as<float>(), 0.0);
 
         dmat4 lookM = lookAt(_eye, _target, _up);
-        dmat4 projM = computeProjectionMatrix(_fov, _cx, _cy);
+        dmat4 projM = computeProjectionMatrix();
         dvec4 viewport(0, 0, _width, _height);
 
         double minDist = numeric_limits<double>::max();
@@ -1057,7 +1052,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 #endif
 
     dmat4 lookM = lookAt(eye, target, up);
-    dmat4 projM = dmat4(camera.computeProjectionMatrix(fov, cx, cy));
+    dmat4 projM = dmat4(getProjectionMatrix(fov, camera._near, camera._far, camera._width, camera._height, cx, cy));
     dmat4 modelM(1.0);
     dvec4 viewport(0, 0, camera._width, camera._height);
 
@@ -1086,28 +1081,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
 /*************/
 dmat4 Camera::computeProjectionMatrix()
 {
-    return computeProjectionMatrix(_fov, _cx, _cy);
-}
-
-/*************/
-dmat4 Camera::computeProjectionMatrix(float fov, float cx, float cy)
-{
-    double l, r, t, b, n, f;
-    // Near and far are obvious
-    n = _near;
-    f = _far;
-    // Up and down
-    double tTemp = n * tan(fov * M_PI / 360.0);
-    double bTemp = -tTemp;
-    t = tTemp - (cy - 0.5) * (tTemp - bTemp);
-    b = bTemp - (cy - 0.5) * (tTemp - bTemp);
-    // Left and right
-    double rTemp = tTemp * _width / _height;
-    double lTemp = bTemp * _width / _height;
-    r = rTemp - (cx - 0.5) * (rTemp - lTemp);
-    l = lTemp - (cx - 0.5) * (rTemp - lTemp);
-
-    return frustum(l, r, b, t, n, f);
+    return getProjectionMatrix(_fov, _near, _far, _width, _height, _cx, _cy);
 }
 
 /*************/
@@ -1128,7 +1102,7 @@ dmat4 Camera::computeViewMatrix()
 /*************/
 void Camera::loadDefaultModels()
 {
-    map<string, string> files{{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}, {"camera", "camera.obj"}};
+    map<string, string> files{{"3d_marker", "3d_marker.obj"}, {"2d_marker", "2d_marker.obj"}, {"camera", "camera.obj"}, {"probe", "probe.obj"}};
 
     for (auto& file : files)
     {

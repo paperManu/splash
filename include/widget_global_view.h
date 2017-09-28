@@ -117,6 +117,7 @@ class GuiGlobalView : public GuiWidget
     // Other
     std::vector<glm::dmat4> getCamerasRTMatrices();
     std::vector<std::shared_ptr<Camera>> getCameras();
+    void drawVirtualProbes();
 };
 
 } // end of namespace

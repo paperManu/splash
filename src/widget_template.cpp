@@ -40,7 +40,7 @@ void GuiTemplate::render()
                 if (!ifstream(configPath, ios::in | ios::binary))
                     configPath = "../Resources/templates/" + name + ".json";
 #endif
-                setGlobal("loadConfig", {configPath});
+                setWorldAttribute("loadConfig", {configPath});
             }
 
             if (ImGui::IsItemHovered())

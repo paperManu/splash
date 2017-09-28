@@ -3,7 +3,7 @@
 #include <hap.h>
 #include <regex>
 
-#ifdef HAVE_SSE2
+#if HAVE_SSE2
 #define GLM_FORCE_SSE2
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
@@ -16,7 +16,6 @@
 #include "cgUtils.h"
 #include "log.h"
 #include "osUtils.h"
-#include "threadpool.h"
 #include "timer.h"
 
 #define SPLASH_SHMDATA_THREADS 2
@@ -292,11 +291,11 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
     if (!_isYUV && (_channels == 3 || _channels == 4))
     {
         char* pixels = (char*)(_readerBuffer).data();
-        vector<thread> threads;
+        vector<future<void>> threads;
         for (int block = 0; block < SPLASH_SHMDATA_THREADS; ++block)
         {
             int size = _width * _height * _channels * sizeof(char);
-            threads.push_back(thread([=]() {
+            threads.push_back(async(launch::async, [=]() {
                 int sizeOfBlock; // We compute the size of the block, to handle image size non divisible by SPLASH_SHMDATA_THREADS
                 if (size - size / SPLASH_SHMDATA_THREADS * block < 2 * size / SPLASH_SHMDATA_THREADS)
                     sizeOfBlock = size - size / SPLASH_SHMDATA_THREADS * block;
@@ -306,9 +305,6 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
                 memcpy(pixels + size / SPLASH_SHMDATA_THREADS * block, (const char*)data + size / SPLASH_SHMDATA_THREADS * block, sizeOfBlock);
             }));
         }
-        for (auto& t : threads)
-            if (t.joinable())
-                t.join();
     }
     else if (_is420)
     {

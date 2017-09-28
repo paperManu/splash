@@ -1,11 +1,10 @@
 #include "texture_image.h"
 
+#include <string>
+
 #include "image.h"
 #include "log.h"
-#include "threadpool.h"
 #include "timer.h"
-
-#include <string>
 
 #define SPLASH_TEXTURE_COPY_THREADS 2
 
@@ -22,11 +21,11 @@ Texture_Image::Texture_Image(RootObject* root)
 }
 
 /*************/
-Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data, int multisample)
+Texture_Image::Texture_Image(RootObject* root, GLsizei width, GLsizei height, const string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
     : Texture(root)
 {
     init();
-    reset(width, height, pixelFormat, data, multisample);
+    reset(width, height, pixelFormat, data, multisample, cubemap);
 }
 
 /*************/
@@ -102,6 +101,7 @@ bool Texture_Image::linkTo(const std::shared_ptr<BaseObject>& obj)
     if (dynamic_pointer_cast<Image>(obj).get() != nullptr)
     {
         auto img = dynamic_pointer_cast<Image>(obj);
+        img->setDirty();
         _img = weak_ptr<Image>(img);
         return true;
     }
@@ -118,7 +118,7 @@ shared_ptr<Image> Texture_Image::read()
 }
 
 /*************/
-void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data, int multisample)
+void Texture_Image::reset(int width, int height, const string& pixelFormat, const GLvoid* data, int multisample, bool cubemap)
 {
     if (width == 0 || height == 0)
     {
@@ -134,6 +134,7 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
         realPixelFormat = "RGBA";
     _pixelFormat = realPixelFormat;
     _multisample = multisample;
+    _cubemap = multisample == 0 ? cubemap : false;
 
     if (realPixelFormat == "RGBA")
     {
@@ -191,6 +192,8 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
 
     if (_multisample > 1)
         glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &_glTex);
+    else if (_cubemap)
+        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &_glTex);
     else
         glCreateTextures(GL_TEXTURE_2D, 1, &_glTex);
 
@@ -231,6 +234,10 @@ void Texture_Image::reset(int width, int height, const string& pixelFormat, cons
     {
         glTextureStorage2DMultisample(_glTex, _multisample, _texInternalFormat, width, height, false);
     }
+    else if (_cubemap == true)
+    {
+        glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
+    }
     else
     {
         glTextureStorage2D(_glTex, _texLevels, _texInternalFormat, width, height);
@@ -249,7 +256,7 @@ void Texture_Image::resize(int width, int height)
     if (!_resizable)
         return;
     if (width != _spec.width || height != _spec.height)
-        reset(width, height, _pixelFormat, 0, _multisample);
+        reset(width, height, _pixelFormat, 0, _multisample, _cubemap);
 }
 
 /*************/
@@ -487,16 +494,15 @@ void Texture_Image::update()
         {
             img->lock();
 
-            _pboCopyThreadIds.clear();
             int stride = SPLASH_TEXTURE_COPY_THREADS;
             int size = imageDataSize;
             for (int i = 0; i < stride - 1; ++i)
             {
-                _pboCopyThreadIds.push_back(SThread::pool.enqueue(
-                    [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
+                _pboCopyThreads.push_back(
+                    async(launch::async, [=]() { copy((char*)img->data() + size / stride * i, (char*)img->data() + size / stride * (i + 1), (char*)pixels + size / stride * i); }));
             }
-            _pboCopyThreadIds.push_back(
-                SThread::pool.enqueue([=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
+            _pboCopyThreads.push_back(
+                async(launch::async, [=]() { copy((char*)img->data() + size / stride * (stride - 1), (char*)img->data() + size, (char*)pixels + size / stride * (stride - 1)); }));
         }
     }
 
@@ -525,10 +531,9 @@ void Texture_Image::update()
 /*************/
 void Texture_Image::flushPbo()
 {
-    if (_pboCopyThreadIds.size() != 0)
+    if (!_pboCopyThreads.empty())
     {
-        SThread::pool.waitThreads(_pboCopyThreadIds);
-        _pboCopyThreadIds.clear();
+        _pboCopyThreads.clear(); // This waits for the threaded copies to finish
 
         glUnmapNamedBuffer(_pbos[_pboReadIndex]);
 

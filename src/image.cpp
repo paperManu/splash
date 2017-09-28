@@ -1,6 +1,7 @@
 #include "image.h"
 
 #include <fstream>
+#include <future>
 #include <memory>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -10,7 +11,6 @@
 
 #include "./log.h"
 #include "./osUtils.h"
-#include "./threadpool.h"
 #include "./timer.h"
 
 #define SPLASH_IMAGE_COPY_THREADS 2
@@ -145,14 +145,13 @@ shared_ptr<SerializedObject> Image::serialize() const
     if (imgPtr == NULL)
         return {};
 
-    vector<unsigned int> threadIds;
-    int stride = SPLASH_IMAGE_COPY_THREADS;
-    for (int i = 0; i < stride - 1; ++i)
     {
-        threadIds.push_back(SThread::pool.enqueue([=]() { copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); }));
+        vector<future<void>> threads;
+        int stride = SPLASH_IMAGE_COPY_THREADS;
+        for (int i = 0; i < stride - 1; ++i)
+            threads.push_back(async(launch::async, ([=]() { copy(imgPtr + imgSize / stride * i, imgPtr + imgSize / stride * (i + 1), currentObjPtr + imgSize / stride * i); })));
+        copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
     }
-    copy(imgPtr + imgSize / stride * (stride - 1), imgPtr + imgSize, currentObjPtr + imgSize / stride * (stride - 1));
-    SThread::pool.waitThreads(threadIds);
 
     if (Timer::get().isDebug())
         Timer::get() >> "serialize " + _name;

@@ -28,6 +28,7 @@
 #include "./mesh.h"
 #if HAVE_SHMDATA
 #include "./mesh_shmdata.h"
+#include "./sink.h"
 #include "./sink_shmdata.h"
 #include "./sink_shmdata_encoded.h"
 #endif
@@ -42,8 +43,8 @@
 #if HAVE_OSX
 #include "./texture_syphon.h"
 #endif
-#include "./threadpool.h"
 #include "./timer.h"
+#include "./virtual_probe.h"
 #include "./warp.h"
 #include "./window.h"
 
@@ -63,12 +64,7 @@ Factory::Factory()
 Factory::Factory(RootObject* root)
     : _root(root)
 {
-    if (_root && _root->getType() == "scene")
-    {
-        _isScene = true;
-        if (dynamic_cast<Scene*>(_root)->isMaster())
-            _isMasterScene = true;
-    }
+    _scene = dynamic_cast<Scene*>(_root);
 
     loadDefaults();
     registerObjects();
@@ -250,7 +246,7 @@ void Factory::registerObjects()
     _objectBook["image_v4l2"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_V4L2>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -264,7 +260,7 @@ void Factory::registerObjects()
     _objectBook["image_ffmpeg"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_FFmpeg>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -278,7 +274,7 @@ void Factory::registerObjects()
     _objectBook["image_gphoto"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_GPhoto>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -293,7 +289,7 @@ void Factory::registerObjects()
     _objectBook["image_shmdata"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_Shmdata>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -308,7 +304,7 @@ void Factory::registerObjects()
     _objectBook["image_opencv"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image_OpenCV>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Image>(_root));
@@ -324,11 +320,16 @@ void Factory::registerObjects()
         "mesh from obj file",
         "Mesh (vertices and UVs) describing a projection surface, read from a .obj file.");
 
+    _objectBook["sink"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Sink>(_root)); },
+        BaseObject::Category::MISC,
+        "sink a texture to a host buffer",
+        "Get the texture content to a host buffer. Only used internally.");
+
 #if HAVE_SHMDATA
     _objectBook["mesh_shmdata"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh_Shmdata>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Mesh>(_root));
@@ -357,7 +358,7 @@ void Factory::registerObjects()
 #if HAVE_PYTHON
     _objectBook["python"] = Page(
         [&]() {
-            if (!_isMasterScene && _root)
+            if (!_root || (_scene && !_scene->isMaster()))
                 return shared_ptr<BaseObject>(nullptr);
             return dynamic_pointer_cast<BaseObject>(make_shared<PythonEmbedded>(_root));
         },
@@ -369,7 +370,7 @@ void Factory::registerObjects()
     _objectBook["queue"] = Page(
         [&]() {
             shared_ptr<BaseObject> object;
-            if (!_isScene)
+            if (!_scene)
                 object = dynamic_pointer_cast<BaseObject>(make_shared<Queue>(_root));
             else
                 object = dynamic_pointer_cast<BaseObject>(make_shared<QueueSurrogate>(_root));
@@ -387,7 +388,7 @@ void Factory::registerObjects()
 #if HAVE_OSX
     _objectBook["texture_syphon"] = Page(
         [&]() {
-            if (!_isScene)
+            if (!_scene)
                 return shared_ptr<BaseObject>(nullptr);
             else
                 return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root));
@@ -397,10 +398,22 @@ void Factory::registerObjects()
         "Texture object synchronized through Syphon.");
 #endif
 
+    _objectBook["virtual_probe"] = Page(
+        [&]() {
+            if (!_scene)
+                return dynamic_pointer_cast<BaseObject>(make_shared<VirtualProbe>(nullptr));
+            else
+                return dynamic_pointer_cast<BaseObject>(make_shared<VirtualProbe>(_root));
+        },
+        BaseObject::Category::MISC,
+        "virtual probe to simulate a virtual projection surface",
+        "Virtual screen used to simulate a virtual projection surface.");
+
     _objectBook["warp"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Warp>(_root)); },
         BaseObject::Category::MISC,
         "warp",
         "Warping object, allows for deforming the output of a Camera.");
+
     _objectBook["window"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Window>(_root)); },
         BaseObject::Category::MISC,
         "window",

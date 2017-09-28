@@ -16,7 +16,6 @@
 #include "./queue.h"
 #include "./texture.h"
 #include "./texture_image.h"
-#include "./threadpool.h"
 #include "./timer.h"
 #include "./userInput_dragndrop.h"
 #include "./userInput_joystick.h"
@@ -47,6 +46,7 @@ namespace Splash
 
 bool Scene::_hasNVSwapGroup{false};
 vector<int> Scene::_glVersion{0, 0};
+vector<string> Scene::_ghostableTypes{"camera", "warp"};
 
 /*************/
 std::vector<int> Scene::getGLVersion()
@@ -97,7 +97,6 @@ Scene::~Scene()
     _objects.clear();
     for (auto& obj : _objects)
         obj.second.reset();
-    _ghostObjects.clear();
 
     _mainWindow->releaseContext();
 
@@ -120,7 +119,10 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
     // Check whether an object of this name already exists
     auto objectIt = _objects.find(name);
     if (objectIt != _objects.end())
+    {
+        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - An object named " << name << " already exists" << Log::endl;
         return {};
+    }
 
     // Create the wanted object
     auto obj = _factory->create(type);
@@ -148,10 +150,6 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
                 _guiLinkedToWindow = true;
             }
         }
-
-        // Special treatment for the windows
-        if (type == "window")
-            obj->setAttribute("swapInterval", {_swapInterval});
     }
 
     return obj;
@@ -161,12 +159,7 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
 void Scene::addGhost(const string& type, const string& name)
 {
     // Currently, only Cameras can be ghosts
-    if (type != string("camera") && type != string("warp"))
-        return;
-
-    // Check whether an object of this name already exists
-    auto objectIt = _ghostObjects.find(name);
-    if (objectIt != _ghostObjects.end())
+    if (find(_ghostableTypes.begin(), _ghostableTypes.end(), type) == _ghostableTypes.end())
         return;
 
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
@@ -175,10 +168,11 @@ void Scene::addGhost(const string& type, const string& name)
     std::shared_ptr<BaseObject> obj = add(type, name);
     if (obj)
     {
-        // And move it to _ghostObjects
+        // And move it to _objects
         lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+        obj->setGhost(true);
         _objects.erase(obj->getName());
-        _ghostObjects[obj->getName()] = obj;
+        _objects[obj->getName()] = obj;
     }
 }
 
@@ -197,7 +191,7 @@ Values Scene::getAttributeFromObject(const string& name, const string& attribute
     // Ask the World if it knows more about this object
     else
     {
-        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute});
+        auto answer = sendMessageToWorldWithAnswer("getAttribute", {name, attribute}, 1e4);
         for (unsigned int i = 1; i < answer.size(); ++i)
             values.push_back(answer[i]);
     }
@@ -242,20 +236,20 @@ Json::Value Scene::getConfigurationAsJson()
     root[_name] = BaseObject::getConfigurationAsJson();
     // Save objects attributes
     for (auto& obj : _objects)
-        if (obj.second->getSavable())
+        if (obj.second->getSavable() && !obj.second->isGhost())
             root[obj.first] = obj.second->getConfigurationAsJson();
 
     // Save links
     Values links;
     for (auto& obj : _objects)
     {
-        if (!obj.second->getSavable())
+        if (!obj.second->getSavable() || obj.second->isGhost())
             continue;
 
         auto linkedObjects = obj.second->getLinkedObjects();
         for (auto& linkedObj : linkedObjects)
         {
-            if (!linkedObj->getSavable())
+            if (!linkedObj->getSavable() || obj.second->isGhost())
                 continue;
 
             links.push_back(Values({linkedObj->getName(), obj.second->getName()}));
@@ -274,15 +268,18 @@ bool Scene::link(const string& first, const string& second)
     std::shared_ptr<BaseObject> sink(nullptr);
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
-    if (_objects.find(second) != _objects.end())
-        sink = _objects[second];
-
-    if (source.get() != nullptr && sink.get() != nullptr)
-        return link(source, sink);
     else
         return false;
+
+    if (_objects.find(second) != _objects.end())
+        sink = _objects[second];
+    else
+        return false;
+
+    return link(source, sink);
 }
 
 /*************/
@@ -305,11 +302,15 @@ void Scene::unlink(const string& first, const string& second)
 
     if (_objects.find(first) != _objects.end())
         source = _objects[first];
+    else
+        return;
+
     if (_objects.find(second) != _objects.end())
         sink = _objects[second];
+    else
+        return;
 
-    if (source.get() != nullptr && sink.get() != nullptr)
-        unlink(source, sink);
+    unlink(source, sink);
 }
 
 /*************/
@@ -321,56 +322,6 @@ void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_p
 }
 
 /*************/
-bool Scene::linkGhost(const string& first, const string& second)
-{
-    std::shared_ptr<BaseObject> source(nullptr);
-    std::shared_ptr<BaseObject> sink(nullptr);
-
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
-    if (_ghostObjects.find(first) != _ghostObjects.end())
-        source = _ghostObjects[first];
-    else if (_objects.find(first) != _objects.end())
-        source = _objects[first];
-    else
-        return false;
-
-    if (_ghostObjects.find(second) != _ghostObjects.end())
-        sink = _ghostObjects[second];
-    else if (_objects.find(second) != _objects.end())
-        sink = _objects[second];
-    else
-        return false;
-
-    return link(source, sink);
-}
-
-/*************/
-void Scene::unlinkGhost(const string& first, const string& second)
-{
-    std::shared_ptr<BaseObject> source(nullptr);
-    std::shared_ptr<BaseObject> sink(nullptr);
-
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
-    if (_ghostObjects.find(first) != _ghostObjects.end())
-        source = _ghostObjects[first];
-    else if (_objects.find(first) != _objects.end())
-        source = _objects[first];
-    else
-        return;
-
-    if (_ghostObjects.find(second) != _ghostObjects.end())
-        sink = _ghostObjects[second];
-    else if (_objects.find(second) != _objects.end())
-        sink = _objects[second];
-    else
-        return;
-
-    unlink(source, sink);
-}
-
-/*************/
 void Scene::remove(const string& name)
 {
     std::shared_ptr<BaseObject> obj;
@@ -379,8 +330,6 @@ void Scene::remove(const string& name)
 
     if (_objects.find(name) != _objects.end())
         _objects.erase(name);
-    else if (_ghostObjects.find(name) != _ghostObjects.end())
-        _ghostObjects.erase(name);
 }
 
 /*************/
@@ -392,6 +341,10 @@ void Scene::render()
         lock_guard<recursive_mutex> lockObjects(_objectsMutex);
         for (auto& obj : _objects)
         {
+            // Ghosts are not updated in the render loop
+            if (obj.second->isGhost())
+                continue;
+
             auto priority = obj.second->getRenderingPriority();
             if (priority == Priority::NO_RENDER)
                 continue;
@@ -481,6 +434,18 @@ void Scene::run()
     _mainWindow->setAsCurrentContext();
     while (_isRunning)
     {
+        // This gets the whole loop duration
+        if (_runInBackground && _swapInterval != 0)
+        {
+          // Artificial synchronization to avoid overloading the GPU in hidden mode
+          Timer::get() >> _targetFrameDuration >> "swap_sync";
+          Timer::get() << "swap_sync";
+        }
+
+        Timer::get() >> "loop_scene";
+        Timer::get() << "loop_scene";
+
+
         // Execute waiting tasks
         runTasks();
 
@@ -490,9 +455,9 @@ void Scene::run()
             continue;
         }
 
-        Timer::get() << "sceneLoop";
+        Timer::get() << "rendering";
         render();
-        Timer::get() >> "sceneLoop";
+        Timer::get() >> "rendering";
 
         Timer::get() << "inputsUpdate";
         updateInputs();
@@ -500,11 +465,8 @@ void Scene::run()
     }
     _mainWindow->releaseContext();
 
-    unique_lock<mutex> lockTexture(_textureUploadMutex);
-    _textureUploadCondition.notify_all();
-    lockTexture.unlock();
+    signalBufferObjectUpdated();
     _textureUploadFuture.get();
-
 }
 
 /*************/
@@ -537,8 +499,9 @@ void Scene::textureUploadRun()
             continue;
         }
 
-        unique_lock<mutex> lockUploadTexture(_textureUploadMutex);
-        _textureUploadCondition.wait(lockUploadTexture);
+        waitSignalBufferObjectUpdated();
+        Timer::get() >> "loop_texture";
+        Timer::get() << "loop_texture";
 
         if (!_isRunning)
             break;
@@ -555,7 +518,7 @@ void Scene::textureUploadRun()
 
         vector<shared_ptr<Texture>> textures;
         bool expectedAtomicValue = false;
-        if (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
         {
             for (auto& obj : _objects)
                 if (obj.second->getType().find("texture") != string::npos)
@@ -578,6 +541,7 @@ void Scene::textureUploadRun()
 
         Timer::get() >> "textureUpload";
     }
+
     _textureUploadWindow->releaseContext();
 }
 
@@ -628,13 +592,6 @@ void Scene::sendMessageToWorld(const string& message, const Values& value)
 Values Scene::sendMessageToWorldWithAnswer(const string& message, const Values& value, const unsigned long long timeout)
 {
     return sendMessageWithAnswer("world", message, value, timeout);
-}
-
-/*************/
-void Scene::waitTextureUpload()
-{
-    lock_guard<mutex> lockTexture(_textureUploadMutex);
-    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
 }
 
 /*************/
@@ -702,9 +659,6 @@ Values Scene::getObjectsNameByType(const string& type)
     lock_guard<recursive_mutex> lock(_objectsMutex);
     Values list;
     for (auto& obj : _objects)
-        if (obj.second->getType() == type)
-            list.push_back(obj.second->getName());
-    for (auto& obj : _ghostObjects)
         if (obj.second->getType() == type)
             list.push_back(obj.second->getName());
     return list;
@@ -830,6 +784,21 @@ void Scene::init(const string& name)
 }
 
 /*************/
+unsigned long long Scene::updateTargetFrameDuration()
+{
+    auto mon = glfwGetPrimaryMonitor();
+    if (!mon) return 0ull;
+
+    auto vidMode = glfwGetVideoMode(mon);
+    if (!vidMode) return 0ull;
+
+    auto refreshRate = vidMode->refreshRate;
+    if (!refreshRate) return 0ull;
+
+    return static_cast<unsigned long long>(1e6 / refreshRate);
+}
+
+/*************/
 void Scene::glfwErrorCallback(int code, const char* msg)
 {
     Log::get() << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
@@ -843,6 +812,7 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
 #endif
 {
     string typeString{"OTHER"};
+    string severityString{""};
     Log::Priority logType{Log::MESSAGE};
 
     switch (type)
@@ -873,7 +843,23 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
         break;
     }
 
-    Log::get() << logType << "GL::debug - [" << typeString << "] - " << message << Log::endl;
+    switch (severity)
+    {
+    case GL_DEBUG_SEVERITY_LOW:
+        severityString = "low";
+        break;
+    case GL_DEBUG_SEVERITY_MEDIUM:
+        severityString = "medium";
+        break;
+    case GL_DEBUG_SEVERITY_HIGH:
+        severityString = "high";
+        break;
+    case GL_DEBUG_SEVERITY_NOTIFICATION:
+        severityString = "notification";
+        break;
+    }
+
+    Log::get() << logType << "GL::debug - [" << typeString << "::" << severityString << "] - " << message << Log::endl;
 }
 
 /*************/
@@ -886,32 +872,18 @@ void Scene::registerAttributes()
             addTask([=]() {
                 string type = args[0].as<string>();
                 string name = args[1].as<string>();
-                add(type, name);
+                string sceneName = args.size() > 2 ? args[2].as<string>() : "";
+
+                if (sceneName == _name)
+                    add(type, name);
+                else if (_isMaster)
+                    addGhost(type, name);
             });
 
             return true;
         },
         {'s', 's'});
-    setAttributeDescription("add", "Add an object of the given name and type");
-
-    addAttribute("addGhost",
-        [&](const Values& args) {
-            addTask([=]() {
-                string type = args[0].as<string>();
-                string name = args[1].as<string>();
-                addGhost(type, name);
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("addGhost", "Add a ghost object of the given name and type. Only useful in the master Scene");
-
-    addAttribute("bufferUploaded", [&](const Values& args) {
-        _textureUploadCondition.notify_all();
-        return true;
-    });
-    setAttributeDescription("bufferUploaded", "Message sent by the World to notify that new textures have been sent");
+    setAttributeDescription("add", "Add an object of the given name, type, and optionally the target scene");
 
     addAttribute("config", [&](const Values& args) {
         addTask([&]() -> void {
@@ -944,14 +916,6 @@ void Scene::registerAttributes()
                     unlink(objectIt->second, localObject.second);
                 if (objectIt != _objects.end())
                     _objects.erase(objectIt);
-
-                objectIt = _ghostObjects.find(objectName);
-                if (objectIt != _ghostObjects.end())
-                {
-                    for (auto& ghostObject : _ghostObjects)
-                        unlink(objectIt->second, ghostObject.second);
-                    _ghostObjects.erase(objectIt);
-                }
             });
 
             return true;
@@ -1015,19 +979,6 @@ void Scene::registerAttributes()
         {'s', 's'});
     setAttributeDescription("link", "Link the two given objects");
 
-    addAttribute("linkGhost",
-        [&](const Values& args) {
-            addTask([=]() {
-                string src = args[0].as<string>();
-                string dst = args[1].as<string>();
-                linkGhost(src, dst);
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("linkGhost", "Link the two given ghost objects");
-
     addAttribute("log",
         [&](const Values& args) {
             Log::get().setLog(args[0].as<string>(), (Log::Priority)args[1].as<int>());
@@ -1045,7 +996,7 @@ void Scene::registerAttributes()
     setAttributeDescription("logToFile", "If set to 1, the process holding the Scene will try to write log to file");
 
     addAttribute("ping", [&](const Values& args) {
-        _textureUploadCondition.notify_all();
+        signalBufferObjectUpdated();
         sendMessageToWorld("pong", {_name});
         return true;
     });
@@ -1085,24 +1036,6 @@ void Scene::registerAttributes()
         },
         {'s', 's'});
 
-    addAttribute("setGhost",
-        [&](const Values& args) {
-            addTask([=]() {
-                string name = args[0].as<string>();
-                string attr = args[1].as<string>();
-                Values values;
-                for (int i = 2; i < args.size(); ++i)
-                    values.push_back(args[i]);
-
-                if (_ghostObjects.find(name) != _ghostObjects.end())
-                    _ghostObjects[name]->setAttribute(attr, values);
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("setGhost", "Set a given object the given attribute");
-
     addAttribute("setMaster", [&](const Values& args) {
         addTask([=]() {
             if (args.empty())
@@ -1130,11 +1063,12 @@ void Scene::registerAttributes()
     addAttribute("swapInterval",
         [&](const Values& args) {
             _swapInterval = max(-1, args[0].as<int>());
+            _targetFrameDuration = updateTargetFrameDuration();
             return true;
         },
         [&]() -> Values { return {(int)_swapInterval}; },
         {'n'});
-    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not");
+    setAttributeDescription("swapInterval", "Set the interval between two video frames. 1 is synced, 0 is not, -1 to sync when possible ");
 
     addAttribute("swapTest", [&](const Values& args) {
         addTask([=]() {
@@ -1180,30 +1114,11 @@ void Scene::registerAttributes()
         {'s', 's'});
     setAttributeDescription("unlink", "Unlink the two given objects");
 
-    addAttribute("unlinkGhost",
-        [&](const Values& args) {
-            if (args.size() < 2)
-                return false;
-
-            addTask([=]() {
-                string src = args[0].as<string>();
-                string dst = args[1].as<string>();
-                unlinkGhost(src, dst);
-            });
-
-            return true;
-        },
-        {'s', 's'});
-    setAttributeDescription("unlinkGhost", "Unlink the two given ghost objects");
-
     addAttribute("wireframe",
         [&](const Values& args) {
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
                 for (auto& obj : _objects)
-                    if (obj.second->getType() == "camera")
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
-                for (auto& obj : _ghostObjects)
                     if (obj.second->getType() == "camera")
                         dynamic_pointer_cast<Camera>(obj.second)->setAttribute("wireframe", {(int)(args[0].as<int>())});
             });
@@ -1219,7 +1134,7 @@ void Scene::registerAttributes()
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
         // (and we will need it later)
-        SThread::pool.enqueue([&]() { _colorCalibrator->update(); });
+        addTask([&]() { _colorCalibrator->update(); });
         return true;
     });
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
@@ -1229,39 +1144,10 @@ void Scene::registerAttributes()
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
         // (and we will need it later)
-        SThread::pool.enqueue([&]() { _colorCalibrator->updateCRF(); });
+        addTask([&]() { _colorCalibrator->updateCRF(); });
         return true;
     });
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");
-#endif
-
-#if HAVE_LINUX
-    addAttribute("sceneAffinity",
-        [&](const Values& args) {
-            auto core = args[0].as<int>();
-            auto rootObjectCount = args[1].as<int>();
-
-            addTask([=]() {
-                if (Utils::setAffinity({core}))
-                    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Set to run on CPU core #" << core << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to set Scene CPU core affinity" << Log::endl;
-
-                if (Utils::setRealTime())
-                    Log::get() << Log::MESSAGE << "Scene::" << __FUNCTION__ << " - Set to realtime priority" << Log::endl;
-                else
-                    Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - Unable to set scheduling priority" << Log::endl;
-
-                vector<int> cores{};
-                for (int i = rootObjectCount; i < Utils::getCoreCount(); ++i)
-                    cores.push_back(i);
-                SThread::pool.setAffinity(cores);
-            });
-
-            return true;
-        },
-        {'n', 'n'});
-    setAttributeDescription("sceneAffinity", "Set the core for the main loop, as well as the number of root objects. The thread pool will use the remaining cores.");
 #endif
 
     addAttribute("configurationPath",

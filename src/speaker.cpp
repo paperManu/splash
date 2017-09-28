@@ -1,7 +1,6 @@
 #include "speaker.h"
 
 #include "log.h"
-#include "threadpool.h"
 #include "timer.h"
 
 using namespace std;
@@ -70,7 +69,7 @@ void Speaker::initResources()
     if (!_engine.startStream(Speaker::portAudioCallback, this))
         return;
 
-    _ready =  true;
+    _ready = true;
 }
 
 /*************/

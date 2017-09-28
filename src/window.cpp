@@ -52,6 +52,7 @@ Window::Window(RootObject* root)
         if (w.get() == nullptr)
             return;
         _window = w;
+        updateSwapInterval(scene->getSwapInterval());
     }
 
     _isInitialized = setProjectionSurface();
@@ -199,20 +200,16 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
     else if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {
         auto scene = dynamic_cast<Scene*>(_root);
+        if (!scene)
+            return false;
         // Warps need to be duplicated in the master scene, to be available in the gui
-        if (scene && !scene->isMaster())
-        {
-            auto warpName = getName() + "_" + obj->getName() + "_warp";
-            scene->sendMessageToWorld("sendToMasterScene", {"addGhost", "warp", warpName});
-            scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", obj->getName(), warpName});
-            scene->sendMessageToWorld("sendToMasterScene", {"linkGhost", warpName, _name});
-        }
+        // So we create them asynchronously
+        auto warpName = getName() + "_" + obj->getName() + "_warp";
+        scene->sendMessageToWorld("sendAllScenes", {"add", "warp", warpName, _root->getName()});
+        scene->sendMessageToWorld("sendAllScenes", {"link", obj->getName(), warpName});
+        scene->sendMessageToWorld("sendAllScenes", {"link", warpName, _name});
 
-        auto warp = dynamic_pointer_cast<Warp>(_root->createObject("warp", getName() + "_" + obj->getName() + "_warp"));
-        if (warp->linkTo(obj))
-            return linkTo(warp);
-
-        return false;
+        return true;
     }
     else if (dynamic_pointer_cast<Gui>(obj).get() != nullptr)
     {
@@ -521,7 +518,7 @@ bool Window::switchFullscreen(int screenId)
     }
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
-    updateSwapInterval();
+    updateSwapInterval(_swapInterval);
     _resized = true;
 
     setEventsCallbacks();
@@ -697,7 +694,7 @@ void Window::setWindowDecoration(bool hasDecoration)
     }
 
     _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
-    updateSwapInterval();
+    updateSwapInterval(_swapInterval);
     _resized = true;
 
     setEventsCallbacks();
@@ -707,11 +704,12 @@ void Window::setWindowDecoration(bool hasDecoration)
 }
 
 /*************/
-void Window::updateSwapInterval()
+void Window::updateSwapInterval(int swapInterval)
 {
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
+    _swapInterval = max<int>(-1, swapInterval);
     glfwSwapInterval(_swapInterval);
 
     _window->releaseContext();
@@ -828,8 +826,7 @@ void Window::registerAttributes()
 
     addAttribute("swapInterval",
         [&](const Values& args) {
-            _swapInterval = max(-1, args[0].as<int>());
-            updateSwapInterval();
+            updateSwapInterval(args[0].as<int>());
             return true;
         },
         {'n'});

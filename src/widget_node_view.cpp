@@ -30,11 +30,11 @@ void GuiNodeView::render()
 
         // This defines the default positions for various node types
         static auto defaultPositionByType = map<string, ImVec2>({{"default", {8, 8}},
-            {"window sink_shmdata", {8, 48}},
+            {"window sink", {8, 48}},
             {"warp", {32, 88}},
             {"camera", {8, 128}},
             {"object", {32, 168}},
-            {"texture filter queue", {8, 208}},
+            {"texture filter queue virtual_screen", {8, 208}},
             {"image", {32, 248}},
             {"mesh", {8, 288}},
             {"python", {32, 328}}});
@@ -157,7 +157,7 @@ void GuiNodeView::render()
         ImGui::Text("Select a type to add an object:");
         ImGui::PushID("addObject");
         if (ImGui::Combo("", &itemIndex, items.data(), items.size()))
-            setGlobal("addObject", {_objectTypes[itemIndex]});
+            setWorldAttribute("addObject", {_objectTypes[itemIndex]});
         ImGui::PopID();
     }
 }
@@ -201,18 +201,12 @@ void GuiNodeView::renderNode(const string& name)
             if (io.KeyShift)
             {
                 if (auto scene = dynamic_cast<Scene*>(_root))
-                {
-                    scene->sendMessageToWorld("sendAllScenes", {"link", _sourceNode, name});
-                    scene->sendMessageToWorld("sendAllScenes", {"linkGhost", _sourceNode, name});
-                }
+                    setWorldAttribute("link", {_sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
                 if (auto scene = dynamic_cast<Scene*>(_root))
-                {
-                    scene->sendMessageToWorld("sendAllScenes", {"unlink", _sourceNode, name});
-                    scene->sendMessageToWorld("sendAllScenes", {"unlinklinkGhost", _sourceNode, name});
-                }
+                    setWorldAttribute("unlink", {_sourceNode, name});
             }
         }
 

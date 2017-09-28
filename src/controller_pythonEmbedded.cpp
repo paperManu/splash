@@ -17,10 +17,305 @@ atomic_int PythonEmbedded::_pythonInstances{0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
 PyObject* PythonEmbedded::SplashError{nullptr};
 
-/*************/
-PythonEmbedded* PythonEmbedded::getSplashInstance(PyObject* module)
+/***********************/
+// Sink Python wrapper //
+/***********************/
+void PythonEmbedded::pythonSinkDealloc(pythonSinkObject* self)
 {
-    return static_cast<PythonEmbedded*>(PyCapsule_Import("splash.splash", 0));
+    auto that = getSplashInstance();
+    if (that)
+    {
+        that->setInScene("deleteObject", {self->sinkName});
+        that->setInScene("deleteObject", {self->filterName});
+    }
+
+    Py_XDECREF(self->lastBuffer);
+
+    Py_TYPE(self)->tp_free((PyObject*)self);
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkNew(PyTypeObject* type, PyObject* /*args*/, PyObject* /*kwds*/)
+{
+    pythonSinkObject* self;
+    self = reinterpret_cast<pythonSinkObject*>(type->tp_alloc(type, 0));
+    return (PyObject*)self;
+}
+
+/*************/
+int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        PyErr_SetString(SplashError, "Can not access the Python embedded interpreter. Something is very wrong here...");
+        return -1;
+    }
+
+    auto root = that->_root;
+    if (!root)
+    {
+        PyErr_SetString(SplashError, "Can not access the root object");
+        return -1;
+    }
+
+    char* source = nullptr;
+    int width = 512;
+    int height = 512;
+    static char* kwlist[] = {(char*)"source", (char*)"width", (char*)"height", nullptr};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|ii", kwlist, &source, &width, &height))
+        return -1;
+
+    if (source)
+    {
+        self->sourceName = string(source);
+    }
+    else
+    {
+        PyErr_SetString(SplashError, "No source object specified");
+        return -1;
+    }
+
+    self->width = width;
+    self->height = height;
+    self->framerate = 30;
+
+    auto objects = that->getObjectNames();
+    auto objectIt = std::find(objects.begin(), objects.end(), self->sourceName);
+    if (objectIt == objects.end())
+    {
+        PyErr_SetString(SplashError, "The specified source object does not exist");
+        return -1;
+    }
+
+    self->sinkName = that->getName() + "_sink_" + self->sourceName;
+    self->filterName = that->getName() + "_filter_" + self->sourceName;
+
+    // Objects are added locally, we don't need (nor want) them in any other Scene
+    that->setInScene("add", {"sink", self->sinkName, root->getName()});
+    that->setInScene("add", {"filter", self->filterName, root->getName()});
+    that->setInScene("link", {self->sourceName, self->filterName});
+    that->setInScene("link", {self->filterName, self->sinkName});
+    that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
+    that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
+
+    return 0;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+        return Py_BuildValue("");
+
+    auto root = that->_root;
+    if (!root)
+        return Py_BuildValue("");
+
+    if (!self->sink)
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+
+    if (!self->sink)
+        return Py_BuildValue("");
+
+    auto frame = self->sink->getBuffer();
+    PyObject* buffer = PyByteArray_FromStringAndSize(reinterpret_cast<char*>(frame.data()), frame.size());
+
+    PyObject* tmp = nullptr;
+    if (self->lastBuffer != nullptr)
+        tmp = self->lastBuffer;
+    self->lastBuffer = buffer;
+    if (tmp != nullptr)
+        Py_XDECREF(tmp);
+
+    Py_INCREF(self->lastBuffer);
+    return self->lastBuffer;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    int width = 512;
+    int height = 512;
+    static char* kwlist[] = {(char*)"width", (char*)"height", nullptr};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ii", kwlist, &width, &height))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    self->width = width;
+    self->height = height;
+    that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    int framerate = 30;
+    static char* kwlist[] = {(char*)"framerate", nullptr};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i", kwlist, &framerate))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    self->framerate = framerate;
+    that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->setObjectAttribute(self->sinkName, "opened", {1});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->setObjectAttribute(self->sinkName, "opened", {0});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_BuildValue("s", "");
+    }
+
+    auto root = that->_root;
+    if (!root)
+        return Py_BuildValue("s", "");
+
+    if (!self->sink)
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+
+    if (!self->sink)
+        return Py_BuildValue("s", "");
+
+    auto caps = self->sink->getCaps();
+    return Py_BuildValue("s", caps.c_str());
+}
+
+// clang-format off
+/*************/
+PyMethodDef PythonEmbedded::SinkMethods[] = {
+    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, (const char*)"Get a copy of the buffer in the sink"},
+    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, (const char*)"Set the size of the grabbed image"},
+    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, (const char*)"Set the framerate of the sink"},
+    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, (const char*)"Open the sink"},
+    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, (const char*)"Close the sink"},
+    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, (const char*)"Get the caps of the buffer"},
+    {nullptr}
+};
+
+/*************/
+PyTypeObject PythonEmbedded::pythonSinkType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    (const char*) "splash.Sink",                               /* tp_name */
+    sizeof(pythonSinkObject),                            /* tp_basicsize */
+    0,                                                   /* tp_itemsize */
+    (destructor)PythonEmbedded::pythonSinkDealloc,       /* tp_dealloc */
+    0,                                                   /* tp_print */
+    0,                                                   /* tp_getattr */
+    0,                                                   /* tp_setattr */
+    0,                                                   /* tp_reserved */
+    0,                                                   /* tp_repr */
+    0,                                                   /* tp_as_number */
+    0,                                                   /* tp_as_sequence */
+    0,                                                   /* tp_as_mapping */
+    0,                                                   /* tp_hash  */
+    0,                                                   /* tp_call */
+    0,                                                   /* tp_str */
+    0,                                                   /* tp_getattro */
+    0,                                                   /* tp_setattro */
+    0,                                                   /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,            /* tp_flags */
+    (const char*)"Splash Sink Object",                         /* tp_doc */
+    0,                                                   /* tp_traverse */
+    0,                                                   /* tp_clear */
+    0,                                                   /* tp_richcompare */
+    0,                                                   /* tp_weaklistoffset */
+    0,                                                   /* tp_iter */
+    0,                                                   /* tp_iternext */
+    PythonEmbedded::SinkMethods,                         /* tp_methods */
+    0,                                                   /* tp_members */
+    0,                                                   /* tp_getset */
+    0,                                                   /* tp_base */
+    0,                                                   /* tp_dict */
+    0,                                                   /* tp_descr_get */
+    0,                                                   /* tp_descr_set */
+    0,                                                   /* tp_dictoffset */
+    (initproc)PythonEmbedded::pythonSinkInit,            /* tp_init */
+    0,                                                   /* tp_alloc */
+    PythonEmbedded::pythonSinkNew                        /* tp_new */
+};
+// clang-format on
+
+/*******************/
+// Embedded Python //
+/*******************/
+PythonEmbedded* PythonEmbedded::getSplashInstance()
+{
+    auto that = static_cast<PythonEmbedded*>(PyCapsule_Import("splash._splash", 0));
+    if (!that->_pythonModule)
+    {
+        // If _pythonModule is not set, it is most certainly because the Splash Python method
+        // is called during the module load.
+        PyErr_SetString(SplashError, "Splash method called in the global scope");
+        return nullptr;
+    }
+    else
+    {
+        return that;
+    }
 }
 
 /*************/
@@ -46,6 +341,32 @@ PyObject* PythonEmbedded::pythonGetLogs(PyObject* self, PyObject* args)
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetTimings_doc__,
+    "Get the timings from Splash\n"
+    "\n"
+    "splash.get_timings()\n"
+    "\n"
+    "Returns:\n"
+    "  The timers as a dict\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetTimings(PyObject* self, PyObject* args)
+{
+    auto& timings = Timer::get().getDurationMap();
+    PyObject* pythonTimerDict = PyDict_New();
+    for (auto& t : timings)
+    {
+        PyObject* val = Py_BuildValue("K", static_cast<uint64_t>(t.second));
+        PyDict_SetItemString(pythonTimerDict, t.first.c_str(), val);
+        Py_DECREF(val);
+    }
+
+    return pythonTimerDict;
+}
+
+/*************/
 PyDoc_STRVAR(pythonGetObjectList_doc__,
     "Get the list of objects from Splash\n"
     "\n"
@@ -59,7 +380,7 @@ PyDoc_STRVAR(pythonGetObjectList_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -88,7 +409,7 @@ PyDoc_STRVAR(pythonGetObjectTypes_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -125,7 +446,7 @@ PyDoc_STRVAR(pythonGetObjectDescription_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -164,7 +485,7 @@ PyDoc_STRVAR(pythonGetObjectAttributeDescription_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -210,7 +531,7 @@ PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -250,7 +571,7 @@ PyDoc_STRVAR(pythonGetObjectAttributes_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -292,7 +613,7 @@ PyDoc_STRVAR(pythonGetObjectLinks_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -328,7 +649,7 @@ PyDoc_STRVAR(pythonGetObjectReversedLinks_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectReversedLinks(PyObject* self, PyObject* args)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -367,7 +688,7 @@ PyDoc_STRVAR(pythonGetTypesFromCategory_doc__,
 
 PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -406,7 +727,7 @@ PyDoc_STRVAR(pythonSetGlobal_doc__,
     "These attributes are listed in the \"world\" object type\n"
     "\n"
     "Signature:\n"
-    "  splash.set_global(attribute, value)\n"
+    "  splash.set_world_attribute(attribute, value)\n"
     "\n"
     "Args:\n"
     "  attribute (string): global attribute to set\n"
@@ -420,7 +741,7 @@ PyDoc_STRVAR(pythonSetGlobal_doc__,
 
 PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -439,7 +760,7 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObje
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setGlobal(string(attrName), value);
+    that->setWorldAttribute(string(attrName), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -450,7 +771,7 @@ PyDoc_STRVAR(pythonSetObject_doc__,
     "Set the attribute for the object to the given value\n"
     "\n"
     "Signature:\n"
-    "  splash.set_object(objectname, attribute, value)\n"
+    "  splash.set_object_attribute(objectname, attribute, value)\n"
     "\n"
     "Args:\n"
     "  objectname (string): object name\n"
@@ -465,7 +786,7 @@ PyDoc_STRVAR(pythonSetObject_doc__,
 
 PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -485,7 +806,7 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObje
     }
 
     auto value = convertToValue(pyValue).as<Values>();
-    that->setObject(string(strName), string(strAttr), value);
+    that->setObjectAttribute(string(strName), string(strAttr), value);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -511,7 +832,7 @@ PyDoc_STRVAR(pythonSetObjectsOfType_doc__,
 
 PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -555,7 +876,7 @@ PyDoc_STRVAR(pythonAddCustomAttribute_doc__,
 
 PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds)
 {
-    auto that = getSplashInstance(self);
+    auto that = getSplashInstance();
     if (!that || !that->_doLoop)
     {
         PyErr_SetString(SplashError, "Error accessing Splash instance");
@@ -584,10 +905,22 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
         return Py_False;
     }
 
+    // Get the value of the attribute if it has already been set during a previous setAttribute
+    // (as attributes are not loaded in any order, the file may have been loaded after the other attributes are set)
+    auto previousValue = that->getObjectAttribute(that->getName(), attributeName);
+
+    // Add the attribute to the Python interpreter object
+    // This will replace any previous (or default) attribute (setter and getter included)
     that->addAttribute(attributeName,
         [=](const Values& args) {
-            PyEval_AcquireThread(that->_pythonGlobalThreadState);
-            PyThreadState_Swap(that->_pythonLocalThreadState);
+            bool calledFromPython = false;
+            auto pyThreadDict = PyThreadState_GetDict();
+            if (!pyThreadDict)
+            {
+                PyEval_AcquireThread(that->_pythonGlobalThreadState);
+                PyThreadState_Swap(that->_pythonLocalThreadState);
+                calledFromPython = true;
+            }
 
             auto moduleDict = PyModule_GetDict(that->_pythonModule);
             PyObject* object = nullptr;
@@ -604,14 +937,23 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
 
             Py_DECREF(object);
 
-            PyThreadState_Swap(that->_pythonGlobalThreadState);
-            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            if (calledFromPython)
+            {
+                PyThreadState_Swap(that->_pythonGlobalThreadState);
+                PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            }
 
             return true;
         },
         [=]() -> Values {
-            PyEval_AcquireThread(that->_pythonGlobalThreadState);
-            PyThreadState_Swap(that->_pythonLocalThreadState);
+            bool calledFromPython = false;
+            auto pyThreadDict = PyThreadState_GetDict();
+            if (!pyThreadDict)
+            {
+                PyEval_AcquireThread(that->_pythonGlobalThreadState);
+                PyThreadState_Swap(that->_pythonLocalThreadState);
+                calledFromPython = true;
+            }
 
             auto moduleDict = PyModule_GetDict(that->_pythonModule);
             auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
@@ -622,8 +964,11 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
                 return {};
             }
 
-            PyThreadState_Swap(that->_pythonGlobalThreadState);
-            PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            if (calledFromPython)
+            {
+                PyThreadState_Swap(that->_pythonGlobalThreadState);
+                PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+            }
 
             if (value.getType() == Value::Type::v)
                 return value.as<Values>();
@@ -632,32 +977,186 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
         },
         {});
 
+    // Set the previous attribute if needed
+    if (!previousValue.empty())
+        that->setObjectAttribute(that->getName(), attributeName, previousValue);
+
     Py_INCREF(Py_True);
     return Py_True;
 }
 
 /*************/
-PyMethodDef PythonEmbedded::SplashMethods[] = {{(char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
-    {(char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
-    {(char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
-    {(char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
-    {(char*)"get_object_attribute_description",
+PyDoc_STRVAR(pythonRegisterAttributeCallback_doc__,
+    "Register a callback to the attribute of the given Splash object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.register_attribute_callback(object_name, attribute, callback)\n"
+    "\n"
+    "Args:\n"
+    "  object (string): Splash object name\n"
+    "  attribute (string): Object attribute name\n"
+    "  callback (callable): Callable to be used as a callback\n"
+    "\n"
+    "Returns:\n"
+    "  The ID of the registered callback, 0 if it failed\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available, or parameters are wrong");
+
+PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return Py_BuildValue("I", 0);
+    }
+
+    char* objectName{nullptr};
+    char* attributeName{nullptr};
+    PyObject* callable{nullptr};
+    static const char* kwlist[] = {"object", "attribute", "callable", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &objectName, &attributeName, &callable))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        return Py_BuildValue("I", 0);
+    }
+
+    if (!PyCallable_Check(callable))
+    {
+        PyErr_SetString(SplashError, "The object provided is not callable");
+        return Py_BuildValue("I", 0);
+    }
+
+    auto splashObject = that->getObject(objectName);
+    if (!splashObject)
+    {
+        PyErr_SetString(SplashError, "There is no Splash object with the given name");
+        return Py_BuildValue("I", 0);
+    }
+
+    auto callbackFunc = [=](const string& obj, const string& attr) {
+        lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+
+        PyEval_AcquireThread(that->_pythonGlobalThreadState);
+        PyThreadState_Swap(that->_pythonLocalThreadState);
+
+        auto pyTuple = PyTuple_New(2);
+        PyTuple_SetItem(pyTuple, 0, Py_BuildValue("s", obj.c_str()));
+        PyTuple_SetItem(pyTuple, 1, Py_BuildValue("s", attr.c_str()));
+
+        PyObject_CallObject(callable, pyTuple);
+        if (PyErr_Occurred())
+            PyErr_Print();
+
+        Py_DECREF(pyTuple);
+
+        PyThreadState_Swap(that->_pythonGlobalThreadState);
+        PyEval_ReleaseThread(that->_pythonGlobalThreadState);
+    };
+
+    lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    auto handle = splashObject->registerCallback(attributeName, callbackFunc);
+    auto pyHandleId = Py_BuildValue("I", handle.getId());
+    that->_attributeCallbackHandles[handle.getId()] = std::move(handle);
+
+    return pyHandleId;
+}
+
+/*************/
+PyDoc_STRVAR(pythonUnregisterAttributeCallback_doc__,
+    "Unregister an attribute callback given its ID\n"
+    "\n"
+    "Signature:\n"
+    "  splash.unregister_attribute_callback(callback_id)\n"
+    "\n"
+    "Args:\n"
+    "  callback_id (unsigned int): Callback ID\n"
+    "\n"
+    "Returns:\n"
+    "  True if the callback has been unregistered, False otherwise\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available, or parameters are wrong");
+
+PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    uint32_t callbackId{0};
+    static const char* kwlist[] = {"callback_id", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", const_cast<char**>(kwlist), &callbackId))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    if (callbackId == 0)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
+    auto callbackIt = that->_attributeCallbackHandles.find(callbackId);
+    if (callbackIt == that->_attributeCallbackHandles.end())
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->_attributeCallbackHandles.erase(callbackIt);
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+// clang-format off
+/*************/
+PyMethodDef PythonEmbedded::SplashMethods[] = {
+    {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
+    {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
+    {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
+    {(const char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
+    {(const char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
+    {(const char*)"get_object_attribute_description",
         (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription,
         METH_VARARGS | METH_KEYWORDS,
         pythonGetObjectAttributeDescription_doc__},
-    {(char*)"get_object_attribute", (PyCFunction)PythonEmbedded::pythonGetObjectAttribute, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttribute_doc__},
-    {(char*)"get_object_attributes", (PyCFunction)PythonEmbedded::pythonGetObjectAttributes, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributes_doc__},
-    {(char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},
-    {(char*)"get_object_reversed_links", (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectReversedLinks_doc__},
-    {(char*)"get_types_from_category", (PyCFunction)PythonEmbedded::pythonGetTypesFromCategory, METH_VARARGS | METH_KEYWORDS, pythonGetTypesFromCategory_doc__},
-    {(char*)"set_global", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
-    {(char*)"set_object", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
-    {(char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},
-    {(char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
-    {nullptr, nullptr, 0, nullptr}};
+    {(const char*)"get_object_attribute", (PyCFunction)PythonEmbedded::pythonGetObjectAttribute, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttribute_doc__},
+    {(const char*)"get_object_attributes", (PyCFunction)PythonEmbedded::pythonGetObjectAttributes, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributes_doc__},
+    {(const char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},
+    {(const char*)"get_object_reversed_links", (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectReversedLinks_doc__},
+    {(const char*)"get_types_from_category", (PyCFunction)PythonEmbedded::pythonGetTypesFromCategory, METH_VARARGS | METH_KEYWORDS, pythonGetTypesFromCategory_doc__},
+    {(const char*)"set_world_attribute", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
+    {(const char*)"set_object_attribute", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
+    {(const char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},
+    {(const char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
+    {(const char*)"register_attribute_callback", (PyCFunction)PythonEmbedded::pythonRegisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonRegisterAttributeCallback_doc__},
+    {(const char*)"unregister_attribute_callback", (PyCFunction)PythonEmbedded::pythonUnregisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonUnregisterAttributeCallback_doc__},
+    {nullptr, nullptr, 0, nullptr}
+};
 
 /*************/
-PyModuleDef PythonEmbedded::SplashModule = {PyModuleDef_HEAD_INIT, "splash", nullptr, -1, PythonEmbedded::SplashMethods, nullptr, nullptr, nullptr, nullptr};
+PyModuleDef PythonEmbedded::SplashModule = {
+    PyModuleDef_HEAD_INIT, 
+    "splash", 
+    "Splash internal module", 
+    -1, 
+    PythonEmbedded::SplashMethods, 
+    nullptr, 
+    nullptr, 
+    nullptr, 
+    nullptr
+};
+// clang-format on
 
 /*************/
 PyObject* PythonEmbedded::pythonInitSplash()
@@ -666,9 +1165,20 @@ PyObject* PythonEmbedded::pythonInitSplash()
 
     module = PyModule_Create(&PythonEmbedded::SplashModule);
     if (!module)
+    {
+        Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Unable to load Splash module" << Log::endl;
         return nullptr;
+    }
 
-    SplashError = PyErr_NewException((char*)"splash.error", nullptr, nullptr);
+    if (PyType_Ready(&PythonEmbedded::pythonSinkType) < 0)
+    {
+        Log::get() << Log::WARNING << "PythonEmbedded::" << __FUNCTION__ << " - Sink type is not ready" << Log::endl;
+        return nullptr;
+    }
+    Py_INCREF(&PythonEmbedded::pythonSinkType);
+    PyModule_AddObject(module, "Sink", (PyObject*)&PythonEmbedded::pythonSinkType);
+
+    SplashError = PyErr_NewException((const char*)"splash.error", nullptr, nullptr);
     if (SplashError)
     {
         Py_INCREF(SplashError);
@@ -764,8 +1274,8 @@ void PythonEmbedded::loop()
 
     // Set the current instance in a capsule
     auto module = PyImport_ImportModule("splash");
-    auto capsule = PyCapsule_New((void*)this, "splash.splash", nullptr);
-    PyDict_SetItemString(PyModule_GetDict(module), "splash", capsule);
+    auto capsule = PyCapsule_New((void*)this, "splash._splash", nullptr);
+    PyDict_SetItemString(PyModule_GetDict(module), "_splash", capsule);
     Py_DECREF(capsule);
 
     PyRun_SimpleString("import sys");
@@ -811,7 +1321,7 @@ void PythonEmbedded::loop()
             PyThreadState_Swap(_pythonGlobalThreadState);
             PyEval_ReleaseThread(_pythonGlobalThreadState);
 
-            Timer::get() >> _loopDurationMs * 1000 >> timerName;
+            Timer::get() >> 1.f / static_cast<float>(_updateRate) * 1000.f >> timerName;
         }
 
         PyEval_AcquireThread(_pythonGlobalThreadState);
@@ -940,6 +1450,15 @@ void PythonEmbedded::registerAttributes()
 
     addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");
+
+    addAttribute("loopRate",
+        [&](const Values& args) {
+            _updateRate = max(1, args[0].as<int>());
+            return true;
+        },
+        [&]() -> Values { return {_updateRate}; },
+        {'n'});
+    setAttributeDescription("loopRate", "Set the rate at which the loop is called");
 }
 
 } // end of namespace

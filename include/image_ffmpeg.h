@@ -30,6 +30,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <future>
 #include <mutex>
 #include <thread>
 
@@ -98,6 +99,7 @@ class Image_FFmpeg : public Image
     std::mutex _videoQueueMutex;
     std::mutex _videoSeekMutex;
     std::mutex _videoEndMutex;
+    std::future<void> _seekFuture;
 
     std::atomic_bool _timeJump{false};
 
@@ -163,6 +165,12 @@ class Image_FFmpeg : public Image
      * \param seconds Desired position
      */
     void seek(float seconds);
+
+    /**
+     * Seek asynchronously
+     * \param seconds Desired position
+     */
+    void seek_async(float seconds);
 
     /**
      * Set the audio output

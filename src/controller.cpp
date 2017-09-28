@@ -11,6 +11,16 @@ namespace Splash
 {
 
 /*************/
+shared_ptr<BaseObject> ControllerObject::getObject(const string& name) const
+{
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return {nullptr};
+
+    return scene->getObject(name);
+}
+
+/*************/
 vector<string> ControllerObject::getObjectNames() const
 {
     auto scene = dynamic_cast<Scene*>(_root);
@@ -20,13 +30,6 @@ vector<string> ControllerObject::getObjectNames() const
     vector<string> objNames;
 
     for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        objNames.push_back(o.first);
-    }
-
-    for (auto& o : scene->_ghostObjects)
     {
         if (!o.second->getSavable())
             continue;
@@ -65,8 +68,6 @@ unordered_map<string, Values> ControllerObject::getObjectAttributes(const string
 
     auto objectIt = scene->_objects.find(name);
     if (objectIt == scene->_objects.end())
-        objectIt = scene->_ghostObjects.find(name);
-    if (objectIt == scene->_objects.end())
         return {};
 
     return objectIt->second->getAttributes(true);
@@ -82,17 +83,6 @@ unordered_map<string, vector<string>> ControllerObject::getObjectLinks() const
     auto links = unordered_map<string, vector<string>>();
 
     for (auto& o : scene->_objects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        links[o.first] = vector<string>();
-        auto linkedObjects = o.second->getLinkedObjects();
-        for (auto& link : linkedObjects)
-        {
-            links[o.first].push_back(link->getName());
-        }
-    }
-    for (auto& o : scene->_ghostObjects)
     {
         if (!o.second->getSavable())
             continue;
@@ -171,14 +161,6 @@ map<string, string> ControllerObject::getObjectTypes() const
         auto type = o.second->getRemoteType();
         types[o.first] = type.empty() ? o.second->getType() : type;
     }
-    for (auto& o : scene->_ghostObjects)
-    {
-        if (!o.second->getSavable())
-            continue;
-        auto type = o.second->getRemoteType();
-        types[o.first] = type.empty() ? o.second->getType() : type;
-    }
-
     return types;
 }
 
@@ -193,9 +175,6 @@ list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& ty
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type || type == "")
             objects.push_back(obj.second);
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == type || type == "")
-            objects.push_back(obj.second);
 
     return objects;
 }
@@ -208,7 +187,7 @@ void ControllerObject::sendBuffer(const std::string& name, const std::shared_ptr
 }
 
 /*************/
-void ControllerObject::setGlobal(const string& name, const Values& values) const
+void ControllerObject::setWorldAttribute(const string& name, const Values& values) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -218,7 +197,17 @@ void ControllerObject::setGlobal(const string& name, const Values& values) const
 }
 
 /*************/
-Values ControllerObject::getGlobal(const string& attr) const
+void ControllerObject::setInScene(const string& name, const Values& values) const
+{
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return;
+
+    scene->setAttribute(name, values);
+}
+
+/*************/
+Values ControllerObject::getWorldAttribute(const string& attr) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -233,7 +222,7 @@ Values ControllerObject::getGlobal(const string& attr) const
 }
 
 /*************/
-void ControllerObject::setObject(const string& name, const string& attr, const Values& values) const
+void ControllerObject::setObjectAttribute(const string& name, const string& attr, const Values& values) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -254,12 +243,7 @@ void ControllerObject::setObjectsOfType(const string& type, const string& attr, 
 
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type)
-            obj.second->setAttribute(attr, values);
-
-    for (auto& obj : scene->_ghostObjects)
-        if (obj.second->getType() == type)
         {
-            obj.second->setAttribute(attr, values);
             auto msg = values;
             msg.push_front(attr);
             msg.push_front(obj.first);

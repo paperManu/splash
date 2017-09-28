@@ -26,6 +26,8 @@
 #define SPLASH_CGUTILS_H
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include <hap.h>
 #include <vector>
 
@@ -204,6 +206,37 @@ inline glm::vec2 colorBalanceFromTemperature(float temp)
 
     return colorBalance;
 }
+
+/**
+ * \brief Get the projection matrix given the fov and shift (0.5 meaning no shift, 0.0 and 1.0 meaning 100% on one direction or the other)
+ * \param fov Field of view, in degrees
+ * \param cx Center shift along X
+ * \param cy Center shift along Y
+ * \return Return the projection matrix
+ */
+inline glm::dmat4 getProjectionMatrix(float fov, float near, float far, float width, float height, float cx, float cy)
+{
+    double l, r, t, b, n, f;
+    n = near;
+    f = far;
+    // Up and down
+    double tTemp = n * tan(fov * M_PI / 360.0);
+    double bTemp = -tTemp;
+    t = tTemp - (cy - 0.5) * (tTemp - bTemp);
+    b = bTemp - (cy - 0.5) * (tTemp - bTemp);
+    // Left and right
+    double rTemp = tTemp * width / height;
+    double lTemp = bTemp * width / height;
+    r = rTemp - (cx - 0.5) * (rTemp - lTemp);
+    l = lTemp - (cx - 0.5) * (rTemp - lTemp);
+
+    return glm::frustum(l, r, b, t, n, f);
+}
+
+/**
+ * \brief Get the view matrix
+ * \return Return the view matrix
+ */
 
 /*************/
 // Hap chunk callback

@@ -72,6 +72,8 @@ class Shader : public BaseObject
     {
         texture = 0,
         texture_rect,
+        object_cubemap,
+        cubemap_projection,
         color,
         filter,
         primitiveId,

@@ -18,11 +18,11 @@ void GuiControl::render()
         // World control
         ImGui::Text("World configuration");
         static auto looseClock = false;
-        auto looseClockValue = getGlobal("looseClock");
+        auto looseClockValue = getWorldAttribute("looseClock");
         if (!looseClockValue.empty())
             looseClock = looseClockValue[0].as<bool>();
         if (ImGui::Checkbox("Loose master clock", &looseClock))
-            setGlobal("looseClock", {static_cast<int>(looseClock)});
+            setWorldAttribute("looseClock", {static_cast<int>(looseClock)});
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Loose clock: if activated, the master clock is only used as an indication, not a hard constraint");
 
@@ -30,14 +30,14 @@ void GuiControl::render()
         if (ImGui::InputInt("World framerate", &worldFramerate, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             worldFramerate = std::max(worldFramerate, 0);
-            setGlobal("framerate", {worldFramerate});
+            setWorldAttribute("framerate", {worldFramerate});
         }
 
         static auto syncTestFrameDelay = 0;
         if (ImGui::InputInt("Frames between color swap", &syncTestFrameDelay, 1, 100, ImGuiInputTextFlags_EnterReturnsTrue))
         {
             syncTestFrameDelay = std::max(syncTestFrameDelay, 0);
-            setGlobal("swapTest", {syncTestFrameDelay});
+            setWorldAttribute("swapTest", {syncTestFrameDelay});
         }
 
         ImGui::Spacing();
@@ -72,7 +72,7 @@ void GuiControl::render()
         static auto showCameraCount = 0;
         if (ImGui::InputInt("Show camera count (w/ blending)", &showCameraCount, 0, 1, ImGuiInputTextFlags_EnterReturnsTrue))
         {
-            setGlobal("computeBlending", {"continuous"});
+            setWorldAttribute("computeBlending", {"continuous"});
             setObjectsOfType("camera", "showCameraCount", {showCameraCount});
         }
 
@@ -121,7 +121,7 @@ void GuiControl::render()
             string newName = _targetObjectName;
             newName.resize(256);
             if (ImGui::InputText("Rename", const_cast<char*>(newName.c_str()), newName.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                setGlobal("renameObject", {_targetObjectName, newName});
+                setWorldAttribute("renameObject", {_targetObjectName, newName});
 
             ImGui::Spacing();
             ImGui::Separator();
@@ -129,7 +129,7 @@ void GuiControl::render()
 
             if (ImGui::Button("Delete selected object"))
             {
-                setGlobal("deleteObject", {_targetObjectName});
+                setWorldAttribute("deleteObject", {_targetObjectName});
                 _targetObjectName = "";
                 _targetIndex = -1;
             }

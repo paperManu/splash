@@ -35,6 +35,7 @@ This program is free software; you can redistribute it and/or modify it under th
 
 ### Authors
 * Emmanuel Durand ([Github](https://github.com/paperManu))([Website](https://emmanueldurand.net))
+* Jérémie Soria ([Github](https://github.com/eldaranne))
 
 ### Projet URL
 This project can be found either on the [SAT Metalab repository](http://code.sat.qc.ca/redmine/projects/splash) or on [Github](https://github.com/paperManu/splash).
@@ -54,7 +55,6 @@ Splash relies on a few libraries to get the job done. These libraries are:
 - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
 - [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
-- [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
 - [portaudio](http://portaudio.com/) to read and output audio,
 - [Python](https://python.org) for scripting capabilities,
 - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
@@ -71,6 +71,8 @@ A few more libraries are used as submodules in the git repository:
 - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
 - [stb_image](https://github.com/nothings/stb) to read images.
+- [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
+- [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
 
 ### Compilation and installation
 
@@ -83,7 +85,7 @@ The current release of Splash has currently only been compiled and tested on Ubu
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
     sudo apt install build-essential git-core cmake automake libtool clang libxrandr-dev libxi-dev
-    sudo apt install libglm-dev libgsl0-dev libatlas3-base libzmq3-dev libgphoto2-dev
+    sudo apt install libglm-dev libgsl0-dev libatlas3-base libgphoto2-dev
     sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev
 
     git clone git://github.com/paperManu/splash

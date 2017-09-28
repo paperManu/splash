@@ -792,7 +792,7 @@ struct ShaderSources
 
         void main(void)
         {
-            gl_Position = vec4(_vertex.x, _vertex.y, _vertex.z, 1.0);
+            gl_Position = vec4(_vertex.xyz, 1.0);
             texCoord = _texcoord;
         }
     )"};
@@ -1026,6 +1026,124 @@ struct ShaderSources
 
             fragColor = color;
         }
+    )"};
+
+    /**
+     * Cubemap objects rendering (used by the virtual screens)
+     */
+    const std::string VERTEX_SHADER_OBJECT_CUBEMAP{R"(
+        #include getSmoothBlendFromVertex
+
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+
+        out VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+        } vertexOut;
+
+        uniform mat4 _modelViewMatrix;
+
+        void main(void)
+        {
+            vertexOut.position = vec4(_vertex.xyz, 1.0);
+            vertexOut.position = _modelViewMatrix * vertexOut.position;
+            gl_Position = vertexOut.position;
+            vertexOut.texCoord = _texcoord;
+        }
+    )"};
+
+    const std::string GEOMETRY_SHADER_OBJECT_CUBEMAP{R"(
+        layout(triangles) in;
+        layout(triangle_strip, max_vertices = 18) out;
+
+        in VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+        } vertexIn[];
+
+        out VertexData
+        {
+            vec4 position;
+            vec2 texCoord;
+        } vertexOut;
+
+        uniform mat4 _projectionMatrix;
+
+        const mat4 cubemapMat[6] = mat4[](
+            mat4(1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 0.0, 0.0, 1.0, 0.0,
+                 0.0, 0.0, 0.0, 1.0),
+            mat4(-1.0, 0.0, 0.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 0.0, 0.0, -1.0, 0.0,
+                 0.0, 0.0, 0.0, 1.0),
+            mat4(0.0, -1.0, 0.0, 0.0,
+                 0.0, 0.0, 1.0, 0.0,
+                 -1.0, 0.0, 0.0, 0.0,
+                 0.0, 0.0, 0.0, 1.0),
+            mat4(0.0, 1.0, 0.0, 0.0,
+                 0.0, 0.0, -1.0, 0.0,
+                 -1.0, 0.0, 0.0, 0.0,
+                 0.0, 0.0, 0.0, 1.0),
+            mat4(0.0, 0.0, 1.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 -1.0, 0.0, .0, 0.0,
+                 0.0, 0.0, 0.0, 1.0),
+            mat4(0.0, 0.0, -1.0, 0.0,
+                 0.0, 1.0, 0.0, 0.0,
+                 1.0, 0.0, 0.0, 0.0,
+                 0.0, 0.0, 0.0, 1.0)
+            );
+
+        void main() 
+        {
+            for (int face = 0; face < 6; ++face)
+            {
+                gl_Layer = face;
+
+                for (int i = 0; i < 3; ++i)
+                {
+                    vertexOut.position = _projectionMatrix * cubemapMat[face] * vertexIn[i].position;
+                    gl_Position = vertexOut.position;
+                    vertexOut.texCoord = vertexIn[i].texCoord;
+                    EmitVertex();
+                }
+                EndPrimitive();
+            }
+        }
+    )"};
+
+    const std::string FRAGMENT_SHADER_OBJECT_CUBEMAP{R"(
+        #ifdef TEXTURE_RECT
+            uniform sampler2DRect _tex0;
+        #else
+            uniform sampler2D _tex0;
+        #endif
+
+            uniform vec2 _tex0_size = vec2(1.0);
+
+            in VertexData
+            {
+                vec4 position;
+                vec2 texCoord;
+            } vertexIn;
+
+            out vec4 fragColor;
+
+            void main(void)
+            {
+        #if TEXTURE_RECT
+                vec4 color = texture(_tex0, vertexIn.texCoord * _tex0_size);
+        #else
+                vec4 color = texture(_tex0, vertexIn.texCoord);
+        #endif
+                
+                fragColor = color;
+            }
     )"};
 
     /**
@@ -1284,7 +1402,6 @@ struct ShaderSources
         layout(location = 0) in vec4 _vertex;
         layout(location = 1) in vec2 _texcoord;
         layout(location = 2) in vec4 _normal;
-        uniform mat4 _modelViewProjectionMatrix;
 
         out VertexData
         {
@@ -1374,6 +1491,83 @@ struct ShaderSources
             float minDist = min(min(b[0], b[1]), b[2]);
             vec4 matColor = vec4(0.3, 0.3, 0.3, 1.0);
             fragColor.rgba = mix(_wireframeColor, matColor, edgeFactor());
+        }
+    )"};
+
+    /**
+     * Cubemap projection to spherical, equirectangular, or "single layer cubemap"
+     */
+    const std::string VERTEX_SHADER_CUBEMAP_PROJECTION{R"(
+        layout(location = 0) in vec4 _vertex;
+        layout(location = 1) in vec2 _texcoord;
+        out vec2 texCoord;
+
+        void main(void)
+        {
+            gl_Position = vec4(_vertex.xyz, 1.0);
+            texCoord = _texcoord;
+        }
+    )"};
+
+    const std::string FRAGMENT_SHADER_CUBEMAP_PROJECTION{R"(
+        #define PI 3.141592653589793
+        #define HALFPI 1.5707963268 
+
+        uniform samplerCube _tex0;
+        uniform vec2 _tex0_size = vec2(1.0);
+
+        uniform int _projectionType = 1; // 0 = equirectangular, 1 = spherical
+        uniform float _sphericalFov = 180.0;
+
+        in vec2 texCoord;
+        out vec4 fragColor;
+
+        void main(void)
+        {
+            vec2 cuv = vec2(texCoord.s, texCoord.t) * 2.0; // Centered UVs
+
+            if (_projectionType == 0)
+            {
+                float alpha = cuv.x * PI;// + PI / 4.0;
+                float phi = PI - cuv.y * HALFPI;
+
+                vec3 direction = vec3(0.0, 0.0, 1.0);
+                mat3 rotationZ = mat3(cos(alpha), sin(alpha), 0.0,
+                                      -sin(alpha), cos(alpha), 0.0,
+                                      0.0, 0.0, 1.0);
+                mat3 rotationY = mat3(cos(phi), 0.0, -sin(phi),
+                                      0.0, 1.0, 0.0,
+                                      sin(phi), 0.0, cos(phi));
+                direction = rotationZ * rotationY * direction;
+                fragColor = texture(_tex0, direction);
+            }
+            else if (_projectionType == 1)
+            {
+                vec2 cuv = (vec2(texCoord.x, texCoord.y) - 0.5) * 2.0; // Centered UVs
+                if (length(cuv) > 1.0)
+                {
+                    fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                    return;
+                }
+    
+                float phi = length(cuv) * (_sphericalFov / 360.0) * PI;
+                vec2 dir = normalize(cuv);
+                float alpha = atan(dir.y, dir.x) + PI;
+
+                vec3 direction = vec3(0.0, 0.0, 1.0);
+                mat3 rotationZ = mat3(cos(alpha), sin(alpha), 0.0,
+                                      -sin(alpha), cos(alpha), 0.0,
+                                      0.0, 0.0, 1.0);
+                mat3 rotationY = mat3(cos(phi), 0.0, -sin(phi),
+                                      0.0, 1.0, 0.0,
+                                      sin(phi), 0.0, cos(phi));
+                direction = rotationZ * rotationY * direction;
+                fragColor = texture(_tex0, direction);
+            }
+            else
+            {
+                fragColor = vec4(cuv.st, 0.0, 1.0);
+            }
         }
     )"};
 

@@ -31,7 +31,8 @@ Branching strategy with git
 
 The [master](https://gitlab.com/sat-metalab/splash/tree/master) branch contains Splash releases. Validated new developments are into the [develop](https://github.com/sat-metalab/splash/tree/develop) branch.
 
-Modifications are made into a dedicated branch that need to be merged into the develop branch through a Gitlab merge request. When you modification is ready, you need to prepare your merge request as follow:
+Modifications are made into a dedicated branch that needs to be merged into the develop branch through a Gitlab merge request. When you modification is ready, you need to prepare your merge request as follow:
+
 * Update your develop branch. 
 ```
 git fetch
@@ -40,5 +41,6 @@ git pull origin develop
 ```
 * Go back to your branch and rebase onto develop. Note that it would be appreciated that you only merge request from a single commit (i.e interactive rebase with squash and/or fixup before pushing).
 ```
+git checkout NAME_OF_YOUR_BRANCH
 git rebase -i develop
 ```

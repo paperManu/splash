@@ -86,7 +86,7 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& type)
         msg.push_back(object->getName());
     }
 
-    setGlobal("replaceObject", msg);
+    setWorldAttribute("replaceObject", msg);
 }
 
 /*************/

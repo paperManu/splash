@@ -27,6 +27,7 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <future>
 #include <json/json.h>
 #include <list>
 #include <map>
@@ -53,9 +54,9 @@ class BufferObject : public BaseObject
     }
 
     /**
-     * \brief Destructor
+     * Set the object as dirty to force update
      */
-    virtual ~BufferObject() override {}
+    void setDirty() { updateTimestamp(); }
 
     /**
      * \brief Check whether the object has been updated
@@ -105,20 +106,21 @@ class BufferObject : public BaseObject
      */
     void setSerializedObject(std::shared_ptr<SerializedObject> obj);
 
-    /**
-     * \brief Updates the timestamp of the object. Also, set the update flag to true.
-     */
-    void updateTimestamp();
-
   protected:
     mutable Spinlock _readMutex;                      //!< Read mutex locked when the object is read from
     mutable Spinlock _writeMutex;                     //!< Write mutex locked when the object is written to
     std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
+    std::future<void> _deserializeFuture{};           //!< Holds the deserialization thread
     int64_t _timestamp{0};                            //!< Timestamp
     bool _updatedBuffer{false};                       //!< True if the BufferObject has been updated
 
     std::shared_ptr<SerializedObject> _serializedObject{nullptr}; //!< Internal buffer object
     bool _newSerializedObject{false};                             //!< Set to true during serialized object processing
+
+    /**
+     * \brief Updates the timestamp of the object. Also, set the update flag to true.
+     */
+    void updateTimestamp();
 
     /**
      * \brief Register new attributes

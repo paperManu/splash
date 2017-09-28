@@ -277,12 +277,22 @@ void Shader::setTexture(const shared_ptr<Texture>& texture, const GLuint texture
 void Shader::setModelViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 {
     glm::mat4 floatMv = (glm::mat4)mv;
+    glm::mat4 floatMp = (glm::mat4)mp;
     glm::mat4 floatMvp = (glm::mat4)(mp * mv);
 
     auto uniformIt = _uniforms.find("_modelViewProjectionMatrix");
     if (uniformIt != _uniforms.end())
         if (uniformIt->second.glIndex != -1)
             glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMvp));
+
+    if ((uniformIt = _uniforms.find("_modelViewMatrix")) != _uniforms.end())
+        if (uniformIt->second.glIndex != -1)
+            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMv));
+
+    if ((uniformIt = _uniforms.find("_projectionMatrix")) != _uniforms.end())
+        if (uniformIt->second.glIndex != -1)
+            glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(floatMp));
+
     if ((uniformIt = _uniforms.find("_normalMatrix")) != _uniforms.end())
         if (uniformIt->second.glIndex != -1)
             glUniformMatrix4fv(uniformIt->second.glIndex, 1, GL_FALSE, glm::value_ptr(glm::transpose(glm::inverse(floatMv))));
@@ -457,7 +467,7 @@ void Shader::parseUniforms(const std::string& src)
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0};
             else if (type == "mat4")
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            else if (type == "sampler2D" || type == "sampler2DRect")
+            else if (type == "sampler2D" || type == "sampler2DRect" || type == "samplerCube")
                 _uniforms[name].values = {};
             else
             {
@@ -769,6 +779,26 @@ void Shader::registerGraphicAttributes()
                 setSource(options + ShaderSources.FRAGMENT_SHADER_TEXTURE, fragment);
                 compileProgram();
             }
+            else if (args[0].as<string>() == "object_cubemap" && (_fill != object_cubemap || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].as<string>();
+                _fill = object_cubemap;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_OBJECT_CUBEMAP, vertex);
+                setSource(options + ShaderSources.GEOMETRY_SHADER_OBJECT_CUBEMAP, geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_OBJECT_CUBEMAP, fragment);
+                compileProgram();
+            }
+            else if (args[0].as<string>() == "cubemap_projection" && (_fill != cubemap_projection || _shaderOptions != options))
+            {
+                _currentProgramName = args[0].as<string>();
+                _fill = object_cubemap;
+                _shaderOptions = options;
+                setSource(options + ShaderSources.VERTEX_SHADER_CUBEMAP_PROJECTION, vertex);
+                resetShader(geometry);
+                setSource(options + ShaderSources.FRAGMENT_SHADER_CUBEMAP_PROJECTION, fragment);
+                compileProgram();
+            }
             else if (args[0].as<string>() == "filter" && (_fill != filter || _shaderOptions != options))
             {
                 _currentProgramName = args[0].as<string>();
@@ -866,8 +896,8 @@ void Shader::registerGraphicAttributes()
             string fill;
             if (_fill == texture)
                 fill = "texture";
-            else if (_fill == texture_rect)
-                fill = "texture_rect";
+            else if (_fill == object_cubemap)
+                fill = "object_cubemap";
             else if (_fill == color)
                 fill = "color";
             else if (_fill == uv)

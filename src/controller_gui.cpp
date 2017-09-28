@@ -10,7 +10,6 @@
 #include "./scene.h"
 #include "./texture.h"
 #include "./texture_image.h"
-#include "./threadpool.h"
 #include "./timer.h"
 #include "./widget_control.h"
 #include "./widget_filters.h"
@@ -155,17 +154,17 @@ void Gui::computeBlending(bool once)
 
     if (previousState != "none")
     {
-        setObject("blender", "mode", {"none"});
+        setObjectAttribute("blender", "mode", {"none"});
         _blendingActive = false;
     }
     else if (once)
     {
-        setObject("blender", "mode", {"once"});
+        setObjectAttribute("blender", "mode", {"once"});
         _blendingActive = true;
     }
     else
     {
-        setObject("blender", "mode", {"continuous"});
+        setObjectAttribute("blender", "mode", {"continuous"});
         _blendingActive = true;
     }
 }
@@ -176,8 +175,8 @@ void Gui::activateLUT()
     auto cameras = getObjectsOfType("camera");
     for (auto& cam : cameras)
     {
-        setObject(cam->getName(), "activateColorLUT", {2});
-        setObject(cam->getName(), "activateColorMixMatrix", {2});
+        setObjectAttribute(cam->getName(), "activateColorLUT", {2});
+        setObjectAttribute(cam->getName(), "activateColorMixMatrix", {2});
     }
 }
 
@@ -200,40 +199,40 @@ void Gui::calibrateColors()
 /*************/
 void Gui::loadConfiguration()
 {
-    setGlobal("loadConfig", {_configurationPath});
+    setWorldAttribute("loadConfig", {_configurationPath});
 }
 
 /*************/
 void Gui::loadProject()
 {
-    setGlobal("loadProject", {_projectPath});
+    setWorldAttribute("loadProject", {_projectPath});
 }
 
 /*************/
 void Gui::copyCameraParameters()
 {
-    setGlobal("copyCameraParameters", {_configurationPath});
+    setWorldAttribute("copyCameraParameters", {_configurationPath});
 }
 
 /*************/
 void Gui::saveConfiguration()
 {
-    setGlobal("save", {_configurationPath});
+    setWorldAttribute("save", {_configurationPath});
 }
 
 /*************/
 void Gui::saveProject()
 {
-    setGlobal("saveProject", {_projectPath});
+    setWorldAttribute("saveProject", {_projectPath});
 }
 
 /*************/
 void Gui::flashBackground()
 {
     if (_flashBG)
-        setGlobal("flashBG", {0});
+        setWorldAttribute("flashBG", {0});
     else
-        setGlobal("flashBG", {1});
+        setWorldAttribute("flashBG", {1});
     _flashBG = !_flashBG;
 }
 
@@ -413,7 +412,7 @@ void Gui::key(int key, int action, int mods)
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
             _wireframe = false;
-            setGlobal("wireframe", {0});
+            setWorldAttribute("wireframe", {0});
         }
         break;
     }
@@ -423,7 +422,7 @@ void Gui::key(int key, int action, int mods)
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
         {
             _wireframe = true;
-            setGlobal("wireframe", {1});
+            setWorldAttribute("wireframe", {1});
         }
         break;
     }
@@ -571,7 +570,7 @@ void Gui::render()
     using namespace ImGui;
 
     // Callback for dragndrop: load the dropped file
-    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setGlobal("loadConfig", {state.value[0].as<string>()}); });
+    UserInput::setCallback(UserInput::State("dragndrop"), [=](const UserInput::State& state) { setWorldAttribute("loadConfig", {state.value[0].as<string>()}); });
 
     ImGuiIO& io = GetIO();
     io.MouseDrawCursor = _mouseHoveringWindow;
@@ -626,7 +625,7 @@ void Gui::render()
             if (ImGui::Button("Wireframe / Textured"))
             {
                 _wireframe = !_wireframe;
-                setGlobal("wireframe", {(int)_wireframe});
+                setWorldAttribute("wireframe", {(int)_wireframe});
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Switch objects between wireframe and textured (Ctrl+T and Ctrl+W)");
@@ -738,7 +737,7 @@ void Gui::render()
             char mediaPath[512];
             strncpy(mediaPath, _root->getMediaPath().data(), 511);
             if (ImGui::InputText("##MediaPath", mediaPath, 512))
-                setGlobal("mediaPath", {string(mediaPath)});
+                setWorldAttribute("mediaPath", {string(mediaPath)});
 
             ImGui::SameLine();
             static bool showMediaFileSelector{false};
@@ -753,7 +752,7 @@ void Gui::render()
                     if (!cancelled)
                     {
                         path = Utils::getPathFromFilePath(path);
-                        setGlobal("mediaPath", {Utils::getPathFromFilePath(path)});
+                        setWorldAttribute("mediaPath", {Utils::getPathFromFilePath(path)});
                     }
                     else
                     {
@@ -1123,8 +1122,8 @@ void Gui::initImWidgets()
         static float buf{0.f};
         static float evt{0.f};
 
-        sce = sce * 0.9 + Timer::get()["sceneLoop"] * 0.001 * 0.1;
-        wrl = wrl * 0.9 + Timer::get()["worldLoop"] * 0.001 * 0.1;
+        sce = sce * 0.9 + Timer::get()["loop_scene"] * 0.001 * 0.1;
+        wrl = wrl * 0.9 + Timer::get()["loop_world"] * 0.001 * 0.1;
         fps = 1e3 / std::max(1.f, sce);
         worldFps = 1e3 / std::max(1.f, wrl);
         upl = upl * 0.9 + Timer::get()["upload"] * 0.001 * 0.1;

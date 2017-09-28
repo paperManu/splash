@@ -36,7 +36,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
         _newSerializedObject = true;
 
         // Deserialize it right away, in a separate thread
-        SThread::pool.enqueueWithoutId([this]() {
+        _deserializeFuture = async(launch::async, [this]() {
             lock_guard<Spinlock> lock(_writeMutex);
             deserialize();
             _serializedObjectWaiting = false;

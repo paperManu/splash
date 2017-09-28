@@ -121,8 +121,6 @@ class Filter : public Texture
     void update() override {}
 
   private:
-    bool _isInitialized{false};
-    std::shared_ptr<GlWindow> _window;
     std::vector<std::weak_ptr<Texture>> _inTextures;
 
     GLuint _fbo{0};

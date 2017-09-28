@@ -142,6 +142,12 @@ class Scene : public RootObject
     bool getStatus() const { return _status; }
 
     /**
+     * Get the swap interval for this whole scene
+     * \return Return the swap interval
+     */
+    int getSwapInterval() const { return _swapInterval; }
+
+    /**
      * \brief Check whether it is initialized
      * \return Return true if the Scene is initialized
      */
@@ -175,21 +181,6 @@ class Scene : public RootObject
      */
     void unlink(const std::string& first, const std::string& second);
     void unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second);
-
-    /**
-     * \brief Link objects, one of them being a ghost
-     * \param first Child object
-     * \param second Parent object
-     * \return Return true if the linking succeeded
-     */
-    bool linkGhost(const std::string& first, const std::string& second);
-
-    /**
-     * \brief Unlink two objects, one of them being a ghost
-     * \param first Child object
-     * \param second Parent object
-     */
-    void unlinkGhost(const std::string& first, const std::string& second);
 
     /**
      * \brief Remove an object
@@ -229,16 +220,9 @@ class Scene : public RootObject
      */
     Values sendMessageToWorldWithAnswer(const std::string& message, const Values& value = {}, const unsigned long long timeout = 0);
 
-    /**
-     * \brief Wait for synchronization with texture upload. This must to be called from a GL context
-     */
-    void waitTextureUpload();
-
   protected:
     std::shared_ptr<GlWindow> _mainWindow;
     bool _isRunning{false};
-
-    std::unordered_map<std::string, std::shared_ptr<BaseObject>> _ghostObjects;
 
     // Gui exists in master scene whatever the configuration
     std::shared_ptr<Gui> _gui;
@@ -267,11 +251,11 @@ class Scene : public RootObject
     bool _isInitialized{false};
     bool _status{false};  //!< Set to true if an error occured during rendering
     int _swapInterval{1}; //!< Global value for the swap interval, default for all windows
+    unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the
+                                                //!< primary monitor
 
     // Texture upload context
     std::future<void> _textureUploadFuture;
-    std::mutex _textureUploadMutex;
-    std::condition_variable _textureUploadCondition;
     std::shared_ptr<GlWindow> _textureUploadWindow;
     std::atomic_bool _textureUploadDone{false};
     Spinlock _textureMutex; //!< Sync between texture and render loops
@@ -282,6 +266,8 @@ class Scene : public RootObject
     GLuint _maxSwapBarriers{0};
 
     unsigned long _nextId{0};
+
+    static std::vector<std::string> _ghostableTypes;
 
     /**
      * \brief Find which OpenGL version is available (from a predefined list)
@@ -300,6 +286,12 @@ class Scene : public RootObject
      * \return Returns a new id
      */
     unsigned long getId() { return ++_nextId; }
+
+    /**
+     * \brief Computes and store the duration of a frame at the refresh rate of the primary monitor
+     * \return The duration of a frame at the refresh rate of the primary monitor in microseconds
+     */
+    unsigned long long updateTargetFrameDuration();
 
     /**
      * \brief Callback for GLFW errors

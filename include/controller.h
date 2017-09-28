@@ -55,6 +55,12 @@ class ControllerObject : public BaseObject
     virtual ~ControllerObject() override {}
 
     /**
+     * Get a ptr to the named object
+     * \return The object
+     */
+    shared_ptr<BaseObject> getObject(const std::string& name) const;
+
+    /**
      * \brief Get a list of the object names
      * \return Return a vector of all the objects
      */
@@ -141,14 +147,21 @@ class ControllerObject : public BaseObject
      * \param name Attribute name
      * \param values Value to set the attribute to
      */
-    void setGlobal(const std::string& name, const Values& values = {}) const;
+    void setWorldAttribute(const std::string& name, const Values& values = {}) const;
+
+    /**
+     * Set the given scene-related attribute
+     * \param name Attribute name
+     * \param values Value to set the attribute to
+     */
+    void setInScene(const std::string& name, const Values& values = {}) const;
 
     /**
      * Get the given configuration-related attribute
      * \param attr Attribute name
      * \return Return the attribute value
      */
-    Values getGlobal(const std::string& attr) const;
+    Values getWorldAttribute(const std::string& attr) const;
 
     /**
      * \brief Set the given attribute for the given object
@@ -156,7 +169,7 @@ class ControllerObject : public BaseObject
      * \param attr Attribute name
      * \param values Value to set the attribute to
      */
-    void setObject(const std::string& name, const std::string& attr, const Values& values = {}) const;
+    void setObjectAttribute(const std::string& name, const std::string& attr, const Values& values = {}) const;
 
     /**
      * \brief Set the given attribute for all objets of the given type

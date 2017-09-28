@@ -24,8 +24,7 @@ void Sink_Shmdata::handlePixels(const char* pixels, const ImageBufferSpec& spec)
     {
         _previousSpec = spec;
         _previousFramerate = _framerate;
-        _caps = "video/x-raw,format=(string)" + spec.format + ",width=(int)" + to_string(spec.width) + ",height=(int)" + to_string(spec.height) + ",framerate=(fraction)" +
-                to_string(_framerate) + "/1,pixel-aspect-ratio=(fraction)1/1";
+        _caps = getCaps();
         _writer.reset(nullptr);
         _writer.reset(new shmdata::Writer(_path, size, _caps, &_logger));
     }
