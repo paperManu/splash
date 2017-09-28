@@ -35,6 +35,7 @@ This program is free software; you can redistribute it and/or modify it under th
 
 ### Authors
 * Emmanuel Durand ([Github](https://github.com/paperManu))([Website](https://emmanueldurand.net))
+* Jérémie Soria ([Github](https://github.com/eldaranne))
 
 ### Projet URL
 This project can be found either on the [SAT Metalab repository](http://code.sat.qc.ca/redmine/projects/splash) or on [Github](https://github.com/paperManu/splash).

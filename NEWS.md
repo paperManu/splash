@@ -1,6 +1,37 @@
 Splash release notes
 ===================
 
+Splash 0.7.6 (2017-09-28)
+-------------------------
+New features:
+- Added a virtual screen object
+- Added a loop rate parameter to the Python interpreter
+- Hidden the Python splash capsule in the splash module
+- Added a Sink wrapper to the Python interpreter
+- Added attribute callbacks
+- Simulate swap synchro when splash is hidden to avoid taking 100% GPU.
+
+Improvements:
+- Added a Probe node to the Blender addon
+- Removed ghost-specific commands
+- Moved swap interval set from Scene to Window
+- Duplicated the link and unlink commands in the World, to simplify the API
+- Renamed controller methods
+- Added ZMQ as a submodule                
+- Added splash.get_timings() to Python API
+- Deleted the thread pool, replaced with futures or mere threads.
+
+Bugs fixed:
+- Fixed an issue in the Blender exporter, when exporting only the 3D models
+- Fixed issue with warps 
+- Fixed factory not creating Python controller
+- Fixed a #ifdef issue in image_shmdata 
+- Fixed Python controller object not loading correctly custom attributes
+- Fixed adaptive framerate
+- Fixed Python custom attributes
+- Fixed integration tests
+- Fixed issue with ImGui style editor not building
+
 Splash 0.7.4 (2017-07-31)
 -------------------------
 New features:
