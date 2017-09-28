@@ -243,7 +243,7 @@ AttributeFunctor::Sync BaseObject::getAttributeSyncMethod(const string& name)
 }
 
 /*************/
-CallbackHandle BaseObject::registerCallback(string attr, AttributeFunctor::Callback cb)
+CallbackHandle BaseObject::registerCallback(const string& attr, AttributeFunctor::Callback cb)
 {
     auto attribute = _attribFunctions.find(attr);
     if (attribute == _attribFunctions.end())
@@ -281,7 +281,7 @@ void BaseObject::init()
 }
 
 /*************/
-void BaseObject::runAsyncTask(function<void(void)> func)
+void BaseObject::runAsyncTask(const function<void(void)>& func)
 {
     lock_guard<mutex> lockTasks(_asyncTaskMutex);
     _asyncTask = async(launch::async, func);

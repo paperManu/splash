@@ -287,7 +287,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param cb Callback function
      * \return Return a callback handle
      */
-    CallbackHandle registerCallback(std::string attr, AttributeFunctor::Callback cb);
+    CallbackHandle registerCallback(const std::string& attr, AttributeFunctor::Callback cb);
 
     /**
      * Unregister a callback
@@ -401,7 +401,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * Run a task asynchronously, one task at a time
      * \param func Function to run
      */
-    void runAsyncTask(std::function<void(void)> func);
+    void runAsyncTask(const std::function<void(void)>& func);
 
     /**
      * \brief Register new attributes
