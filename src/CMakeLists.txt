@@ -127,6 +127,7 @@ target_sources(
     widget_text_box.cpp
     widget_warp.cpp
     window.cpp
+    ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp
 	../external/jsoncpp/jsoncpp.cpp

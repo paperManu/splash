@@ -783,6 +783,7 @@ void Scene::init(const string& name)
     sendMessageToWorld("sceneLaunched", {});
 }
 
+/*************/
 unsigned long long Scene::updateTargetFrameDuration()
 {
     auto mon = glfwGetPrimaryMonitor();
