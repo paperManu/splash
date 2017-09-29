@@ -120,7 +120,7 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
     auto objectIt = _objects.find(name);
     if (objectIt != _objects.end())
     {
-        Log::get() << Log::WARNING << "Scene::" << __FUNCTION__ << " - An object named " << name << " already exists" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - An object named " << name << " already exists" << Log::endl;
         return {};
     }
 
@@ -341,6 +341,9 @@ void Scene::render()
         lock_guard<recursive_mutex> lockObjects(_objectsMutex);
         for (auto& obj : _objects)
         {
+            // We also run all pending tasks for every object
+            obj.second->runTasks();
+
             // Ghosts are not updated in the render loop
             if (obj.second->isGhost())
                 continue;
@@ -437,14 +440,13 @@ void Scene::run()
         // This gets the whole loop duration
         if (_runInBackground && _swapInterval != 0)
         {
-          // Artificial synchronization to avoid overloading the GPU in hidden mode
-          Timer::get() >> _targetFrameDuration >> "swap_sync";
-          Timer::get() << "swap_sync";
+            // Artificial synchronization to avoid overloading the GPU in hidden mode
+            Timer::get() >> _targetFrameDuration >> "swap_sync";
+            Timer::get() << "swap_sync";
         }
 
         Timer::get() >> "loop_scene";
         Timer::get() << "loop_scene";
-
 
         // Execute waiting tasks
         runTasks();
@@ -521,8 +523,11 @@ void Scene::textureUploadRun()
         if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
         {
             for (auto& obj : _objects)
-                if (obj.second->getType().find("texture") != string::npos)
-                    textures.emplace_back(dynamic_pointer_cast<Texture>(obj.second));
+            {
+                auto texture = dynamic_pointer_cast<Texture>(obj.second);
+                if (texture)
+                    textures.emplace_back(texture);
+            }
             _objectsCurrentlyUpdated = false;
         }
 
@@ -787,13 +792,16 @@ void Scene::init(const string& name)
 unsigned long long Scene::updateTargetFrameDuration()
 {
     auto mon = glfwGetPrimaryMonitor();
-    if (!mon) return 0ull;
+    if (!mon)
+        return 0ull;
 
     auto vidMode = glfwGetVideoMode(mon);
-    if (!vidMode) return 0ull;
+    if (!vidMode)
+        return 0ull;
 
     auto refreshRate = vidMode->refreshRate;
-    if (!refreshRate) return 0ull;
+    if (!refreshRate)
+        return 0ull;
 
     return static_cast<unsigned long long>(1e6 / refreshRate);
 }

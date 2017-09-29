@@ -141,14 +141,6 @@ void Filter::render()
     if (_inTextures.empty() || _inTextures[0].expired())
         return;
 
-    // Execute waiting tasks
-    {
-        lock_guard<mutex> lockTask(_taskMutex);
-        for (auto& task : _taskQueue)
-            task();
-        _taskQueue.clear();
-    }
-
     if (_updateColorDepth)
         updateColorDepth();
 

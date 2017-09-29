@@ -17,6 +17,13 @@ AttributeFunctor& BaseObject::operator[](const string& attr)
 }
 
 /*************/
+void BaseObject::addTask(const function<void()>& task)
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    _taskQueue.push_back(task);
+}
+
+/*************/
 void BaseObject::linkToParent(BaseObject* obj)
 {
     auto parentIt = find(_parents.begin(), _parents.end(), obj);
@@ -383,5 +390,14 @@ void BaseObject::setAttributeParameter(const string& name, bool savable, bool up
         attr->second.savable(savable);
         attr->second.doUpdateDistant(updateDistant);
     }
+}
+
+/*************/
+void BaseObject::runTasks()
+{
+    lock_guard<recursive_mutex> lock(_taskMutex);
+    for (auto& task : _taskQueue)
+        task();
+    _taskQueue.clear();
 }
 }

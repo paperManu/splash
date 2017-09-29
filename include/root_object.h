@@ -157,8 +157,6 @@ class RootObject : public BaseObject
     bool _bufferObjectUpdated = ATOMIC_FLAG_INIT;
 
     // Tasks queue
-    std::recursive_mutex _taskMutex{};
-    std::list<std::function<void()>> _taskQueue{};
     std::mutex _recurringTaskMutex{};
     std::map<std::string, std::function<void()>> _recurringTasks{};
 
@@ -181,12 +179,6 @@ class RootObject : public BaseObject
     virtual void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) {}
 
     /**
-     * \brief Add a new task to the queue
-     * \param task Task function
-     */
-    void addTask(const std::function<void()>& task);
-
-    /**
      * Add a task repeated at each frame
      * \param name Task name
      * \param task Task function
@@ -200,9 +192,10 @@ class RootObject : public BaseObject
     void removeRecurringTask(const std::string& name);
 
     /**
-     * \brief Execute all the tasks in the queue
+     * Execute all the tasks in the queue
+     * Root objects can have recursive tasks, so they get their own version of this method
      */
-    void runTasks();
+    void runTasks() final;
 
     /**
      * \brief Register new functors to modify attributes

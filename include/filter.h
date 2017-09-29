@@ -142,20 +142,6 @@ class Filter : public Texture
     std::string _shaderSource{""};     //!< User defined fragment shader filter
     std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file
 
-    // Tasks queue
-    std::mutex _taskMutex;
-    std::list<std::function<void()>> _taskQueue;
-
-    /**
-     * \brief Add a new task to the queue
-     * \param task Task function
-     */
-    void addTask(const std::function<void()>& task)
-    {
-        std::lock_guard<std::mutex> lock(_taskMutex);
-        _taskQueue.push_back(task);
-    }
-
     /**
      * \brief Init function called in constructors
      */

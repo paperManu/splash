@@ -10,6 +10,7 @@
 # directory as this script. Otherwise, modify the path accordingly
 
 import splash
+from time import sleep
 
 def splash_init():
     runTests()
@@ -32,6 +33,8 @@ def runTests():
             continue
 
         print("\n==========", name, "==========")
+        print("Press a key to continue")
+        input()
 
         filepath = path + "/" + name
         src = imp.load_source("data", path, open(filepath))
@@ -52,8 +55,5 @@ def runTests():
         splash.set_world_attribute("loadProject",
                                    os.path.dirname(os.path.realpath(__file__))
                                    + "/integrationTests_project.json")
-
-        print("Press a key to continue")
-        input()
 
     splash.set_world_attribute("quit", [])
