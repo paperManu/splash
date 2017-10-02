@@ -232,7 +232,7 @@ class Camera : public BaseObject
     bool _hidden{false};
     bool _flashBG{false};
     bool _automaticResize{true};
-    bool _render16bits{false};
+    bool _render16bits{true};
     int _multisample{0};
     bool _updateColorDepth{false}; // Set to true if the _render16bits has been updated
     glm::dvec4 _clearColor{0.6, 0.6, 0.6, 1.0};
