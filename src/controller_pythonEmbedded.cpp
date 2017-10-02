@@ -367,6 +367,52 @@ PyObject* PythonEmbedded::pythonGetTimings(PyObject* self, PyObject* args)
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetMasterClock_doc__,
+    "Get the master clock from Splash, in milliseconds\n"
+    "\n"
+    "splash.get_master_clock()\n"
+    "\n"
+    "Returns:\n"
+    "  A tuple containing whether the clock is set, a boolean indicating whether it is paused, and the clock value in ms.\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetMasterClock(PyObject* self, PyObject* args)
+{
+    bool paused = false;
+    int64_t clockMs = 0;
+    bool isClockSet = Timer::get().getMasterClock<chrono::milliseconds>(clockMs, paused);
+    PyObject* pyTuple = PyTuple_New(3);
+
+    if (isClockSet)
+    {
+        Py_INCREF(Py_True);
+        PyTuple_SetItem(pyTuple, 0, Py_True);
+    }
+    else
+    {
+        Py_INCREF(Py_False);
+        PyTuple_SetItem(pyTuple, 0, Py_False);
+    }
+
+    if (pause)
+    {
+        Py_INCREF(Py_True);
+        PyTuple_SetItem(pyTuple, 1, Py_True);
+    }
+    else
+    {
+        Py_INCREF(Py_False);
+        PyTuple_SetItem(pyTuple, 1, Py_False);
+    }
+
+    PyTuple_SetItem(pyTuple, 2, Py_BuildValue("L", clockMs));
+
+    return pyTuple;
+}
+
+/*************/
 PyDoc_STRVAR(pythonGetObjectList_doc__,
     "Get the list of objects from Splash\n"
     "\n"
@@ -1124,6 +1170,7 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
     {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
+    {(const char*)"get_master_clock", (PyCFunction)PythonEmbedded::pythonGetMasterClock, METH_VARARGS, pythonGetMasterClock_doc__},
     {(const char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
     {(const char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
     {(const char*)"get_object_attribute_description",
