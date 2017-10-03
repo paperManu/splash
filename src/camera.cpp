@@ -1131,7 +1131,11 @@ void Camera::loadDefaultModels()
         obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(mesh);
+
+        // We create the geometry manually for it not to be registered in the root
+        auto geometry = make_shared<Geometry>(_root);
+        geometry->linkTo(mesh);
+        obj->linkTo(geometry);
 
         _models[file.first] = obj;
     }
