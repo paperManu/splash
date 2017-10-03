@@ -224,8 +224,21 @@ void Image_V4L2::captureThreadFunc()
                                                 to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
                                                 string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
 
-                    if (_autosetResolution && (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height))
-                        runAsyncTask([=]() { setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height}); });
+                    bool expectedResizingValue = false;
+                    if (_autosetResolution && _automaticResizing.compare_exchange_weak(expectedResizingValue, true))
+                    {
+                        if (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height)
+                        {
+                            addTask([=]() {
+                                setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height});
+                                _automaticResizing = false;
+                            });
+                        }
+                        else
+                        {
+                            _automaticResizing = false;
+                        }
+                    }
 
                     _sourceFormatAsString = sourceFormatAsString;
                 }

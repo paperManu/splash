@@ -25,11 +25,12 @@
 #ifndef SPLASH_IMAGE_V4L2_H
 #define SPLASH_IMAGE_V4L2_H
 
-#include "config.h"
-#include "image.h"
-
+#include <atomic>
 #include <deque>
 #include <linux/videodev2.h>
+
+#include "config.h"
+#include "image.h"
 
 namespace Splash
 {
@@ -103,6 +104,7 @@ class Image_V4L2 : public Image
     bool _captureThreadRun{false}; //!< Set to false to stop the capture thread
     bool _startCapturing{false};
     bool _stopCapturing{false};
+    std::atomic_bool _automaticResizing{false};
 
     ImageBufferSpec _spec{};
 
