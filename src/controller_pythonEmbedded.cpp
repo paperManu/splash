@@ -396,7 +396,7 @@ PyObject* PythonEmbedded::pythonGetMasterClock(PyObject* self, PyObject* args)
         PyTuple_SetItem(pyTuple, 0, Py_False);
     }
 
-    if (pause)
+    if (paused)
     {
         Py_INCREF(Py_True);
         PyTuple_SetItem(pyTuple, 1, Py_True);
