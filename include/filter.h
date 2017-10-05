@@ -105,6 +105,12 @@ class Filter : public Texture
     void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
 
     /**
+     * Set whether to keep the input image ratio
+     * \param keepRatio Keep ratio if true
+     */
+    void setKeepRatio(bool keepRatio);
+
+    /**
      * \brief Filters should always be saved as it holds user-modifiable parameters
      * \param savable Needed for heritage reasons, no effect whatsoever
      */
@@ -130,6 +136,7 @@ class Filter : public Texture
 
     // Filter parameters
     int _sizeOverride[2]{-1, -1};                            //!< If set to positive values, overrides the size given by input textures
+    bool _keepRatio{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
     std::string _pixelFormat{"RGBA"};                        //!< Output pixel format
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
@@ -173,6 +180,11 @@ class Filter : public Texture
      * Update the shader parameters, if it is the default shader
      */
     void updateShaderParameters();
+
+    /**
+     * Update the size override to take (or not) ratio into account
+     */
+    void updateSizeWrtRatio();
 
     /**
      * \brief Register new functors to modify attributes

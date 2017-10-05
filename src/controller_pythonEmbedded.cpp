@@ -145,10 +145,10 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
     }
 
     int width = 512;
-    int height = 512;
+    int height = 0;
     static char* kwlist[] = {(char*)"width", (char*)"height", nullptr};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ii", kwlist, &width, &height))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|i", kwlist, &width, &height))
     {
         Py_INCREF(Py_False);
         return Py_False;
@@ -183,6 +183,31 @@ PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObjec
 
     self->framerate = framerate;
     that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyObject* PythonEmbedded::pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    bool keepRatio = false;
+    static char* kwlist[] = {(char*)"keep_ratio", nullptr};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "p", kwlist, &keepRatio))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->setObjectAttribute(self->filterName, "keepRatio", {static_cast<int>(keepRatio)});
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -250,6 +275,7 @@ PyMethodDef PythonEmbedded::SinkMethods[] = {
     {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, (const char*)"Get a copy of the buffer in the sink"},
     {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, (const char*)"Set the size of the grabbed image"},
     {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, (const char*)"Set the framerate of the sink"},
+    {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS, (const char*)"Keep the input image ratio if set to true"},
     {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, (const char*)"Open the sink"},
     {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, (const char*)"Close the sink"},
     {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, (const char*)"Get the caps of the buffer"},

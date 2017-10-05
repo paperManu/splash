@@ -136,6 +136,34 @@ void Filter::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
 }
 
 /*************/
+void Filter::setKeepRatio(bool keepRatio)
+{
+    if (keepRatio == _keepRatio)
+        return;
+
+    _keepRatio = keepRatio;
+    updateSizeWrtRatio();
+}
+
+/*************/
+void Filter::updateSizeWrtRatio()
+{
+    if (_keepRatio && (_sizeOverride[0] || _sizeOverride[1]))
+    {
+        auto inputSpec = _inTextures[0].lock()->getSpec();
+
+        int maxSize = std::max<int>(_sizeOverride[0], _sizeOverride[1]);
+        float ratio = static_cast<float>(inputSpec.width) / static_cast<float>(inputSpec.height);
+        ratio = ratio != 0.f ? ratio : 1.f;
+
+        if (_sizeOverride[0] > _sizeOverride[1])
+            _sizeOverride[1] = static_cast<int>(_sizeOverride[0] / ratio);
+        else
+            _sizeOverride[0] = static_cast<int>(_sizeOverride[1] * ratio);
+    }
+}
+
+/*************/
 void Filter::render()
 {
     if (_inTextures.empty() || _inTextures[0].expired())
@@ -149,17 +177,23 @@ void Filter::render()
 
     if (inputSpec != _outTextureSpec || (_sizeOverride[0] > 0 && _sizeOverride[1] > 0))
     {
-        _outTextureSpec = input->getSpec();
+        auto newOutTextureSpec = inputSpec;
         if (_sizeOverride[0] > 0 || _sizeOverride[1] > 0)
         {
-            _outTextureSpec.width = _sizeOverride[0];
-            _outTextureSpec.height = _sizeOverride[1];
+            updateSizeWrtRatio();
+            newOutTextureSpec.width = _sizeOverride[0] ? _sizeOverride[0] : _sizeOverride[1];
+            newOutTextureSpec.height = _sizeOverride[1] ? _sizeOverride[1] : _sizeOverride[0];
         }
-        _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
-        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+        if (_outTextureSpec != newOutTextureSpec)
+        {
+            _outTextureSpec = newOutTextureSpec;
+            _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
+            glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+
+            GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
+            glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+        }
     }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
@@ -573,6 +607,15 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n'});
     setAttributeDescription("invertChannels", "Invert red and blue channels");
+
+    addAttribute("keepRatio",
+        [&](const Values& args) {
+            setKeepRatio(args[0].as<bool>());
+            return true;
+        },
+        [&]() -> Values { return {static_cast<int>(_keepRatio)}; },
+        {'n'});
+    setAttributeDescription("keepRatio", "If set to 1, keeps the ratio of the input image");
 
     addAttribute("saturation",
         [&](const Values& args) {
