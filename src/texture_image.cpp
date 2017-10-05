@@ -443,10 +443,10 @@ void Texture_Image::update()
 #ifdef DEBUG
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new texture" << Log::endl;
 #endif
-            img->lock();
+            img->lockWrite();
             glTextureStorage2D(_glTex, _texLevels, internalFormat, spec.width, spec.height);
             glTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, glChannelOrder, dataFormat, img->data());
-            img->unlock();
+            img->unlockWrite();
         }
         else if (isCompressed)
         {
@@ -454,10 +454,10 @@ void Texture_Image::update()
             Log::get() << Log::DEBUGGING << "Texture_Image::" << __FUNCTION__ << " - Creating a new compressed texture" << Log::endl;
 #endif
 
-            img->lock();
+            img->lockWrite();
             glTextureStorage2D(_glTex, _texLevels, internalFormat, spec.width, spec.height);
             glCompressedTextureSubImage2D(_glTex, 0, 0, 0, spec.width, spec.height, internalFormat, imageDataSize, img->data());
-            img->unlock();
+            img->unlockWrite();
         }
         updatePbos(spec.width, spec.height, spec.pixelBytes());
 
@@ -465,10 +465,10 @@ void Texture_Image::update()
         GLubyte* pixels = (GLubyte*)glMapNamedBufferRange(_pbos[0], 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (pixels != NULL)
         {
-            img->lock();
+            img->lockWrite();
             memcpy((void*)pixels, img->data(), imageDataSize);
             glUnmapNamedBuffer(_pbos[0]);
-            img->unlock();
+            img->unlockWrite();
         }
 
         // And copy it to the second PBO
@@ -492,7 +492,7 @@ void Texture_Image::update()
         GLubyte* pixels = (GLubyte*)glMapNamedBufferRange(_pbos[_pboReadIndex], 0, imageDataSize, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
         if (pixels != NULL)
         {
-            img->lock();
+            img->lockWrite();
 
             int stride = SPLASH_TEXTURE_COPY_THREADS;
             int size = imageDataSize;
@@ -538,7 +538,7 @@ void Texture_Image::flushPbo()
         glUnmapNamedBuffer(_pbos[_pboReadIndex]);
 
         if (!_img.expired())
-            _img.lock()->unlock();
+            _img.lock()->unlockWrite();
     }
 }
 

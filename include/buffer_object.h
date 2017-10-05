@@ -31,6 +31,7 @@
 #include <json/json.h>
 #include <list>
 #include <map>
+#include <shared_mutex>
 #include <unordered_map>
 
 #include "./base_object.h"
@@ -52,6 +53,18 @@ class BufferObject : public BaseObject
     {
         registerAttributes();
     }
+
+    /**
+     * Lock the buffer, useful while reading. Use with care
+     * Note that only write mutex is needed, as it also disables reading
+     * Can be locked multiple times, must then be unlocked as many times
+     */
+    void lockWrite() { _writeMutex.lock_shared(); }
+
+    /**
+     * \brief Unlock the buffer
+     */
+    void unlockWrite() { _writeMutex.unlock_shared(); }
 
     /**
      * Set the object as dirty to force update
@@ -108,7 +121,7 @@ class BufferObject : public BaseObject
 
   protected:
     mutable Spinlock _readMutex;                      //!< Read mutex locked when the object is read from
-    mutable Spinlock _writeMutex;                     //!< Write mutex locked when the object is written to
+    mutable std::shared_timed_mutex _writeMutex;      //!< Write mutex locked when the object is written to
     std::atomic_bool _serializedObjectWaiting{false}; //!< True if a serialized object has been set and waits for processing
     std::future<void> _deserializeFuture{};           //!< Holds the deserialization thread
     int64_t _timestamp{0};                            //!< Timestamp

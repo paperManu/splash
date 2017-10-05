@@ -128,7 +128,7 @@ bool Mesh::read(const string& filename)
         mesh.uvs = objLoader.getUVs();
         mesh.normals = objLoader.getNormals();
 
-        lock_guard<Spinlock> lock(_writeMutex);
+        lock_guard<shared_timed_mutex> lock(_writeMutex);
         _mesh = mesh;
         updateTimestamp();
     }
@@ -281,10 +281,10 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 void Mesh::update()
 {
-    lock_guard<Spinlock> lock(_readMutex);
-    lock_guard<Spinlock> lockWrite(_writeMutex);
     if (_meshUpdated)
     {
+        lock_guard<Spinlock> lock(_readMutex);
+        shared_lock<shared_timed_mutex> lockWrite(_writeMutex);
         _mesh = _bufferMesh;
         _meshUpdated = false;
     }
@@ -351,7 +351,7 @@ void Mesh::createDefaultMesh(int subdiv)
         }
     }
 
-    lock_guard<Spinlock> lock(_writeMutex);
+    lock_guard<shared_timed_mutex> lock(_writeMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();

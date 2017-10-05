@@ -37,7 +37,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 
         // Deserialize it right away, in a separate thread
         _deserializeFuture = async(launch::async, [this]() {
-            lock_guard<Spinlock> lock(_writeMutex);
+            lock_guard<shared_timed_mutex> lock(_writeMutex);
             deserialize();
             _serializedObjectWaiting = false;
         });
