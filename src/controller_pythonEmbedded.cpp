@@ -104,6 +104,17 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkGrab_doc__,
+    "Grab the latest image from the sink\n"
+    "\n"
+    "splash.grab()\n"
+    "\n"
+    "Returns:\n"
+    "  The grabbed image as a bytes object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -135,6 +146,21 @@ PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkSetSize_doc__,
+    "Set the size of the grabbed images. Resizes the input accordingly\n"
+    "\n"
+    "splash.set_size(width, height)\n"
+    "\n"
+    "Args:\n"
+    "  width (int): Desired width\n"
+    "  height (int): Desired height\n"
+    "\n"
+    "Returns:\n"
+    "  True if the size has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
@@ -163,6 +189,20 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkSetFramerate_doc__,
+    "Set the framerate at which the sink should read the image\n"
+    "\n"
+    "splash.set_framerate(framerate)\n"
+    "\n"
+    "Args:\n"
+    "  framerate (int): Framerate\n"
+    "\n"
+    "Returns:\n"
+    "  True if the framerate has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
@@ -189,6 +229,20 @@ PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObjec
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkSetKeepRatio_doc__,
+    "Set whether to keep the input image ratio when resizing\n"
+    "\n"
+    "splash.keep_ratio(keep_ratio)\n"
+    "\n"
+    "Args:\n"
+    "  keep_ratio (int): Set to True to keep the ratio\n"
+    "\n"
+    "Returns:\n"
+    "  True if the option has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
@@ -214,6 +268,17 @@ PyObject* PythonEmbedded::pythonSinkKeepRatio(pythonSinkObject* self, PyObject* 
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkOpen_doc__,
+    "Open the sink, which will start reading the input image\n"
+    "\n"
+    "splash.open()\n"
+    "\n"
+    "Returns:\n"
+    "  True if the sink has been successfully opened\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -230,6 +295,17 @@ PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkClose_doc__,
+    "Close the sink\n"
+    "\n"
+    "splash.close()\n"
+    "\n"
+    "Returns:\n"
+    "  True if the sink has been closed successfully\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -246,6 +322,17 @@ PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkGetCaps_doc__,
+    "Get a caps describing the grabbed buffers\n"
+    "\n"
+    "splash.get_caps()\n"
+    "\n"
+    "Returns:\n"
+    "  A string holding the caps\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -272,13 +359,13 @@ PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SinkMethods[] = {
-    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, (const char*)"Get a copy of the buffer in the sink"},
-    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, (const char*)"Set the size of the grabbed image"},
-    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, (const char*)"Set the framerate of the sink"},
-    {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS, (const char*)"Keep the input image ratio if set to true"},
-    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, (const char*)"Open the sink"},
-    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, (const char*)"Close the sink"},
-    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, (const char*)"Get the caps of the buffer"},
+    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, pythonSinkGrab_doc__},
+    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, pythonSinkSetSize_doc__},
+    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, pythonSinkSetFramerate_doc__},
+    {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS, pythonSinkSetKeepRatio_doc__},
+    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, pythonSinkOpen_doc__},
+    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, pythonSinkClose_doc__},
+    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, pythonSinkGetCaps_doc__},
     {nullptr}
 };
 
