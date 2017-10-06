@@ -3,7 +3,8 @@
 #include <hap.h>
 #include <regex>
 
-#if HAVE_SSE2
+// All existing 64bits x86 CPUs have SSE2
+#if __x86_64__
 #define GLM_FORCE_SSE2
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
