@@ -217,9 +217,8 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     if (!_isConnectedToRemote)
-        return readFile(_filepath);
+        return readFile(filename);
     else
         return true;
 }
@@ -382,7 +381,13 @@ void Image::registerAttributes()
         {'n'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file",
+        [&](const Values& args) {
+            _filepath = args[0].as<string>();
+            return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+        },
+        [&]() -> Values { return {_filepath}; },
+        {'s'});
     setAttributeDescription("file", "Image file to load");
 
     addAttribute("srgb",

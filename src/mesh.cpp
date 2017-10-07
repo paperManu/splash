@@ -112,12 +112,10 @@ vector<float> Mesh::getAnnexe() const
 /*************/
 bool Mesh::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
-
     if (!_isConnectedToRemote)
     {
         Loader::Obj objLoader;
-        if (!objLoader.load(_filepath))
+        if (!objLoader.load(filename))
         {
             Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
             return false;
@@ -362,7 +360,13 @@ void Mesh::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file",
+        [&](const Values& args) {
+            _filepath = args[0].as<string>();
+            return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+        },
+        [&]() -> Values { return {_filepath}; },
+        {'s'});
     setAttributeDescription("file", "Mesh file to load");
 
     addAttribute("benchmark",
