@@ -26,6 +26,7 @@
 #define SPLASH_SPINLOCK_H
 
 #include <atomic>
+#include <thread>
 
 namespace Splash
 {
@@ -34,16 +35,14 @@ namespace Splash
 class Spinlock
 {
   public:
+    void unlock() { _lock.clear(std::memory_order_release); }
+    bool try_lock() { return !_lock.test_and_set(std::memory_order_acquire); }
     void lock()
     {
-        while (_lock.test_and_set(std::memory_order_acquire))
-        {
-        }
+        for (uint32_t i = 0; !try_lock(); ++i)
+            if (i % 100 == 0)
+                std::this_thread::yield();
     }
-
-    void unlock() { _lock.clear(std::memory_order_release); }
-
-    bool try_lock() { return !_lock.test_and_set(std::memory_order_acquire); }
 
   private:
     std::atomic_flag _lock = ATOMIC_FLAG_INIT;

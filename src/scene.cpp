@@ -520,7 +520,7 @@ void Scene::textureUploadRun()
 
         vector<shared_ptr<Texture>> textures;
         bool expectedAtomicValue = false;
-        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+        if (_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
         {
             for (auto& obj : _objects)
             {
@@ -528,7 +528,7 @@ void Scene::textureUploadRun()
                 if (texture)
                     textures.emplace_back(texture);
             }
-            _objectsCurrentlyUpdated = false;
+            _objectsCurrentlyUpdated.store(false, std::memory_order_release);
         }
 
         for (auto& texture : textures)
@@ -909,9 +909,9 @@ void Scene::registerAttributes()
             addTask([=]() -> void {
                 // We wait until we can indeed deleted the object
                 bool expectedAtomicValue = false;
-                while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true))
+                while (!_objectsCurrentlyUpdated.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acquire))
                     this_thread::sleep_for(chrono::milliseconds(1));
-                OnScopeExit { _objectsCurrentlyUpdated = false; };
+                OnScopeExit { _objectsCurrentlyUpdated.store(false, std::memory_order_release); };
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 

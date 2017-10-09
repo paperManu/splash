@@ -30,7 +30,7 @@ bool BufferObject::deserialize()
 void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
 {
     bool expectedAtomicValue = false;
-    if (_serializedObjectWaiting.compare_exchange_strong(expectedAtomicValue, true))
+    if (_serializedObjectWaiting.compare_exchange_strong(expectedAtomicValue, true, std::memory_order_acq_rel))
     {
         _serializedObject = move(obj);
         _newSerializedObject = true;
@@ -39,7 +39,7 @@ void BufferObject::setSerializedObject(shared_ptr<SerializedObject> obj)
         _deserializeFuture = async(launch::async, [this]() {
             lock_guard<shared_timed_mutex> lock(_writeMutex);
             deserialize();
-            _serializedObjectWaiting = false;
+            _serializedObjectWaiting.store(false, std::memory_order_acq_rel);
         });
     }
 }

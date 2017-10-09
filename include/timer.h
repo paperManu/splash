@@ -89,7 +89,7 @@ class Timer
         auto currentTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
         auto timeIt = _timeMap.find(name);
         if (timeIt == _timeMap.end())
-            _timeMap[name] = currentTime;
+            _timeMap[name].store(currentTime, std::memory_order_acq_rel);
         else
             timeIt->second = currentTime;
     }
@@ -110,9 +110,9 @@ class Timer
 
             auto durationIt = _durationMap.find(name);
             if (durationIt == _durationMap.end())
-                _durationMap[name] = currentTime - timeIt->second;
+                _durationMap[name].store(currentTime - timeIt->second.load(std::memory_order_acq_rel), std::memory_order_acq_rel);
             else
-                durationIt->second = currentTime - timeIt->second;
+                durationIt->second = currentTime - timeIt->second.load(std::memory_order_acq_rel);
         }
     }
 
@@ -135,7 +135,7 @@ class Timer
         auto durationIt = _durationMap.find(name);
         unsigned long long elapsed;
 
-        elapsed = currentTime - timeIt->second;
+        elapsed = currentTime - timeIt->second.load(std::memory_order_acq_rel);
 
         timespec nap;
         nap.tv_sec = 0;
@@ -149,7 +149,7 @@ class Timer
         }
 
         if (durationIt == _durationMap.end())
-            _durationMap[name] = std::max(duration, elapsed);
+            _durationMap[name].store(std::max(duration, elapsed), std::memory_order_acq_rel);
         else
             durationIt->second = std::max(duration, elapsed);
 
@@ -186,7 +186,7 @@ class Timer
     {
         auto durationIt = _durationMap.find(name);
         if (durationIt == _durationMap.end())
-            _durationMap[name] = value;
+            _durationMap[name].store(value, std::memory_order_acq_rel);
         else
             durationIt->second = value;
     }
@@ -216,14 +216,14 @@ class Timer
     Timer& operator<<(const std::string& name)
     {
         start(name);
-        _currentDuration = 0;
+        _currentDuration.store(0, std::memory_order_acq_rel);
         return *this;
     }
 
     Timer& operator>>(unsigned long long duration)
     {
         _timerMutex.lock(); // We lock the mutex to prevent this value to be reset by another call to timer
-        _currentDuration = duration;
+        _currentDuration.store(duration, std::memory_order_acq_rel);
         _durationThreadId = std::this_thread::get_id();
         _isDurationSet = true;
         return *this;
@@ -235,8 +235,8 @@ class Timer
         if (_isDurationSet && _durationThreadId == std::this_thread::get_id())
         {
             _isDurationSet = false;
-            duration = _currentDuration;
-            _currentDuration = 0;
+            duration = _currentDuration.load(std::memory_order_acq_rel);
+            _currentDuration.store(0, std::memory_order_acq_rel);
             _timerMutex.unlock();
         }
 
