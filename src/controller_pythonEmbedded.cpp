@@ -672,6 +672,88 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetObjectType_doc__,
+    "Get the type of the given object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_type(objectname)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): name of the object\n"
+    "\n"
+    "Returns:\n"
+    "  The type of the object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectType(PyObject* self, PyObject* args, PyObject* kwds)
+{
+  auto that = getSplashInstance();
+  if (!that || !that->_doLoop)
+  {
+    PyErr_SetString(SplashError, "Error accessing Splash instance");
+    return PyList_New(0);
+  }
+
+  char* strName;
+  static const char* kwlist[] = {"objectname", nullptr};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
+  {
+    PyErr_SetString(SplashError, "Wrong argument type or number");
+    return PyList_New(0);
+  }
+
+  return convertFromValue(that->getObject(string(strName))->getType());
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectsOfType_doc__,
+    "Get the name of all the objects of the given type\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_objects_of_type(objecttype)\n"
+    "\n"
+    "Args:\n"
+    "  objecttype (string): type of the objects we want to get\n"
+    "\n"
+    "Returns:\n"
+    "  The objects of the given type\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
+{
+  auto that = getSplashInstance();
+  if (!that || !that->_doLoop)
+  {
+    PyErr_SetString(SplashError, "Error accessing Splash instance");
+    return PyList_New(0);
+  }
+
+  char* strType;
+  static const char* kwlist[] = {"objecttype", nullptr};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
+  {
+    PyErr_SetString(SplashError, "Wrong argument type or number");
+    return PyList_New(0);
+  }
+
+  auto objects = that->getObjectsOfType(strType);
+  PyObject* pythonObjectList = PyList_New(objects.size());
+
+  int i = 0;
+  for (auto& obj : objects)
+  {
+    PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", obj->getName().c_str()));
+    ++i;
+  }
+
+  return pythonObjectList;
+}
+
+/*************/
 PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
     "Get the attribute value for the given object\n"
     "\n"
@@ -1286,10 +1368,9 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"get_master_clock", (PyCFunction)PythonEmbedded::pythonGetMasterClock, METH_VARARGS, pythonGetMasterClock_doc__},
     {(const char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
     {(const char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
-    {(const char*)"get_object_attribute_description",
-        (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectAttributeDescription_doc__},
+    {(const char*)"get_object_attribute_description", (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributeDescription_doc__},
+    {(const char*)"get_object_type", (PyCFunction)PythonEmbedded::pythonGetObjectType, METH_VARARGS | METH_KEYWORDS, pythonGetObjectType_doc__},
+    {(const char*)"get_objects_of_type", (PyCFunction)PythonEmbedded::pythonGetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonGetObjectsOfType_doc__},
     {(const char*)"get_object_attribute", (PyCFunction)PythonEmbedded::pythonGetObjectAttribute, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttribute_doc__},
     {(const char*)"get_object_attributes", (PyCFunction)PythonEmbedded::pythonGetObjectAttributes, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributes_doc__},
     {(const char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},

@@ -140,6 +140,8 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectType(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
