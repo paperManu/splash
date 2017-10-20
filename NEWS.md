@@ -1,6 +1,26 @@
 Splash release notes
 ===================
 
+Splash 0.7.8 (2017-10-20)
+-------------------------
+New features:
+- Added method to get master clock from Python
+- Added a keepRatio attribute to Filter, and keep_ratio(bool) method to Python sink
+- Added python bindings to get an object's type and all objects of a type.
+
+Improvements:
+- Every object now has a task queue
+- Improved help for Python Sink object
+- Replaced SSE2 detection with x86-64 detection
+- Specified memory ordering for important atomic operations
+
+Bugs fixed:
+- Temporarily fixed banding in dark regions
+- Fixed issue with blending happening on calibration markers
+- Image_V4L2: fixed a deadlock issue with automatic resizing
+- Fixed issue with multiple textures linked to a single image
+- Fix: keep relative paths relative
+
 Splash 0.7.6 (2017-09-28)
 -------------------------
 New features:
