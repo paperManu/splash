@@ -25,8 +25,7 @@ Mesh_Shmdata::~Mesh_Shmdata()
 /*************/
 bool Mesh_Shmdata::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
-    _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
+    _reader = make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
 }
@@ -115,7 +114,7 @@ void Mesh_Shmdata::onData(void* data, int data_size)
         intPtr += size;
     }
 
-    lock_guard<Spinlock> lock(_writeMutex);
+    lock_guard<shared_timed_mutex> lock(_writeMutex);
     if (Timer::get().isDebug())
         Timer::get() << "mesh_shmdata " + _name;
 

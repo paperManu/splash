@@ -135,10 +135,13 @@ class PythonEmbedded : public ControllerObject
     static PythonEmbedded* getSplashInstance();
     static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
     static PyObject* pythonGetTimings(PyObject* self, PyObject* args);
+    static PyObject* pythonGetMasterClock(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectType(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonGetObjectLinks(PyObject* self, PyObject* args);
@@ -171,6 +174,7 @@ class PythonEmbedded : public ControllerObject
     static int pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkGrab(pythonSinkObject* self);
     static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkOpen(pythonSinkObject* self);
     static PyObject* pythonSinkClose(pythonSinkObject* self);

@@ -196,7 +196,7 @@ bool Link::sendBuffer(const string& name, shared_ptr<SerializedObject> buffer)
             _otgBuffers.push_back(buffer);
             _otgMutex.unlock();
 
-            _otgNumber += 1;
+            _otgNumber.fetch_add(1, std::memory_order_acq_rel);
 
             zmq::message_t msg(name.size() + 1);
             memcpy(msg.data(), (void*)name.c_str(), name.size() + 1);
@@ -325,7 +325,7 @@ void Link::freeOlderBuffer(void* data, void* hint)
         return;
     }
     ctx->_otgBuffers.erase(ctx->_otgBuffers.begin() + index);
-    ctx->_otgNumber -= 1;
+    ctx->_otgNumber.fetch_sub(1, std::memory_order_acq_rel);
 }
 
 /*************/

@@ -41,11 +41,6 @@ bool Image_OpenCV::read(const string& filename)
         _inputIndex = -1;
     }
 
-    if (_inputIndex == -1)
-        _filepath = filename;
-    else
-        _filepath = to_string(_inputIndex);
-
     // This releases any previous input
     _continueReading = false;
     if (_readLoopThread.joinable())
@@ -79,17 +74,21 @@ void Image_OpenCV::readLoop()
         return;
     }
 
+    auto realPath = _filepath;
+    if (_inputIndex != -1)
+        realPath = to_string(_inputIndex);
+
     if (!_videoCapture->isOpened())
     {
         bool status;
         if (_inputIndex >= 0)
             status = _videoCapture->open(_inputIndex);
         else
-            status = _videoCapture->open(_filepath);
+            status = _videoCapture->open(realPath);
 
         if (!status)
         {
-            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << _filepath << Log::endl;
+            Log::get() << Log::WARNING << "Image_OpenCV::" << __FUNCTION__ << " - Unable to open video capture input " << realPath << Log::endl;
             return;
         }
 
@@ -97,7 +96,7 @@ void Image_OpenCV::readLoop()
         _videoCapture->set(CV_CAP_PROP_FRAME_HEIGHT, _height);
         _videoCapture->set(CV_CAP_PROP_FPS, _framerate);
 
-        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Successfully initialized VideoCapture " << _filepath << Log::endl;
+        Log::get() << Log::MESSAGE << "Image_OpenCV::" << __FUNCTION__ << " - Successfully initialized VideoCapture " << realPath << Log::endl;
     }
 
     while (_continueReading)
@@ -124,7 +123,7 @@ void Image_OpenCV::readLoop()
         unsigned int imageSize = capture.rows * capture.cols * capture.channels();
         copy(capture.data, capture.data + imageSize, pixels);
 
-        lock_guard<Spinlock> lockWrite(_writeMutex);
+        lock_guard<shared_timed_mutex> lockWrite(_writeMutex);
         if (!_bufferImage)
             _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
         std::swap(*_bufferImage, _readBuffer);

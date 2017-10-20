@@ -347,7 +347,7 @@ void Window::render()
 
     glDeleteSync(_renderFence);
     _renderFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    _swappableWindowsCount = 0; // Reset the window number
+    _swappableWindowsCount.store(0, std::memory_order_acq_rel); // Reset the window number
 
     // Resize the input textures accordingly to the window size.
     // This goes upstream to the cameras and gui
@@ -439,7 +439,7 @@ void Window::swapBuffers()
     glWaitSync(_renderFence, 0, GL_TIMEOUT_IGNORED);
 
     // Only one window will wait for vblank, the others draws directly into front buffer
-    auto windowIndex = _swappableWindowsCount.fetch_add(1);
+    auto windowIndex = _swappableWindowsCount.fetch_add(1, std::memory_order_acq_rel);
 
 // If swap interval is null (meaning no vsync), draw directly to the front buffer in any case
 #if not HAVE_OSX

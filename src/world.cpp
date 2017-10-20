@@ -72,6 +72,9 @@ void World::run()
                 vector<future<void>> threads;
                 for (auto& o : _objects)
                 {
+                    // Run object tasks
+                    o.second->runTasks();
+
                     auto bufferObj = dynamic_pointer_cast<BufferObject>(o.second);
                     // This prevents the map structure to be modified in the threads
                     auto serializedObjectIt = serializedObjects.emplace(std::make_pair(bufferObj->getDistantName(), shared_ptr<SerializedObject>(nullptr)));
@@ -1015,9 +1018,7 @@ bool World::loadProject(const string& filename)
                 auto source = link[0].asString();
                 auto sink = link[1].asString();
 
-                addTask([=]() {
-                    sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
-                });
+                addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
             }
         }
 
@@ -1152,8 +1153,8 @@ void World::parseArguments(int argc, char** argv)
             }
             else
             {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg)
-                           << ": argument expects a positive integer, or a string in the form of \":x.y\"" << Log::endl;
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer, or a string in the form of \":x.y\""
+                           << Log::endl;
                 exit(0);
             }
             break;

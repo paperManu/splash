@@ -333,6 +333,11 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      */
     virtual void render() {}
 
+    /**
+     * Run the tasks waiting in the object's queue
+     */
+    virtual void runTasks();
+
   public:
     bool _savable{true}; //!< True if the object should be saved
 
@@ -358,7 +363,16 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     std::future<void> _asyncTask{};
     std::mutex _asyncTaskMutex{};
 
+    std::list<std::function<void()>> _taskQueue;
+    std::recursive_mutex _taskMutex;
+
     bool _ghost{false}; //!< True if the object ghosts an object in another scene
+
+    /**
+     * Add a new task to the queue
+     * \param task Task function
+     */
+    void addTask(const std::function<void()>& task);
 
     /**
      * \brief Initialize some generic attributes

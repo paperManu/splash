@@ -298,7 +298,7 @@ void Geometry::update()
     // If a serialized geometry is present, we use it as the alternative buffer
     if (!_onMasterScene && _serializedMesh.size() != 0)
     {
-        lock_guard<Spinlock> lock(_writeMutex);
+        lock_guard<shared_timed_mutex> lock(_writeMutex);
 
         if (_glTemporaryBuffers.size() != 4)
             _glTemporaryBuffers.resize(4);

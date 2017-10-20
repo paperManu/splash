@@ -406,16 +406,6 @@ ImageBufferSpec QueueSurrogate::getSpec() const
 }
 
 /*************/
-void QueueSurrogate::update()
-{
-    unique_lock<mutex> lock(_taskMutex);
-    for (auto& task : _taskQueue)
-        task();
-    _taskQueue.clear();
-    lock.unlock();
-}
-
-/*************/
 void QueueSurrogate::registerAttributes()
 {
     Texture::registerAttributes();
@@ -428,8 +418,7 @@ void QueueSurrogate::registerAttributes()
         if (args.size() != 1)
             return false;
 
-        lock_guard<mutex> lock(_taskMutex);
-        _taskQueue.push_back([=]() {
+        addTask([=]() {
             auto sourceName = _name + DISTANT_NAME_SUFFIX;
             auto type = args[0].as<string>();
 

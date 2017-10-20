@@ -74,16 +74,6 @@ class Image : public BufferObject
     const void* data() const;
 
     /**
-     * \brief Lock the image, useful while reading. Use with care Note that only write mutex is needed, as it also disables reading
-     */
-    void lock() { _writeMutex.lock(); }
-
-    /**
-     * \brief Unlock the image
-     */
-    void unlock() { _writeMutex.unlock(); }
-
-    /**
      * \brief Get the image buffer
      * \return Return the image buffer
      */

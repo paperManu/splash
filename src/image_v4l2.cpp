@@ -97,7 +97,7 @@ void Image_V4L2::captureThreadFunc()
 
     if (!_hasStreamingIO)
     {
-        unique_lock<Spinlock> lockWrite(_writeMutex, std::defer_lock);
+        unique_lock<shared_timed_mutex> lockWrite(_writeMutex, std::defer_lock);
         while (_captureThreadRun)
         {
             if (!_bufferImage || _bufferImage->getSpec() != _imageBuffers[buffer.index]->getSpec())
@@ -149,7 +149,7 @@ void Image_V4L2::captureThreadFunc()
         }
 
         // Run the capture
-        unique_lock<Spinlock> lockWrite(_writeMutex, std::defer_lock);
+        unique_lock<shared_timed_mutex> lockWrite(_writeMutex, std::defer_lock);
         while (_captureThreadRun)
         {
             struct pollfd fd;
@@ -224,8 +224,21 @@ void Image_V4L2::captureThreadFunc()
                                                 to_string((float)_v4l2SourceFormat.fmt.pix.priv / 1000.f) + "Hz, format " +
                                                 string(reinterpret_cast<char*>(&_v4l2SourceFormat.fmt.pix.pixelformat), 4);
 
-                    if (_autosetResolution && (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height))
-                        runAsyncTask([=]() { setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height}); });
+                    bool expectedResizingValue = false;
+                    if (_autosetResolution && _automaticResizing.compare_exchange_weak(expectedResizingValue, true))
+                    {
+                        if (_outputWidth != _v4l2SourceFormat.fmt.pix.width || _outputHeight != _v4l2SourceFormat.fmt.pix.height)
+                        {
+                            addTask([=]() {
+                                setAttribute("captureSize", {_v4l2SourceFormat.fmt.pix.width, _v4l2SourceFormat.fmt.pix.height});
+                                _automaticResizing = false;
+                            });
+                        }
+                        else
+                        {
+                            _automaticResizing = false;
+                        }
+                    }
 
                     _sourceFormatAsString = sourceFormatAsString;
                 }

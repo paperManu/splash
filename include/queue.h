@@ -191,15 +191,12 @@ class QueueSurrogate : public Texture
     /**
      * \brief Update the texture according to the owned Image
      */
-    void update() final;
+    void update() final {};
 
   private:
     int _filterIndex{0};
     std::shared_ptr<Filter> _filter;
     std::shared_ptr<BaseObject> _source;
-
-    std::list<std::function<void()>> _taskQueue;
-    std::mutex _taskMutex;
 
     /**
      * \brief Register new functors to modify attributes

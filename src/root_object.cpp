@@ -157,13 +157,6 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 }
 
 /*************/
-void RootObject::addTask(const function<void()>& task)
-{
-    lock_guard<recursive_mutex> lock(_taskMutex);
-    _taskQueue.push_back(task);
-}
-
-/*************/
 void RootObject::addRecurringTask(const string& name, const function<void()>& task)
 {
     unique_lock<mutex> lock(_recurringTaskMutex, std::try_to_lock);

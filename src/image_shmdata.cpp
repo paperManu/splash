@@ -3,7 +3,8 @@
 #include <hap.h>
 #include <regex>
 
-#if HAVE_SSE2
+// All existing 64bits x86 CPUs have SSE2
+#if __x86_64__
 #define GLM_FORCE_SSE2
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
@@ -45,8 +46,7 @@ Image_Shmdata::~Image_Shmdata()
 /*************/
 bool Image_Shmdata::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
-    _reader.reset(new shmdata::Follower(_filepath, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger));
+    _reader = make_unique<shmdata::Follower>(filename, [&](void* data, size_t size) { onData(data, size); }, [&](const string& caps) { onCaps(caps); }, [&]() {}, &_logger);
 
     return true;
 }
@@ -222,7 +222,7 @@ void Image_Shmdata::onData(void* data, int data_size)
 /*************/
 void Image_Shmdata::readHapFrame(void* data, int data_size)
 {
-    lock_guard<Spinlock> lock(_writeMutex);
+    lock_guard<shared_timed_mutex> lock(_writeMutex);
 
     // We are using kind of a hack to store a DXT compressed image in an ImageBuffer
     // First, we check the texture format type
@@ -265,7 +265,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
 /*************/
 void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
 {
-    lock_guard<Spinlock> lock(_writeMutex);
+    lock_guard<shared_timed_mutex> lock(_writeMutex);
 
     // Check if we need to resize the reader buffer
     auto bufSpec = _readerBuffer.getSpec();

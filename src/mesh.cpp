@@ -112,12 +112,10 @@ vector<float> Mesh::getAnnexe() const
 /*************/
 bool Mesh::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
-
     if (!_isConnectedToRemote)
     {
         Loader::Obj objLoader;
-        if (!objLoader.load(_filepath))
+        if (!objLoader.load(filename))
         {
             Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Unable to read the specified mesh file: " << filename << Log::endl;
             return false;
@@ -128,7 +126,7 @@ bool Mesh::read(const string& filename)
         mesh.uvs = objLoader.getUVs();
         mesh.normals = objLoader.getNormals();
 
-        lock_guard<Spinlock> lock(_writeMutex);
+        lock_guard<shared_timed_mutex> lock(_writeMutex);
         _mesh = mesh;
         updateTimestamp();
     }
@@ -281,10 +279,10 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 void Mesh::update()
 {
-    lock_guard<Spinlock> lock(_readMutex);
-    lock_guard<Spinlock> lockWrite(_writeMutex);
     if (_meshUpdated)
     {
+        lock_guard<Spinlock> lock(_readMutex);
+        shared_lock<shared_timed_mutex> lockWrite(_writeMutex);
         _mesh = _bufferMesh;
         _meshUpdated = false;
     }
@@ -351,7 +349,7 @@ void Mesh::createDefaultMesh(int subdiv)
         }
     }
 
-    lock_guard<Spinlock> lock(_writeMutex);
+    lock_guard<shared_timed_mutex> lock(_writeMutex);
     _mesh = std::move(mesh);
 
     updateTimestamp();
@@ -362,7 +360,13 @@ void Mesh::registerAttributes()
 {
     BufferObject::registerAttributes();
 
-    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file",
+        [&](const Values& args) {
+            _filepath = args[0].as<string>();
+            return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+        },
+        [&]() -> Values { return {_filepath}; },
+        {'s'});
     setAttributeDescription("file", "Mesh file to load");
 
     addAttribute("benchmark",

@@ -29,7 +29,6 @@
 #define SPLASH_GLV_FONTSIZE 8.0
 #define SPLASH_GLV_FONTWIDTH 2.0
 
-#include <atomic>
 #include <deque>
 #include <functional>
 #include <list>

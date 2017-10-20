@@ -896,7 +896,7 @@ void Camera::setupFBO()
         _renderColorTexture = make_unique<Texture_Image>(_root);
         _renderColorTexture->setAttribute("clampToEdge", {1});
         _renderColorTexture->setAttribute("filtering", {0});
-        _renderColorTexture->reset(512, 512, "RGBA", nullptr, _multisample);
+        _renderColorTexture->reset(512, 512, "RGBA16", nullptr, _multisample);
         glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _renderColorTexture->getTexId(), 0);
     }
 
@@ -911,7 +911,7 @@ void Camera::setupFBO()
         _outColorTexture = make_shared<Texture_Image>(_root);
         _outColorTexture->setAttribute("clampToEdge", {1});
         _outColorTexture->setAttribute("filtering", {0});
-        _outColorTexture->reset(512, 512, "RGBA", nullptr, false);
+        _outColorTexture->reset(512, 512, "RGBA16", nullptr, false);
         glNamedFramebufferTexture(_blitFbo, GL_COLOR_ATTACHMENT0, _outColorTexture->getTexId(), 0);
     }
 
@@ -1131,7 +1131,11 @@ void Camera::loadDefaultModels()
         obj->setAttribute("scale", {WORLDMARKER_SCALE});
         obj->setAttribute("fill", {"color"});
         obj->setAttribute("color", MARKER_SET);
-        obj->linkTo(mesh);
+
+        // We create the geometry manually for it not to be registered in the root
+        auto geometry = make_shared<Geometry>(_root);
+        geometry->linkTo(mesh);
+        obj->linkTo(geometry);
 
         _models[file.first] = obj;
     }

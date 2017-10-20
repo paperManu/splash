@@ -104,6 +104,17 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkGrab_doc__,
+    "Grab the latest image from the sink\n"
+    "\n"
+    "splash.grab()\n"
+    "\n"
+    "Returns:\n"
+    "  The grabbed image as a bytes object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -135,6 +146,21 @@ PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkSetSize_doc__,
+    "Set the size of the grabbed images. Resizes the input accordingly\n"
+    "\n"
+    "splash.set_size(width, height)\n"
+    "\n"
+    "Args:\n"
+    "  width (int): Desired width\n"
+    "  height (int): Desired height\n"
+    "\n"
+    "Returns:\n"
+    "  True if the size has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
@@ -145,10 +171,10 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
     }
 
     int width = 512;
-    int height = 512;
+    int height = 0;
     static char* kwlist[] = {(char*)"width", (char*)"height", nullptr};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ii", kwlist, &width, &height))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "i|i", kwlist, &width, &height))
     {
         Py_INCREF(Py_False);
         return Py_False;
@@ -163,6 +189,20 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkSetFramerate_doc__,
+    "Set the framerate at which the sink should read the image\n"
+    "\n"
+    "splash.set_framerate(framerate)\n"
+    "\n"
+    "Args:\n"
+    "  framerate (int): Framerate\n"
+    "\n"
+    "Returns:\n"
+    "  True if the framerate has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
@@ -189,6 +229,56 @@ PyObject* PythonEmbedded::pythonSinkSetFramerate(pythonSinkObject* self, PyObjec
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkSetKeepRatio_doc__,
+    "Set whether to keep the input image ratio when resizing\n"
+    "\n"
+    "splash.keep_ratio(keep_ratio)\n"
+    "\n"
+    "Args:\n"
+    "  keep_ratio (int): Set to True to keep the ratio\n"
+    "\n"
+    "Returns:\n"
+    "  True if the option has been set correctly\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    bool keepRatio = false;
+    static char* kwlist[] = {(char*)"keep_ratio", nullptr};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "p", kwlist, &keepRatio))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->setObjectAttribute(self->filterName, "keepRatio", {static_cast<int>(keepRatio)});
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyDoc_STRVAR(pythonSinkOpen_doc__,
+    "Open the sink, which will start reading the input image\n"
+    "\n"
+    "splash.open()\n"
+    "\n"
+    "Returns:\n"
+    "  True if the sink has been successfully opened\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -205,6 +295,17 @@ PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkClose_doc__,
+    "Close the sink\n"
+    "\n"
+    "splash.close()\n"
+    "\n"
+    "Returns:\n"
+    "  True if the sink has been closed successfully\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -221,6 +322,17 @@ PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkGetCaps_doc__,
+    "Get a caps describing the grabbed buffers\n"
+    "\n"
+    "splash.get_caps()\n"
+    "\n"
+    "Returns:\n"
+    "  A string holding the caps\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
 PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 {
     auto that = getSplashInstance();
@@ -247,12 +359,13 @@ PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SinkMethods[] = {
-    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, (const char*)"Get a copy of the buffer in the sink"},
-    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, (const char*)"Set the size of the grabbed image"},
-    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, (const char*)"Set the framerate of the sink"},
-    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, (const char*)"Open the sink"},
-    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, (const char*)"Close the sink"},
-    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, (const char*)"Get the caps of the buffer"},
+    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, pythonSinkGrab_doc__},
+    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, pythonSinkSetSize_doc__},
+    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, pythonSinkSetFramerate_doc__},
+    {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS, pythonSinkSetKeepRatio_doc__},
+    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, pythonSinkOpen_doc__},
+    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, pythonSinkClose_doc__},
+    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, pythonSinkGetCaps_doc__},
     {nullptr}
 };
 
@@ -364,6 +477,52 @@ PyObject* PythonEmbedded::pythonGetTimings(PyObject* self, PyObject* args)
     }
 
     return pythonTimerDict;
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetMasterClock_doc__,
+    "Get the master clock from Splash, in milliseconds\n"
+    "\n"
+    "splash.get_master_clock()\n"
+    "\n"
+    "Returns:\n"
+    "  A tuple containing whether the clock is set, a boolean indicating whether it is paused, and the clock value in ms.\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetMasterClock(PyObject* self, PyObject* args)
+{
+    bool paused = false;
+    int64_t clockMs = 0;
+    bool isClockSet = Timer::get().getMasterClock<chrono::milliseconds>(clockMs, paused);
+    PyObject* pyTuple = PyTuple_New(3);
+
+    if (isClockSet)
+    {
+        Py_INCREF(Py_True);
+        PyTuple_SetItem(pyTuple, 0, Py_True);
+    }
+    else
+    {
+        Py_INCREF(Py_False);
+        PyTuple_SetItem(pyTuple, 0, Py_False);
+    }
+
+    if (paused)
+    {
+        Py_INCREF(Py_True);
+        PyTuple_SetItem(pyTuple, 1, Py_True);
+    }
+    else
+    {
+        Py_INCREF(Py_False);
+        PyTuple_SetItem(pyTuple, 1, Py_False);
+    }
+
+    PyTuple_SetItem(pyTuple, 2, Py_BuildValue("L", clockMs));
+
+    return pyTuple;
 }
 
 /*************/
@@ -510,6 +669,88 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
 
     auto description = result[0].as<string>();
     return Py_BuildValue("s", description.c_str());
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectType_doc__,
+    "Get the type of the given object\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_object_type(objectname)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): name of the object\n"
+    "\n"
+    "Returns:\n"
+    "  The type of the object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectType(PyObject* self, PyObject* args, PyObject* kwds)
+{
+  auto that = getSplashInstance();
+  if (!that || !that->_doLoop)
+  {
+    PyErr_SetString(SplashError, "Error accessing Splash instance");
+    return PyList_New(0);
+  }
+
+  char* strName;
+  static const char* kwlist[] = {"objectname", nullptr};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
+  {
+    PyErr_SetString(SplashError, "Wrong argument type or number");
+    return PyList_New(0);
+  }
+
+  return convertFromValue(that->getObject(string(strName))->getType());
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectsOfType_doc__,
+    "Get the name of all the objects of the given type\n"
+    "\n"
+    "Signature:\n"
+    "  splash.get_objects_of_type(objecttype)\n"
+    "\n"
+    "Args:\n"
+    "  objecttype (string): type of the objects we want to get\n"
+    "\n"
+    "Returns:\n"
+    "  The objects of the given type\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
+{
+  auto that = getSplashInstance();
+  if (!that || !that->_doLoop)
+  {
+    PyErr_SetString(SplashError, "Error accessing Splash instance");
+    return PyList_New(0);
+  }
+
+  char* strType;
+  static const char* kwlist[] = {"objecttype", nullptr};
+  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
+  {
+    PyErr_SetString(SplashError, "Wrong argument type or number");
+    return PyList_New(0);
+  }
+
+  auto objects = that->getObjectsOfType(strType);
+  PyObject* pythonObjectList = PyList_New(objects.size());
+
+  int i = 0;
+  for (auto& obj : objects)
+  {
+    PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", obj->getName().c_str()));
+    ++i;
+  }
+
+  return pythonObjectList;
 }
 
 /*************/
@@ -1124,12 +1365,12 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
     {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
+    {(const char*)"get_master_clock", (PyCFunction)PythonEmbedded::pythonGetMasterClock, METH_VARARGS, pythonGetMasterClock_doc__},
     {(const char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
     {(const char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
-    {(const char*)"get_object_attribute_description",
-        (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription,
-        METH_VARARGS | METH_KEYWORDS,
-        pythonGetObjectAttributeDescription_doc__},
+    {(const char*)"get_object_attribute_description", (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributeDescription_doc__},
+    {(const char*)"get_object_type", (PyCFunction)PythonEmbedded::pythonGetObjectType, METH_VARARGS | METH_KEYWORDS, pythonGetObjectType_doc__},
+    {(const char*)"get_objects_of_type", (PyCFunction)PythonEmbedded::pythonGetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonGetObjectsOfType_doc__},
     {(const char*)"get_object_attribute", (PyCFunction)PythonEmbedded::pythonGetObjectAttribute, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttribute_doc__},
     {(const char*)"get_object_attributes", (PyCFunction)PythonEmbedded::pythonGetObjectAttributes, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributes_doc__},
     {(const char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},

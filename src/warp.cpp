@@ -263,7 +263,7 @@ void Warp::setupFBO()
         glCreateFramebuffers(1, &_fbo);
 
     _outTexture = make_shared<Texture_Image>(_root);
-    _outTexture->reset(512, 512, "RGBA", nullptr);
+    _outTexture->reset(512, 512, "RGBA16", nullptr);
     glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
     GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);

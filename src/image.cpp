@@ -56,7 +56,7 @@ void Image::init()
 /*************/
 Image::~Image()
 {
-    lock_guard<Spinlock> writeLock(_writeMutex);
+    lock_guard<shared_timed_mutex> writeLock(_writeMutex);
     lock_guard<Spinlock> readlock(_readMutex);
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image::~Image - Destructor" << Log::endl;
@@ -217,9 +217,8 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
 /*************/
 bool Image::read(const string& filename)
 {
-    _filepath = Utils::getFullPathFromFilePath(filename, _root->getConfigurationPath());
     if (!_isConnectedToRemote)
-        return readFile(_filepath);
+        return readFile(filename);
     else
         return true;
 }
@@ -250,7 +249,7 @@ bool Image::readFile(const string& filename)
     memcpy(img.data(), rawImage, w * h * 4);
     stbi_image_free(rawImage);
 
-    lock_guard<Spinlock> lock(_writeMutex);
+    lock_guard<shared_timed_mutex> lock(_writeMutex);
     if (!_bufferImage)
         _bufferImage = unique_ptr<ImageBuffer>(new ImageBuffer());
     std::swap(*_bufferImage, img);
@@ -274,15 +273,17 @@ void Image::zero()
 /*************/
 void Image::update()
 {
-    lock_guard<Spinlock> lockRead(_readMutex);
-    lock_guard<Spinlock> lockWrite(_writeMutex);
     if (_imageUpdated)
     {
+        lock_guard<Spinlock> lockRead(_readMutex);
+        shared_lock<shared_timed_mutex> lockWrite(_writeMutex);
         _image.swap(_bufferImage);
         _imageUpdated = false;
     }
     else if (_benchmark)
+    {
         updateTimestamp();
+    }
 }
 
 /*************/
@@ -380,7 +381,13 @@ void Image::registerAttributes()
         {'n'});
     setAttributeDescription("flop", "Mirrors the image on the X axis");
 
-    addAttribute("file", [&](const Values& args) { return read(args[0].as<string>()); }, [&]() -> Values { return {_filepath}; }, {'s'});
+    addAttribute("file",
+        [&](const Values& args) {
+            _filepath = args[0].as<string>();
+            return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
+        },
+        [&]() -> Values { return {_filepath}; },
+        {'s'});
     setAttributeDescription("file", "Image file to load");
 
     addAttribute("srgb",

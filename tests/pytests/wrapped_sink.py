@@ -11,5 +11,5 @@ def run():
     sink.open()
     sleep(0.5)
     image = sink.grab()
-    print("Grabbed image:", image)
+    print("Grabbed image:", image.hex())
     sink.close()
