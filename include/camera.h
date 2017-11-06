@@ -217,10 +217,10 @@ class Camera : public BaseObject
     void setOutputSize(int width, int height);
 
   private:
-    GLuint _fbo{0};
-    GLuint _blitFbo{0};
-    std::unique_ptr<Texture_Image> _renderDepthTexture{nullptr};
-    std::unique_ptr<Texture_Image> _renderColorTexture{nullptr};
+    GLuint _msFbo{0};
+    GLuint _outFbo{0};
+    std::unique_ptr<Texture_Image> _msDepthTexture{nullptr};
+    std::unique_ptr<Texture_Image> _msColorTexture{nullptr};
     std::unique_ptr<Texture_Image> _outDepthTexture{nullptr};
     std::shared_ptr<Texture_Image> _outColorTexture{nullptr};
     std::vector<std::weak_ptr<Object>> _objects;

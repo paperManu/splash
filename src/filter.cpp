@@ -384,20 +384,6 @@ void Filter::registerAttributes()
 {
     Texture::registerAttributes();
 
-    addAttribute("16bits",
-        [&](const Values& args) {
-            bool render16bits = args[0].as<int>();
-            if (render16bits != _render16bits)
-            {
-                _render16bits = render16bits;
-                _updateColorDepth = true;
-            }
-            return true;
-        },
-        [&]() -> Values { return {(int)_render16bits}; },
-        {'n'});
-    setAttributeDescription("16bits", "Set to 1 for the filter to be rendered in 16bits per component (otherwise 8bpc)");
-
     addAttribute("pixelFormat",
         [&](const Values& args) {
             string p = args[0].as<string>();
