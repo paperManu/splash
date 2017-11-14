@@ -231,19 +231,29 @@ void World::applyConfig()
                     spawn = jsScenes[i]["spawn"].asInt();
 
                 string display{""};
+                string worldDisplay{"none"};
 #if HAVE_LINUX
                 auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
                 auto regDisplayInt = regex("[0-9]", regex_constants::extended);
                 smatch match;
 
-                display = "DISPLAY=:0.0";
+                if (getenv("DISPLAY"))
+                {
+                    worldDisplay = getenv("DISPLAY");
+                    if (worldDisplay.size() == 2) // Yes, we consider a maximum of 10 display servers. Because, really?
+                        worldDisplay += ".0";
+                    if (_reloadingConfig)
+                        worldDisplay = "none";
+                }
+
+                display = "DISPLAY=" + worldDisplay;
                 if (jsScenes[i].isMember("display"))
                 {
                     auto displayParameter = jsScenes[i]["display"].asString();
                     if (regex_match(displayParameter, match, regDisplayFull))
                         display = "DISPLAY=" + displayParameter;
                     else if (regex_match(displayParameter, match, regDisplayInt))
-                        display = "DISPLAY=:0." + displayParameter;
+                        display = "DISPLAY=:" + _displayServer + "." + displayParameter;
                 }
 
                 if (!_forcedDisplay.empty())
@@ -251,7 +261,7 @@ void World::applyConfig()
                     if (regex_match(_forcedDisplay, match, regDisplayFull))
                         display = "DISPLAY=" + _forcedDisplay;
                     else if (regex_match(_forcedDisplay, match, regDisplayInt))
-                        display = "DISPLAY=:0." + _forcedDisplay;
+                        display = "DISPLAY=:" + _displayServer + "." + _forcedDisplay;
                 }
 #endif
 
@@ -260,17 +270,6 @@ void World::applyConfig()
                 if (spawn > 0)
                 {
                     _sceneLaunched = false;
-                    string worldDisplay = "none";
-#if HAVE_LINUX
-                    if (getenv("DISPLAY"))
-                    {
-                        worldDisplay = getenv("DISPLAY");
-                        if (worldDisplay.size() == 2)
-                            worldDisplay += ".0";
-                        if (_reloadingConfig)
-                            worldDisplay = "none";
-                    }
-#endif
 
                     // If the current process is on the correct display, we use an inner Scene
                     if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
@@ -1091,6 +1090,7 @@ void World::parseArguments(int argc, char** argv)
             {"debug", no_argument, 0, 'd'},
 #if HAVE_LINUX
             {"forceDisplay", required_argument, 0, 'D'},
+            {"displayServer", required_argument, 0, 'S'},
 #endif
             {"help", no_argument, 0, 'h'},
             {"hide", no_argument, 0, 'H'},
@@ -1104,7 +1104,7 @@ void World::parseArguments(int argc, char** argv)
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "dD:hHilo:p:st", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "dD:S:hHilo:p:st", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -1121,6 +1121,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
 #if HAVE_LINUX
             cout << "\t-D (--forceDisplay) : force the display on which to show all windows" << endl;
+            cout << "\t-S (--displayServer) : set the display server ID" << endl;
 #endif
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
@@ -1155,6 +1156,23 @@ void World::parseArguments(int argc, char** argv)
             {
                 Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer, or a string in the form of \":x.y\""
                            << Log::endl;
+                exit(0);
+            }
+            break;
+        }
+        case 'S':
+        {
+            auto regInt = regex("[0-9]", regex_constants::extended);
+            smatch match;
+
+            _displayServer = string(optarg);
+            if (regex_match(_displayServer, match, regInt))
+            {
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display server forced to :" << _displayServer << Log::endl;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer" << Log::endl;
                 exit(0);
             }
             break;
