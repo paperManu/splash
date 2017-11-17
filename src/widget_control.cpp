@@ -69,12 +69,16 @@ void GuiControl::render()
         if (ImGui::InputFloat("Blending precision", &blendPrecision, 0.01f, 0.04f, 3, ImGuiInputTextFlags_EnterReturnsTrue))
             setObjectsOfType("camera", "blendPrecision", {blendPrecision});
 
-        static auto showCameraCount = 0;
-        if (ImGui::InputInt("Show camera count (w/ blending)", &showCameraCount, 0, 1, ImGuiInputTextFlags_EnterReturnsTrue))
+        static auto showCameraCount = false;
+        if (ImGui::Checkbox("Show camera count (w/ blending)", &showCameraCount))
         {
             setWorldAttribute("computeBlending", {"continuous"});
             setObjectsOfType("camera", "showCameraCount", {showCameraCount});
         }
+
+        static auto cameras16Bits = true;
+        if (ImGui::Checkbox("Render cameras in 16bits per channel", &cameras16Bits))
+            setObjectsOfType("camera", "16bits", {cameras16Bits});
 
         ImGui::Spacing();
         ImGui::Separator();
