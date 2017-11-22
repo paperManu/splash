@@ -51,6 +51,18 @@ World::~World()
 /*************/
 void World::run()
 {
+    // If set to run as a child process, only create a scene which will wait for instructions
+    // from the master process
+    if (_runAsChild)
+    {
+        Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Creating child Scene with name " << _childSceneName << Log::endl;
+
+        Scene scene(_childSceneName, _linkSocketPrefix);
+        scene.run();
+
+        return;
+    }
+
     applyConfig();
 
     while (true)
@@ -283,16 +295,13 @@ void World::applyConfig()
                         // Spawn a new process containing this Scene
                         Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
 
-                        string cmd;
-                        if (_executionPath == "")
-                            cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
-                        else
-                            cmd = _executionPath + "splash-scene";
+                        string cmd = _currentExePath;
                         string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
                         string timer = Timer::get().isDebug() ? "-t" : "";
+                        string slave = "--child";
                         string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
-                        vector<char*> argv = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str()};
+                        vector<char*> argv = {(char*)cmd.c_str(), (char*)slave.c_str(), (char*)debug.c_str(), (char*)timer.c_str()};
                         if (!_linkSocketPrefix.empty())
                         {
                             argv.push_back((char*)"--prefix");
@@ -765,20 +774,24 @@ void World::handleSerializedObject(const string& name, shared_ptr<SerializedObje
 /*************/
 void World::init()
 {
-    _type = "world";
-    _name = "world";
+    // If set to run as a child process, we do not initialize anything
+    if (!_runAsChild)
+    {
+        _type = "world";
+        _name = "world";
 
-    _that = this;
-    _signals.sa_handler = leave;
-    _signals.sa_flags = 0;
-    sigaction(SIGINT, &_signals, NULL);
-    sigaction(SIGTERM, &_signals, NULL);
+        _that = this;
+        _signals.sa_handler = leave;
+        _signals.sa_flags = 0;
+        sigaction(SIGINT, &_signals, NULL);
+        sigaction(SIGTERM, &_signals, NULL);
 
-    if (_linkSocketPrefix.empty())
-        _linkSocketPrefix = to_string(static_cast<int>(getpid()));
-    _link = make_shared<Link>(this, _name);
+        if (_linkSocketPrefix.empty())
+            _linkSocketPrefix = to_string(static_cast<int>(getpid()));
+        _link = make_shared<Link>(this, _name);
 
-    registerAttributes();
+        registerAttributes();
+    }
 }
 
 /*************/
@@ -1077,8 +1090,9 @@ void World::parseArguments(int argc, char** argv)
     cout << endl;
 
     // Get the executable directory
-    string executable = argv[0];
-    _executionPath = Utils::getPathFromExecutablePath(executable);
+    _splashExecutable = argv[0];
+    _currentExePath = Utils::getCurrentExecutablePath();
+    _executionPath = Utils::getPathFromExecutablePath(_splashExecutable);
 
     // Parse the other args
     string filename = string(DATADIR) + "splash.json";
@@ -1100,11 +1114,12 @@ void World::parseArguments(int argc, char** argv)
             {"prefix", required_argument, 0, 'p'},
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
+            {"child", no_argument, 0, 'c'},
             {0, 0, 0, 0}
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "dD:S:hHilo:p:st", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "cdD:S:hHilo:p:st", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -1128,6 +1143,7 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-H (--hide) : run Splash in background" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
+            cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
             cout << endl;
             exit(0);
             break;
@@ -1216,30 +1232,46 @@ void World::parseArguments(int argc, char** argv)
             Timer::get().setDebug(true);
             break;
         }
+        case 'c':
+        {
+            _runAsChild = true;
+            break;
+        }
         }
     }
 
+    string lastArg = "";
     if (optind < argc)
-    {
-        filename = string(argv[argc - 1]);
-        defaultFile = false;
-    }
+        lastArg = string(argv[argc - 1]);
 
     if (defaultFile)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
 
-    if (filename != "")
+    if (_runAsChild)
     {
-        Json::Value config;
-        _status &= loadConfig(filename, config);
+        if (!lastArg.empty())
+            _childSceneName = lastArg;
+    }
+    else
+    {
+        if (!lastArg.empty())
+        {
+            filename = lastArg;
+            defaultFile = false;
+        }
+        if (filename != "")
+        {
+            Json::Value config;
+            _status &= loadConfig(filename, config);
 
-        if (_status)
-            _config = config;
+            if (_status)
+                _config = config;
+            else
+                exit(0);
+        }
         else
             exit(0);
     }
-    else
-        exit(0);
 }
 
 /*************/

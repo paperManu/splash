@@ -71,7 +71,6 @@ link_directories(${PYTHON_LIBRARY_DIRS})
 #
 add_library(splash-${API_VERSION} STATIC world.cpp)
 add_executable(splash splash-app.cpp)
-add_executable(splash-scene splash-scene.cpp)
 
 #
 # Splash library
@@ -209,18 +208,15 @@ target_link_libraries(splash-${API_VERSION} ${OPENCV_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PYTHON_LIBRARIES})
 
 #
-# splash and splash-scene executables
+# splash executable
 #
 target_link_libraries(splash splash-${API_VERSION})
-target_link_libraries(splash-scene splash-${API_VERSION})
 
 #
 # Installation
 #
 install(TARGETS splash DESTINATION "bin/")
-install(TARGETS splash-scene DESTINATION "bin/")
 
 if (APPLE)
     target_link_libraries(splash "-undefined dynamic_lookup")
-    target_link_libraries(splash-scene "-undefined dynamic_lookup")
 endif()

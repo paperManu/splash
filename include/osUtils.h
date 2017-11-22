@@ -370,6 +370,22 @@ inline int getFileDescriptorForOpenedFile(const std::string& filepath)
     return 0;
 }
 
+/**
+ * \brief Get the path of the currently executed file
+ * \return Return the path as a string
+ */
+inline std::string getCurrentExecutablePath()
+{
+    std::string currentExePath = "";
+#if HAVE_LINUX
+    auto pid = getpid();
+    auto procExe = "/proc/" + std::to_string(pid) + "/exe";
+    char* realPath = realpath(procExe.c_str(), nullptr);
+    currentExePath = std::string(realPath);
+#endif
+    return currentExePath;
+}
+
 #if HAVE_SHMDATA
 /**
  * \brief Shmdata logger dedicated to splash
