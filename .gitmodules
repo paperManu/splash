@@ -42,3 +42,6 @@
 [submodule "external/zmq"]
 	path = external/zmq
 	url = https://github.com/zeromq/libzmq.git
+[submodule "external/flamegraph"]
+	path = external/flamegraph
+	url = https://github.com/brendangregg/FlameGraph.git

@@ -101,6 +101,10 @@ if (DEBUG_OPENGL EQUAL 1)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
 endif()
 
+if (PROFILE_OPENGL EQUAL 1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROFILE")
+endif()
+
 if (DATAPATH_SDK_PATH)
     if (IS_DIRECTORY "${DATAPATH_SDK_PATH}/include" AND IS_DIRECTORY "${DATAPATH_SDK_PATH}/utils")
         set(HAVE_DATAPATH 1)
@@ -226,6 +230,7 @@ info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
 info_cfg_option(DEBUG_OPENGL)
+info_cfg_option(PROFILE_OPENGL)
 
 info_cfg_text("")
 message("${_config_msg}")

@@ -53,7 +53,7 @@ class ProfilerGL
              * \brief Constructor
              * \param scope Name given to the currently profiled scope
              */
-            Content(const std::string& scope)
+            explicit Content(const std::string& scope)
                 : _scope(scope)
             {
                 // We format the scope name for later use in post processing.
@@ -94,15 +94,15 @@ class ProfilerGL
 
         struct SectionData
         {
-            SectionData(const std::string& scope)
+            explicit SectionData(const std::string& scope)
                 : _content(scope)
             {
             }
             Content _content;
-            unsigned int _queries[2];
+            unsigned int _queries[2]{};
         };
 
-        Section(const std::string& scope)
+        explicit Section(const std::string& scope)
             : _data(scope)
         {
             // We generate the two timers for start and end of section
@@ -126,10 +126,6 @@ class ProfilerGL
             // Record the closing scope for later processing to avoid CPU/GPU syncing
             ProfilerGL::get().saveSectionData(_data);
         }
-
-        Content& getContent() { return _data._content; }
-
-        unsigned int* getQueries() { return _data._queries; }
 
       private:
         SectionData _data;
@@ -361,9 +357,6 @@ class ProfilerGL
         for (auto& timing : ProfilerGL::get().getTimings())
         {
 
-            // We just use simple indices for the thread because the real thread id does not give much information, the
-            // interpretation of the data will be done with the help of the naming of the profiled scopes.
-            std::string current_thread = "thread_" + std::to_string(thread_index++);
             std::vector<std::string> stages;
 
             // Now we parse the profiling data in reverse to start from the higher level scope.
@@ -380,11 +373,10 @@ class ProfilerGL
 
                 depth = current_depth;
 
-                stages.push_back(std::string(";") + content.getScope());
+                stages.push_back(content.getScope());
 
-                output_file << current_thread;
                 for (auto& stage : stages)
-                    output_file << stage;
+                    output_file << stage << ";";
 
                 output_file << " " << content.getDuration() - content.getChildrenDuration() << std::endl;
             }

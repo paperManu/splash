@@ -13,6 +13,7 @@
 #include "./mesh.h"
 #include "./object.h"
 #include "./osUtils.h"
+#include "./profilerGL.h"
 #include "./queue.h"
 #include "./texture.h"
 #include "./texture_image.h"
@@ -371,62 +372,88 @@ void Scene::render()
     bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
     bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
     auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
-    for (auto& objPriority : objectList)
     {
-        // If the objects needs some Textures, we need to sync
-        if (firstTextureSync && objPriority.first > Priority::BLENDING && objPriority.first < Priority::POST_CAMERA)
+#ifdef PROFILE
+        PROFILEGL("Render loop")
+#endif
+        for (auto& objPriority : objectList)
         {
-            // We wait for textures to be uploaded, and we prevent any upload while rendering
-            // cameras to prevent tearing
-            textureLock.lock();
-            if (glIsSync(_textureUploadFence) == GL_TRUE)
+#ifdef PROFILE
+            PROFILEGL("priority " + std::to_string(static_cast<int>(objPriority.first)));
+#endif
+            // If the objects needs some Textures, we need to sync
+            if (firstTextureSync && objPriority.first > Priority::BLENDING && objPriority.first < Priority::POST_CAMERA)
             {
-                glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
-                glDeleteSync(_textureUploadFence);
-            }
-            firstTextureSync = false;
-        }
-
-        if (objPriority.second.size() != 0)
-            Timer::get() << objPriority.second[0]->getType();
-
-        for (auto& obj : objPriority.second)
-        {
-            obj->update();
-
-            if (obj->getCategory() == BaseObject::Category::MESH)
-                if (obj->wasUpdated())
+#ifdef PROFILE
+                PROFILEGL("texture upload lock");
+#endif
+                // We wait for textures to be uploaded, and we prevent any upload while rendering
+                // cameras to prevent tearing
+                textureLock.lock();
+                if (glIsSync(_textureUploadFence) == GL_TRUE)
                 {
-                    // If a mesh has been updated, force blending update
-                    dynamic_pointer_cast<Blender>(_blender)->forceUpdate();
-                    obj->setNotUpdated();
+                    glWaitSync(_textureUploadFence, 0, GL_TIMEOUT_IGNORED);
+                    glDeleteSync(_textureUploadFence);
                 }
+                firstTextureSync = false;
+            }
 
-            if (obj->getCategory() == BaseObject::Category::IMAGE)
-                if (obj->wasUpdated())
-                    obj->setNotUpdated();
+            if (objPriority.second.size() != 0)
+                Timer::get() << objPriority.second[0]->getType();
 
-            obj->render();
-        }
+            for (auto& obj : objPriority.second)
+            {
+#ifdef PROFILE
+                PROFILEGL("object " + obj->getName());
+#endif
+                obj->update();
 
-        if (objPriority.second.size() != 0)
-            Timer::get() >> objPriority.second[0]->getType();
+                if (obj->getCategory() == BaseObject::Category::MESH)
+                    if (obj->wasUpdated())
+                    {
+                        // If a mesh has been updated, force blending update
+                        dynamic_pointer_cast<Blender>(_blender)->forceUpdate();
+                        obj->setNotUpdated();
+                    }
 
-        if (firstWindowSync && objPriority.first >= Priority::POST_CAMERA)
-        {
-            _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-            if (textureLock.owns_lock())
-                textureLock.unlock();
-            firstWindowSync = false;
+                if (obj->getCategory() == BaseObject::Category::IMAGE)
+                    if (obj->wasUpdated())
+                        obj->setNotUpdated();
+
+                obj->render();
+            }
+
+            if (objPriority.second.size() != 0)
+                Timer::get() >> objPriority.second[0]->getType();
+
+            if (firstWindowSync && objPriority.first >= Priority::POST_CAMERA)
+            {
+#ifdef PROFILE
+                PROFILEGL("texture upload unlock");
+#endif
+                _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+                if (textureLock.owns_lock())
+                    textureLock.unlock();
+                firstWindowSync = false;
+            }
         }
     }
 
-    // Swap all buffers at once
-    Timer::get() << "swap";
-    for (auto& obj : _objects)
-        if (obj.second->getType() == "window")
-            dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
-    Timer::get() >> "swap";
+    {
+#ifdef PROFILE
+        PROFILEGL("swap buffers");
+#endif
+        // Swap all buffers at once
+        Timer::get() << "swap";
+        for (auto& obj : _objects)
+            if (obj.second->getType() == "window")
+                dynamic_pointer_cast<Window>(obj.second)->swapBuffers();
+        Timer::get() >> "swap";
+    }
+
+#ifdef PROFILE
+    ProfilerGL::get().gatherTimings();
+#endif
 }
 
 /*************/
@@ -469,6 +496,11 @@ void Scene::run()
 
     signalBufferObjectUpdated();
     _textureUploadFuture.get();
+
+#ifdef PROFILE
+    ProfilerGL::get().processTimings();
+    ProfilerGL::get().processFlamegraph("/tmp/splash_profiling_data_" + _name);
+#endif
 }
 
 /*************/
@@ -493,8 +525,14 @@ void Scene::updateInputs()
 void Scene::textureUploadRun()
 {
     _textureUploadWindow->setAsCurrentContext();
+
     while (_isRunning)
     {
+#ifdef PROFILE
+        PROFILEGL("texture upload");
+
+        OnScopeExit { ProfilerGL::get().gatherTimings(); };
+#endif
         if (!_started)
         {
             this_thread::sleep_for(chrono::milliseconds(50));
@@ -532,13 +570,21 @@ void Scene::textureUploadRun()
         }
 
         for (auto& texture : textures)
+        {
+#ifdef PROFILE
+            PROFILEGL("start " + texture->getName());
+#endif
             texture->update();
+        }
 
         _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
         lockTexture.unlock();
 
         for (auto& texture : textures)
         {
+#ifdef PROFILE
+            PROFILEGL("end " + texture->getName());
+#endif
             auto texImage = dynamic_pointer_cast<Texture_Image>(texture);
             if (texImage)
                 texImage->flushPbo();
