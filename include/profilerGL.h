@@ -25,9 +25,13 @@
 #ifndef SPLASH_PROFILER_GL_H
 #define SPLASH_PROFILER_GL_H
 
+#include <algorithm>
+#include <fstream>
 #include <memory>
+#include <mutex>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 #include <glad/glad.h>
 
@@ -301,7 +305,7 @@ class ProfilerGL
     /**
      * \brief Process the recorded profiled sections to output in multiple formats (flamegraph, splash built-in UI)
      */
-    std::string processTimings()
+    void processTimings()
     {
         std::lock_guard<std::mutex> lock(_profiling_m);
 
@@ -310,7 +314,7 @@ class ProfilerGL
             // We first preprocess the cumulated time of the direct "children of each scope".
             // We need this value to compute the duration properly to format it for flamegraph.
             int depth = -1;
-            std::map<int, uint64_t> children_durations;
+            std::unordered_map<int, uint64_t> children_durations;
 
             for (auto& content : timing.second)
             {
@@ -335,6 +339,9 @@ class ProfilerGL
         }
     }
 
+    /**
+     * Clear the recorded timings
+     */
     void clearTimings()
     {
         std::lock_guard<std::mutex> lock(_profiling_m);
@@ -350,13 +357,12 @@ class ProfilerGL
         // We want to prevent multiple writings to the same file
         std::lock_guard<std::mutex> lock(_processing_m);
 
-        ofstream output_file;
+        std::ofstream output_file;
         output_file.open(path);
         int thread_index = 0;
 
         for (auto& timing : ProfilerGL::get().getTimings())
         {
-
             std::vector<std::string> stages;
 
             // Now we parse the profiling data in reverse to start from the higher level scope.
