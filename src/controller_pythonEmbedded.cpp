@@ -252,7 +252,7 @@ PyObject* PythonEmbedded::pythonSinkKeepRatio(pythonSinkObject* self, PyObject* 
         return Py_False;
     }
 
-    bool keepRatio = false;
+    int keepRatio = false;
     static char* kwlist[] = {(char*)"keep_ratio", nullptr};
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "p", kwlist, &keepRatio))
