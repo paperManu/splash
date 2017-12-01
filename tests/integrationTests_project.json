@@ -37,7 +37,6 @@
       "type" : "object"
    },
    "object_image_filter" : {
-      "16bits" : [ 0 ],
       "blackLevel" : [ 0 ],
       "blackLevelAuto" : [ 0, 0.019999999552965164 ],
       "brightness" : [ 1 ],

@@ -973,8 +973,7 @@ void Scene::registerAttributes()
 
                 for (auto& localObject : _objects)
                     unlink(objectIt->second, localObject.second);
-                if (objectIt != _objects.end())
-                    _objects.erase(objectIt);
+                _objects.erase(objectIt);
             });
 
             return true;

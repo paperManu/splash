@@ -157,6 +157,7 @@ class PythonEmbedded : public ControllerObject
 
     // Sink wrapper-specific stuff
   public:
+    static std::atomic_int sinkIndex;
     typedef struct
     {
         PyObject_HEAD std::string sourceName{""};
@@ -166,6 +167,8 @@ class PythonEmbedded : public ControllerObject
         std::string sinkName{""};
         std::string filterName{""};
         std::shared_ptr<Splash::Sink> sink{nullptr};
+        bool linked{false};
+        bool opened{false};
         PyObject* lastBuffer{nullptr};
     } pythonSinkObject;
 
@@ -173,6 +176,8 @@ class PythonEmbedded : public ControllerObject
     static void pythonSinkDealloc(pythonSinkObject* self);
     static PyObject* pythonSinkNew(PyTypeObject* type, PyObject* args, PyObject* kwds);
     static int pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkLink(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkUnlink(pythonSinkObject* self);
     static PyObject* pythonSinkGrab(pythonSinkObject* self);
     static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds);

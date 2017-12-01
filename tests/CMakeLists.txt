@@ -79,7 +79,7 @@ add_custom_target(check DEPENDS tests)
 add_custom_command(OUTPUT integration_tests
     COMMAND if [ ! -d ${CMAKE_CURRENT_SOURCE_DIR}/assets ]; then $(git clone https://gitlab.com/sat-metalab/splash-assets ${CMAKE_CURRENT_SOURCE_DIR}/assets); fi
     COMMAND ../src/splash ${CMAKE_CURRENT_SOURCE_DIR}/integrationTests.json
-    DEPENDS splash splash-scene
+    DEPENDS splash
     )
 add_custom_target(check_integration DEPENDS integration_tests)
 

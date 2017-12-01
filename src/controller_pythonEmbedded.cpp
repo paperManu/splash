@@ -16,6 +16,7 @@ namespace Splash
 atomic_int PythonEmbedded::_pythonInstances{0};
 PyThreadState* PythonEmbedded::_pythonGlobalThreadState{nullptr};
 PyObject* PythonEmbedded::SplashError{nullptr};
+atomic_int PythonEmbedded::sinkIndex{1};
 
 /***********************/
 // Sink Python wrapper //
@@ -59,13 +60,89 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
         return -1;
     }
 
-    char* source = nullptr;
     int width = 512;
     int height = 512;
-    static char* kwlist[] = {(char*)"source", (char*)"width", (char*)"height", nullptr};
+    static char* kwlist[] = {(char*)"width", (char*)"height", nullptr};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s|ii", kwlist, &source, &width, &height))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &width, &height))
         return -1;
+
+    self->width = width;
+    self->height = height;
+    self->framerate = 30;
+
+    auto index = that->sinkIndex.fetch_add(1);
+    self->sinkName = that->getName() + "_pythonsink_" + to_string(index);
+    that->setInScene("add", {"sink", self->sinkName, root->getName()});
+
+    // Wait until the sink is created
+    int maxTries = 200;
+    while (!self->sink && --maxTries)
+    {
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+        this_thread::sleep_for(chrono::milliseconds(5));
+    }
+
+    if (maxTries == 0)
+    {
+        PyErr_SetString(SplashError, "Error while creating the Splash Sink object");
+        return -1;
+    }
+
+    return 0;
+}
+
+/*************/
+PyDoc_STRVAR(pythonSinkLink_doc__,
+    "Link the sink to the given object\n"
+    "\n"
+    "splash.link_to(object_name)\n"
+    "\n"
+    "Returns:\n"
+    "  True if the connection was successful\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSinkLink(pythonSinkObject* self, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    auto root = that->_root;
+    if (!root)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    if (!self->sink)
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+
+    if (!self->sink)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    if (self->linked)
+    {
+        PyErr_SetString(SplashError, "The sink is already linked to an object");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    char* source = nullptr;
+    static char* kwlist[] = {(char*)"source", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &source))
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
 
     if (source)
     {
@@ -74,33 +151,95 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
     else
     {
         PyErr_SetString(SplashError, "No source object specified");
-        return -1;
+        Py_INCREF(Py_False);
+        return Py_False;
     }
-
-    self->width = width;
-    self->height = height;
-    self->framerate = 30;
 
     auto objects = that->getObjectNames();
     auto objectIt = std::find(objects.begin(), objects.end(), self->sourceName);
     if (objectIt == objects.end())
     {
         PyErr_SetString(SplashError, "The specified source object does not exist");
-        return -1;
+        Py_INCREF(Py_False);
+        return Py_False;
     }
 
-    self->sinkName = that->getName() + "_sink_" + self->sourceName;
-    self->filterName = that->getName() + "_filter_" + self->sourceName;
+    self->filterName = self->sinkName + "_filter_" + self->sourceName;
 
-    // Objects are added locally, we don't need (nor want) them in any other Scene
-    that->setInScene("add", {"sink", self->sinkName, root->getName()});
+    // Fitler is added locally, we don't need (nor want) it in any other Scene
     that->setInScene("add", {"filter", self->filterName, root->getName()});
     that->setInScene("link", {self->sourceName, self->filterName});
     that->setInScene("link", {self->filterName, self->sinkName});
     that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
     that->setObjectAttribute(self->filterName, "sizeOverride", {self->width, self->height});
 
-    return 0;
+    self->linked = true;
+
+    Py_INCREF(Py_True);
+    return Py_True;
+}
+
+/*************/
+PyDoc_STRVAR(pythonSinkUnlink_doc__,
+    "Unlink the sink from the connected object, if any\n"
+    "\n"
+    "splash.unlink()\n"
+    "\n"
+    "Returns:\n"
+    "  True if the sink was connected\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSinkUnlink(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    auto root = that->_root;
+    if (!root)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    if (!self->sink)
+        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
+
+    if (!self->sink)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    if (!self->linked)
+    {
+        PyErr_SetString(SplashError, "The sink is not linked to any object");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    that->setInScene("unlink", {self->sourceName, self->filterName});
+    that->setInScene("unlink", {self->filterName, self->sinkName});
+    that->setInScene("deleteObject", {self->filterName});
+
+    // Wait for the filter to be truly deleted. We do not try to get a shared_ptr
+    // of the object, because we want it to be deleted. So we get the object list
+    auto objectList = that->getObjectNames();
+    while (std::find(objectList.begin(), objectList.end(), self->filterName) != objectList.end())
+    {
+        this_thread::sleep_for(chrono::milliseconds(5));
+        objectList = that->getObjectNames();
+    }
+
+    self->linked = false;
+
+    Py_INCREF(Py_True);
+    return Py_True;
 }
 
 /*************/
@@ -126,10 +265,19 @@ PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
         return Py_BuildValue("");
 
     if (!self->sink)
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
-
-    if (!self->sink)
         return Py_BuildValue("");
+
+    if (!self->opened)
+        return Py_BuildValue("");
+
+    // The Sink wrapper can be opened although its Splash counterpart has not
+    // received the order yet. We wait for that
+    Values opened({false});
+    while (!opened[0].as<bool>())
+    {
+        self->sink->getAttribute("opened", opened);
+        this_thread::sleep_for(chrono::milliseconds(5));
+    }
 
     auto frame = self->sink->getBuffer();
     PyObject* buffer = PyByteArray_FromStringAndSize(reinterpret_cast<char*>(frame.data()), frame.size());
@@ -288,7 +436,15 @@ PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
         return Py_False;
     }
 
+    if (!self->linked)
+    {
+        PyErr_SetString(SplashError, "The sink is not linked to any object");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
     that->setObjectAttribute(self->sinkName, "opened", {1});
+    self->opened = true;
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -315,7 +471,15 @@ PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
         return Py_False;
     }
 
+    if (!self->opened)
+    {
+        PyErr_SetString(SplashError, "The sink is not opened");
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
     that->setObjectAttribute(self->sinkName, "opened", {0});
+    self->opened = false;
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -347,9 +511,6 @@ PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
         return Py_BuildValue("s", "");
 
     if (!self->sink)
-        self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
-
-    if (!self->sink)
         return Py_BuildValue("s", "");
 
     auto caps = self->sink->getCaps();
@@ -366,6 +527,8 @@ PyMethodDef PythonEmbedded::SinkMethods[] = {
     {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, pythonSinkOpen_doc__},
     {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, pythonSinkClose_doc__},
     {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, pythonSinkGetCaps_doc__},
+    {(const char*)"link_to", (PyCFunction)PythonEmbedded::pythonSinkLink, METH_VARARGS, pythonSinkLink_doc__},
+    {(const char*)"unlink", (PyCFunction)PythonEmbedded::pythonSinkUnlink, METH_VARARGS, pythonSinkUnlink_doc__},
     {nullptr}
 };
 
