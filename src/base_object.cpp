@@ -304,6 +304,14 @@ void BaseObject::registerAttributes()
         },
         {'s'});
 
+    addAttribute("setSavable",
+        [&](const Values& args) {
+            auto savable = args[0].as<bool>();
+            setSavable(savable);
+            return true;
+        },
+        {'n'});
+
     addAttribute("priorityShift",
         [&](const Values& args) {
             _priorityShift = args[0].as<int>();

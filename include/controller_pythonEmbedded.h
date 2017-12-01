@@ -78,6 +78,7 @@ class PythonEmbedded : public ControllerObject
   private:
     std::string _filepath{""};   //!< Path to the python script
     std::string _scriptName{""}; //!< Name of the module (filename minus .py)
+    Values _pythonArgs{};        //!< Command line arguments to send to the scripts
 
     bool _doLoop{false};                     //!< Set to false to stop the Python loop
     int _updateRate{200};                    //!< Loops per second

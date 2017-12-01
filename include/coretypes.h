@@ -28,7 +28,6 @@
 #define SPLASH_GL_DEBUG true
 
 #define SPLASH_ALL_PEERS "__ALL__"
-#define SPLASH_MASTER_SCENE "__MASTER__"
 #define SPLASH_DEFAULTS_FILE_ENV "SPLASH_DEFAULTS"
 
 #define SPLASH_FILE_CONFIGURATION "splashConfiguration"

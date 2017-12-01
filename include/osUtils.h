@@ -248,6 +248,17 @@ inline std::string getPathFromFilePath(const std::string& filepath, const std::s
 }
 
 /**
+ * Get the current working directory
+ * \return Return the working directory
+ */
+inline std::string getCurrentWorkingDirectory()
+{
+    char workingPathChar[256];
+    auto workingPath = std::string(getcwd(workingPathChar, 255));
+    return workingPath;
+}
+
+/**
  * \brief Get the directory path from an executable file path
  * \param filepath Executable path
  * \return Return the executable directory
@@ -269,8 +280,7 @@ inline std::string getPathFromExecutablePath(const std::string& filepath)
     }
     else if (isRelative)
     {
-        char workingPathChar[256];
-        auto workingPath = std::string(getcwd(workingPathChar, 255));
+        auto workingPath = getCurrentWorkingDirectory();
         if (path.find("/") == 1)
             fullPath = workingPath + path.substr(1, slashPos) + "/";
         else if (path.find("/") == 2)

@@ -689,22 +689,22 @@ PyDoc_STRVAR(pythonGetObjectType_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectType(PyObject* self, PyObject* args, PyObject* kwds)
 {
-  auto that = getSplashInstance();
-  if (!that || !that->_doLoop)
-  {
-    PyErr_SetString(SplashError, "Error accessing Splash instance");
-    return PyList_New(0);
-  }
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
 
-  char* strName;
-  static const char* kwlist[] = {"objectname", nullptr};
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
-  {
-    PyErr_SetString(SplashError, "Wrong argument type or number");
-    return PyList_New(0);
-  }
+    char* strName;
+    static const char* kwlist[] = {"objectname", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        return PyList_New(0);
+    }
 
-  return convertFromValue(that->getObject(string(strName))->getType());
+    return convertFromValue(that->getObject(string(strName))->getType());
 }
 
 /*************/
@@ -725,32 +725,32 @@ PyDoc_STRVAR(pythonGetObjectsOfType_doc__,
 
 PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
 {
-  auto that = getSplashInstance();
-  if (!that || !that->_doLoop)
-  {
-    PyErr_SetString(SplashError, "Error accessing Splash instance");
-    return PyList_New(0);
-  }
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
 
-  char* strType;
-  static const char* kwlist[] = {"objecttype", nullptr};
-  if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
-  {
-    PyErr_SetString(SplashError, "Wrong argument type or number");
-    return PyList_New(0);
-  }
+    char* strType;
+    static const char* kwlist[] = {"objecttype", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
+    {
+        PyErr_SetString(SplashError, "Wrong argument type or number");
+        return PyList_New(0);
+    }
 
-  auto objects = that->getObjectsOfType(strType);
-  PyObject* pythonObjectList = PyList_New(objects.size());
+    auto objects = that->getObjectsOfType(strType);
+    PyObject* pythonObjectList = PyList_New(objects.size());
 
-  int i = 0;
-  for (auto& obj : objects)
-  {
-    PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", obj->getName().c_str()));
-    ++i;
-  }
+    int i = 0;
+    for (auto& obj : objects)
+    {
+        PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", obj->getName().c_str()));
+        ++i;
+    }
 
-  return pythonObjectList;
+    return pythonObjectList;
 }
 
 /*************/
@@ -1523,6 +1523,11 @@ void PythonEmbedded::loop()
     // Load the module by its filename
     PyRun_SimpleString(("sys.path.append(\"" + _filepath + "\")").c_str());
 
+    // Set the script arguments
+    PyRun_SimpleString(("sys.argv = []"));
+    for (auto& arg : _pythonArgs)
+        PyRun_SimpleString(("sys.argv.append(\"" + arg.as<string>() + "\")").c_str());
+
     string moduleName = _scriptName.substr(0, _scriptName.rfind("."));
     pName = PyUnicode_FromString(moduleName.c_str());
 
@@ -1688,6 +1693,11 @@ Value PythonEmbedded::convertToValue(PyObject* pyObject)
 void PythonEmbedded::registerAttributes()
 {
     ControllerObject::registerAttributes();
+
+    addAttribute("args", [&](const Values& args) {
+        _pythonArgs = args;
+        return true;
+    });
 
     addAttribute("file", [&](const Values& args) { return setScriptFile(args[0].as<string>()); }, [&]() -> Values { return {_filepath + _scriptName}; }, {'s'});
     setAttributeDescription("file", "Set the path to the source Python file");

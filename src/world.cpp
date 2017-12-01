@@ -1119,7 +1119,7 @@ void World::parseArguments(int argc, char** argv)
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "cdD:S:hHilo:p:st", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:st", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -1129,7 +1129,7 @@ void World::parseArguments(int argc, char** argv)
         default:
         case 'h':
         {
-            cout << "Basic usage: splash [config.json]" << endl;
+            cout << "Basic usage: splash [arguments] [config.json] -- [python script argument]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
@@ -1141,6 +1141,8 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
             cout << "\t-H (--hide) : run Splash in background" << endl;
+            cout << "\t-P (--python) : add the given Python script to the loaded configuration" << endl;
+            cout << "                  any argument after -- will be sent to the script" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
             cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
@@ -1198,6 +1200,41 @@ void World::parseArguments(int argc, char** argv)
             _runInBackground = true;
             break;
         }
+        case 'P':
+        {
+            auto pythonScriptPath = Utils::getFullPathFromFilePath(string(optarg), Utils::getCurrentWorkingDirectory());
+
+            // Build the Python arg list
+            auto pythonArgs = Values({pythonScriptPath});
+            bool isPythonArg = false;
+            for (int i = 0; i < argc; ++i)
+            {
+                if (!isPythonArg && "--" == string(argv[i]))
+                {
+                    isPythonArg = true;
+                    continue;
+                }
+                else if (!isPythonArg)
+                {
+                    continue;
+                }
+                else
+                {
+                    pythonArgs.push_back(string(argv[i]));
+                }
+            }
+
+            // The Python script will be added once the loop runs
+            addTask([=]() {
+                Log::get() << Log::MESSAGE << "World::parseArguments - Adding Python script from command line argument: " << pythonScriptPath << Log::endl;
+                auto pythonObjectName = "_pythonArgScript";
+                sendMessage(SPLASH_ALL_PEERS, "add", {"python", pythonObjectName, _masterSceneName});
+                sendMessage(pythonObjectName, "setSavable", {false});
+                sendMessage(pythonObjectName, "args", {pythonArgs});
+                sendMessage(pythonObjectName, "file", {pythonScriptPath});
+            });
+            break;
+        }
         case 'i':
         {
             auto descriptions = getObjectsAttributesDescriptions();
@@ -1242,7 +1279,7 @@ void World::parseArguments(int argc, char** argv)
 
     string lastArg = "";
     if (optind < argc)
-        lastArg = string(argv[argc - 1]);
+        lastArg = string(argv[optind]);
 
     if (defaultFile)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
