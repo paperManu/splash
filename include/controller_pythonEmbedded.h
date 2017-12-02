@@ -160,9 +160,11 @@ class PythonEmbedded : public ControllerObject
     static std::atomic_int sinkIndex;
     typedef struct
     {
+        bool initialized{false};
         PyObject_HEAD std::string sourceName{""};
         uint32_t width{512};
         uint32_t height{512};
+        bool keepRatio{false};
         uint32_t framerate{30};
         std::string sinkName{""};
         std::string filterName{""};

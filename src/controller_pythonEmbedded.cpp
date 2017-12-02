@@ -7,6 +7,8 @@
 #include "./log.h"
 #include "./osUtils.h"
 
+#define SPLASH_PYTHON_MAX_TRIES 200
+
 using namespace std;
 
 namespace Splash
@@ -23,14 +25,23 @@ atomic_int PythonEmbedded::sinkIndex{1};
 /***********************/
 void PythonEmbedded::pythonSinkDealloc(pythonSinkObject* self)
 {
-    auto that = getSplashInstance();
-    if (that)
+    if (self->initialized)
     {
-        that->setInScene("deleteObject", {self->sinkName});
-        that->setInScene("deleteObject", {self->filterName});
-    }
+        auto that = getSplashInstance();
+        if (that)
+        {
+            that->setInScene("deleteObject", {self->sinkName});
+            that->setInScene("deleteObject", {self->filterName});
+        }
 
-    Py_XDECREF(self->lastBuffer);
+        if (self->linked)
+        {
+            auto result = pythonSinkUnlink(self);
+            Py_XDECREF(result);
+        }
+
+        Py_XDECREF(self->lastBuffer);
+    }
 
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -60,11 +71,12 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
         return -1;
     }
 
+    char* source = nullptr;
     int width = 512;
     int height = 512;
-    static char* kwlist[] = {(char*)"width", (char*)"height", nullptr};
+    static char* kwlist[] = {(char*)"source", (char*)"width", (char*)"height", nullptr};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|ii", kwlist, &width, &height))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|sii", kwlist, &source, &width, &height))
         return -1;
 
     self->width = width;
@@ -76,18 +88,30 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
     that->setInScene("add", {"sink", self->sinkName, root->getName()});
 
     // Wait until the sink is created
-    int maxTries = 200;
-    while (!self->sink && --maxTries)
+    int triesLeft = SPLASH_PYTHON_MAX_TRIES;
+    while (!self->sink && --triesLeft)
     {
         self->sink = dynamic_pointer_cast<Sink>(root->getObject(self->sinkName));
         this_thread::sleep_for(chrono::milliseconds(5));
     }
 
-    if (maxTries == 0)
+    if (triesLeft == 0)
     {
         PyErr_SetString(SplashError, "Error while creating the Splash Sink object");
         return -1;
     }
+
+    if (source)
+    {
+        auto newArgs = Py_BuildValue("(s)", source);
+        auto newKwds = PyDict_New();
+        auto result = pythonSinkLink(self, newArgs, newKwds);
+        Py_XDECREF(result);
+        Py_XDECREF(newArgs);
+        Py_XDECREF(newKwds);
+    }
+
+    self->initialized = true;
 
     return 0;
 }
@@ -131,7 +155,7 @@ PyObject* PythonEmbedded::pythonSinkLink(pythonSinkObject* self, PyObject* args,
 
     if (self->linked)
     {
-        PyErr_SetString(SplashError, "The sink is already linked to an object");
+        PyErr_Warn(PyExc_Warning, "The sink is already linked to an object");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -150,7 +174,7 @@ PyObject* PythonEmbedded::pythonSinkLink(pythonSinkObject* self, PyObject* args,
     }
     else
     {
-        PyErr_SetString(SplashError, "No source object specified");
+        PyErr_Warn(PyExc_Warning, "No source object specified");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -159,14 +183,14 @@ PyObject* PythonEmbedded::pythonSinkLink(pythonSinkObject* self, PyObject* args,
     auto objectIt = std::find(objects.begin(), objects.end(), self->sourceName);
     if (objectIt == objects.end())
     {
-        PyErr_SetString(SplashError, "The specified source object does not exist");
+        PyErr_Warn(PyExc_Warning, "The specified source object does not exist");
         Py_INCREF(Py_False);
         return Py_False;
     }
 
     self->filterName = self->sinkName + "_filter_" + self->sourceName;
 
-    // Fitler is added locally, we don't need (nor want) it in any other Scene
+    // Filter is added locally, we don't need (nor want) it in any other Scene
     that->setInScene("add", {"filter", self->filterName, root->getName()});
     that->setInScene("link", {self->sourceName, self->filterName});
     that->setInScene("link", {self->filterName, self->sinkName});
@@ -218,9 +242,17 @@ PyObject* PythonEmbedded::pythonSinkUnlink(pythonSinkObject* self)
 
     if (!self->linked)
     {
-        PyErr_SetString(SplashError, "The sink is not linked to any object");
+        PyErr_Warn(PyExc_Warning, "The sink is not linked to any object");
         Py_INCREF(Py_False);
         return Py_False;
+    }
+
+    if (self->opened)
+    {
+        auto result = pythonSinkClose(self);
+        if (result == Py_False)
+            return result;
+        Py_XDECREF(result);
     }
 
     that->setInScene("unlink", {self->sourceName, self->filterName});
@@ -279,8 +311,34 @@ PyObject* PythonEmbedded::pythonSinkGrab(pythonSinkObject* self)
         this_thread::sleep_for(chrono::milliseconds(5));
     }
 
-    auto frame = self->sink->getBuffer();
-    PyObject* buffer = PyByteArray_FromStringAndSize(reinterpret_cast<char*>(frame.data()), frame.size());
+    // Due to the asynchronicity of passing messages to Splash, the frame may still
+    // be at a wrong resolution if set_size was called. We test for this case.
+    PyObject* buffer = nullptr;
+    int triesLeft = SPLASH_PYTHON_MAX_TRIES;
+    while (triesLeft)
+    {
+        auto frame = self->sink->getBuffer();
+        if (frame.size() != self->width * self->height * 4 /* RGBA*/)
+        {
+            --triesLeft;
+            this_thread::sleep_for(chrono::milliseconds(5));
+            // Keeping the ratio may also have had some effects
+            if (self->keepRatio)
+            {
+                auto realSize = that->getObjectAttribute(self->filterName, "sizeOverride");
+                self->width = realSize[0].as<int>();
+                self->height = realSize[1].as<int>();
+            }
+        }
+        else
+        {
+            buffer = PyByteArray_FromStringAndSize(reinterpret_cast<char*>(frame.data()), frame.size());
+            break;
+        }
+    }
+
+    if (!buffer)
+        return Py_BuildValue("");
 
     PyObject* tmp = nullptr;
     if (self->lastBuffer != nullptr)
@@ -409,6 +467,7 @@ PyObject* PythonEmbedded::pythonSinkKeepRatio(pythonSinkObject* self, PyObject* 
         return Py_False;
     }
 
+    self->keepRatio = keepRatio;
     that->setObjectAttribute(self->filterName, "keepRatio", {static_cast<int>(keepRatio)});
 
     Py_INCREF(Py_True);
@@ -438,7 +497,7 @@ PyObject* PythonEmbedded::pythonSinkOpen(pythonSinkObject* self)
 
     if (!self->linked)
     {
-        PyErr_SetString(SplashError, "The sink is not linked to any object");
+        PyErr_Warn(PyExc_Warning, "The sink is not linked to any object");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -473,13 +532,20 @@ PyObject* PythonEmbedded::pythonSinkClose(pythonSinkObject* self)
 
     if (!self->opened)
     {
-        PyErr_SetString(SplashError, "The sink is not opened");
+        PyErr_Warn(PyExc_Warning, "The sink is not opened");
         Py_INCREF(Py_False);
         return Py_False;
     }
 
     that->setObjectAttribute(self->sinkName, "opened", {0});
     self->opened = false;
+
+    PyObject* tmp = nullptr;
+    if (self->lastBuffer != nullptr)
+        tmp = self->lastBuffer;
+    self->lastBuffer = nullptr;
+    if (tmp != nullptr)
+        Py_XDECREF(tmp);
 
     Py_INCREF(Py_True);
     return Py_True;
@@ -520,15 +586,15 @@ PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SinkMethods[] = {
-    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_VARARGS, pythonSinkGrab_doc__},
-    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS, pythonSinkSetSize_doc__},
-    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS, pythonSinkSetFramerate_doc__},
-    {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS, pythonSinkSetKeepRatio_doc__},
-    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_VARARGS, pythonSinkOpen_doc__},
-    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_VARARGS, pythonSinkClose_doc__},
-    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS, pythonSinkGetCaps_doc__},
-    {(const char*)"link_to", (PyCFunction)PythonEmbedded::pythonSinkLink, METH_VARARGS, pythonSinkLink_doc__},
-    {(const char*)"unlink", (PyCFunction)PythonEmbedded::pythonSinkUnlink, METH_VARARGS, pythonSinkUnlink_doc__},
+    {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_NOARGS, pythonSinkGrab_doc__},
+    {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS | METH_KEYWORDS, pythonSinkSetSize_doc__},
+    {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS | METH_KEYWORDS, pythonSinkSetFramerate_doc__},
+    {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS | METH_KEYWORDS, pythonSinkSetKeepRatio_doc__},
+    {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_NOARGS, pythonSinkOpen_doc__},
+    {(const char*)"close", (PyCFunction)PythonEmbedded::pythonSinkClose, METH_NOARGS, pythonSinkClose_doc__},
+    {(const char*)"get_caps", (PyCFunction)PythonEmbedded::pythonSinkGetCaps, METH_VARARGS | METH_KEYWORDS, pythonSinkGetCaps_doc__},
+    {(const char*)"link_to", (PyCFunction)PythonEmbedded::pythonSinkLink, METH_VARARGS | METH_KEYWORDS, pythonSinkLink_doc__},
+    {(const char*)"unlink", (PyCFunction)PythonEmbedded::pythonSinkUnlink, METH_NOARGS, pythonSinkUnlink_doc__},
     {nullptr}
 };
 
@@ -779,7 +845,7 @@ PyObject* PythonEmbedded::pythonGetObjectDescription(PyObject* self, PyObject* a
     static const char* kwlist[] = {"objecttype", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return Py_BuildValue("ss", "", "");
     }
 
@@ -819,14 +885,14 @@ PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, Py
     static const char* kwlist[] = {"objectname", "attribute", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", const_cast<char**>(kwlist), &strName, &strAttr))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return Py_BuildValue("s", "");
     }
 
     auto result = that->getObjectAttributeDescription(string(strName), string(strAttr));
     if (result.size() == 0)
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return Py_BuildValue("s", "");
     }
 
@@ -863,7 +929,7 @@ PyObject* PythonEmbedded::pythonGetObjectType(PyObject* self, PyObject* args, Py
     static const char* kwlist[] = {"objectname", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyList_New(0);
     }
 
@@ -899,7 +965,7 @@ PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* self, PyObject* args,
     static const char* kwlist[] = {"objecttype", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strType))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyList_New(0);
     }
 
@@ -947,7 +1013,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
     static const char* kwlist[] = {"objectname", "attribute", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", const_cast<char**>(kwlist), &strName, &strAttr))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyList_New(0);
     }
 
@@ -986,7 +1052,7 @@ PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* ar
     static const char* kwlist[] = {"objectname", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyDict_New();
     }
 
@@ -1103,7 +1169,7 @@ PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* self, PyObject* a
     static const char* kwlist[] = {"category", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strCategory))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyList_New(0);
     }
 
@@ -1158,7 +1224,7 @@ PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObje
     static const char* kwlist[] = {"attribute", "value", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO", const_cast<char**>(kwlist), &attrName, &pyValue))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -1204,7 +1270,7 @@ PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObje
     static const char* kwlist[] = {"objectname", "attribute", "value", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &strName, &strAttr, &pyValue))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -1250,7 +1316,7 @@ PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args,
     static const char* kwlist[] = {"objecttype", "attribute", "value", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &strType, &strAttr, &pyValue))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -1292,7 +1358,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
     static const char* kwlist[] = {"variable", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strAttr))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -1304,7 +1370,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
     auto object = PyDict_GetItemString(moduleDict, attributeName.c_str());
     if (!object)
     {
-        PyErr_SetString(SplashError, (string("Could not find object named ") + attributeName + " in the global scope").c_str());
+        PyErr_Warn(PyExc_Warning, (string("Could not find object named ") + attributeName + " in the global scope").c_str());
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -1334,7 +1400,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
                 object = convertFromValue(args);
             if (PyDict_SetItemString(moduleDict, attributeName.c_str(), object) == -1)
             {
-                PyErr_SetString(SplashError, (string("Could not set object named ") + attributeName).c_str());
+                PyErr_Warn(PyExc_Warning, (string("Could not set object named ") + attributeName).c_str());
                 Py_DECREF(object);
                 return false;
             }
@@ -1364,7 +1430,7 @@ PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* arg
             auto value = convertToValue(object);
             if (!object)
             {
-                PyErr_SetString(SplashError, (string("Could not find object named ") + attributeName).c_str());
+                PyErr_Warn(PyExc_Warning, (string("Could not find object named ") + attributeName).c_str());
                 return {};
             }
 
@@ -1422,20 +1488,20 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* self, PyObje
     static const char* kwlist[] = {"object", "attribute", "callable", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "ssO", const_cast<char**>(kwlist), &objectName, &attributeName, &callable))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return Py_BuildValue("I", 0);
     }
 
     if (!PyCallable_Check(callable))
     {
-        PyErr_SetString(SplashError, "The object provided is not callable");
+        PyErr_Warn(PyExc_Warning, "The object provided is not callable");
         return Py_BuildValue("I", 0);
     }
 
     auto splashObject = that->getObject(objectName);
     if (!splashObject)
     {
-        PyErr_SetString(SplashError, "There is no Splash object with the given name");
+        PyErr_Warn(PyExc_Warning, "There is no Splash object with the given name");
         return Py_BuildValue("I", 0);
     }
 
@@ -1497,7 +1563,7 @@ PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* self, PyOb
     static const char* kwlist[] = {"callback_id", nullptr};
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", const_cast<char**>(kwlist), &callbackId))
     {
-        PyErr_SetString(SplashError, "Wrong argument type or number");
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         Py_INCREF(Py_False);
         return Py_False;
     }
@@ -1582,7 +1648,7 @@ PyObject* PythonEmbedded::pythonInitSplash()
     Py_INCREF(&PythonEmbedded::pythonSinkType);
     PyModule_AddObject(module, "Sink", (PyObject*)&PythonEmbedded::pythonSinkType);
 
-    SplashError = PyErr_NewException((const char*)"splash.error", nullptr, nullptr);
+    SplashError = PyErr_NewException((const char*)"splash.error", PyExc_Exception, nullptr);
     if (SplashError)
     {
         Py_INCREF(SplashError);
