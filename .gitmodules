@@ -36,7 +36,6 @@
 [submodule "external/snappy"]
 	path = external/snappy
 	url = https://github.com/google/snappy.git
-    branch = 1.1.6
 [submodule "external/zmq"]
 	path = external/zmq
 	url = https://github.com/zeromq/libzmq.git
