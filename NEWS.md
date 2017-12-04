@@ -1,6 +1,26 @@
 Splash release notes
 ===================
 
+Splash 0.7.10 (2017-12-04)
+-------------------------
+New features:
+- Added -P option to set python script from args                                                                        
+- OpenGL performance profiler.                                                                                          
+- Ease-of-use for performance profiler flamegraph generation.
+- Added conditional profiling of render loop and texture upload
+
+Improvements:
+- Updated FFmpeg and Snappy                                  
+- Some other Python Sink fixes to make it more reliable                                        
+- Removed the splash-scene executable, replaced by an option on splash                                                  
+- Added a gui checkbox to activate / deactivate 16bits rendering for all cameras                                        
+
+Bugs fixed:
+- Fixes following static analysis                                                                                       
+- Hardened Python Sink wrapper                                                                                          
+- Bool to int cast caused a crash in python binding. (Hint: don't do it)                                                
+- Fixed issues related to GCC 7.2 and Ubuntu 17.10                                                                      
+
 Splash 0.7.8 (2017-10-20)
 -------------------------
 New features:
