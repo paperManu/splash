@@ -52,7 +52,7 @@ class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
     {
     }
 
-    CallbackHandle(std::weak_ptr<BaseObject> owner, const std::string& attr)
+    CallbackHandle(const std::weak_ptr<BaseObject>& owner, const std::string& attr)
         : _owner(owner)
         , _attribute(attr)
         , _isValid(true)

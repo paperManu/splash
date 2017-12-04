@@ -392,6 +392,7 @@ inline std::string getCurrentExecutablePath()
     auto procExe = "/proc/" + std::to_string(pid) + "/exe";
     char* realPath = realpath(procExe.c_str(), nullptr);
     currentExePath = std::string(realPath);
+    free(realPath);
 #endif
     return currentExePath;
 }
