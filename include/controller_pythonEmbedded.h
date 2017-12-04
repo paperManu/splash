@@ -78,6 +78,7 @@ class PythonEmbedded : public ControllerObject
   private:
     std::string _filepath{""};   //!< Path to the python script
     std::string _scriptName{""}; //!< Name of the module (filename minus .py)
+    Values _pythonArgs{};        //!< Command line arguments to send to the scripts
 
     bool _doLoop{false};                     //!< Set to false to stop the Python loop
     int _updateRate{200};                    //!< Loops per second
@@ -156,15 +157,20 @@ class PythonEmbedded : public ControllerObject
 
     // Sink wrapper-specific stuff
   public:
+    static std::atomic_int sinkIndex;
     typedef struct
     {
+        bool initialized{false};
         PyObject_HEAD std::string sourceName{""};
         uint32_t width{512};
         uint32_t height{512};
+        bool keepRatio{false};
         uint32_t framerate{30};
         std::string sinkName{""};
         std::string filterName{""};
         std::shared_ptr<Splash::Sink> sink{nullptr};
+        bool linked{false};
+        bool opened{false};
         PyObject* lastBuffer{nullptr};
     } pythonSinkObject;
 
@@ -172,6 +178,8 @@ class PythonEmbedded : public ControllerObject
     static void pythonSinkDealloc(pythonSinkObject* self);
     static PyObject* pythonSinkNew(PyTypeObject* type, PyObject* args, PyObject* kwds);
     static int pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkLink(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkUnlink(pythonSinkObject* self);
     static PyObject* pythonSinkGrab(pythonSinkObject* self);
     static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds);

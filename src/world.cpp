@@ -51,6 +51,18 @@ World::~World()
 /*************/
 void World::run()
 {
+    // If set to run as a child process, only create a scene which will wait for instructions
+    // from the master process
+    if (_runAsChild)
+    {
+        Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Creating child Scene with name " << _childSceneName << Log::endl;
+
+        Scene scene(_childSceneName, _linkSocketPrefix);
+        scene.run();
+
+        return;
+    }
+
     applyConfig();
 
     while (true)
@@ -231,19 +243,29 @@ void World::applyConfig()
                     spawn = jsScenes[i]["spawn"].asInt();
 
                 string display{""};
+                string worldDisplay{"none"};
 #if HAVE_LINUX
                 auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
                 auto regDisplayInt = regex("[0-9]", regex_constants::extended);
                 smatch match;
 
-                display = "DISPLAY=:0.0";
+                if (getenv("DISPLAY"))
+                {
+                    worldDisplay = getenv("DISPLAY");
+                    if (worldDisplay.size() == 2) // Yes, we consider a maximum of 10 display servers. Because, really?
+                        worldDisplay += ".0";
+                    if (_reloadingConfig)
+                        worldDisplay = "none";
+                }
+
+                display = "DISPLAY=" + worldDisplay;
                 if (jsScenes[i].isMember("display"))
                 {
                     auto displayParameter = jsScenes[i]["display"].asString();
                     if (regex_match(displayParameter, match, regDisplayFull))
                         display = "DISPLAY=" + displayParameter;
                     else if (regex_match(displayParameter, match, regDisplayInt))
-                        display = "DISPLAY=:0." + displayParameter;
+                        display = "DISPLAY=:" + _displayServer + "." + displayParameter;
                 }
 
                 if (!_forcedDisplay.empty())
@@ -251,7 +273,7 @@ void World::applyConfig()
                     if (regex_match(_forcedDisplay, match, regDisplayFull))
                         display = "DISPLAY=" + _forcedDisplay;
                     else if (regex_match(_forcedDisplay, match, regDisplayInt))
-                        display = "DISPLAY=:0." + _forcedDisplay;
+                        display = "DISPLAY=:" + _displayServer + "." + _forcedDisplay;
                 }
 #endif
 
@@ -260,17 +282,6 @@ void World::applyConfig()
                 if (spawn > 0)
                 {
                     _sceneLaunched = false;
-                    string worldDisplay = "none";
-#if HAVE_LINUX
-                    if (getenv("DISPLAY"))
-                    {
-                        worldDisplay = getenv("DISPLAY");
-                        if (worldDisplay.size() == 2)
-                            worldDisplay += ".0";
-                        if (_reloadingConfig)
-                            worldDisplay = "none";
-                    }
-#endif
 
                     // If the current process is on the correct display, we use an inner Scene
                     if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
@@ -284,16 +295,13 @@ void World::applyConfig()
                         // Spawn a new process containing this Scene
                         Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
 
-                        string cmd;
-                        if (_executionPath == "")
-                            cmd = string(SPLASHPREFIX) + "/bin/splash-scene";
-                        else
-                            cmd = _executionPath + "splash-scene";
+                        string cmd = _currentExePath;
                         string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
                         string timer = Timer::get().isDebug() ? "-t" : "";
+                        string slave = "--child";
                         string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
-                        vector<char*> argv = {(char*)cmd.c_str(), (char*)debug.c_str(), (char*)timer.c_str()};
+                        vector<char*> argv = {(char*)cmd.c_str(), (char*)slave.c_str(), (char*)debug.c_str(), (char*)timer.c_str()};
                         if (!_linkSocketPrefix.empty())
                         {
                             argv.push_back((char*)"--prefix");
@@ -766,20 +774,24 @@ void World::handleSerializedObject(const string& name, shared_ptr<SerializedObje
 /*************/
 void World::init()
 {
-    _type = "world";
-    _name = "world";
+    // If set to run as a child process, we do not initialize anything
+    if (!_runAsChild)
+    {
+        _type = "world";
+        _name = "world";
 
-    _that = this;
-    _signals.sa_handler = leave;
-    _signals.sa_flags = 0;
-    sigaction(SIGINT, &_signals, NULL);
-    sigaction(SIGTERM, &_signals, NULL);
+        _that = this;
+        _signals.sa_handler = leave;
+        _signals.sa_flags = 0;
+        sigaction(SIGINT, &_signals, NULL);
+        sigaction(SIGTERM, &_signals, NULL);
 
-    if (_linkSocketPrefix.empty())
-        _linkSocketPrefix = to_string(static_cast<int>(getpid()));
-    _link = make_shared<Link>(this, _name);
+        if (_linkSocketPrefix.empty())
+            _linkSocketPrefix = to_string(static_cast<int>(getpid()));
+        _link = make_shared<Link>(this, _name);
 
-    registerAttributes();
+        registerAttributes();
+    }
 }
 
 /*************/
@@ -1078,8 +1090,9 @@ void World::parseArguments(int argc, char** argv)
     cout << endl;
 
     // Get the executable directory
-    string executable = argv[0];
-    _executionPath = Utils::getPathFromExecutablePath(executable);
+    _splashExecutable = argv[0];
+    _currentExePath = Utils::getCurrentExecutablePath();
+    _executionPath = Utils::getPathFromExecutablePath(_splashExecutable);
 
     // Parse the other args
     string filename = string(DATADIR) + "splash.json";
@@ -1091,6 +1104,7 @@ void World::parseArguments(int argc, char** argv)
             {"debug", no_argument, 0, 'd'},
 #if HAVE_LINUX
             {"forceDisplay", required_argument, 0, 'D'},
+            {"displayServer", required_argument, 0, 'S'},
 #endif
             {"help", no_argument, 0, 'h'},
             {"hide", no_argument, 0, 'H'},
@@ -1100,11 +1114,12 @@ void World::parseArguments(int argc, char** argv)
             {"prefix", required_argument, 0, 'p'},
             {"silent", no_argument, 0, 's'},
             {"timer", no_argument, 0, 't'},
+            {"child", no_argument, 0, 'c'},
             {0, 0, 0, 0}
         };
 
         int optionIndex = 0;
-        auto ret = getopt_long(argc, argv, "dD:hHilo:p:st", longOptions, &optionIndex);
+        auto ret = getopt_long(argc, argv, "+cdD:S:hHilo:p:P:st", longOptions, &optionIndex);
 
         if (ret == -1)
             break;
@@ -1114,19 +1129,23 @@ void World::parseArguments(int argc, char** argv)
         default:
         case 'h':
         {
-            cout << "Basic usage: splash [config.json]" << endl;
+            cout << "Basic usage: splash [arguments] [config.json] -- [python script argument]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
             cout << "\t-d (--debug) : activate debug messages (if Splash was compiled with -DDEBUG)" << endl;
             cout << "\t-t (--timer) : activate more timers, at the cost of performance" << endl;
 #if HAVE_LINUX
             cout << "\t-D (--forceDisplay) : force the display on which to show all windows" << endl;
+            cout << "\t-S (--displayServer) : set the display server ID" << endl;
 #endif
             cout << "\t-s (--silent) : disable all messages" << endl;
             cout << "\t-i (--info) : get description for all objects attributes" << endl;
             cout << "\t-H (--hide) : run Splash in background" << endl;
+            cout << "\t-P (--python) : add the given Python script to the loaded configuration" << endl;
+            cout << "                  any argument after -- will be sent to the script" << endl;
             cout << "\t-l (--log2file) : write the logs to /var/log/splash.log, if possible" << endl;
             cout << "\t-p (--prefix) : set the shared memory socket paths prefix (defaults to the PID)" << endl;
+            cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
             cout << endl;
             exit(0);
             break;
@@ -1159,9 +1178,61 @@ void World::parseArguments(int argc, char** argv)
             }
             break;
         }
+        case 'S':
+        {
+            auto regInt = regex("[0-9]", regex_constants::extended);
+            smatch match;
+
+            _displayServer = string(optarg);
+            if (regex_match(_displayServer, match, regInt))
+            {
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Display server forced to :" << _displayServer << Log::endl;
+            }
+            else
+            {
+                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - " << string(optarg) << ": argument expects a positive integer" << Log::endl;
+                exit(0);
+            }
+            break;
+        }
         case 'H':
         {
             _runInBackground = true;
+            break;
+        }
+        case 'P':
+        {
+            auto pythonScriptPath = Utils::getFullPathFromFilePath(string(optarg), Utils::getCurrentWorkingDirectory());
+
+            // Build the Python arg list
+            auto pythonArgs = Values({pythonScriptPath});
+            bool isPythonArg = false;
+            for (int i = 0; i < argc; ++i)
+            {
+                if (!isPythonArg && "--" == string(argv[i]))
+                {
+                    isPythonArg = true;
+                    continue;
+                }
+                else if (!isPythonArg)
+                {
+                    continue;
+                }
+                else
+                {
+                    pythonArgs.push_back(string(argv[i]));
+                }
+            }
+
+            // The Python script will be added once the loop runs
+            addTask([=]() {
+                Log::get() << Log::MESSAGE << "World::parseArguments - Adding Python script from command line argument: " << pythonScriptPath << Log::endl;
+                auto pythonObjectName = "_pythonArgScript";
+                sendMessage(SPLASH_ALL_PEERS, "add", {"python", pythonObjectName, _masterSceneName});
+                sendMessage(pythonObjectName, "setSavable", {false});
+                sendMessage(pythonObjectName, "args", {pythonArgs});
+                sendMessage(pythonObjectName, "file", {pythonScriptPath});
+            });
             break;
         }
         case 'i':
@@ -1198,30 +1269,46 @@ void World::parseArguments(int argc, char** argv)
             Timer::get().setDebug(true);
             break;
         }
+        case 'c':
+        {
+            _runAsChild = true;
+            break;
+        }
         }
     }
 
+    string lastArg = "";
     if (optind < argc)
-    {
-        filename = string(argv[argc - 1]);
-        defaultFile = false;
-    }
+        lastArg = string(argv[optind]);
 
     if (defaultFile)
         Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
 
-    if (filename != "")
+    if (_runAsChild)
     {
-        Json::Value config;
-        _status &= loadConfig(filename, config);
+        if (!lastArg.empty())
+            _childSceneName = lastArg;
+    }
+    else
+    {
+        if (!lastArg.empty())
+        {
+            filename = lastArg;
+            defaultFile = false;
+        }
+        if (filename != "")
+        {
+            Json::Value config;
+            _status &= loadConfig(filename, config);
 
-        if (_status)
-            _config = config;
+            if (_status)
+                _config = config;
+            else
+                exit(0);
+        }
         else
             exit(0);
     }
-    else
-        exit(0);
 }
 
 /*************/

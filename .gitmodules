@@ -1,6 +1,3 @@
-[submodule "external/bandit"]
-	path = external/bandit
-	url = https://github.com/joakimkarlsson/bandit.git
 [submodule "external/hap"]
 	path = external/hap
 	url = https://github.com/Vidvox/hap.git
@@ -32,13 +29,17 @@
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
 	url = https://git.ffmpeg.org/ffmpeg.git
-	branch = n3.2.1
+	branch = release/3.4
 [submodule "external/glfw"]
 	path = external/glfw
 	url = https://github.com/glfw/glfw.git
 [submodule "external/snappy"]
 	path = external/snappy
 	url = https://github.com/google/snappy.git
+    branch = 1.1.6
 [submodule "external/zmq"]
 	path = external/zmq
 	url = https://github.com/zeromq/libzmq.git
+[submodule "external/flamegraph"]
+	path = external/flamegraph
+	url = https://github.com/brendangregg/FlameGraph.git

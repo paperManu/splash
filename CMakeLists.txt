@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.7.8
+    VERSION 0.7.10
     LANGUAGES C CXX
 )
 
@@ -99,6 +99,10 @@ endif()
 
 if (DEBUG_OPENGL EQUAL 1)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
+endif()
+
+if (PROFILE_OPENGL EQUAL 1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROFILE")
 endif()
 
 if (DATAPATH_SDK_PATH)
@@ -226,6 +230,7 @@ info_cfg_option(ZMQ_VERSION)
 info_cfg_option(DATAPATH_SDK_PATH)
 info_cfg_option(DOXYGEN_FOUND)
 info_cfg_option(DEBUG_OPENGL)
+info_cfg_option(PROFILE_OPENGL)
 
 info_cfg_text("")
 message("${_config_msg}")

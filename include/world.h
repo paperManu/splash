@@ -81,6 +81,9 @@ class World : public RootObject
     void run();
 
   private:
+    std::string _splashExecutable{"splash"};
+    std::string _currentExePath{""};
+
 #if HAVE_PORTAUDIO
     std::unique_ptr<LtcClock> _clock{nullptr}; //!< Master clock from a LTC signal
     std::string _clockDeviceName{""};          //!< Name of the input sound source for the master clock
@@ -103,8 +106,12 @@ class World : public RootObject
     std::string _blendingMode{};      //!< Blending mode: can be none, once or continuous
     bool _runInBackground{false};     //!< If true, no window will be created
 
+    bool _runAsChild{false}; //!< If true, runs as a child process
+    std::string _childSceneName{"scene"};
+
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
+    std::string _displayServer{"0"};    //!< Display server.
     std::string _forcedDisplay{""};     //!< Set to force an output display
     bool _reloadingConfig{false};       // TODO: workaround to allow for correct reloading when an inner scene was used
 

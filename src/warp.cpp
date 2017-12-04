@@ -141,6 +141,7 @@ void Warp::render()
     }
 
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    glEnable(GL_FRAMEBUFFER_SRGB);
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -179,6 +180,7 @@ void Warp::render()
         }
     }
 
+    glDisable(GL_FRAMEBUFFER_SRGB);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 
     _outTexture->generateMipmap();
@@ -263,18 +265,18 @@ void Warp::setupFBO()
         glCreateFramebuffers(1, &_fbo);
 
     _outTexture = make_shared<Texture_Image>(_root);
-    _outTexture->reset(512, 512, "RGBA16", nullptr);
+    _outTexture->reset(512, 512, "sRGBA", nullptr);
     glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
 
     GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
     if (_status != GL_FRAMEBUFFER_COMPLETE)
     {
-        Log::get() << Log::WARNING << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
+        Log::get() << Log::ERROR << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
         return;
     }
     else
     {
-        Log::get() << Log::MESSAGE << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+        Log::get() << Log::DEBUGGING << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
     }
 
     // Setup the virtual screen
