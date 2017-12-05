@@ -57,8 +57,8 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 link_directories(${FFMPEG_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
-
 link_directories(${GLFW_LIBRARY_DIRS})
+
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})
@@ -194,13 +194,13 @@ endif()
 
 # Distributed third parties first
 target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} ${SNAPPY_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} snappy)
+target_link_libraries(splash-${API_VERSION} glfw)
+target_link_libraries(splash-${API_VERSION} zmq.a)
 
 target_link_libraries(splash-${API_VERSION} pthread)
 target_link_libraries(splash-${API_VERSION} ${Boost_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} glfw)
 target_link_libraries(splash-${API_VERSION} ${GSL_LIBRARIES})
-target_link_libraries(splash-${API_VERSION} zmq.a)
 target_link_libraries(splash-${API_VERSION} ${SHMDATA_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${GPHOTO_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} ${PORTAUDIO_LIBRARIES})
