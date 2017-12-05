@@ -661,6 +661,29 @@ PythonEmbedded* PythonEmbedded::getSplashInstance()
 }
 
 /*************/
+PyDoc_STRVAR(pythonGetInterpreterName_doc__,
+    "Get the name of the Python interpreter running the script\n"
+    "\n"
+    "splash.get_interpreter_name()\n"
+    "\n"
+    "Returns:\n"
+    "  The name of the interpreter\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetInterpreterName(PyObject* self, PyObject* args)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
+
+    return Py_BuildValue("s", that->_name.c_str());
+}
+
+/*************/
 PyDoc_STRVAR(pythonGetLogs_doc__,
     "Get the logs from Splash\n"
     "\n"
@@ -1591,6 +1614,7 @@ PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* self, PyOb
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {
+    {(const char*)"get_interpreter_name", (PyCFunction)PythonEmbedded::pythonGetInterpreterName, METH_VARARGS, pythonGetInterpreterName_doc__},
     {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
     {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},

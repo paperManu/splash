@@ -134,6 +134,7 @@ class PythonEmbedded : public ControllerObject
 
     static PyObject* pythonInitSplash();
     static PythonEmbedded* getSplashInstance();
+    static PyObject* pythonGetInterpreterName(PyObject* self, PyObject* args);
     static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
     static PyObject* pythonGetTimings(PyObject* self, PyObject* args);
     static PyObject* pythonGetMasterClock(PyObject* self, PyObject* args);
