@@ -1,4 +1,4 @@
-image: ubuntu:artful
+image: ubuntu:xenial
 
 variables:
   DOCKER_DRIVER: overlay

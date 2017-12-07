@@ -1277,12 +1277,15 @@ void World::parseArguments(int argc, char** argv)
         }
     }
 
-    string lastArg = "";
-    if (optind < argc)
-        lastArg = string(argv[optind]);
+    // Find last argument index, or "--"
+    int lastArgIndex = 0;
+    for (; lastArgIndex < argc; ++lastArgIndex)
+        if (string(argv[lastArgIndex]) == "--")
+            break;
 
-    if (defaultFile)
-        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
+    string lastArg = "";
+    if (optind < lastArgIndex)
+        lastArg = string(argv[optind]);
 
     if (_runAsChild)
     {
@@ -1307,8 +1310,15 @@ void World::parseArguments(int argc, char** argv)
                 exit(0);
         }
         else
+        {
             exit(0);
+        }
     }
+
+    if (defaultFile)
+        Log::get() << Log::MESSAGE << "No filename specified, loading default file" << Log::endl;
+    else
+        Log::get() << Log::MESSAGE << "Loading file " << filename << Log::endl;
 }
 
 /*************/
