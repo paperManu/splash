@@ -11,10 +11,8 @@ RUN apt install --assume-yes \
     libtool \
     libxrandr-dev \
     libxi-dev \
-    libglm-dev \
     libgsl0-dev \
     libatlas3-base \
-    libzmq3-dev \
     libgphoto2-dev \
     libgl1-mesa-dev \
     libxinerama-dev \
