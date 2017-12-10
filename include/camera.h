@@ -40,6 +40,7 @@
 
 #include "./attribute.h"
 #include "./coretypes.h"
+#include "./framebuffer.h"
 #include "./geometry.h"
 #include "./image.h"
 #include "./object.h"
@@ -120,7 +121,13 @@ class Camera : public BaseObject
      * \brief Get the output texture for this camera
      * \return Return a pointer to the output textures
      */
-    std::shared_ptr<Texture_Image> getTexture() const { return _outColorTexture; }
+    std::shared_ptr<Texture_Image> getTexture() const
+    {
+        if (_outFbo)
+            return _outFbo->getColorTexture();
+        else
+            return {nullptr};
+    }
 
     /**
      * \brief Try to link the given BaseObject to this object
@@ -204,25 +211,8 @@ class Camera : public BaseObject
      */
     bool setCalibrationPoint(const Values& screenPoint);
 
-    /**
-     * \brief Set the output framebuffer
-     */
-    void setupFBO();
-
-    /**
-     * \brief Set the resolution of this camera
-     * \param width Width of the output textures
-     * \param height Height of the output textures
-     */
-    void setOutputSize(int width, int height);
-
   private:
-    GLuint _msFbo{0};
-    GLuint _outFbo{0};
-    std::unique_ptr<Texture_Image> _msDepthTexture{nullptr};
-    std::unique_ptr<Texture_Image> _msColorTexture{nullptr};
-    std::unique_ptr<Texture_Image> _outDepthTexture{nullptr};
-    std::shared_ptr<Texture_Image> _outColorTexture{nullptr};
+    std::unique_ptr<Framebuffer> _msFbo{nullptr}, _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects;
 
     // Rendering parameters
@@ -231,7 +221,6 @@ class Camera : public BaseObject
     bool _showCameraCount{false};
     bool _hidden{false};
     bool _flashBG{false};
-    bool _automaticResize{true};
     bool _render16bits{true};
     int _multisample{0};
     bool _updateColorDepth{false}; // Set to true if the _render16bits has been updated
@@ -315,11 +304,6 @@ class Camera : public BaseObject
      * \brief Send calibration points to the model
      */
     void sendCalibrationPointsToObjects();
-
-    /**
-     * \brief Update the color depth for all textures
-     */
-    void updateColorDepth();
 
     /**
      * \brief Register new functors to modify attributes

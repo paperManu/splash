@@ -42,21 +42,19 @@ Filter::~Filter()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Filter::~Filter - Destructor" << Log::endl;
 #endif
-
-    glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
 void Filter::bind()
 {
-    _outTexture->bind();
+    _fbo->getColorTexture()->bind();
 }
 
 /*************/
 unordered_map<string, Values> Filter::getShaderUniforms() const
 {
     unordered_map<string, Values> uniforms;
-    uniforms["size"] = {(float)_outTexture->getSpec().width, (float)_outTexture->getSpec().height};
+    uniforms["size"] = {static_cast<float>(_fbo->getColorTexture()->getSpec().width), static_cast<float>(_fbo->getColorTexture()->getSpec().height)};
     return uniforms;
 }
 
@@ -93,7 +91,7 @@ bool Filter::linkTo(const std::shared_ptr<BaseObject>& obj)
 /*************/
 void Filter::unbind()
 {
-    _outTexture->unbind();
+    _fbo->getColorTexture()->unbind();
 }
 
 /*************/
@@ -169,9 +167,6 @@ void Filter::render()
     if (_inTextures.empty() || _inTextures[0].expired())
         return;
 
-    if (_updateColorDepth)
-        updateColorDepth();
-
     auto input = _inTextures[0].lock();
     auto inputSpec = input->getSpec();
 
@@ -188,15 +183,11 @@ void Filter::render()
         if (_outTextureSpec != newOutTextureSpec)
         {
             _outTextureSpec = newOutTextureSpec;
-            _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
-            glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
-
-            GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-            glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+            _fbo->setSize(_outTextureSpec.width, _outTextureSpec.height);
         }
     }
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    _fbo->bindDraw();
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
     _screen->activate();
@@ -204,14 +195,14 @@ void Filter::render()
     _screen->draw();
     _screen->deactivate();
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _fbo->unbindDraw();
 
-    _outTexture->generateMipmap();
+    _fbo->getColorTexture()->generateMipmap();
 
     // Automatic black level stuff
     if (_autoBlackLevelTargetValue != 0.f)
     {
-        auto luminance = _outTexture->getMeanValue().luminance();
+        auto luminance = _fbo->getColorTexture()->getMeanValue().luminance();
         auto deltaLuminance = _autoBlackLevelTargetValue - luminance;
         auto newBlackLevel = _autoBlackLevel + deltaLuminance / 2.f;
         newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
@@ -275,23 +266,8 @@ void Filter::updateUniforms()
 void Filter::setOutput()
 {
     glGetError();
-    glCreateFramebuffers(1, &_fbo);
-
-    _outTexture = make_shared<Texture_Image>(_root);
-    _outTexture->setAttribute("filtering", {1});
-    _outTexture->reset(512, 512, "RGBA", nullptr);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
-
-    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        Log::get() << Log::WARNING << "Filter::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-        return;
-    }
-    else
-    {
-        Log::get() << Log::DEBUGGING << "Filter::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-    }
+    _fbo = make_unique<Framebuffer>(_root);
+    _fbo->getColorTexture()->setAttribute("filtering", {1});
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);
@@ -315,16 +291,6 @@ void Filter::updateShaderParameters()
     // This is a trick to force the shader compilation
     _screen->activate();
     _screen->deactivate();
-}
-
-/*************/
-void Filter::updateColorDepth()
-{
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, 0, 0);
-    auto spec = _outTexture->getSpec();
-    _outTexture->reset(spec.width, spec.height, _pixelFormat, nullptr);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
-    _updateColorDepth = false;
 }
 
 /*************/
@@ -383,20 +349,6 @@ bool Filter::setFilterSource(const string& source)
 void Filter::registerAttributes()
 {
     Texture::registerAttributes();
-
-    addAttribute("pixelFormat",
-        [&](const Values& args) {
-            string p = args[0].as<string>();
-            if (p != _pixelFormat)
-            {
-                _pixelFormat = p;
-                _updateColorDepth = true;
-            }
-            return true;
-        },
-        [&]() -> Values { return {_pixelFormat}; },
-        {'s'});
-    setAttributeDescription("pixelFormat", "Set the output pixel format (defaults to RGBA)");
 
     addAttribute("filterSource",
         [&](const Values& args) {

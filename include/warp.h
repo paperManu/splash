@@ -35,6 +35,7 @@
 #include "./attribute.h"
 #include "./camera.h"
 #include "./coretypes.h"
+#include "./framebuffer.h"
 #include "./mesh_bezierPatch.h"
 #include "./object.h"
 #include "./texture.h"
@@ -85,7 +86,7 @@ class Warp : public Texture
      * \brief Get the texture the warp is rendered to
      * \return Return the rendered texture
      */
-    std::shared_ptr<Texture_Image> getTexture() const { return _outTexture; }
+    std::shared_ptr<Texture_Image> getTexture() const { return _fbo->getColorTexture(); }
 
     /**
      * \brief Get spec of the texture
@@ -131,8 +132,7 @@ class Warp : public Texture
   private:
     std::weak_ptr<Camera> _inCamera;
 
-    GLuint _fbo{0};
-    std::shared_ptr<Texture_Image> _outTexture{nullptr};
+    std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::shared_ptr<Mesh_BezierPatch> _screenMesh{nullptr};
     std::shared_ptr<Object> _screen{nullptr};
     ImageBufferSpec _outTextureSpec;

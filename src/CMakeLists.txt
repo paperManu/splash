@@ -91,6 +91,7 @@ target_sources(
     controller_gui.cpp
     factory.cpp
     filter.cpp
+    framebuffer.cpp
     geometry.cpp
     gpuBuffer.cpp
     imageBuffer.cpp
