@@ -702,6 +702,7 @@ void Image_V4L2::registerAttributes()
         [&]() -> Values { return {_v4l2Index}; },
         {'n'});
     setAttributeParameter("index", true, true);
+    setAttributeDescription("index", "Set the input index for the selected V4L2 capture device");
 
     addAttribute("sourceFormat", [&](const Values& args) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
     setAttributeParameter("sourceFormat", true, true);

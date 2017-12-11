@@ -183,6 +183,7 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonSinkUnlink(pythonSinkObject* self);
     static PyObject* pythonSinkGrab(pythonSinkObject* self);
     static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkGetSize(pythonSinkObject* self);
     static PyObject* pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkOpen(pythonSinkObject* self);

@@ -395,6 +395,34 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkGetSize_doc__,
+    "Get the size of the grabbed images\n"
+    "\n"
+    "splash.get_size()\n"
+    "\n"
+    "Returns:\n"
+    "  width, height\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSinkGetSize(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    Values size = that->getObjectAttribute(self->filterName, "sizeOverride");
+    if (size.size() == 2)
+        return Py_BuildValue("ii", size[0].as<int>(), size[1].as<int>());
+    else
+        return Py_BuildValue("");
+}
+
+/*************/
 PyDoc_STRVAR(pythonSinkSetFramerate_doc__,
     "Set the framerate at which the sink should read the image\n"
     "\n"
@@ -588,6 +616,7 @@ PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 PyMethodDef PythonEmbedded::SinkMethods[] = {
     {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_NOARGS, pythonSinkGrab_doc__},
     {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS | METH_KEYWORDS, pythonSinkSetSize_doc__},
+    {(const char*)"get_size", (PyCFunction)PythonEmbedded::pythonSinkGetSize, METH_VARARGS | METH_KEYWORDS, pythonSinkGetSize_doc__},
     {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS | METH_KEYWORDS, pythonSinkSetFramerate_doc__},
     {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS | METH_KEYWORDS, pythonSinkSetKeepRatio_doc__},
     {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_NOARGS, pythonSinkOpen_doc__},
