@@ -107,9 +107,10 @@ class PythonEmbedded : public ControllerObject
     /**
      * \brief Build a Python object from a Value
      * \param value Value to convert
+     * \param toDict Convert Values to a dict if true
      * \return Return a PyObject* representation of the value
      */
-    static PyObject* convertFromValue(const Value& value);
+    static PyObject* convertFromValue(const Value& value, bool toDict = false);
 
     /**
      * \brief Build a Value from a valid Python object

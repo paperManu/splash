@@ -1044,6 +1044,7 @@ PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
     "Args:\n"
     "  objectname (string): name of the object\n"
     "  attribute (string): wanted attribute\n"
+    "  as_dict (bool): if True, returns the result as a dict (if values are named)\n"
     "\n"
     "Returns:\n"
     "  The value of the attribute\n"
@@ -1062,17 +1063,17 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
 
     char* strName;
     char* strAttr;
-    static const char* kwlist[] = {"objectname", "attribute", nullptr};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", const_cast<char**>(kwlist), &strName, &strAttr))
+    int asDict = 0;
+    static const char* kwlist[] = {"objectname", "attribute", "as_dict", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|p", const_cast<char**>(kwlist), &strName, &strAttr, &asDict))
     {
         PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyList_New(0);
     }
 
     auto result = that->getObjectAttribute(string(strName), string(strAttr));
-    auto pyResult = convertFromValue(result);
 
-    return pyResult;
+    return convertFromValue(result, static_cast<bool>(asDict));
 }
 
 /*************/
@@ -1910,9 +1911,10 @@ PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const string& name
 }
 
 /*************/
-PyObject* PythonEmbedded::convertFromValue(const Value& value)
+PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
 {
     function<PyObject*(const Value&)> parseValue;
+
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
         if (v.getType() == Value::Type::i)
@@ -1924,9 +1926,19 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value)
         else if (v.getType() == Value::Type::v)
         {
             auto values = v.as<Values>();
-            pyValue = PyList_New(values.size());
-            for (int i = 0; i < values.size(); ++i)
-                PyList_SetItem(pyValue, i, parseValue(values[i]));
+            if (toDict)
+            {
+                pyValue = PyDict_New();
+                for (int i = 0; i < values.size(); ++i)
+                    if (values[i].isNamed())
+                        PyDict_SetItem(pyValue, Py_BuildValue("s", values[i].getName().c_str()), parseValue(values[i]));
+            }
+            else
+            {
+                pyValue = PyList_New(values.size());
+                for (int i = 0; i < values.size(); ++i)
+                    PyList_SetItem(pyValue, i, parseValue(values[i]));
+            }
         }
 
         return pyValue;

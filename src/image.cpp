@@ -279,11 +279,29 @@ void Image::update()
         shared_lock<shared_timed_mutex> lockWrite(_writeMutex);
         _image.swap(_bufferImage);
         _imageUpdated = false;
+
+        if (_remoteType.empty() || _type == _remoteType)
+            updateMediaInfo();
     }
     else if (_benchmark)
     {
         updateTimestamp();
     }
+}
+
+/*************/
+void Image::updateMediaInfo()
+{
+    Values mediaInfo;
+    auto spec = _image->getSpec();
+    mediaInfo.push_back(Value(spec.width, "width"));
+    mediaInfo.push_back(Value(spec.width, "height"));
+    mediaInfo.push_back(Value(spec.bpp, "bpp"));
+    mediaInfo.push_back(Value(spec.channels, "channels"));
+    mediaInfo.push_back(Value(spec.format, "format"));
+    mediaInfo.push_back(Value(_srgb, "srgb"));
+    updateMoreMediaInfo(mediaInfo);
+    std::swap(_mediaInfo, mediaInfo);
 }
 
 /*************/
@@ -419,6 +437,16 @@ void Image::registerAttributes()
         [&]() -> Values { return {false}; },
         {'n'});
     setAttributeDescription("pattern", "Set to 1 to replace the image with a pattern");
+
+    addAttribute("mediaInfo",
+        [&](const Values& args) {
+            _mediaInfo = args;
+            return true;
+        },
+        [&]() -> Values { return _mediaInfo; },
+        {});
+    setAttributeParameter("mediaInfo", false, true);
+    setAttributeDescription("mediaInfo", "Media information (size, duration, etc.)");
 }
 
 } // end of namespace

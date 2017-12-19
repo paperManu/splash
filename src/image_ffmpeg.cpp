@@ -728,6 +728,13 @@ void Image_FFmpeg::videoDisplayLoop()
 }
 
 /*************/
+void Image_FFmpeg::updateMoreMediaInfo(Values& mediaInfo)
+{
+    auto spec = _image->getSpec();
+    mediaInfo.push_back(Value(static_cast<float>(_avContext->duration) / static_cast<float>(AV_TIME_BASE), "duration"));
+}
+
+/*************/
 void Image_FFmpeg::registerAttributes()
 {
     Image::registerAttributes();

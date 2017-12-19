@@ -187,6 +187,11 @@ class Image_V4L2 : public Image
     void stopCapture();
 
     /**
+     * Add more media info
+     */
+    void updateMoreMediaInfo(Values& mediaInfo) final;
+
+    /**
      * \brief Register new functors to modify attributes
      */
     void registerAttributes();

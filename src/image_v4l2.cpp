@@ -613,6 +613,13 @@ bool Image_V4L2::enumerateVideoStandards()
 }
 
 /*************/
+void Image_V4L2::updateMoreMediaInfo(Values& mediaInfo)
+{
+    mediaInfo.push_back(Value(_devicePath, "devicePath"));
+    mediaInfo.push_back(Value(_v4l2Index, "v4l2Index"));
+}
+
+/*************/
 void Image_V4L2::registerAttributes()
 {
     Image::registerAttributes();
