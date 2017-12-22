@@ -295,7 +295,7 @@ void Image::updateMediaInfo()
     Values mediaInfo;
     auto spec = _image->getSpec();
     mediaInfo.push_back(Value(spec.width, "width"));
-    mediaInfo.push_back(Value(spec.width, "height"));
+    mediaInfo.push_back(Value(spec.height, "height"));
     mediaInfo.push_back(Value(spec.bpp, "bpp"));
     mediaInfo.push_back(Value(spec.channels, "channels"));
     mediaInfo.push_back(Value(spec.format, "format"));
