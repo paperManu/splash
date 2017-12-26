@@ -570,6 +570,8 @@ void Object::registerAttributes()
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
             _vertexBlendingActive = args[0].as<int>();
+            for (auto& geom : _geometries)
+                geom->useAlternativeBuffers(_vertexBlendingActive);
             return true;
         },
         {'n'});

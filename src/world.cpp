@@ -301,12 +301,16 @@ void World::applyConfig()
                         string slave = "--child";
                         string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
 
-                        vector<char*> argv = {(char*)cmd.c_str(), (char*)slave.c_str(), (char*)debug.c_str(), (char*)timer.c_str()};
+                        vector<char*> argv = {(char*)cmd.c_str(), (char*)slave.c_str()};
                         if (!_linkSocketPrefix.empty())
                         {
                             argv.push_back((char*)"--prefix");
                             argv.push_back(const_cast<char*>(_linkSocketPrefix.c_str()));
                         }
+                        if (!debug.empty())
+                            argv.push_back((char*)debug.c_str());
+                        if (!timer.empty())
+                            argv.push_back((char*)timer.c_str());
                         argv.push_back((char*)name.c_str());
                         argv.push_back(nullptr);
                         vector<char*> env = {(char*)display.c_str(), (char*)xauth.c_str(), nullptr};
@@ -1083,11 +1087,13 @@ bool World::loadProject(const string& filename)
 /*************/
 void World::parseArguments(int argc, char** argv)
 {
-    cout << endl;
-    cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
-    cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
-    cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
-    cout << endl;
+    auto printWelcome = []() {
+        cout << endl;
+        cout << "\t             \033[33;1m- Splash -\033[0m" << endl;
+        cout << "\t\033[1m- Modular multi-output video mapper -\033[0m" << endl;
+        cout << "\t          \033[1m- Version " << PACKAGE_VERSION << " -\033[0m" << endl;
+        cout << endl;
+    };
 
     // Get the executable directory
     _splashExecutable = argv[0];
@@ -1129,6 +1135,8 @@ void World::parseArguments(int argc, char** argv)
         default:
         case 'h':
         {
+            printWelcome();
+
             cout << "Basic usage: splash [arguments] [config.json] -- [python script argument]" << endl;
             cout << "Options:" << endl;
             cout << "\t-o (--open) [filename] : set [filename] as the configuration file to open" << endl;
@@ -1148,7 +1156,6 @@ void World::parseArguments(int argc, char** argv)
             cout << "\t-c (--child): run as a child controlled by a master Splash process" << endl;
             cout << endl;
             exit(0);
-            break;
         }
         case 'd':
         {
@@ -1240,7 +1247,6 @@ void World::parseArguments(int argc, char** argv)
             auto descriptions = getObjectsAttributesDescriptions();
             cout << descriptions << endl;
             exit(0);
-            break;
         }
         case 'l':
         {
@@ -1294,6 +1300,8 @@ void World::parseArguments(int argc, char** argv)
     }
     else
     {
+        printWelcome();
+
         if (!lastArg.empty())
         {
             filename = lastArg;

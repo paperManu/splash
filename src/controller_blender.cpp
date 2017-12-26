@@ -33,6 +33,25 @@ void Blender::update()
 
     auto isMaster = scene->isMaster();
 
+    auto getObjLinkedToCameras = [&]() -> vector<shared_ptr<BaseObject>> {
+        vector<shared_ptr<BaseObject>> objLinkedToCameras{};
+
+        auto cameras = getObjectsOfType("camera");
+        auto links = getObjectLinks();
+        for (auto& camera : cameras)
+        {
+            auto cameraLinks = links[camera->getName()];
+            for (auto& linked : cameraLinks)
+            {
+                auto object = dynamic_pointer_cast<Object>(getObject(linked));
+                if (object)
+                    objLinkedToCameras.push_back(getObject(linked));
+            }
+        }
+
+        return objLinkedToCameras;
+    };
+
     if (_computeBlending && (!_blendingComputed || _continuousBlending))
     {
         _blendingComputed = true;
@@ -41,7 +60,7 @@ void Blender::update()
         if (isMaster)
         {
             auto cameras = getObjectsOfType("camera");
-            auto objects = getObjectsOfType("object");
+            auto objects = getObjLinkedToCameras();
 
             if (cameras.size() != 0)
             {
@@ -72,7 +91,8 @@ void Blender::update()
                 return;
             }
 
-            setObjectsOfType("object", "activateVertexBlending", {1});
+            for (auto& object : objects)
+                object->setAttribute("activateVertexBlending", {1});
 
             // If there are some other scenes, send them the blending
             auto geometries = getObjectsOfType("geometry");
@@ -93,13 +113,9 @@ void Blender::update()
                 _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
             _vertexBlendingReceptionStatus = false;
 
-            auto objects = getObjectsOfType("object");
+            auto objects = getObjLinkedToCameras();
             for (auto& object : objects)
                 object->setAttribute("activateVertexBlending", {1});
-
-            auto geometries = getObjectsOfType("geometry");
-            for (auto& it : geometries)
-                dynamic_pointer_cast<Geometry>(it)->useAlternativeBuffers(true);
         }
     }
     // This deactivates the blending
@@ -108,7 +124,7 @@ void Blender::update()
         _blendingComputed = false;
 
         auto cameras = getObjectsOfType("camera");
-        auto objects = getObjectsOfType("object");
+        auto objects = getObjLinkedToCameras();
 
         if (isMaster && cameras.size() != 0)
         {
@@ -122,10 +138,6 @@ void Blender::update()
 
         for (auto& object : objects)
             object->setAttribute("activateVertexBlending", {0});
-
-        auto geometries = getObjectsOfType("geometry");
-        for (auto& it : geometries)
-            dynamic_pointer_cast<Geometry>(it)->useAlternativeBuffers(false);
     }
 }
 
