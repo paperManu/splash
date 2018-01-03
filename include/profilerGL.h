@@ -113,7 +113,7 @@ class ProfilerGL
             glGenQueries(2, _data._queries);
 
             // We keep the current code scope depth updated.
-            ProfilerGL::get().increaseDepth(_data._content, std::this_thread::get_id());
+            ProfilerGL::get().increaseDepth(_data._content);
 
             // Get the timer at the start of the section
             glQueryCounter(_data._queries[0], GL_TIMESTAMP);
@@ -125,7 +125,7 @@ class ProfilerGL
             glQueryCounter(_data._queries[1], GL_TIMESTAMP);
 
             // We keep the current code scope depth updated.
-            ProfilerGL::get().decreaseDepth(_data._content, std::this_thread::get_id());
+            ProfilerGL::get().decreaseDepth(_data._content);
 
             // Record the closing scope for later processing to avoid CPU/GPU syncing
             ProfilerGL::get().saveSectionData(_data);
@@ -184,8 +184,9 @@ class ProfilerGL
      * \param content Reference to the section content that will be updated
      * \param thread_id Id of the running thread
      */
-    void increaseDepth(Section::Content& content, const std::thread::id& thread_id)
+    void increaseDepth(Section::Content& content)
     {
+        auto thread_id = std::this_thread::get_id();
         std::lock_guard<std::mutex> lock(_processing_m);
 
         auto depth = _current_depth.find(thread_id);
@@ -201,8 +202,9 @@ class ProfilerGL
      * \param content Reference to the section content that will be updated
      * \param thread_id Id of the running thread
      */
-    void decreaseDepth(Section::Content& content, const std::thread::id& thread_id)
+    void decreaseDepth(Section::Content& content)
     {
+        auto thread_id = std::this_thread::get_id();
         std::lock_guard<std::mutex> lock(_processing_m);
 
         auto depth = _current_depth.find(thread_id);
@@ -251,7 +253,6 @@ class ProfilerGL
         auto thread_id = std::this_thread::get_id();
 
         std::lock_guard<std::mutex> lock(_processing_m);
-
         auto timings = _unprocessed_timings.find(thread_id);
         if (timings == _unprocessed_timings.end())
         {
@@ -261,8 +262,7 @@ class ProfilerGL
 
         for (auto& timing : timings->second)
         {
-            // Wait until the query counters are available, it should be immediate in our case since we will be
-            // calling gatherTimings after the vertical sync is done.
+            // Wait until the query counters are available
             unsigned int timerAvailable = 0;
             while (!timerAvailable)
                 glGetQueryObjectuiv(timing._queries[1], GL_QUERY_RESULT_AVAILABLE, &timerAvailable);
@@ -272,6 +272,9 @@ class ProfilerGL
             glGetQueryObjectui64v(timing._queries[0], GL_QUERY_RESULT, &startTime);
             glGetQueryObjectui64v(timing._queries[1], GL_QUERY_RESULT, &endTime);
             timing._content.setDuration(endTime - startTime);
+
+            // Cleanup
+            glDeleteQueries(2, timing._queries);
 
             // Record the section data  for postprocessing
             ProfilerGL::get().commitSection(timing._content);
@@ -359,7 +362,6 @@ class ProfilerGL
 
         std::ofstream output_file;
         output_file.open(path);
-        int thread_index = 0;
 
         for (auto& timing : ProfilerGL::get().getTimings())
         {
