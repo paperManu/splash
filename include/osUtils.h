@@ -329,13 +329,11 @@ inline std::string getFullPathFromFilePath(const std::string& filepath, const st
  */
 inline std::vector<std::string> listDirContent(const std::string& path)
 {
-    bool isDirectoryPath = true;
     auto tmpPath = cleanPath(path);
 
     auto directory = opendir(tmpPath.c_str());
     if (directory == nullptr)
     {
-        isDirectoryPath = false;
         tmpPath = Utils::getPathFromFilePath(tmpPath);
         directory = opendir(tmpPath.c_str());
     }
@@ -391,8 +389,11 @@ inline std::string getCurrentExecutablePath()
     auto pid = getpid();
     auto procExe = "/proc/" + std::to_string(pid) + "/exe";
     char* realPath = realpath(procExe.c_str(), nullptr);
-    currentExePath = std::string(realPath);
-    free(realPath);
+    if (realPath)
+    {
+        currentExePath = std::string(realPath);
+        free(realPath);
+    }
 #endif
     return currentExePath;
 }
