@@ -1,6 +1,23 @@
 Splash release notes
 ===================
 
+Splash 0.7.12 (2018-01-05)
+--------------------------
+New features:
+- Added support for named values, and a mediaInfo attribute to Images
+
+Improvements:
+- Added Python as a dependency for CI
+- Bundled GL FBOs into the Framebuffer class
+- Added get_size() method to Python sink
+- Added splash.get_interpreter_name() to Python
+- Updated ZMQ and Hap
+
+Bugs fixed:
+- Fixed blending when a virtual probe is in use, with multiple GPUs
+- Fixed a GPU leak in ProfilerGL
+- Fixed issue with command line args
+
 Splash 0.7.10 (2017-12-04)
 -------------------------
 New features:
