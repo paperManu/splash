@@ -30,14 +30,15 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "attribute.h"
-#include "coretypes.h"
-#include "image.h"
-#include "object.h"
-#include "texture.h"
-#include "texture_image.h"
+#include "./attribute.h"
+#include "./coretypes.h"
+#include "./framebuffer.h"
+#include "./image.h"
+#include "./object.h"
+#include "./texture.h"
+#include "./texture_image.h"
 
 namespace Splash
 {
@@ -78,7 +79,7 @@ class Filter : public Texture
      * Get the output texture
      * \return Return the output texture
      */
-    std::shared_ptr<Texture> getOutTexture() const { return _outTexture; }
+    std::shared_ptr<Texture> getOutTexture() const { return _fbo->getColorTexture(); }
 
     /**
      * Get the shader parameters related to this texture
@@ -90,7 +91,7 @@ class Filter : public Texture
      * \brief Get specs of the texture
      * \return Return the texture specs
      */
-    ImageBufferSpec getSpec() const { return _outTexture->getSpec(); }
+    ImageBufferSpec getSpec() const { return _fbo->getColorTexture()->getSpec(); }
 
     /**
      * \brief Try to link the given BaseObject to this object
@@ -129,8 +130,7 @@ class Filter : public Texture
   private:
     std::vector<std::weak_ptr<Texture>> _inTextures;
 
-    GLuint _fbo{0};
-    std::shared_ptr<Texture_Image> _outTexture{nullptr};
+    std::unique_ptr<Framebuffer> _fbo{nullptr};
     std::shared_ptr<Object> _screen;
     ImageBufferSpec _outTextureSpec;
 
@@ -138,9 +138,7 @@ class Filter : public Texture
     int _sizeOverride[2]{-1, -1};                            //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
-    std::string _pixelFormat{"RGBA"};                        //!< Output pixel format
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
-    bool _updateColorDepth{false};                           //!< Set to true if the _render16bits has been updated
     Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
     float _autoBlackLevelTargetValue{0.f};                   //!< If not zero, defines the target luminance value
     float _autoBlackLevelSpeed{0.02f};                       //!< Coefficient applied to update the black level value
@@ -165,11 +163,6 @@ class Filter : public Texture
      * \brief Setup the output texture
      */
     void setOutput();
-
-    /**
-     * \brief Update the color depth for all textures
-     */
-    void updateColorDepth();
 
     /**
      * \brief Updates the shader uniforms according to the textures and images the filter is connected to.

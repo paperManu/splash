@@ -53,14 +53,12 @@ Warp::~Warp()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Warp::~Warp - Destructor" << Log::endl;
 #endif
-
-    glDeleteFramebuffers(1, &_fbo);
 }
 
 /*************/
 void Warp::bind()
 {
-    _outTexture->bind();
+    _fbo->getColorTexture()->bind();
 }
 
 /*************/
@@ -96,7 +94,7 @@ bool Warp::linkTo(const std::shared_ptr<BaseObject>& obj)
 /*************/
 void Warp::unbind()
 {
-    _outTexture->unbind();
+    _fbo->getColorTexture()->unbind();
 }
 
 /*************/
@@ -134,13 +132,10 @@ void Warp::render()
     if (inputSpec != _outTextureSpec)
     {
         _outTextureSpec = inputSpec;
-        _outTexture->resize(_outTextureSpec.width, _outTextureSpec.height);
-        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
-        GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-        glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
+        _fbo->setSize(inputSpec.width, inputSpec.height);
     }
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+    _fbo->bindDraw();
     glEnable(GL_FRAMEBUFFER_SRGB);
     glViewport(0, 0, _outTextureSpec.width, _outTextureSpec.height);
 
@@ -181,9 +176,9 @@ void Warp::render()
     }
 
     glDisable(GL_FRAMEBUFFER_SRGB);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _fbo->unbindDraw();
 
-    _outTexture->generateMipmap();
+    _fbo->getColorTexture()->generateMipmap();
 }
 
 /*************/
@@ -261,23 +256,8 @@ void Warp::loadDefaultModels()
 /*************/
 void Warp::setupFBO()
 {
-    if (glIsFramebuffer(_fbo) == GL_FALSE)
-        glCreateFramebuffers(1, &_fbo);
-
-    _outTexture = make_shared<Texture_Image>(_root);
-    _outTexture->reset(512, 512, "sRGBA", nullptr);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
-
-    GLenum _status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
-    if (_status != GL_FRAMEBUFFER_COMPLETE)
-    {
-        Log::get() << Log::ERROR << "Warp::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << _status << Log::endl;
-        return;
-    }
-    else
-    {
-        Log::get() << Log::DEBUGGING << "Warp::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-    }
+    _fbo = make_unique<Framebuffer>(_root);
+    _fbo->setParameters(0, false, true /* srgb */);
 
     // Setup the virtual screen
     _screen = make_shared<Object>(_root);

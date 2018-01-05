@@ -41,46 +41,51 @@ struct Value
   public:
     enum Type
     {
-        i = 0,
-        f,
-        s,
-        v
+        i = 0,  // integer
+        f,      // float
+        s,      // string
+        v       // values
     };
 
     Value() {}
 
     template <class T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
-    Value(T v)
+    Value(T v, std::string name = "")
         : _i(v)
         , _type(Type::i)
+        , _name(name)
     {
     }
 
     template <class T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
-    Value(T v)
+    Value(T v, std::string name = "")
         : _f(v)
         , _type(Type::f)
+        , _name(name)
     {
     }
 
     template <class T, typename std::enable_if<std::is_same<T, std::string>::value>::type* = nullptr>
-    Value(T v)
+    Value(T v, std::string name = "")
         : _s(v)
         , _type(Type::s)
+        , _name(name)
     {
     }
 
     template <class T, typename std::enable_if<std::is_same<T, const char*>::value>::type* = nullptr>
-    Value(T c)
+    Value(T c, std::string name = "")
         : _s(std::string(c))
         , _type(Type::s)
+        , _name(name)
     {
     }
 
     template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
-    Value(T v)
+    Value(T v, std::string name = "")
         : _v(std::unique_ptr<Values>(new Values()))
         , _type(Type::v)
+        , _name(name)
     {
         *_v = v;
     }
@@ -104,12 +109,19 @@ struct Value
             case Type::v:
                 break;
             }
+            _name = v._name;
             _s = v._s;
             _v = std::unique_ptr<Values>(new Values());
             if (v._v)
                 *_v = *(v._v);
         }
 
+        return *this;
+    }
+
+    Value& operator[](const std::string& name)
+    {
+        _name = name;
         return *this;
     }
 
@@ -129,6 +141,9 @@ struct Value
     bool operator==(const Value& v) const
     {
         if (_type != v._type)
+            return false;
+
+        if (_name != v._name)
             return false;
 
         switch (_type)
@@ -233,6 +248,10 @@ struct Value
         }
     }
 
+    std::string getName() const { return _name; }
+    void setName(const std::string& name) { _name = name; }
+    bool isNamed() const { return !_name.empty(); }
+
     Type getType() const { return _type; }
     char getTypeAsChar() const
     {
@@ -268,11 +287,12 @@ struct Value
 
   private:
     Type _type{Type::i};
+    std::string _name{""};
     union {
         int64_t _i{0};
         double _f;
     };
-    std::string _s;
+    std::string _s{""};
     std::unique_ptr<Values> _v{nullptr};
 };
 

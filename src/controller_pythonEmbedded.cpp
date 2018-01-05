@@ -395,6 +395,34 @@ PyObject* PythonEmbedded::pythonSinkSetSize(pythonSinkObject* self, PyObject* ar
 }
 
 /*************/
+PyDoc_STRVAR(pythonSinkGetSize_doc__,
+    "Get the size of the grabbed images\n"
+    "\n"
+    "splash.get_size()\n"
+    "\n"
+    "Returns:\n"
+    "  width, height\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonSinkGetSize(pythonSinkObject* self)
+{
+    auto that = getSplashInstance();
+    if (!that)
+    {
+        Py_INCREF(Py_False);
+        return Py_False;
+    }
+
+    Values size = that->getObjectAttribute(self->filterName, "sizeOverride");
+    if (size.size() == 2)
+        return Py_BuildValue("ii", size[0].as<int>(), size[1].as<int>());
+    else
+        return Py_BuildValue("");
+}
+
+/*************/
 PyDoc_STRVAR(pythonSinkSetFramerate_doc__,
     "Set the framerate at which the sink should read the image\n"
     "\n"
@@ -588,6 +616,7 @@ PyObject* PythonEmbedded::pythonSinkGetCaps(pythonSinkObject* self)
 PyMethodDef PythonEmbedded::SinkMethods[] = {
     {(const char*)"grab", (PyCFunction)PythonEmbedded::pythonSinkGrab, METH_NOARGS, pythonSinkGrab_doc__},
     {(const char*)"set_size", (PyCFunction)PythonEmbedded::pythonSinkSetSize, METH_VARARGS | METH_KEYWORDS, pythonSinkSetSize_doc__},
+    {(const char*)"get_size", (PyCFunction)PythonEmbedded::pythonSinkGetSize, METH_VARARGS | METH_KEYWORDS, pythonSinkGetSize_doc__},
     {(const char*)"set_framerate", (PyCFunction)PythonEmbedded::pythonSinkSetFramerate, METH_VARARGS | METH_KEYWORDS, pythonSinkSetFramerate_doc__},
     {(const char*)"keep_ratio", (PyCFunction)PythonEmbedded::pythonSinkKeepRatio, METH_VARARGS | METH_KEYWORDS, pythonSinkSetKeepRatio_doc__},
     {(const char*)"open", (PyCFunction)PythonEmbedded::pythonSinkOpen, METH_NOARGS, pythonSinkOpen_doc__},
@@ -658,6 +687,29 @@ PythonEmbedded* PythonEmbedded::getSplashInstance()
     {
         return that;
     }
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetInterpreterName_doc__,
+    "Get the name of the Python interpreter running the script\n"
+    "\n"
+    "splash.get_interpreter_name()\n"
+    "\n"
+    "Returns:\n"
+    "  The name of the interpreter\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetInterpreterName(PyObject* self, PyObject* args)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyList_New(0);
+    }
+
+    return Py_BuildValue("s", that->_name.c_str());
 }
 
 /*************/
@@ -992,6 +1044,7 @@ PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
     "Args:\n"
     "  objectname (string): name of the object\n"
     "  attribute (string): wanted attribute\n"
+    "  as_dict (bool): if True, returns the result as a dict (if values are named)\n"
     "\n"
     "Returns:\n"
     "  The value of the attribute\n"
@@ -1010,17 +1063,17 @@ PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* arg
 
     char* strName;
     char* strAttr;
-    static const char* kwlist[] = {"objectname", "attribute", nullptr};
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss", const_cast<char**>(kwlist), &strName, &strAttr))
+    int asDict = 0;
+    static const char* kwlist[] = {"objectname", "attribute", "as_dict", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "ss|p", const_cast<char**>(kwlist), &strName, &strAttr, &asDict))
     {
         PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
         return PyList_New(0);
     }
 
     auto result = that->getObjectAttribute(string(strName), string(strAttr));
-    auto pyResult = convertFromValue(result);
 
-    return pyResult;
+    return convertFromValue(result, static_cast<bool>(asDict));
 }
 
 /*************/
@@ -1591,6 +1644,7 @@ PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* self, PyOb
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {
+    {(const char*)"get_interpreter_name", (PyCFunction)PythonEmbedded::pythonGetInterpreterName, METH_VARARGS, pythonGetInterpreterName_doc__},
     {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
     {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
@@ -1857,9 +1911,10 @@ PyObject* PythonEmbedded::getFuncFromModule(PyObject* module, const string& name
 }
 
 /*************/
-PyObject* PythonEmbedded::convertFromValue(const Value& value)
+PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
 {
     function<PyObject*(const Value&)> parseValue;
+
     parseValue = [&](const Value& v) -> PyObject* {
         PyObject* pyValue = nullptr;
         if (v.getType() == Value::Type::i)
@@ -1871,9 +1926,19 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value)
         else if (v.getType() == Value::Type::v)
         {
             auto values = v.as<Values>();
-            pyValue = PyList_New(values.size());
-            for (int i = 0; i < values.size(); ++i)
-                PyList_SetItem(pyValue, i, parseValue(values[i]));
+            if (toDict)
+            {
+                pyValue = PyDict_New();
+                for (int i = 0; i < values.size(); ++i)
+                    if (values[i].isNamed())
+                        PyDict_SetItem(pyValue, Py_BuildValue("s", values[i].getName().c_str()), parseValue(values[i]));
+            }
+            else
+            {
+                pyValue = PyList_New(values.size());
+                for (int i = 0; i < values.size(); ++i)
+                    PyList_SetItem(pyValue, i, parseValue(values[i]));
+            }
         }
 
         return pyValue;

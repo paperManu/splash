@@ -144,6 +144,8 @@ class Image : public BufferObject
     bool write(const std::string& filename);
 
   protected:
+    Values _mediaInfo{};
+
     std::unique_ptr<ImageBuffer> _image;
     std::unique_ptr<ImageBuffer> _bufferImage;
     std::string _filepath;
@@ -156,6 +158,11 @@ class Image : public BufferObject
 
     void createDefaultImage(); //< Create a default black image
     void createPattern();      //< Create a default pattern
+
+    /**
+     * Update the _mediaInfo member
+     */
+    void updateMediaInfo();
 
     /**
      * \brief Read the specified image file
@@ -172,6 +179,11 @@ class Image : public BufferObject
   private:
     // Deserialization is done in this buffer, to avoid realloc
     ImageBuffer _bufferDeserialize;
+
+    /**
+     * Add more media info, to be implemented by derived classes
+     */
+    virtual void updateMoreMediaInfo(Values& mediaInfo) {}
 
     /**
      * \brief Base init for the class

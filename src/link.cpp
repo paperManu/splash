@@ -273,6 +273,11 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                     memcpy(msg.data(), (void*)&valueType, sizeof(valueType));
                     _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
+                    std::string valueName = v.getName();
+                    msg.rebuild(sizeof(valueName) + 1);
+                    memcpy(msg.data(), valueName.c_str(), sizeof(valueName) + 1);
+                    _socketMessageOut->send(msg, ZMQ_SNDMORE);
+
                     if (valueType == Value::Type::v)
                         sendMessage(v.as<Values>());
                     else
@@ -352,8 +357,14 @@ void Link::handleInputMessages()
             {
                 _socketMessageIn->recv(&msg);
                 Value::Type valueType = *(Value::Type*)msg.data();
+
+                _socketMessageIn->recv(&msg);
+                string valueName(static_cast<char*>(msg.data()));
+
                 if (valueType == Value::Type::v)
+                {
                     values.push_back(recvMessage());
+                }
                 else
                 {
                     _socketMessageIn->recv(&msg);
@@ -364,6 +375,9 @@ void Link::handleInputMessages()
                     else if (valueType == Value::Type::s)
                         values.push_back(string((char*)msg.data()));
                 }
+
+                if (!valueName.empty())
+                    values.back().setName(valueName);
             }
             return values;
         };

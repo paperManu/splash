@@ -57,30 +57,9 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
     glGetError();
-    glCreateFramebuffers(1, &_fbo);
 
-    {
-        _depthTexture = make_shared<Texture_Image>(s);
-        _depthTexture->reset(_width, _height, "D", 0);
-        _depthTexture->setResizable(1);
-        glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
-    }
-
-    {
-        _outTexture = make_shared<Texture_Image>(s);
-        _outTexture->reset(_width, _height, "RGBA", NULL);
-        _outTexture->setResizable(1);
-        glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
-    }
-
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glNamedFramebufferDrawBuffers(_fbo, 1, fboBuffers);
-
-    GLenum status = glCheckNamedFramebufferStatus(_fbo, GL_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-        Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - Error while initializing framebuffer object: " << status << Log::endl;
-    else
-        Log::get() << Log::MESSAGE << "Gui::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+    _fbo = make_unique<Framebuffer>(_root);
+    _fbo->setResizable(true);
 
     _window->releaseContext();
 
@@ -537,7 +516,7 @@ void Gui::render()
     if (!_isInitialized)
         return;
 
-    ImageBufferSpec spec = _outTexture->getSpec();
+    ImageBufferSpec spec = _fbo->getColorTexture()->getSpec();
     if (spec.width != _width || spec.height != _height)
         setOutputSize(spec.width, spec.height);
 
@@ -788,16 +767,16 @@ void Gui::render()
     {
         _wasVisible = _isVisible;
 
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo);
+        _fbo->bindDraw();
         glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
         if (_isVisible || _showAbout)
             ImGui::Render();
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        _fbo->unbindDraw();
     }
 
-    _outTexture->generateMipmap();
+    _fbo->getColorTexture()->generateMipmap();
 
 #ifdef DEBUG
     error = glGetError();
@@ -820,10 +799,7 @@ void Gui::setOutputSize(int width, int height)
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
 
-    _depthTexture->setAttribute("size", {width, height});
-    _outTexture->setAttribute("size", {width, height});
-    glNamedFramebufferTexture(_fbo, GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
-    glNamedFramebufferTexture(_fbo, GL_COLOR_ATTACHMENT0, _outTexture->getTexId(), 0);
+    _fbo->setSize(width, height);
 
     _width = width;
     _height = height;

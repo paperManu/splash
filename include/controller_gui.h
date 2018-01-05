@@ -45,6 +45,7 @@
 #endif
 #include "./attribute.h"
 #include "./camera.h"
+#include "./framebuffer.h"
 #include "./coretypes.h"
 #include "./userInput.h"
 #include "./widget.h"
@@ -80,7 +81,7 @@ class Gui : public ControllerObject
      * \brief Get pointers to this gui textures
      * \return Return shared pointers to the rendered textures
      */
-    std::shared_ptr<Texture> getTexture() const { return _outTexture; }
+    std::shared_ptr<Texture> getTexture() const { return _fbo->getColorTexture(); }
 
     /**
      * \brief Check wether it is initialized
@@ -188,9 +189,7 @@ class Gui : public ControllerObject
     // There can be only one gui, so it is not such an issue
     static GLFWwindow* _glfwWindow;
 
-    GLuint _fbo{0};
-    std::shared_ptr<Texture_Image> _depthTexture;
-    std::shared_ptr<Texture_Image> _outTexture;
+    std::unique_ptr<Framebuffer> _fbo{nullptr};
     float _width{512}, _height{512};
     bool _resized{false};
     int _initialGuiPos[2]{16, 16}; //!< Gui position at startup

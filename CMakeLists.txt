@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.7.10
+    VERSION 0.7.12
     LANGUAGES C CXX
 )
 
@@ -46,7 +46,6 @@ set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
-pkg_search_module(SNAPPY REQUIRED snappy)
 pkg_search_module(GSL REQUIRED gsl)
 pkg_search_module(ZMQ REQUIRED libzmq)
 pkg_check_modules(FFMPEG REQUIRED libavformat libavcodec libavutil libswscale)
@@ -127,6 +126,7 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(external/glfw)
+add_subdirectory(external/snappy)
 
 #
 # Sources
@@ -167,21 +167,7 @@ if(UNIX AND NOT APPLE) # Package creation on Linux
     set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}")
     set(CPACK_DEBIAN_PROJECT_HOMEPAGE "https://gitlab.com/sat-metalab/splash/wiki")
     set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libatlas3-base,
-                                      libboost-system1.58.0,
-                                      libgphoto2-6,
-                                      libgsl2,
-                                      libopencv-core2.4v5,
-                                      libopencv-highgui2.4v5,
-                                      libopencv-imgproc2.4v5,
-                                      libopencv-video2.4v5,
-                                      libxrandr2,
-                                      libxi6,
-                                      libxinerama1,
-                                      libxcursor1,
-                                      libzmq5,
-                                      libportaudio2,
-                                      zip")
+    set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_VENDOR} <emmanueldurand@protonmail.com>")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Splash is a free (as in GPL) modular mapping software. Provided that the user creates a 3D model with UV mapping of the projection surface, Splash will take care of calibrating the videoprojectors (intrinsic and extrinsic parameters, blending), and feed them with the input video sources. Splash can handle multiple inputs, mapped on multiple 3D models, and has been tested with up to eight outputs on two graphic cards. It currently runs on a single computer but support for multiple computers mapping together is planned.")
     set(CPACK_DEBIAN_PACKAGE_SECTION "video")

@@ -31,20 +31,18 @@ VirtualProbe::~VirtualProbe()
 {
     if (!_root)
         return;
-
-    glDeleteFramebuffers(2, _fbo);
 }
 
 /*************/
 void VirtualProbe::bind()
 {
-    _outColorTexture->bind();
+    _outFbo->getColorTexture()->bind();
 }
 
 /*************/
 void VirtualProbe::unbind()
 {
-    _outColorTexture->unbind();
+    _outFbo->getColorTexture()->unbind();
 }
 
 /*************/
@@ -99,7 +97,7 @@ void VirtualProbe::render()
         _newHeight = 0;
     }
 
-    if (!_colorTexture)
+    if (!_fbo || !_outFbo)
         return;
 
     glViewport(0, 0, _cubemapSize, _cubemapSize);
@@ -108,7 +106,7 @@ void VirtualProbe::render()
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     // First pass: render to the cubemap
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo[0]);
+    _fbo->bindDraw();
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -135,10 +133,11 @@ void VirtualProbe::render()
         if (!previousFill.empty())
             obj->setAttribute("fill", previousFill);
     }
+    _fbo->unbindDraw();
 
     // Second pass: render the projected cubemap
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _fbo[1]);
-    _colorTexture->generateMipmap();
+    _outFbo->bindDraw();
+    _fbo->getColorTexture()->generateMipmap();
 
     glViewport(0, 0, _width, _height);
     glClearColor(1.0, 0.0, 0.0, 0.0);
@@ -151,7 +150,7 @@ void VirtualProbe::render()
     _screen->draw();
     _screen->deactivate();
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    _outFbo->unbindDraw();
     glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_MULTISAMPLE);
@@ -168,57 +167,22 @@ glm::dmat4 VirtualProbe::computeViewMatrix() const
 /*************/
 void VirtualProbe::setupFBO()
 {
-    glCreateFramebuffers(2, _fbo);
+    _fbo = make_unique<Framebuffer>(_root);
+    _fbo->setSize(_width, _height);
+    _fbo->setParameters(0, false, false, true);
+    _fbo->getDepthTexture()->setName("depthCube");
+    _fbo->getColorTexture()->setName("colorCube");
+    _fbo->getColorTexture()->setAttribute("clampToEdge", {1});
+    _fbo->getColorTexture()->setAttribute("filtering", {0});
 
-    if (!_depthTexture)
-    {
-        _depthTexture = make_unique<Texture_Image>(_root, _width, _height, "D", nullptr, 0, true);
-        _depthTexture->setName("depthCube");
-        glNamedFramebufferTexture(_fbo[0], GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
-    }
-
-    if (!_colorTexture)
-    {
-        _colorTexture = make_unique<Texture_Image>(_root);
-        _colorTexture->setName("colorCube");
-        _colorTexture->setAttribute("clampToEdge", {1});
-        _colorTexture->setAttribute("filtering", {0});
-        _colorTexture->reset(_width, _height, "RGBA", nullptr, 0, true);
-        glNamedFramebufferTexture(_fbo[0], GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
-    }
-
-    if (!_outDepthTexture)
-    {
-        _outDepthTexture = make_unique<Texture_Image>(_root, _width, _height, "D", nullptr);
-        glNamedFramebufferTexture(_fbo[1], GL_DEPTH_ATTACHMENT, _outDepthTexture->getTexId(), 0);
-    }
-
-    if (!_outColorTexture)
-    {
-        _outColorTexture = make_unique<Texture_Image>(_root, _width, _height, "RGBA", nullptr);
-        glNamedFramebufferTexture(_fbo[1], GL_COLOR_ATTACHMENT0, _outColorTexture->getTexId(), 0);
-    }
-
-    GLenum fboBuffers[1] = {GL_COLOR_ATTACHMENT0};
-    glNamedFramebufferDrawBuffers(_fbo[0], 1, fboBuffers);
-    GLenum status = glCheckNamedFramebufferStatus(_fbo[0], GL_DRAW_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-        Log::get() << Log::ERROR << "VirtualProbe::" << __FUNCTION__ << " - Error while initializing render framebuffer object: " << status << Log::endl;
-    else
-        Log::get() << Log::DEBUGGING << "VirtualProbe::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
-
-    glNamedFramebufferDrawBuffers(_fbo[1], 1, fboBuffers);
-    status = glCheckNamedFramebufferStatus(_fbo[1], GL_DRAW_FRAMEBUFFER);
-    if (status != GL_FRAMEBUFFER_COMPLETE)
-        Log::get() << Log::ERROR << "VirtualProbe::" << __FUNCTION__ << " - Error while initializing output framebuffer object: " << status << Log::endl;
-    else
-        Log::get() << Log::DEBUGGING << "VirtualProbe::" << __FUNCTION__ << " - Framebuffer object successfully initialized" << Log::endl;
+    _outFbo = make_unique<Framebuffer>(_root);
+    _outFbo->setSize(_width, _height);
 
     _screen = make_unique<Object>(_root);
     _screen->setAttribute("fill", {"cubemap_projection"});
     auto virtualScreen = make_shared<Geometry>(_root);
     _screen->addGeometry(virtualScreen);
-    _screen->addTexture(_colorTexture);
+    _screen->addTexture(_fbo->getColorTexture());
 }
 
 /*************/
@@ -245,26 +209,8 @@ void VirtualProbe::setOutputSize(int width, int height)
     }
 
     _cubemapSize = std::max(width, height);
-
-    _depthTexture->setResizable(1);
-    _depthTexture->setAttribute("size", {_cubemapSize, _cubemapSize});
-    _depthTexture->setResizable(0);
-    glNamedFramebufferTexture(_fbo[0], GL_DEPTH_ATTACHMENT, _depthTexture->getTexId(), 0);
-
-    _colorTexture->setResizable(1);
-    _colorTexture->setAttribute("size", {_cubemapSize, _cubemapSize});
-    _colorTexture->setResizable(0);
-    glNamedFramebufferTexture(_fbo[0], GL_COLOR_ATTACHMENT0, _colorTexture->getTexId(), 0);
-
-    _outDepthTexture->setResizable(1);
-    _outDepthTexture->setAttribute("size", {_width, _height});
-    _outDepthTexture->setResizable(0);
-    glNamedFramebufferTexture(_fbo[1], GL_DEPTH_ATTACHMENT, _outDepthTexture->getTexId(), 0);
-
-    _outColorTexture->setResizable(1);
-    _outColorTexture->setAttribute("size", {_width, _height});
-    _outColorTexture->setResizable(0);
-    glNamedFramebufferTexture(_fbo[1], GL_COLOR_ATTACHMENT0, _outColorTexture->getTexId(), 0);
+    _fbo->setSize(_cubemapSize, _cubemapSize);
+    _outFbo->setSize(_width, _height);
 }
 
 /*************/

@@ -914,8 +914,10 @@ void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity
         severityString = "high";
         break;
     case GL_DEBUG_SEVERITY_NOTIFICATION:
-        severityString = "notification";
-        break;
+        // Disable notifications, they are far too verbose
+        return;
+        // severityString = "notification";
+        // break;
     }
 
     Log::get() << logType << "GL::debug - [" << typeString << "::" << severityString << "] - " << message << Log::endl;

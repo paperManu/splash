@@ -184,6 +184,11 @@ class Image_FFmpeg : public Image
     void audioLoop();
 
     /**
+     * Add more media info
+     */
+    void updateMoreMediaInfo(Values& mediaInfo) final;
+
+    /**
      * \brief Video display loop
      */
     void videoDisplayLoop();

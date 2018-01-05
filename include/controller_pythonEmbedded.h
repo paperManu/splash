@@ -107,9 +107,10 @@ class PythonEmbedded : public ControllerObject
     /**
      * \brief Build a Python object from a Value
      * \param value Value to convert
+     * \param toDict Convert Values to a dict if true
      * \return Return a PyObject* representation of the value
      */
-    static PyObject* convertFromValue(const Value& value);
+    static PyObject* convertFromValue(const Value& value, bool toDict = false);
 
     /**
      * \brief Build a Value from a valid Python object
@@ -134,6 +135,7 @@ class PythonEmbedded : public ControllerObject
 
     static PyObject* pythonInitSplash();
     static PythonEmbedded* getSplashInstance();
+    static PyObject* pythonGetInterpreterName(PyObject* self, PyObject* args);
     static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
     static PyObject* pythonGetTimings(PyObject* self, PyObject* args);
     static PyObject* pythonGetMasterClock(PyObject* self, PyObject* args);
@@ -182,6 +184,7 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonSinkUnlink(pythonSinkObject* self);
     static PyObject* pythonSinkGrab(pythonSinkObject* self);
     static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonSinkGetSize(pythonSinkObject* self);
     static PyObject* pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonSinkOpen(pythonSinkObject* self);

@@ -33,6 +33,7 @@
 
 #include "./attribute.h"
 #include "./coretypes.h"
+#include "./framebuffer.h"
 #include "./geometry.h"
 #include "./image.h"
 #include "./object.h"
@@ -80,7 +81,7 @@ class VirtualProbe : public Texture
      * \brief Get spec of the texture
      * \return Return the spec
      */
-    ImageBufferSpec getSpec() const { return _colorTextureSpec; }
+    ImageBufferSpec getSpec() const { return _outFbo->getColorTexture()->getSpec(); }
 
     /**
      * \brief Try to link the given BaseObject to this object
@@ -134,14 +135,10 @@ class VirtualProbe : public Texture
     };
 
   private:
-    GLuint _fbo[2]{0, 0};
-    std::unique_ptr<Texture_Image> _depthTexture{nullptr};
-    std::shared_ptr<Texture_Image> _colorTexture{nullptr};
-    std::unique_ptr<Texture_Image> _outDepthTexture{nullptr};
-    std::shared_ptr<Texture_Image> _outColorTexture{nullptr};
+    std::unique_ptr<Framebuffer> _fbo{nullptr};
+    std::unique_ptr<Framebuffer> _outFbo{nullptr};
     std::vector<std::weak_ptr<Object>> _objects{};
     std::unique_ptr<Object> _screen{nullptr};
-    ImageBufferSpec _colorTextureSpec;
 
     glm::dmat4 _faceProjectionMatrix{1.0};
     glm::dvec3 _position{0.0, 0.0, 0.0};
