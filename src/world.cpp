@@ -25,10 +25,13 @@
 using namespace glm;
 using namespace std;
 
+#define SPLASH_CAMERA_LINK "__camera_link"
+
 namespace Splash
 {
 /*************/
 World* World::_that;
+const vector<string> World::_partiallySavableTypes{"image", "texture", "mesh", "object", "filter", "queue", "virtual_probe"};
 
 /*************/
 World::World(int argc, char** argv)
@@ -717,7 +720,39 @@ void World::saveProject()
                 if (m == "links")
                 {
                     for (auto& v : config[m])
-                        root[m].append(v);
+                    {
+                        auto from = v[0].asString();
+                        auto to = v[1].asString();
+                        // Only keep links to partially saved types
+                        bool isSavableType = false;
+                        bool isLinkedToCam = false;
+                        for (const auto& type : _partiallySavableTypes)
+                            if (config[from]["type"].asString().find(type) != string::npos)
+                            {
+                                // If the object is linked to a camera, we save the link as
+                                // "saved to all available cameras"
+                                if (config[to]["type"].asString() == "camera")
+                                {
+                                    isLinkedToCam = true;
+                                    isSavableType = true;
+                                    continue;
+                                }
+
+                                for (const auto& type : _partiallySavableTypes)
+                                    if (config[to]["type"].asString().find(type) != string::npos)
+                                        isSavableType = true;
+                            }
+
+                        if (isLinkedToCam)
+                            v[1] = SPLASH_CAMERA_LINK;
+
+                        if (isSavableType)
+                            root[m].append(v);
+
+                        // Prevent saving link to cameras multiple times
+                        if (isLinkedToCam)
+                            break;
+                    }
                     continue;
                 }
 
@@ -1025,6 +1060,7 @@ bool World::loadProject(const string& filename)
         }
 
         // Handle the links
+        // We will need a list of all cameras
         if (partialConfig.isMember("links"))
         {
             for (const auto& link : partialConfig["links"])
@@ -1034,7 +1070,18 @@ bool World::loadProject(const string& filename)
                 auto source = link[0].asString();
                 auto sink = link[1].asString();
 
-                addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
+                addTask([=]() {
+                    if (sink != SPLASH_CAMERA_LINK)
+                    {
+                        sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
+                    }
+                    else
+                    {
+                        auto cameraNames = getObjectsNameByType("camera");
+                        for (const auto& camera : cameraNames)
+                            sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
+                    }
+                });
             }
         }
 

@@ -121,7 +121,7 @@ class World : public RootObject
     std::string _configFilename;  //!< Configuration file path
     std::string _projectFilename; //!< Project configuration file path
     Json::Value _config;          //!< Configuration as JSon
-    const std::vector<std::string> _partiallySavableTypes{"image", "texture", "mesh", "object", "filter", "queue"};
+    static const std::vector<std::string> _partiallySavableTypes;
 
     bool _sceneLaunched{false};
     std::mutex _childProcessMutex;
