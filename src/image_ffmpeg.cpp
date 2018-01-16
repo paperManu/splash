@@ -71,6 +71,12 @@ void Image_FFmpeg::freeFFmpegObjects()
 }
 
 /*************/
+float Image_FFmpeg::getMediaDuration() const
+{
+    return static_cast<float>(_avContext->duration) / static_cast<float>(AV_TIME_BASE);
+}
+
+/*************/
 bool Image_FFmpeg::read(const string& filename)
 {
     // First: cleanup
@@ -273,10 +279,10 @@ void Image_FFmpeg::readLoop()
 
 #if HAVE_PORTAUDIO
     // Find an audio decoder
-    AVCodec* audioCodec{nullptr};
     auto audioCodecContext = avcodec_alloc_context3(nullptr);
     if (_audioStreamIndex >= 0)
     {
+        AVCodec* audioCodec{nullptr};
         auto audioCodecParameters = _avContext->streams[_audioStreamIndex]->codecpar;
         if (avcodec_parameters_to_context(audioCodecContext, audioCodecParameters) < 0)
         {
@@ -362,7 +368,7 @@ void Image_FFmpeg::readLoop()
             if (packet.stream_index == _videoStreamIndex && _videoSeekMutex.try_lock())
             {
                 auto img = unique_ptr<ImageBuffer>();
-                uint64_t timing;
+                uint64_t timing = 0;
                 bool hasFrame = false;
 
                 //
@@ -524,7 +530,8 @@ void Image_FFmpeg::readLoop()
 
         // This prevents looping to happen before the queue has been consumed
         lock_guard<mutex> lockEnd(_videoEndMutex);
-        seek(0.f);
+        // Seek to the beginning, or whatever time is set in _trimStart
+        seek(_trimStart);
     } while (_loopOnVideo && _continueRead);
 
     av_frame_free(&rgbFrame);
@@ -590,7 +597,7 @@ void Image_FFmpeg::seek(float seconds)
         seekFlag = AVSEEK_FLAG_BACKWARD;
 
     // Prevent seeking outside of the file
-    float duration = (float)_avContext->duration / (float)AV_TIME_BASE;
+    float duration = getMediaDuration();
     if (seconds < 0)
         seconds = 0;
     else if (seconds > duration)
@@ -665,7 +672,7 @@ void Image_FFmpeg::videoDisplayLoop()
             bool useClock = _useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused);
             if (useClock)
             {
-                float seconds = (float)clockAsMs / 1e3f + _shiftTime;
+                float seconds = (float)clockAsMs / 1e3f + _shiftTime + _trimStart;
                 _clockTime = seconds * 1e6;
             }
 
@@ -690,6 +697,18 @@ void Image_FFmpeg::videoDisplayLoop()
                         _startTime = Timer::getTime() - _clockTime;
                         _currentTime = _clockTime;
                     }
+                }
+
+                // If the frame is beyond the trimming end, seek to the trimming start
+                if (_trimEnd > _trimStart && (timedFrame.timing / 1e6 > _trimEnd || timedFrame.timing / 1e6 < _trimStart))
+                {
+                    if (!_timeJump)
+                    {
+                        _timeJump = true;
+                        localQueue.clear();
+                        seek_async(_trimStart);
+                    }
+                    continue;
                 }
 
                 // Compute the difference between next frame and the current clock
@@ -731,7 +750,7 @@ void Image_FFmpeg::videoDisplayLoop()
 void Image_FFmpeg::updateMoreMediaInfo(Values& mediaInfo)
 {
     auto spec = _image->getSpec();
-    mediaInfo.push_back(Value(static_cast<float>(_avContext->duration) / static_cast<float>(AV_TIME_BASE), "duration"));
+    mediaInfo.push_back(Value(getMediaDuration(), "duration"));
 }
 
 /*************/
@@ -756,8 +775,7 @@ void Image_FFmpeg::registerAttributes()
             if (_avContext == nullptr)
                 return {0.f};
 
-            float duration = (float)_avContext->duration / (float)AV_TIME_BASE;
-            return {duration};
+            return {getMediaDuration()};
         });
     setAttributeParameter("duration", false, true);
 
@@ -792,7 +810,7 @@ void Image_FFmpeg::registerAttributes()
             if (_avContext == nullptr)
                 return {0.f};
 
-            float duration = std::max(0.0, (double)_avContext->duration / (double)AV_TIME_BASE - (double)_elapsedTime / 1e6);
+            float duration = std::max(0.f, getMediaDuration() - static_cast<float>(_elapsedTime) / 1e6f);
             return {duration};
         });
     setAttributeParameter("remaining", false, true);
@@ -817,6 +835,31 @@ void Image_FFmpeg::registerAttributes()
         {'n'});
     setAttributeParameter("seek", false, true);
     setAttributeDescription("seek", "Change the read position in the video file");
+
+    addAttribute("trim",
+        [&](const Values& args) {
+            float start = args[0].as<float>();
+            float end = args[1].as<float>();
+
+            if (start > end)
+                return false;
+
+            if (start < 0.f)
+                start = 0.f;
+
+            auto mediaDuration = getMediaDuration();
+            if (end > mediaDuration)
+                end = mediaDuration;
+
+            _trimStart = start;
+            _trimEnd = end;
+        },
+        [&]() -> Values {
+            return {_trimStart, _trimEnd};
+        },
+        {'n', 'n'});
+    setAttributeParameter("trim", true, true);
+    setAttributeDescription("trim", "Trim the video by setting the start and end times");
 
     addAttribute("useClock",
         [&](const Values& args) {

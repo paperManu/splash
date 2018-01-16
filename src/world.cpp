@@ -940,17 +940,40 @@ Values World::jsonToValues(const Json::Value& values)
     else if (values.isDouble())
         outValues.emplace_back(values.asFloat());
     else if (values.isArray())
+    {
         for (const auto& v : values)
         {
             if (v.isInt())
                 outValues.emplace_back(v.asInt());
             else if (v.isDouble())
                 outValues.emplace_back(v.asFloat());
-            else if (v.isArray())
+            else if (v.isArray() || v.isObject())
                 outValues.emplace_back(jsonToValues(v));
             else
                 outValues.emplace_back(v.asString());
         }
+    }
+    else if (values.isObject())
+    {
+        auto names = values.getMemberNames();
+        int index = 0;
+        for (const auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt(), names[index]);
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat(), names[index]);
+            else if (v.isArray() || v.isObject())
+                outValues.emplace_back(jsonToValues(v), names[index]);
+            else
+            {
+                outValues.emplace_back(v.asString());
+                outValues.back().setName(names[index]);
+            }
+
+            ++index;
+        }
+    }
     else
         outValues.emplace_back(values.asString());
 

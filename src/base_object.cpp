@@ -172,27 +172,67 @@ unordered_map<string, Values> BaseObject::getDistantAttributes() const
 }
 
 /*************/
-Json::Value BaseObject::getValuesAsJson(const Values& values) const
+Json::Value BaseObject::getValuesAsJson(const Values& values, bool asObject) const
 {
     Json::Value jsValue;
-    for (auto& v : values)
+    if (asObject)
     {
-        switch (v.getType())
+        for (auto& v : values)
         {
-        default:
-            continue;
-        case Value::i:
-            jsValue.append(v.as<int>());
-            break;
-        case Value::f:
-            jsValue.append(v.as<float>());
-            break;
-        case Value::s:
-            jsValue.append(v.as<string>());
-            break;
-        case Value::v:
-            jsValue.append(getValuesAsJson(v.as<Values>()));
-            break;
+            switch (v.getType())
+            {
+            default:
+                continue;
+            case Value::i:
+                jsValue[v.getName()] = v.as<int>();
+                break;
+            case Value::f:
+                jsValue[v.getName()] = v.as<float>();
+                break;
+            case Value::s:
+                jsValue[v.getName()] = v.as<string>();
+                break;
+            case Value::v:
+            {
+                auto vv = v.as<Values>();
+                // If the first value is named, we treat it as a Json object
+                if (!vv.empty() && vv[0].isNamed())
+                    jsValue[v.getName()] = getValuesAsJson(vv, true);
+                else
+                    jsValue[v.getName()] = getValuesAsJson(vv, false);
+                break;
+            }
+            }
+        }
+    }
+    else
+    {
+        for (auto& v : values)
+        {
+            switch (v.getType())
+            {
+            default:
+                continue;
+            case Value::i:
+                jsValue.append(v.as<int>());
+                break;
+            case Value::f:
+                jsValue.append(v.as<float>());
+                break;
+            case Value::s:
+                jsValue.append(v.as<string>());
+                break;
+            case Value::v:
+            {
+                auto vv = v.as<Values>();
+                // If the first value is named, we treat it as a Json object
+                if (!vv.empty() && vv[0].isNamed())
+                    jsValue.append(getValuesAsJson(vv, true));
+                else
+                    jsValue.append(getValuesAsJson(vv, false));
+                break;
+            }
+            }
         }
     }
     return jsValue;

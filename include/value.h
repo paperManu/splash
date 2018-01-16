@@ -83,11 +83,10 @@ struct Value
 
     template <class T, typename std::enable_if<std::is_same<T, Values>::value>::type* = nullptr>
     Value(T v, std::string name = "")
-        : _v(std::unique_ptr<Values>(new Values()))
+        : _v(std::unique_ptr<Values>(new Values(v)))
         , _type(Type::v)
         , _name(name)
     {
-        *_v = v;
     }
 
     Value(const Value& v) { operator=(v); }

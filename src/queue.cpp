@@ -147,6 +147,14 @@ void Queue::update()
 
             _root->sendMessage(_name, "source", {sourceParameters.type});
 
+            for (const auto& arg : sourceParameters.args)
+            {
+                if (!arg.isNamed())
+                    continue;
+
+                _currentSource->setAttribute(arg.getName(), arg.as<Values>());
+            }
+
             Log::get() << Log::MESSAGE << "Queue::" << __FUNCTION__ << " - Playing file: " << sourceParameters.filename << Log::endl;
         }
     }
@@ -307,8 +315,7 @@ void Queue::registerAttributes()
                     source.start = (int64_t)(src[2].as<float>() * 1e6);
                     source.stop = (int64_t)(src[3].as<float>() * 1e6);
                     source.freeRun = src[4].as<bool>();
-                    for (auto idx = 5; idx < src.size(); ++idx)
-                        source.args.push_back(src[idx]);
+                    source.args = src[5].as<Values>();
 
                     _playlist.push_back(source);
                 }
@@ -330,8 +337,7 @@ void Queue::registerAttributes()
                 source.push_back((double)src.start / 1e6);
                 source.push_back((double)src.stop / 1e6);
                 source.push_back((int)src.freeRun);
-                for (auto& v : src.args)
-                    source.push_back(v);
+                source.push_back(src.args);
 
                 playlist.emplace_back(std::move(source));
             }
