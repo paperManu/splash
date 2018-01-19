@@ -485,22 +485,22 @@ void GuiGlobalView::processKeyEvents()
 
         if (io.KeysDownDuration[262] == 0.0)
         {
-            _camera->moveCalibrationPoint(delta, 0);
+            setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {delta, 0});
             propagateCalibration();
         }
         if (io.KeysDownDuration[263] == 0.0)
         {
-            _camera->moveCalibrationPoint(-delta, 0);
+            setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
             propagateCalibration();
         }
         if (io.KeysDownDuration[264] == 0.0)
         {
-            _camera->moveCalibrationPoint(0, -delta);
+            setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, -delta});
             propagateCalibration();
         }
         if (io.KeysDownDuration[265] == 0.0)
         {
-            _camera->moveCalibrationPoint(0, delta);
+            setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, delta});
             propagateCalibration();
         }
 
