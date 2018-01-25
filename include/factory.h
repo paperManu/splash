@@ -91,7 +91,14 @@ class Factory
      * \param type Type name
      * \return Return true if the type exists
      */
-    bool isCreatable(std::string type);
+    bool isCreatable(const std::string& type);
+
+    /**
+     * Check whether the given type is savable in a project
+     * \param type Type name
+     * \return Return true if the type is savable in a project
+     */
+    bool isProjectSavable(const std::string& type);
 
   private:
     using BuildFuncT = std::function<std::shared_ptr<BaseObject>()>;
@@ -99,17 +106,19 @@ class Factory
     struct Page
     {
         Page() = default;
-        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, const std::string& sd = "none", const std::string& d = "none")
+        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, const std::string& sd = "none", const std::string& d = "none", bool ps = false)
             : builder(f)
             , objectCategory(o)
             , shortDescription(sd)
             , description(d)
+            , projectSavable(ps)
         {
         }
         BuildFuncT builder{};
         BaseObject::Category objectCategory{BaseObject::Category::MISC};
         std::string shortDescription{"none"};
         std::string description{"none"};
+        bool projectSavable{false};
         Values attributes{};
     };
 

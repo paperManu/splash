@@ -31,7 +31,6 @@ namespace Splash
 {
 /*************/
 World* World::_that;
-const vector<string> World::_partiallySavableTypes{"image", "texture", "mesh", "object", "filter", "queue", "virtual_probe"};
 
 /*************/
 World::World(int argc, char** argv)
@@ -721,27 +720,11 @@ void World::saveProject()
                 {
                     for (auto& v : config[m])
                     {
-                        auto from = v[0].asString();
-                        auto to = v[1].asString();
                         // Only keep links to partially saved types
-                        bool isSavableType = false;
-                        bool isLinkedToCam = false;
-                        for (const auto& type : _partiallySavableTypes)
-                            if (config[from]["type"].asString().find(type) != string::npos)
-                            {
-                                // If the object is linked to a camera, we save the link as
-                                // "saved to all available cameras"
-                                if (config[to]["type"].asString() == "camera")
-                                {
-                                    isLinkedToCam = true;
-                                    isSavableType = true;
-                                    continue;
-                                }
-
-                                for (const auto& type : _partiallySavableTypes)
-                                    if (config[to]["type"].asString().find(type) != string::npos)
-                                        isSavableType = true;
-                            }
+                        bool isSavableType = _factory->isProjectSavable(config[v[0].asString()]["type"].asString());
+                        // If the object is linked to a camera, we save the link as
+                        // "saved to all available cameras"
+                        bool isLinkedToCam = (config[v[1].asString()]["type"].asString() == "camera");
 
                         if (isLinkedToCam)
                             v[1] = SPLASH_CAMERA_LINK;
@@ -760,14 +743,7 @@ void World::saveProject()
                     continue;
 
                 // We only save configuration for non Scene-specific objects, which are one of the following:
-                bool isSavableType = false;
-                for (const auto& type : _partiallySavableTypes)
-                {
-                    if (config[m]["type"].asString().find(type) != string::npos)
-                        isSavableType = true;
-                }
-
-                if (!isSavableType)
+                if (!_factory->isProjectSavable(config[m]["type"].asString()))
                     continue;
 
                 root[m] = Json::Value();
@@ -1059,15 +1035,8 @@ bool World::loadProject(const string& filename)
                 if (!_config[s.first][m].isMember("type"))
                     continue;
 
-                bool isSavableType = false;
-                for (const auto& type : _partiallySavableTypes)
-                    if (_config[s.first][m]["type"].asString().find(type) != string::npos)
-                        isSavableType = true;
-
-                if (!isSavableType)
-                    continue;
-
-                setAttribute("deleteObject", {m});
+                if (_factory->isProjectSavable(_config[s.first][m]["type"].asString()))
+                    setAttribute("deleteObject", {m});
             }
         }
 
