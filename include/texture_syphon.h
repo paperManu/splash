@@ -81,6 +81,12 @@ class Texture_Syphon : public Texture
     ImageBufferSpec getSpec() const { return ImageBufferSpec(); }
 
     /**
+     * Get the output texture GL id
+     * \return Return the id
+     */
+    GLuint getTexId() const;
+
+    /**
      * \brief Try to link the given BaseObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */

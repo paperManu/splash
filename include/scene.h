@@ -37,8 +37,6 @@
 #include "./colorcalibrator.h"
 #endif
 #include "./attribute.h"
-#include "./controller.h"
-#include "./controller_gui.h"
 #include "./coretypes.h"
 #include "./factory.h"
 #include "./root_object.h"
@@ -47,6 +45,8 @@
 namespace Splash
 {
 
+class ControllerObject;
+class Gui;
 class Scene;
 
 /*************/

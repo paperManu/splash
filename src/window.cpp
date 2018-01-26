@@ -326,7 +326,7 @@ void Window::render()
     // else, we draw the window normally
     else
     {
-        glClearColor(0.0, 0.0, 0.0, 0.0);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
 
         auto layout = _layout;

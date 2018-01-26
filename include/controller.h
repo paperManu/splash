@@ -30,6 +30,7 @@
 
 #include "./attribute.h"
 #include "./coretypes.h"
+#include "./scene.h"
 #include "./userInput.h"
 
 namespace Splash
@@ -136,6 +137,13 @@ class ControllerObject : public BaseObject
     std::list<std::shared_ptr<BaseObject>> getObjectsOfType(const std::string& type) const;
 
     /**
+     * Get all objects of the given base type, including derived types
+     * \return Return a list of objects of the given type
+     */
+    template<typename T>
+    std::list<std::shared_ptr<T>> getObjectsOfBaseType() const;
+
+    /**
      * \brief Send a serialized buffer to the given BufferObject
      * \param name Object name
      * \param buffer Serialized buffer
@@ -192,6 +200,25 @@ class ControllerObject : public BaseObject
      */
     void registerAttributes() { BaseObject::registerAttributes(); }
 };
+
+/*************/
+template<typename T>
+std::list<std::shared_ptr<T>> ControllerObject::getObjectsOfBaseType() const
+{
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (!scene)
+        return {};
+
+    auto objects = std::list<std::shared_ptr<T>>();
+    for (auto& obj : scene->_objects)
+    {
+        auto objAsTexture = std::dynamic_pointer_cast<T>(obj.second);
+        if (objAsTexture)
+            objects.push_back(objAsTexture);
+    }
+
+    return objects;
+}
 
 } // end of namespace
 

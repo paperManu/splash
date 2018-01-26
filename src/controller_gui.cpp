@@ -20,6 +20,7 @@
 #include "./widget_node_view.h"
 #include "./widget_template.h"
 #include "./widget_text_box.h"
+#include "./widget_textures_view.h"
 #include "./widget_warp.h"
 #include "./window.h"
 
@@ -1195,6 +1196,9 @@ void Gui::initImWidgets()
     {
         auto perfGraph = make_shared<GuiGraph>(_scene, "Performance Graph");
         _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(perfGraph));
+
+        auto texturesView = make_shared<GuiTexturesView>(_scene, "Textures");
+        _guiWidgets.push_back(dynamic_pointer_cast<GuiWidget>(texturesView));
     }
 }
 

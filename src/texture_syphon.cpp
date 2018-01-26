@@ -68,6 +68,18 @@ void Texture_Syphon::unbind()
 }
 
 /**************/
+GLuint Texture_Syphon::getTexId() const
+{
+    if (_syphonReceiver.isConnected())
+    {
+        auto frameId = _syphonReceiver.getFrame();
+        return frameId;
+    }
+
+    return 0;
+}
+
+/**************/
 void Texture_Syphon::registerAttributes()
 {
     Texture::registerAttributes();

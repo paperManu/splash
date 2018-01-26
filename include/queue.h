@@ -177,6 +177,12 @@ class QueueSurrogate : public Texture
     std::shared_ptr<Filter> getFilter() const { return _filter; }
 
     /**
+     * \brief Get the id of the gl texture
+     * \return Return the texture id
+     */
+    GLuint getTexId() const { return _filter->getTexId(); }
+
+    /**
      * \brief Get the current source created by the queue
      * \return Return the current source
      */
