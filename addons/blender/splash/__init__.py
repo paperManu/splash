@@ -28,6 +28,9 @@ bl_info = {
     "category": "Object",
 }
 
+import sys
+sys.path.insert(0, '/usr/local/lib/python3/dist-packages')
+
 
 if "bpy" in locals():
     import imp
