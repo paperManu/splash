@@ -405,6 +405,10 @@ void World::applyConfig()
             sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
         }
 
+        // Make sure all objects have been created in every Scene, by sending a sync message
+        for (const auto& s : _scenes)
+            auto answer = sendMessageWithAnswer(s.first, "sync");
+
         // Then we link the objects together
         for (auto& s : _scenes)
         {
@@ -1398,6 +1402,9 @@ void World::registerAttributes()
                     sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
                     addLocally(type, name, s.first);
                 }
+
+                for (const auto& s : _scenes)
+                    auto answer = sendMessageWithAnswer(s.first, "sync");
 
                 auto path = Utils::getPathFromFilePath(_configFilename);
                 set(name, "configFilePath", {path}, false);

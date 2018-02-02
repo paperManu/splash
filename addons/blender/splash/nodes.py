@@ -284,7 +284,7 @@ class SplashImageNode(SplashBaseNode):
 
     def validate(self):
         if self.inputs['File'].default_value == "":
-            return False, "No object has been selected for node " + self.name
+            return False, "No filename has been set for node " + self.name
         else:
             return True, ""
 

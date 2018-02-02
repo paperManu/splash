@@ -1062,6 +1062,12 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("ping", "Ping the World");
 
+    addAttribute("sync", [&](const Values& args) {
+        addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
+        return true;
+    });
+    setAttributeDescription("sync", "Dummy message to make sure all previous messages have been processed by the Scene.");
+
     addAttribute("remove",
         [&](const Values& args) {
             addTask([=]() {
