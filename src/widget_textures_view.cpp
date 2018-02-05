@@ -29,6 +29,9 @@ void GuiTexturesView::render()
             Values size;
             cameraAsObj->getAttribute("size", size);
 
+            if (size[0].as<int>() == 0)
+                continue;
+
             int w = ImGui::GetWindowWidth() / 2;
             int h = w * size[1].as<int>() / size[0].as<int>();
 

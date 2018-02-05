@@ -853,6 +853,8 @@ void Image_FFmpeg::registerAttributes()
 
             _trimStart = start;
             _trimEnd = end;
+
+            return true;
         },
         [&]() -> Values {
             return {_trimStart, _trimEnd};
