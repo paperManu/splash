@@ -1,6 +1,21 @@
 Splash release notes
 ===================
 
+Splash 0.7.14 (2018-02-05)
+--------------------------
+New features:
+- Added the trim attribute to image_ffmpeg                                           
+- Added a texture debugging panel                                                    
+
+Improvements:
+- Added a Python module search path to Blender addon
+- Factory registers objects' savability                                              
+- Updated docs                                                                       
+
+Bugs fixed:
+- Fixed issues with calibration controls                                             
+- Fixed object linked to cameras when loading project                                
+
 Splash 0.7.12 (2018-01-05)
 --------------------------
 New features:
