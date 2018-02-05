@@ -350,7 +350,7 @@ void GuiGlobalView::doCalibration()
 /*************/
 void GuiGlobalView::propagateCalibration()
 {
-    vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
+    const vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
     for (auto& p : properties)
     {
         Values values;
@@ -420,7 +420,8 @@ void GuiGlobalView::processJoystickState()
 
         if (xValue != 0.f || yValue != 0.f)
         {
-            _camera->moveCalibrationPoint(xValue * speed, yValue * speed);
+            setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {xValue * speed, yValue * speed});
+            _camera->moveCalibrationPoint(0, 0);
             propagateCalibration();
         }
     }
@@ -486,21 +487,25 @@ void GuiGlobalView::processKeyEvents()
         if (io.KeysDownDuration[262] > 0.0)
         {
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {delta, 0});
+            _camera->moveCalibrationPoint(0, 0);
             propagateCalibration();
         }
         if (io.KeysDownDuration[263] > 0.0)
         {
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
+            _camera->moveCalibrationPoint(0, 0);
             propagateCalibration();
         }
         if (io.KeysDownDuration[264] > 0.0)
         {
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, -delta});
+            _camera->moveCalibrationPoint(0, 0);
             propagateCalibration();
         }
         if (io.KeysDownDuration[265] > 0.0)
         {
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, delta});
+            _camera->moveCalibrationPoint(0, 0);
             propagateCalibration();
         }
 
