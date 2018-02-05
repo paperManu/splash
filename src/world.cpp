@@ -25,6 +25,8 @@
 using namespace glm;
 using namespace std;
 
+#define SPLASH_CAMERA_LINK "__camera_link"
+
 namespace Splash
 {
 /*************/
@@ -403,6 +405,10 @@ void World::applyConfig()
             sendMessage(SPLASH_ALL_PEERS, "runInBackground", {_runInBackground});
         }
 
+        // Make sure all objects have been created in every Scene, by sending a sync message
+        for (const auto& s : _scenes)
+            auto answer = sendMessageWithAnswer(s.first, "sync");
+
         // Then we link the objects together
         for (auto& s : _scenes)
         {
@@ -717,7 +723,23 @@ void World::saveProject()
                 if (m == "links")
                 {
                     for (auto& v : config[m])
-                        root[m].append(v);
+                    {
+                        // Only keep links to partially saved types
+                        bool isSavableType = _factory->isProjectSavable(config[v[0].asString()]["type"].asString());
+                        // If the object is linked to a camera, we save the link as
+                        // "saved to all available cameras"
+                        bool isLinkedToCam = (config[v[1].asString()]["type"].asString() == "camera");
+
+                        if (isLinkedToCam)
+                            v[1] = SPLASH_CAMERA_LINK;
+
+                        if (isSavableType)
+                            root[m].append(v);
+
+                        // Prevent saving link to cameras multiple times
+                        if (isLinkedToCam)
+                            break;
+                    }
                     continue;
                 }
 
@@ -725,14 +747,7 @@ void World::saveProject()
                     continue;
 
                 // We only save configuration for non Scene-specific objects, which are one of the following:
-                bool isSavableType = false;
-                for (const auto& type : _partiallySavableTypes)
-                {
-                    if (config[m]["type"].asString().find(type) != string::npos)
-                        isSavableType = true;
-                }
-
-                if (!isSavableType)
+                if (!_factory->isProjectSavable(config[m]["type"].asString()))
                     continue;
 
                 root[m] = Json::Value();
@@ -905,17 +920,40 @@ Values World::jsonToValues(const Json::Value& values)
     else if (values.isDouble())
         outValues.emplace_back(values.asFloat());
     else if (values.isArray())
+    {
         for (const auto& v : values)
         {
             if (v.isInt())
                 outValues.emplace_back(v.asInt());
             else if (v.isDouble())
                 outValues.emplace_back(v.asFloat());
-            else if (v.isArray())
+            else if (v.isArray() || v.isObject())
                 outValues.emplace_back(jsonToValues(v));
             else
                 outValues.emplace_back(v.asString());
         }
+    }
+    else if (values.isObject())
+    {
+        auto names = values.getMemberNames();
+        int index = 0;
+        for (const auto& v : values)
+        {
+            if (v.isInt())
+                outValues.emplace_back(v.asInt(), names[index]);
+            else if (v.isDouble())
+                outValues.emplace_back(v.asFloat(), names[index]);
+            else if (v.isArray() || v.isObject())
+                outValues.emplace_back(jsonToValues(v), names[index]);
+            else
+            {
+                outValues.emplace_back(v.asString());
+                outValues.back().setName(names[index]);
+            }
+
+            ++index;
+        }
+    }
     else
         outValues.emplace_back(values.asString());
 
@@ -1001,15 +1039,8 @@ bool World::loadProject(const string& filename)
                 if (!_config[s.first][m].isMember("type"))
                     continue;
 
-                bool isSavableType = false;
-                for (const auto& type : _partiallySavableTypes)
-                    if (_config[s.first][m]["type"].asString().find(type) != string::npos)
-                        isSavableType = true;
-
-                if (!isSavableType)
-                    continue;
-
-                setAttribute("deleteObject", {m});
+                if (_factory->isProjectSavable(_config[s.first][m]["type"].asString()))
+                    setAttribute("deleteObject", {m});
             }
         }
 
@@ -1025,6 +1056,7 @@ bool World::loadProject(const string& filename)
         }
 
         // Handle the links
+        // We will need a list of all cameras
         if (partialConfig.isMember("links"))
         {
             for (const auto& link : partialConfig["links"])
@@ -1034,7 +1066,18 @@ bool World::loadProject(const string& filename)
                 auto source = link[0].asString();
                 auto sink = link[1].asString();
 
-                addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
+                addTask([=]() {
+                    if (sink != SPLASH_CAMERA_LINK)
+                    {
+                        sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
+                    }
+                    else
+                    {
+                        auto cameraNames = getObjectsNameByType("camera");
+                        for (const auto& camera : cameraNames)
+                            sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
+                    }
+                });
             }
         }
 
@@ -1359,6 +1402,9 @@ void World::registerAttributes()
                     sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
                     addLocally(type, name, s.first);
                 }
+
+                for (const auto& s : _scenes)
+                    auto answer = sendMessageWithAnswer(s.first, "sync");
 
                 auto path = Utils::getPathFromFilePath(_configFilename);
                 set(name, "configFilePath", {path}, false);

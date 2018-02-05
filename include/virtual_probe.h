@@ -123,6 +123,12 @@ class VirtualProbe : public Texture
     void unbind() final;
 
     /**
+     * \brief Get the id of the gl texture
+     * \return Return the texture id
+     */
+    GLuint getTexId() const { return _outFbo->getColorTexture()->getTexId(); }
+
+    /**
      * \brief Update for a VirtualProbe does nothing, it is the render() job
      */
     void update() final {}

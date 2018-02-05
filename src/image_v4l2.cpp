@@ -306,17 +306,17 @@ bool Image_V4L2::initializeCapture()
         {
             if (errno != EINVAL)
             {
-                Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - VIDIOC_QUERYCTRL failed for RGB133_V4L2_CID_LIVESTREAM" << Log::endl;
+                Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - VIDIOC_QUERYCTRL failed for RGB133_V4L2_CID_LIVESTREAM" << Log::endl;
                 return false;
             }
             else
             {
-                Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM is not supported" << Log::endl;
+                Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM is not supported" << Log::endl;
             }
         }
         else if (queryCtrl.flags & V4L2_CTRL_FLAG_DISABLED)
         {
-            Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM is not supported" << Log::endl;
+            Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM is not supported" << Log::endl;
         }
         else
         {
@@ -326,7 +326,7 @@ bool Image_V4L2::initializeCapture()
             result = ioctl(_deviceFd, VIDIOC_S_CTRL, &control);
             if (result == -1)
             {
-                Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - VIDIOC_S_CTRL failed for RGB133_V4L2_CID_LIVESTREAM" << Log::endl;
+                Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - VIDIOC_S_CTRL failed for RGB133_V4L2_CID_LIVESTREAM" << Log::endl;
                 return false;
             }
         }
@@ -336,11 +336,11 @@ bool Image_V4L2::initializeCapture()
         result = ioctl(_deviceFd, VIDIOC_G_CTRL, &control);
         if (result == -1)
         {
-            Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - VIDIOC_G_CTRL failed for RGB133_V4L2_CID_LIVESTREAM" << Log::endl;
+            Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - VIDIOC_G_CTRL failed for RGB133_V4L2_CID_LIVESTREAM" << Log::endl;
             return false;
         }
 
-        Log::get() << Log::MESSAGE << " Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM current value: " << control.value << Log::endl;
+        Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - RGB133_V4L2_CID_LIVESTREAM current value: " << control.value << Log::endl;
     }
 #endif
 
@@ -354,7 +354,7 @@ bool Image_V4L2::openControlDevice()
     if ((_controlFd = open(_controlDevicePath.c_str(), O_RDWR)) < 0)
     {
         _isDatapath = false;
-        Log::get() << Log::WARNING << " Image_V4L2::" << __FUNCTION__ << " - Unable to open control device." << Log::endl;
+        Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Unable to open control device." << Log::endl;
         return false;
     }
 

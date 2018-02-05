@@ -571,6 +571,22 @@ void Filter::registerDefaultShaderAttributes()
         {'n'});
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
+    addAttribute("size",
+        [&](const Values& args) { return true; },
+        [&]() -> Values {
+            if (_inTextures.empty())
+                return {0, 0};
+
+            auto texture = _inTextures[0].lock();
+            if (!texture)
+                return {0, 0};
+
+            auto inputSpec = texture->getSpec();
+            return {inputSpec.width, inputSpec.height};
+        },
+        {});
+    setAttributeDescription("size", "Size of the input texture");
+
     addAttribute("sizeOverride",
         [&](const Values& args) {
             _sizeOverride[0] = args[0].as<int>();

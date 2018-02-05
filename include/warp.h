@@ -89,6 +89,12 @@ class Warp : public Texture
     std::shared_ptr<Texture_Image> getTexture() const { return _fbo->getColorTexture(); }
 
     /**
+     * Get the output texture GL id
+     * \return Return the id
+     */
+    GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
+
+    /**
      * \brief Get spec of the texture
      * \return Return the spec
      */

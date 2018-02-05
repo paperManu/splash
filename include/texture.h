@@ -83,6 +83,12 @@ class Texture : public BaseObject
     virtual ImageBufferSpec getSpec() const = 0;
 
     /**
+     * Get the output texture GL id
+     * \return Return the id
+     */
+    virtual GLuint getTexId() const = 0;
+
+    /**
      * \brief Get the prefix for the glsl sampler name
      */
     virtual std::string getPrefix() const { return "_tex"; }

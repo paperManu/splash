@@ -125,6 +125,7 @@ target_sources(
     widget_meshes.cpp
     widget_template.cpp
     widget_text_box.cpp
+    widget_textures_view.cpp
     widget_warp.cpp
     window.cpp
     ../external/imgui/imgui_demo.cpp

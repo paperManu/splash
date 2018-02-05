@@ -79,7 +79,7 @@ class Filter : public Texture
      * Get the output texture
      * \return Return the output texture
      */
-    std::shared_ptr<Texture> getOutTexture() const { return _fbo->getColorTexture(); }
+    std::shared_ptr<Texture_Image> getOutTexture() const { return _fbo->getColorTexture(); }
 
     /**
      * Get the shader parameters related to this texture
@@ -92,6 +92,12 @@ class Filter : public Texture
      * \return Return the texture specs
      */
     ImageBufferSpec getSpec() const { return _fbo->getColorTexture()->getSpec(); }
+
+    /**
+     * \brief Get the id of the gl texture
+     * \return Return the texture id
+     */
+    GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
 
     /**
      * \brief Try to link the given BaseObject to this object

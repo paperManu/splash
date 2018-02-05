@@ -84,8 +84,8 @@ The current release of Splash has currently only been compiled and tested on Ubu
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
-    sudo apt install build-essential git-core cmake automake libtool clang libxrandr-dev libxi-dev
-    sudo apt install libglm-dev libgsl0-dev libatlas3-base libgphoto2-dev
+    sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev
+    sudo apt install mesa-common-dev libglm-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev
     sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev
 
     git clone git://github.com/paperManu/splash
@@ -115,60 +115,6 @@ Then log out and log back in.
 If you want to specify some defaults values for the objects, you can set the environment variable SPLASH_DEFAULTS with the path to a file defining default values for given types. An example of such a file can be found in [data/splashrc](data/splashrc)
 
 And that's it, you can move on the the [Walkthrough](https://github.com/paperManu/splash/wiki/Walkthrough) page.
-
-#### Mac OSX
-
-__DISCLAIMER:__ The port to OSX is not well maintained, mainly because of the lack of time. A maintainer would be very welcome, feel free to stand up if you are willing to help.
-
-OSX installation is still a work in progress and has not been extensively tested (far from it!). Also, our current tests have shown that it is far easier to install on OSX version 10.9 or newer, as they switched from libstdc++ (GCC standard library) to libc++ (Clang standard library) as default which seems to solve tedious linking issues.
-
-So, let's start with the installation of the dependencies. Firstly download and install [MacPorts](https://www.macports.org/install.php) or [Homebrew](https://brew.sh), after having installed Xcode Developer Tools and XCode Command Line Developer Tools (from the [Apple Developer website](https://developer.apple.com/downloads)).
-
-The following steps will be using the port command from MacPorts, you may replace it with the brew equivalent if you are more of a Homebrew user. Note that compiling with the Homebrew versions of the libraries has not been tested, so please report issues (and ideally solutions as I do not have a Mac with Homebrew...).
-
-With MacPorts, install the following packages:
-
-    sudo port install libtool cmake git pkgconfig gstreamer1 python35 gsl zmq glfw glm portaudio
-
-With Homebrew, install the following packages:
-    
-    brew install libtool cmake git pkgconfig gstreamer python3 gsl zeromq homebrew/versions/glfw3 glm portaudio ffmpeg snappy libgphoto2
-
-We then install Shmdata, which depends on GStreamer. Note that Shmdata is only needed if you want Splash to communicate with other Shmdata-compatible softwares. If you want to read video files or feed Splash through Syphon, you can skip this step.
-
-    git clone https://github.com/nicobou/shmdata
-    cd shmdata
-    ./autogen.sh && ./configure
-    make && sudo make install
-    cd ..
-
-Install all the other dependencies:
-
-And then grab and install Splash:
-
-    git clone https://github.com/paperManu/splash
-    cd splash
-    git submodule update --init
-    ./make_deps.sh
-    mkdir -p build && cd build
-    cmake ..
-    make && sudo make install
-
-You should now be able to launch Splash:
-
-    splash --help
-
-It is also possible to create an app bundle automatically, the resulting bundle will be placed in the 'osx' subdirectory:
-
-    git clone https://github.com/paperManu/splash
-    cd splash
-    git submodule update --init
-    ./make_deps.sh
-    mkdir -p build && cd build
-    cmake ..
-    make && make package_osx
-
-Remember that it is a very early port to OSX.
 
 <a name="goingforward"/></a>
 Going forward

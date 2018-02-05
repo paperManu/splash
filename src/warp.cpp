@@ -324,6 +324,19 @@ void Warp::registerAttributes()
         {'n', 'n'});
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
+    addAttribute("size",
+        [&](const Values& args) { return true; },
+        [&]() -> Values {
+            auto camera = _inCamera.lock();
+            if (!camera)
+                return {0, 0};
+            Values size;
+            camera->getAttribute("size", size);
+            return size;
+        },
+        {});
+    setAttributeDescription("size", "Size of the input camera");
+
     // Show the Bezier patch describing the warp
     // Also resets the selected control point if hidden
     addAttribute("showControlLattice",

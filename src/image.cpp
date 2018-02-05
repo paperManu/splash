@@ -402,6 +402,8 @@ void Image::registerAttributes()
     addAttribute("file",
         [&](const Values& args) {
             _filepath = args[0].as<string>();
+            if (_filepath.empty())
+                return true;
             return read(Utils::getFullPathFromFilePath(_filepath, _root->getConfigurationPath()));
         },
         [&]() -> Values { return {_filepath}; },

@@ -110,6 +110,8 @@ class Image_FFmpeg : public Image
     float _shiftTime{0};
     float _seekTime{0};
     bool _paused{false};
+    float _trimStart{0.f}; //!< Start trimming time
+    float _trimEnd{0.f};   //!< End trimming time
 
     std::mutex _clockMutex;
     bool _useClock{false};
@@ -149,6 +151,11 @@ class Image_FFmpeg : public Image
      * \brief Free everything related to FFmpeg
      */
     void freeFFmpegObjects();
+
+    /**
+     * Get the media duration
+     */
+    float getMediaDuration() const;
 
     /**
      * \brief Base init for the class
