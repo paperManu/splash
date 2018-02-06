@@ -207,16 +207,6 @@ void Gui::saveProject()
 }
 
 /*************/
-void Gui::flashBackground()
-{
-    if (_flashBG)
-        setWorldAttribute("flashBG", {0});
-    else
-        setWorldAttribute("flashBG", {1});
-    _flashBG = !_flashBG;
-}
-
-/*************/
 void Gui::setJoystick(const vector<float>& axes, const vector<uint8_t>& buttons)
 {
     for (auto& w : _guiWidgets)
@@ -372,7 +362,7 @@ void Gui::key(int key, int action, int mods)
     case GLFW_KEY_F:
     {
         if (action == GLFW_PRESS && mods == GLFW_MOD_CONTROL)
-            flashBackground();
+            setObjectsOfType("camera", "flashBG", {});
         break;
     }
     case GLFW_KEY_M:
@@ -598,7 +588,7 @@ void Gui::render()
                 ImGui::SetTooltip("To use once cameras are calibrated (Ctrl+B, Ctrl+Alt+B to compute at each frames)");
 
             if (ImGui::Button("Flash background"))
-                flashBackground();
+                setObjectsOfType("camera", "flashBG", {});
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Set the background as light gray (Ctrl+F)");
 
@@ -1046,35 +1036,46 @@ void Gui::initImWidgets()
     // Some help regarding keyboard shortcuts
     auto helpBox = make_shared<GuiTextBox>(_scene, "Shortcuts");
     helpBox->setTextFunc([]() {
-        string text;
-        text += "Tab: show / hide this GUI\n";
-        text += "General shortcuts:\n";
-        text += " Ctrl+F: white background instead of black\n";
-        text += " Ctrl+B: compute the blending between all projectors\n";
-        text += " Ctrl+Alt+B: compute the blending between all projectors at every frame\n";
-        text += " Ctrl+M: hide/show the OS cursor\n";
-        text += " Ctrl+T: textured draw mode\n";
-        text += " Ctrl+W: wireframe draw mode\n";
+        string text = R"(Tab: show / hide this GUI
+        General shortcuts:
+         Ctrl+F: white background instead of black
+         Ctrl+B: compute the blending between all projectors
+         Ctrl+Alt+B: compute the blending between all projectors at every frame
+         Ctrl+M: hide/show the OS cursor
+         Ctrl+T: textured draw mode
+         Ctrl+W: wireframe draw mode
+        )";
 #if HAVE_GPHOTO
-        text += "\n";
-        text += " Ctrl+O: launch camera color calibration\n";
-        text += " Ctrl+P: launch projectors color calibration\n";
-        text += " Ctrl+L: activate color LUT (if calibrated)\n";
+        text += R"(
+         Ctrl+O: launch camera color calibration
+         Ctrl+P: launch projectors color calibration
+         Ctrl+L: activate color LUT (if calibrated)
+        )";
 #endif
-        text += "\n";
-        text += "Views panel:\n";
-        text += " Ctrl + left click on a camera thumbnail: hide / show the given camera\n";
-        text += " Space: switch between projectors\n";
-        text += " A: show / hide the target calibration point\n";
-        text += " C: calibrate the selected camera\n";
-        text += " H: hide all but the selected camera\n";
-        text += " O: show calibration points from all cameras\n";
-        text += " Ctrl+Z: revert camera to previous calibration\n";
+        text += R"(
+        Views panel:
+         Ctrl + left click on a camera thumbnail: hide / show the given camera
+         Space: switch between projectors
+         A: show / hide the target calibration point
+         C: calibrate the selected camera
+         H: hide all but the selected camera
+         O: show calibration points from all cameras
+         Ctrl+Z: revert camera to previous calibration
 
-        text += "\n";
-        text += "Node view (inside Control panel):\n";
-        text += " Shift + left click: link the clicked node to the selected one\n";
-        text += " Ctrl + left click: unlink the clicked node from the selected one\n";
+        Node view (inside Control panel):
+         Shift + left click: link the clicked node to the selected one
+         Ctrl + left click: unlink the clicked node from the selected one
+
+        Joystick controls (may vary with the controller):
+         Directions: move the selected calibration point
+         Button 1: select previous calibration point
+         Button 2: select next calibration point
+         Button 3: hide all but the selected cameras
+         Button 4: calibrate
+         Button 5: move calibration point slower
+         Button 6: move calibration point faster
+         Button 7: flash the background to light gray
+        )";
 
         return text;
     });

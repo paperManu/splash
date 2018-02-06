@@ -220,7 +220,6 @@ class Gui : public ControllerObject
     bool _mouseHoveringWindow{false};
     bool _isVisible{false};
     bool _wasVisible{true};
-    bool _flashBG{false}; // Set to true if the BG is set to all white for all outputs
     bool _wireframe{false};
     bool _blendingActive{false};
     bool _showAbout{false};
@@ -278,11 +277,6 @@ class Gui : public ControllerObject
      * \param text Text to set the clipboard to
      */
     static void setClipboardText(void* userData, const char* text);
-
-    /**
-     * \brief Make the background flash to light grey
-     */
-    void flashBackground();
 
     /**
      * \brief Copy camera parameters from the specified configuration file to the current configuration

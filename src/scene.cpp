@@ -999,20 +999,6 @@ void Scene::registerAttributes()
         {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
     setAttributeDescription("masterClock", "Set the timing of the master clock");
 
-    addAttribute("flashBG",
-        [&](const Values& args) {
-            addTask([=]() {
-                lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-                for (auto& obj : _objects)
-                    if (dynamic_pointer_cast<Camera>(obj.second).get() != nullptr)
-                        dynamic_pointer_cast<Camera>(obj.second)->setAttribute("flashBG", {(int)(args[0].as<int>())});
-            });
-
-            return true;
-        },
-        {'n'});
-    setAttributeDescription("flashBG", "Switches the background color from black to light grey");
-
     addAttribute("getObjectsNameByType",
         [&](const Values& args) {
             addTask([=]() {

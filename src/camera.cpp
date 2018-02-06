@@ -17,6 +17,7 @@
 #include "./log.h"
 #include "./mesh.h"
 #include "./object.h"
+#include "./osUtils.h"
 #include "./scene.h"
 #include "./shader.h"
 #include "./texture.h"
@@ -178,6 +179,16 @@ void Camera::blendingTessellateForCurrentCamera()
 }
 
 /*************/
+void calibrationCallback(const size_t iter, void* params, const gsl_multifit_nlinear_workspace* w)
+{
+    gsl_vector* x = gsl_multifit_nlinear_position(w);
+    cout << iter << " --> ";
+    for (int i = 0; i < 9; ++i)
+        cout << gsl_vector_get(x, i) << " ";
+    cout << endl;
+}
+
+/*************/
 bool Camera::doCalibration()
 {
     int pointsSet = 0;
@@ -199,14 +210,12 @@ bool Camera::doCalibration()
 
     gsl_multimin_function calibrationFunc;
     calibrationFunc.n = 9;
-    calibrationFunc.f = &Camera::cameraCalibration_f;
+    calibrationFunc.f = &Camera::calibrationCostFunc;
     calibrationFunc.params = (void*)this;
 
     Log::get() << "Camera::" << __FUNCTION__ << " - Starting calibration..." << Log::endl;
 
-    const gsl_multimin_fminimizer_type* minimizerType;
-    minimizerType = gsl_multimin_fminimizer_nmsimplex2rand;
-
+    const gsl_multimin_fminimizer_type* minimizerType = gsl_multimin_fminimizer_nmsimplex2rand;
     // Variables we do not want to keep between tries
     dvec3 eyeOriginal = _eye;
     float fovOriginal = _fov;
@@ -214,86 +223,71 @@ bool Camera::doCalibration()
     double minValue = numeric_limits<double>::max();
     vector<double> selectedValues(9);
 
-    mutex gslMutex;
-    // First step: we try a bunch of starts and keep the best one
+    gsl_multimin_fminimizer* minimizer;
+    minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
+    gsl_vector* x = gsl_vector_alloc(9);
+    gsl_vector* step = gsl_vector_alloc(9);
+    gsl_vector_set(step, 0, 10.0);
+    gsl_vector_set(step, 1, 0.1);
+    gsl_vector_set(step, 2, 0.1);
+    for (int i = 3; i < 6; ++i)
+        gsl_vector_set(step, i, 1.0);
+    for (int i = 3; i < 9; ++i)
+        gsl_vector_set(step, i, M_PI / 4.0);
+
+    // First step: find a rough estimate, quickly
+    for (double s = 0.0; s <= 1.3; s += 0.3)
     {
-        vector<future<void>> threads;
-        for (int index = 0; index < 4; ++index)
+        for (double t = 0.0; t <= 1.3; t += 0.3)
         {
-            threads.push_back(async(launch::async, [&]() {
-                gsl_multimin_fminimizer* minimizer;
-                minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
+            gsl_vector_set(x, 0, 50.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 25.0);
+            gsl_vector_set(x, 1, s);
+            gsl_vector_set(x, 2, t);
+            for (int i = 0; i < 3; ++i)
+            {
+                gsl_vector_set(x, i + 3, eyeOriginal[i]);
+                gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * M_PI * 2.0);
+            }
 
-                for (double s = 0.0; s <= 1.0; s += 0.2)
-                    for (double t = 0.0; t <= 1.0; t += 0.2)
-                    {
-                        gsl_vector* step = gsl_vector_alloc(9);
-                        gsl_vector_set(step, 0, 10.0);
-                        gsl_vector_set(step, 1, 0.1);
-                        gsl_vector_set(step, 2, 0.1);
-                        for (int i = 3; i < 9; ++i)
-                            gsl_vector_set(step, i, 0.1);
+            gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
 
-                        gsl_vector* x = gsl_vector_alloc(9);
-                        gsl_vector_set(x, 0, 35.0 + ((float)rand() / RAND_MAX * 2.0 - 1.0) * 16.0);
-                        gsl_vector_set(x, 1, s);
-                        gsl_vector_set(x, 2, t);
-                        for (int i = 0; i < 3; ++i)
-                        {
-                            gsl_vector_set(x, i + 3, eyeOriginal[i]);
-                            gsl_vector_set(x, i + 6, (float)rand() / RAND_MAX * 360.f);
-                        }
+            size_t iter = 0;
+            int status = GSL_CONTINUE;
+            double localMinimum = numeric_limits<double>::max();
+            while (status == GSL_CONTINUE && iter < 1000 && localMinimum > 64.0)
+            {
+                iter++;
+                status = gsl_multimin_fminimizer_iterate(minimizer);
+                if (status)
+                {
+                    Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
+                    break;
+                }
 
-                        gsl_multimin_fminimizer_set(minimizer, &calibrationFunc, x, step);
+                status = gsl_multimin_test_size(minimizer->size, 1e-2);
+                localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
+            }
 
-                        size_t iter = 0;
-                        int status = GSL_CONTINUE;
-                        double localMinimum = numeric_limits<double>::max();
-                        while (status == GSL_CONTINUE && iter < 10000 && localMinimum > 0.5)
-                        {
-                            iter++;
-                            status = gsl_multimin_fminimizer_iterate(minimizer);
-                            if (status)
-                            {
-                                Log::get() << Log::WARNING << "Camera::" << __FUNCTION__ << " - An error has occured during minimization" << Log::endl;
-                                break;
-                            }
-
-                            status = gsl_multimin_test_size(minimizer->size, 1e-6);
-                            localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
-                        }
-
-                        lock_guard<mutex> lock(gslMutex);
-                        if (localMinimum < minValue)
-                        {
-                            minValue = localMinimum;
-                            for (int i = 0; i < 9; ++i)
-                                selectedValues[i] = gsl_vector_get(minimizer->x, i);
-                        }
-
-                        gsl_vector_free(x);
-                        gsl_vector_free(step);
-                    }
-
-                gsl_multimin_fminimizer_free(minimizer);
-            }));
+            if (localMinimum < minValue)
+            {
+                minValue = localMinimum;
+                for (int i = 0; i < 9; ++i)
+                    selectedValues[i] = gsl_vector_get(minimizer->x, i);
+            }
         }
     }
 
     // Second step: we improve on the best result from the previous step
     for (int index = 0; index < 8; ++index)
     {
-        gsl_multimin_fminimizer* minimizer;
-        minimizer = gsl_multimin_fminimizer_alloc(minimizerType, 9);
-
-        gsl_vector* step = gsl_vector_alloc(9);
         gsl_vector_set(step, 0, 1.0);
         gsl_vector_set(step, 1, 0.05);
         gsl_vector_set(step, 2, 0.05);
+        for (int i = 3; i < 6; ++i)
+            gsl_vector_set(step, i, 0.1);
         for (int i = 3; i < 9; ++i)
-            gsl_vector_set(step, i, 0.01);
+            gsl_vector_set(step, i, M_PI / 10.0);
 
-        gsl_vector* x = gsl_vector_alloc(9);
         for (int i = 0; i < 9; ++i)
             gsl_vector_set(x, i, selectedValues[i]);
 
@@ -312,11 +306,10 @@ bool Camera::doCalibration()
                 break;
             }
 
-            status = gsl_multimin_test_size(minimizer->size, 1e-6);
+            status = gsl_multimin_test_size(minimizer->size, 1e-7);
             localMinimum = gsl_multimin_fminimizer_minimum(minimizer);
         }
 
-        lock_guard<mutex> lock(gslMutex);
         if (localMinimum < minValue)
         {
             minValue = localMinimum;
@@ -324,11 +317,13 @@ bool Camera::doCalibration()
                 selectedValues[i] = gsl_vector_get(minimizer->x, i);
         }
 
-        gsl_vector_free(x);
-        gsl_vector_free(step);
-        gsl_multimin_fminimizer_free(minimizer);
     }
 
+    gsl_vector_free(x);
+    gsl_vector_free(step);
+    gsl_multimin_fminimizer_free(minimizer);
+
+    // If the result is good enough, apply it. Otherwise, drop!
     if (minValue > 1000.0)
     {
         Log::get() << "Camera::" << __FUNCTION__ << " - Minumum found at (fov, cx, cy): " << selectedValues[0] << " " << selectedValues[1] << " " << selectedValues[2] << Log::endl;
@@ -370,7 +365,23 @@ bool Camera::doCalibration()
         _updatedParams = true;
     }
 
+    // Keep the reprojection error
     _calibrationReprojectionError = minValue;
+
+    // Propagate the calibration to other Scenes
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (scene && scene->isMaster())
+    {
+        const vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
+        for (auto& p : properties)
+        {
+            Values values;
+            getAttribute(p, values);
+            values.push_front(p);
+            values.push_front(_name);
+            scene->sendMessageToWorld("sendAll", values);
+        }
+    }
 
     return true;
 }
@@ -779,6 +790,8 @@ bool Camera::addCalibrationPoint(const Values& worldPoint)
         object->addCalibrationPoint(world);
     }
 
+    _calibrationCalledOnce = false;
+
     return true;
 }
 
@@ -804,7 +817,8 @@ void Camera::moveCalibrationPoint(float dx, float dy)
     auto distanceToBorder = std::min(screenX, std::min(screenY, std::min(1.f - screenX, 1.f - screenY)));
     _calibrationPoints[_selectedCalibrationPoint].weight = 1.f - distanceToBorder;
 
-    if (_calibrationCalledOnce)
+    auto scene = dynamic_cast<Scene*>(_root);
+    if (_calibrationCalledOnce && scene && scene->isMaster())
         doCalibration();
 }
 
@@ -887,7 +901,7 @@ bool Camera::setCalibrationPoint(const Values& screenPoint)
 }
 
 /*************/
-double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
+double Camera::calibrationCostFunc(const gsl_vector* v, void* params)
 {
     if (params == NULL)
         return 0.0;
@@ -908,7 +922,7 @@ double Camera::cameraCalibration_f(const gsl_vector* v, void* params)
     }
 
     // Some limits for the calibration parameters
-    if (fov > 120.0 || abs(cx - 0.5) > 1.0 || abs(cy - 0.5) > 1.0)
+    if (fov < 4.0 || fov > 120.0 || abs(cx - 0.5) > 1.0 || abs(cy - 0.5) > 1.0)
         return numeric_limits<double>::max();
 
     dvec3 eye;
@@ -1111,6 +1125,24 @@ void Camera::registerAttributes()
         {'n', 'n'});
     setAttributeDescription("size", "Set the render size");
 
+    addAttribute("near",
+        [&](const Values& args) {
+            _near = args[0].as<float>();
+            return true;
+        },
+        [&]() -> Values { return {_near}; },
+        {});
+    setAttributeDescription("near", "Closest visible distance");
+
+    addAttribute("far",
+        [&](const Values& args) {
+            _far = args[0].as<float>();
+            return true;
+        },
+        [&]() -> Values { return {_far}; },
+        {});
+    setAttributeDescription("far", "Farthest visible distance");
+
     addAttribute("principalPoint",
         [&](const Values& args) {
             _cx = args[0].as<float>();
@@ -1234,6 +1266,14 @@ void Camera::registerAttributes()
         },
         {'n'});
     setAttributeDescription("forward", "Move the camera forward along its Z axis");
+
+    addAttribute("calibrate", [&](const Values& args) {
+        auto scene = dynamic_cast<Scene*>(_root);
+        if (scene && scene->isMaster())
+            doCalibration();
+        return true;
+    });
+    setAttributeDescription("calibrate", "Compute calibration with the current calibration points");
 
     addAttribute("addCalibrationPoint",
         [&](const Values& args) {
@@ -1572,13 +1612,11 @@ void Camera::registerAttributes()
     });
     setAttributeDescription("switchDisplayAllCalibration", "Switch whether to show all calibration points in this camera");
 
-    addAttribute("flashBG",
-        [&](const Values& args) {
-            _flashBG = args[0].as<int>();
-            return true;
-        },
-        {'n'});
-    setAttributeDescription("flashBG", "If set to 1, switch background to light gray");
+    addAttribute("flashBG", [&](const Values& args) {
+        _flashBG = !_flashBG;
+        return true;
+    });
+    setAttributeDescription("flashBG", "Switch background to light gray");
 
     addAttribute("getReprojectionError", [&](const Values& args) { return true; }, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");

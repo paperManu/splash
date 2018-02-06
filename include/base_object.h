@@ -77,7 +77,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     BaseObject()
         : _root(nullptr)
     {
-        init();
+        registerAttributes();
     }
 
     /**
@@ -87,7 +87,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     BaseObject(RootObject* root)
         : _root(root)
     {
-        init();
+        registerAttributes();
     }
 
     /**
@@ -182,7 +182,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param args Values object which holds attribute values
      * \return Returns true if the parameter exists and was set
      */
-    bool setAttribute(const std::string& attrib, const Values& args);
+    bool setAttribute(const std::string& attrib, const Values& args = {});
 
     /**
      * \brief Get the specified attribute
@@ -374,11 +374,6 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \param task Task function
      */
     void addTask(const std::function<void()>& task);
-
-    /**
-     * \brief Initialize some generic attributes
-     */
-    void init();
 
     /**
      * \brief Add a new attribute to this object

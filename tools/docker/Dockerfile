@@ -1,4 +1,4 @@
-FROM ubuntu:xenial
+FROM ubuntu:artful
 MAINTAINER Emmanuel Durand <emmanueldurand@protonmail.com>
 
 RUN apt update && apt upgrade -y

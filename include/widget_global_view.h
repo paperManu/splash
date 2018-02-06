@@ -100,8 +100,10 @@ class GuiGlobalView : public GuiWidget
      */
     void colorizeCameraWireframes(bool colorize);
 
+    /**
+     * Call camera's calibration method, after saving the current state
+     */
     void doCalibration();
-    void propagateCalibration(); // Propagates calibration to other Scenes if needed
 
     /**
      * \brief Hide all cameras except for the selected one

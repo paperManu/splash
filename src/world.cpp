@@ -1463,15 +1463,6 @@ void World::registerAttributes()
         {'s', 's'});
     setAttributeDescription("unlink", "Unlink the two given objects");
 
-    addAttribute("flashBG",
-        [&](const Values& args) {
-            addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "flashBG", {args[0].as<int>()}); });
-
-            return true;
-        },
-        {'n'});
-    setAttributeDescription("flashBG", "Switches the background color from black to light grey");
-
 #if HAVE_LINUX
     addAttribute("forceRealtime",
         [&](const Values& args) {

@@ -26,9 +26,6 @@
 #define SPLASH_CAMERA_H
 
 #include <functional>
-#include <glm/glm.hpp>
-#include <gsl/gsl_deriv.h>
-#include <gsl/gsl_multimin.h>
 #include <list>
 #include <memory>
 #include <string>
@@ -36,9 +33,18 @@
 #include <utility>
 #include <vector>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_deriv.h>
+#include <gsl/gsl_multimin.h>
+#include <gsl/gsl_multifit_nlinear.h>
+
 #include "./config.h"
 
 #include "./attribute.h"
+#include "./cgUtils.h"
 #include "./coretypes.h"
 #include "./framebuffer.h"
 #include "./geometry.h"
@@ -293,7 +299,7 @@ class Camera : public BaseObject
     std::list<Drawable> _drawables;
 
     // Function used for the calibration (camera parameters optimization)
-    static double cameraCalibration_f(const gsl_vector* v, void* params);
+    static double calibrationCostFunc(const gsl_vector* v, void* params);
 
     /**
      * \brief Load some defaults models, like the locator for calibration

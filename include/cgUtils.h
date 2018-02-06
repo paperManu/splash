@@ -39,6 +39,10 @@ namespace Splash
 {
 
 /*************/
+// Color stuff
+/*************/
+
+/*************/
 struct RgbValue
 {
     RgbValue(){};
@@ -221,23 +225,19 @@ inline glm::dmat4 getProjectionMatrix(float fov, float near, float far, float wi
     f = far;
     // Up and down
     double tTemp = n * tan(fov * M_PI / 360.0);
-    double bTemp = -tTemp;
-    t = tTemp - (cy - 0.5) * (tTemp - bTemp);
-    b = bTemp - (cy - 0.5) * (tTemp - bTemp);
+    t = tTemp - (cy - 0.5) * 2.0 * tTemp;
+    b = -tTemp - (cy - 0.5) * 2.0 * tTemp;
     // Left and right
     double rTemp = tTemp * width / height;
-    double lTemp = bTemp * width / height;
+    double lTemp = -tTemp * width / height;
     r = rTemp - (cx - 0.5) * (rTemp - lTemp);
     l = lTemp - (cx - 0.5) * (rTemp - lTemp);
 
     return glm::frustum(l, r, b, t, n, f);
 }
 
-/**
- * \brief Get the view matrix
- * \return Return the view matrix
- */
-
+/*************/
+// HAP
 /*************/
 // Hap chunk callback
 void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* info);

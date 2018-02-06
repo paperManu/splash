@@ -341,22 +341,9 @@ void GuiGlobalView::doCalibration()
     _previousCameraParameters.push_back(params);
 
     // Calibration
-    _camera->doCalibration();
-    propagateCalibration();
+    _camera->setAttribute("calibrate");
 
     return;
-}
-
-/*************/
-void GuiGlobalView::propagateCalibration()
-{
-    const vector<string> properties{"eye", "target", "up", "fov", "principalPoint"};
-    for (auto& p : properties)
-    {
-        Values values;
-        _camera->getAttribute(p, values);
-        setObjectAttribute(_camera->getName(), p, values);
-    }
 }
 
 /*************/
@@ -389,24 +376,28 @@ void GuiGlobalView::processJoystickState()
         {
             setObjectAttribute(_camera->getName(), "selectNextCalibrationPoint", {});
         }
-        else if (_joyButtons[2] == 1)
+        else if (_joyButtons[2] == 1 && _joyButtons[2] != _joyButtonsPrevious[2])
         {
-            speed = 10.f;
+            _hideCameras = !_camerasHidden;
         }
         else if (_joyButtons[3] == 1 && _joyButtons[3] != _joyButtonsPrevious[3])
         {
             doCalibration();
         }
     }
-    if (_joyButtons.size() >= 6)
+    if (_joyButtons.size() >= 7)
     {
-        if (_joyButtons[4] == 1 && _joyButtons[4] != _joyButtonsPrevious[4])
+        if (_joyButtons[4] == 1)
         {
-            showAllCalibrationPoints();
+            speed = 0.1f;
         }
-        else if (_joyButtons[5] == 1 && _joyButtons[5] != _joyButtonsPrevious[5])
+        else if (_joyButtons[5] == 1)
         {
-            _hideCameras = !_camerasHidden;
+            speed = 10.f;
+        }
+        else if (_joyButtons[6] == 1 && _joyButtons[6] != _joyButtonsPrevious[6])
+        {
+            setObjectsOfType("camera", "flashBG", {});
         }
     }
 
@@ -419,11 +410,7 @@ void GuiGlobalView::processJoystickState()
         float yValue = -_joyAxes[1]; // Y axis goes downward for joysticks...
 
         if (xValue != 0.f || yValue != 0.f)
-        {
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {xValue * speed, yValue * speed});
-            _camera->moveCalibrationPoint(0, 0);
-            propagateCalibration();
-        }
     }
 
     // This prevents issues when disconnecting the joystick
@@ -475,6 +462,13 @@ void GuiGlobalView::processKeyEvents()
             revertCalibration();
         return;
     }
+    else if (io.KeysDown[ImGui::GetKeyIndex(ImGuiKey_Tab)] && io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_Tab)] == 0.0)
+    {
+        if (io.KeyShift)
+            setObjectAttribute(_camera->getName(), "selectPreviousCalibrationPoint", {});
+        else
+            setObjectAttribute(_camera->getName(), "selectNextCalibrationPoint", {});
+    }
     // Arrow keys
     else
     {
@@ -484,30 +478,15 @@ void GuiGlobalView::processKeyEvents()
         else if (io.KeyCtrl)
             delta = 10.f;
 
-        if (io.KeysDownDuration[262] > 0.0)
-        {
+        // Setting the camera locally is needed due to async nature of setObjectAttribute
+        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_RightArrow)] > 0.0)
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {delta, 0});
-            _camera->moveCalibrationPoint(0, 0);
-            propagateCalibration();
-        }
-        if (io.KeysDownDuration[263] > 0.0)
-        {
+        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_LeftArrow)] > 0.0)
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {-delta, 0});
-            _camera->moveCalibrationPoint(0, 0);
-            propagateCalibration();
-        }
-        if (io.KeysDownDuration[264] > 0.0)
-        {
+        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_DownArrow)] > 0.0)
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, -delta});
-            _camera->moveCalibrationPoint(0, 0);
-            propagateCalibration();
-        }
-        if (io.KeysDownDuration[265] > 0.0)
-        {
+        if (io.KeysDownDuration[ImGui::GetKeyIndex(ImGuiKey_UpArrow)] > 0.0)
             setObjectAttribute(_camera->getName(), "moveCalibrationPoint", {0, delta});
-            _camera->moveCalibrationPoint(0, 0);
-            propagateCalibration();
-        }
 
         return;
     }

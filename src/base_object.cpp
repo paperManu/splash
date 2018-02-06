@@ -322,12 +322,6 @@ bool BaseObject::setRenderingPriority(Priority priority)
 }
 
 /*************/
-void BaseObject::init()
-{
-    registerAttributes();
-}
-
-/*************/
 void BaseObject::runAsyncTask(const function<void(void)>& func)
 {
     lock_guard<mutex> lockTasks(_asyncTaskMutex);
