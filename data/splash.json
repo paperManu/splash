@@ -61,7 +61,6 @@
       },
       "win1" : {
          "decorated" : [ 1 ],
-         "fullscreen" : [ -1 ],
          "gamma" : [ 2.200000047683716 ],
          "layout" : [ 0, 0, 0, 0 ],
          "position" : [ 611, 17 ],

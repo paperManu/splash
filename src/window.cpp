@@ -478,56 +478,6 @@ void Window::showCursor(bool visibility)
 }
 
 /*************/
-bool Window::switchFullscreen(int screenId)
-{
-    int count;
-    GLFWmonitor** monitors = glfwGetMonitors(&count);
-    if (screenId >= count)
-        return false;
-
-    if (_window.get() == nullptr)
-        return false;
-
-    if (screenId == _screenId)
-        return true;
-    _screenId = screenId;
-
-    glfwWindowHint(GLFW_VISIBLE, true);
-    GLFWwindow* window;
-    if (_screenId != -1 && glfwGetWindowMonitor(_window->get()) == NULL)
-    {
-        const GLFWvidmode* vidmode = glfwGetVideoMode(monitors[_screenId]);
-        glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
-        glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
-        glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
-        glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
-
-        window = glfwCreateWindow(vidmode->width, vidmode->height, ("Splash::" + _name).c_str(), monitors[_screenId], _window->getMainWindow());
-    }
-    else
-    {
-        int width, height;
-        glfwGetWindowSize(_window->get(), &width, &height);
-        window = glfwCreateWindow(width, height, ("Splash::" + _name).c_str(), 0, _window->getMainWindow());
-    }
-
-    if (!window)
-    {
-        Log::get() << Log::WARNING << "Window::" << __FUNCTION__ << " - Unable to create new fullscreen shared window" << Log::endl;
-        return false;
-    }
-
-    _window = move(make_shared<GlWindow>(window, _window->getMainWindow()));
-    updateSwapInterval(_swapInterval);
-    _resized = true;
-
-    setEventsCallbacks();
-    showCursor(false);
-
-    return true;
-}
-
-/*************/
 void Window::setTexture(const shared_ptr<Texture>& tex)
 {
     auto textureIt = find_if(_inTextures.begin(), _inTextures.end(), [&](const weak_ptr<Texture>& t) {
@@ -729,15 +679,6 @@ void Window::updateWindowShape()
 void Window::registerAttributes()
 {
     BaseObject::registerAttributes();
-
-    addAttribute("fullscreen",
-        [&](const Values& args) {
-            switchFullscreen(args[0].as<int>());
-            return true;
-        },
-        [&]() -> Values { return {_screenId}; },
-        {'n'});
-    setAttributeDescription("fullscreen", "Set the window as fullscreen given the screen index");
 
     addAttribute("decorated",
         [&](const Values& args) {

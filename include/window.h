@@ -161,12 +161,6 @@ class Window : public BaseObject
     void showCursor(bool visibility);
 
     /**
-     * \brief Set the window to fullscreen
-     * \param screenId Screen where the window should be placed
-     */
-    bool switchFullscreen(int screenId = -1);
-
-    /**
      * \brief Set a new texture to draw
      * \param tex Target texture
      */
@@ -187,7 +181,6 @@ class Window : public BaseObject
     bool _isInitialized{false};
     std::shared_ptr<GlWindow> _window;
     int _screenId{-1};
-    bool _fullscreen{false};
     bool _withDecoration{true};
     int _windowRect[4];
     bool _resized{true};

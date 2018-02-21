@@ -179,16 +179,6 @@ void Camera::blendingTessellateForCurrentCamera()
 }
 
 /*************/
-void calibrationCallback(const size_t iter, void* params, const gsl_multifit_nlinear_workspace* w)
-{
-    gsl_vector* x = gsl_multifit_nlinear_position(w);
-    cout << iter << " --> ";
-    for (int i = 0; i < 9; ++i)
-        cout << gsl_vector_get(x, i) << " ";
-    cout << endl;
-}
-
-/*************/
 bool Camera::doCalibration()
 {
     int pointsSet = 0;
