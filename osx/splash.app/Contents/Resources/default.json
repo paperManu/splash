@@ -78,7 +78,7 @@
       {
          "address" : "localhost",
          "display" : 0,
-         "httpServer" : [ "127.0.0.1", "9000" ],
+         "httpserver" : [ "127.0.0.1", "9000" ],
          "name" : "local",
          "spawn" : 1,
          "swapInterval" : 1

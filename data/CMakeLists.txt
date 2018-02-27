@@ -43,9 +43,7 @@ install(FILES
     DESTINATION "share/splash/")
 
 install(FILES
-    fonts/OpenSans-Bold.ttf
-    fonts/OpenSans-Light.ttf
-    fonts/OpenSans-Regular.ttf
+    fonts/Roboto-Medium.ttf
     DESTINATION "share/splash/fonts")
 
 install(FILES 

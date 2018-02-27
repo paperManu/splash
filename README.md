@@ -74,6 +74,8 @@ A few more libraries are used as submodules in the git repository:
 - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
 - [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
 
+Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font is used and distributed under the Apache license.
+
 ### Compilation and installation
 
 #### Linux

@@ -17,7 +17,18 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-include_directories(../include)
+include_directories(../src/)
+include_directories(../src/core)
+include_directories(../src/controller)
+include_directories(../src/controller/widget)
+include_directories(../src/graphics)
+include_directories(../src/image)
+include_directories(../src/mesh)
+include_directories(../src/sink)
+include_directories(../src/sound)
+include_directories(../src/userinput)
+include_directories(../src/utils)
+
 include_directories(../external/doctest/doctest/)
 include_directories(../external/cppzmq)
 include_directories(../external/glm)
@@ -62,9 +73,9 @@ link_directories(${PYTHON_LIBRARY_DIRS})
 # Unit tests (executed through 'make check')
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
-    check_attributeFunctor.cpp
+    check_attributefunctor.cpp
     check_base_object.cpp
-    check_resizableArray.cpp
+    check_resizablearray.cpp
     check_value.cpp
 )
 

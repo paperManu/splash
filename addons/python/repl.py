@@ -3,7 +3,7 @@
 #
 # "python" : {
 #   "type" : "python",
-#   "file" : "./httpServer.py"
+#   "file" : "./httpserver.py"
 # }
 #
 # For this to work,  the configuration file should be in the same

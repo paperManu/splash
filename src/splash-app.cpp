@@ -22,7 +22,7 @@
  * The main program from the Splash suite.
  */
 
-#include "splash.h"
+#include "./splash.h"
 
 using namespace Splash;
 
