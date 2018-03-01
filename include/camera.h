@@ -39,7 +39,6 @@
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_deriv.h>
 #include <gsl/gsl_multimin.h>
-#include <gsl/gsl_multifit_nlinear.h>
 
 #include "./config.h"
 
