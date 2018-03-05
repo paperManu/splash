@@ -18,10 +18,6 @@
 #include "./scene.h"
 #include "./timer.h"
 
-// Included only for creating the documentation through the --info flag
-#include "./geometry.h"
-#include "./window.h"
-
 using namespace glm;
 using namespace std;
 
@@ -35,8 +31,8 @@ World* World::_that;
 /*************/
 World::World(int argc, char** argv)
 {
+    registerAttributes();
     parseArguments(argc, argv);
-
     init();
 }
 
@@ -808,8 +804,6 @@ void World::init()
         if (_linkSocketPrefix.empty())
             _linkSocketPrefix = to_string(static_cast<int>(getpid()));
         _link = make_shared<Link>(this, _name);
-
-        registerAttributes();
     }
 }
 

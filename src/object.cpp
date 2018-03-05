@@ -621,7 +621,7 @@ void Object::registerAttributes()
         },
         [&]() -> Values { return {_sideness}; },
         {'n'});
-    setAttributeDescription("sideness", "If set to 0 or 1, the object is single-sided. If set to 2, it is double-sided");
+    setAttributeDescription("sideness", "Set the side culling for the object: 0 for double sided, 1 for front-face visible, 2 for back-face visible");
 
     addAttribute("fill",
         [&](const Values& args) {

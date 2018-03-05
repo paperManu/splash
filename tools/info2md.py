@@ -29,7 +29,7 @@ if __name__ == "__main__":
             objType = data[:data.find("_description")]
             objectsDescription[objType] = json[data]
         elif type(json[data]) == dict:
-            attributes = "Attributes:\n"
+            attributes = "Attributes:\n\n"
             for attr in json[data]:
                 if json[data][attr] == "":
                     continue
@@ -40,8 +40,8 @@ if __name__ == "__main__":
     for data in json:
         if data.find("_description") != -1:
             continue
-        print("### " + data)
+        print("#### {}\n".format(data))
         description = objectsDescription.get(data)
         if description is not None:
-            print(description)
+            print("{}\n".format(description))
         print(objectsAttributes[data])

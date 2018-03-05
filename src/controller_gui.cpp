@@ -1038,6 +1038,7 @@ void Gui::initImWidgets()
     helpBox->setTextFunc([]() {
         string text = R"(Tab: show / hide this GUI
         General shortcuts:
+         Ctrl+S: save the current configuration
          Ctrl+F: white background instead of black
          Ctrl+B: compute the blending between all projectors
          Ctrl+Alt+B: compute the blending between all projectors at every frame
