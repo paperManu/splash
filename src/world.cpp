@@ -553,8 +553,8 @@ string World::getObjectsAttributesDescriptions()
         if (!obj)
             continue;
 
-        auto objectDescription = localFactory.getDescription(type);
-        root[obj->getType() + "_description"] = objectDescription;
+        root[obj->getType() + "_short_description"] = localFactory.getShortDescription(type);
+        root[obj->getType() + "_description"] = localFactory.getDescription(type);
 
         auto attributesDescriptions = obj->getAttributesDescriptions();
         int addedAttribute = 0;

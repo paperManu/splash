@@ -7,7 +7,6 @@ import json
 import sys
 from io import StringIO
 
-#*************#
 if __name__ == "__main__":
     jsonString = ""
     firstLine = True
@@ -21,13 +20,18 @@ if __name__ == "__main__":
     io = StringIO(jsonString)
     json = json.load(io)
 
-    objectsDescription = dict()
-    objectsAttributes = dict()
+    objects_descriptions = dict()
+    objects_short_descriptions = dict()
+    objects_attributes = dict()
 
     for data in json:
         if type(json[data]) == str:
-            objType = data[:data.find("_description")]
-            objectsDescription[objType] = json[data]
+            if data.find("_short_description") != -1:
+                objType = data[:data.find("_short_description")]
+                objects_short_descriptions[objType] = json[data]
+            elif data.find("_description") != -1:
+                objType = data[:data.find("_description")]
+                objects_descriptions[objType] = json[data]
         elif type(json[data]) == dict:
             attributes = "Attributes:\n\n"
             for attr in json[data]:
@@ -35,13 +39,14 @@ if __name__ == "__main__":
                     continue
                 attributes += "- " + attr + ": " + json[data][attr] + "\n"
             attributes += "\n"
-            objectsAttributes[data] = attributes
+            objects_attributes[data] = attributes
 
     for data in json:
-        if data.find("_description") != -1:
+        if data.find("_description") != -1 or data.find("_short_description") != -1:
             continue
-        print("#### {}\n".format(data))
-        description = objectsDescription.get(data)
+        description = objects_descriptions.get(data)
+        short_description = objects_short_descriptions.get(data)
+        print("#### {} - {}\n".format(data, short_description))
         if description is not None:
             print("{}\n".format(description))
-        print(objectsAttributes[data])
+        print(objects_attributes[data])
