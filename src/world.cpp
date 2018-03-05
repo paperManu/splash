@@ -5,9 +5,11 @@
 #include <getopt.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <regex>
+#include <set>
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <utility>
 
 #include "./image.h"
 #include "./link.h"
@@ -387,8 +389,8 @@ void World::applyConfig()
                 string type = obj["type"].asString();
                 if (type != "scene")
                 {
-                    sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
-                    // Some objects are also created on this side, and linked with the distant one
+                    sendMessage(s.first, "add", {type, name, s.first});
+                    sendMessage(_masterSceneName, "add", {type, name, s.first});
                     addLocally(type, name, s.first);
                 }
 
@@ -403,7 +405,7 @@ void World::applyConfig()
 
         // Make sure all objects have been created in every Scene, by sending a sync message
         for (const auto& s : _scenes)
-            auto answer = sendMessageWithAnswer(s.first, "sync");
+            sendMessageWithAnswer(s.first, "sync");
 
         // Then we link the objects together
         for (auto& s : _scenes)
@@ -703,6 +705,7 @@ void World::saveProject()
 
         // Here, we don't care about which Scene holds which object, as objects with the
         // same name in different Scenes are necessarily clones
+        std::set<std::pair<string, string>> existingLinks{}; // We keep a list of already existing links
         for (auto& s : _scenes)
         {
             // Get this scene's configuration
@@ -729,12 +732,14 @@ void World::saveProject()
                         if (isLinkedToCam)
                             v[1] = SPLASH_CAMERA_LINK;
 
+                        auto link = make_pair<string, string>(v[0].asString(), v[1].asString());
+                        if (existingLinks.find(link) == existingLinks.end())
+                            existingLinks.insert(link);
+                        else
+                            continue;
+
                         if (isSavableType)
                             root[m].append(v);
-
-                        // Prevent saving link to cameras multiple times
-                        if (isLinkedToCam)
-                            break;
                     }
                     continue;
                 }
@@ -1087,29 +1092,31 @@ bool World::loadProject(const string& filename)
             if (type == "scene")
                 continue;
 
-            // Before anything, all objects have the right to know what the current path is
-            auto path = Utils::getPathFromFilePath(_configFilename);
-            sendMessage(name, "configFilePath", {path});
-            set(name, "configFilePath", {path}, false);
+            addTask([=]() {
+                // Before anything, all objects have the right to know what the current path is
+                auto path = Utils::getPathFromFilePath(_configFilename);
+                sendMessage(name, "configFilePath", {path});
+                set(name, "configFilePath", {path}, false);
 
-            // Set their attributes
-            auto objMembers = obj.getMemberNames();
-            int idxAttr = 0;
-            for (const auto& attr : obj)
-            {
-                if (objMembers[idxAttr] == "type")
+                // Set their attributes
+                auto objMembers = obj.getMemberNames();
+                int idxAttr = 0;
+                for (const auto& attr : obj)
                 {
+                    if (objMembers[idxAttr] == "type")
+                    {
+                        idxAttr++;
+                        continue;
+                    }
+
+                    auto values = jsonToValues(attr);
+                    values.push_front(objMembers[idxAttr]);
+                    values.push_front(name);
+                    setAttribute("sendAll", values);
+
                     idxAttr++;
-                    continue;
                 }
-
-                auto values = jsonToValues(attr);
-                values.push_front(objMembers[idxAttr]);
-                values.push_front(name);
-                setAttribute("sendAll", values);
-
-                idxAttr++;
-            }
+            });
         }
 
         return true;
@@ -1393,15 +1400,12 @@ void World::registerAttributes()
 
                 for (auto& s : _scenes)
                 {
-                    sendMessage(SPLASH_ALL_PEERS, "add", {type, name, s.first});
+                    sendMessage(s.first, "add", {type, name, s.first});
                     addLocally(type, name, s.first);
+                    sendMessageWithAnswer(s.first, "sync");
                 }
 
-                for (const auto& s : _scenes)
-                    auto answer = sendMessageWithAnswer(s.first, "sync");
-
-                auto path = Utils::getPathFromFilePath(_configFilename);
-                set(name, "configFilePath", {path}, false);
+                set(name, "configFilePath", {Utils::getPathFromFilePath(_configFilename)}, false);
             });
 
             return true;
@@ -1434,6 +1438,9 @@ void World::registerAttributes()
 
                 // Ask for Scenes to delete the object
                 sendMessage(SPLASH_ALL_PEERS, "deleteObject", args);
+
+                for (const auto& s : _scenes)
+                    sendMessageWithAnswer(s.first, "sync");
             });
 
             return true;

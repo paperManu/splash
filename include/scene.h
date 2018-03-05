@@ -249,8 +249,8 @@ class Scene : public RootObject
 
     bool _isMaster{false}; //!< Set to true if this is the master Scene of the current config
     bool _isInitialized{false};
-    bool _status{false};  //!< Set to true if an error occured during rendering
-    int _swapInterval{1}; //!< Global value for the swap interval, default for all windows
+    bool _status{false};                        //!< Set to true if an error occured during rendering
+    int _swapInterval{1};                       //!< Global value for the swap interval, default for all windows
     unsigned long long _targetFrameDuration{0}; //!< Duration in microseconds of a frame at the refresh rate of the
                                                 //!< primary monitor
 

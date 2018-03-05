@@ -108,14 +108,22 @@ void Blender::update()
         else
         {
             // Wait for the master scene to notify us that the blending was updated
+            // Note that we do not wait more that 2 seconds
             unique_lock<mutex> updateBlendingLock(_vertexBlendingMutex);
-            while (!_vertexBlendingReceptionStatus)
+            int maxSecElapsed = 2;
+            while (!_vertexBlendingReceptionStatus && maxSecElapsed)
+            {
                 _vertexBlendingCondition.wait_for(updateBlendingLock, chrono::seconds(1));
-            _vertexBlendingReceptionStatus = false;
+                maxSecElapsed--;
+            }
 
-            auto objects = getObjLinkedToCameras();
-            for (auto& object : objects)
-                object->setAttribute("activateVertexBlending", {1});
+            if (_vertexBlendingReceptionStatus)
+            {
+                _vertexBlendingReceptionStatus = false;
+
+                for (auto& object : getObjLinkedToCameras())
+                    object->setAttribute("activateVertexBlending", {1});
+            }
         }
     }
     // This deactivates the blending

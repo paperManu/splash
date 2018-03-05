@@ -409,7 +409,7 @@ void Scene::render()
                     if (obj->wasUpdated())
                     {
                         // If a mesh has been updated, force blending update
-                        dynamic_pointer_cast<Blender>(_blender)->forceUpdate();
+                        addTask([=]() { dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
                         obj->setNotUpdated();
                     }
 
