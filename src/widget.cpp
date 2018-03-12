@@ -178,7 +178,11 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     if (ImGui::Button("Select path"))
     {
         if (!manualPath)
-            path = path + "/" + fileList[selectedId[label]].filename;
+        {
+            auto selectedIdIt = selectedId.find(label);
+            if (selectedIdIt != selectedId.end())
+                path = path + "/" + fileList[selectedIdIt->second].filename;
+        }
         selectionDone = true;
     }
     ImGui::SameLine();
@@ -196,6 +200,9 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 
     ImGui::End();
     ImGui::PopID();
+
+    // Clean the path
+    path = Utils::cleanPath(path);
 
     if (selectionDone || cancelled)
         return true;
