@@ -664,7 +664,6 @@ void Image_FFmpeg::videoDisplayLoop()
             //
             // Get the current master and local clocks
             //
-            _currentTime = Timer::getTime() - _startTime;
             float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
 
             int64_t clockAsMs;
@@ -697,6 +696,10 @@ void Image_FFmpeg::videoDisplayLoop()
                         _startTime = Timer::getTime() - _clockTime;
                         _currentTime = _clockTime;
                     }
+                }
+                else
+                {
+                    _currentTime = Timer::getTime() - _startTime;
                 }
 
                 // If the frame is beyond the trimming end, seek to the trimming start
