@@ -135,7 +135,6 @@ add_subdirectory(addons)
 add_subdirectory(data)
 add_subdirectory(docs)
 add_subdirectory(external)
-add_subdirectory(osx)
 add_subdirectory(src)
 add_subdirectory(tests)
 
@@ -150,7 +149,7 @@ add_custom_target(uninstall
 
 #
 # CPack related info
-# Creates package on Linux. On OSX, it is handled separately (see ./osx/CMakeLists.txt)
+# Creates package on Linux.
 #
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
 set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")
