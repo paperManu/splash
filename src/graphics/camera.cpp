@@ -1,4 +1,4 @@
-#include "./graphics/camera.h"
+#include "./camera.h"
 
 #include <fstream>
 #include <future>

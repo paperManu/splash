@@ -25,7 +25,7 @@
 #ifndef SPLASH_IMAGE_FFMPEG_H
 #define SPLASH_IMAGE_FFMPEG_H
 
-#include "config.h"
+#include "./config.h"
 
 #include <atomic>
 #include <condition_variable>

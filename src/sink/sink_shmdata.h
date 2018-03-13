@@ -27,8 +27,8 @@
 
 #include <shmdata/writer.hpp>
 
-#include "./osutils.h"
-#include "./sink.h"
+#include "./utils/osutils.h"
+#include "./sink/sink.h"
 
 namespace Splash
 {

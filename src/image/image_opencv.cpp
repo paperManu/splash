@@ -5,7 +5,7 @@
 #include <opencv2/opencv.hpp>
 #include <hap.h>
 
-#include "./cgutils.h"
+#include "./utils/cgutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

@@ -1,11 +1,11 @@
-#include "image_gphoto.h"
+#include "./image_gphoto.h"
 
 #include <cmath>
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "log.h"
-#include "timer.h"
+#include "./utils/log.h"
+#include "./utils/timer.h"
 
 using namespace std;
 

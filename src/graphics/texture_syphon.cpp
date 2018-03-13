@@ -1,6 +1,6 @@
-#include "texture_syphon.h"
+#include "./texture_syphon.h"
 
-#include "log.h"
+#include "./utils/log.h"
 
 using namespace std;
 

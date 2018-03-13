@@ -1,4 +1,4 @@
-#include "./core/world.h"
+#include "./world.h"
 
 #include <chrono>
 #include <fstream>
@@ -11,12 +11,12 @@
 #include <unistd.h>
 #include <utility>
 
-#include "./image.h"
 #include "./core/link.h"
+#include "./core/scene.h"
+#include "./image.h"
+#include "./image/queue.h"
 #include "./mesh.h"
 #include "./osutils.h"
-#include "./image/queue.h"
-#include "./core/scene.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

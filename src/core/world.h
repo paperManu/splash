@@ -41,8 +41,8 @@
 #if HAVE_PORTAUDIO
 #include "./ltcclock.h"
 #endif
-#include "./image/queue.h"
 #include "./core/root_object.h"
+#include "./image/queue.h"
 
 namespace Splash
 {

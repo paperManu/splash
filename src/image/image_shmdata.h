@@ -28,10 +28,10 @@
 #include <shmdata/console-logger.hpp>
 #include <shmdata/follower.hpp>
 
-#include "config.h"
+#include "./config.h"
 
-#include "image.h"
-#include "osutils.h"
+#include "./image/image.h"
+#include "./utils/osutils.h"
 
 namespace Splash
 {

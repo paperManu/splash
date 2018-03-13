@@ -37,8 +37,8 @@
 #include "./core/coretypes.h"
 #include "./core/factory.h"
 #include "./graphics/filter.h"
-#include "./image.h"
 #include "./graphics/texture.h"
+#include "./image/image.h"
 
 namespace Splash
 {
@@ -197,7 +197,7 @@ class QueueSurrogate : public Texture
     /**
      * \brief Update the texture according to the owned Image
      */
-    void update() final {};
+    void update() final{};
 
   private:
     int _filterIndex{0};

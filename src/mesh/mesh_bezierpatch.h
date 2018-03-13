@@ -31,11 +31,11 @@
 #include <mutex>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "attribute.h"
-#include "coretypes.h"
-#include "mesh.h"
+#include "./core/attribute.h"
+#include "./core/coretypes.h"
+#include "./mesh/mesh.h"
 
 namespace Splash
 {

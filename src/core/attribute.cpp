@@ -1,4 +1,4 @@
-#include "./core/attribute.h"
+#include "./attribute.h"
 
 #include "./core/base_object.h"
 #include "./utils/log.h"

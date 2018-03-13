@@ -1,6 +1,6 @@
-#include "mesh_bezierpatch.h"
+#include "./mesh_bezierpatch.h"
 
-#include "log.h"
+#include "./utils/log.h"
 
 using namespace std;
 

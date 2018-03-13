@@ -33,7 +33,7 @@
 
 #include <glm/glm.hpp>
 
-#include "log.h"
+#include "./utils/log.h"
 
 namespace Splash
 {

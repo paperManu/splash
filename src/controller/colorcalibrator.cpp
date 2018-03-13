@@ -1,4 +1,4 @@
-#include "colorcalibrator.h"
+#include "./colorcalibrator.h"
 
 #define PIC_DISABLE_OPENGL
 #define PIC_DISABLE_QT

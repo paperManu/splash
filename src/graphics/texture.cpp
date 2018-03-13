@@ -1,8 +1,8 @@
-#include "texture.h"
+#include "./texture.h"
 
-#include "image.h"
-#include "log.h"
-#include "timer.h"
+#include "./image/image.h"
+#include "./utils/log.h"
+#include "./utils/timer.h"
 
 #include <string>
 

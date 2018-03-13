@@ -1,4 +1,4 @@
-#include "./core/factory.h"
+#include "./factory.h"
 
 #include <json/json.h>
 

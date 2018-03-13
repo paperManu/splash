@@ -1,12 +1,12 @@
-#include "./graphics/object.h"
+#include "./object.h"
 
-#include "./graphics/geometry.h"
 #include "./graphics/filter.h"
-#include "./image/image.h"
-#include "./mesh/mesh.h"
+#include "./graphics/geometry.h"
 #include "./graphics/shader.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./image/image.h"
+#include "./mesh/mesh.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

@@ -1,10 +1,10 @@
-#include "ltcclock.h"
+#include "./ltcclock.h"
 
 #include <chrono>
 #include <iostream>
 
-#include "log.h"
-#include "timer.h"
+#include "./utils/log.h"
+#include "./utils/timer.h"
 
 using namespace std;
 

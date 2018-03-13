@@ -1,8 +1,8 @@
-#include "geometry.h"
+#include "./geometry.h"
 
-#include "log.h"
-#include "mesh.h"
-#include "scene.h"
+#include "./core/scene.h"
+#include "./mesh/mesh.h"
+#include "./utils/log.h"
 
 using namespace std;
 using namespace glm;

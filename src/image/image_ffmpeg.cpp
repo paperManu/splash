@@ -10,8 +10,8 @@
 #include <fstream>
 #include <hap.h>
 
-#include "./cgutils.h"
-#include "./osutils.h"
+#include "./utils/cgutils.h"
+#include "./utils/osutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

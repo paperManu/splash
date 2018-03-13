@@ -32,8 +32,8 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
-#include "./utils/timer.h"
 #include "./graphics/window.h"
+#include "./utils/timer.h"
 
 using namespace std;
 

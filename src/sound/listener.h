@@ -35,10 +35,10 @@
 
 #include <portaudio.h>
 
-#include "./core/base_object.h"
-#include "./core/attribute.h"
 #include "./config.h"
-#include "./sound_engine.h"
+#include "./core/attribute.h"
+#include "./core/base_object.h"
+#include "./sound/sound_engine.h"
 
 namespace Splash
 {

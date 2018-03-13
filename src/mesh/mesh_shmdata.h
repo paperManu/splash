@@ -32,10 +32,10 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "mesh.h"
-#include "osutils.h"
+#include "./mesh/mesh.h"
+#include "./utils/osutils.h"
 
 namespace Splash
 {

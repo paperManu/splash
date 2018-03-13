@@ -1,10 +1,10 @@
-#include "texture_image.h"
+#include "./texture_image.h"
 
 #include <string>
 
-#include "image.h"
-#include "log.h"
-#include "timer.h"
+#include "./image/image.h"
+#include "./utils/log.h"
+#include "./utils/timer.h"
 
 #define SPLASH_TEXTURE_COPY_THREADS 2
 

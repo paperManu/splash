@@ -1,4 +1,4 @@
-#include "image.h"
+#include "./image.h"
 
 #include <fstream>
 #include <future>
@@ -9,7 +9,7 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "./osutils.h"
+#include "./utils/osutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

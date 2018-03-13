@@ -1,4 +1,4 @@
-#include "./graphics/framebuffer.h"
+#include "./framebuffer.h"
 
 #include "./utils/log.h"
 #include "./utils/timer.h"

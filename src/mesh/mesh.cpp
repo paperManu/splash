@@ -1,9 +1,9 @@
-#include "mesh.h"
+#include "./mesh.h"
 
 #include "./core/root_object.h"
-#include "./meshloader.h"
-#include "./osutils.h"
+#include "./mesh/meshloader.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 using namespace std;

@@ -1,10 +1,10 @@
-#include "filter.h"
+#include "./filter.h"
 
-#include "cgutils.h"
-#include "log.h"
-#include "scene.h"
-#include "texture_image.h"
-#include "timer.h"
+#include "./core/scene.h"
+#include "./graphics/texture_image.h"
+#include "./utils/cgutils.h"
+#include "./utils/log.h"
+#include "./utils/timer.h"
 
 using namespace std;
 

@@ -1,4 +1,4 @@
-#include "./graphics/virtual_probe.h"
+#include "./virtual_probe.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 

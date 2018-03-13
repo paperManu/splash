@@ -1,4 +1,4 @@
-#include "image_shmdata.h"
+#include "./image_shmdata.h"
 
 #include <hap.h>
 #include <regex>
@@ -14,10 +14,10 @@
 #include <glm/glm.hpp>
 #endif
 
-#include "cgutils.h"
-#include "log.h"
-#include "osutils.h"
-#include "timer.h"
+#include "./utils/cgutils.h"
+#include "./utils/log.h"
+#include "./utils/osutils.h"
+#include "./utils/timer.h"
 
 #define SPLASH_SHMDATA_THREADS 2
 #define SPLASH_SHMDATA_WITH_POOL 0 // FIXME: there is an issue with the threadpool in the shmdata callback

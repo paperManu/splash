@@ -33,10 +33,10 @@
 #include <ltc.h>
 #include <portaudio.h>
 
-#include "attribute.h"
-#include "config.h"
-#include "coretypes.h"
-#include "listener.h"
+#include "./config.h"
+#include "./core/attribute.h"
+#include "./core/coretypes.h"
+#include "./sound/listener.h"
 
 namespace Splash
 {

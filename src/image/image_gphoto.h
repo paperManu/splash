@@ -31,9 +31,9 @@
 
 #include <gphoto2/gphoto2.h>
 
-#include "config.h"
+#include "./config.h"
 
-#include "image.h"
+#include "./image/image.h"
 
 typedef Camera GpCamera;
 

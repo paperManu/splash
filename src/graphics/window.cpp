@@ -1,17 +1,17 @@
-#include "./graphics/window.h"
+#include "./window.h"
 
-#include "./graphics/camera.h"
 #include "./controller_gui.h"
-#include "./graphics/geometry.h"
-#include "./image.h"
-#include "./graphics/object.h"
 #include "./core/scene.h"
+#include "./graphics/camera.h"
+#include "./graphics/geometry.h"
+#include "./graphics/object.h"
 #include "./graphics/shader.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./graphics/warp.h"
+#include "./image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
-#include "./graphics/warp.h"
 
 #include <functional>
 #include <glm/gtc/matrix_transform.hpp>

@@ -29,8 +29,8 @@
 #include <deque>
 #include <linux/videodev2.h>
 
-#include "config.h"
-#include "image.h"
+#include "./config.h"
+#include "./image/image.h"
 
 namespace Splash
 {

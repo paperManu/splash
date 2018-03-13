@@ -1,7 +1,7 @@
 #include "./mesh_shmdata.h"
 
 #include "./core/root_object.h"
-#include "./osutils.h"
+#include "./utils/osutils.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 
