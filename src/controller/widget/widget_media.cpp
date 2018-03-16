@@ -44,7 +44,7 @@ void GuiMedia::render()
                 for (auto& type : _mediaTypes)
                     mediaTypes.push_back(type.first.c_str());
 
-                if (ImGui::Combo("", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
+                if (ImGui::Combo("##media_type", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
                     replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
 
                 ImGui::Text(("Current media type: " + _mediaTypesReversed[media->getRemoteType()]).c_str());
