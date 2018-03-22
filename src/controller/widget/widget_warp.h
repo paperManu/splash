@@ -46,7 +46,7 @@ class GuiWarp : public GuiWidget
   private:
     bool _noMove{false};
 
-    int _currentWarp{0};
+    uint32_t _currentWarp{0};
     std::string _currentWarpName{""};
     int _currentControlPointIndex{0};
     glm::vec2 _deltaAtPicking;

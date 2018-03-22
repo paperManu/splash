@@ -200,12 +200,12 @@ void GuiNodeView::renderNode(const string& name)
         {
             if (io.KeyShift)
             {
-                if (auto scene = dynamic_cast<Scene*>(_root))
+                if (dynamic_cast<Scene*>(_root))
                     setWorldAttribute("link", {_sourceNode, name});
             }
             else if (io.KeyCtrl)
             {
-                if (auto scene = dynamic_cast<Scene*>(_root))
+                if (dynamic_cast<Scene*>(_root))
                     setWorldAttribute("unlink", {_sourceNode, name});
             }
         }

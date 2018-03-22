@@ -123,7 +123,7 @@ class Warp : public Texture
     /**
      * \brief Warps should always be saved as it hold user-modifiable parameters. This method has no effect.
      */
-    void setSavable(bool savable) { _savable = true; }
+    void setSavable(bool /*savable*/) { _savable = true; }
 
     /**
      * \brief Update the warp

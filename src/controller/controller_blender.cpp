@@ -185,7 +185,7 @@ void Blender::registerAttributes()
         {'s'});
     setAttributeDescription("mode", "Set the blending mode. Can be 'none', 'once' or 'continuous'");
 
-    addAttribute("blendingUpdated", [&](const Values& args) {
+    addAttribute("blendingUpdated", [&](const Values&) {
         _vertexBlendingReceptionStatus = true;
         _vertexBlendingCondition.notify_one();
         return true;

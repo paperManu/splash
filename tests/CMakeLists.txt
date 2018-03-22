@@ -61,8 +61,8 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 link_directories(${FFMPEG_LIBRARY_DIRS})
 link_directories(${SNAPPY_LIBRARY_DIRS})
 link_directories(${ZMQ_LIBRARY_DIRS})
-
 link_directories(${GLFW_LIBRARY_DIRS})
+
 link_directories(${GSL_LIBRARY_DIRS})
 link_directories(${SHMDATA_LIBRARY_DIRS})
 link_directories(${GPHOTO_LIBRARY_DIRS})

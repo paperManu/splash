@@ -132,7 +132,7 @@ void Shader::deactivate()
         glUseProgram(0);
 #endif
         _activated = false;
-        for (int i = 0; i < _textures.size(); ++i)
+        for (uint32_t i = 0; i < _textures.size(); ++i)
             _textures[i]->unbind();
         _textures.clear();
     }
@@ -546,7 +546,7 @@ void Shader::parseUniforms(const std::string& src)
         }
         else
         {
-            if (glGetUniformBlockIndex(_program, name.c_str()) == -1)
+            if (glGetUniformBlockIndex(_program, name.c_str()) == GL_INVALID_INDEX)
                 u.second.glIndex = -1;
         }
     }
@@ -579,7 +579,7 @@ void Shader::updateUniforms()
 {
     if (_activated)
     {
-        for (int i = 0; i < _uniformsToUpdate.size(); ++i)
+        for (uint32_t i = 0; i < _uniformsToUpdate.size(); ++i)
         {
             string u = _uniformsToUpdate[i];
 
@@ -737,7 +737,7 @@ void Shader::registerAttributes()
         Values uniformArgs;
         if (args[1].getType() != Value::Type::v)
         {
-            for (int i = 1; i < args.size(); ++i)
+            for (uint32_t i = 1; i < args.size(); ++i)
                 uniformArgs.push_back(args[i]);
         }
         else
@@ -766,7 +766,7 @@ void Shader::registerGraphicAttributes()
         [&](const Values& args) {
             // Get additionnal shading options
             string options = ShaderSources.VERSION_DIRECTIVE_GL4;
-            for (int i = 1; i < args.size(); ++i)
+            for (uint32_t i = 1; i < args.size(); ++i)
                 options += "#define " + args[i].as<string>() + "\n";
 
             if (args[0].as<string>() == "texture" && (_fill != texture || _shaderOptions != options))
@@ -930,7 +930,7 @@ void Shader::registerComputeAttributes()
 
         // Get additionnal shading options
         string options = ShaderSources.VERSION_DIRECTIVE_GL4;
-        for (int i = 1; i < args.size(); ++i)
+        for (uint32_t i = 1; i < args.size(); ++i)
             options += "#define " + args[i].as<string>() + "\n";
 
         if ("resetVisibility" == args[0].as<string>())
@@ -973,7 +973,7 @@ void Shader::registerFeedbackAttributes()
 
         // Get additionnal shader options
         string options = ShaderSources.VERSION_DIRECTIVE_GL4;
-        for (int i = 1; i < args.size(); ++i)
+        for (uint32_t i = 1; i < args.size(); ++i)
             options += "#define " + args[i].as<string>() + "\n";
 
         if ("tessellateFromCamera" == args[0].as<string>())
@@ -995,7 +995,7 @@ void Shader::registerFeedbackAttributes()
 
         GLchar* feedbackVaryings[args.size()];
         vector<string> varyingNames;
-        for (int i = 0; i < args.size(); ++i)
+        for (uint32_t i = 0; i < args.size(); ++i)
         {
             varyingNames.push_back(args[i].as<string>());
             feedbackVaryings[i] = new GLchar[256];
@@ -1004,7 +1004,7 @@ void Shader::registerFeedbackAttributes()
 
         glTransformFeedbackVaryings(_program, args.size(), const_cast<const GLchar**>(feedbackVaryings), GL_SEPARATE_ATTRIBS);
 
-        for (int i = 0; i < args.size(); ++i)
+        for (uint32_t i = 0; i < args.size(); ++i)
             delete feedbackVaryings[i];
 
         return true;

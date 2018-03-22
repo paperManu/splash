@@ -183,7 +183,7 @@ class Image : public BufferObject
     /**
      * Add more media info, to be implemented by derived classes
      */
-    virtual void updateMoreMediaInfo(Values& mediaInfo) {}
+    virtual void updateMoreMediaInfo(Values& /*mediaInfo*/) {}
 
     /**
      * \brief Base init for the class

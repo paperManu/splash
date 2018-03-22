@@ -153,7 +153,7 @@ inline std::string cleanPath(const std::string& filepath)
             remain = remain.substr(nextSlashPos + 1, std::string::npos);
     }
 
-    for (int i = 0; i < links.size();)
+    for (uint32_t i = 0; i < links.size();)
     {
         if (links[i] == "..")
         {

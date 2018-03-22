@@ -76,7 +76,7 @@ void Object::activate()
 
     // Set the shader depending on a few other parameters
     Values shaderParameters{};
-    for (int i = 0; i < _textures.size(); ++i)
+    for (uint32_t i = 0; i < _textures.size(); ++i)
         shaderParameters.push_back("TEX_" + to_string(i + 1));
 
     for (auto& p : _fillParameters)
@@ -627,7 +627,7 @@ void Object::registerAttributes()
         [&](const Values& args) {
             _fill = args[0].as<string>();
             _fillParameters.clear();
-            for (int i = 1; i < args.size(); ++i)
+            for (uint32_t i = 1; i < args.size(); ++i)
                 _fillParameters.push_back(args[i].as<string>());
             return true;
         },

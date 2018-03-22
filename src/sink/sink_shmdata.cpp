@@ -48,7 +48,7 @@ void Sink_Shmdata::registerAttributes()
         {'s'});
     setAttributeDescription("socket", "Socket path to which data is sent");
 
-    addAttribute("caps", [&](const Values& args) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
+    addAttribute("caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
     setAttributeDescription("caps", "Caps of the sent data");
 }
 

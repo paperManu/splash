@@ -208,7 +208,6 @@ bool Camera::doCalibration()
     const gsl_multimin_fminimizer_type* minimizerType = gsl_multimin_fminimizer_nmsimplex2rand;
     // Variables we do not want to keep between tries
     dvec3 eyeOriginal = _eye;
-    float fovOriginal = _fov;
 
     double minValue = numeric_limits<double>::max();
     vector<double> selectedValues(9);
@@ -487,7 +486,7 @@ Values Camera::pickCalibrationPoint(float x, float y)
     double minDist = numeric_limits<double>::max();
     int index = -1;
 
-    for (int i = 0; i < _calibrationPoints.size(); ++i)
+    for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
     {
         dvec3 projectedPoint = project(_calibrationPoints[i].world, lookM, projM, viewport);
         projectedPoint.z = 0.0;
@@ -667,14 +666,14 @@ void Camera::render()
             auto screenMarker = _models.find("2d_marker");
             if (worldMarker != _models.end() && screenMarker != _models.end())
             {
-                for (int i = 0; i < _calibrationPoints.size(); ++i)
+                for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
                 {
                     auto& point = _calibrationPoints[i];
 
                     worldMarker->second->setAttribute("position", {point.world.x, point.world.y, point.world.z});
                     glm::dvec4 transformedPoint = projectionMatrix * viewMatrix * glm::dvec4(point.world.x, point.world.y, point.world.z, 1.0);
                     worldMarker->second->setAttribute("scale", {WORLDMARKER_SCALE * std::max(transformedPoint.z, 1.0) * _fov});
-                    if (_selectedCalibrationPoint == i)
+                    if (_selectedCalibrationPoint == static_cast<int>(i))
                         worldMarker->second->setAttribute("color", MARKER_SELECTED);
                     else if (point.isSet)
                         worldMarker->second->setAttribute("color", MARKER_SET);
@@ -686,12 +685,12 @@ void Camera::render()
                     worldMarker->second->draw();
                     worldMarker->second->deactivate();
 
-                    if ((point.isSet && _selectedCalibrationPoint == i) || _showAllCalibrationPoints) // Draw the target position on screen as well
+                    if ((point.isSet && _selectedCalibrationPoint == static_cast<int>(i)) || _showAllCalibrationPoints) // Draw the target position on screen as well
                     {
 
                         screenMarker->second->setAttribute("position", {point.screen.x, point.screen.y, 0.f});
                         screenMarker->second->setAttribute("scale", {SCREENMARKER_SCALE});
-                        if (_selectedCalibrationPoint == i)
+                        if (_selectedCalibrationPoint == static_cast<int>(i))
                             screenMarker->second->setAttribute("color", SCREEN_MARKER_SELECTED);
                         else
                             screenMarker->second->setAttribute("color", SCREEN_MARKER_SET);
@@ -763,7 +762,7 @@ bool Camera::addCalibrationPoint(const Values& worldPoint)
     dvec3 world(worldPoint[0].as<float>(), worldPoint[1].as<float>(), worldPoint[2].as<float>());
 
     // Check if the point is already present
-    for (int i = 0; i < _calibrationPoints.size(); ++i)
+    for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
         if (_calibrationPoints[i].world == world)
         {
             _selectedCalibrationPoint = i;
@@ -826,7 +825,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
         double minDist = numeric_limits<double>::max();
         int index = -1;
 
-        for (int i = 0; i < _calibrationPoints.size(); ++i)
+        for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
         {
             dvec3 projectedPoint = project(_calibrationPoints[i].world, lookM, projM, viewport);
             projectedPoint.z = 0.0;
@@ -855,7 +854,7 @@ void Camera::removeCalibrationPoint(const Values& point, bool unlessSet)
     {
         dvec3 world(point[0].as<float>(), point[1].as<float>(), point[2].as<float>());
 
-        for (int i = 0; i < _calibrationPoints.size(); ++i)
+        for (uint32_t i = 0; i < _calibrationPoints.size(); ++i)
             if (_calibrationPoints[i].world == world)
             {
                 if (_calibrationPoints[i].isSet == true && unlessSet)
@@ -959,7 +958,7 @@ double Camera::calibrationCostFunc(const gsl_vector* v, void* params)
 
     // Project all the object points, and measure the distance between them and the image points
     double summedDistance = 0.0;
-    for (int i = 0; i < imagePoints.size(); ++i)
+    for (uint32_t i = 0; i < imagePoints.size(); ++i)
     {
         dvec3 projectedPoint;
         projectedPoint = project(objectPoints[i], lookM, projM, viewport);
@@ -1232,8 +1231,6 @@ void Camera::registerAttributes()
     addAttribute("pan",
         [&](const Values& args) {
             dvec4 panV(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), 0.f);
-            dvec3 dirV = normalize(_eye - _target);
-
             dmat4 rotMat = inverse(computeViewMatrix());
             panV = rotMat * panV;
             _target = _target + dvec3(panV[0], panV[1], panV[2]);
@@ -1257,7 +1254,7 @@ void Camera::registerAttributes()
         {'n'});
     setAttributeDescription("forward", "Move the camera forward along its Z axis");
 
-    addAttribute("calibrate", [&](const Values& args) {
+    addAttribute("calibrate", [&](const Values&) {
         auto scene = dynamic_cast<Scene*>(_root);
         if (scene && scene->isMaster())
             doCalibration();
@@ -1273,7 +1270,7 @@ void Camera::registerAttributes()
         {'n', 'n', 'n'});
     setAttributeDescription("addCalibrationPoint", "Add a calibration point at the given position");
 
-    addAttribute("deselectedCalibrationPoint", [&](const Values& args) {
+    addAttribute("deselectedCalibrationPoint", [&](const Values&) {
         deselectCalibrationPoint();
         return true;
     });
@@ -1301,13 +1298,13 @@ void Camera::registerAttributes()
     addAttribute("setCalibrationPoint", [&](const Values& args) { return setCalibrationPoint({args[0].as<float>(), args[1].as<float>()}); }, {'n', 'n'});
     setAttributeDescription("setCalibrationPoint", "Set the 2D projection of a calibration point");
 
-    addAttribute("selectNextCalibrationPoint", [&](const Values& args) {
+    addAttribute("selectNextCalibrationPoint", [&](const Values&) {
         _selectedCalibrationPoint = (_selectedCalibrationPoint + 1) % _calibrationPoints.size();
         return true;
     });
     setAttributeDescription("selectNextCalibrationPoint", "Select the next available calibration point");
 
-    addAttribute("selectPreviousCalibrationPoint", [&](const Values& args) {
+    addAttribute("selectPreviousCalibrationPoint", [&](const Values&) {
         if (_selectedCalibrationPoint == 0)
             _selectedCalibrationPoint = _calibrationPoints.size() - 1;
         else
@@ -1596,19 +1593,19 @@ void Camera::registerAttributes()
         {'n'});
     setAttributeDescription("showAllCalibrationPoints", "Switch whether to show all calibration points");
 
-    addAttribute("switchDisplayAllCalibration", [&](const Values& args) {
+    addAttribute("switchDisplayAllCalibration", [&](const Values&) {
         _displayAllCalibrations = !_displayAllCalibrations;
         return true;
     });
     setAttributeDescription("switchDisplayAllCalibration", "Switch whether to show all calibration points in this camera");
 
-    addAttribute("flashBG", [&](const Values& args) {
+    addAttribute("flashBG", [&](const Values&) {
         _flashBG = !_flashBG;
         return true;
     });
     setAttributeDescription("flashBG", "Switch background to light gray");
 
-    addAttribute("getReprojectionError", [&](const Values& args) { return true; }, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
+    addAttribute("getReprojectionError", [&](const Values&) { return true; }, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
 }
 

@@ -216,7 +216,7 @@ void Image_Shmdata::onData(void* data, int data_size)
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> "image_shmdata " + _name;
+        Timer::get() >> ("image_shmdata " + _name);
 }
 
 /*************/
@@ -263,7 +263,7 @@ void Image_Shmdata::readHapFrame(void* data, int data_size)
 }
 
 /*************/
-void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
+void Image_Shmdata::readUncompressedFrame(void* data, int /*data_size*/)
 {
     lock_guard<shared_timed_mutex> lock(_writeMutex);
 
@@ -308,14 +308,14 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
     }
     else if (_is420)
     {
-        const unsigned char* Y = (const unsigned char*)data;
-        const unsigned char* U = (const unsigned char*)data + _width * _height;
-        const unsigned char* V = (const unsigned char*)data + _width * _height * 5 / 4;
+        const unsigned char* Y = static_cast<const unsigned char*>(data);
+        const unsigned char* U = static_cast<const unsigned char*>(data) + _width * _height;
+        const unsigned char* V = static_cast<const unsigned char*>(data) + _width * _height * 5 / 4;
         char* pixels = (char*)(_readerBuffer).data();
 
-        for (int y = 0; y < _height; ++y)
+        for (uint32_t y = 0; y < _height; ++y)
         {
-            for (int x = 0; x < _width; x += 2)
+            for (uint32_t x = 0; x < _width; x += 2)
             {
                 pixels[(x + y * _width) * 2 + 0] = U[(x / 2) + (y / 2) * (_width / 2)];
                 pixels[(x + y * _width) * 2 + 1] = Y[x + y * _width];
@@ -326,7 +326,7 @@ void Image_Shmdata::readUncompressedFrame(void* data, int data_size)
     }
     else if (_is422)
     {
-        const unsigned char* YUV = (const unsigned char*)data;
+        const unsigned char* YUV = static_cast<const unsigned char*>(data);
         char* pixels = (char*)(_readerBuffer).data();
         copy(YUV, YUV + _width * _height * 2, pixels);
     }

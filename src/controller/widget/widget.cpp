@@ -147,10 +147,10 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
     }
 
     ImGui::BeginChild("##filelist", ImVec2(0, -48), true);
-    static unordered_map<string, int> selectedId{};
+    static unordered_map<string, uint32_t> selectedId{};
     if (selectedId.find(label) == selectedId.end())
         selectedId[label] = 0;
-    for (int i = 0; i < fileList.size(); ++i)
+    for (uint32_t i = 0; i < fileList.size(); ++i)
     {
         bool isSelected = (selectedId[label] == i);
 
@@ -216,8 +216,8 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
 /*************/
 GuiWidget::GuiWidget(Scene* scene, string name)
     : ControllerObject(scene)
-    , _scene(scene)
     , _name(name)
+    , _scene(scene)
 {
 }
 
@@ -393,7 +393,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         {
             auto answer = scene->getAttributeDescriptionFromObject(objName, attrName);
             if (answer.size() != 0)
-                ImGui::SetTooltip(answer[0].as<string>().c_str());
+                ImGui::SetTooltip("%s", answer[0].as<string>().c_str());
         }
     }
 }

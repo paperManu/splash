@@ -121,7 +121,7 @@ void Image_V4L2::captureThreadFunc()
     {
         // Initialize the buffers
         _imageBuffers.clear();
-        for (int i = 0; i < _bufferCount; ++i)
+        for (uint32_t i = 0; i < _bufferCount; ++i)
         {
             _imageBuffers.push_back(unique_ptr<ImageBuffer>(new ImageBuffer(_spec)));
 
@@ -251,7 +251,7 @@ void Image_V4L2::captureThreadFunc()
         if (result < 0)
             Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - VIDIOC_STREAMOFF failed: " << result << Log::endl;
 
-        for (int i = 0; i < _bufferCount; ++i)
+        for (uint32_t i = 0; i < _bufferCount; ++i)
         {
             memset(&buffer, 0, sizeof(buffer));
             buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -290,8 +290,6 @@ bool Image_V4L2::initializeUserPtrCapture()
 /*************/
 bool Image_V4L2::initializeCapture()
 {
-    int result = 0;
-
 #if HAVE_DATAPATH
     if (_isDatapath)
     {
@@ -711,7 +709,7 @@ void Image_V4L2::registerAttributes()
     setAttributeParameter("index", true, true);
     setAttributeDescription("index", "Set the input index for the selected V4L2 capture device");
 
-    addAttribute("sourceFormat", [&](const Values& args) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
+    addAttribute("sourceFormat", [&](const Values&) { return true; }, [&]() -> Values { return {_sourceFormatAsString}; }, {});
     setAttributeParameter("sourceFormat", true, true);
 
     addAttribute("pixelFormat",

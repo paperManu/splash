@@ -416,7 +416,6 @@ void Gui::mouseButton(int btn, int action, int mods)
     using namespace ImGui;
     ImGuiIO& io = GetIO();
 
-    int button{0};
     bool isPressed = action == GLFW_PRESS ? true : false;
     switch (btn)
     {
@@ -440,7 +439,7 @@ void Gui::mouseButton(int btn, int action, int mods)
 }
 
 /*************/
-void Gui::mouseScroll(double xoffset, double yoffset)
+void Gui::mouseScroll(double /*xoffset*/, double yoffset)
 {
     ImGuiIO& io = ImGui::GetIO();
     io.MouseWheel += (float)yoffset;
@@ -488,7 +487,7 @@ void Gui::renderSplashScreen()
         ImGui::NextColumn();
         ImGui::Dummy(ImVec2(256, 80));
         ImGui::Text("Splash, a modular video-mapping engine");
-        ImGui::Text((string("Version ") + string(PACKAGE_VERSION)).c_str());
+        ImGui::Text("Version %s", PACKAGE_VERSION);
         ImGui::Spacing();
         ImGui::Text("Developed at the Société des Arts Technologiques");
         ImGui::Text("https://gitlab.com/sat-metalab/splash/wikis");
@@ -1007,7 +1006,7 @@ void Gui::initImGui(int width, int height)
 }
 
 /*************/
-const char* Gui::getClipboardText(void* userData)
+const char* Gui::getClipboardText(void* /*userData*/)
 {
     if (_glfwWindow)
         return glfwGetClipboardString(_glfwWindow);
@@ -1016,7 +1015,7 @@ const char* Gui::getClipboardText(void* userData)
 }
 
 /*************/
-void Gui::setClipboardText(void* userData, const char* text)
+void Gui::setClipboardText(void* /*userData*/, const char* text)
 {
     if (_glfwWindow)
         glfwSetClipboardString(_glfwWindow, text);
@@ -1156,12 +1155,9 @@ void Gui::initImWidgets()
             // Convert the last lines of the text log
             vector<string> logs = Log::get().getLogs(Log::MESSAGE, Log::WARNING, Log::ERROR, Log::DEBUGGING);
             string text;
-            int start = std::max(0, (int)logs.size() - nbrLines);
-            for (int i = start; i < logs.size(); ++i)
-            {
-                if (i >= 0)
-                    text += logs[i] + string("\n");
-            }
+            uint32_t start = std::max(0, static_cast<int>(logs.size()) - nbrLines);
+            for (uint32_t i = start; i < logs.size(); ++i)
+                text += logs[i] + string("\n");
 
             return text;
         });

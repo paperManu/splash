@@ -121,7 +121,7 @@ class Filter : public Texture
      * \brief Filters should always be saved as it holds user-modifiable parameters
      * \param savable Needed for heritage reasons, no effect whatsoever
      */
-    void setSavable(bool savable) { _savable = true; }
+    void setSavable(bool /*savable*/) override { _savable = true; }
 
     /**
      * \brief Render the filter

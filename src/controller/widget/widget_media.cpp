@@ -47,7 +47,7 @@ void GuiMedia::render()
                 if (ImGui::Combo("##media_type", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
                     replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
 
-                ImGui::Text(("Current media type: " + _mediaTypesReversed[media->getRemoteType()]).c_str());
+                ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());
 
                 ImGui::Text("Parameters:");
                 auto attributes = media->getAttributes(true);
@@ -85,7 +85,7 @@ void GuiMedia::render()
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(96);
                                 ImGui::PushID((idStack + "media_type").c_str());
-                                ImGui::Text(_mediaTypesReversed[values[0].as<string>()].c_str());
+                                ImGui::Text("%s", _mediaTypesReversed[values[0].as<string>()].c_str());
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media type");
                                 ImGui::PopID();
@@ -136,7 +136,7 @@ void GuiMedia::render()
                                 ImGui::SameLine();
                                 ImGui::PushItemWidth(-0.01f);
                                 ImGui::PushID((idStack + "path").c_str());
-                                ImGui::Text(values[1].as<string>().c_str());
+                                ImGui::Text("%s", values[1].as<string>().c_str());
                                 if (ImGui::IsItemHovered())
                                     ImGui::SetTooltip("Media path");
                                 ImGui::PopID();
@@ -165,7 +165,6 @@ void GuiMedia::render()
                         if (ImGui::IsItemHovered())
                             ImGui::SetTooltip("Add this media");
 
-                        int typeIndex;
                         ImGui::SameLine();
                         ImGui::PushItemWidth(96);
                         ImGui::PushID("newMediaType");

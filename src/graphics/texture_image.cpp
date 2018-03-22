@@ -255,7 +255,7 @@ void Texture_Image::resize(int width, int height)
 {
     if (!_resizable)
         return;
-    if (width != _spec.width || height != _spec.height)
+    if (static_cast<uint32_t>(width) != _spec.width || static_cast<uint32_t>(height) != _spec.height)
         reset(width, height, _pixelFormat, 0, _multisample, _cubemap);
 }
 
@@ -351,7 +351,7 @@ void Texture_Image::update()
 
     // Get GL parameters
     GLenum internalFormat;
-    GLenum dataFormat;
+    GLenum dataFormat = GL_UNSIGNED_BYTE;
     if (!isCompressed)
     {
         if (spec.channels == 4 && spec.type == ImageBufferSpec::Type::UINT8)

@@ -89,7 +89,7 @@ vector<char> GpuBuffer::getBufferAsVector(size_t vertexNbr)
 
     int copyBufferSize = 0;
     glGetNamedBufferParameteriv(_copyBufferId, GL_BUFFER_SIZE, &copyBufferSize);
-    if (copyBufferSize < vectorSize)
+    if (static_cast<uint32_t>(copyBufferSize) < vectorSize)
     {
         glDeleteBuffers(1, &_copyBufferId);
         glCreateBuffers(1, &_copyBufferId);

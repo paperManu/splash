@@ -700,7 +700,7 @@ PyDoc_STRVAR(pythonGetInterpreterName_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetInterpreterName(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetInterpreterName(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -724,11 +724,11 @@ PyDoc_STRVAR(pythonGetLogs_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetLogs(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetLogs(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto logs = Log::get().getLogs(Log::ERROR, Log::WARNING, Log::MESSAGE);
     PyObject* pythonLogList = PyList_New(logs.size());
-    for (int i = 0; i < logs.size(); ++i)
+    for (uint32_t i = 0; i < logs.size(); ++i)
         PyList_SetItem(pythonLogList, i, Py_BuildValue("s", logs[i].c_str()));
 
     return pythonLogList;
@@ -746,7 +746,7 @@ PyDoc_STRVAR(pythonGetTimings_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetTimings(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetTimings(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto& timings = Timer::get().getDurationMap();
     PyObject* pythonTimerDict = PyDict_New();
@@ -772,7 +772,7 @@ PyDoc_STRVAR(pythonGetMasterClock_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetMasterClock(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetMasterClock(PyObject* /*self*/, PyObject* /*args*/)
 {
     bool paused = false;
     int64_t clockMs = 0;
@@ -818,7 +818,7 @@ PyDoc_STRVAR(pythonGetObjectList_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetObjectList(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -829,7 +829,7 @@ PyObject* PythonEmbedded::pythonGetObjectList(PyObject* self, PyObject* args)
 
     auto objects = that->getObjectNames();
     PyObject* pythonObjectList = PyList_New(objects.size());
-    for (int i = 0; i < objects.size(); ++i)
+    for (uint32_t i = 0; i < objects.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", objects[i].c_str()));
 
     return pythonObjectList;
@@ -847,7 +847,7 @@ PyDoc_STRVAR(pythonGetObjectTypes_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetObjectTypes(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -884,7 +884,7 @@ PyDoc_STRVAR(pythonGetObjectDescription_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectDescription(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -923,7 +923,7 @@ PyDoc_STRVAR(pythonGetObjectAttributeDescription_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectAttributeDescription(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -968,7 +968,7 @@ PyDoc_STRVAR(pythonGetObjectType_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectType(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectType(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1004,7 +1004,7 @@ PyDoc_STRVAR(pythonGetObjectsOfType_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectsOfType(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1052,7 +1052,7 @@ PyDoc_STRVAR(pythonGetObjectAttribute_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectAttribute(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1092,7 +1092,7 @@ PyDoc_STRVAR(pythonGetObjectAttributes_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetObjectAttributes(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1134,7 +1134,7 @@ PyDoc_STRVAR(pythonGetObjectLinks_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1148,7 +1148,7 @@ PyObject* PythonEmbedded::pythonGetObjectLinks(PyObject* self, PyObject* args)
     for (auto& obj : objects)
     {
         PyObject* links = PyList_New(obj.second.size());
-        for (int i = 0; i < obj.second.size(); ++i)
+        for (uint32_t i = 0; i < obj.second.size(); ++i)
             PyList_SetItem(links, i, Py_BuildValue("s", obj.second[i].c_str()));
         PyDict_SetItemString(pythonObjectDict, obj.first.c_str(), links);
         Py_DECREF(links);
@@ -1170,7 +1170,7 @@ PyDoc_STRVAR(pythonGetObjectReversedLinks_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetObjectReversedLinks(PyObject* self, PyObject* args)
+PyObject* PythonEmbedded::pythonGetObjectReversedLinks(PyObject* /*self*/, PyObject* /*args*/)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1184,7 +1184,7 @@ PyObject* PythonEmbedded::pythonGetObjectReversedLinks(PyObject* self, PyObject*
     for (auto& obj : objects)
     {
         PyObject* links = PyList_New(obj.second.size());
-        for (int i = 0; i < obj.second.size(); ++i)
+        for (uint32_t i = 0; i < obj.second.size(); ++i)
             PyList_SetItem(links, i, Py_BuildValue("s", obj.second[i].c_str()));
         PyDict_SetItemString(pythonObjectDict, obj.first.c_str(), links);
         Py_DECREF(links);
@@ -1209,7 +1209,7 @@ PyDoc_STRVAR(pythonGetTypesFromCategory_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1238,7 +1238,7 @@ PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* self, PyObject* a
 
     auto types = that->getTypesFromCategory(cat);
     PyObject* pythonObjectList = PyList_New(types.size());
-    for (int i = 0; i < types.size(); ++i)
+    for (uint32_t i = 0; i < types.size(); ++i)
         PyList_SetItem(pythonObjectList, i, Py_BuildValue("s", types[i].c_str()));
 
     return pythonObjectList;
@@ -1262,7 +1262,7 @@ PyDoc_STRVAR(pythonSetGlobal_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonSetGlobal(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonSetGlobal(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1307,7 +1307,7 @@ PyDoc_STRVAR(pythonSetObject_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonSetObject(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonSetObject(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1353,7 +1353,7 @@ PyDoc_STRVAR(pythonSetObjectsOfType_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available");
 
-PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonSetObjectsOfType(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1397,7 +1397,7 @@ PyDoc_STRVAR(pythonAddCustomAttribute_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available, or parameters are wrong");
 
-PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonAddCustomAttribute(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1526,7 +1526,7 @@ PyDoc_STRVAR(pythonRegisterAttributeCallback_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available, or parameters are wrong");
 
-PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1602,7 +1602,7 @@ PyDoc_STRVAR(pythonUnregisterAttributeCallback_doc__,
     "Raises:\n"
     "  splash.error: if Splash instance is not available, or parameters are wrong");
 
-PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds)
+PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* /*self*/, PyObject* args, PyObject* kwds)
 {
     auto that = getSplashInstance();
     if (!that || !that->_doLoop)
@@ -1788,8 +1788,7 @@ void PythonEmbedded::stop()
 /*************/
 void PythonEmbedded::loop()
 {
-    PyObject *pName, *pModule, *pDict;
-    PyObject *pArgs, *pValue;
+    PyObject* pName;
 
     // Create the sub-interpreter
     PyEval_AcquireThread(_pythonGlobalThreadState);
@@ -1929,14 +1928,14 @@ PyObject* PythonEmbedded::convertFromValue(const Value& value, bool toDict)
             if (toDict)
             {
                 pyValue = PyDict_New();
-                for (int i = 0; i < values.size(); ++i)
+                for (uint32_t i = 0; i < values.size(); ++i)
                     if (values[i].isNamed())
                         PyDict_SetItem(pyValue, Py_BuildValue("s", values[i].getName().c_str()), parseValue(values[i]));
             }
             else
             {
                 pyValue = PyList_New(values.size());
-                for (int i = 0; i < values.size(); ++i)
+                for (uint32_t i = 0; i < values.size(); ++i)
                     PyList_SetItem(pyValue, i, parseValue(values[i]));
             }
         }

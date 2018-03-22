@@ -154,7 +154,7 @@ shared_ptr<SerializedObject> Image::serialize() const
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> "serialize " + _name;
+        Timer::get() >> ("serialize " + _name);
 
     return obj;
 }
@@ -181,7 +181,6 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
         char xmlSpecChar[nbrChar];
         ptr = reinterpret_cast<char*>(xmlSpecChar);
         copy(currentObjPtr, currentObjPtr + nbrChar, ptr);
-        currentObjPtr = obj->data() + SPLASH_IMAGE_SERIALIZED_HEADER_SIZE;
         string xmlSpec(xmlSpecChar);
 
         ImageBufferSpec spec;
@@ -209,7 +208,7 @@ bool Image::deserialize(const shared_ptr<SerializedObject>& obj)
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> "deserialize " + _name;
+        Timer::get() >> ("deserialize " + _name);
 
     return true;
 }

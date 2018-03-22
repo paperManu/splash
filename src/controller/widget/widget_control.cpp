@@ -108,7 +108,7 @@ void GuiControl::render()
         if (_targetIndex >= 0)
         {
             vector<string> objectNames = getObjectNames();
-            if (objectNames.size() <= _targetIndex)
+            if (objectNames.size() <= static_cast<uint32_t>(_targetIndex))
                 return;
             _targetObjectName = objectNames[_targetIndex];
         }

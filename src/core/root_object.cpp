@@ -135,7 +135,6 @@ bool RootObject::waitSignalBufferObjectUpdated(uint64_t timeout)
 {
     unique_lock<mutex> lockCondition(_bufferObjectUpdatedMutex);
 
-    bool expectedValue = true;
     auto bufferWasUpdated = _bufferObjectUpdated;
 
     if (bufferWasUpdated == true)

@@ -228,7 +228,7 @@ void World::applyConfig()
 
         const Json::Value jsScenes = _config["scenes"];
 
-        for (int i = 0; i < jsScenes.size(); ++i)
+        for (uint32_t i = 0; i < jsScenes.size(); ++i)
         {
             // If no address has been specified, we consider it is localhost
             if (!jsScenes[i].isMember("address") || jsScenes[i]["address"].asString() == string("localhost"))
@@ -535,7 +535,7 @@ string World::getObjectsAttributesDescriptions()
 
     auto formatDescription = [](const string desc, const Values& argTypes) -> string {
         string descriptionStr = "[";
-        for (int i = 0; i < argTypes.size(); ++i)
+        for (uint32_t i = 0; i < argTypes.size(); ++i)
         {
             descriptionStr += argTypes[i].as<string>();
             if (i < argTypes.size() - 1)
@@ -628,7 +628,7 @@ void World::saveConfig()
     // Local objects configuration can differ from the scenes objects,
     // as their type is not necessarily identical
     Json::Value& jsScenes = _config["scenes"];
-    for (int i = 0; i < jsScenes.size(); ++i)
+    for (uint32_t i = 0; i < jsScenes.size(); ++i)
     {
         string sceneName = jsScenes[i]["name"].asString();
         _config[sceneName] = Json::Value();
@@ -813,7 +813,7 @@ void World::init()
 }
 
 /*************/
-void World::leave(int signal_value)
+void World::leave(int /*signal_value*/)
 {
     Log::get() << "World::" << __FUNCTION__ << " - Received a SIG event. Quitting." << Log::endl;
     _that->_quit = true;
@@ -855,7 +855,7 @@ bool World::copyCameraParameters(const std::string& filename)
     // Get the scene names from this other configuration file
     const Json::Value jsScenes = config["scenes"];
     vector<string> sceneNames;
-    for (int i = 0; i < jsScenes.size(); ++i)
+    for (uint32_t i = 0; i < jsScenes.size(); ++i)
         if (jsScenes[i].isMember("name"))
             sceneNames.push_back(jsScenes[i]["name"].asString());
 
@@ -1025,7 +1025,6 @@ bool World::loadProject(const string& filename)
         // Now, we apply the configuration depending on the current state
         // Meaning, we replace objects with the same name, create objects with non-existing name,
         // and delete objects which are not in the partial config
-        auto& scenes = _config["scenes"];
 
         // Delete existing objects
         for (const auto& s : _scenes)
@@ -1413,7 +1412,7 @@ void World::registerAttributes()
         {'s'});
     setAttributeDescription("addObject", "Add an object to the scenes");
 
-    addAttribute("sceneLaunched", [&](const Values& args) {
+    addAttribute("sceneLaunched", [&](const Values&) {
         lock_guard<mutex> lockChildProcess(_childProcessMutex);
         _sceneLaunched = true;
         _childProcessConditionVariable.notify_all();
@@ -1639,12 +1638,12 @@ void World::registerAttributes()
 
     addAttribute("pong",
         [&](const Values& args) {
-            Timer::get() >> "pingScene " + args[0].as<string>();
+            Timer::get() >> ("pingScene " + args[0].as<string>());
             return true;
         },
         {'s'});
 
-    addAttribute("quit", [&](const Values& args) {
+    addAttribute("quit", [&](const Values&) {
         _quit = true;
         return true;
     });
@@ -1689,7 +1688,7 @@ void World::registerAttributes()
             auto objName = args[0].as<string>();
             auto objType = args[1].as<string>();
             vector<string> targets;
-            for (int i = 2; i < args.size(); ++i)
+            for (uint32_t i = 2; i < args.size(); ++i)
                 targets.push_back(args[i].as<string>());
 
             if (!_factory->isCreatable(objType))

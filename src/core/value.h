@@ -126,8 +126,8 @@ struct Value
 
     template <class InputIt>
     Value(InputIt first, InputIt last)
-        : _type(Type::v)
-        , _v(std::unique_ptr<Values>(new Values()))
+        : _v(std::unique_ptr<Values>(new Values()))
+        , _type(Type::v)
     {
         auto it = first;
         while (it != last)
@@ -159,7 +159,7 @@ struct Value
             if (_v->size() != v._v->size())
                 return false;
             bool isEqual = true;
-            for (int i = 0; i < _v->size(); ++i)
+            for (uint32_t i = 0; i < _v->size(); ++i)
                 isEqual &= (_v->at(i) == v._v->at(i));
             return isEqual;
         }
@@ -256,6 +256,8 @@ struct Value
     {
         switch (_type)
         {
+        default:
+            return ' ';
         case Type::i:
             return 'n';
         case Type::f:
@@ -267,7 +269,7 @@ struct Value
         }
     }
 
-    int size() const
+    uint32_t size() const
     {
         switch (_type)
         {
@@ -285,14 +287,14 @@ struct Value
     }
 
   private:
-    Type _type{Type::i};
-    std::string _name{""};
     union {
         int64_t _i{0};
         double _f;
     };
     std::string _s{""};
     std::unique_ptr<Values> _v{nullptr};
+    Type _type{Type::i};
+    std::string _name{""};
 };
 
 } // end of namespace

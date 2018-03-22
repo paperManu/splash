@@ -136,7 +136,7 @@ void Sink::update()
 /*************/
 void Sink::handlePixels(const char* pixels, const ImageBufferSpec& spec)
 {
-    auto size = spec.rawSize();
+    uint32_t size = spec.rawSize();
     if (size != _buffer.size())
         _buffer.resize(size);
 
@@ -152,7 +152,7 @@ void Sink::updatePbos(int width, int height, int bytes)
     _pbos.resize(_pboCount);
     glCreateBuffers(_pbos.size(), _pbos.data());
 
-    for (int i = 0; i < _pbos.size(); ++i)
+    for (uint32_t i = 0; i < _pbos.size(); ++i)
         glNamedBufferData(_pbos[i], width * height * bytes, 0, GL_STREAM_READ);
 
     _pboWriteIndex = 0;

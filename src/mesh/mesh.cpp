@@ -169,7 +169,7 @@ shared_ptr<SerializedObject> Mesh::serialize() const
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> "serialize " + _name;
+        Timer::get() >> ("serialize " + _name);
 
     return obj;
 }
@@ -191,7 +191,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
     copy(currentObjPtr, currentObjPtr + sizeof(nbrVertices), ptr); // This will fail if float have different size between sender and receiver
     currentObjPtr += sizeof(nbrVertices);
 
-    if (nbrVertices < 0 || nbrVertices > obj->size())
+    if (nbrVertices < 0 || nbrVertices > static_cast<int>(obj->size()))
     {
         Log::get() << Log::WARNING << "Mesh::" << __FUNCTION__ << " - Bad buffer received, discarding" << Log::endl;
         return false;
@@ -203,7 +203,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
     data.push_back(vector<float>(nbrVertices * 4));
 
     bool hasAnnexe = false;
-    if (obj->size() > nbrVertices * 4 * 14) // Check whether there is an annexe buffer in all this
+    if (obj->size() > static_cast<uint32_t>(nbrVertices) * 4 * 14) // Check whether there is an annexe buffer in all this
     {
         hasAnnexe = true;
         data.push_back(vector<float>(nbrVertices * 4));
@@ -223,7 +223,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
         MeshContainer mesh;
 
         mesh.vertices.resize(nbrVertices);
-        for (unsigned int i = 0; i < nbrVertices; ++i)
+        for (int i = 0; i < nbrVertices; ++i)
         {
             mesh.vertices[i][0] = data[0][i * 4 + 0];
             mesh.vertices[i][1] = data[0][i * 4 + 1];
@@ -232,14 +232,14 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
         }
 
         mesh.uvs.resize(nbrVertices);
-        for (unsigned int i = 0; i < nbrVertices; ++i)
+        for (int i = 0; i < nbrVertices; ++i)
         {
             mesh.uvs[i][0] = data[1][i * 2 + 0];
             mesh.uvs[i][1] = data[1][i * 2 + 1];
         }
 
         mesh.normals.resize(nbrVertices);
-        for (unsigned int i = 0; i < nbrVertices; ++i)
+        for (int i = 0; i < nbrVertices; ++i)
         {
             mesh.normals[i][0] = data[2][i * 4 + 0];
             mesh.normals[i][1] = data[2][i * 4 + 1];
@@ -249,7 +249,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
         if (hasAnnexe)
         {
             mesh.annexe.resize(nbrVertices);
-            for (unsigned int i = 0; i < nbrVertices; ++i)
+            for (int i = 0; i < nbrVertices; ++i)
             {
                 mesh.annexe[i][0] = data[3][i * 4 + 0];
                 mesh.annexe[i][1] = data[3][i * 4 + 1];
@@ -271,7 +271,7 @@ bool Mesh::deserialize(const shared_ptr<SerializedObject>& obj)
     }
 
     if (Timer::get().isDebug())
-        Timer::get() >> "deserialize " + _name;
+        Timer::get() >> ("deserialize " + _name);
 
     return true;
 }

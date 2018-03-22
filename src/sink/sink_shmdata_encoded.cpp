@@ -259,7 +259,7 @@ void Sink_Shmdata_Encoded::registerAttributes()
         {'n'});
     setAttributeDescription("bitrate", "Output encoded video target bitrate");
 
-    addAttribute("caps", [&](const Values& args) { return true; }, [&]() -> Values { return {_caps}; });
+    addAttribute("caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; });
     setAttributeDescription("caps", "Generated caps");
 
     addAttribute("codec",
@@ -296,7 +296,7 @@ void Sink_Shmdata_Encoded::registerAttributes()
         {'s'});
     setAttributeDescription("socket", "Socket path to which data is sent");
 
-    addAttribute("caps", [&](const Values& args) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
+    addAttribute("caps", [&](const Values&) { return true; }, [&]() -> Values { return {_caps}; }, {'s'});
     setAttributeDescription("caps", "Caps of the sent data");
 }
 

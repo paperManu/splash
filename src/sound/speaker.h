@@ -143,10 +143,10 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     if (_planar)
     {
         size_t step = _sampleSize / sizeof(T);
-        int sampleNbr = (buffer.size() / step) / _channels;
+        uint32_t sampleNbr = (buffer.size() / step) / _channels;
         int linesize = sampleNbr * step;
-        for (auto channel = 0; channel < _channels; ++channel)
-            for (int sample = 0; sample < sampleNbr; ++sample)
+        for (uint32_t channel = 0; channel < _channels; ++channel)
+            for (uint32_t sample = 0; sample < sampleNbr; ++sample)
             {
                 int index = sample * step + channel * linesize;
                 std::copy(&buffer[index], &buffer[index + step], &interleavedBuffer[(sample * _channels + channel) * step]);
@@ -163,7 +163,7 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     else
         delta = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition + readPosition;
 
-    if (delta < buffer.size() * bufferSampleSize)
+    if (delta < static_cast<int>(buffer.size() * bufferSampleSize))
         return false;
 
     int spaceLeft = SPLASH_SPEAKER_RINGBUFFER_SIZE - writePosition;
@@ -174,7 +174,7 @@ bool Speaker::addToQueue(const ResizableArray<T>& buffer)
     else
         bufferPtr = static_cast<const uint8_t*>(buffer.data());
 
-    if (spaceLeft < buffer.size() * bufferSampleSize)
+    if (spaceLeft < static_cast<int>(buffer.size() * bufferSampleSize))
     {
         _ringUnusedSpace = spaceLeft;
         writePosition = 0;

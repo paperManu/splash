@@ -99,7 +99,7 @@ void Filter::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
-        for (int i = 0; i < _inTextures.size();)
+        for (uint32_t i = 0; i < _inTextures.size();)
         {
             if (_inTextures[i].expired())
                 continue;
@@ -150,7 +150,6 @@ void Filter::updateSizeWrtRatio()
     {
         auto inputSpec = _inTextures[0].lock()->getSpec();
 
-        int maxSize = std::max<int>(_sizeOverride[0], _sizeOverride[1]);
         float ratio = static_cast<float>(inputSpec.width) / static_cast<float>(inputSpec.height);
         ratio = ratio != 0.f ? ratio : 1.f;
 
@@ -222,8 +221,8 @@ void Filter::updateUniforms()
     if (!_colorCurves.empty())
     {
         Values tmpCurves;
-        for (int i = 0; i < _colorCurves[0].size(); ++i)
-            for (int j = 0; j < _colorCurves.size(); ++j)
+        for (uint32_t i = 0; i < _colorCurves[0].size(); ++i)
+            for (uint32_t j = 0; j < _colorCurves.size(); ++j)
                 tmpCurves.push_back(_colorCurves[j][i].as<float>());
         Values curves;
         curves.push_back(tmpCurves);
@@ -233,8 +232,6 @@ void Filter::updateUniforms()
     // Update generic uniforms
     for (auto& weakObject : _linkedObjects)
     {
-        auto scene = dynamic_cast<Scene*>(_root);
-
         auto obj = weakObject.lock();
         if (obj)
         {
@@ -482,7 +479,7 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute("colorCurves",
         [&](const Values& args) {
-            int pointCount = 0;
+            uint32_t pointCount = 0;
             for (auto& v : args)
                 if (pointCount == 0)
                     pointCount = v.size();
@@ -503,7 +500,7 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute("colorCurveAnchors",
         [&](const Values& args) {
-            auto count = args[0].as<int>();
+            auto count = args[0].as<uint32_t>();
 
             if (count < 2)
                 return false;
@@ -511,12 +508,12 @@ void Filter::registerDefaultShaderAttributes()
                 return true;
 
             Values linearCurve;
-            for (int i = 0; i < count; ++i)
+            for (uint32_t i = 0; i < count; ++i)
                 linearCurve.push_back(static_cast<float>(i) / (static_cast<float>(count - 1)));
 
             addTask([=]() {
                 _colorCurves.clear();
-                for (int i = 0; i < 3; ++i)
+                for (uint32_t i = 0; i < 3; ++i)
                     _colorCurves.push_back(linearCurve);
                 updateShaderParameters();
             });
@@ -572,7 +569,7 @@ void Filter::registerDefaultShaderAttributes()
     setAttributeDescription("saturation", "Set the saturation for the linked texture");
 
     addAttribute("size",
-        [&](const Values& args) { return true; },
+        [&](const Values&) { return true; },
         [&]() -> Values {
             if (_inTextures.empty())
                 return {0, 0};

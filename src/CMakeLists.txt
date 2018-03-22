@@ -18,6 +18,32 @@
 #
 
 #
+# Enable all warnings as errors
+#
+add_definitions(-Wall -Wextra -Werror)
+add_definitions(-Wno-unknown-pragmas)
+
+# Disable warnings for some specific files
+set_source_files_properties(
+    ../external/imgui/imgui_demo.cpp
+    ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui.cpp
+	../external/jsoncpp/jsoncpp.cpp
+	../external/hap/source/hap.c
+    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
+)
+
+set_source_files_properties(
+    graphics/camera.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
+)
+
+set_source_files_properties(
+    image/image.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough= -Wno-implicit-fallthrough"
+)
+
+#
 # Includes
 #
 include_directories(./)
@@ -159,6 +185,11 @@ else()
 endif()
 
 if (GPHOTO_FOUND)
+    set_source_files_properties(
+        controller/colorcalibrator.cpp 
+        PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
+    )
+
     target_sources(splash-${API_VERSION} PRIVATE
         controller/colorcalibrator.cpp 
         image/image_gphoto.cpp
@@ -194,6 +225,11 @@ if (SHMDATA_FOUND)
 endif()
 
 if (PYTHONLIBS_FOUND)
+    set_source_files_properties(
+        controller/controller_pythonembedded.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-missing-field-initializers
+    )
+
     target_sources(splash-${API_VERSION} PRIVATE
         controller/controller_pythonembedded.cpp
     )

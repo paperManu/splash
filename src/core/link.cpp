@@ -264,7 +264,7 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                 else
                     _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
-                for (int i = 0; i < message.size(); ++i)
+                for (uint32_t i = 0; i < message.size(); ++i)
                 {
                     auto v = message[i];
                     Value::Type valueType = v.getType();
@@ -319,7 +319,7 @@ void Link::freeOlderBuffer(void* data, void* hint)
 {
     Link* ctx = (Link*)hint;
     lock_guard<Spinlock> lock(ctx->_otgMutex);
-    int index = 0;
+    uint32_t index = 0;
     for (; index < ctx->_otgBuffers.size(); ++index)
         if (ctx->_otgBuffers[index]->data() == data)
             break;

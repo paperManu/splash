@@ -8,7 +8,7 @@ namespace Splash
 {
 
 /*************/
-void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* info)
+void hapDecodeCallback(HapDecodeWorkFunction func, void* p, unsigned int count, void* /*info*/)
 {
     vector<future<void>> threads;
     for (unsigned int i = 0; i < count; ++i)

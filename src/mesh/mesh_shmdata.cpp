@@ -58,7 +58,7 @@ void Mesh_Shmdata::onCaps(const string& dataType)
 }
 
 /*************/
-void Mesh_Shmdata::onData(void* data, int data_size)
+void Mesh_Shmdata::onData(void* data, int /*data_size*/)
 {
     if (!_capsIsValid)
         return;
@@ -123,7 +123,7 @@ void Mesh_Shmdata::onData(void* data, int data_size)
     updateTimestamp();
 
     if (Timer::get().isDebug())
-        Timer::get() >> "mesh_shmdata " + _name;
+        Timer::get() >> ("mesh_shmdata " + _name);
 }
 
 /*************/

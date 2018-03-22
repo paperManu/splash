@@ -100,7 +100,7 @@ void Mesh_BezierPatch::createPatch(int width, int height)
 /*************/
 void Mesh_BezierPatch::createPatch(Patch& patch)
 {
-    if (patch.size.x * patch.size.y != patch.vertices.size())
+    if (patch.size.x * patch.size.y != static_cast<int>(patch.vertices.size()))
         return;
 
     lock_guard<mutex> lock(_patchMutex);
@@ -246,15 +246,15 @@ void Mesh_BezierPatch::registerAttributes()
 
     addAttribute("patchControl",
         [&](const Values& args) {
-            auto width = args[0].as<int>();
-            auto height = args[1].as<int>();
+            auto width = args[0].as<uint32_t>();
+            auto height = args[1].as<uint32_t>();
 
             if (args.size() - 2 != height * width)
                 return false;
 
             Patch patch;
             patch.size = glm::ivec2(width, height);
-            for (int p = 2; p < args.size(); ++p)
+            for (uint32_t p = 2; p < args.size(); ++p)
                 patch.vertices.push_back(glm::vec2(args[p].as<Values>()[0].as<float>(), args[p].as<Values>()[1].as<float>()));
 
             createPatch(patch);
@@ -266,7 +266,7 @@ void Mesh_BezierPatch::registerAttributes()
             v.push_back(_patch.size.x);
             v.push_back(_patch.size.y);
 
-            for (int i = 0; i < _patch.vertices.size(); ++i)
+            for (uint32_t i = 0; i < _patch.vertices.size(); ++i)
             {
                 Values vertex{_patch.vertices[i].x, _patch.vertices[i].y};
                 v.emplace_back(vertex);

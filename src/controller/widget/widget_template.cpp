@@ -44,7 +44,7 @@ void GuiTemplate::render()
             }
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(_descriptions[name].data());
+                ImGui::SetTooltip("%s", _descriptions[name].data());
         }
     }
 }

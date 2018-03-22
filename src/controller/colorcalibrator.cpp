@@ -651,7 +651,7 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
         mask = vector<bool>(image->height * image->width, false);
 
         double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 8);
-        double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
+        // double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
 
         for (int y = 0; y < image->height; ++y)
             for (int x = 0; x < image->width; ++x)

@@ -71,7 +71,7 @@ class Queue : public BufferObject
      * \brief The Queue does not exist on the Scene side, there is the QueueSurrogate for this. So deserialization has no meaning
      * \return Return always false
      */
-    bool deserialize(const std::shared_ptr<SerializedObject>& obj) override { return false; }
+    bool deserialize(const std::shared_ptr<SerializedObject>& /*obj*/) override { return false; }
 
     /**
      * \brief Return the name of the distant buffer object

@@ -858,16 +858,16 @@ unsigned long long Scene::updateTargetFrameDuration()
 }
 
 /*************/
-void Scene::glfwErrorCallback(int code, const char* msg)
+void Scene::glfwErrorCallback(int /*code*/, const char* msg)
 {
     Log::get() << Log::WARNING << "Scene::glfwErrorCallback - " << msg << Log::endl;
 }
 
 /*************/
 #ifdef HAVE_OSX
-void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, const void* /*userParam*/)
 #else
-void Scene::glMsgCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, void* userParam)
+void Scene::glMsgCallback(GLenum /*source*/, GLenum type, GLuint /*id*/, GLenum severity, GLsizei /*length*/, const GLchar* message, void* /*userParam*/)
 #endif
 {
     string typeString{"OTHER"};
@@ -946,7 +946,7 @@ void Scene::registerAttributes()
         {'s', 's'});
     setAttributeDescription("add", "Add an object of the given name, type, and optionally the target scene");
 
-    addAttribute("config", [&](const Values& args) {
+    addAttribute("config", [&](const Values&) {
         addTask([&]() -> void {
             setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
             Json::Value config = getConfigurationAsJson();
@@ -1041,14 +1041,14 @@ void Scene::registerAttributes()
         {'n'});
     setAttributeDescription("logToFile", "If set to 1, the process holding the Scene will try to write log to file");
 
-    addAttribute("ping", [&](const Values& args) {
+    addAttribute("ping", [&](const Values&) {
         signalBufferObjectUpdated();
         sendMessageToWorld("pong", {_name});
         return true;
     });
     setAttributeDescription("ping", "Ping the World");
 
-    addAttribute("sync", [&](const Values& args) {
+    addAttribute("sync", [&](const Values&) {
         addTask([=]() { sendMessageToWorld("answerMessage", {"sync", _name}); });
         return true;
     });
@@ -1099,14 +1099,14 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("setMaster", "Set this Scene as master, can give the configuration file path as a parameter");
 
-    addAttribute("start", [&](const Values& args) {
+    addAttribute("start", [&](const Values&) {
         _started = true;
         sendMessageToWorld("answerMessage", {"start", _name});
         return true;
     });
     setAttributeDescription("start", "Start the Scene main loop");
 
-    addAttribute("stop", [&](const Values& args) {
+    addAttribute("stop", [&](const Values&) {
         _started = false;
         return true;
     });
@@ -1144,7 +1144,7 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("swapTestColor", "Set the swap test color");
 
-    addAttribute("quit", [&](const Values& args) {
+    addAttribute("quit", [&](const Values&) {
         addTask([=]() {
             _started = false;
             _isRunning = false;
@@ -1181,7 +1181,7 @@ void Scene::registerAttributes()
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
 #if HAVE_GPHOTO
-    addAttribute("calibrateColor", [&](const Values& args) {
+    addAttribute("calibrateColor", [&](const Values&) {
         if (_colorCalibrator == nullptr)
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked
@@ -1191,7 +1191,7 @@ void Scene::registerAttributes()
     });
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
-    addAttribute("calibrateColorResponseFunction", [&](const Values& args) {
+    addAttribute("calibrateColorResponseFunction", [&](const Values&) {
         if (_colorCalibrator == nullptr)
             return false;
         // This needs to be launched in another thread, as the set mutex is already locked

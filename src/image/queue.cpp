@@ -102,7 +102,7 @@ void Queue::update()
     }
 
     // If the index changed
-    if (sourceIndex != _currentSourceIndex)
+    if (sourceIndex != static_cast<uint32_t>(_currentSourceIndex))
     {
         if (_playing)
         {

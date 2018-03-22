@@ -17,6 +17,19 @@
 # along with Splash.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# Disable warnings from external libs
+add_definitions(-w)
+
+#
+# External sources
+#
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(glfw)
+add_subdirectory(snappy)
+
 if(APPLE)
     add_custom_command(
         OUTPUT SyphonBuild

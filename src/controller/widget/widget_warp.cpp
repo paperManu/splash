@@ -12,8 +12,6 @@ namespace Splash
 /*************/
 void GuiWarp::render()
 {
-    ImGuiIO& io = ImGui::GetIO();
-
     if (ImGui::CollapsingHeader(_name.c_str()))
     {
         auto objects = getObjectsOfType("warp");
@@ -27,7 +25,7 @@ void GuiWarp::render()
 
         ImGui::BeginChild("Warps", ImVec2(ImGui::GetWindowWidth() * 0.25, ImGui::GetWindowWidth() * 0.67), true);
         ImGui::Text("Select a warp:");
-        for (int i = 0; i < warps.size(); ++i)
+        for (uint32_t i = 0; i < warps.size(); ++i)
         {
             auto& warp = warps[i];
 
@@ -55,7 +53,7 @@ void GuiWarp::render()
                 _currentWarp = i;
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(warp->getName().c_str());
+                ImGui::SetTooltip("%s", warp->getName().c_str());
         }
         ImGui::EndChild();
 
@@ -144,7 +142,7 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
         else
         {
             _currentControlPointIndex++;
-            if (_currentControlPointIndex + 2 >= controlPoints.size())
+            if (static_cast<uint32_t>(_currentControlPointIndex) + 2 >= controlPoints.size())
                 _currentControlPointIndex = 0;
         }
 
@@ -152,11 +150,9 @@ void GuiWarp::processKeyEvents(const shared_ptr<Warp>& warp)
     }
     // Arrow keys
     {
-        auto scene = dynamic_cast<Scene*>(_root);
-
         Values controlPoints;
         warp->getAttribute("patchControl", controlPoints);
-        if (controlPoints.size() < _currentControlPointIndex + 2)
+        if (controlPoints.size() < static_cast<uint32_t>(_currentControlPointIndex) + 2)
             return;
 
         float delta = 0.001f;
@@ -218,7 +214,7 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
         // Get the distance between the mouse and the point
         Values controlPoints;
         warp->getAttribute("patchControl", controlPoints);
-        if (controlPoints.size() < _currentControlPointIndex)
+        if (controlPoints.size() < static_cast<uint32_t>(_currentControlPointIndex))
             return;
         Value point = controlPoints[_currentControlPointIndex + 2].as<Values>();
         _deltaAtPicking = glm::vec2(point[0].as<float>() - mousePos.x, point[1].as<float>() - mousePos.y);
@@ -227,7 +223,7 @@ void GuiWarp::processMouseEvents(const shared_ptr<Warp>& warp, int warpWidth, in
     {
         Values controlPoints;
         warp->getAttribute("patchControl", controlPoints);
-        if (controlPoints.size() < _currentControlPointIndex)
+        if (controlPoints.size() < static_cast<uint32_t>(_currentControlPointIndex))
             return;
 
         Values point = controlPoints[_currentControlPointIndex + 2].as<Values>();

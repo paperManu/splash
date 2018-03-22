@@ -131,7 +131,7 @@ void Image_OpenCV::readLoop()
         updateTimestamp();
 
         if (Timer::get().isDebug())
-            Timer::get() >> "read " + _name;
+            Timer::get() >> ("read " + _name);
     }
 }
 

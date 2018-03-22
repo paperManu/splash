@@ -165,7 +165,7 @@ shared_ptr<SerializedObject> Geometry::serialize() const
 /*************/
 bool Geometry::deserialize(const shared_ptr<SerializedObject>& obj)
 {
-    auto verticesNumber = *(int*)(obj->data());
+    uint32_t verticesNumber = *reinterpret_cast<int*>(obj->data());
 
     if (obj->size() != verticesNumber * 4 * 14 + 4)
     {
@@ -205,7 +205,7 @@ float Geometry::pickVertex(dvec3 p, dvec3& v)
     auto mesh = _mesh.lock();
 
     vector<float> vertices = mesh->getVertCoords();
-    for (int i = 0; i < vertices.size(); i += 4)
+    for (uint32_t i = 0; i < vertices.size(); i += 4)
     {
         dvec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
         float dist = length(p - vertex);
@@ -346,7 +346,7 @@ void Geometry::update()
 
         glBindVertexArray(vertexArrayIt->second);
 
-        for (int idx = 0; idx < _glBuffers.size(); ++idx)
+        for (uint32_t idx = 0; idx < _glBuffers.size(); ++idx)
         {
             if (_useAlternativeBuffers && _glAlternativeBuffers.size() != 0 && _glAlternativeBuffers[0])
             {

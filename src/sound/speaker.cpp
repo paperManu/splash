@@ -74,9 +74,9 @@ void Speaker::initResources()
 
 /*************/
 int Speaker::portAudioCallback(
-    const void* in, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags statusFlags, void* userData)
+    const void* /*in*/, void* out, uint64_t framesPerBuffer, const PaStreamCallbackTimeInfo* /*timeInfo*/, PaStreamCallbackFlags /*statusFlags*/, void* userData)
 {
-    auto that = (Speaker*)userData;
+    auto that = static_cast<Speaker*>(userData);
     uint8_t* output = (uint8_t*)out;
 
     if (!output)
@@ -95,7 +95,7 @@ int Speaker::portAudioCallback(
 
     if (delta < step)
     {
-        for (unsigned int i = 0; i < step; ++i)
+        for (int i = 0; i < step; ++i)
             *output++ = 0;
     }
     // Else, we copy the values and move the read position
@@ -122,8 +122,7 @@ int Speaker::portAudioCallback(
 
     if (that->_abortCallback)
         return paComplete;
-    else
-        return paContinue;
+    return paContinue;
 }
 
 /*************/

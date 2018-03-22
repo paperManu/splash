@@ -408,13 +408,13 @@ void Image_GPhoto::registerAttributes()
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");
 
     // Actions
-    addAttribute("capture", [&](const Values& args) {
+    addAttribute("capture", [&](const Values&) {
         runAsyncTask([=]() { capture(); });
         return true;
     });
     setAttributeDescription("capture", "Ask for the camera to shoot");
 
-    addAttribute("detect", [&](const Values& args) {
+    addAttribute("detect", [&](const Values&) {
         runAsyncTask([=]() { detectCameras(); });
         return true;
     });
@@ -422,7 +422,7 @@ void Image_GPhoto::registerAttributes()
 
     // Status
     addAttribute("ready",
-        [&](const Values& args) { return false; },
+        [&](const Values&) { return false; },
         [&]() -> Values {
             lock_guard<recursive_mutex> lock(_gpMutex);
             if (_selectedCameraIndex == -1)

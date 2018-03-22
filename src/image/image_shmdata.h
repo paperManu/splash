@@ -66,13 +66,13 @@ class Image_Shmdata : public Image
 
     ImageBuffer _readerBuffer;
     std::string _inputDataType{""};
-    int _bpp{0};
-    int _width{0};
-    int _height{0};
-    int _red{0};
-    int _green{0};
-    int _blue{0};
-    int _channels{0};
+    uint32_t _bpp{0};
+    uint32_t _width{0};
+    uint32_t _height{0};
+    uint32_t _red{0};
+    uint32_t _green{0};
+    uint32_t _blue{0};
+    uint32_t _channels{0};
     bool _isHap{false};
     bool _isYUV{false};
     bool _is420{false};

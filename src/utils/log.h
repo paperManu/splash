@@ -174,7 +174,7 @@ class Log
     {
         std::lock_guard<Spinlock> lock(_mutex);
         std::vector<std::pair<std::string, Priority>> logs;
-        for (int i = _logPointer; i < _logs.size(); ++i)
+        for (uint32_t i = _logPointer; i < _logs.size(); ++i)
             logs.push_back(_logs[i]);
         _logPointer = _logs.size();
         return logs;
@@ -236,7 +236,7 @@ class Log
     mutable Spinlock _mutex;
     std::deque<std::pair<std::string, Priority>> _logs;
     bool _logToFile{false};
-    int _logLength{500};
+    uint32_t _logLength{500};
     int _logPointer{0};
     Priority _verbosity{MESSAGE};
 
@@ -265,7 +265,7 @@ class Log
         addToString(str, args...);
     }
 
-    void addToString(std::string& str) const { return; }
+    void addToString(std::string&) const { return; }
 
     /**
      * \brief Set a new log message

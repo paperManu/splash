@@ -33,7 +33,7 @@
 
 #include <glm/glm.hpp>
 
-#include "./utils/log.h"
+#include "../utils/log.h"
 
 namespace Splash
 {
@@ -71,21 +71,13 @@ class Obj : public Base
         _normals.clear();
         _faces.clear();
 
-        // All objects are converted to a single one.
-        // This indices keeps track of the objects
-        int vertexShift = 0;
-        int uvShift = 0;
-        int normalShift = 0;
-
         for (std::string line; std::getline(file, line);)
         {
 
             std::string::size_type pos;
             if ((pos = line.find("o ")) == 0)
             {
-                vertexShift = _vertices.size();
-                uvShift = _uvs.size();
-                normalShift = _normals.size();
+                continue;
             }
             else if ((pos = line.find("v ")) == 0)
             {
@@ -238,7 +230,7 @@ class Obj : public Base
         for (auto& face : _faces)
         {
             if (face[0].uvId == -1)
-                for (auto& v : face)
+                for (uint32_t i = 0; i < face.size(); ++i)
                     uvs.push_back(glm::vec2(0.f, 0.f));
             else
             {

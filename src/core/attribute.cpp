@@ -95,7 +95,7 @@ bool AttributeFunctor::operator()(const Values& args)
         return false;
     }
 
-    for (int i = 0; i < _valuesTypes.size(); ++i)
+    for (uint32_t i = 0; i < _valuesTypes.size(); ++i)
     {
         auto type = args[i].getTypeAsChar();
         auto expected = _valuesTypes[i];

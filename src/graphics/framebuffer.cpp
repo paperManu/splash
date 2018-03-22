@@ -144,7 +144,7 @@ void Framebuffer::unbindDraw()
     {
         int currentFbo = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &currentFbo);
-        if (currentFbo != _fbo)
+        if (static_cast<GLuint>(currentFbo) != _fbo)
         {
             Log::get() << Log::WARNING << "Framebuffer::" << __FUNCTION__ << " - Cannot unbind a FBO which is not bound" << Log::endl;
             return;
@@ -163,7 +163,7 @@ void Framebuffer::unbindRead()
     {
         int currentFbo = 0;
         glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &currentFbo);
-        if (currentFbo != _fbo)
+        if (static_cast<GLuint>(currentFbo) != _fbo)
         {
             Log::get() << Log::WARNING << "Framebuffer::" << __FUNCTION__ << " - Cannot unbind a FBO which is not bound" << Log::endl;
             return;

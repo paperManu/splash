@@ -47,7 +47,7 @@ void GuiMeshes::render()
                 if (ImGui::Combo("", &_meshTypeIndex[meshName], meshTypes.data(), meshTypes.size()))
                     replaceMesh(meshName, meshTypes[_meshTypeIndex[meshName]]);
 
-                ImGui::Text(("Current mesh type: " + _meshTypeReversed[mesh->getRemoteType()]).c_str());
+                ImGui::Text("Current mesh type: %s", _meshTypeReversed[mesh->getRemoteType()].c_str());
 
                 ImGui::Text("Parameters:");
                 auto attributes = mesh->getAttributes(true);

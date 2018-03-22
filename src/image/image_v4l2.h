@@ -97,7 +97,7 @@ class Image_V4L2 : public Image
     std::string _sourceFormatAsString{""};
 
     struct v4l2_requestbuffers _v4l2RequestBuffers;
-    int _bufferCount{3};
+    uint32_t _bufferCount{3};
     std::deque<std::unique_ptr<ImageBuffer>> _imageBuffers{};
 
     bool _capturing{false};        //!< True if currently capturing frames

@@ -34,7 +34,7 @@ void Joystick::updateMethod()
 {
     detectJoysticks();
 
-    for (int i = 0; i < _joysticks.size(); ++i)
+    for (uint32_t i = 0; i < _joysticks.size(); ++i)
     {
         auto& joystick = _joysticks[i];
         int count;
@@ -47,11 +47,11 @@ void Joystick::updateMethod()
                 a = 0.f;
 
         if (joystick.axes.size() < axes.size())
-            for (int a = 0; a < axes.size() - joystick.axes.size(); ++a)
+            for (uint32_t a = 0; a < axes.size() - joystick.axes.size(); ++a)
                 joystick.axes.push_back(0.f);
 
         // Axes values are accumulated until they are read
-        for (int a = 0; a < joystick.axes.size(); ++a)
+        for (uint32_t a = 0; a < joystick.axes.size(); ++a)
             joystick.axes[a] += axes[a];
 
         auto bufferButtons = glfwGetJoystickButtons(GLFW_JOYSTICK_1 + i, &count);
@@ -86,7 +86,7 @@ void Joystick::updateCallbacks()
             return;
         }
 
-        if (joystickIndex != -1 && joystickAction.size() != 0 && _joysticks.size() > joystickIndex)
+        if (joystickIndex != -1 && joystickAction.size() != 0 && static_cast<int>(_joysticks.size()) > joystickIndex)
         {
             State state(targetState);
             if (joystickAction == "buttons")

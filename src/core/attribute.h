@@ -53,10 +53,10 @@ class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
     }
 
     CallbackHandle(const std::weak_ptr<BaseObject>& owner, const std::string& attr)
-        : _owner(owner)
-        , _attribute(attr)
+        : _callbackId(_nextCallbackId.fetch_add(1))
         , _isValid(true)
-        , _callbackId(_nextCallbackId.fetch_add(1))
+        , _owner(owner)
+        , _attribute(attr)
     {
     }
 
@@ -237,11 +237,16 @@ class AttributeFunctor
 
   private:
     mutable std::mutex _defaultFuncMutex{};
+    std::string _name{}; // Name of the attribute
+
     std::function<bool(const Values&)> _setFunc{};
     std::function<const Values()> _getFunc{};
 
+    bool _defaultSetAndGet{true};
+    bool _doUpdateDistant{false}; // True if the World should send this attr values to Scenes
+    bool _savable{true};          // True if this attribute should be saved
+
     std::string _objectName{};        // Name of the object holding this attribute
-    std::string _name{};              // Name of the attribute
     std::string _description{};       // Attribute description
     Values _values{};                 // Holds the values for the default set and get functions
     std::vector<char> _valuesTypes{}; // List of the types held in _values
@@ -251,10 +256,6 @@ class AttributeFunctor
     std::map<uint32_t, Callback> _callbacks{};
 
     bool _isLocked{false};
-
-    bool _defaultSetAndGet{true};
-    bool _doUpdateDistant{false}; // True if the World should send this attr values to Scenes
-    bool _savable{true};          // True if this attribute should be saved
 };
 
 } // end of namespace

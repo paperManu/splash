@@ -15,7 +15,7 @@ void GuiTextBox::render()
     if (getText)
     {
         if (ImGui::CollapsingHeader(_name.c_str()))
-            ImGui::Text(getText().c_str());
+            ImGui::Text("%s", getText().c_str());
     }
 }
 

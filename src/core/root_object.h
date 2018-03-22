@@ -176,7 +176,7 @@ class RootObject : public BaseObject
      * \param name Object name to receive the serialized object
      * \param obj Serialized object
      */
-    virtual void handleSerializedObject(const std::string& name, std::shared_ptr<SerializedObject> obj) {}
+    virtual void handleSerializedObject(const std::string& /*name*/, std::shared_ptr<SerializedObject> /*obj*/) {}
 
     /**
      * Add a task repeated at each frame

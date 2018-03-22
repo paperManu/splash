@@ -192,7 +192,7 @@ int Warp::pickControlPoint(glm::vec2 p, glm::vec2& v)
 
     auto vertices = _screenMesh->getControlPoints();
     int index = -1;
-    for (int i = 0; i < vertices.size(); ++i)
+    for (uint32_t i = 0; i < vertices.size(); ++i)
     {
         float dist = glm::length(p - vertices[i]);
         if (dist < distance)
@@ -325,7 +325,7 @@ void Warp::registerAttributes()
     setAttributeDescription("patchSize", "Set the Bezier patch control resolution");
 
     addAttribute("size",
-        [&](const Values& args) { return true; },
+        [&](const Values&) { return true; },
         [&]() -> Values {
             auto camera = _inCamera.lock();
             if (!camera)
@@ -353,7 +353,7 @@ void Warp::registerAttributes()
     addAttribute("showControlPoint",
         [&](const Values& args) {
             auto index = args[0].as<int>();
-            if (index < 0 || index >= _screenMesh->getControlPoints().size())
+            if (index < 0 || index >= static_cast<int>(_screenMesh->getControlPoints().size()))
                 _selectedControlPointIndex = -1;
             else
                 _selectedControlPointIndex = index;

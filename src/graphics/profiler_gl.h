@@ -184,7 +184,7 @@ class ProfilerGL
      * \param content Reference to the section content that will be updated
      * \param thread_id Id of the running thread
      */
-    void increaseDepth(Section::Content& content)
+    void increaseDepth(Section::Content& /*content*/)
     {
         auto thread_id = std::this_thread::get_id();
         std::lock_guard<std::mutex> lock(_processing_m);

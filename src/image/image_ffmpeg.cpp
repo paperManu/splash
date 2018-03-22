@@ -207,7 +207,7 @@ void Image_FFmpeg::readLoop()
 #if HAVE_PORTAUDIO
     _audioStreamIndex = -1;
 #endif
-    for (int i = 0; i < _avContext->nb_streams; ++i)
+    for (uint32_t i = 0; i < _avContext->nb_streams; ++i)
     {
         if (_avContext->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && _videoStreamIndex < 0)
             _videoStreamIndex = i;
@@ -329,7 +329,7 @@ void Image_FFmpeg::readLoop()
     int numBytes = av_image_get_buffer_size(AV_PIX_FMT_YUYV422, videoCodecContext->width, videoCodecContext->height, 1);
     vector<unsigned char> buffer(numBytes);
 
-    struct SwsContext* swsContext;
+    struct SwsContext* swsContext = nullptr;
     if (!isHap)
     {
         swsContext = sws_getContext(videoCodecContext->width,
@@ -487,7 +487,6 @@ void Image_FFmpeg::readLoop()
             // Reading the audio
             else if (packet.stream_index == _audioStreamIndex && audioCodecContext)
             {
-                auto hasFrame = false;
                 if (avcodec_send_packet(audioCodecContext, &packet) < 0)
                     Log::get() << Log::WARNING << "Image_FFmpeg::" << __FUNCTION__ << " - Error while decoding an audio frame in file " << _filepath << Log::endl;
                 uint64_t timing = (double)packet.pts * _audioTimeBase * 1e6;
@@ -770,7 +769,7 @@ void Image_FFmpeg::registerAttributes()
     setAttributeDescription("bufferSize", "Set the maximum buffer size for the video (in MB)");
 
     addAttribute("duration",
-        [&](const Values& args) { return false; },
+        [&](const Values&) { return false; },
         [&]() -> Values {
             if (_avContext == nullptr)
                 return {0.f};
@@ -805,7 +804,7 @@ void Image_FFmpeg::registerAttributes()
     setAttributeParameter("loop", true, true);
 
     addAttribute("remaining",
-        [&](const Values& args) { return false; },
+        [&](const Values&) { return false; },
         [&]() -> Values {
             if (_avContext == nullptr)
                 return {0.f};
@@ -878,7 +877,7 @@ void Image_FFmpeg::registerAttributes()
     setAttributeParameter("useClock", true, true);
 
     addAttribute("videoFormat",
-        [&](const Values& args) {
+        [&](const Values&) {
             // Video format string cannot be set from outside this class
             return true;
         },

@@ -27,7 +27,7 @@ void GuiGlobalView::captureJoystick()
     UserInput::setCallback(UserInput::State("joystick_0_axes"), [&](const UserInput::State& state) {
         lock_guard<mutex> lock(_joystickMutex);
         _joyAxes.resize(state.value.size(), 0.f);
-        for (int i = 0; i < _joyAxes.size(); ++i)
+        for (uint32_t i = 0; i < _joyAxes.size(); ++i)
             _joyAxes[i] += state.value[i].as<float>();
     });
 
@@ -88,7 +88,6 @@ void GuiGlobalView::render()
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Activate colorization of the wireframe rendering, green for selected camera and magenta for the other cameras\n(V while hovering the view)");
 
-        ImVec2 winSize = ImGui::GetWindowSize();
         double leftMargin = ImGui::GetCursorScreenPos().x - ImGui::GetWindowPos().x;
 
         auto cameras = getCameras();
@@ -136,7 +135,7 @@ void GuiGlobalView::render()
             }
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip(camera->getName().c_str());
+                ImGui::SetTooltip("%s", camera->getName().c_str());
         }
         ImGui::EndChild();
 
@@ -147,15 +146,18 @@ void GuiGlobalView::render()
             Values size;
             _camera->getAttribute("size", size);
 
+            int sizeX = size[0].as<int>();
+            int sizeY = size[1].as<int>();
+
             int w = ImGui::GetWindowWidth() - 2 * leftMargin;
-            int h = w * size[1].as<int>() / size[0].as<int>();
+            int h = sizeX != 0 ? w * sizeY / sizeX : 1;
 
             _camWidth = w;
             _camHeight = h;
 
             Values reprojectionError;
             _camera->getAttribute("getReprojectionError", reprojectionError);
-            ImGui::Text(("Current camera: " + _camera->getName() + " - Reprojection error: " + reprojectionError[0].as<string>()).c_str());
+            ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getName().c_str(), reprojectionError[0].as<float>());
 
             ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())
@@ -248,7 +250,7 @@ void GuiGlobalView::nextCamera()
         _camera = cameras[0];
     else
     {
-        for (int i = 0; i < cameras.size(); ++i)
+        for (uint32_t i = 0; i < cameras.size(); ++i)
         {
             if (cameras[i] == _camera && i == cameras.size() - 1)
             {
@@ -268,8 +270,6 @@ void GuiGlobalView::nextCamera()
         setObjectAttribute(_camera->getName(), "frame", {1});
         setObjectAttribute(_camera->getName(), "displayCalibration", {1});
     }
-
-    return;
 }
 
 /*************/

@@ -353,10 +353,10 @@ void Window::render()
     // This goes upstream to the cameras and gui
     // Textures are resized to the number of "frame" there are, according to the layout
     bool resize = true;
-    for (int i = 0; i < _inTextures.size(); ++i)
+    for (uint32_t i = 0; i < _inTextures.size(); ++i)
     {
         int value = _layout[i].as<int>();
-        for (int j = i + 1; j < _inTextures.size(); ++j)
+        for (uint32_t j = i + 1; j < _inTextures.size(); ++j)
             if (_layout[j].as<int>() != value)
                 resize = false;
     }
@@ -556,7 +556,7 @@ void Window::scrollCallback(GLFWwindow* win, double xoffset, double yoffset)
 }
 
 /*************/
-void Window::pathdropCallback(GLFWwindow* win, int count, const char** paths)
+void Window::pathdropCallback(GLFWwindow* /*win*/, int count, const char** paths)
 {
     lock_guard<mutex> lock(_callbackMutex);
     for (int i = 0; i < count; ++i)
@@ -564,7 +564,7 @@ void Window::pathdropCallback(GLFWwindow* win, int count, const char** paths)
 }
 
 /*************/
-void Window::closeCallback(GLFWwindow* win)
+void Window::closeCallback(GLFWwindow* /*win*/)
 {
     lock_guard<mutex> lock(_callbackMutex);
     _quitFlag = true;
