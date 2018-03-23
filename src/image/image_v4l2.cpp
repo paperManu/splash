@@ -299,7 +299,7 @@ bool Image_V4L2::initializeCapture()
         memset(&queryCtrl, 0, sizeof(queryCtrl));
         queryCtrl.id = RGB133_V4L2_CID_LIVESTREAM;
 
-        result = ioctl(_deviceFd, VIDIOC_QUERYCTRL, &queryCtrl);
+        int result = ioctl(_deviceFd, VIDIOC_QUERYCTRL, &queryCtrl);
         if (result == -1)
         {
             if (errno != EINVAL)

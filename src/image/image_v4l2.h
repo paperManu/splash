@@ -91,8 +91,8 @@ class Image_V4L2 : public Image
 
     // Capture parameters
     int _v4l2Index{0};
-    int _outputWidth{1920};
-    int _outputHeight{1080};
+    uint32_t _outputWidth{1920};
+    uint32_t _outputHeight{1080};
     uint32_t _outputPixelFormat{V4L2_PIX_FMT_RGB24};
     std::string _sourceFormatAsString{""};
 
