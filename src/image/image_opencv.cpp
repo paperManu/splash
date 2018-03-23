@@ -112,7 +112,7 @@ void Image_OpenCV::readLoop()
         }
 
         auto spec = _readBuffer.getSpec();
-        if (spec.width != capture.rows || spec.height != capture.cols || spec.channels != capture.channels())
+        if (static_cast<int>(spec.width) != capture.rows || static_cast<int>(spec.height) != capture.cols || static_cast<int>(spec.channels) != capture.channels())
         {
             ImageBufferSpec newSpec(capture.cols, capture.rows, capture.channels(), 8 * capture.channels(), ImageBufferSpec::Type::UINT8);
             newSpec.format = "BGR";
