@@ -8,18 +8,19 @@ RUN apt install --assume-yes \
     git-core \
     cmake \
     automake \
-    libtool \
-    libxrandr-dev \
-    libxi-dev \
     libgsl0-dev \
     libatlas3-base \
-    libgphoto2-dev \
     libgl1-mesa-dev \
-    libxinerama-dev \
+    libgphoto2-dev \
+    libopencv-dev \
+    libtool \
     libxcursor-dev \
+    libxi-dev \
+    libxinerama-dev \
+    libxrandr-dev \
+    libz-dev \
     python3-dev \
     portaudio19-dev \
-    libopencv-dev \
     yasm
 
 VOLUME /pkg

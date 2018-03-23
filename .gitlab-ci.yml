@@ -1,4 +1,4 @@
-image: ubuntu:artful
+image: ubuntu:xenial
 
 variables:
   DOCKER_DRIVER: overlay
@@ -10,15 +10,23 @@ before_script:
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
   - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-  - make glfw
 
 stages:
-  - test
+  - test:xenial
+  - test:artful
   - package
   - static_analysis
 
-test:
-  stage: test
+test:xenial:
+  image: ubuntu:xenial
+  stage: test:xenial
+  script: 
+    - make -j$(nproc)
+    - make test
+
+test:artful:
+  image: ubuntu:artful
+  stage: test:artful
   script: 
     - make -j$(nproc)
     - make test
