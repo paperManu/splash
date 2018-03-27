@@ -111,6 +111,8 @@ bool FileSelectorParseDir(string& path, vector<FilesystemFile>& list, const vect
 /*********/
 bool FileSelector(const string& label, string& path, bool& cancelled, const vector<string>& extensions, bool showNormalFiles)
 {
+    path = Utils::getPathFromFilePath(path);
+
     static bool filterExtension = true;
     bool manualPath = false;
     bool selectionDone = false;
@@ -181,7 +183,11 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
         {
             auto selectedIdIt = selectedId.find(label);
             if (selectedIdIt != selectedId.end())
+            {
+                if (selectedIdIt->second >= fileList.size())
+                    selectedIdIt->second = 0;
                 path = path + "/" + fileList[selectedIdIt->second].filename;
+            }
         }
         selectionDone = true;
     }

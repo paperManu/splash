@@ -637,7 +637,7 @@ void Gui::render()
                 if (SplashImGui::FileSelector("Configuration", path, cancelled, {{"json"}}))
                 {
                     if (!cancelled)
-                        _configurationPath = path;
+                        _configurationPath = Utils::isDir(path) ? path + "configuration.json" : path;
                     else
                         path = _root->getConfigurationPath();
                     showConfigurationFileSelector = false;
@@ -681,7 +681,7 @@ void Gui::render()
                 if (SplashImGui::FileSelector("Project", path, cancelled, {{"json"}}))
                 {
                     if (!cancelled)
-                        _projectPath = path;
+                        _projectPath = Utils::isDir(path) ? path + "project.json" : path;
                     else
                         path = _root->getConfigurationPath();
                     showProjectFileSelector = false;
