@@ -50,9 +50,9 @@ AttributeFunctor& AttributeFunctor::operator=(AttributeFunctor&& a)
         _description = move(a._description);
         _values = move(a._values);
         _valuesTypes = move(a._valuesTypes);
-        _defaultSetAndGet = move(a._defaultSetAndGet);
-        _doUpdateDistant = move(a._doUpdateDistant);
-        _savable = move(a._savable);
+        _defaultSetAndGet = a._defaultSetAndGet;
+        _doUpdateDistant = a._doUpdateDistant;
+        _savable = a._savable;
     }
 
     return *this;

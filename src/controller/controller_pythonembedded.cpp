@@ -1558,7 +1558,7 @@ PyObject* PythonEmbedded::pythonRegisterAttributeCallback(PyObject* /*self*/, Py
         return Py_BuildValue("I", 0);
     }
 
-    auto callbackFunc = [=](const string& obj, const string& attr) {
+    auto callbackFunc = [that, callable](const string& obj, const string& attr) {
         lock_guard<mutex> lockCb(that->_attributeCallbackMutex);
 
         PyEval_AcquireThread(that->_pythonGlobalThreadState);
