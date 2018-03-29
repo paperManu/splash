@@ -35,10 +35,10 @@
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
-#include "./image/image.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./image/image.h"
 
 namespace Splash
 {
@@ -141,14 +141,16 @@ class Filter : public Texture
     ImageBufferSpec _outTextureSpec;
 
     // Filter parameters
-    int _sizeOverride[2]{-1, -1};                            //!< If set to positive values, overrides the size given by input textures
+    int _sizeOverride[2]{-1, -1}; //!< If set to positive values, overrides the size given by input textures
     bool _keepRatio{false};
     std::unordered_map<std::string, Values> _filterUniforms; //!< Contains all filter uniforms
     bool _render16bits{false};                               //!< Set to true for the filter to be rendered in 16bits
     Values _colorCurves{};                                   //!< RGB points for the color curves, active if at least 3 points are set
-    float _autoBlackLevelTargetValue{0.f};                   //!< If not zero, defines the target luminance value
-    float _autoBlackLevelSpeed{0.02f};                       //!< Coefficient applied to update the black level value
+
+    float _autoBlackLevelTargetValue{0.f}; //!< If not zero, defines the target luminance value
+    float _autoBlackLevelSpeed{1.f};     //!< Time to match the black level target value
     float _autoBlackLevel{0.f};
+    int64_t _previousTime{0}; //!< Used for computing the current black value regarding black value speed
 
     std::string _shaderSource{""};     //!< User defined fragment shader filter
     std::string _shaderSourceFile{""}; //!< User defined fragment shader filter source file

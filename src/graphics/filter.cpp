@@ -204,9 +204,18 @@ void Filter::render()
         auto luminance = _fbo->getColorTexture()->getMeanValue().luminance();
         auto deltaLuminance = _autoBlackLevelTargetValue - luminance;
         auto newBlackLevel = _autoBlackLevel + deltaLuminance / 2.f;
-        newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
-        _autoBlackLevel = _autoBlackLevel * (1.f - _autoBlackLevelSpeed) + newBlackLevel * _autoBlackLevelSpeed;
-        _filterUniforms["_blackLevel"] = {_autoBlackLevel / 255.0};
+
+        auto currentTime = Timer::getTime() / 1000;
+        auto deltaT = _previousTime == 0 ? 0.f : static_cast<float>((currentTime - _previousTime) / 1e3);
+        _previousTime = currentTime;
+
+        if (deltaT != 0.f)
+        {
+            auto blackLevelProgress = deltaT / _autoBlackLevelSpeed;
+            newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
+            _autoBlackLevel = newBlackLevel * blackLevelProgress + _autoBlackLevel * (1.f - blackLevelProgress);
+            _filterUniforms["_blackLevel"] = {_autoBlackLevel / 255.0};
+        }
     }
 }
 
@@ -400,17 +409,17 @@ void Filter::registerDefaultShaderAttributes()
         [&](const Values& args) {
             auto blackLevel = args[0].as<float>();
             blackLevel = std::max(0.f, std::min(1.f, blackLevel));
-            _filterUniforms["_blackLevel"] = {blackLevel};
+            _filterUniforms["_blackLevel"] = {blackLevel / 255.f};
             return true;
         },
         [&]() -> Values {
             auto it = _filterUniforms.find("_blackLevel");
             if (it == _filterUniforms.end())
                 _filterUniforms["_blackLevel"] = {0.f}; // Default value
-            return _filterUniforms["_blackLevel"];
+            return {_filterUniforms["_blackLevel"][0].as<float>() * 255.f};
         },
         {'n'});
-    setAttributeDescription("blackLevel", "Set the black level for the linked texture");
+    setAttributeDescription("blackLevel", "Set the black level for the linked texture, between 0 and 255");
 
     addAttribute("blackLevelAuto",
         [&](const Values& args) {
@@ -423,8 +432,9 @@ void Filter::registerDefaultShaderAttributes()
         },
         {'n', 'n'});
     setAttributeDescription("blackLevelAuto",
-        "If the first parameter is not zero, automatic black level is enabled to match its value if needed.\n"
-        "The second parameter defines the speed at which the black level is updated.\n"
+        "If the first parameter is not zero, automatic black level is enabled.\n"
+        "The first parameter is the black level value (between 0 and 255) to match if needed.\n"
+        "The second parameter is the maximum time to match the black level, in seconds.\n"
         "The black level will be updated so that the minimum overall luminance matches the target.");
 
     addAttribute("brightness",
