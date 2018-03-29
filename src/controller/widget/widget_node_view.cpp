@@ -221,10 +221,7 @@ void GuiNodeView::renderNode(const string& name)
         }
     }
 
-    // This tricks allows for detecting clicks on the node, while keeping it closed
-    // TODO: investigate whther this is what closes the next panel unexpectedly
-    ImGui::SetNextTreeNodeOpen(false);
-    if (ImGui::CollapsingHeader(name.c_str()))
+    if (ImGui::Button(name.c_str(), ImVec2(192, 20)))
     {
         _clickedNode = name;
         _sourceNode = name;
