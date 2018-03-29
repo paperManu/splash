@@ -1,4 +1,4 @@
-#include "./image_gphoto.h"
+#include "./image/image_gphoto.h"
 
 #include <cmath>
 #include <fcntl.h>

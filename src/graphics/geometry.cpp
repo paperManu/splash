@@ -1,4 +1,4 @@
-#include "./geometry.h"
+#include "./graphics/geometry.h"
 
 #include "./core/scene.h"
 #include "./mesh/mesh.h"

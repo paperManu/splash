@@ -39,7 +39,7 @@
 #include "./core/coretypes.h"
 #include "./core/factory.h"
 #if HAVE_PORTAUDIO
-#include "./ltcclock.h"
+#include "./sound/ltcclock.h"
 #endif
 #include "./core/root_object.h"
 #include "./image/queue.h"
@@ -143,6 +143,15 @@ class World : public RootObject
     void applyConfig();
 
     /**
+     * Spawn a scene given its parameters
+     * \param name Scene name
+     * \param display Display where to spawn the scene
+     * \param address Address where to spawn the scene
+     * \param spawn If true, the Scene is spawned, otherwise it is considered to be already running
+     */
+    bool addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn = true);
+
+    /**
      * \brief Copies the camera calibration from the given file to the current configuration
      * \param filename Source configuration file
      * \return Return true if everything went well
@@ -196,14 +205,6 @@ class World : public RootObject
      * \brief Handle the exit signal messages
      */
     static void leave(int signal_value);
-
-    /**
-     * \brief Load a Json file
-     * \param filename Json file path
-     * \param configuration Holds the Json tree
-     * \return Return true if everything went well
-     */
-    bool loadJsonFile(const std::string& filename, Json::Value& configuration);
 
     /**
      * \brief Load the specified configuration file

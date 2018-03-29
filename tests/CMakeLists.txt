@@ -18,16 +18,6 @@
 #
 
 include_directories(../src/)
-include_directories(../src/core)
-include_directories(../src/controller)
-include_directories(../src/controller/widget)
-include_directories(../src/graphics)
-include_directories(../src/image)
-include_directories(../src/mesh)
-include_directories(../src/sink)
-include_directories(../src/sound)
-include_directories(../src/userinput)
-include_directories(../src/utils)
 
 include_directories(../external/doctest/doctest/)
 include_directories(../external/cppzmq)
@@ -71,20 +61,27 @@ link_directories(${OPENCV_LIBRARY_DIRS})
 link_directories(${PYTHON_LIBRARY_DIRS})
 
 # Unit tests (executed through 'make check')
+add_custom_command(OUTPUT update_assets
+    COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/data
+    COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/data/*.json ${CMAKE_CURRENT_BINARY_DIR}/data/
+    )
+add_custom_target(assets DEPENDS update_assets)
+
 add_executable(unitTests unitTests.cpp)
 target_sources(unitTests PRIVATE
     check_attributefunctor.cpp
     check_base_object.cpp
     check_resizablearray.cpp
     check_value.cpp
+    check_upgrade_configuration.cpp
 )
-
+add_dependencies(unitTests assets)
 target_link_libraries(unitTests splash-${API_VERSION})
 
 add_test(NAME unitTests COMMAND unitTests)
 
 add_custom_command(OUTPUT tests COMMAND unitTests)
-add_custom_target(check DEPENDS tests)
+add_custom_target(check DEPENDS update_assets tests)
 
 # Integration tests (executed by launching Splash and checking its behavior)
 add_custom_command(OUTPUT integration_tests

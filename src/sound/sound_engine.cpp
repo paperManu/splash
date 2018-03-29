@@ -1,4 +1,4 @@
-#include "./sound_engine.h"
+#include "./sound/sound_engine.h"
 
 #if not HAVE_OSX
 #include <pa_jack.h>

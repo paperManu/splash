@@ -1,4 +1,4 @@
-#include "./imagebuffer.h"
+#include "./core/imagebuffer.h"
 
 using namespace std;
 

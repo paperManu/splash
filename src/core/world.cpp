@@ -1,4 +1,4 @@
-#include "./world.h"
+#include "./core/world.h"
 
 #include <chrono>
 #include <fstream>
@@ -13,11 +13,12 @@
 
 #include "./core/link.h"
 #include "./core/scene.h"
-#include "./image.h"
+#include "./image/image.h"
 #include "./image/queue.h"
-#include "./mesh.h"
-#include "./osutils.h"
+#include "./mesh/mesh.h"
+#include "./utils/jsonutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 using namespace glm;
@@ -226,139 +227,21 @@ void World::applyConfig()
             return;
         }
 
-        const Json::Value jsScenes = _config["scenes"];
-
-        for (uint32_t i = 0; i < jsScenes.size(); ++i)
+        const Json::Value& scenes = _config["scenes"];
+        for (const auto& sceneName : scenes.getMemberNames())
         {
-            // If no address has been specified, we consider it is localhost
-            if (!jsScenes[i].isMember("address") || jsScenes[i]["address"].asString() == string("localhost"))
+            string sceneAddress = scenes[sceneName].isMember("address") ? scenes[sceneName]["address"].asString() : "localhost";
+            string sceneDisplay = scenes[sceneName].isMember("display") ? scenes[sceneName]["display"].asString() : "";
+            int spawn = scenes[sceneName].isMember("spawn") ? scenes[sceneName]["spawn"].asInt() : 1;
+
+            if (!addScene(sceneName, sceneDisplay, sceneAddress, spawn))
+                continue;
+
+            // Set the remaining parameters
+            for (const auto& paramName : scenes[sceneName].getMemberNames())
             {
-                if (!jsScenes[i].isMember("name"))
-                {
-                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Scenes need a name" << Log::endl;
-                    return;
-                }
-                int spawn = 1;
-                if (jsScenes[i].isMember("spawn"))
-                    spawn = jsScenes[i]["spawn"].asInt();
-
-                string display{""};
-                string worldDisplay{"none"};
-#if HAVE_LINUX
-                auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
-                auto regDisplayInt = regex("[0-9]", regex_constants::extended);
-                smatch match;
-
-                if (getenv("DISPLAY"))
-                {
-                    worldDisplay = getenv("DISPLAY");
-                    if (worldDisplay.size() == 2) // Yes, we consider a maximum of 10 display servers. Because, really?
-                        worldDisplay += ".0";
-                    if (_reloadingConfig)
-                        worldDisplay = "none";
-                }
-
-                display = "DISPLAY=" + worldDisplay;
-                if (jsScenes[i].isMember("display"))
-                {
-                    auto displayParameter = jsScenes[i]["display"].asString();
-                    if (regex_match(displayParameter, match, regDisplayFull))
-                        display = "DISPLAY=" + displayParameter;
-                    else if (regex_match(displayParameter, match, regDisplayInt))
-                        display = "DISPLAY=:" + _displayServer + "." + displayParameter;
-                }
-
-                if (!_forcedDisplay.empty())
-                {
-                    if (regex_match(_forcedDisplay, match, regDisplayFull))
-                        display = "DISPLAY=" + _forcedDisplay;
-                    else if (regex_match(_forcedDisplay, match, regDisplayInt))
-                        display = "DISPLAY=:" + _displayServer + "." + _forcedDisplay;
-                }
-#endif
-
-                string name = jsScenes[i]["name"].asString();
-                int pid = -1;
-                if (spawn > 0)
-                {
-                    _sceneLaunched = false;
-
-                    // If the current process is on the correct display, we use an inner Scene
-                    if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
-                    {
-                        Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
-                        _innerScene = make_shared<Scene>(name, _linkSocketPrefix);
-                        _innerSceneThread = thread([&]() { _innerScene->run(); });
-                    }
-                    else
-                    {
-                        // Spawn a new process containing this Scene
-                        Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
-
-                        string cmd = _currentExePath;
-                        string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
-                        string timer = Timer::get().isDebug() ? "-t" : "";
-                        string slave = "--child";
-                        string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
-
-                        vector<char*> argv = {(char*)cmd.c_str(), (char*)slave.c_str()};
-                        if (!_linkSocketPrefix.empty())
-                        {
-                            argv.push_back((char*)"--prefix");
-                            argv.push_back(const_cast<char*>(_linkSocketPrefix.c_str()));
-                        }
-                        if (!debug.empty())
-                            argv.push_back((char*)debug.c_str());
-                        if (!timer.empty())
-                            argv.push_back((char*)timer.c_str());
-                        argv.push_back((char*)name.c_str());
-                        argv.push_back(nullptr);
-                        vector<char*> env = {(char*)display.c_str(), (char*)xauth.c_str(), nullptr};
-
-                        int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
-                        if (status != 0)
-                            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << name << Log::endl;
-                    }
-
-                    // We wait for the child process to be launched
-                    unique_lock<mutex> lockChildProcess(_childProcessMutex);
-                    while (!_sceneLaunched)
-                    {
-                        if (cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, chrono::seconds(5)))
-                        {
-                            Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << name << "\". Exiting."
-                                       << Log::endl;
-                            _quit = true;
-                            return;
-                        }
-                    }
-                }
-
-                _scenes[name] = pid;
-                if (_masterSceneName == "")
-                    _masterSceneName = name;
-
-                // Initialize the communication
-                if (pid == -1 && spawn)
-                    _link->connectTo(name, _innerScene.get());
-                else
-                    _link->connectTo(name);
-
-                // Set the remaining parameters
-                auto sceneMembers = jsScenes[i].getMemberNames();
-                int idx{0};
-                for (const auto& param : jsScenes[i])
-                {
-                    string paramName = sceneMembers[idx];
-
-                    auto values = jsonToValues(param);
-                    sendMessage(name, paramName, values);
-                    idx++;
-                }
-            }
-            else
-            {
-                Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Non-local scenes are not implemented yet" << Log::endl;
+                auto values = jsonToValues(scenes[sceneName][paramName]);
+                sendMessage(sceneName, paramName, values);
             }
         }
 
@@ -366,35 +249,22 @@ void World::applyConfig()
         // The first scene is the master one, and also receives some ghost objects
         // First, set the master scene
         sendMessage(_masterSceneName, "setMaster", {_configFilename});
+
         // Then, we create the objects
-        for (auto& s : _scenes)
+        for (const auto& scene : _scenes)
         {
-            if (!_config.isMember(s.first))
+            const Json::Value& objects = _config["scenes"][scene.first]["objects"];
+            if (!objects)
                 continue;
 
-            const Json::Value jsScene = _config[s.first];
-
             // Create the objects
-            auto sceneMembers = jsScene.getMemberNames();
-            int idx = 0;
-            for (const auto& obj : jsScene)
+            auto sceneMembers = objects.getMemberNames();
+            for (const auto& objectName : objects.getMemberNames())
             {
-                string name = sceneMembers[idx];
-                if (name == "links" || !obj.isMember("type"))
-                {
-                    idx++;
+                if (!objects[objectName].isMember("type"))
                     continue;
-                }
 
-                string type = obj["type"].asString();
-                if (type != "scene")
-                {
-                    sendMessage(s.first, "add", {type, name, s.first});
-                    sendMessage(_masterSceneName, "add", {type, name, s.first});
-                    addLocally(type, name, s.first);
-                }
-
-                idx++;
+                setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first});
             }
 
             // Set some default directories
@@ -410,78 +280,52 @@ void World::applyConfig()
         // Then we link the objects together
         for (auto& s : _scenes)
         {
-            if (!_config.isMember(s.first))
+            const Json::Value& scene = _config["scenes"][s.first];
+            auto sceneMembers = scene.getMemberNames();
+            const Json::Value& links = scene["links"];
+            if (!links)
                 continue;
 
-            const Json::Value jsScene = _config[s.first];
-            auto sceneMembers = jsScene.getMemberNames();
-
-            int idx = 0;
-            for (const auto& obj : jsScene)
+            for (auto& link : links)
             {
-                if (sceneMembers[idx] != "links")
-                {
-                    idx++;
+                if (link.size() < 2)
                     continue;
-                }
-
-                for (auto& link : obj)
-                {
-                    if (link.size() < 2)
-                        continue;
-                    sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
-                }
-                idx++;
+                addTask([=]() { sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()}); });
             }
         }
 
         // Configure the objects
         for (auto& s : _scenes)
         {
-            if (!_config.isMember(s.first))
+            const Json::Value& objects = _config["scenes"][s.first]["objects"];
+            if (!objects)
                 continue;
 
-            const Json::Value jsScene = _config[s.first];
-
             // Create the objects
-            auto sceneMembers = jsScene.getMemberNames();
-            int idx{0};
-            for (const auto& obj : jsScene)
+            for (const auto& objectName : objects.getMemberNames())
             {
-                string name = sceneMembers[idx];
-                if (name == "links" || !obj.isMember("type"))
-                {
-                    idx++;
-                    continue;
-                }
+                auto& obj = objects[objectName];
 
-                string type = obj["type"].asString();
-
-                // Set their attributes
-                auto objMembers = obj.getMemberNames();
-                int idxAttr = 0;
-                for (const auto& attr : obj)
-                {
-                    if (objMembers[idxAttr] == "type")
+                addTask([=]() {
+                    // Set their attributes
+                    auto objMembers = obj.getMemberNames();
+                    int idxAttr = 0;
+                    for (const auto& attr : obj)
                     {
+                        if (objMembers[idxAttr] == "type")
+                        {
+                            idxAttr++;
+                            continue;
+                        }
+
+                        auto values = jsonToValues(attr);
+                        values.push_front(objMembers[idxAttr]);
+                        values.push_front(objectName);
+                        setAttribute("sendAll", values);
+
                         idxAttr++;
-                        continue;
                     }
-
-                    auto values = jsonToValues(attr);
-
-                    // Send the attribute
-                    sendMessage(name, objMembers[idxAttr], values);
-                    if (type != "scene")
-                    {
-                        // We also the attribute locally, if the object exists
-                        set(name, objMembers[idxAttr], values, false);
-                    }
-
-                    idxAttr++;
-                }
-
-                idx++;
+                });
             }
         }
 
@@ -525,6 +369,120 @@ void World::applyConfig()
             _quit = true;
             break;
         }
+    }
+}
+
+/*************/
+bool World::addScene(const std::string& sceneName, const std::string& sceneDisplay, const std::string& sceneAddress, bool spawn)
+{
+    if (sceneAddress == "localhost")
+    {
+        string display{""};
+        string worldDisplay{"none"};
+#if HAVE_LINUX
+        auto regDisplayFull = regex("(:[0-9]\\.[0-9])", regex_constants::extended);
+        auto regDisplayInt = regex("[0-9]", regex_constants::extended);
+        smatch match;
+
+        if (getenv("DISPLAY") != nullptr)
+        {
+            worldDisplay = getenv("DISPLAY");
+            if (worldDisplay.size() == 2) // Yes, we consider a maximum of 10 display servers. Because, really?
+                worldDisplay += ".0";
+            if (_reloadingConfig)
+                worldDisplay = "none";
+        }
+
+        display = "DISPLAY=" + worldDisplay;
+        if (!sceneDisplay.empty())
+        {
+            if (regex_match(sceneDisplay, match, regDisplayFull))
+                display = "DISPLAY=" + sceneDisplay;
+            else if (regex_match(sceneDisplay, match, regDisplayInt))
+                display = "DISPLAY=:" + _displayServer + "." + sceneDisplay;
+        }
+
+        if (!_forcedDisplay.empty())
+        {
+            if (regex_match(_forcedDisplay, match, regDisplayFull))
+                display = "DISPLAY=" + _forcedDisplay;
+            else if (regex_match(_forcedDisplay, match, regDisplayInt))
+                display = "DISPLAY=:" + _displayServer + "." + _forcedDisplay;
+        }
+#endif
+
+        int pid = -1;
+        if (spawn > 0)
+        {
+            _sceneLaunched = false;
+
+            // If the current process is on the correct display, we use an inner Scene
+            if (worldDisplay.size() > 0 && display.find(worldDisplay) == display.size() - worldDisplay.size() && !_innerScene)
+            {
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting an inner Scene" << Log::endl;
+                _innerScene = make_shared<Scene>(sceneName, _linkSocketPrefix);
+                _innerSceneThread = thread([&]() { _innerScene->run(); });
+            }
+            else
+            {
+                // Spawn a new process containing this Scene
+                Log::get() << Log::MESSAGE << "World::" << __FUNCTION__ << " - Starting a Scene in another process" << Log::endl;
+
+                string cmd = _currentExePath;
+                string debug = (Log::get().getVerbosity() == Log::DEBUGGING) ? "-d" : "";
+                string timer = Timer::get().isDebug() ? "-t" : "";
+                string slave = "--child";
+                string xauth = "XAUTHORITY=" + Utils::getHomePath() + "/.Xauthority";
+
+                vector<char*> argv = {const_cast<char*>(cmd.c_str()), const_cast<char*>(slave.c_str())};
+                if (!_linkSocketPrefix.empty())
+                {
+                    argv.push_back((char*)"--prefix");
+                    argv.push_back(const_cast<char*>(_linkSocketPrefix.c_str()));
+                }
+                if (!debug.empty())
+                    argv.push_back(const_cast<char*>(debug.c_str()));
+                if (!timer.empty())
+                    argv.push_back(const_cast<char*>(timer.c_str()));
+                argv.push_back(const_cast<char*>(sceneName.c_str()));
+                argv.push_back(nullptr);
+                vector<char*> env = {const_cast<char*>(display.c_str()), const_cast<char*>(xauth.c_str()), nullptr};
+
+                int status = posix_spawn(&pid, cmd.c_str(), nullptr, nullptr, argv.data(), env.data());
+                if (status != 0)
+                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Error while spawning process for scene " << sceneName << Log::endl;
+            }
+
+            // We wait for the child process to be launched
+            unique_lock<mutex> lockChildProcess(_childProcessMutex);
+            while (!_sceneLaunched)
+            {
+                if (cv_status::timeout == _childProcessConditionVariable.wait_for(lockChildProcess, chrono::seconds(5)))
+                {
+                    Log::get() << Log::ERROR << "World::" << __FUNCTION__ << " - Timeout when trying to connect to newly spawned scene \"" << sceneName << "\". Exiting."
+                               << Log::endl;
+                    _quit = true;
+                    return false;
+                }
+            }
+        }
+
+        _scenes[sceneName] = pid;
+        if (_masterSceneName.empty())
+            _masterSceneName = sceneName;
+
+        // Initialize the communication
+        if (pid == -1 && spawn)
+            _link->connectTo(sceneName, _innerScene.get());
+        else
+            _link->connectTo(sceneName);
+
+        return true;
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Non-local scenes are not implemented yet" << Log::endl;
+        return false;
     }
 }
 
@@ -604,8 +562,8 @@ void World::saveConfig()
 {
     setlocale(LC_NUMERIC, "C"); // Needed to make sure numbers are written with commas
 
-    Json::Value root;
-    root["scenes"] = Json::Value();
+    Json::Value distantScenes;
+    distantScenes["scenes"] = Json::Value();
 
     // Get the configuration from the different scenes
     for (auto& s : _scenes)
@@ -613,7 +571,7 @@ void World::saveConfig()
         Json::Value scene;
         scene["name"] = s.first;
         scene["address"] = "localhost"; // Distant scenes are not yet supported
-        root["scenes"].append(scene);
+        distantScenes["scenes"].append(scene);
 
         // Get this scene's configuration
         Values answer = sendMessageWithAnswer(s.first, "config");
@@ -622,56 +580,45 @@ void World::saveConfig()
         Json::Value config;
         Json::Reader reader;
         reader.parse(answer[2].as<string>(), config);
-        root[s.first] = config;
+        distantScenes[s.first] = config;
     }
 
     // Local objects configuration can differ from the scenes objects,
     // as their type is not necessarily identical
-    Json::Value& jsScenes = _config["scenes"];
-    for (uint32_t i = 0; i < jsScenes.size(); ++i)
+    for (const auto& sceneName : _config["scenes"].getMemberNames())
     {
-        string sceneName = jsScenes[i]["name"].asString();
-        _config[sceneName] = Json::Value();
-
-        // Set the scene configuration from what was received in the previous loop
-        Json::Value::Members attributes = root[sceneName][sceneName].getMemberNames();
-        for (const auto& attr : attributes)
-            jsScenes[i][attr] = root[sceneName][sceneName][attr];
-
-        if (root.isMember(sceneName))
+        //_config["scenes"][sceneName] = Json::Value();
+        if (distantScenes.isMember(sceneName))
         {
-            Json::Value& scene = root[sceneName];
-            Json::Value::Members members = scene.getMemberNames();
-
-            for (auto& m : members)
+            // Set the scene configuration from what was received in the previous loop
+            Json::Value& scene = distantScenes[sceneName];
+            for (const auto& attr : distantScenes[sceneName].getMemberNames())
             {
-                // The root objects contains configuration for the scenes as if they
-                // were Objects themselves, although they are RootObjects. We should not
-                // include them here
-                if (m == sceneName)
-                    continue;
-
-                if (!_config[sceneName].isMember(m))
-                    _config[sceneName][m] = Json::Value();
-
-                if (m != "links")
+                if (attr != "objects")
                 {
-                    attributes = scene[m].getMemberNames();
-                    for (const auto& a : attributes)
-                        _config[sceneName][m][a] = scene[m][a];
-
-                    const auto& obj = _objects.find(m);
-                    if (obj != _objects.end())
-                    {
-                        Json::Value worldObjValue = obj->second->getConfigurationAsJson();
-                        attributes = worldObjValue.getMemberNames();
-                        for (const auto& a : attributes)
-                            _config[sceneName][m][a] = worldObjValue[a];
-                    }
+                    _config["scenes"][sceneName][attr] = scene[attr];
                 }
                 else
                 {
-                    _config[sceneName][m] = scene[m];
+                    Json::Value::Members objectNames = scene["objects"].getMemberNames();
+
+                    _config["scenes"][sceneName][attr] = Json::Value();
+                    Json::Value& objects = _config["scenes"][sceneName]["objects"];
+
+                    for (auto& m : objectNames)
+                    {
+                        for (const auto& a : scene["objects"][m].getMemberNames())
+                            objects[m][a] = scene["objects"][m][a];
+
+                        const auto& obj = _objects.find(m);
+                        if (obj != _objects.end())
+                        {
+                            Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                            auto attributes = worldObjValue.getMemberNames();
+                            for (const auto& a : attributes)
+                                objects[m][a] = worldObjValue[a];
+                        }
+                    }
                 }
             }
         }
@@ -679,9 +626,9 @@ void World::saveConfig()
 
     // Configuration from the world
     _config["description"] = SPLASH_FILE_CONFIGURATION;
+    _config["version"] = string(PACKAGE_VERSION);
     auto worldConfiguration = BaseObject::getConfigurationAsJson();
-    auto attributes = worldConfiguration.getMemberNames();
-    for (const auto& attr : attributes)
+    for (const auto& attr : worldConfiguration.getMemberNames())
     {
         _config["world"][attr] = worldConfiguration[attr];
     }
@@ -701,6 +648,7 @@ void World::saveProject()
 
         auto root = Json::Value(); // Haha, auto root...
         root["description"] = SPLASH_FILE_PROJECT;
+        root["version"] = string(PACKAGE_VERSION);
         root["links"] = Json::Value();
 
         // Here, we don't care about which Scene holds which object, as objects with the
@@ -716,54 +664,43 @@ void World::saveProject()
             Json::Reader reader;
             reader.parse(answer[2].as<string>(), config);
 
-            auto members = config.getMemberNames();
-            for (const auto& m : members)
+            for (auto& v : config["links"])
             {
-                if (m == "links")
-                {
-                    for (auto& v : config[m])
-                    {
-                        // Only keep links to partially saved types
-                        bool isSavableType = _factory->isProjectSavable(config[v[0].asString()]["type"].asString());
-                        // If the object is linked to a camera, we save the link as
-                        // "saved to all available cameras"
-                        bool isLinkedToCam = (config[v[1].asString()]["type"].asString() == "camera");
+                // Only keep links to partially saved types
+                bool isSavableType = _factory->isProjectSavable(config["objects"][v[0].asString()]["type"].asString());
+                // If the object is linked to a camera, we save the link as
+                // "saved to all available cameras"
+                bool isLinkedToCam = (config["objects"][v[1].asString()]["type"].asString() == "camera");
 
-                        if (isLinkedToCam)
-                            v[1] = SPLASH_CAMERA_LINK;
+                if (isLinkedToCam)
+                    v[1] = SPLASH_CAMERA_LINK;
 
-                        auto link = make_pair<string, string>(v[0].asString(), v[1].asString());
-                        if (existingLinks.find(link) == existingLinks.end())
-                            existingLinks.insert(link);
-                        else
-                            continue;
-
-                        if (isSavableType)
-                            root[m].append(v);
-                    }
-                    continue;
-                }
-
-                if (!config[m].isMember("type"))
+                auto link = make_pair<string, string>(v[0].asString(), v[1].asString());
+                if (existingLinks.find(link) == existingLinks.end())
+                    existingLinks.insert(link);
+                else
                     continue;
 
+                if (isSavableType)
+                    root["links"].append(v);
+            }
+
+            for (const auto& member : config["objects"].getMemberNames())
+            {
                 // We only save configuration for non Scene-specific objects, which are one of the following:
-                if (!_factory->isProjectSavable(config[m]["type"].asString()))
+                if (!_factory->isProjectSavable(config["objects"][member]["type"].asString()))
                     continue;
 
-                root[m] = Json::Value();
-                auto attributes = config[m].getMemberNames();
-                for (const auto& a : attributes)
-                    root[m][a] = config[m][a];
+                for (const auto& attr : config["objects"][member].getMemberNames())
+                    root["objects"][member][attr] = config["objects"][member][attr];
 
                 // Check for configuration of this object held in the World context
-                const auto& obj = _objects.find(m);
+                const auto& obj = _objects.find(member);
                 if (obj != _objects.end())
                 {
                     Json::Value worldObjValue = obj->second->getConfigurationAsJson();
-                    attributes = worldObjValue.getMemberNames();
-                    for (const auto& a : attributes)
-                        root[m][a] = worldObjValue[a];
+                    for (const auto& attr : worldObjValue.getMemberNames())
+                        root["objects"][member][attr] = worldObjValue[attr];
                 }
             }
         }
@@ -788,7 +725,7 @@ Values World::getObjectsNameByType(const string& type)
 /*************/
 void World::handleSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
-    _link->sendBuffer(name, std::move(obj));
+    _link->sendBuffer(name, obj);
 }
 
 /*************/
@@ -803,8 +740,8 @@ void World::init()
         _that = this;
         _signals.sa_handler = leave;
         _signals.sa_flags = 0;
-        sigaction(SIGINT, &_signals, NULL);
-        sigaction(SIGTERM, &_signals, NULL);
+        sigaction(SIGINT, &_signals, nullptr);
+        sigaction(SIGTERM, &_signals, nullptr);
 
         if (_linkSocketPrefix.empty())
             _linkSocketPrefix = to_string(static_cast<int>(getpid()));
@@ -853,56 +790,27 @@ bool World::copyCameraParameters(const std::string& filename)
     }
 
     // Get the scene names from this other configuration file
-    const Json::Value jsScenes = config["scenes"];
-    vector<string> sceneNames;
-    for (uint32_t i = 0; i < jsScenes.size(); ++i)
-        if (jsScenes[i].isMember("name"))
-            sceneNames.push_back(jsScenes[i]["name"].asString());
-
-    for (const auto& s : sceneNames)
+    for (const auto& s : config["scenes"].getMemberNames())
     {
-        if (!config.isMember(s))
-            continue;
-
-        const Json::Value jsScene = config[s];
-        auto sceneMembers = jsScene.getMemberNames();
-        int idx = 0;
         // Look for the cameras in the configuration file
-        for (const auto& obj : jsScene)
+        for (const auto& name : config["scenes"][s]["objects"].getMemberNames())
         {
-            string name = sceneMembers[idx];
-            if (name == "links" || !obj.isMember("type"))
-            {
-                idx++;
-                continue;
-            }
-
+            Json::Value& obj = config["scenes"][s]["objects"][name];
             if (find(copyableTypes.begin(), copyableTypes.end(), obj["type"].asString()) == copyableTypes.end())
-            {
-                idx++;
                 continue;
-            }
 
             // Go through the camera attributes
-            auto objMembers = obj.getMemberNames();
-            int idxAttr = 0;
-            for (const auto& attr : obj)
+            for (const auto& attrName : obj.getMemberNames())
             {
-                if (objMembers[idxAttr] == "type")
-                {
-                    idxAttr++;
+                Json::Value& attr = obj[attrName];
+                if (attrName == "type")
                     continue;
-                }
 
                 auto values = jsonToValues(attr);
 
                 // Send the new values for this attribute
-                sendMessage(name, objMembers[idxAttr], values);
-
-                idxAttr++;
+                sendMessage(name, attrName, values);
             }
-
-            idx++;
         }
     }
 
@@ -960,46 +868,12 @@ Values World::jsonToValues(const Json::Value& values)
 }
 
 /*************/
-bool World::loadJsonFile(const string& filename, Json::Value& configuration)
-{
-    ifstream in(filename, ios::in | ios::binary);
-    string contents;
-    if (in)
-    {
-        in.seekg(0, ios::end);
-        contents.resize(in.tellg());
-        in.seekg(0, ios::beg);
-        in.read(&contents[0], contents.size());
-        in.close();
-    }
-    else
-    {
-        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to open file " << filename << Log::endl;
-        return false;
-    }
-
-    Json::Value config;
-    Json::Reader reader;
-
-    bool success = reader.parse(contents, config);
-    if (!success)
-    {
-        Log::get() << Log::WARNING << "World::" << __FUNCTION__ << " - Unable to parse file " << filename << Log::endl;
-        Log::get() << Log::WARNING << reader.getFormattedErrorMessages() << Log::endl;
-        return false;
-    }
-
-    configuration = config;
-    return true;
-}
-
-/*************/
 bool World::loadConfig(const string& filename, Json::Value& configuration)
 {
-    if (!loadJsonFile(filename, configuration))
+    if (!Utils::loadJsonFile(filename, configuration))
         return false;
 
-    if (!configuration.isMember("description") || configuration["description"].asString() != SPLASH_FILE_CONFIGURATION)
+    if (!Utils::checkAndUpgradeConfiguration(configuration))
         return false;
 
     _configFilename = filename;
@@ -1014,7 +888,7 @@ bool World::loadProject(const string& filename)
     try
     {
         Json::Value partialConfig;
-        if (!loadJsonFile(filename, partialConfig))
+        if (!Utils::loadJsonFile(filename, partialConfig))
             return false;
 
         if (!partialConfig.isMember("description") || partialConfig["description"].asString() != SPLASH_FILE_PROJECT)
@@ -1029,73 +903,56 @@ bool World::loadProject(const string& filename)
         // Delete existing objects
         for (const auto& s : _scenes)
         {
-            auto members = _config[s.first].getMemberNames();
-            for (const auto& m : members)
+            const Json::Value& sceneObjects = _config["scenes"][s.first]["objects"];
+            for (const auto& member : sceneObjects.getMemberNames())
             {
-                if (m == "links")
+                if (!sceneObjects[member].isMember("type"))
                     continue;
-                if (!_config[s.first][m].isMember("type"))
-                    continue;
-
-                if (_factory->isProjectSavable(_config[s.first][m]["type"].asString()))
-                    setAttribute("deleteObject", {m});
+                if (_factory->isProjectSavable(sceneObjects[member]["type"].asString()))
+                    setAttribute("deleteObject", {member});
             }
         }
 
         // Create new objects
-        auto members = partialConfig.getMemberNames();
-        for (const auto& m : members)
+        for (const auto& objectName : partialConfig["objects"].getMemberNames())
         {
-            if (m == "links" || m == "description")
+            if (!partialConfig["objects"][objectName].isMember("type"))
                 continue;
-            if (!partialConfig[m].isMember("type"))
-                continue;
-            setAttribute("addObject", {partialConfig[m]["type"].asString(), m});
+            setAttribute("addObject", {partialConfig["objects"][objectName]["type"].asString(), objectName});
         }
 
         // Handle the links
         // We will need a list of all cameras
-        if (partialConfig.isMember("links"))
+        for (const auto& link : partialConfig["links"])
         {
-            for (const auto& link : partialConfig["links"])
-            {
-                if (link.size() != 2)
-                    continue;
-                auto source = link[0].asString();
-                auto sink = link[1].asString();
+            if (link.size() != 2)
+                continue;
+            auto source = link[0].asString();
+            auto sink = link[1].asString();
 
-                addTask([=]() {
-                    if (sink != SPLASH_CAMERA_LINK)
-                    {
-                        sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
-                    }
-                    else
-                    {
-                        auto cameraNames = getObjectsNameByType("camera");
-                        for (const auto& camera : cameraNames)
-                            sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
-                    }
-                });
-            }
+            addTask([=]() {
+                if (sink != SPLASH_CAMERA_LINK)
+                {
+                    sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), link[1].asString()});
+                }
+                else
+                {
+                    auto cameraNames = getObjectsNameByType("camera");
+                    for (const auto& camera : cameraNames)
+                        sendMessage(SPLASH_ALL_PEERS, "link", {link[0].asString(), camera});
+                }
+            });
         }
 
         // Configure the objects
-        for (const auto& name : members)
+        for (const auto& objectName : partialConfig["objects"].getMemberNames())
         {
-            if (name == "links" || name == "description")
-                continue;
-
-            auto& obj = partialConfig[name];
-            string type = obj["type"].asString();
-
-            if (type == "scene")
-                continue;
+            auto& obj = partialConfig["objects"][objectName];
+            auto configPath = Utils::getPathFromFilePath(_configFilename);
 
             addTask([=]() {
                 // Before anything, all objects have the right to know what the current path is
-                auto path = Utils::getPathFromFilePath(_configFilename);
-                sendMessage(name, "configFilePath", {path});
-                set(name, "configFilePath", {path}, false);
+                setAttribute("sendAll", {objectName, "configFilePath", configPath});
 
                 // Set their attributes
                 auto objMembers = obj.getMemberNames();
@@ -1110,7 +967,7 @@ bool World::loadProject(const string& filename)
 
                     auto values = jsonToValues(attr);
                     values.push_front(objMembers[idxAttr]);
-                    values.push_front(name);
+                    values.push_front(objectName);
                     setAttribute("sendAll", values);
 
                     idxAttr++;
@@ -1388,20 +1245,27 @@ void World::registerAttributes()
         [&](const Values& args) {
             addTask([=]() {
                 auto type = args[0].as<string>();
-                auto name = string();
-
-                if (args.size() == 1)
-                    name = type + "_" + to_string(getId());
-                else if (args.size() == 2)
-                    name = args[1].as<string>();
+                auto name = args.size() < 2 ? type + "_" + to_string(getId()) : args[1].as<string>();
+                auto scene = args.size() < 3 ? "" : args[2].as<string>();
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-                for (auto& s : _scenes)
+                if (scene.empty())
                 {
-                    sendMessage(s.first, "add", {type, name, s.first});
-                    addLocally(type, name, s.first);
-                    sendMessageWithAnswer(s.first, "sync");
+                    for (auto& s : _scenes)
+                    {
+                        sendMessage(s.first, "add", {type, name, s.first});
+                        addLocally(type, name, s.first);
+                        sendMessageWithAnswer(s.first, "sync");
+                    }
+                }
+                else
+                {
+                    sendMessage(scene, "add", {type, name, scene});
+                    if (scene != _masterSceneName)
+                        sendMessage(_masterSceneName, "add", {type, name, scene});
+                    addLocally(type, name, scene);
+                    sendMessageWithAnswer(scene, "sync");
                 }
 
                 set(name, "configFilePath", {Utils::getPathFromFilePath(_configFilename)}, false);

@@ -39,9 +39,9 @@
 #include "./config.h"
 
 #include "./core/attribute.h"
-#include "./controller.h"
+#include "./controller/controller.h"
 #include "./core/coretypes.h"
-#include "./image.h"
+#include "./image/image.h"
 
 namespace Splash
 {

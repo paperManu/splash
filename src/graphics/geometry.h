@@ -37,7 +37,7 @@
 #include "./core/buffer_object.h"
 #include "./core/coretypes.h"
 #include "./graphics/gpu_buffer.h"
-#include "./mesh.h"
+#include "./mesh/mesh.h"
 
 namespace Splash
 {

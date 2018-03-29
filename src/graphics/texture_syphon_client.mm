@@ -1,4 +1,4 @@
-#import "texture_syphon_client.h"
+#include "./graphics/texture_syphon_client.h"
 
 #import <iostream>
 #import <Syphon/Syphon.h>

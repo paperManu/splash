@@ -1,4 +1,4 @@
-#include "./texture_syphon.h"
+#include "./graphics/texture_syphon.h"
 
 #include "./utils/log.h"
 

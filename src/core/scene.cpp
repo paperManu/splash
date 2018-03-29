@@ -1,9 +1,9 @@
-#include "./scene.h"
+#include "./core/scene.h"
 
 #include <utility>
 
-#include "./controller_blender.h"
-#include "./controller_gui.h"
+#include "./controller/controller_blender.h"
+#include "./controller/controller_gui.h"
 #include "./core/link.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
@@ -14,19 +14,19 @@
 #include "./graphics/texture_image.h"
 #include "./graphics/warp.h"
 #include "./graphics/window.h"
-#include "./image.h"
+#include "./image/image.h"
 #include "./image/queue.h"
-#include "./mesh.h"
-#include "./osutils.h"
-#include "./userinput_dragndrop.h"
-#include "./userinput_joystick.h"
-#include "./userinput_keyboard.h"
-#include "./userinput_mouse.h"
+#include "./mesh/mesh.h"
+#include "./userinput/userinput_dragndrop.h"
+#include "./userinput/userinput_joystick.h"
+#include "./userinput/userinput_keyboard.h"
+#include "./userinput/userinput_mouse.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 #if HAVE_GPHOTO
-#include "./colorcalibrator.h"
+#include "./controller/colorcalibrator.h"
 #endif
 
 #if HAVE_OSX
@@ -217,7 +217,7 @@ Values Scene::getAttributeDescriptionFromObject(const string& name, const string
     if (values.size() == 0 || values[0].as<string>() == "")
     {
         auto answer = sendMessageToWorldWithAnswer("getAttributeDescription", {name, attribute}, 10000);
-        if (answer.size() != 0)
+        if (!answer.empty())
         {
             values.clear();
             values.push_back(answer[1]);
@@ -233,12 +233,14 @@ Json::Value Scene::getConfigurationAsJson()
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
     Json::Value root;
+    auto sceneConfiguration = BaseObject::getConfigurationAsJson();
+    for (const auto& attr : sceneConfiguration.getMemberNames())
+        root[attr] = sceneConfiguration[attr];
 
-    root[_name] = BaseObject::getConfigurationAsJson();
     // Save objects attributes
     for (auto& obj : _objects)
         if (obj.second->getSavable() && !obj.second->isGhost())
-            root[obj.first] = obj.second->getConfigurationAsJson();
+            root["objects"][obj.first] = obj.second->getConfigurationAsJson();
 
     // Save links
     Values links;

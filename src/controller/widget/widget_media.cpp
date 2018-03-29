@@ -1,10 +1,10 @@
-#include "./widget_media.h"
+#include "./controller/widget/widget_media.h"
 
 #include <imgui.h>
 
 #include "./core/scene.h"
 #include "./image/queue.h"
-#include "./osutils.h"
+#include "./utils/osutils.h"
 
 using namespace std;
 

@@ -1,6 +1,6 @@
-#include "./window.h"
+#include "./graphics/window.h"
 
-#include "./controller_gui.h"
+#include "./controller/controller_gui.h"
 #include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/geometry.h"
@@ -9,7 +9,7 @@
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
 #include "./graphics/warp.h"
-#include "./image.h"
+#include "./image/image.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

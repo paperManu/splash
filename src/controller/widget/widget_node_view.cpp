@@ -1,4 +1,4 @@
-#include "./widget_node_view.h"
+#include "./controller/widget/widget_node_view.h"
 
 #include <imgui.h>
 

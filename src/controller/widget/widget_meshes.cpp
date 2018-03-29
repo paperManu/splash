@@ -1,10 +1,10 @@
-#include "./widget_meshes.h"
+#include "./controller/widget/widget_meshes.h"
 
 #include <imgui.h>
 
 #include "./core/scene.h"
 #include "./image/queue.h"
-#include "./osutils.h"
+#include "./utils/osutils.h"
 
 using namespace std;
 

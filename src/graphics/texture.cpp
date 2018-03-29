@@ -1,4 +1,4 @@
-#include "./texture.h"
+#include "./graphics/texture.h"
 
 #include "./image/image.h"
 #include "./utils/log.h"

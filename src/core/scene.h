@@ -34,7 +34,7 @@
 #include "./config.h"
 
 #if HAVE_GPHOTO
-#include "./colorcalibrator.h"
+#include "./controller/colorcalibrator.h"
 #endif
 #include "./core/attribute.h"
 #include "./core/coretypes.h"

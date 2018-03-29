@@ -1,4 +1,4 @@
-#include "./widget_template.h"
+#include "./controller/widget/widget_template.h"
 
 #include <array>
 #include <fstream>

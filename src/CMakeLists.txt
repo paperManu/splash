@@ -49,15 +49,6 @@ endif()
 # Includes
 #
 include_directories(./)
-include_directories(./core)
-include_directories(./controller)
-include_directories(./controller/widget)
-include_directories(./image)
-include_directories(./mesh)
-include_directories(./sink)
-include_directories(./sound)
-include_directories(./userinput)
-include_directories(./utils)
 
 include_directories(../external/cppzmq)
 include_directories(../external/glm)

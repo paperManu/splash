@@ -1,4 +1,4 @@
-#include "./filter.h"
+#include "./graphics/filter.h"
 
 #include "./core/scene.h"
 #include "./graphics/texture_image.h"

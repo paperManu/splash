@@ -1,4 +1,4 @@
-#include "./controller_blender.h"
+#include "./controller/controller_blender.h"
 
 #include "./core/scene.h"
 #include "./graphics/camera.h"

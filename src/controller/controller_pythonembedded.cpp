@@ -1,11 +1,11 @@
-#include "./controller_pythonembedded.h"
+#include "./controller/controller_pythonembedded.h"
 
 #include <fstream>
 #include <functional>
 #include <mutex>
 
-#include "./osutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 
 #define SPLASH_PYTHON_MAX_TRIES 200
 

@@ -1,4 +1,4 @@
-#include "./camera.h"
+#include "./graphics/camera.h"
 
 #include <fstream>
 #include <future>
@@ -12,16 +12,16 @@
 #include <glm/gtx/simd_vec4.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#include "./cgutils.h"
-#include "./image.h"
-#include "./mesh.h"
-#include "./graphics/object.h"
-#include "./osutils.h"
 #include "./core/scene.h"
+#include "./graphics/object.h"
 #include "./graphics/shader.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./image/image.h"
+#include "./mesh/mesh.h"
+#include "./utils/cgutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 #define SCISSOR_WIDTH 8
@@ -305,7 +305,6 @@ bool Camera::doCalibration()
             for (int i = 0; i < 9; ++i)
                 selectedValues[i] = gsl_vector_get(minimizer->x, i);
         }
-
     }
 
     gsl_vector_free(x);

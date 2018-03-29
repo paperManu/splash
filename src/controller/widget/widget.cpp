@@ -1,4 +1,4 @@
-#include "./widget.h"
+#include "./controller/widget/widget.h"
 
 #include <dirent.h>
 
@@ -8,21 +8,21 @@
 #include <imgui.h>
 
 #include "./graphics/camera.h"
-#include "./image.h"
-#include "./image_ffmpeg.h"
+#include "./image/image.h"
+#include "./image/image_ffmpeg.h"
 #if HAVE_SHMDATA
-#include "./image_shmdata.h"
+#include "./image/image_shmdata.h"
 #endif
 #include "./core/scene.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
-#include "./osutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 #if HAVE_GPHOTO
-#include "./colorcalibrator.h"
+#include "./controller/colorcalibrator.h"
 #endif
 
 #pragma clang diagnostic push

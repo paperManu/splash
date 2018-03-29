@@ -1,4 +1,4 @@
-#include "./mesh_shmdata.h"
+#include "./mesh/mesh_shmdata.h"
 
 #include "./core/root_object.h"
 #include "./utils/osutils.h"

@@ -1,4 +1,4 @@
-#include "./widget_global_view.h"
+#include "./controller/widget/widget_global_view.h"
 
 #include <array>
 #include <fstream>

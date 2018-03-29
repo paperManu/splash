@@ -32,11 +32,11 @@
 #include <unordered_map>
 #include <vector>
 
-#include "config.h"
+#include "./config.h"
 
-#include "attribute.h"
-#include "coretypes.h"
-#include "texture.h"
+#include "./core/attribute.h"
+#include "./core/coretypes.h"
+#include "./graphics/texture.h"
 
 namespace Splash
 {

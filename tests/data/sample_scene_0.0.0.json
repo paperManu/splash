@@ -1,0 +1,151 @@
+{
+   "description" : "splashConfiguration",
+   // Default encoding for text
+   "encoding" : "UTF-8",
+   "first" : {
+      "cam1" : {
+         "16bits" : [ 1 ],
+         "brightness" : [ 1 ],
+         "colorMixMatrix" : [
+            [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]
+         ],
+         "colorTemperature" : [ 6500 ],
+         "eye" : [ 0.0, 0.0, 0.0 ],
+         "far" : [ 100 ],
+         "fov" : [ 60 ],
+         "multisampling" : [ 4 ],
+         "near" : [ 0.1 ],
+         "principalPoint" : [ 0.5, 0.5 ],
+         "size" : [ 1280, 1024 ],
+         "target" : [ 0.0, 0.0, 1.0 ],
+         "type" : "camera",
+         "up" : [ 0, 0, 1 ],
+         "weightedCalibrationPoints" : [ 1 ]
+      },
+      "image" : {
+         "file" : [ "color_map.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "pattern" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image"
+      },
+      "links" : [
+         [ "cam1", "win1" ],
+         [ "mesh", "object" ],
+         [ "image", "object" ],
+         [ "object", "cam1" ]
+      ],
+      "mesh" : {
+         "file" : [ "cubes.obj" ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "fill" : [ "texture" ],
+         "normalExponent" : [ 0 ],
+         "position" : [ 0, 0, 0 ],
+         "priorityShift" : [ 0 ],
+         "rotation" : [ 0, 0, 0 ],
+         "scale" : [ 1, 1, 1 ],
+         "sideness" : [ 0 ],
+         "type" : "object"
+      },
+      "win1" : {
+         "decorated" : [ 1 ],
+         "gamma" : [ 2.2 ],
+         "layout" : [ 0, 0, 0, 0 ],
+         "position" : [ 611, 17 ],
+         "priorityShift" : [ 0 ],
+         "size" : [ 1280, 1024 ],
+         "srgb" : [ 1 ],
+         "type" : "window"
+      }
+   },
+   "second" : {
+      "cam2" : {
+         "16bits" : [ 1 ],
+         "brightness" : [ 1 ],
+         "colorMixMatrix" : [
+            [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]
+         ],
+         "colorTemperature" : [ 6500 ],
+         "eye" : [ 0.0, 0.0, 0.0 ],
+         "far" : [ 100 ],
+         "fov" : [ 60 ],
+         "multisampling" : [ 4 ],
+         "near" : [ 0.1 ],
+         "principalPoint" : [ 0.5, 0.5 ],
+         "size" : [ 1280, 1024 ],
+         "target" : [ 0.0, 0.0, 1.0 ],
+         "type" : "camera",
+         "up" : [ 0, 0, 1 ],
+         "weightedCalibrationPoints" : [ 1 ]
+      },
+      "image" : {
+         "file" : [ "color_map.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "pattern" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image"
+      },
+      "links" : [
+         [ "cam2", "win2" ],
+         [ "mesh", "object" ],
+         [ "image", "object" ],
+         [ "object", "cam2" ]
+      ],
+      "mesh" : {
+         "file" : [ "cubes.obj" ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "fill" : [ "texture" ],
+         "normalExponent" : [ 0 ],
+         "position" : [ 0, 0, 0 ],
+         "priorityShift" : [ 0 ],
+         "rotation" : [ 0, 0, 0 ],
+         "scale" : [ 1, 1, 1 ],
+         "sideness" : [ 0 ],
+         "type" : "object"
+      },
+      "win2" : {
+         "decorated" : [ 1 ],
+         "gamma" : [ 2.2 ],
+         "layout" : [ 0, 0, 0, 0 ],
+         "position" : [ 611, 17 ],
+         "priorityShift" : [ 0 ],
+         "size" : [ 1280, 1024 ],
+         "srgb" : [ 1 ],
+         "type" : "window"
+      }
+   },
+   "scenes" : [
+      {
+         "address" : "localhost",
+         "display" : 0,
+         "name" : "first",
+         "spawn" : 1,
+         "swapInterval" : [ 1 ],
+         "type" : "scene"
+      },
+      {
+         "address" : "localhost",
+         "display" : 1,
+         "name" : "second",
+         "spawn" : 1,
+         "swapInterval" : [ 1 ],
+         "type" : "scene"
+      }
+   ],
+   "world" : {
+      "clockDeviceName" : [ "" ],
+      "configurationPath" : [ "" ],
+      "forceRealtime" : [ 0 ],
+      "framerate" : [ 60 ],
+      "looseClock" : [ 0 ],
+      "mediaPath" : [ "" ],
+      "priorityShift" : [ 0 ],
+      "type" : "world"
+   }
+}

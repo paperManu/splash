@@ -1,4 +1,4 @@
-#include "./colorcalibrator.h"
+#include "./controller/colorcalibrator.h"
 
 #define PIC_DISABLE_OPENGL
 #define PIC_DISABLE_QT
@@ -16,7 +16,7 @@
 #include <glm/gtx/simd_vec4.hpp>
 
 #include "./core/scene.h"
-#include "./image_gphoto.h"
+#include "./image/image_gphoto.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
 

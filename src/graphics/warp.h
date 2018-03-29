@@ -36,7 +36,7 @@
 #include "./graphics/camera.h"
 #include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
-#include "./mesh_bezierpatch.h"
+#include "./mesh/mesh_bezierpatch.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"

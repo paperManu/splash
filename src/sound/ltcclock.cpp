@@ -1,4 +1,4 @@
-#include "./ltcclock.h"
+#include "./sound/ltcclock.h"
 
 #include <chrono>
 #include <iostream>

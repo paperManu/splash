@@ -1,4 +1,4 @@
-#include "./object.h"
+#include "./graphics/object.h"
 
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"

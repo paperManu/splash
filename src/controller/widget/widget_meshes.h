@@ -25,7 +25,7 @@
 #ifndef SPLASH_WIDGET_MESHES_H
 #define SPLASH_WIDGET_MESHES_H
 
-#include "./widget.h"
+#include "./controller/widget/widget.h"
 
 namespace Splash
 {

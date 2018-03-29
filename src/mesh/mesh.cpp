@@ -1,4 +1,4 @@
-#include "./mesh.h"
+#include "./mesh/mesh.h"
 
 #include "./core/root_object.h"
 #include "./mesh/meshloader.h"

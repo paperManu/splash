@@ -34,7 +34,7 @@
 #include "./core/buffer_object.h"
 #include "./core/coretypes.h"
 #include "./core/root_object.h"
-#include "./imagebuffer.h"
+#include "./core/imagebuffer.h"
 
 namespace Splash
 {

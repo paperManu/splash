@@ -34,9 +34,9 @@
 #include "./config.h"
 
 #include "./core/attribute.h"
-#include "./cgutils.h"
+#include "./utils/cgutils.h"
 #include "./core/coretypes.h"
-#include "./image.h"
+#include "./image/image.h"
 #include "./graphics/texture.h"
 
 namespace Splash

@@ -1,4 +1,4 @@
-#include "./mesh_bezierpatch.h"
+#include "./mesh/mesh_bezierpatch.h"
 
 #include "./utils/log.h"
 

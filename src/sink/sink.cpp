@@ -1,4 +1,4 @@
-#include "./sink.h"
+#include "./sink/sink.h"
 
 #include <fstream>
 

@@ -37,7 +37,7 @@
 #include "./controller.h"
 #include "./core/coretypes.h"
 #include "./graphics/filter.h"
-#include "./sink.h"
+#include "./sink/sink.h"
 
 namespace Splash
 {

@@ -38,17 +38,17 @@
 #include <imgui.h>
 #include <memory>
 
-#include "config.h"
+#include "./config.h"
 
 #if HAVE_GPHOTO
-#include "./colorcalibrator.h"
+#include "./controller/colorcalibrator.h"
 #endif
+#include "./controller/widget/widget.h"
 #include "./core/attribute.h"
+#include "./core/coretypes.h"
 #include "./graphics/camera.h"
 #include "./graphics/framebuffer.h"
-#include "./core/coretypes.h"
-#include "./userinput.h"
-#include "./widget.h"
+#include "./userinput/userinput.h"
 
 namespace Splash
 {

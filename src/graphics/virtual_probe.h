@@ -35,7 +35,7 @@
 #include "./core/coretypes.h"
 #include "./graphics/framebuffer.h"
 #include "./graphics/geometry.h"
-#include "./image.h"
+#include "./image/image.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"

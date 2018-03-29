@@ -1,4 +1,4 @@
-#include "./gpu_buffer.h"
+#include "./graphics/gpu_buffer.h"
 
 using namespace std;
 

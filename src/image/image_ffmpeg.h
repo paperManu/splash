@@ -44,9 +44,9 @@ extern "C" {
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
-#include "./image.h"
+#include "./image/image.h"
 #if HAVE_PORTAUDIO
-#include "./speaker.h"
+#include "./sound/speaker.h"
 #endif
 
 namespace Splash

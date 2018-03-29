@@ -1,40 +1,40 @@
-#include "./factory.h"
+#include "./core/factory.h"
 
 #include <json/json.h>
 
 #include "./graphics/camera.h"
 #if HAVE_GPHOTO
-#include "./colorcalibrator.h"
+#include "./controller/colorcalibrator.h"
 #endif
-#include "./controller_blender.h"
+#include "./controller/controller_blender.h"
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"
-#include "./image.h"
+#include "./image/image.h"
 #if HAVE_LINUX
-#include "./image_v4l2.h"
+#include "./image/image_v4l2.h"
 #endif
 #if HAVE_GPHOTO
-#include "./image_gphoto.h"
+#include "./image/image_gphoto.h"
 #endif
-#include "./image_ffmpeg.h"
+#include "./image/image_ffmpeg.h"
 #if HAVE_OPENCV
-#include "./image_opencv.h"
+#include "./image/image_opencv.h"
 #endif
 #if HAVE_SHMDATA
-#include "./image_shmdata.h"
+#include "./image/image_shmdata.h"
 #endif
 #include "./core/link.h"
-#include "./mesh.h"
+#include "./mesh/mesh.h"
 #include "./utils/log.h"
 #if HAVE_SHMDATA
-#include "./mesh_shmdata.h"
-#include "./sink.h"
-#include "./sink_shmdata.h"
-#include "./sink_shmdata_encoded.h"
+#include "./mesh/mesh_shmdata.h"
+#include "./sink/sink.h"
+#include "./sink/sink_shmdata.h"
+#include "./sink/sink_shmdata_encoded.h"
 #endif
 #include "./graphics/object.h"
 #if HAVE_PYTHON
-#include "./controller_pythonembedded.h"
+#include "./controller/controller_pythonembedded.h"
 #endif
 #include "./image/queue.h"
 #include "./core/scene.h"

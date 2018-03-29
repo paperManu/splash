@@ -1,4 +1,4 @@
-#include "./widget_textures_view.h"
+#include "./controller/widget/widget_textures_view.h"
 
 #include <imgui.h>
 

@@ -1,216 +1,315 @@
-{// Default encoding for text
-
-   "encoding" : "UTF-8",
+{
    "description" : "splashConfiguration",
-   "first" : {
-      "cam1" : {
-         "activateColorLUT" : [ 0 ],
-         "blackLevel" : [ 0.0 ],
-         "blendPrecision" : [ 0.1000000014901161 ],
-         "blendWidth" : [ 0.05000000074505806 ],
-         "brightness" : [ 1.0 ],
-         "colorMixMatrix" : [
-            [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
-         ],
-         "colorTemperature" : [ 6500.0 ],
-         "eye" : [ -2.0, 2.0, 0.3000000119209290 ],
-         "fov" : [ 35.0 ],
-         "principalPoint" : [ 0.50, 0.50 ],
-         "shared" : 0,
-         "size" : [ 1920.0, 1200.0 ],
-         "target" : [ 0.0, 0.0, 0.50 ],
-         "type" : "camera",
-         "up" : [ 0.0, 0.0, 1.0 ]
-      },
-      //"cam2" : {
-      //   "activateColorLUT" : [ 0 ],
-      //   "blackLevel" : [ 0.0 ],
-      //   "blendPrecision" : [ 0.1000000014901161 ],
-      //   "blendWidth" : [ 0.05000000074505806 ],
-      //   "brightness" : [ 1.0 ],
-      //   "colorMixMatrix" : [
-      //      [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
-      //   ],
-      //   "colorTemperature" : [ 6500.0 ],
-      //   "eye" : [ 2.0, -2.0, 0.3000000119209290 ],
-      //   "fov" : [ 35.0 ],
-      //   "principalPoint" : [ 0.50, 0.50 ],
-      //   "shared" : 0,
-      //   "size" : [ 1920.0, 1200.0 ],
-      //   "target" : [ 0.0, 0.0, 0.50 ],
-      //   "type" : "camera",
-      //   "up" : [ 0.0, 0.0, 1.0 ]
-      //},
-      "colorCalibrator" : {
-         "colorSamples" : [ 5 ],
-         "detectionThresholdFactor" : [ 1.0 ],
-         "equalizeMethod" : [ 2 ],
-         "hdrStep" : [ 1.0 ],
-         "imagePerHDR" : [ 1 ],
-         "type" : "colorCalibrator"
-      },
+   "scenes" : {
       "first" : {
-         "blendingResolution" : [ 2048 ],
-         "type" : "scene"
-      },
-      "image" : {
-         "benchmark" : 0,
-         "file" : [ "color_map_3k.png" ],
-         "flip" : [ 0 ],
-         "flop" : [ 0 ],
-         "srgb" : [ 1 ],
-         "type" : "image"
-      },//"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-
-      "links" : [
-         [ "mesh", "object" ],
-         [ "object", "cam1" ],
-         [ "object", "cam2" ],
-         [ "image", "object" ],
-         [ "cam1", "win1" ],
-         [ "cam2", "win2" ]
-      ],
-      "mesh" : {
-         "file" : [ "sphere.obj" ],
-         "type" : "mesh"
-      },
-      "object" : {
-         "fill" : [ "texture" ],
-         "position" : [ 0.0, 0.0, 0.0 ],
-         "scale" : [ 1.0, 1.0, 1.0 ],
-         "sideness" : [ 2 ],
-         "type" : "object"
-      },
-      "win1" : {
-         "decorated" : [ 1 ],
-         "fullscreen" : [ -1 ],
-         "gamma" : [ 2.200000047683716 ],
-         "layout" : [ 0, 0, 0, 0 ],
-         "position" : [ 0, 25 ],
-         "size" : [ 959, 1148 ],
-         "srgb" : [ 1 ],
-         "type" : "window"
-      }
-      //"win2" : {
-      //   "decorated" : [ 1 ],
-      //   "fullscreen" : [ -1 ],
-      //   "gamma" : [ 2.200000047683716 ],
-      //   "layout" : [ 0, 0, 0, 0 ],
-      //   "position" : [ 0, 25 ],
-      //   "size" : [ 959, 1148 ],
-      //   "srgb" : [ 1 ],
-      //   "type" : "window"
-      //}
-   },
-   "scenes" : [
-      {
          "address" : "localhost",
          "display" : 0,
-         "name" : "second",
-         "spawn" : 1,
-         "swapInterval" : 1
-      },
-      {
-         "address" : "localhost",
-         "display" : 0,
-         "name" : "first",
-         "spawn" : 1,
-         "swapInterval" : 1
-      }
-   ],
-   "second" : {
-      "cam3" : {
-         "activateColorLUT" : [ 0 ],
-         "blackLevel" : [ 0.0 ],
-         "blendPrecision" : [ 0.1000000014901161 ],
-         "blendWidth" : [ 0.05000000074505806 ],
-         "brightness" : [ 1.0 ],
-         "colorMixMatrix" : [
-            [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
+         "links" : [
+            [ "cam1", "win1_cam1_warp" ],
+            [ "object", "cam1" ],
+            [ "object", "gui" ],
+            [ "mesh", "object" ],
+            [ "image", "object" ],
+            [ "object_image_filter", "object" ],
+            [ "image", "object_image_filter" ],
+            [ "gui", "win1" ],
+            [ "cam1", "win1" ],
+            [ "win1_cam1_warp", "win1" ]
          ],
-         "colorTemperature" : [ 6500.0 ],
-         "eye" : [ -2.0, -2.0, 0.3000000119209290 ],
-         "fov" : [ 35.0 ],
-         "principalPoint" : [ 0.50, 0.50 ],
-         "shared" : 0,
-         "size" : [ 1920.0, 1200.0 ],
-         "target" : [ 0.0, 0.0, 0.50 ],
-         "type" : "camera",
-         "up" : [ 0.0, 0.0, 1.0 ]
-      },
-      //"cam4" : {
-      //   "activateColorLUT" : [ 0 ],
-      //   "blackLevel" : [ 0.0 ],
-      //   "blendPrecision" : [ 0.1000000014901161 ],
-      //   "blendWidth" : [ 0.05000000074505806 ],
-      //   "brightness" : [ 1.0 ],
-      //   "colorMixMatrix" : [
-      //      [ 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 ]
-      //   ],
-      //   "colorTemperature" : [ 6500.0 ],
-      //   "eye" : [ 2.0, 2.0, -0.50 ],
-      //   "fov" : [ 35.0 ],
-      //   "principalPoint" : [ 0.50, 0.50 ],
-      //   "shared" : 0,
-      //   "size" : [ 1920.0, 1200.0 ],
-      //   "target" : [ 0.0, 0.0, 0.50 ],
-      //   "type" : "camera",
-      //   "up" : [ 0.0, 0.0, 1.0 ]
-      //},
-      "image" : {
-         "benchmark" : 0,
-         "file" : [ "color_map_3k.png" ],
-         "flip" : [ 0 ],
-         "flop" : [ 0 ],
-         "srgb" : [ 1 ],
-         "type" : "image"
-      },//"shmimage" : {"type" : "image_shmdata", "file" : "/tmp/switcher_default_video_video-0"},
-
-      "links" : [
-         [ "mesh", "object" ],
-         [ "object", "cam3" ],
-         [ "object", "cam4" ],
-         [ "image", "object" ],
-         [ "cam3", "win3" ],
-         [ "cam4", "win4" ]
-      ],
-      "mesh" : {
-         "file" : [ "sphere.obj" ],
-         "type" : "mesh"
-      },
-      "object" : {
-         "fill" : [ "texture" ],
-         "position" : [ 0.0, 0.0, 0.0 ],
-         "scale" : [ 1.0, 1.0, 1.0 ],
-         "sideness" : [ 2 ],
-         "type" : "object"
+         "objects" : {
+            "blender" : {
+               "mode" : [ "none" ],
+               "priorityShift" : [ 0 ],
+               "type" : "blender"
+            },
+            "cam1" : {
+               "16bits" : [ 1 ],
+               "activateColorLUT" : [ 0 ],
+               "blendPrecision" : [ 0.10000000149011612 ],
+               "blendWidth" : [ 0.05000000074505806 ],
+               "brightness" : [ 1 ],
+               "colorMixMatrix" : [
+                  [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]
+               ],
+               "colorTemperature" : [ 6500 ],
+               "eye" : [ -2, 2, 0.30000001192092896 ],
+               "far" : [ 100 ],
+               "fov" : [ 35 ],
+               "getReprojectionError" : [ 0 ],
+               "multisampling" : [ 0 ],
+               "near" : [ 0.10000000149011612 ],
+               "principalPoint" : [ 0.5, 0.5 ],
+               "priorityShift" : [ 0 ],
+               "size" : [ 1920, 1200 ],
+               "target" : [ 0, 0, 0.5 ],
+               "type" : "camera",
+               "up" : [ 0, 0, 1 ],
+               "weightedCalibrationPoints" : [ 1 ]
+            },
+            "colorCalibrator" : {
+               "colorSamples" : [ 5 ],
+               "detectionThresholdFactor" : [ 1 ],
+               "equalizeMethod" : [ 2 ],
+               "hdrStep" : [ 1 ],
+               "imagePerHDR" : [ 1 ],
+               "priorityShift" : [ 0 ],
+               "type" : "colorCalibrator"
+            },
+            "dragndrop" : {
+               "priorityShift" : [ 0 ],
+               "type" : "dragndrop",
+               "updateRate" : [ 10 ]
+            },
+            "gui" : {
+               "priorityShift" : [ 0 ],
+               "type" : "gui"
+            },
+            "image" : {
+               "file" : [ "color_map_3k.png" ],
+               "flip" : [ 0 ],
+               "flop" : [ 0 ],
+               "pattern" : [ 0 ],
+               "priorityShift" : [ 0 ],
+               "srgb" : [ 1 ],
+               "type" : "image"
+            },
+            "joystick" : {
+               "priorityShift" : [ 0 ],
+               "type" : "joystick",
+               "updateRate" : [ 100 ]
+            },
+            "keyboard" : {
+               "priorityShift" : [ 0 ],
+               "type" : "keyboard",
+               "updateRate" : [ 100 ]
+            },
+            "mesh" : {
+               "file" : [ "sphere.obj" ],
+               "priorityShift" : [ 0 ],
+               "type" : "mesh"
+            },
+            "mouse" : {
+               "priorityShift" : [ 0 ],
+               "type" : "mouse",
+               "updateRate" : [ 100 ]
+            },
+            "object" : {
+               "fill" : [ "texture" ],
+               "normalExponent" : [ 0 ],
+               "position" : [ 0, 0, 0 ],
+               "priorityShift" : [ 0 ],
+               "rotation" : [ 0, 0, 0 ],
+               "scale" : [ 1, 1, 1 ],
+               "sideness" : [ 2 ],
+               "type" : "object"
+            },
+            "object_image_filter" : {
+               "blackLevel" : [ 0 ],
+               "blackLevelAuto" : [ 0, 0.019999999552965164 ],
+               "brightness" : [ 1 ],
+               "colorCurveAnchors" : [ 0 ],
+               "colorTemperature" : [ 6500 ],
+               "contrast" : [ 1 ],
+               "fileFilterSource" : [ "" ],
+               "filterSource" : [ "" ],
+               "invertChannels" : [ 0 ],
+               "keepRatio" : [ 0 ],
+               "priorityShift" : [ 0 ],
+               "saturation" : [ 1 ],
+               "size" : [ 3072, 3072 ],
+               "sizeOverride" : [ -1, -1 ],
+               "type" : "filter"
+            },
+            "win1" : {
+               "decorated" : [ 1 ],
+               "gamma" : [ 2.2000000476837158 ],
+               "layout" : [ 0, 0, 0, 0 ],
+               "position" : [ 0, 25 ],
+               "priorityShift" : [ 0 ],
+               "size" : [ 959, 1148 ],
+               "srgb" : [ 1 ],
+               "type" : "window"
+            },
+            "win1_cam1_warp" : {
+               "patchControl" : [
+                  4,
+                  4,
+                  [ -1, -1 ],
+                  [ -0.33333331346511841, -1 ],
+                  [ 0.33333337306976318, -1 ],
+                  [ 1, -1 ],
+                  [ -1, -0.33333331346511841 ],
+                  [ -0.33333331346511841, -0.33333331346511841 ],
+                  [ 0.33333337306976318, -0.33333331346511841 ],
+                  [ 1, -0.33333331346511841 ],
+                  [ -1, 0.33333337306976318 ],
+                  [ -0.33333331346511841, 0.33333337306976318 ],
+                  [ 0.33333337306976318, 0.33333337306976318 ],
+                  [ 1, 0.33333337306976318 ],
+                  [ -1, 1 ],
+                  [ -0.33333331346511841, 1 ],
+                  [ 0.33333337306976318, 1 ],
+                  [ 1, 1 ]
+               ],
+               "patchResolution" : [ 64 ],
+               "patchSize" : [ 4, 4 ],
+               "priorityShift" : [ 0 ],
+               "size" : [ 1920, 1200 ],
+               "type" : "warp"
+            }
+         },
+         "priorityShift" : [ 0 ],
+         "spawn" : 1,
+         "swapInterval" : [ 1 ],
+         "type" : "scene"
       },
       "second" : {
-         "blendingResolution" : [ 2048 ],
+         "address" : "localhost",
+         "display" : 0,
+         "links" : [
+            [ "cam3", "win3_cam3_warp" ],
+            [ "object", "cam3" ],
+            [ "mesh", "object" ],
+            [ "image", "object" ],
+            [ "object_image_filter", "object" ],
+            [ "image", "object_image_filter" ],
+            [ "cam3", "win3" ],
+            [ "win3_cam3_warp", "win3" ]
+         ],
+         "objects" : {
+            "blender" : {
+               "mode" : [ "none" ],
+               "priorityShift" : [ 0 ],
+               "type" : "blender"
+            },
+            "cam3" : {
+               "16bits" : [ 1 ],
+               "activateColorLUT" : [ 0 ],
+               "blendPrecision" : [ 0.10000000149011612 ],
+               "blendWidth" : [ 0.05000000074505806 ],
+               "brightness" : [ 1 ],
+               "colorMixMatrix" : [
+                  [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ]
+               ],
+               "colorTemperature" : [ 6500 ],
+               "eye" : [ -2, -2, 0.30000001192092896 ],
+               "far" : [ 100 ],
+               "fov" : [ 35 ],
+               "getReprojectionError" : [ 0 ],
+               "multisampling" : [ 0 ],
+               "near" : [ 0.10000000149011612 ],
+               "principalPoint" : [ 0.5, 0.5 ],
+               "priorityShift" : [ 0 ],
+               "size" : [ 1920, 1200 ],
+               "target" : [ 0, 0, 0.5 ],
+               "type" : "camera",
+               "up" : [ 0, 0, 1 ],
+               "weightedCalibrationPoints" : [ 1 ]
+            },
+            "image" : {
+               "file" : [ "color_map_3k.png" ],
+               "flip" : [ 0 ],
+               "flop" : [ 0 ],
+               "pattern" : [ 0 ],
+               "priorityShift" : [ 0 ],
+               "srgb" : [ 1 ],
+               "type" : "image"
+            },
+            "mesh" : {
+               "file" : [ "sphere.obj" ],
+               "priorityShift" : [ 0 ],
+               "type" : "mesh"
+            },
+            "object" : {
+               "fill" : [ "texture" ],
+               "normalExponent" : [ 0 ],
+               "position" : [ 0, 0, 0 ],
+               "priorityShift" : [ 0 ],
+               "rotation" : [ 0, 0, 0 ],
+               "scale" : [ 1, 1, 1 ],
+               "sideness" : [ 2 ],
+               "type" : "object"
+            },
+            "object_image_filter" : {
+               "blackLevel" : [ 0 ],
+               "blackLevelAuto" : [ 0, 0.019999999552965164 ],
+               "brightness" : [ 1 ],
+               "colorCurveAnchors" : [ 0 ],
+               "colorTemperature" : [ 6500 ],
+               "contrast" : [ 1 ],
+               "fileFilterSource" : [ "" ],
+               "filterSource" : [ "" ],
+               "invertChannels" : [ 0 ],
+               "keepRatio" : [ 0 ],
+               "priorityShift" : [ 0 ],
+               "saturation" : [ 1 ],
+               "size" : [ 3072, 3072 ],
+               "sizeOverride" : [ -1, -1 ],
+               "type" : "filter"
+            },
+            "win3" : {
+               "decorated" : [ 1 ],
+               "gamma" : [ 2.2000000476837158 ],
+               "layout" : [ 0, 0, 0, 0 ],
+               "position" : [ 0, 0 ],
+               "priorityShift" : [ 0 ],
+               "size" : [ 959, 1148 ],
+               "srgb" : [ 1 ],
+               "type" : "window"
+            },
+            "win3_cam3_warp" : {
+               "patchControl" : [
+                  4,
+                  4,
+                  [ -1, -1 ],
+                  [ -0.33333331346511841, -1 ],
+                  [ 0.33333337306976318, -1 ],
+                  [ 1, -1 ],
+                  [ -1, -0.33333331346511841 ],
+                  [ -0.33333331346511841, -0.33333331346511841 ],
+                  [ 0.33333337306976318, -0.33333331346511841 ],
+                  [ 1, -0.33333331346511841 ],
+                  [ -1, 0.33333337306976318 ],
+                  [ -0.33333331346511841, 0.33333337306976318 ],
+                  [ 0.33333337306976318, 0.33333337306976318 ],
+                  [ 1, 0.33333337306976318 ],
+                  [ -1, 1 ],
+                  [ -0.33333331346511841, 1 ],
+                  [ 0.33333337306976318, 1 ],
+                  [ 1, 1 ]
+               ],
+               "patchResolution" : [ 64 ],
+               "patchSize" : [ 4, 4 ],
+               "priorityShift" : [ 0 ],
+               "size" : [ 1920, 1200 ],
+               "type" : "warp"
+            }
+         },
+         "priorityShift" : [ 0 ],
+         "spawn" : 1,
+         "swapInterval" : [ 1 ],
          "type" : "scene"
-      },
-      "win3" : {
-         "decorated" : [ 1 ],
-         "fullscreen" : [ -1 ],
-         "gamma" : [ 2.200000047683716 ],
-         "layout" : [ 0, 0, 0, 0 ],
-         "position" : [ 0, 0 ],
-         "size" : [ 959, 1148 ],
-         "srgb" : [ 1 ],
-         "type" : "window"
       }
-      //"win4" : {
-      //   "decorated" : [ 1 ],
-      //   "fullscreen" : [ -1 ],
-      //   "gamma" : [ 2.200000047683716 ],
-      //   "layout" : [ 0, 0, 0, 0 ],
-      //   "position" : [ 1920, 25 ],
-      //   "size" : [ 959, 1148 ],
-      //   "srgb" : [ 1 ],
-      //   "type" : "window"
-      //}
    },
+   "version" : "0.7.15",
+   //"win4" : {
+   //   "decorated" : [ 1 ],
+   //   "fullscreen" : [ -1 ],
+   //   "gamma" : [ 2.200000047683716 ],
+   //   "layout" : [ 0, 0, 0, 0 ],
+   //   "position" : [ 1920, 25 ],
+   //   "size" : [ 959, 1148 ],
+   //   "srgb" : [ 1 ],
+   //   "type" : "window"
+   //}
    "world" : {
-      "framerate" : 60
+      "clockDeviceName" : [ "" ],
+      "configurationPath" : [ "/home/manu/src/splash/data/" ],
+      "forceRealtime" : [ 0 ],
+      "framerate" : [ 60 ],
+      "looseClock" : [ 0 ],
+      "mediaPath" : [ "/home/manu/src/splash/data/" ],
+      "priorityShift" : [ 0 ],
+      "type" : "world"
    }
 }
