@@ -211,7 +211,7 @@ void Filter::render()
 
         if (deltaT != 0.f)
         {
-            auto blackLevelProgress = deltaT / _autoBlackLevelSpeed;
+            auto blackLevelProgress = std::min(1.f, deltaT / _autoBlackLevelSpeed); // Limit to 1.f, otherwise the black level resonates
             newBlackLevel = min(_autoBlackLevelTargetValue, max(0.f, newBlackLevel));
             _autoBlackLevel = newBlackLevel * blackLevelProgress + _autoBlackLevel * (1.f - blackLevelProgress);
             _filterUniforms["_blackLevel"] = {_autoBlackLevel / 255.0};
@@ -407,8 +407,7 @@ void Filter::registerDefaultShaderAttributes()
 {
     addAttribute("blackLevel",
         [&](const Values& args) {
-            auto blackLevel = args[0].as<float>();
-            blackLevel = std::max(0.f, std::min(1.f, blackLevel));
+            auto blackLevel = std::max(0.f, std::min(255.f, args[0].as<float>()));
             _filterUniforms["_blackLevel"] = {blackLevel / 255.f};
             return true;
         },
@@ -423,8 +422,8 @@ void Filter::registerDefaultShaderAttributes()
 
     addAttribute("blackLevelAuto",
         [&](const Values& args) {
-            _autoBlackLevelTargetValue = args[0].as<float>();
-            _autoBlackLevelSpeed = max(0.f, min(1.f, args[1].as<float>()));
+            _autoBlackLevelTargetValue = std::min(255.f, std::max(0.f, args[0].as<float>()));
+            _autoBlackLevelSpeed = std::max(0.f, args[1].as<float>());
             return true;
         },
         [&]() -> Values {

@@ -930,10 +930,7 @@ struct ShaderSources
 
             // Black level
             if (_blackLevel != 0.0)
-            {
-                float blackCorrection = clamp(_blackLevel, 0.0, 1.0);
                 color.rgb = color.rgb * (1.0 - _blackLevel) + _blackLevel;
-            }
 
             // Color curves
     #ifdef COLOR_CURVE_COUNT
