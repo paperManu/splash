@@ -130,7 +130,7 @@ bool Image_GPhoto::capture()
 
     GPhotoCamera camera = _cameras[_selectedCameraIndex];
 
-    CameraFilePath filePath;
+    CameraFilePath filePath{};
     int res;
     if ((res = gp_camera_capture(camera.cam, GP_CAPTURE_IMAGE, &filePath, _gpContext)) == GP_OK)
     {
@@ -291,7 +291,7 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
         gp_camera_new(&camera.cam);
 
         int m = gp_abilities_list_lookup_model(_gpCams, camera.model.c_str());
-        CameraAbilities abilities;
+        CameraAbilities abilities{};
         gp_abilities_list_get_abilities(_gpCams, m, &abilities);
         gp_camera_set_abilities(camera.cam, abilities);
 

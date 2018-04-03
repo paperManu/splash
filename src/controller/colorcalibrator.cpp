@@ -34,6 +34,7 @@ void gslErrorHandler(const char* reason, const char* file, int line, int gsl_err
 
 /*************/
 ColorCalibrator::ColorCalibrator(RootObject* scene)
+    : BaseObject(scene)
 {
     _type = "colorCalibrator";
 
@@ -367,7 +368,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
 
         string filename = "/tmp/splash_ldr_sample_" + to_string(i) + ".tga";
         int status = _gcamera->capture();
-        if (false == status)
+        if (status == 0)
         {
             Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Error while capturing LDRI" << Log::endl;
             return {};
@@ -509,7 +510,7 @@ float ColorCalibrator::findCorrectExposure()
     {
         _gcamera->getAttribute("shutterspeed", res);
         int status = _gcamera->capture();
-        if (false == status)
+        if (status == 0)
         {
             Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - There was an issue during capture." << Log::endl;
             return 0.f;
@@ -624,8 +625,6 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
 {
     if (image == nullptr || !image->isValid())
         return vector<bool>();
-
-    vector<int> coords;
 
     // Find the maximum value
     float maxLinearLuminance = numeric_limits<float>::min();

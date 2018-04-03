@@ -86,7 +86,7 @@ class Image_GPhoto : public Image
         std::vector<std::string> isos;
     };
 
-    std::recursive_mutex _gpMutex;
+    std::recursive_mutex _gpMutex{};
     GPContext* _gpContext{nullptr};
     CameraAbilitiesList* _gpCams{nullptr};
     GPPortInfoList* _gpPorts{nullptr};
