@@ -2,11 +2,8 @@
 
 #include <json/json.h>
 
-#include "./graphics/camera.h"
-#if HAVE_GPHOTO
-#include "./controller/colorcalibrator.h"
-#endif
 #include "./controller/controller_blender.h"
+#include "./graphics/camera.h"
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"
 #include "./image/image.h"
@@ -36,17 +33,17 @@
 #if HAVE_PYTHON
 #include "./controller/controller_pythonembedded.h"
 #endif
-#include "./image/queue.h"
 #include "./core/scene.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
+#include "./image/queue.h"
 #if HAVE_OSX
 #include "./graphics/texture_syphon.h"
 #endif
-#include "./utils/timer.h"
 #include "./graphics/virtual_probe.h"
 #include "./graphics/warp.h"
 #include "./graphics/window.h"
+#include "./utils/timer.h"
 
 using namespace std;
 
@@ -408,7 +405,7 @@ void Factory::registerObjects()
         true);
 
     _objectBook["texture_image"] = Page([&]() { return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Image>(_root)); },
-        BaseObject::Category::IMAGE,
+        BaseObject::Category::TEXTURE,
         "texture image",
         "Texture object created from an Image object.",
         true);
@@ -421,7 +418,7 @@ void Factory::registerObjects()
             else
                 return dynamic_pointer_cast<BaseObject>(make_shared<Texture_Syphon>(_root));
         },
-        BaseObject::Category::IMAGE,
+        BaseObject::Category::TEXTURE,
         "texture image through Syphon",
         "Texture object synchronized through Syphon.",
         true);

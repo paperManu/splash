@@ -407,15 +407,15 @@ void Scene::render()
 #endif
                 obj->update();
 
-                if (obj->getCategory() == BaseObject::Category::MESH)
+                auto objectCategory = obj->getCategory();
+                if (objectCategory == BaseObject::Category::MESH)
                     if (obj->wasUpdated())
                     {
                         // If a mesh has been updated, force blending update
                         addTask([=]() { dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
                         obj->setNotUpdated();
                     }
-
-                if (obj->getCategory() == BaseObject::Category::IMAGE)
+                if (objectCategory == BaseObject::Category::IMAGE || objectCategory == BaseObject::Category::TEXTURE)
                     if (obj->wasUpdated())
                         obj->setNotUpdated();
 

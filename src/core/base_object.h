@@ -67,7 +67,8 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     {
         MISC,
         IMAGE,
-        MESH
+        MESH,
+        TEXTURE
     };
 
   public:
