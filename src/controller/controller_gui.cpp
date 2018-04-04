@@ -1117,12 +1117,12 @@ void Gui::initImWidgets()
 
         // Create the text message
         ostringstream stream;
-        Values clock;
+        Timer::Point clock;
         if (Timer::get().getMasterClock(clock))
         {
-            stream << "Master clock: " << clock[0].as<int>() << "/" << clock[1].as<int>() << "/" << clock[2].as<int>() << " - " << clock[3].as<int>() << ":" << clock[4].as<int>()
-                   << ":" << clock[5].as<int>() << ":" << clock[6].as<int>();
-            if (clock[7].as<int>() == 1)
+            stream << "Master clock: " << clock.years << "/" << clock.months << "/" << clock.days << " - " << clock.hours << ":" << clock.mins << ":" << clock.secs << ":"
+                   << clock.frame;
+            if (clock.paused)
                 stream << " - Paused";
             stream << "\n";
         }

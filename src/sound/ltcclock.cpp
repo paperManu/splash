@@ -67,7 +67,7 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
                 SMPTETimecode stime;
                 ltc_frame_to_time(&stime, &ltcFrame.ltc, LTC_TC_CLOCK);
 
-                Clock clock;
+                Timer::Point clock;
                 clock.years = stime.years;
                 clock.months = stime.months;
                 clock.days = stime.days;
@@ -101,11 +101,7 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
             }
 
             if (_masterClock)
-            {
-                Values v;
-                getClock(v);
-                Timer::get().setMasterClock(v);
-            }
+                Timer::get().setMasterClock(_clock);
         }
 
         ltc_decoder_free(ltcDecoder);
@@ -123,19 +119,9 @@ LtcClock::~LtcClock()
 }
 
 /*************/
-LtcClock::Clock LtcClock::getClock()
+Timer::Point LtcClock::getClock()
 {
     return _clock;
-}
-
-/*************/
-void LtcClock::getClock(Values& clockValues)
-{
-    if (!_ready)
-        return;
-
-    Clock clock = _clock;
-    clockValues = Values({(int)clock.years, (int)clock.months, (int)clock.days, (int)clock.hours, (int)clock.mins, (int)clock.secs, (int)clock.frame, (int)clock.paused});
 }
 
 /*************/

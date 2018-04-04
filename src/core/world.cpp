@@ -143,9 +143,12 @@ void World::run()
             for (auto& d : durationMap)
                 sendMessage(_masterSceneName, "duration", {d.first, (int)d.second});
             // Also send the master clock if needed
-            Values clock;
+            Timer::Point clock;
             if (Timer::get().getMasterClock(clock))
-                sendMessage(_masterSceneName, "masterClock", clock);
+            {
+                auto clockValues = Values({clock.years, clock.months, clock.days, clock.hours, clock.mins, clock.secs, clock.frame, clock.paused});
+                sendMessage(_masterSceneName, "masterClock", clockValues);
+            }
 
             // Send newer logs to all master Scene
             auto logs = Log::get().getNewLogs();

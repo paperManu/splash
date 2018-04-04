@@ -37,6 +37,7 @@
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
 #include "./sound/listener.h"
+#include "./utils/timer.h"
 
 namespace Splash
 {
@@ -45,18 +46,6 @@ namespace Splash
 class LtcClock : public BaseObject
 {
   public:
-    struct Clock
-    {
-        uint8_t years{0};
-        uint8_t months{0};
-        uint8_t days{0};
-        uint8_t hours{0};
-        uint8_t mins{0};
-        uint8_t secs{0};
-        uint8_t frame{0};
-        bool paused{false};
-    };
-
     /**
      * \brief Constructor
      */
@@ -74,14 +63,9 @@ class LtcClock : public BaseObject
 
     /**
      * \brief Get the clock as a Clock struct
-     * \return Return a Clock struct
+     * \return Return a Timer::Point
      */
-    Clock getClock();
-
-    /**
-     * \brief Get the clock as as values (from years to frame, starting with a bool set to true if clock is running)
-     */
-    void getClock(Values& clockValues);
+    Timer::Point getClock();
 
   private:
     bool _ready{false};
@@ -93,7 +77,7 @@ class LtcClock : public BaseObject
     uint8_t _previousFrame{0};
     uint8_t _maximumFramePerSec{30};
 
-    Clock _clock;
+    Timer::Point _clock;
     std::unique_ptr<Listener> _listener;
 
     /**

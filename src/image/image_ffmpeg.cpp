@@ -685,6 +685,7 @@ void Image_FFmpeg::videoDisplayLoop()
                 }
                 else if (useClock && _clockTime != -1l)
                 {
+                    _currentTime = Timer::getTime() - _startTime;
                     auto delta = abs(_currentTime - _clockTime);
                     // If the difference between master clock and local clock is greater than 1.5 frames @30Hz, we adjust local clock
                     if (delta > 50000)

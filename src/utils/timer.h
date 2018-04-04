@@ -44,6 +44,18 @@ namespace Splash
 class Timer
 {
   public:
+    struct Point
+    {
+        uint32_t years{0};
+        uint32_t months{0};
+        uint32_t days{0};
+        uint32_t hours{0};
+        uint32_t mins{0};
+        uint32_t secs{0};
+        uint32_t frame{0};
+        bool paused{false};
+    };
+
     /**
      * \brief Get the singleton
      * \return Return the Timer singleton
@@ -259,16 +271,12 @@ class Timer
      * \brief Set the master clock time
      * \param clock Master clock value
      */
-    void setMasterClock(const Values& clock)
+    void setMasterClock(const Timer::Point& clock)
     {
-        if (clock.size() == 8)
-        {
-            std::lock_guard<Spinlock> lockClock(_clockMutex);
-            _clock = clock;
-
-            if (_looseClock && clock[7].as<int>() != 1)
-                _lastMasterClockUpdate = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
-        }
+        std::lock_guard<Spinlock> lockClock(_clockMutex);
+        _clockSet = true;
+        _clock = clock;
+        _lastMasterClockUpdate = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now().time_since_epoch());
     }
 
     /**
@@ -276,9 +284,9 @@ class Timer
      * \param clock Master clock value
      * \return Return true if the master clock is set
      */
-    bool getMasterClock(Values& clock) const
+    bool getMasterClock(Timer::Point& clock) const
     {
-        if (_clock.size() > 0)
+        if (_clockSet)
         {
             std::lock_guard<Spinlock> lockClock(_clockMutex);
             clock = _clock;
@@ -291,7 +299,7 @@ class Timer
     }
 
     /**
-     * \brief Get the master clock time
+     * \brief Get the master clock time, corrected from the last update time
      * \param time Master clock time, unit based on template parameter
      * \param paused True if the clock is paused
      * \return Return true if the master clock is set
@@ -299,7 +307,7 @@ class Timer
     template <typename T>
     bool getMasterClock(int64_t& time, bool& paused) const
     {
-        if (_clock.size() == 0)
+        if (!_clockSet)
         {
             paused = false;
             return false;
@@ -307,13 +315,18 @@ class Timer
 
         std::unique_lock<Spinlock> lockClock(_clockMutex);
         auto clock = _clock;
+        auto lastMasterClockUpdate = _lastMasterClockUpdate;
         lockClock.unlock();
 
-        int64_t frames = clock[6].as<int>() + (clock[5].as<int>() + (clock[4].as<int>() + (clock[3].as<int>() + clock[2].as<int>() * 24ll) * 60ll) * 60ll) * 120ll;
+        int64_t frames = clock.frame + (clock.secs + (clock.mins + (clock.hours + clock.days * 24ll) * 60ll) * 60ll) * 120ll;
         std::chrono::microseconds useconds((frames * 1000000) / 120);
+        auto currentTime = std::chrono::microseconds(getTime());
         time = std::chrono::duration_cast<T>(useconds).count();
 
-        paused = clock[7].as<int>();
+        paused = clock.paused;
+        // If the clock is not paused, we correct the received master clock to add time since last update
+        if (!paused)
+            time += std::chrono::duration_cast<T>(currentTime - lastMasterClockUpdate).count();
 
         if (_looseClock && paused)
         {
@@ -349,7 +362,8 @@ class Timer
     bool _isDebug{false};
     bool _looseClock{false};
     std::chrono::microseconds _lastMasterClockUpdate{};
-    Values _clock;
+    Timer::Point _clock;
+    bool _clockSet{false};
 };
 
 } // end of namespace

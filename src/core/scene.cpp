@@ -995,7 +995,16 @@ void Scene::registerAttributes()
 
     addAttribute("masterClock",
         [&](const Values& args) {
-            Timer::get().setMasterClock(args);
+            Timer::Point clock;
+            clock.years = args[0].as<uint32_t>();
+            clock.months = args[1].as<uint32_t>();
+            clock.days = args[2].as<uint32_t>();
+            clock.hours = args[3].as<uint32_t>();
+            clock.mins = args[4].as<uint32_t>();
+            clock.secs = args[5].as<uint32_t>();
+            clock.frame = args[6].as<uint32_t>();
+            clock.paused = args[7].as<bool>();
+            Timer::get().setMasterClock(clock);
             return true;
         },
         {'n', 'n', 'n', 'n', 'n', 'n', 'n'});
