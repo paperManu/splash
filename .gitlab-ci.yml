@@ -14,6 +14,7 @@ before_script:
 stages:
   - test:xenial
   - test:artful
+  - test:bionic
   - package
   - static_analysis
 
@@ -27,6 +28,13 @@ test:xenial:
 test:artful:
   image: ubuntu:artful
   stage: test:artful
+  script: 
+    - make -j$(nproc)
+    - make test
+
+test:bionic:
+  image: ubuntu:bionic
+  stage: test:bionic
   script: 
     - make -j$(nproc)
     - make test
