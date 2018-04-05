@@ -633,7 +633,7 @@ void Scene::setAsMaster(const string& configFilePath)
     // Initialize the color calibration object
     _colorCalibrator = make_shared<ColorCalibrator>(this);
     _colorCalibrator->setName("colorCalibrator");
-    _objects["colorCalibrator"] = dynamic_pointer_cast<BaseObject>(_colorCalibrator);
+    _objects["colorCalibrator"] = _colorCalibrator;
 #endif
 }
 
@@ -1190,21 +1190,17 @@ void Scene::registerAttributes()
 
 #if HAVE_GPHOTO
     addAttribute("calibrateColor", [&](const Values&) {
-        if (_colorCalibrator == nullptr)
-            return false;
-        // This needs to be launched in another thread, as the set mutex is already locked
-        // (and we will need it later)
-        addTask([&]() { _colorCalibrator->update(); });
+        auto calibrator = dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
+        if (calibrator)
+            calibrator->update();
         return true;
     });
     setAttributeDescription("calibrateColor", "Launch projectors color calibration");
 
     addAttribute("calibrateColorResponseFunction", [&](const Values&) {
-        if (_colorCalibrator == nullptr)
-            return false;
-        // This needs to be launched in another thread, as the set mutex is already locked
-        // (and we will need it later)
-        addTask([&]() { _colorCalibrator->updateCRF(); });
+        auto calibrator = dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
+        if (calibrator)
+            calibrator->updateCRF();
         return true;
     });
     setAttributeDescription("calibrateColorResponseFunction", "Launch the camera color calibration");

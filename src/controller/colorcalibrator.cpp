@@ -15,7 +15,6 @@
 #include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtx/simd_vec4.hpp>
 
-#include "./core/scene.h"
 #include "./image/image_gphoto.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
@@ -33,12 +32,10 @@ void gslErrorHandler(const char* reason, const char* file, int line, int gsl_err
 }
 
 /*************/
-ColorCalibrator::ColorCalibrator(RootObject* scene)
-    : BaseObject(scene)
+ColorCalibrator::ColorCalibrator(RootObject* root)
+    : ControllerObject(root)
 {
     _type = "colorCalibrator";
-
-    _scene = scene;
     registerAttributes();
 
     // Set up the calibration strategy
@@ -48,293 +45,319 @@ ColorCalibrator::ColorCalibrator(RootObject* scene)
 /*************/
 ColorCalibrator::~ColorCalibrator()
 {
+    if (_calibrationThread.joinable())
+        _calibrationThread.join();
 }
 
 /*************/
 void ColorCalibrator::update()
 {
-    // Initialize camera
-    _gcamera = make_shared<Image_GPhoto>(_root, "");
-    // Prepare for freeing the camera when leaving scope
-    OnScopeExit { _gcamera.reset(); };
-
-    // Check whether the camera is ready
-    Values status;
-    _gcamera->getAttribute("ready", status);
-    if (status.size() == 0 || status[0].as<int>() == 0)
+    if (!_calibrationMutex.try_lock())
     {
-        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
+        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Another calibration is in process. Exiting." << Log::endl;
         return;
     }
 
-    auto scene = dynamic_cast<Scene*>(_scene);
-    if (!scene)
-        return;
-
-    // Get the Camera list
-    Values cameraList = scene->getObjectsNameByType("camera");
-
-    _calibrationParams.clear();
-    for (auto& cam : cameraList)
-    {
-        CalibrationParams params;
-        params.camName = cam.as<string>();
-        _calibrationParams.push_back(params);
-    }
-
-    //
-    // Find the exposure times for all black and all white
-    //
-    float mediumExposureTime;
-    // All cameras to white
-    for (auto& params : _calibrationParams)
-    {
-        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 1});
-        scene->sendMessageToWorld("sendAll", {params.camName, "flashBG", 1});
-        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.7, 0.7, 0.7, 1.0});
-    }
-    mediumExposureTime = findCorrectExposure();
-
-    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
-
-    for (auto& params : _calibrationParams)
-        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
-
-    // All cameras to normal
-    for (auto& params : _calibrationParams)
-        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 0});
-
-    //
-    // Compute the camera response function
-    //
-    if (_crf == nullptr)
-        captureHDR(9, 0.33);
-
-    for (auto& params : _calibrationParams)
-        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 1});
-
-    //
-    // Find the location of each projection
-    //
-    _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
-    shared_ptr<pic::Image> hdr;
-    for (auto& params : _calibrationParams)
-    {
-        // Activate the target projector
-        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 1.0, 1.0, 1.0, 1.0});
-        hdr = captureHDR(1);
-        if (nullptr == hdr)
-            return;
-
-        // Activate all the other ones
-        for (auto& otherCam : cameraList)
-            scene->sendMessageToWorld("sendAll", {otherCam.as<string>(), "clearColor", 1.0, 1.0, 1.0, 1.0});
-        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
-        shared_ptr<pic::Image> othersHdr = captureHDR(1);
-        if (nullptr == othersHdr)
-            return;
-
-        shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
-        *diffHdr = *hdr;
-        *diffHdr -= (*othersHdr * _displayDetectionThreshold);
-        diffHdr->clamp(0.f, numeric_limits<float>::max());
-        params.maskROI = getMaskROI(diffHdr);
-        for (auto& otherCam : cameraList)
-            scene->sendMessageToWorld("sendAll", {otherCam.as<string>(), "clearColor", 0.0, 0.0, 0.0, 1.0});
-
-        // Save the camera center for later use
-        params.whitePoint = getMeanValue(hdr, params.maskROI);
-    }
-
-    //
-    // Find color curves for each Camera
-    //
-    for (auto& params : _calibrationParams)
-    {
-        string camName = params.camName;
-
-        RgbValue minValues;
-        RgbValue maxValues;
-        for (int c = 0; c < 3; ++c)
+    _calibrationThread = thread([&]() {
+        // Initialize camera
+        _gcamera = make_shared<Image_GPhoto>(_root, "");
+        // Prepare for freeing the camera when leaving scope
+        OnScopeExit
         {
-            int samples = _colorCurveSamples;
-            for (int s = 0; s < samples; ++s)
+            _calibrationMutex.unlock();
+            _gcamera.reset();
+        };
+
+        // Check whether the camera is ready
+        Values status;
+        _gcamera->getAttribute("ready", status);
+        if (status.size() == 0 || status[0].as<int>() == 0)
+        {
+            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update calibration" << Log::endl;
+            return;
+        }
+
+        // Get the Camera list
+        auto cameras = getObjectsOfType("camera");
+
+        _calibrationParams.clear();
+        for (const auto& camera : cameras)
+        {
+            CalibrationParams params;
+            params.camName = camera->getName();
+            _calibrationParams.push_back(params);
+        }
+
+        //
+        // Find the exposure times for all black and all white
+        //
+        float mediumExposureTime;
+        // All cameras to white
+        for (auto& params : _calibrationParams)
+        {
+            setObjectAttribute(params.camName, "hide", {1});
+            setObjectAttribute(params.camName, "flashBG", {1});
+            setObjectAttribute(params.camName, "clearColor", {0.7, 0.7, 0.7, 1.0});
+        }
+        mediumExposureTime = findCorrectExposure();
+
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Exposure time: " << mediumExposureTime << Log::endl;
+
+        for (auto& params : _calibrationParams)
+            setObjectAttribute(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+
+        // All cameras to normal
+        for (auto& params : _calibrationParams)
+            setObjectAttribute(params.camName, "hide", {0});
+
+        //
+        // Compute the camera response function
+        //
+        if (_crf == nullptr)
+            captureHDR(9, 0.33);
+
+        for (auto& params : _calibrationParams)
+            setObjectAttribute(params.camName, "hide", {1});
+
+        //
+        // Find the location of each projection
+        //
+        _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
+        shared_ptr<pic::Image> hdr;
+        for (auto& params : _calibrationParams)
+        {
+            // Activate the target projector
+            setObjectAttribute(params.camName, "clearColor", {1.0, 1.0, 1.0, 1.0});
+            hdr = captureHDR(1);
+            if (nullptr == hdr)
+                return;
+
+            // Activate all the other ones
+            for (auto& otherCam : cameras)
+                setObjectAttribute(otherCam->getName(), "clearColor", {1.0, 1.0, 1.0, 1.0});
+            setObjectAttribute(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+            shared_ptr<pic::Image> othersHdr = captureHDR(1);
+            if (nullptr == othersHdr)
+                return;
+
+            shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
+            *diffHdr = *hdr;
+            *diffHdr -= (*othersHdr * _displayDetectionThreshold);
+            diffHdr->clamp(0.f, numeric_limits<float>::max());
+            params.maskROI = getMaskROI(diffHdr);
+            for (auto& otherCam : cameras)
+                setObjectAttribute(otherCam->getName(), "clearColor", {0.0, 0.0, 0.0, 1.0});
+
+            // Save the camera center for later use
+            params.whitePoint = getMeanValue(hdr, params.maskROI);
+        }
+
+        return;
+
+        //
+        // Find color curves for each Camera
+        //
+        for (auto& params : _calibrationParams)
+        {
+            string camName = params.camName;
+
+            RgbValue minValues;
+            RgbValue maxValues;
+            for (int c = 0; c < 3; ++c)
             {
-                float x = (float)s / (float)(samples - 1);
+                int samples = _colorCurveSamples;
+                for (int s = 0; s < samples; ++s)
+                {
+                    auto x = static_cast<float>(s) / static_cast<float>(samples - 1);
 
-                // Set the color
-                Values color(4, 0.0);
-                color[c] = x;
-                color[3] = 1.0;
-                scene->sendMessageToWorld("sendAll", {camName, "clearColor", color[0], color[1], color[2], color[3]});
+                    // Set the color
+                    Values color(4, 0.0);
+                    color[c] = x;
+                    color[3] = 1.0;
+                    setObjectAttribute(camName, "clearColor", {color[0], color[1], color[2], color[3]});
 
-                // Set approximately the exposure
-                _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
+                    // Set approximately the exposure
+                    _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
-                hdr = captureHDR(_imagePerHDR, _hdrStep);
-                if (nullptr == hdr)
-                    return;
-                vector<float> values = getMeanValue(hdr, params.maskROI);
-                params.curves[c].push_back(Point(x, values));
+                    hdr = captureHDR(_imagePerHDR, _hdrStep);
+                    if (nullptr == hdr)
+                        return;
+                    vector<float> values = getMeanValue(hdr, params.maskROI);
+                    params.curves[c].push_back(Point(x, values));
 
-                scene->sendMessageToWorld("sendAll", {camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
-                Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c]
-                           << " for input value: " << x << Log::endl;
+                    setObjectAttribute(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+                    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Camera " << camName << ", color channel " << c << " value: " << values[c]
+                               << " for input value: " << x << Log::endl;
+                }
+
+                // Update min and max values, added to the black level
+                minValues[c] = params.curves[c][0].second[c];
+                maxValues[c] = params.curves[c][samples - 1].second[c];
             }
 
-            // Update min and max values, added to the black level
-            minValues[c] = params.curves[c][0].second[c];
-            maxValues[c] = params.curves[c][samples - 1].second[c];
+            params.minValues = minValues;
+            params.maxValues = maxValues;
+
+            params.projectorCurves = computeProjectorFunctionInverse(params.curves);
         }
 
-        params.minValues = minValues;
-        params.maxValues = maxValues;
-
-        params.projectorCurves = computeProjectorFunctionInverse(params.curves);
-    }
-
-    //
-    // Find color mixing matrix
-    //
-    for (auto& params : _calibrationParams)
-    {
-        string camName = params.camName;
-
-        vector<RgbValue> lowValues(3);
-        vector<RgbValue> highValues(3);
-        glm::mat3 mixRGB;
-
-        // Get the middle and max values from the previous captures
-        for (int c = 0; c < 3; ++c)
+        //
+        // Find color mixing matrix
+        //
+        for (auto& params : _calibrationParams)
         {
-            lowValues[c] = params.curves[c][1].second;
-            highValues[c] = params.curves[c][_colorCurveSamples - 1].second;
+            string camName = params.camName;
+
+            vector<RgbValue> lowValues(3);
+            vector<RgbValue> highValues(3);
+            glm::mat3 mixRGB;
+
+            // Get the middle and max values from the previous captures
+            for (int c = 0; c < 3; ++c)
+            {
+                lowValues[c] = params.curves[c][1].second;
+                highValues[c] = params.curves[c][_colorCurveSamples - 1].second;
+            }
+
+            setObjectAttribute(camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
+
+            for (int c = 0; c < 3; ++c)
+                for (int otherC = 0; otherC < 3; ++otherC)
+                    mixRGB[otherC][c] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
+
+            params.mixRGB = glm::inverse(mixRGB);
         }
 
-        scene->sendMessageToWorld("sendAll", {camName, "clearColor", 0.0, 0.0, 0.0, 1.0});
+        //
+        // Compute and apply the white balance
+        //
+        RgbValue targetWhiteBalance = equalizeWhiteBalances();
 
-        for (int c = 0; c < 3; ++c)
-            for (int otherC = 0; otherC < 3; ++otherC)
-                mixRGB[otherC][c] = (highValues[c][otherC] - lowValues[c][otherC]) / (highValues[otherC][otherC] - lowValues[otherC][otherC]);
-
-        params.mixRGB = glm::inverse(mixRGB);
-    }
-
-    //
-    // Compute and apply the white balance
-    //
-    RgbValue targetWhiteBalance = equalizeWhiteBalances();
-
-    for (auto& params : _calibrationParams)
-    {
-        RgbValue whiteBalance;
-        whiteBalance = targetWhiteBalance / params.whiteBalance;
-        whiteBalance.normalize();
-        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / "
-                   << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
-
-        for (unsigned int c = 0; c < 3; ++c)
-            for (auto& v : params.projectorCurves[c])
-                v.second[c] = v.second[c] * whiteBalance[c];
-
-        params.minValues = params.minValues * whiteBalance;
-        params.maxValues = params.maxValues * whiteBalance;
-    }
-
-    //
-    // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
-    //
-    // Fourth values contain luminance (calculated using other values)
-    vector<float> minValues(4, 0.f);
-    vector<float> maxValues(4, numeric_limits<float>::max());
-    for (auto& params : _calibrationParams)
-    {
-        for (unsigned int c = 0; c < 3; ++c)
+        for (auto& params : _calibrationParams)
         {
-            minValues[c] = std::max(minValues[c], params.minValues[c]);
-            maxValues[c] = std::min(maxValues[c], params.maxValues[c]);
-        }
-        minValues[3] = std::max(minValues[3], params.minValues.luminance());
-        maxValues[3] = std::min(maxValues[3], params.maxValues.luminance());
-    }
+            RgbValue whiteBalance;
+            whiteBalance = targetWhiteBalance / params.whiteBalance;
+            whiteBalance.normalize();
+            Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " Projector " << params.camName << " correction white balance: " << whiteBalance[0] << " / "
+                       << whiteBalance[1] << " / " << whiteBalance[2] << Log::endl;
 
-    //
-    // Offset and scale projector curves to fit in [minValue, maxValue] for all channels
-    //
-    for (auto& params : _calibrationParams)
-    {
-        // We use a common scale and offset to keep color balance
-        float range = params.maxValues.luminance() - params.minValues.luminance();
-        float offset = (minValues[3] - params.minValues.luminance()) / range;
-        float scale = (maxValues[3] - minValues[3]) / range;
-
-        for (unsigned int c = 0; c < 3; ++c)
-            for (auto& v : params.projectorCurves[c])
-                v.second[c] = v.second[c] * scale + offset;
-    }
-
-    //
-    // Send calibration to the cameras
-    //
-    for (auto& params : _calibrationParams)
-    {
-        string camName = params.camName;
-        Values lut;
-        for (unsigned int v = 0; v < 256; ++v)
             for (unsigned int c = 0; c < 3; ++c)
-                lut.push_back(params.projectorCurves[c][v].second[c]);
+                for (auto& v : params.projectorCurves[c])
+                    v.second[c] = v.second[c] * whiteBalance[c];
 
-        scene->sendMessageToWorld("sendAll", {camName, "colorLUT", lut});
-        scene->sendMessageToWorld("sendAll", {camName, "activateColorLUT", 1});
+            params.minValues = params.minValues * whiteBalance;
+            params.maxValues = params.maxValues * whiteBalance;
+        }
 
-        Values m(9);
-        for (int u = 0; u < 3; ++u)
-            for (int v = 0; v < 3; ++v)
-                m[u * 3 + v] = params.mixRGB[u][v];
+        //
+        // Get the overall maximum value for rgb(0,0,0), and minimum for rgb(1,1,1)
+        //
+        // Fourth values contain luminance (calculated using other values)
+        vector<float> minValues(4, 0.f);
+        vector<float> maxValues(4, numeric_limits<float>::max());
+        for (auto& params : _calibrationParams)
+        {
+            for (unsigned int c = 0; c < 3; ++c)
+            {
+                minValues[c] = std::max(minValues[c], params.minValues[c]);
+                maxValues[c] = std::min(maxValues[c], params.maxValues[c]);
+            }
+            minValues[3] = std::max(minValues[3], params.minValues.luminance());
+            maxValues[3] = std::min(maxValues[3], params.maxValues.luminance());
+        }
 
-        scene->sendMessageToWorld("sendAll", {camName, "colorMixMatrix", m});
+        //
+        // Offset and scale projector curves to fit in [minValue, maxValue] for all channels
+        //
+        for (auto& params : _calibrationParams)
+        {
+            // We use a common scale and offset to keep color balance
+            float range = params.maxValues.luminance() - params.minValues.luminance();
+            float offset = (minValues[3] - params.minValues.luminance()) / range;
+            float scale = (maxValues[3] - minValues[3]) / range;
 
-        // Also, we set some parameters to default as they interfer with the calibration
-        scene->sendMessageToWorld("sendAll", {camName, "brightness", 1.0});
-        scene->sendMessageToWorld("sendAll", {camName, "colorTemperature", 6500.0});
-    }
+            for (unsigned int c = 0; c < 3; ++c)
+                for (auto& v : params.projectorCurves[c])
+                    v.second[c] = v.second[c] * scale + offset;
+        }
 
-    //
-    // Cameras back to normal
-    //
-    for (auto& params : _calibrationParams)
-    {
-        scene->sendMessageToWorld("sendAll", {params.camName, "hide", 0});
-        scene->sendMessageToWorld("sendAll", {params.camName, "flashBG", 0});
-        scene->sendMessageToWorld("sendAll", {params.camName, "clearColor"});
-    }
+        //
+        // Send calibration to the cameras
+        //
+        for (auto& params : _calibrationParams)
+        {
+            string camName = params.camName;
+            Values lut;
+            for (unsigned int v = 0; v < 256; ++v)
+                for (unsigned int c = 0; c < 3; ++c)
+                    lut.push_back(params.projectorCurves[c][v].second[c]);
 
-    Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
+            auto attrParams = Values();
+            attrParams.push_back(lut);
+            setObjectAttribute(camName, "colorLUT", attrParams);
+            setObjectAttribute(camName, "activateColorLUT", {1});
+
+            Values m(9);
+            for (int u = 0; u < 3; ++u)
+                for (int v = 0; v < 3; ++v)
+                    m[u * 3 + v] = params.mixRGB[u][v];
+
+            attrParams = Values();
+            attrParams.push_back(m);
+            setObjectAttribute(camName, "colorMixMatrix", attrParams);
+
+            // Also, we set some parameters to default as they interfer with the calibration
+            setObjectAttribute(camName, "brightness", {1.0});
+            setObjectAttribute(camName, "colorTemperature", {6500.0});
+        }
+
+        //
+        // Cameras back to normal
+        //
+        for (auto& params : _calibrationParams)
+        {
+            setObjectAttribute(params.camName, "hide", {0});
+            setObjectAttribute(params.camName, "flashBG", {0});
+            setObjectAttribute(params.camName, "clearColor", {});
+        }
+
+        Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Calibration updated" << Log::endl;
+    });
 }
 
 /*************/
 void ColorCalibrator::updateCRF()
 {
-    // Initialize camera
-    _gcamera = make_shared<Image_GPhoto>(_root, "");
-
-    // Check whether the camera is ready
-    Values status;
-    _gcamera->getAttribute("ready", status);
-    if (status.size() == 0 || status[0].as<int>() == 0)
+    if (!_calibrationMutex.try_lock())
     {
-        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
+        Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Another calibration is in process. Exiting." << Log::endl;
         return;
     }
 
-    findCorrectExposure();
+    _calibrationThread = thread([&]() {
+        // Initialize camera
+        _gcamera = make_shared<Image_GPhoto>(_root, "");
+        OnScopeExit
+        {
+            _calibrationMutex.unlock();
+            _gcamera.reset();
+        };
 
-    // Compute the camera response function
-    _crf.reset();
-    captureHDR(9, 0.33);
+        // Check whether the camera is ready
+        Values status;
+        _gcamera->getAttribute("ready", status);
+        if (status.size() == 0 || status[0].as<int>() == 0)
+        {
+            Log::get() << Log::WARNING << "ColorCalibrator::" << __FUNCTION__ << " - Camera is not ready, unable to update color response" << Log::endl;
+            return;
+        }
 
-    // Free camera
-    _gcamera.reset();
+        findCorrectExposure();
+
+        // Compute the camera response function
+        _crf.reset();
+        captureHDR(9, 0.33);
+    });
 }
 
 /*************/
@@ -366,7 +389,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         // Update exposure for next step
         nextSpeed *= pow(2.0, step);
 
-        string filename = "/tmp/splash_ldr_sample_" + to_string(i) + ".tga";
+        string filename = "/tmp/splash_ldr_sample_" + to_string(i) + ".bmp";
         int status = _gcamera->capture();
         if (status == 0)
         {
@@ -376,7 +399,8 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         _gcamera->update();
         _gcamera->write(filename);
 
-        ldr[i].Read(filename, pic::LT_NOR);
+        ldr[i].Read(filename, pic::LT_NOR_GAMMA);
+        ldr[i].Write(filename);
     }
 
     // Reset the shutterspeed
@@ -529,11 +553,11 @@ float ColorCalibrator::findCorrectExposure()
         for (int y = spec.height / 2 - roiSize / 2; y < spec.height / 2 + roiSize / 2; ++y)
             for (int x = spec.width / 2 - roiSize / 2; x < spec.width / 2 + roiSize / 2; ++x)
             {
-                sum += (unsigned long)(255.f *
-                                       (0.2126 * pixel[(x + y * spec.width) * 3] + 0.7152 * pixel[(x + y * spec.width) * 3 + 1] + 0.0722 * pixel[(x + y * spec.width) * 3 + 2]));
+                auto index = (x + y * spec.width) * spec.channels;
+                sum += static_cast<unsigned long>(0.2126 * pixel[index] + 0.7152 * pixel[index + 1] + 0.0722 * pixel[index + 2]);
             }
 
-        float meanValue = (float)sum / (float)total;
+        auto meanValue = static_cast<float>(sum) / static_cast<float>(total);
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
 
         if (meanValue < 100.f)
@@ -649,7 +673,7 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
         meanY = 0;
         mask = vector<bool>(image->height * image->width, false);
 
-        double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 8);
+        double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 4);
         // double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
 
         for (int y = 0; y < image->height; ++y)

@@ -33,9 +33,6 @@
 
 #include "./config.h"
 
-#if HAVE_GPHOTO
-#include "./controller/colorcalibrator.h"
-#endif
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
 #include "./core/factory.h"
@@ -55,9 +52,6 @@ class Scene : public RootObject
 {
     friend ControllerObject;
     friend UserInput;
-#if HAVE_GPHOTO
-    friend ColorCalibrator;
-#endif
 
   public:
     /**
@@ -237,7 +231,7 @@ class Scene : public RootObject
 
 // Objects in charge of calibration
 #if HAVE_GPHOTO
-    std::shared_ptr<ColorCalibrator> _colorCalibrator;
+    std::shared_ptr<BaseObject> _colorCalibrator{nullptr};
 #endif
 
   private:

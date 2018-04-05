@@ -185,9 +185,23 @@ bool Image_GPhoto::doSetProperty(const string& name, const string& value)
     CameraWidget* widget;
     if (gp_widget_get_child_by_name(camera->configuration, name.c_str(), &widget) == GP_OK)
     {
-        gp_widget_set_value(widget, value.c_str());
-        gp_camera_set_config(camera->cam, camera->configuration, _gpContext);
+        if (gp_widget_set_value(widget, value.c_str()) != GP_OK)
+        {
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to set parameter " << name << " to value " << value << Log::endl;
+            return false;
+        }
+
+        if (gp_camera_set_config(camera->cam, camera->configuration, _gpContext) != GP_OK)
+        {
+            Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Setting parameter " << name << " is not supported for this camera" << Log::endl;
+            return false;
+        }
+
         return true;
+    }
+    else
+    {
+        Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Parameter " << name << " does not seem to be available" << Log::endl;
     }
 
     return false;

@@ -25,15 +25,19 @@
 #ifndef SPLASH_COLORCALIBRATOR_H
 #define SPLASH_COLORCALIBRATOR_H
 
-#include <glm/glm.hpp>
+#include <mutex>
+#include <thread>
 #include <utility>
+
+#include <glm/glm.hpp>
 
 #include "./config.h"
 
+#include "./controller/controller.h"
 #include "./core/attribute.h"
-#include "./utils/cgutils.h"
 #include "./core/coretypes.h"
 #include "./image/image_gphoto.h"
+#include "./utils/cgutils.h"
 
 namespace pic
 {
@@ -44,33 +48,25 @@ class CameraResponseFunction;
 namespace Splash
 {
 
-class Scene;
-
 /*************/
-class ColorCalibrator : public BaseObject
+class ColorCalibrator : public ControllerObject
 {
   public:
     /**
      * \brief Constructor
-     * \param scene Root scene
+     * \param root Root object
      */
-    ColorCalibrator(RootObject* scene);
+    ColorCalibrator(RootObject* root);
 
     /**
      * \brief Destructor
      */
-    ~ColorCalibrator() override;
-
-    /**
-     * No copy constructor
-     */
-    ColorCalibrator(const ColorCalibrator&) = delete;
-    ColorCalibrator& operator=(const ColorCalibrator&) = delete;
+    ~ColorCalibrator() final;
 
     /**
      * \brief Update the color calibration of all cameras
      */
-    void update() override;
+    void update() final;
 
     /**
      * \brief Update the color response function of the physical camera
@@ -101,7 +97,6 @@ class ColorCalibrator : public BaseObject
     //
     // Attributes
     //
-    RootObject* _scene; // TODO: use _root instead
     std::shared_ptr<Image_GPhoto> _gcamera;
     std::shared_ptr<pic::CameraResponseFunction> _crf{nullptr};
 
@@ -113,6 +108,9 @@ class ColorCalibrator : public BaseObject
     int _equalizationMethod{2};
 
     std::vector<CalibrationParams> _calibrationParams;
+
+    std::thread _calibrationThread{};
+    std::mutex _calibrationMutex{};
 
     /**
      * \brief Capture an HDR image from the gcamera
