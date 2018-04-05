@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <utility>
 
+#include "./core/buffer_object.h"
 #include "./core/link.h"
 #include "./core/scene.h"
 #include "./image/image.h"
@@ -174,10 +175,10 @@ void World::run()
 }
 
 /*************/
-void World::addLocally(const string& type, const string& name, const string& destination)
+void World::addToWorld(const string& type, const string& name)
 {
     // Images and Meshes have a counterpart on this side
-    if (type.find("image") == string::npos && type.find("mesh") == string::npos && type.find("queue") == string::npos)
+    if (!_factory->isSubtype<BufferObject>(type))
         return;
 
     auto object = _factory->create(type);
@@ -185,28 +186,8 @@ void World::addLocally(const string& type, const string& name, const string& des
     if (object.get() != nullptr)
     {
         object->setId(getId());
-        realName = object->setName(name); // The real name is not necessarily the one we set (see Queues)
-        _objects[realName] = object;
-    }
-
-    // If the object is not registered yet, we add it with the specified destination
-    // as well as the WORLD_SCENE destination
-    if (_objectDest.find(realName) == _objectDest.end())
-    {
-        _objectDest[realName] = vector<string>();
-        _objectDest[realName].emplace_back(destination);
-    }
-    // If it is, we only add the new destination
-    else
-    {
-        bool isPresent = false;
-        for (auto d : _objectDest[realName])
-            if (d == destination)
-                isPresent = true;
-        if (!isPresent)
-        {
-            _objectDest[realName].emplace_back(destination);
-        }
+        object->setName(name); // The real name is not necessarily the one we set (see Queues)
+        _objects[name] = object;
     }
 }
 
@@ -218,7 +199,6 @@ void World::applyConfig()
     // We first destroy all scene and objects
     _scenes.clear();
     _objects.clear();
-    _objectDest.clear();
     _masterSceneName = "";
 
     try
@@ -1258,7 +1238,7 @@ void World::registerAttributes()
                     for (auto& s : _scenes)
                     {
                         sendMessage(s.first, "add", {type, name, s.first});
-                        addLocally(type, name, s.first);
+                        addToWorld(type, name);
                         sendMessageWithAnswer(s.first, "sync");
                     }
                 }
@@ -1267,7 +1247,7 @@ void World::registerAttributes()
                     sendMessage(scene, "add", {type, name, scene});
                     if (scene != _masterSceneName)
                         sendMessage(_masterSceneName, "add", {type, name, scene});
-                    addLocally(type, name, scene);
+                    addToWorld(type, name);
                     sendMessageWithAnswer(scene, "sync");
                 }
 
@@ -1294,10 +1274,6 @@ void World::registerAttributes()
                 auto objectName = args[0].as<string>();
 
                 // Delete the object here
-                auto objectDestIt = _objectDest.find(objectName);
-                if (objectDestIt != _objectDest.end())
-                    _objectDest.erase(objectDestIt);
-
                 auto objectIt = _objects.find(objectName);
                 if (objectIt != _objects.end())
                     _objects.erase(objectIt);
@@ -1532,13 +1508,6 @@ void World::registerAttributes()
                     object->setName(newName);
                     _objects[newName] = object;
                     _objects.erase(objIt);
-
-                    auto objDestIt = _objectDest.find(name);
-                    if (objDestIt != _objectDest.end())
-                    {
-                        _objectDest.erase(objDestIt);
-                        _objectDest[newName] = {newName};
-                    }
                 }
 
                 // Update the name in the Scenes

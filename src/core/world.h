@@ -42,7 +42,6 @@
 #include "./sound/ltcclock.h"
 #endif
 #include "./core/root_object.h"
-#include "./image/queue.h"
 
 namespace Splash
 {
@@ -54,8 +53,6 @@ class World;
 //! World class, responsible for setting and controlling the Scene, getting the frames (video or meshes) and dispatching them.
 class World : public RootObject
 {
-    friend Queue;
-
   public:
     /**
      * \brief Constructor
@@ -116,7 +113,6 @@ class World : public RootObject
     bool _reloadingConfig{false};       // TODO: workaround to allow for correct reloading when an inner scene was used
 
     std::atomic_int _nextId{0};
-    std::map<std::string, std::vector<std::string>> _objectDest;
 
     std::string _configFilename;  //!< Configuration file path
     std::string _projectFilename; //!< Project configuration file path
@@ -133,9 +129,8 @@ class World : public RootObject
      * \brief Add an object to the world (used for Images and Meshes currently)
      * \param type Object type
      * \param name Object name
-     * \param destination Destination scene name
      */
-    void addLocally(const std::string& type, const std::string& name, const std::string& destination);
+    void addToWorld(const std::string& type, const std::string& name);
 
     /**
      * \brief Apply the configuration

@@ -100,8 +100,16 @@ class Factory
      */
     bool isProjectSavable(const std::string& type);
 
+    /**
+     * Check whether the first type is a subtype of the template type
+     * \param type Type name
+     * \return Return true if the type name is a subtype of the template type
+     */
+    template <typename T>
+    bool isSubtype(const std::string& type);
+
   private:
-    using BuildFuncT = std::function<std::shared_ptr<BaseObject>()>;
+    using BuildFuncT = std::function<std::shared_ptr<BaseObject>(RootObject*)>;
 
     struct Page
     {
@@ -119,7 +127,6 @@ class Factory
         std::string shortDescription{"none"};
         std::string description{"none"};
         bool projectSavable{false};
-        Values attributes{};
     };
 
     RootObject* _root{nullptr};              //!< Root object, used as root for all created objects
@@ -146,6 +153,21 @@ class Factory
      */
     void registerObjects();
 };
+
+/*************/
+template <typename T>
+bool Factory::isSubtype(const std::string& type)
+{
+    auto page = _objectBook.find(type);
+    if (page == _objectBook.end())
+        return false;
+
+    auto object = page->second.builder(nullptr);
+    if (!object)
+        return false;
+
+    return static_cast<bool>(std::dynamic_pointer_cast<T>(object));
+}
 
 } // end of namespace
 

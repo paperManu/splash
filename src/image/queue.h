@@ -43,8 +43,6 @@
 namespace Splash
 {
 
-class World;
-
 /*************/
 class Queue : public BufferObject
 {

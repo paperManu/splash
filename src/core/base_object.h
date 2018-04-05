@@ -130,11 +130,7 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
      * \brief Set the name of the object.
      * \param name name of the object.
      */
-    inline virtual std::string setName(const std::string& name)
-    {
-        _name = name;
-        return _name;
-    }
+    inline void setName(const std::string& name) { _name = name; }
 
     /**
      * \brief Get the name of the object.

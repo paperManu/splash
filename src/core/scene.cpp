@@ -134,11 +134,8 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
         obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
 
         obj->setId(getId());
-        auto realName = obj->setName(name);
-        if (realName == string())
-            _objects[to_string(obj->getId())] = obj;
-        else
-            _objects[realName] = obj;
+        obj->setName(name);
+        _objects[name] = obj;
 
         // Some objects have to be connected to the gui (if the Scene is master)
         if (_gui != nullptr)
