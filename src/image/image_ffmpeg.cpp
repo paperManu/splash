@@ -73,6 +73,8 @@ void Image_FFmpeg::freeFFmpegObjects()
 /*************/
 float Image_FFmpeg::getMediaDuration() const
 {
+    if (!_avContext)
+        return 0.f;
     return static_cast<float>(_avContext->duration) / static_cast<float>(AV_TIME_BASE);
 }
 
@@ -588,6 +590,9 @@ void Image_FFmpeg::audioLoop()
 /*************/
 void Image_FFmpeg::seek(float seconds)
 {
+    if (!_avContext)
+        return;
+
     lock_guard<mutex> lock(_videoSeekMutex);
 
     int seekFlag = 0;
