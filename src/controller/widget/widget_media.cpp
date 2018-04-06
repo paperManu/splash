@@ -21,6 +21,10 @@ GuiMedia::GuiMedia(Scene* scene, const string& name)
 
     for (auto& type : _mediaTypes)
         _mediaTypesReversed[type.second] = type.first;
+
+    // Make sure that the default new media for queues is set to the one
+    // specified by _newMediaTypeIndex, otherwise it would be an empty string
+    _newMedia[_newMediaTypeIndex] = _mediaTypes.begin()->second;
 }
 
 /*************/
