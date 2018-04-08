@@ -1,5 +1,0 @@
-FROM ubuntu:16.04
-MAINTAINER Emmanuel Durand <emmanueldurand@gmail.com>
-RUN apt update -qq \
-    && apt install -y curl wget build-essential git-core zip cmake automake libtool libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python \
-    && apt clean && apt autoclean && apt autoremove -y && rm -rf /var/lib/{apt,dpkg,cache,log}/

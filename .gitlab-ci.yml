@@ -1,57 +1,50 @@
+image: ubuntu:16.04
+
 variables:
   DOCKER_DRIVER: overlay
 
 stages:
-  - prepare_docker
   - test
   - package
 
-services:
-  - docker:dind
-
 before_script:
+  - apt update -qq
+  - apt install -y curl wget build-essential git-core zip cmake automake libtool libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
   - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
 
 #
-# Prepare Docker images
-#
-prepare_docker:16.04:
-  stage: prepare_docker
-  image: docker:git
-  before_script:
-    - echo "Nothing to do"
-  script:
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
-    - docker build --pull -t $CI_REGISTRY_IMAGE:ci_16.04 -f $CI_PROJECT_DIR/ci/Dockerfile_16.04 .
-    - docker push $CI_REGISTRY_IMAGE:ci_16.04
-
-prepare_docker:18.04:
-  stage: prepare_docker
-  image: docker:git
-  before_script:
-    - echo "Nothing to do"
-  script:
-    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN $CI_REGISTRY
-    - docker build --pull -t $CI_REGISTRY_IMAGE:ci_18.04 -f $CI_PROJECT_DIR/ci/Dockerfile_18.04 .
-    - docker push $CI_REGISTRY_IMAGE:ci_18.04
-
-#
 # Tests
 #
 test:16.04:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci_16.04
+  image: ubuntu:16.04
   script: 
     - make -j$(nproc)
     - make test
 
 test:18.04:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci_18.04
+  image: ubuntu:18.04
   script: 
+    - make -j$(nproc)
+    - make test
+
+test:archlinux:
+  stage: test
+  image: base/archlinux
+  only:
+    - archlinux
+  before_script:
+    - pacman -Syyu --noconfirm
+    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa glm gsl libgphoto2 python3 portaudio zip zlib
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+  script:
     - make -j$(nproc)
     - make test
 
@@ -60,7 +53,6 @@ test:18.04:
 #
 package:
   stage: package
-  image: $CI_REGISTRY_IMAGE:ci_16.04
   script:
     - make -j$(nproc)
     - make package
@@ -79,7 +71,6 @@ package:
 #
 static_analysis:
   stage: test
-  image: $CI_REGISTRY_IMAGE:ci_16.04
   script:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash" -O coverity_tool.tgz
     - tar xvzf coverity_tool.tgz

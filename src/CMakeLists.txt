@@ -229,7 +229,7 @@ if (PYTHONLIBS_FOUND)
 endif()
 
 # Distributed third parties first
-target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
 target_link_libraries(splash-${API_VERSION} zmq.a)

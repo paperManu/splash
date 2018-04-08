@@ -13,5 +13,5 @@ fi
 cd zmq
 rm -rf build
 mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=${EXTERNALS_DIR}/third_parties -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_INSTALL_PREFIX=${EXTERNALS_DIR}/third_parties -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=lib ..
 make -j${CPU_COUNT} && make install

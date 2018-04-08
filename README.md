@@ -88,12 +88,26 @@ sudo apt install <download path>/splash-<version>-Linux.deb
 
 You can also compile Splash by hand, especially if you are curious about its internals or want to tinker with the code (or even, who knows, contribute!). Note that although what follows compiles the develop branch, it is more likely to contain bugs alongside new features / optimizations so if you experience crash you can try with the master branch.
 
+The packages necessary to compile Splash are the following:
+- Ubuntu and derivatives:
+
 ```bash
 sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev
 sudo apt install mesa-common-dev libglm-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev
 sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev
 sudo apt install python3-numpy
+```
 
+- Archlinux (not well maintained, please signal any issue):
+
+```bash
+pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor
+pacman -Sy mesa glm gsl libgphoto2 python3 portaudio zip zlib
+```
+
+Once everything is installed, you can go on with building Splash:
+
+```bash
 git clone git://github.com/paperManu/splash
 cd splash
 git submodule update --init
