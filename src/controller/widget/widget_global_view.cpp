@@ -117,12 +117,26 @@ void GuiGlobalView::render()
                     // Empty previous camera parameters
                     _previousCameraParameters.clear();
 
-                    // Ensure that all cameras are shown
-                    _camerasHidden = false;
-                    _camerasColorized = false;
-                    for (auto& cam : cameras)
-                        setObjectAttribute(cam->getName(), "hide", {0});
+                    // List the number of visible cameras
+                    vector<string> visibleCameras{};
+                    for (const auto& cam : cameras)
+                    {
+                        auto visibility = getObjectAttribute(cam->getName(), "hide");
+                        if (visibility.size() and !visibility[0].as<bool>())
+                            visibleCameras.push_back(cam->getName());
+                    }
 
+                    // Keep the same set of cameras visible
+                    for (const auto& cam : cameras)
+                        setObjectAttribute(cam->getName(), "hide", {1});
+
+                    for (const auto& camName : visibleCameras)
+                        setObjectAttribute(camName, "hide", {0});
+
+                    // Ensure the selected camera is visible...
+                    setObjectAttribute(camera->getName(), "hide", {0});
+
+                    _camerasColorized = false;
                     setObjectAttribute(_camera->getName(), "frame", {0});
                     setObjectAttribute(_camera->getName(), "displayCalibration", {0});
 

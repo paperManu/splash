@@ -1525,6 +1525,7 @@ void Camera::registerAttributes()
                 _hidden = !_hidden;
             return true;
         },
+        [&]() -> Values { return {_hidden}; },
         {'n'});
     setAttributeDescription("hide", "If set to 1, prevent from drawing this camera");
 
@@ -1608,4 +1609,4 @@ void Camera::registerAttributes()
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
 }
 
-} // end of namespace
+} // namespace Splash
