@@ -230,10 +230,6 @@ GuiWidget::GuiWidget(Scene* scene, string name)
 /*************/
 void GuiWidget::drawAttributes(const string& objName, const unordered_map<string, Values>& attributes)
 {
-    auto scene = dynamic_cast<Scene*>(_scene);
-    if (!scene)
-        return;
-
     vector<string> attributeNames;
     for (auto& attr : attributes)
         attributeNames.push_back(attr.first);
@@ -253,15 +249,23 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
         {
             ImGui::PushID(attrName.c_str());
             if (ImGui::Button("L"))
-                scene->sendMessageToWorld("sendAll", {objName, "switchLock", attrName});
+                setObjectAttribute(objName, "switchLock", {attrName});
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Lock / Unlock this attribute");
-            ImGui::PopID();
             ImGui::SameLine();
+
+            if (ImGui::Button("R"))
+                setObjectAttribute(objName, attrName, attribute);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("If pressed, resend the value as-is");
+            ImGui::SameLine();
+
+            ImGui::PopID();
 
             int precision = 0;
             if (attribute[0].getType() == Value::Type::f)
                 precision = 3;
+
 
             switch (attribute.size())
             {
@@ -272,7 +276,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 float tmp = attribute[0].as<float>();
                 float step = attribute[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
                 if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    scene->sendMessageToWorld("sendAll", {objName, attrName, tmp});
+                    setObjectAttribute(objName, attrName, {tmp});
                 break;
             }
             case 2:
@@ -281,7 +285,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 tmp.push_back(attribute[0].as<float>());
                 tmp.push_back(attribute[1].as<float>());
                 if (ImGui::InputFloat2(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    scene->sendMessageToWorld("sendAll", {objName, attrName, tmp[0], tmp[1]});
+                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1]});
                 break;
             }
             case 3:
@@ -291,7 +295,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 tmp.push_back(attribute[1].as<float>());
                 tmp.push_back(attribute[2].as<float>());
                 if (ImGui::InputFloat3(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    scene->sendMessageToWorld("sendAll", {objName, attrName, tmp[0], tmp[1], tmp[2]});
+                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2]});
                 break;
             }
             case 4:
@@ -302,10 +306,11 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                 tmp.push_back(attribute[2].as<float>());
                 tmp.push_back(attribute[3].as<float>());
                 if (ImGui::InputFloat4(attrName.c_str(), tmp.data(), precision, ImGuiInputTextFlags_EnterReturnsTrue))
-                    scene->sendMessageToWorld("sendAll", {objName, attrName, tmp[0], tmp[1], tmp[2], tmp[3]});
+                    setObjectAttribute(objName, attrName, {tmp[0], tmp[1], tmp[2], tmp[3]});
                 break;
             }
             }
+
             break;
         }
         case 'v':
@@ -352,7 +357,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     tmp.resize(512);
                     ImGui::PushID((objName + attrName).c_str());
                     if (ImGui::InputText("", const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {objName, attrName, tmp});
+                        setObjectAttribute(objName, attrName, {tmp});
 
                     // Callback for dragndrop: replace the file path in the field
                     if (ImGui::IsItemHovered())
@@ -374,7 +379,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                         if (SplashImGui::FileSelector(objName, path, cancelled, extensions))
                         {
                             if (!cancelled)
-                                scene->sendMessageToWorld("sendAll", {objName, attrName, path});
+                                setObjectAttribute(objName, attrName, {path});
                             path = _root->getMediaPath();
                             _fileSelectorTarget = "";
                         }
@@ -388,7 +393,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                     string tmp = v.as<string>();
                     tmp.resize(256);
                     if (ImGui::InputText(attrName.c_str(), const_cast<char*>(tmp.c_str()), tmp.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                        scene->sendMessageToWorld("sendAll", {objName, attrName, tmp});
+                        setObjectAttribute(objName, attrName, {tmp});
                 }
             }
             break;
@@ -397,7 +402,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
 
         if (ImGui::IsItemHovered())
         {
-            auto answer = scene->getAttributeDescriptionFromObject(objName, attrName);
+            auto answer = getObjectAttributeDescription(objName, attrName);
             if (answer.size() != 0)
                 ImGui::SetTooltip("%s", answer[0].as<string>().c_str());
         }

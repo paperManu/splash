@@ -901,7 +901,7 @@ void Gui::initImGui(int width, int height)
     ImGuiIO& io = GetIO();
 
     string fontPath = "";
-    vector<string> fontPaths{string(DATADIR) + string("fonts/Roboto-Medium.ttf"), "../Resources/fonts/OpenSans-Bold.ttf"};
+    vector<string> fontPaths{string(DATADIR) + string("fonts/Roboto-Medium.ttf")};
     for (auto& path : fontPaths)
         if (ifstream(path, ios::in | ios::binary))
             fontPath = path;
@@ -909,10 +909,6 @@ void Gui::initImGui(int width, int height)
     if (fontPath != "")
     {
         io.Fonts->Clear();
-        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
-        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
-        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
-        io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
         io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 15);
         io.Fonts->Build();
     }
