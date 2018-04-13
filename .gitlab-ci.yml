@@ -9,7 +9,7 @@ stages:
 
 before_script:
   - apt update -qq
-  - apt install -y curl wget build-essential git-core zip cmake automake libtool libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
+  - apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build

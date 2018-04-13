@@ -73,6 +73,7 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
 
     // Intialize the GUI widgets
     _window->setAsCurrentContext();
+    ImGui::CreateContext();
     initImGui(_width, _height);
     initImWidgets();
     loadIcon();
@@ -87,6 +88,13 @@ Gui::~Gui()
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Gui::~Gui - Destructor" << Log::endl;
 #endif
+
+    if (_window->setAsCurrentContext())
+    {
+        // Clean ImGui
+        ImGui::DestroyContext();
+        _window->releaseContext();
+    }
 
     glDeleteTextures(1, &_imFontTextureId);
     glDeleteProgram(_imGuiShaderHandle);
@@ -762,10 +770,14 @@ void Gui::render()
         glClearColor(0.0, 0.0, 0.0, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
         if (_isVisible || _showAbout)
+        {
             ImGui::Render();
+            imGuiRenderDrawLists(ImGui::GetDrawData());
+        }
         _fbo->unbindDraw();
     }
 
+    ImGui::EndFrame();
     _fbo->getColorTexture()->generateMipmap();
 
 #ifdef DEBUG
@@ -931,13 +943,15 @@ void Gui::initImGui(int width, int height)
     io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
 
-    io.RenderDrawListsFn = Gui::imGuiRenderDrawLists;
-
     // Set style
     ImGuiStyle& style = ImGui::GetStyle();
-    style.ChildWindowRounding = 2.f;
+    style.AntiAliasedLines = true;
+    style.ChildRounding = 2.f;
+    style.ChildBorderSize = 1.f;
     style.FrameRounding = 2.f;
+    style.PopupBorderSize = 0.f;
     style.ScrollbarSize = 12.f;
+    style.WindowBorderSize = 0.f;
     style.Colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_TextDisabled] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
     style.Colors[ImGuiCol_WindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
@@ -952,7 +966,6 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.81f, 0.40f, 0.25f, 0.27f);
     style.Colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.81f, 0.40f, 0.24f, 0.40f);
     style.Colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.80f, 0.50f, 0.50f, 0.40f);
-    style.Colors[ImGuiCol_ComboBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.99f);
     style.Colors[ImGuiCol_ColumnHovered] = ImVec4(0.60f, 0.40f, 0.40f, 0.45f);
     style.Colors[ImGuiCol_ColumnActive] = ImVec4(0.65f, 0.50f, 0.50f, 0.55f);
     style.Colors[ImGuiCol_CheckMark] = ImVec4(0.90f, 0.90f, 0.90f, 0.50f);
@@ -970,16 +983,12 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.30f);
     style.Colors[ImGuiCol_ResizeGripHovered] = ImVec4(1.00f, 1.00f, 1.00f, 0.60f);
     style.Colors[ImGuiCol_ResizeGripActive] = ImVec4(1.00f, 1.00f, 1.00f, 0.90f);
-    style.Colors[ImGuiCol_CloseButton] = ImVec4(0.81f, 0.50f, 0.28f, 0.50f);
-    style.Colors[ImGuiCol_CloseButtonHovered] = ImVec4(0.70f, 0.70f, 0.90f, 0.60f);
-    style.Colors[ImGuiCol_CloseButtonActive] = ImVec4(0.70f, 0.70f, 0.70f, 1.00f);
     style.Colors[ImGuiCol_PlotLines] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     style.Colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_TextSelectedBg] = ImVec4(0.00f, 0.00f, 1.00f, 0.35f);
     style.Colors[ImGuiCol_PopupBg] = ImVec4(0.05f, 0.05f, 0.10f, 0.90f);
-    style.AntiAliasedLines = false;
 
     unsigned char* pixels;
     int w, h;

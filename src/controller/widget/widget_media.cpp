@@ -16,10 +16,10 @@ GuiMedia::GuiMedia(Scene* scene, const string& name)
     : GuiWidget(scene, name)
 {
     auto types = getTypesFromCategory(BaseObject::Category::IMAGE);
-    for (auto& type : types)
+    for (const auto& type : types)
         _mediaTypes[getShortDescription(type)] = type;
 
-    for (auto& type : _mediaTypes)
+    for (const auto& type : _mediaTypes)
         _mediaTypesReversed[type.second] = type.first;
 
     // Make sure that the default new media for queues is set to the one
@@ -48,7 +48,7 @@ void GuiMedia::render()
                 for (auto& type : _mediaTypes)
                     mediaTypes.push_back(type.first.c_str());
 
-                if (ImGui::Combo("##media_type", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
+                if (ImGui::Combo("##mediaType", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
                     replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
 
                 ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());

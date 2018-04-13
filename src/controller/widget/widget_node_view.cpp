@@ -193,6 +193,12 @@ void GuiNodeView::renderNode(const string& name)
 
     ImGui::SetCursorPos(ImVec2(0, 2));
 
+    if (ImGui::Button(name.c_str(), ImVec2(192, 20)))
+    {
+        _clickedNode = name;
+        _sourceNode = name;
+    }
+
     if (ImGui::IsItemHovered())
     {
         // Object linking
@@ -221,12 +227,6 @@ void GuiNodeView::renderNode(const string& name)
         }
     }
 
-    if (ImGui::Button(name.c_str(), ImVec2(192, 20)))
-    {
-        _clickedNode = name;
-        _sourceNode = name;
-    }
-
     // End of node rendering
     ImGui::EndChild();
 
@@ -245,4 +245,4 @@ int GuiNodeView::updateWindowFlags()
     return flags;
 }
 
-} // end of namespace
+} // namespace Splash
