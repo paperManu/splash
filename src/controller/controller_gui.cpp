@@ -958,7 +958,10 @@ void Gui::initImGui(int width, int height)
     style.Colors[ImGuiCol_ChildWindowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     style.Colors[ImGuiCol_Border] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
+    style.Colors[ImGuiCol_PopupBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.90f);
     style.Colors[ImGuiCol_FrameBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.45f);
+    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
+    style.Colors[ImGuiCol_FrameBgActive] = ImVec4(0.79f, 0.45f, 0.17f, 0.80f);
     style.Colors[ImGuiCol_TitleBg] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);
     style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);
     style.Colors[ImGuiCol_TitleBgActive] = ImVec4(0.98f, 0.58f, 0.12, 0.74f);

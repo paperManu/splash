@@ -165,13 +165,13 @@ bool FileSelector(const string& label, string& path, bool& cancelled, const vect
             selectedId[label] = i;
             manualPath = false;
         }
-    }
 
-    if (ImGui::IsWindowHovered() && ImGui::IsMouseDoubleClicked(0))
-    {
-        path = path + "/" + fileList[selectedId[label]].filename;
-        if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
-            selectionDone = true;
+        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+        {
+            path = path + "/" + filename;
+            if (!FileSelectorParseDir(path, fileList, extensions, showNormalFiles))
+                selectionDone = true;
+        }
     }
     ImGui::EndChild();
 
@@ -265,7 +265,6 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             int precision = 0;
             if (attribute[0].getType() == Value::Type::f)
                 precision = 3;
-
 
             switch (attribute.size())
             {
