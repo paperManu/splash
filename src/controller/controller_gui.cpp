@@ -40,8 +40,6 @@ GLint Gui::_imGuiColorLocation;
 GLuint Gui::_imGuiVboHandle, Gui::_imGuiElementsHandle, Gui::_imGuiVaoHandle;
 size_t Gui::_imGuiVboMaxSize = 20000;
 
-GLFWwindow* Gui::_glfwWindow = nullptr;
-
 /*************/
 Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
     : ControllerObject(s)
@@ -54,7 +52,6 @@ Gui::Gui(shared_ptr<GlWindow> w, RootObject* s)
         return;
 
     _window = w;
-    _glfwWindow = _window->get();
     if (!_window->setAsCurrentContext())
         Log::get() << Log::WARNING << "Gui::" << __FUNCTION__ << " - A previous context has not been released." << Log::endl;
     glGetError();
@@ -942,6 +939,12 @@ void Gui::initImGui(int width, int height)
     io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
     io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
     io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
+    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
+    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
+    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
+    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
     // Set style
     ImGuiStyle& style = ImGui::GetStyle();
@@ -1009,24 +1012,25 @@ void Gui::initImGui(int width, int height)
     // Init clipboard callbacks
     io.GetClipboardTextFn = Gui::getClipboardText;
     io.SetClipboardTextFn = Gui::setClipboardText;
+    io.ClipboardUserData = static_cast<void*>(_window->get());
 
     _isInitialized = true;
 }
 
 /*************/
-const char* Gui::getClipboardText(void* /*userData*/)
+const char* Gui::getClipboardText(void* userData)
 {
-    if (_glfwWindow)
-        return glfwGetClipboardString(_glfwWindow);
+    if (userData)
+        return glfwGetClipboardString(static_cast<GLFWwindow*>(userData));
     else
         return nullptr;
 }
 
 /*************/
-void Gui::setClipboardText(void* /*userData*/, const char* text)
+void Gui::setClipboardText(void* userData, const char* text)
 {
-    if (_glfwWindow)
-        glfwSetClipboardString(_glfwWindow, text);
+    if (userData)
+        glfwSetClipboardString(static_cast<GLFWwindow*>(userData), text);
 }
 
 /*************/

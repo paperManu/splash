@@ -185,10 +185,6 @@ class Gui : public ControllerObject
     std::shared_ptr<GlWindow> _window;
     Scene* _scene;
 
-    // This is needed for some GLFW callbacks, and also has to be static...
-    // There can be only one gui, so it is not such an issue
-    static GLFWwindow* _glfwWindow;
-
     std::unique_ptr<Framebuffer> _fbo{nullptr};
     float _width{512}, _height{512};
     bool _resized{false};
