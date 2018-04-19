@@ -13,4 +13,4 @@ if [ ! $(which docker) ]; then
 fi
 
 docker build -t metalab/splash:build -f Dockerfile .
-docker run -t -v ${PWD}:/pkg:rw metalab/splash:build $git_branch
+docker run --rm -t -v ${PWD}:/pkg:rw metalab/splash:build $git_branch

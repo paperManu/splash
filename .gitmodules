@@ -3,7 +3,7 @@
 	url = https://github.com/Vidvox/hap.git
 [submodule "external/piccante"]
 	path = external/piccante
-	url = https://github.com/banterle/piccante.git
+	url = https://github.com/cnr-isti-vclab/piccante.git
 	branch = master
 [submodule "external/imgui"]
 	path = external/imgui
@@ -20,9 +20,6 @@
 [submodule "external/glm"]
 	path = external/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "external/macdylibbundler"]
-	path = external/macdylibbundler
-	url = https://github.com/auriamg/macdylibbundler.git
 [submodule "external/doctest"]
 	path = external/doctest
 	url = https://github.com/onqtam/doctest

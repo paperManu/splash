@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(
     splash 
-    VERSION 0.7.14
+    VERSION 0.7.16
     LANGUAGES C CXX
 )
 
@@ -116,17 +116,7 @@ else()
     set(HAVE_DATAPATH 0)
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/include/config.h")
-
-#
-# External sources
-#
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
-add_subdirectory(external/glfw)
-add_subdirectory(external/snappy)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h")
 
 #
 # Sources
@@ -135,22 +125,21 @@ add_subdirectory(addons)
 add_subdirectory(data)
 add_subdirectory(docs)
 add_subdirectory(external)
-add_subdirectory(osx)
 add_subdirectory(src)
 add_subdirectory(tests)
 
 # Uninstall target
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
     IMMEDIATE @ONLY)
 
 add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake)
 
 #
 # CPack related info
-# Creates package on Linux. On OSX, it is handled separately (see ./osx/CMakeLists.txt)
+# Creates package on Linux.
 #
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Splash, a modular multi-projector video-mapping software")
 set(CPACK_PACKAGE_VENDOR "Emmanuel Durand")

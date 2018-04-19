@@ -38,7 +38,7 @@ src/splash-scene
 src/.deps/
 src/Makefile
 src/Makefile.i
-include/config.h*
+src/config.h*
 include/stamp-h1
 tests/assets
 tests/check_image
@@ -50,8 +50,3 @@ tests/check_gui
 tests/*.log
 tests/*.trs
 tools/splash-check-calibration
-osx/Info.plist
-osx/splash.app/Contents/Info.plist
-osx/splash.app/Contents/MacOS/splash
-osx/splash.app/Contents/MacOS/splash-scene
-osx/splash.app/Contents/libs

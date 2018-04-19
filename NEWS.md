@@ -1,6 +1,40 @@
 Splash release notes
 ===================
 
+Splash 0.7.16 (2018-04-19)
+--------------------------
+Improvements:
+- Upgraded ImGui
+- Added a button to resend numeric attributes
+- Improved cameras hide behavior
+- Added CI for Ubuntu Bionic Beaver
+- Improved automatic black value settings
+- Refactored the configuration file
+- Removed references to OSX from the project (not from the code, yet)
+- Cleaned up sources
+- Changed GUI font
+- Updated --info option output
+- Removed the window fullscreen attribute
+- Improved calibration through GSL
+
+Bugs fixed
+- Fixed issue in Blender addon when exporting mesh_shmdata
+- Fixed copy/paste
+- Fixed FileSelector and its usage in Gui
+- Fixed install target installing Snappy lib and headers
+- Fixed compilation on Archlinux
+- Fixed a GUI issue: default media when adding to playlist was different that the one displayed
+- Fixed crash in ImageFFmpeg when a video file is not found
+- Fixed a few issues related to color calibration
+- Fixed Texture Image showing in the Media panel
+- Fixed master clock, removed Timer dependencies to Value
+- Fixed auto black level behavior
+- Fixed media panel closing unexpectedly
+- Fixed a random segfault in Python callbacks
+- Fixed issue when pausing a video
+- Fixed project loading when multiple scenes are used
+- Fixes in documentation and help
+
 Splash 0.7.14 (2018-02-05)
 --------------------------
 New features:

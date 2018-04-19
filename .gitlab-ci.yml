@@ -1,28 +1,56 @@
-image: ubuntu:xenial
+image: ubuntu:16.04
 
 variables:
   DOCKER_DRIVER: overlay
 
-before_script: 
+stages:
+  - test
+  - package
+
+before_script:
   - apt update -qq
-  - apt install -y curl wget build-essential git-core zip cmake automake libtool libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
+  - apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
   - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-  - make glfw
 
-stages:
-  - test
-  - package
-  - static_analysis
-
-test:
+#
+# Tests
+#
+test:16.04:
   stage: test
+  image: ubuntu:16.04
   script: 
     - make -j$(nproc)
     - make test
 
+test:18.04:
+  stage: test
+  image: ubuntu:18.04
+  script: 
+    - make -j$(nproc)
+    - make test
+
+test:archlinux:
+  stage: test
+  image: base/archlinux
+  only:
+    - archlinux
+  before_script:
+    - pacman -Syyu --noconfirm
+    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa glm gsl libgphoto2 python3 portaudio zip zlib
+    - git submodule update --init
+    - ./make_deps.sh
+    - rm -rf build && mkdir build && cd build
+    - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+  script:
+    - make -j$(nproc)
+    - make test
+
+#
+# Package
+#
 package:
   stage: package
   script:
@@ -38,8 +66,11 @@ package:
     - "*.deb"
     - "*.tar.bz2"
 
+#
+# Static analysis
+#
 static_analysis:
-  stage: static_analysis
+  stage: test
   script:
     - wget https://scan.coverity.com/download/linux64 --post-data "token=zkRfEWYxyAeJDlYYg9Hkkg&project=paperManu%2Fsplash" -O coverity_tool.tgz
     - tar xvzf coverity_tool.tgz

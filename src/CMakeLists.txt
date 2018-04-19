@@ -18,9 +18,38 @@
 #
 
 #
+# Enable all warnings as errors
+#
+add_definitions(-Wall -Wextra -Werror)
+add_definitions(-Wno-unknown-pragmas)
+
+# Disable warnings for some specific files
+set_source_files_properties(
+    ../external/imgui/imgui_demo.cpp
+    ../external/imgui/imgui_draw.cpp
+    ../external/imgui/imgui.cpp
+	../external/jsoncpp/jsoncpp.cpp
+	../external/hap/source/hap.c
+    PROPERTIES COMPILE_FLAGS "-Wno-error -Wno-all -Wno-extra -Wno-sign-compare -Wno-deprecated-declarations"
+)
+
+set_source_files_properties(
+    graphics/camera.cpp
+    PROPERTIES COMPILE_FLAGS "-Wno-error=strict-aliasing -Wno-strict-aliasing"
+)
+
+if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 6.0)
+  set_source_files_properties(
+      image/image.cpp
+      PROPERTIES COMPILE_FLAGS "-Wno-error=implicit-fallthrough= -Wno-implicit-fallthrough"
+  )
+endif()
+
+#
 # Includes
 #
-include_directories(../include)
+include_directories(./)
+
 include_directories(../external/cppzmq)
 include_directories(../external/glm)
 include_directories(../external/hap/source)
@@ -69,7 +98,7 @@ link_directories(${PYTHON_LIBRARY_DIRS})
 #
 # Targets
 #
-add_library(splash-${API_VERSION} STATIC world.cpp)
+add_library(splash-${API_VERSION} STATIC core/world.cpp)
 add_executable(splash splash-app.cpp)
 
 #
@@ -79,55 +108,54 @@ if (APPLE)
     add_dependencies(splash-${API_VERSION} Syphon)
 endif()
 
-target_sources(
-    splash-${API_VERSION} PRIVATE
-    attribute.cpp
-    base_object.cpp
-    buffer_object.cpp
-    camera.cpp
-    cgUtils.cpp
-    controller.cpp
-    controller_blender.cpp
-    controller_gui.cpp
-    factory.cpp
-    filter.cpp
-    framebuffer.cpp
-    geometry.cpp
-    gpuBuffer.cpp
-    imageBuffer.cpp
-    image.cpp
-    image_ffmpeg.cpp
-    link.cpp
-    mesh_bezierPatch.cpp
-    mesh.cpp
-    object.cpp
-    queue.cpp
-    root_object.cpp
-    scene.cpp
-    sink.cpp
-    shader.cpp
-    texture.cpp
-    texture_image.cpp
-    userInput.cpp
-    userInput_dragndrop.cpp
-    userInput_joystick.cpp
-    userInput_keyboard.cpp
-    userInput_mouse.cpp
-    virtual_probe.cpp
-    warp.cpp
-    widget.cpp
-    widget_control.cpp
-    widget_filters.cpp
-    widget_global_view.cpp
-    widget_graph.cpp
-    widget_node_view.cpp
-    widget_media.cpp
-    widget_meshes.cpp
-    widget_template.cpp
-    widget_text_box.cpp
-    widget_textures_view.cpp
-    widget_warp.cpp
-    window.cpp
+target_sources(splash-${API_VERSION} PRIVATE
+    core/attribute.cpp
+    core/base_object.cpp
+    core/buffer_object.cpp
+    core/factory.cpp
+    core/imagebuffer.cpp
+    core/link.cpp
+    core/root_object.cpp
+    core/scene.cpp
+    controller/controller.cpp
+    controller/controller_blender.cpp
+    controller/controller_gui.cpp
+    controller/widget/widget.cpp
+    controller/widget/widget_control.cpp
+    controller/widget/widget_filters.cpp
+    controller/widget/widget_global_view.cpp
+    controller/widget/widget_graph.cpp
+    controller/widget/widget_node_view.cpp
+    controller/widget/widget_media.cpp
+    controller/widget/widget_meshes.cpp
+    controller/widget/widget_template.cpp
+    controller/widget/widget_text_box.cpp
+    controller/widget/widget_textures_view.cpp
+    controller/widget/widget_warp.cpp
+    graphics/camera.cpp
+    graphics/filter.cpp
+    graphics/framebuffer.cpp
+    graphics/geometry.cpp
+    graphics/gpu_buffer.cpp
+    graphics/object.cpp
+    graphics/shader.cpp
+    graphics/texture.cpp
+    graphics/texture_image.cpp
+    graphics/virtual_probe.cpp
+    graphics/warp.cpp
+    graphics/window.cpp
+    image/image.cpp
+    image/image_ffmpeg.cpp
+    image/queue.cpp
+    mesh/mesh.cpp
+    mesh/mesh_bezierpatch.cpp
+    sink/sink.cpp
+    userinput/userinput.cpp
+    userinput/userinput_dragndrop.cpp
+    userinput/userinput_joystick.cpp
+    userinput/userinput_keyboard.cpp
+    userinput/userinput_mouse.cpp
+    utils/cgutils.cpp
     ../external/imgui/imgui_demo.cpp
     ../external/imgui/imgui_draw.cpp
     ../external/imgui/imgui.cpp
@@ -136,40 +164,43 @@ target_sources(
 )
 
 if (APPLE)
-    target_sources(
-        splash-${API_VERSION} PRIVATE
+    target_sources(splash-${API_VERSION} PRIVATE
 	    ../external/glad/compatibility/src/glad_compatibility.c
         texture_syphon.cpp
         texture_syphon_client.mm
     )
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -F${CMAKE_CURRENT_SOURCE_DIR}/../external/syphon/build/Release -framework Syphon")
 else()
-    target_sources(
-        splash-${API_VERSION} PRIVATE
+    target_sources(splash-${API_VERSION} PRIVATE
 	    ../external/glad/core/src/glad_core.c
-        image_v4l2.cpp
+        image/image_v4l2.cpp
     )
 endif()
 
 if (GPHOTO_FOUND)
-    target_sources(
-        splash-${API_VERSION} PRIVATE
-        colorcalibrator.cpp 
-        image_gphoto.cpp
+    set_source_files_properties(
+        controller/colorcalibrator.cpp 
+        PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"
+    )
+
+    target_sources(splash-${API_VERSION} PRIVATE
+        controller/colorcalibrator.cpp 
+        image/image_gphoto.cpp
     )
 endif()
 
 if (OPENCV_FOUND)
-    target_sources(splash-${API_VERSION} PRIVATE image_opencv.cpp)
+    target_sources(splash-${API_VERSION} PRIVATE 
+        image/image_opencv.cpp
+    )
 endif()
 
 if (PORTAUDIO_FOUND)
-    target_sources(
-        splash-${API_VERSION} PRIVATE
-        listener.cpp
-        ltcclock.cpp
-        speaker.cpp
-        sound_engine.cpp
+    target_sources(splash-${API_VERSION} PRIVATE
+        sound/listener.cpp
+        sound/ltcclock.cpp
+        sound/speaker.cpp
+        sound/sound_engine.cpp
         ../external/libltc/src/decoder.c
         ../external/libltc/src/encoder.c
         ../external/libltc/src/ltc.c
@@ -178,24 +209,27 @@ if (PORTAUDIO_FOUND)
 endif()
 
 if (SHMDATA_FOUND)
-    target_sources(
-        splash-${API_VERSION} PRIVATE
-        image_shmdata.cpp
-        mesh_shmdata.cpp
-        sink_shmdata.cpp
-        sink_shmdata_encoded.cpp
+    target_sources(splash-${API_VERSION} PRIVATE
+        image/image_shmdata.cpp
+        mesh/mesh_shmdata.cpp
+        sink/sink_shmdata.cpp
+        sink/sink_shmdata_encoded.cpp
     )
 endif()
 
 if (PYTHONLIBS_FOUND)
-    target_sources(
-        splash-${API_VERSION} PRIVATE
-        controller_pythonEmbedded.cpp
+    set_source_files_properties(
+        controller/controller_pythonembedded.cpp
+        PROPERTIES COMPILE_FLAGS -Wno-missing-field-initializers
+    )
+
+    target_sources(splash-${API_VERSION} PRIVATE
+        controller/controller_pythonembedded.cpp
     )
 endif()
 
 # Distributed third parties first
-target_link_libraries(splash-${API_VERSION} ${FFMPEG_LIBRARIES})
+target_link_libraries(splash-${API_VERSION} ${FFMPEG_STATIC_LIBRARIES})
 target_link_libraries(splash-${API_VERSION} snappy)
 target_link_libraries(splash-${API_VERSION} glfw)
 target_link_libraries(splash-${API_VERSION} zmq.a)
