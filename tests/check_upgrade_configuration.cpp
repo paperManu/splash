@@ -1,3 +1,5 @@
+#include <string>
+
 #include <doctest.h>
 #include <json/json.h>
 
@@ -19,6 +21,7 @@ TEST_CASE("Testing World::checkAndUpgradeConfiguration for a single Scene")
     filePath = Utils::getCurrentWorkingDirectory() + "/data/sample_scene_0.7.15.json";
     Json::Value upgradedConfiguration;
     Utils::loadJsonFile(filePath, upgradedConfiguration);
+    upgradedConfiguration["version"] = string(PACKAGE_VERSION);
 
     CHECK(configuration == upgradedConfiguration);
 }
