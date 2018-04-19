@@ -21,8 +21,9 @@
 import numpy
 import bpy
 from bpy.types import NodeTree, Node, NodeSocket
-from math import floor, pi
-from mathutils import Vector, Matrix
+from math import pi
+from mathutils import Vector
+from nodeitems_utils import NodeCategory, NodeItem
 
 import imp
 if "operators" in locals():
@@ -117,12 +118,12 @@ class SplashCameraNode(SplashBaseNode):
 
     sp_acceptedLinks = [
         'SplashObjectNodeType',
-        ]
+    ]
 
     sp_objectProperty = bpy.props.StringProperty(name="Source object",
-                                         description="Object holding the camera",
-                                         default="",
-                                         maxlen=1024)
+                                                 description="Object holding the camera",
+                                                 default="",
+                                                 maxlen=1024)
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
@@ -173,8 +174,7 @@ class SplashGuiNode(SplashBaseNode):
     bl_label = 'Gui window'
     name = 'Gui window'
 
-    sp_acceptedLinks = [
-        ]
+    sp_acceptedLinks = []
 
     def init(self, context):
         self.inputs.new('NodeSocketBool', 'Decorated').default_value = True
@@ -224,7 +224,6 @@ class SplashImageNode(SplashBaseNode):
             self.inputs['Flip'].enabled = True
             self.inputs['Flop'].enabled = True
             self.inputs['sRGB'].enabled = True
-            
 
     sp_imageTypes = [
         ("image", "image", "Static image"),
@@ -306,10 +305,10 @@ class SplashMeshNode(SplashBaseNode):
         ("mesh_shmdata", "Shared memory", "Mesh from shared memory")
     ]
     sp_meshTypeProperty = bpy.props.EnumProperty(name="Type",
-                                                  description="Mesh source type",
-                                                  items=sp_meshTypes,
-                                                  default="mesh",
-                                                  update=update_mesh_type)
+                                                 description="Mesh source type",
+                                                 items=sp_meshTypes,
+                                                 default="mesh",
+                                                 update=update_mesh_type)
 
     def draw_buttons(self, context, layout):
         row = layout.row()
@@ -339,7 +338,6 @@ class SplashMeshNode(SplashBaseNode):
             import os
 
             if bpy.context.edit_object is not None:
-                editedObject = context.edit_object.name
                 bpy.ops.object.editmode_toggle()
 
             objectName = self.inputs['Object'].default_value
@@ -360,13 +358,21 @@ class SplashMeshNode(SplashBaseNode):
         super().update()
 
     def validate(self):
-        object_name = self.inputs['Object'].default_value
-        if object_name == "":
-            return False, "No object has been selected for node " + self.name
-        elif len(bpy.data.objects[object_name].data.uv_layers) == 0:
-            return False, "Object " + object_name + " does not have any UV coordinates"
-        else:
-            return True, ""
+        object_type = self.sp_meshTypeProperty
+
+        if object_type == "mesh":
+            object_name = self.inputs['Object'].default_value
+            if object_name == "":
+                return False, "No object has been selected for node " + self.name
+            elif len(bpy.data.objects[object_name].data.uv_layers) == 0:
+                return False, "Object " + object_name + " does not have any UV coordinates"
+            else:
+                return True, ""
+        elif object_type == "mesh_shmdata":
+            if self.inputs['File'].default_value == "":
+                return False, "No file path has been set for node " + self.name
+            else:
+                return True, ""
 
 
 class SplashObjectNode(SplashBaseNode):
@@ -378,7 +384,7 @@ class SplashObjectNode(SplashBaseNode):
         'SplashImageNodeType',
         'SplashMeshNodeType',
         'SplashProbeNodeType'
-        ]
+    ]
 
     sp_cullingModes = [
         ("0", "none", "No culling"),
@@ -386,9 +392,9 @@ class SplashObjectNode(SplashBaseNode):
         ("2", "back", "Backface culling")
     ]
     sp_cullingModeProperty = bpy.props.EnumProperty(name="Culling",
-        description="Face winding culling",
-        items=sp_cullingModes,
-        default="0")
+                                                    description="Face winding culling",
+                                                    items=sp_cullingModes,
+                                                    default="0")
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
@@ -428,9 +434,9 @@ class SplashProbeNode(SplashBaseNode):
         ("1", "spherical", "Spherical")
     ]
     sp_projectionTypeProperty = bpy.props.EnumProperty(name="Projection",
-        description="Projection type",
-        items=sp_projectionType,
-        default="0")
+                                                       description="Projection type",
+                                                       items=sp_projectionType,
+                                                       default="0")
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
@@ -478,7 +484,7 @@ class SplashSceneNode(SplashBaseNode):
     sp_acceptedLinks = [
         'SplashWindowNodeType',
         'SplashGuiNodeType'
-        ]
+    ]
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
@@ -514,7 +520,7 @@ class SplashWindowNode(SplashBaseNode):
     sp_acceptedLinks = [
         'SplashCameraNodeType',
         'SplashImageNodeType',
-        ]
+    ]
 
     def draw_buttons(self, context, layout):
         layout.prop(self, "name")
@@ -559,7 +565,7 @@ class SplashWorldNode(SplashBaseNode):
 
     sp_acceptedLinks = [
         'SplashSceneNodeType',
-        ]
+    ]
 
     def draw_buttons(self, context, layout):
         row = layout.row()
@@ -591,9 +597,6 @@ class SplashWorldNode(SplashBaseNode):
         super().update()
 
 
-import nodeitems_utils
-from nodeitems_utils import NodeCategory, NodeItem
-
 class SplashNodeCategory(NodeCategory):
     @classmethod
     def poll(cls, context):
@@ -601,7 +604,7 @@ class SplashNodeCategory(NodeCategory):
 
 
 node_categories = [
-    SplashNodeCategory("SPLASHNODES", "Splash Nodes", items = [
+    SplashNodeCategory("SPLASHNODES", "Splash Nodes", items=[
         NodeItem("SplashCameraNodeType"),
         NodeItem("SplashGuiNodeType"),
         NodeItem("SplashImageNodeType"),
@@ -611,5 +614,5 @@ node_categories = [
         NodeItem("SplashSceneNodeType"),
         NodeItem("SplashWindowNodeType"),
         NodeItem("SplashWorldNodeType"),
-        ]),
-    ]
+    ]),
+]
