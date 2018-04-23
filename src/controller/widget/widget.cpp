@@ -230,6 +230,7 @@ GuiWidget::GuiWidget(Scene* scene, string name)
 /*************/
 void GuiWidget::drawAttributes(const string& objName, const unordered_map<string, Values>& attributes)
 {
+    auto objAlias = getObjectAlias(objName);
     vector<string> attributeNames;
     for (auto& attr : attributes)
         attributeNames.push_back(attr.first);
@@ -375,7 +376,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
                         static string path = _root->getMediaPath();
                         bool cancelled;
                         vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}, {"obj"}};
-                        if (SplashImGui::FileSelector(objName, path, cancelled, extensions))
+                        if (SplashImGui::FileSelector(objAlias, path, cancelled, extensions))
                         {
                             if (!cancelled)
                                 setObjectAttribute(objName, attrName, {path});

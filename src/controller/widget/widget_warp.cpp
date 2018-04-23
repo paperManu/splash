@@ -53,7 +53,7 @@ void GuiWarp::render()
                 _currentWarp = i;
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", warp->getName().c_str());
+                ImGui::SetTooltip("%s", warp->getAlias().c_str());
         }
         ImGui::EndChild();
 

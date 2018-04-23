@@ -205,7 +205,7 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
         // Warps need to be duplicated in the master scene, to be available in the gui
         // So we create them asynchronously
         auto warpName = getName() + "_" + obj->getName() + "_warp";
-        scene->sendMessageToWorld("sendAllScenes", {"add", "warp", warpName, _root->getName()});
+        scene->sendMessageToWorld("sendAllScenes", {"addObject", "warp", warpName, _root->getName()});
         scene->sendMessageToWorld("sendAllScenes", {"link", obj->getName(), warpName});
         scene->sendMessageToWorld("sendAllScenes", {"link", warpName, _name});
 

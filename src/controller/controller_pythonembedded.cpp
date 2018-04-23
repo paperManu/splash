@@ -85,7 +85,7 @@ int PythonEmbedded::pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObj
 
     auto index = that->sinkIndex.fetch_add(1);
     self->sinkName = that->getName() + "_pythonsink_" + to_string(index);
-    that->setInScene("add", {"sink", self->sinkName, root->getName()});
+    that->setInScene("addObject", {"sink", self->sinkName, root->getName()});
 
     // Wait until the sink is created
     int triesLeft = SPLASH_PYTHON_MAX_TRIES;
@@ -191,7 +191,7 @@ PyObject* PythonEmbedded::pythonSinkLink(pythonSinkObject* self, PyObject* args,
     self->filterName = self->sinkName + "_filter_" + self->sourceName;
 
     // Filter is added locally, we don't need (nor want) it in any other Scene
-    that->setInScene("add", {"filter", self->filterName, root->getName()});
+    that->setInScene("addObject", {"filter", self->filterName, root->getName()});
     that->setInScene("link", {self->sourceName, self->filterName});
     that->setInScene("link", {self->filterName, self->sinkName});
     that->setObjectAttribute(self->sinkName, "framerate", {self->framerate});
@@ -804,6 +804,73 @@ PyObject* PythonEmbedded::pythonGetMasterClock(PyObject* /*self*/, PyObject* /*a
     PyTuple_SetItem(pyTuple, 2, Py_BuildValue("L", clockMs));
 
     return pyTuple;
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectAlias_doc__,
+    "Get the alias for the given object\n"
+    "\n"
+    "splash.get_object_alias(objectname)\n"
+    "\n"
+    "Args:\n"
+    "  objectname (string): name of the object\n"
+    "\n"
+    "Returns:\n"
+    "  The alias for the given object\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectAlias(PyObject* /*self*/, PyObject* args, PyObject* kwds)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return Py_BuildValue("s", "");
+    }
+
+    char* strName;
+    static const char* kwlist[] = {"objectname", nullptr};
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", const_cast<char**>(kwlist), &strName))
+    {
+        PyErr_Warn(PyExc_Warning, "Wrong argument type or number");
+        return Py_BuildValue("s", "");
+    }
+
+    return Py_BuildValue("s", that->getObjectAlias(string(strName)).c_str());
+}
+
+/*************/
+PyDoc_STRVAR(pythonGetObjectAliases_doc__,
+    "Get the aliases for all objects\n"
+    "\n"
+    "splash.get_object_aliases()\n"
+    "\n"
+    "Returns:\n"
+    "  A dict of object aliases given their name\n"
+    "\n"
+    "Raises:\n"
+    "  splash.error: if Splash instance is not available");
+
+PyObject* PythonEmbedded::pythonGetObjectAliases(PyObject* /*self*/, PyObject* /*args*/)
+{
+    auto that = getSplashInstance();
+    if (!that || !that->_doLoop)
+    {
+        PyErr_SetString(SplashError, "Error accessing Splash instance");
+        return PyDict_New();
+    }
+
+    PyObject* pythonAliasesDict = PyDict_New();
+    for (auto& alias : that->getObjectAliases())
+    {
+        PyObject* val = PyUnicode_FromString(alias.second.c_str());
+        PyDict_SetItemString(pythonAliasesDict, alias.first.c_str(), val);
+        Py_DECREF(val);
+    }
+
+    return pythonAliasesDict;
 }
 
 /*************/
@@ -1644,11 +1711,13 @@ PyObject* PythonEmbedded::pythonUnregisterAttributeCallback(PyObject* /*self*/, 
 // clang-format off
 /*************/
 PyMethodDef PythonEmbedded::SplashMethods[] = {
+    {(const char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
     {(const char*)"get_interpreter_name", (PyCFunction)PythonEmbedded::pythonGetInterpreterName, METH_VARARGS, pythonGetInterpreterName_doc__},
-    {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_logs", (PyCFunction)PythonEmbedded::pythonGetLogs, METH_VARARGS, pythonGetLogs_doc__},
-    {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
     {(const char*)"get_master_clock", (PyCFunction)PythonEmbedded::pythonGetMasterClock, METH_VARARGS, pythonGetMasterClock_doc__},
+    {(const char*)"get_object_alias", (PyCFunction)PythonEmbedded::pythonGetObjectAlias, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAlias_doc__},
+    {(const char*)"get_object_aliases", (PyCFunction)PythonEmbedded::pythonGetObjectAliases, METH_VARARGS, pythonGetObjectAliases_doc__},
+    {(const char*)"get_object_list", (PyCFunction)PythonEmbedded::pythonGetObjectList, METH_VARARGS, pythonGetObjectList_doc__},
     {(const char*)"get_object_types", (PyCFunction)PythonEmbedded::pythonGetObjectTypes, METH_VARARGS, pythonGetObjectTypes_doc__},
     {(const char*)"get_object_description", (PyCFunction)PythonEmbedded::pythonGetObjectDescription, METH_VARARGS, pythonGetObjectDescription_doc__},
     {(const char*)"get_object_attribute_description", (PyCFunction)PythonEmbedded::pythonGetObjectAttributeDescription, METH_VARARGS | METH_KEYWORDS, pythonGetObjectAttributeDescription_doc__},
@@ -1659,11 +1728,11 @@ PyMethodDef PythonEmbedded::SplashMethods[] = {
     {(const char*)"get_object_links", (PyCFunction)PythonEmbedded::pythonGetObjectLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectLinks_doc__},
     {(const char*)"get_object_reversed_links", (PyCFunction)PythonEmbedded::pythonGetObjectReversedLinks, METH_VARARGS | METH_KEYWORDS, pythonGetObjectReversedLinks_doc__},
     {(const char*)"get_types_from_category", (PyCFunction)PythonEmbedded::pythonGetTypesFromCategory, METH_VARARGS | METH_KEYWORDS, pythonGetTypesFromCategory_doc__},
+    {(const char*)"get_timings", (PyCFunction)PythonEmbedded::pythonGetTimings, METH_VARARGS, pythonGetTimings_doc__},
+    {(const char*)"register_attribute_callback", (PyCFunction)PythonEmbedded::pythonRegisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonRegisterAttributeCallback_doc__},
     {(const char*)"set_world_attribute", (PyCFunction)PythonEmbedded::pythonSetGlobal, METH_VARARGS | METH_KEYWORDS, pythonSetGlobal_doc__},
     {(const char*)"set_object_attribute", (PyCFunction)PythonEmbedded::pythonSetObject, METH_VARARGS | METH_KEYWORDS, pythonSetObject_doc__},
     {(const char*)"set_objects_of_type", (PyCFunction)PythonEmbedded::pythonSetObjectsOfType, METH_VARARGS | METH_KEYWORDS, pythonSetObjectsOfType_doc__},
-    {(const char*)"add_custom_attribute", (PyCFunction)PythonEmbedded::pythonAddCustomAttribute, METH_VARARGS | METH_KEYWORDS, pythonAddCustomAttribute_doc__},
-    {(const char*)"register_attribute_callback", (PyCFunction)PythonEmbedded::pythonRegisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonRegisterAttributeCallback_doc__},
     {(const char*)"unregister_attribute_callback", (PyCFunction)PythonEmbedded::pythonUnregisterAttributeCallback, METH_VARARGS | METH_KEYWORDS, pythonUnregisterAttributeCallback_doc__},
     {nullptr, nullptr, 0, nullptr}
 };

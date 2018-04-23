@@ -71,7 +71,7 @@ class UserInput : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    UserInput(RootObject* root);
+    explicit UserInput(RootObject* root);
 
     /**
      * \brief Destructor

@@ -72,7 +72,7 @@ class Scene : public RootObject
      * \param name Object name
      * \return Return a shared pointer to the created object
      */
-    std::shared_ptr<BaseObject> add(const std::string& type, const std::string& name = "");
+    std::shared_ptr<BaseObject> addObject(const std::string& type, const std::string& name = "");
 
     /**
      * \brief Add an object ghosting one in another Scene. Used in master Scene for controlling purposes
@@ -259,8 +259,6 @@ class Scene : public RootObject
     GLuint _maxSwapGroups{0};
     GLuint _maxSwapBarriers{0};
 
-    unsigned long _nextId{0};
-
     static std::vector<std::string> _ghostableTypes;
 
     /**
@@ -274,12 +272,6 @@ class Scene : public RootObject
      * \param name Scene name
      */
     void init(const std::string& name);
-
-    /**
-     * \brief Get the next available id
-     * \return Returns a new id
-     */
-    unsigned long getId() { return ++_nextId; }
 
     /**
      * \brief Computes and store the duration of a frame at the refresh rate of the primary monitor

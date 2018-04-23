@@ -115,16 +115,16 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     inline std::string getType() const { return _type; }
 
     /**
-     * \brief Set the ID of the object.
-     * \param id ID of the object.
+     * Set the alias name for the object
+     * \param alias Alias name
      */
-    inline void setId(unsigned long id) { _id = id; }
+    inline void setAlias(const std::string& alias) { _alias = alias.empty() ? _name : alias; }
 
     /**
-     * \brief Get the ID of the object.
-     * \return Returns the ID of the object.
+     * Get the alias name for the object
+     * \return Return the alias
      */
-    inline unsigned long getId() const { return _id; }
+    inline std::string getAlias() const { return _alias.empty() ? _name : _alias; }
 
     /**
      * \brief Set the name of the object.
@@ -340,11 +340,11 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     bool _savable{true}; //!< True if the object should be saved
 
   protected:
-    unsigned long _id{0};                //!< Internal ID of the object
     std::string _type{"baseobject"};     //!< Internal type
     Category _category{Category::MISC};  //!< Object category, updated by the factory
     std::string _remoteType{""};         //!< When the object root is a Scene, this is the type of the corresponding object in the World
     std::string _name{""};               //!< Object name
+    std::string _alias{""};              //!< Alias name
     std::vector<BaseObject*> _parents{}; //!< Objects parents
 
     Priority _renderingPriority{Priority::NO_RENDER}; //!< Rendering priority, if negative the object won't be rendered
@@ -443,6 +443,6 @@ class BaseObject : public std::enable_shared_from_this<BaseObject>
     void setAttributeParameter(const std::string& name, bool savable, bool updateDistant);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_BASE_OBJECT_H

@@ -44,7 +44,7 @@ class ControllerObject : public BaseObject
      * \brief Constructor
      * \param root RootObject
      */
-    ControllerObject(RootObject* root)
+    explicit ControllerObject(RootObject* root)
         : BaseObject(root)
     {
         registerAttributes();
@@ -60,6 +60,18 @@ class ControllerObject : public BaseObject
      * \return The object
      */
     shared_ptr<BaseObject> getObject(const std::string& name) const;
+
+    /**
+     * Get the alias for the given object
+     * \return Return the alias
+     */
+    std::string getObjectAlias(const std::string& name) const;
+
+    /**
+     * Get the aliases for all objects
+     * \return Return a map of the aliases
+     */
+    std::unordered_map<std::string, std::string> getObjectAliases() const;
 
     /**
      * \brief Get a list of the object names

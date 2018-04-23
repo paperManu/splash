@@ -331,12 +331,15 @@ void BaseObject::runAsyncTask(const function<void(void)>& func)
 /*************/
 void BaseObject::registerAttributes()
 {
-    addAttribute("setName",
+    addAttribute("alias",
         [&](const Values& args) {
-            setName(args[0].as<string>());
+            auto alias = args[0].as<string>();
+            setAlias(alias);
             return true;
         },
+        [&]() -> Values { return {getAlias()}; },
         {'s'});
+    setAttributeDescription("alias", "Alias name");
 
     addAttribute("setSavable",
         [&](const Values& args) {
@@ -442,4 +445,4 @@ void BaseObject::runTasks()
         task();
     _taskQueue.clear();
 }
-}
+} // namespace Splash

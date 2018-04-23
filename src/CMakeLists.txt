@@ -115,6 +115,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/factory.cpp
     core/imagebuffer.cpp
     core/link.cpp
+    core/name_registry.cpp
     core/root_object.cpp
     core/scene.cpp
     controller/controller.cpp

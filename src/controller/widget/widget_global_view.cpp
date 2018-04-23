@@ -149,7 +149,7 @@ void GuiGlobalView::render()
             }
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", camera->getName().c_str());
+                ImGui::SetTooltip("%s", camera->getAlias().c_str());
         }
         ImGui::EndChild();
 
@@ -171,7 +171,7 @@ void GuiGlobalView::render()
 
             Values reprojectionError;
             _camera->getAttribute("getReprojectionError", reprojectionError);
-            ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getName().c_str(), reprojectionError[0].as<float>());
+            ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
 
             ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())

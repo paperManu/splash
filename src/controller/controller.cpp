@@ -21,6 +21,28 @@ shared_ptr<BaseObject> ControllerObject::getObject(const string& name) const
 }
 
 /*************/
+string ControllerObject::getObjectAlias(const std::string& name) const
+{
+    auto object = getObject(name);
+    if (object)
+        return object->getAlias();
+    else
+        return {};
+}
+
+/*************/
+unordered_map<string, string> ControllerObject::getObjectAliases() const
+{
+    auto objectNames = getObjectNames();
+    unordered_map<string, string> objectAliases;
+
+    for (const auto& name : objectNames)
+        objectAliases[name] = getObjectAlias(name);
+
+    return objectAliases;
+}
+
+/*************/
 vector<string> ControllerObject::getObjectNames() const
 {
     auto scene = dynamic_cast<Scene*>(_root);

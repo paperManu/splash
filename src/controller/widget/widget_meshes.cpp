@@ -32,7 +32,7 @@ void GuiMeshes::render()
         for (auto& mesh : meshList)
         {
             auto meshName = mesh->getName();
-            if (ImGui::TreeNode(meshName.c_str()))
+            if (ImGui::TreeNode(mesh->getAlias().c_str()))
             {
                 ImGui::Text("Change mesh type: ");
                 ImGui::SameLine();

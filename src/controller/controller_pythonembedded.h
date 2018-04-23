@@ -139,6 +139,8 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
     static PyObject* pythonGetTimings(PyObject* self, PyObject* args);
     static PyObject* pythonGetMasterClock(PyObject* self, PyObject* args);
+    static PyObject* pythonGetObjectAlias(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectAliases(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds);
