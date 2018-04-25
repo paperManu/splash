@@ -63,8 +63,7 @@ inline int getThreadId()
  */
 inline int getCoreCount()
 {
-    auto ncores = sysconf(_SC_NPROCESSORS_CONF);
-    return ncores;
+    return sysconf(_SC_NPROCESSORS_CONF);
 }
 
 /**

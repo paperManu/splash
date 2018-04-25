@@ -246,7 +246,7 @@ void World::applyConfig()
                 if (!objects[objectName].isMember("type"))
                     continue;
 
-                setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first});
+                setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first, false});
             }
 
             // Set some default directories
@@ -900,7 +900,7 @@ bool World::loadProject(const string& filename)
         {
             if (!partialConfig["objects"][objectName].isMember("type"))
                 continue;
-            setAttribute("addObject", {partialConfig["objects"][objectName]["type"].asString(), objectName});
+            setAttribute("addObject", {partialConfig["objects"][objectName]["type"].asString(), objectName, "", false});
         }
 
         // Handle the links
@@ -1232,10 +1232,11 @@ void World::registerAttributes()
                 auto type = args[0].as<string>();
                 auto name = args.size() < 2 ? "" : args[1].as<string>();
                 auto scene = args.size() < 3 ? "" : args[2].as<string>();
+                auto checkName = args.size() < 4 ? true : args[3].as<bool>();
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
-                if (name.empty() || !_nameRegistry.registerName(name))
+                if (checkName && (name.empty() || !_nameRegistry.registerName(name)))
                     name = _nameRegistry.generateName(type);
 
                 if (scene.empty())
@@ -1539,7 +1540,8 @@ void World::registerAttributes()
             return true;
         },
         {'s', 's'});
-    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type, and links the new object to the objects given by the following parameters");
+    setAttributeDescription("replaceObject",
+        "Replace the given object by an object of the given type, with the given alias, and links the new object to the objects given by the following parameters");
 
     addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)
