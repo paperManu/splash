@@ -18,7 +18,7 @@ RootObject::RootObject()
 RootObject::~RootObject() {}
 
 /*************/
-shared_ptr<BaseObject> RootObject::createObject(const string& type, const string& name)
+shared_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
@@ -59,7 +59,7 @@ void RootObject::disposeObject(const string& name)
 }
 
 /*************/
-shared_ptr<BaseObject> RootObject::getObject(const string& name)
+shared_ptr<GraphObject> RootObject::getObject(const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 

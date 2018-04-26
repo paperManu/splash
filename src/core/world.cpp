@@ -716,7 +716,6 @@ void World::init()
     // If set to run as a child process, we do not initialize anything
     if (!_runAsChild)
     {
-        _type = "world";
         _name = "world";
 
         _that = this;

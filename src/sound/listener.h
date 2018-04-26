@@ -37,14 +37,14 @@
 
 #include "./config.h"
 #include "./core/attribute.h"
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 #include "./sound/sound_engine.h"
 
 namespace Splash
 {
 
 /*************/
-class Listener : public BaseObject
+class Listener : public GraphObject
 {
   public:
     /**
@@ -168,6 +168,6 @@ bool Listener::readFromQueue(std::vector<T>& buffer)
     return true;
 }
 
-} // end of namespace
+} // namespace Splash
 
 #endif

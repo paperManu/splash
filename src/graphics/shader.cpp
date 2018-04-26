@@ -17,6 +17,7 @@ namespace Splash
 
 /*************/
 Shader::Shader(ProgramType type)
+    : GraphObject(nullptr)
 {
     _type = "shader";
 
@@ -965,7 +966,7 @@ void Shader::registerComputeAttributes()
 /*************/
 void Shader::registerFeedbackAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("feedbackPhase", [&](const Values& args) {
         if (args.size() < 1)
@@ -1011,4 +1012,4 @@ void Shader::registerFeedbackAttributes()
     });
 }
 
-} // end of namespace
+} // namespace Splash

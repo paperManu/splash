@@ -66,7 +66,6 @@ Scene::Scene(const string& name, const string& socketPrefix)
 {
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
-    _type = "scene";
     _isRunning = true;
     _name = name;
     _linkSocketPrefix = socketPrefix;
@@ -107,7 +106,7 @@ Scene::~Scene()
 }
 
 /*************/
-std::shared_ptr<BaseObject> Scene::addObject(const string& type, const string& name)
+std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
@@ -139,10 +138,10 @@ std::shared_ptr<BaseObject> Scene::addObject(const string& type, const string& n
         if (_gui != nullptr)
         {
             if (obj->getType() == "object")
-                link(obj, dynamic_pointer_cast<BaseObject>(_gui));
+                link(obj, dynamic_pointer_cast<GraphObject>(_gui));
             else if (obj->getType() == "window" && !_guiLinkedToWindow)
             {
-                link(dynamic_pointer_cast<BaseObject>(_gui), obj);
+                link(dynamic_pointer_cast<GraphObject>(_gui), obj);
                 _guiLinkedToWindow = true;
             }
         }
@@ -263,7 +262,7 @@ bool Scene::link(const string& first, const string& second)
 }
 
 /*************/
-bool Scene::link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
+bool Scene::link(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second)
 {
     if (!first || !second)
         return false;
@@ -281,7 +280,7 @@ void Scene::unlink(const string& first, const string& second)
 }
 
 /*************/
-void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
+void Scene::unlink(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second)
 {
     if (!first || !second)
         return;
@@ -292,7 +291,7 @@ void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_p
 /*************/
 void Scene::remove(const string& name)
 {
-    std::shared_ptr<BaseObject> obj;
+    std::shared_ptr<GraphObject> obj;
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -308,7 +307,7 @@ void Scene::render()
         PROFILEGL("Render loop")
 #endif
         // Create lists of objects to update and to render
-        map<Priority, vector<shared_ptr<BaseObject>>> objectList{};
+        map<GraphObject::Priority, vector<shared_ptr<GraphObject>>> objectList{};
         {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             for (auto& obj : _objects)
@@ -321,13 +320,13 @@ void Scene::render()
                     continue;
 
                 auto priority = obj.second->getRenderingPriority();
-                if (priority == Priority::NO_RENDER)
+                if (priority == GraphObject::Priority::NO_RENDER)
                     continue;
 
                 auto listIt = objectList.find(priority);
                 if (listIt == objectList.end())
                 {
-                    auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
+                    auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<GraphObject>>()));
                     if (entry.second == true)
                         listIt = entry.first;
                     else
@@ -339,14 +338,14 @@ void Scene::render()
         }
 
         // Update and render the objects
-        // See BaseObject::getRenderingPriority() for precision about priorities
+        // See GraphObject::getRenderingPriority() for precision about priorities
         bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
         bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
         auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
         for (auto& objPriority : objectList)
         {
             // If the objects needs some Textures, we need to sync
-            if (firstTextureSync && objPriority.first > Priority::BLENDING && objPriority.first < Priority::POST_CAMERA)
+            if (firstTextureSync && objPriority.first > GraphObject::Priority::BLENDING && objPriority.first < GraphObject::Priority::POST_CAMERA)
             {
 #ifdef PROFILE
                 PROFILEGL("texture upload lock");
@@ -373,14 +372,14 @@ void Scene::render()
                 obj->update();
 
                 auto objectCategory = obj->getCategory();
-                if (objectCategory == BaseObject::Category::MESH)
+                if (objectCategory == GraphObject::Category::MESH)
                     if (obj->wasUpdated())
                     {
                         // If a mesh has been updated, force blending update
                         addTask([=]() { dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
                         obj->setNotUpdated();
                     }
-                if (objectCategory == BaseObject::Category::IMAGE || objectCategory == BaseObject::Category::TEXTURE)
+                if (objectCategory == GraphObject::Category::IMAGE || objectCategory == GraphObject::Category::TEXTURE)
                     if (obj->wasUpdated())
                         obj->setNotUpdated();
 
@@ -390,7 +389,7 @@ void Scene::render()
             if (objPriority.second.size() != 0)
                 Timer::get() >> objPriority.second[0]->getType();
 
-            if (firstWindowSync && objPriority.first >= Priority::POST_CAMERA)
+            if (firstWindowSync && objPriority.first >= GraphObject::Priority::POST_CAMERA)
             {
 #ifdef PROFILE
                 PROFILEGL("texture upload unlock");

@@ -30,6 +30,7 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./core/scene.h"
 #include "./userinput/userinput.h"
 
@@ -37,7 +38,7 @@ namespace Splash
 {
 
 /*************/
-class ControllerObject : public BaseObject
+class ControllerObject : public GraphObject
 {
   public:
     /**
@@ -45,7 +46,7 @@ class ControllerObject : public BaseObject
      * \param root RootObject
      */
     explicit ControllerObject(RootObject* root)
-        : BaseObject(root)
+        : GraphObject(root)
     {
         registerAttributes();
     }
@@ -59,7 +60,7 @@ class ControllerObject : public BaseObject
      * Get a ptr to the named object
      * \return The object
      */
-    shared_ptr<BaseObject> getObject(const std::string& name) const;
+    shared_ptr<GraphObject> getObject(const std::string& name) const;
 
     /**
      * Get the alias for the given object
@@ -139,14 +140,14 @@ class ControllerObject : public BaseObject
      * \param category Category to look for
      * \return Return a list of all types of the given category
      */
-    std::vector<std::string> getTypesFromCategory(const BaseObject::Category& category) const;
+    std::vector<std::string> getTypesFromCategory(const GraphObject::Category& category) const;
 
     /**
      * \brief Get all object of given type. If empty, get all objects.
      * \param type Type to look for
      * \return Return a list of all objects of the given type
      */
-    std::list<std::shared_ptr<BaseObject>> getObjectsOfType(const std::string& type) const;
+    std::list<std::shared_ptr<GraphObject>> getObjectsOfType(const std::string& type) const;
 
     /**
      * Get all objects of the given base type, including derived types
@@ -210,7 +211,7 @@ class ControllerObject : public BaseObject
     /**
      * \brief Register new functors to modify attributes
      */
-    void registerAttributes() { BaseObject::registerAttributes(); }
+    void registerAttributes() { GraphObject::registerAttributes(); }
 };
 
 /*************/

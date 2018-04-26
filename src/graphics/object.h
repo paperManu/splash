@@ -33,6 +33,7 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./graphics/geometry.h"
 #include "./graphics/gpu_buffer.h"
 #include "./graphics/shader.h"
@@ -41,7 +42,7 @@
 namespace Splash
 {
 
-class Object : public BaseObject
+class Object : public GraphObject
 {
   public:
     /**
@@ -133,16 +134,16 @@ class Object : public BaseObject
     int getVerticesNumber() const;
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
-     * \brief Try to unlink the given BaseObject from this object
+     * \brief Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -269,6 +270,6 @@ class Object : public BaseObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_OBJECT_H

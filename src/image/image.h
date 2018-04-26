@@ -154,7 +154,6 @@ class Image : public BufferObject
     bool _imageUpdated{false};
     bool _srgb{true};
     bool _benchmark{false};
-    bool _worldObject{false};
 
     void createDefaultImage(); //< Create a default black image
     void createPattern();      //< Create a default pattern

@@ -120,10 +120,10 @@ class Texture_Image : public Texture
     ImageBufferSpec getSpec() const { return _spec; }
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
      * \brief Lock the texture for read / write operations

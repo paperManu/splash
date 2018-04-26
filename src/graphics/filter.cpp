@@ -59,7 +59,7 @@ unordered_map<string, Values> Filter::getShaderUniforms() const
 }
 
 /*************/
-bool Filter::linkTo(const std::shared_ptr<BaseObject>& obj)
+bool Filter::linkTo(const std::shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
     if (!obj || !Texture::linkTo(obj))
@@ -95,7 +95,7 @@ void Filter::unbind()
 }
 
 /*************/
-void Filter::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
+void Filter::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {

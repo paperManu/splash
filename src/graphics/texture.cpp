@@ -13,7 +13,7 @@ namespace Splash
 
 /*************/
 Texture::Texture(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     init();
 }
@@ -40,16 +40,16 @@ void Texture::init()
 }
 
 /*************/
-bool Texture::linkTo(const shared_ptr<BaseObject>& obj)
+bool Texture::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
-    return BaseObject::linkTo(obj);
+    return GraphObject::linkTo(obj);
 }
 
 /*************/
 void Texture::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 }
 
-} // end of namespace
+} // namespace Splash

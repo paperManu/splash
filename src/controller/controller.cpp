@@ -11,7 +11,7 @@ namespace Splash
 {
 
 /*************/
-shared_ptr<BaseObject> ControllerObject::getObject(const string& name) const
+shared_ptr<GraphObject> ControllerObject::getObject(const string& name) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
@@ -161,7 +161,7 @@ string ControllerObject::getDescription(const string& type) const
 }
 
 /*************/
-vector<string> ControllerObject::getTypesFromCategory(const BaseObject::Category& category) const
+vector<string> ControllerObject::getTypesFromCategory(const GraphObject::Category& category) const
 {
     Factory factory;
     return factory.getObjectsOfCategory(category);
@@ -187,13 +187,13 @@ map<string, string> ControllerObject::getObjectTypes() const
 }
 
 /*************/
-list<shared_ptr<BaseObject>> ControllerObject::getObjectsOfType(const string& type) const
+list<shared_ptr<GraphObject>> ControllerObject::getObjectsOfType(const string& type) const
 {
     auto scene = dynamic_cast<Scene*>(_root);
     if (!scene)
         return {};
 
-    auto objects = list<shared_ptr<BaseObject>>();
+    auto objects = list<shared_ptr<GraphObject>>();
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == type || type == "")
             objects.push_back(obj.second);

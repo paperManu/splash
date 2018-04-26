@@ -8,7 +8,8 @@ using namespace std;
 namespace Splash
 {
 /*************/
-Framebuffer::Framebuffer(RootObject* root) : BaseObject(root)
+Framebuffer::Framebuffer(RootObject* root)
+    : GraphObject(root)
 {
     glCreateFramebuffers(1, &_fbo);
 
@@ -173,4 +174,4 @@ void Framebuffer::unbindRead()
     }
 }
 
-} // end of namespace
+} // namespace Splash

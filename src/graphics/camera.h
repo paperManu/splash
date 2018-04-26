@@ -43,19 +43,20 @@
 #include "./config.h"
 
 #include "./core/attribute.h"
-#include "./utils/cgutils.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./graphics/framebuffer.h"
 #include "./graphics/geometry.h"
-#include "./image/image.h"
 #include "./graphics/object.h"
 #include "./graphics/texture_image.h"
+#include "./image/image.h"
+#include "./utils/cgutils.h"
 
 namespace Splash
 {
 
 /*************/
-class Camera : public BaseObject
+class Camera : public GraphObject
 {
   public:
     enum CalibrationPointsVisibility
@@ -135,16 +136,16 @@ class Camera : public BaseObject
     }
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
-     * \brief Try to unlink the given BaseObject from this object
+     * \brief Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point
@@ -316,6 +317,6 @@ class Camera : public BaseObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_CAMERA_H

@@ -9,8 +9,8 @@
 #include <stb_image.h>
 #include <stb_image_write.h>
 
-#include "./utils/osutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 #define SPLASH_IMAGE_COPY_THREADS 2
@@ -27,9 +27,6 @@ Image::Image(RootObject* root)
 {
     init();
     _renderingPriority = Priority::MEDIA;
-
-    if (root && root->getType() == "world")
-        _worldObject = true;
 }
 
 /*************/
@@ -450,4 +447,4 @@ void Image::registerAttributes()
     setAttributeDescription("mediaInfo", "Media information (size, duration, etc.)");
 }
 
-} // end of namespace
+} // namespace Splash

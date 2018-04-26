@@ -72,7 +72,7 @@ class Scene : public RootObject
      * \param name Object name
      * \return Return a shared pointer to the created object
      */
-    std::shared_ptr<BaseObject> addObject(const std::string& type, const std::string& name = "");
+    std::shared_ptr<GraphObject> addObject(const std::string& type, const std::string& name = "");
 
     /**
      * \brief Add an object ghosting one in another Scene. Used in master Scene for controlling purposes
@@ -166,7 +166,7 @@ class Scene : public RootObject
      * \return Return true if the linking succeeded
      */
     bool link(const std::string& first, const std::string& second);
-    bool link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second);
+    bool link(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second);
 
     /**
      * \brief Unlink two objects. This always succeeds
@@ -174,7 +174,7 @@ class Scene : public RootObject
      * \param second Parent object
      */
     void unlink(const std::string& first, const std::string& second);
-    void unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second);
+    void unlink(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second);
 
     /**
      * \brief Remove an object
@@ -223,15 +223,15 @@ class Scene : public RootObject
     bool _guiLinkedToWindow{false};
 
     // Default input objects
-    std::shared_ptr<BaseObject> _keyboard{nullptr};
-    std::shared_ptr<BaseObject> _mouse{nullptr};
-    std::shared_ptr<BaseObject> _joystick{nullptr};
-    std::shared_ptr<BaseObject> _dragndrop{nullptr};
-    std::shared_ptr<BaseObject> _blender{nullptr};
+    std::shared_ptr<GraphObject> _keyboard{nullptr};
+    std::shared_ptr<GraphObject> _mouse{nullptr};
+    std::shared_ptr<GraphObject> _joystick{nullptr};
+    std::shared_ptr<GraphObject> _dragndrop{nullptr};
+    std::shared_ptr<GraphObject> _blender{nullptr};
 
 // Objects in charge of calibration
 #if HAVE_GPHOTO
-    std::shared_ptr<BaseObject> _colorCalibrator{nullptr};
+    std::shared_ptr<GraphObject> _colorCalibrator{nullptr};
 #endif
 
   private:

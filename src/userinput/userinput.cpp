@@ -30,7 +30,7 @@ bool UserInput::State::operator==(const UserInput::State& s) const
 
 /*************/
 UserInput::UserInput(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     _type = "userinput";
     registerAttributes();
@@ -133,7 +133,7 @@ string UserInput::getWindowName(const GLFWwindow* glfwWindow) const
     if (!scene)
         return {};
 
-    auto windows = list<shared_ptr<BaseObject>>();
+    auto windows = list<shared_ptr<GraphObject>>();
     auto lock = scene->getLockOnObjects();
     for (auto& obj : scene->_objects)
         if (obj.second->getType() == "window")
@@ -190,7 +190,7 @@ void UserInput::updateCallbacks()
 /*************/
 void UserInput::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("updateRate",
         [&](const Values& args) {

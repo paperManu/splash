@@ -113,6 +113,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/base_object.cpp
     core/buffer_object.cpp
     core/factory.cpp
+    core/graph_object.cpp
     core/imagebuffer.cpp
     core/link.cpp
     core/name_registry.cpp

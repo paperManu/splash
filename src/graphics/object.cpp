@@ -23,7 +23,7 @@ namespace Splash
 
 /*************/
 Object::Object(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     init();
 }
@@ -213,10 +213,10 @@ int Object::getVerticesNumber() const
 }
 
 /*************/
-bool Object::linkTo(const shared_ptr<BaseObject>& obj)
+bool Object::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
-    if (!BaseObject::linkTo(obj))
+    if (!GraphObject::linkTo(obj))
         return false;
 
     if (obj->getType().find("texture") != string::npos)
@@ -272,7 +272,7 @@ bool Object::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
+void Object::unlinkFrom(const shared_ptr<GraphObject>& obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
@@ -332,7 +332,7 @@ void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
         removeTexture(tex);
     }
 
-    BaseObject::unlinkFrom(obj);
+    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -565,7 +565,7 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("activateVertexBlending",
         [&](const Values& args) {

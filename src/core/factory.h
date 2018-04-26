@@ -29,7 +29,7 @@
 #include <vector>
 
 #include "./core/attribute.h"
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 
 namespace Splash
 {
@@ -50,14 +50,14 @@ class Factory
      * \brief Constructor
      * \param root Root object
      */
-    Factory(RootObject* root);
+    explicit Factory(RootObject* root);
 
     /**
-     * \brief Creates a BaseObject given its type
+     * \brief Creates a GraphObject given its type
      * \param type Object type
      * \return Return a shared pointer to the created object
      */
-    std::shared_ptr<BaseObject> create(const std::string& type);
+    std::shared_ptr<GraphObject> create(const std::string& type);
 
     /**
      * \brief Get all creatable object types
@@ -66,11 +66,11 @@ class Factory
     std::vector<std::string> getObjectTypes();
 
     /**
-     * \brief Get all objects of the given BaseObject::Category
+     * \brief Get all objects of the given GraphObject::Category
      * \param c Category to look for
      * \return Return a list of object types of the given class
      */
-    std::vector<std::string> getObjectsOfCategory(BaseObject::Category c);
+    std::vector<std::string> getObjectsOfCategory(GraphObject::Category c);
 
     /**
      * \brief Get object type short description
@@ -109,12 +109,12 @@ class Factory
     bool isSubtype(const std::string& type);
 
   private:
-    using BuildFuncT = std::function<std::shared_ptr<BaseObject>(RootObject*)>;
+    using BuildFuncT = std::function<std::shared_ptr<GraphObject>(RootObject*)>;
 
     struct Page
     {
         Page() = default;
-        Page(BuildFuncT f, BaseObject::Category o = BaseObject::Category::MISC, const std::string& sd = "none", const std::string& d = "none", bool ps = false)
+        Page(BuildFuncT f, GraphObject::Category o = GraphObject::Category::MISC, const std::string& sd = "none", const std::string& d = "none", bool ps = false)
             : builder(f)
             , objectCategory(o)
             , shortDescription(sd)
@@ -123,7 +123,7 @@ class Factory
         {
         }
         BuildFuncT builder{};
-        BaseObject::Category objectCategory{BaseObject::Category::MISC};
+        GraphObject::Category objectCategory{GraphObject::Category::MISC};
         std::string shortDescription{"none"};
         std::string description{"none"};
         bool projectSavable{false};

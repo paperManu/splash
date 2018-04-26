@@ -34,14 +34,14 @@
 #include <shared_mutex>
 #include <unordered_map>
 
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 #include "./core/spinlock.h"
 
 namespace Splash
 {
 
 /*************/
-class BufferObject : public BaseObject
+class BufferObject : public GraphObject
 {
   public:
     /**
@@ -49,7 +49,7 @@ class BufferObject : public BaseObject
      * \param root Root object
      */
     BufferObject(RootObject* root)
-        : BaseObject(root)
+        : GraphObject(root)
     {
         registerAttributes();
     }
@@ -75,7 +75,7 @@ class BufferObject : public BaseObject
      * \brief Check whether the object has been updated
      * \return Return true if the object has been updated
      */
-    bool wasUpdated() const { return _updatedBuffer | BaseObject::wasUpdated(); }
+    bool wasUpdated() const { return _updatedBuffer | GraphObject::wasUpdated(); }
 
     /**
      * \brief Set the updated buffer flag to false.
@@ -138,7 +138,7 @@ class BufferObject : public BaseObject
     /**
      * \brief Register new attributes
      */
-    void registerAttributes() { BaseObject::registerAttributes(); }
+    void registerAttributes() { GraphObject::registerAttributes(); }
 };
 
 } // end of namespace

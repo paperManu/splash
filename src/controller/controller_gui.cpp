@@ -269,7 +269,7 @@ void Gui::setMouseState(const vector<UserInput::State>& state)
 
     for (auto& s : state)
     {
-        auto parentIt = find_if(_parents.begin(), _parents.end(), [&](const BaseObject* p) { return s.window == p->getName(); });
+        auto parentIt = find_if(_parents.begin(), _parents.end(), [&](const GraphObject* p) { return s.window == p->getName(); });
         if (parentIt == _parents.end())
         {
             _mouseHoveringWindow = false;
@@ -453,7 +453,7 @@ void Gui::mouseScroll(double /*xoffset*/, double yoffset)
 }
 
 /*************/
-bool Gui::linkTo(const shared_ptr<BaseObject>& obj)
+bool Gui::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
     if (!ControllerObject::linkTo(obj))
@@ -470,12 +470,12 @@ bool Gui::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void Gui::unlinkFrom(const shared_ptr<BaseObject>& obj)
+void Gui::unlinkFrom(const shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
         _guiCamera->unlinkFrom(obj);
 
-    BaseObject::unlinkFrom(obj);
+    GraphObject::unlinkFrom(obj);
 }
 
 /*************/

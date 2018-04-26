@@ -118,8 +118,6 @@ class Mesh : public BufferObject
     virtual void update();
 
   protected:
-    bool _worldObject{false};
-
     struct MeshContainer
     {
         std::vector<glm::vec4> vertices;

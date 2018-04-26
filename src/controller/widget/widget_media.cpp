@@ -15,7 +15,7 @@ namespace Splash
 GuiMedia::GuiMedia(Scene* scene, const string& name)
     : GuiWidget(scene, name)
 {
-    auto types = getTypesFromCategory(BaseObject::Category::IMAGE);
+    auto types = getTypesFromCategory(GraphObject::Category::IMAGE);
     for (const auto& type : types)
         _mediaTypes[getShortDescription(type)] = type;
 
@@ -318,7 +318,7 @@ void GuiMedia::render()
 void GuiMedia::replaceMedia(const string& previousMedia, const string& alias, const string& type)
 {
     // We get the list of all objects linked to previousMedia
-    auto targetObjects = list<weak_ptr<BaseObject>>();
+    auto targetObjects = list<weak_ptr<GraphObject>>();
     auto objects = getObjectsOfType("");
     for (auto& object : objects)
     {
@@ -353,9 +353,9 @@ int GuiMedia::updateWindowFlags()
 }
 
 /*************/
-list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
+list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 {
-    auto mediaList = list<shared_ptr<BaseObject>>();
+    auto mediaList = list<shared_ptr<GraphObject>>();
     auto mediaTypes = list<string>({"image", "queue", "texture"});
 
     for (auto& type : mediaTypes)
@@ -370,9 +370,9 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 }
 
 /*************/
-list<shared_ptr<BaseObject>> GuiMedia::getFiltersForImage(const shared_ptr<BaseObject>& image)
+list<shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const shared_ptr<GraphObject>& image)
 {
-    auto filterList = list<shared_ptr<BaseObject>>();
+    auto filterList = list<shared_ptr<GraphObject>>();
     auto allFilters = getObjectsOfType("filter");
     for (auto& obj : allFilters)
     {

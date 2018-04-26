@@ -1293,13 +1293,13 @@ PyObject* PythonEmbedded::pythonGetTypesFromCategory(PyObject* /*self*/, PyObjec
         return PyList_New(0);
     }
 
-    auto cat = BaseObject::Category::MISC;
+    auto cat = GraphObject::Category::MISC;
     if (strcmp(strCategory, "image") == 0)
-        cat = BaseObject::Category::IMAGE;
+        cat = GraphObject::Category::IMAGE;
     else if (strcmp(strCategory, "mesh") == 0)
-        cat = BaseObject::Category::MESH;
+        cat = GraphObject::Category::MESH;
     else if (strcmp(strCategory, "misc") == 0)
-        cat = BaseObject::Category::MISC;
+        cat = GraphObject::Category::MISC;
     else
         return PyList_New(0);
 

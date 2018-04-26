@@ -34,6 +34,7 @@
 
 #include "./core/base_object.h"
 #include "./core/factory.h"
+#include "./core/graph_object.h"
 #include "./core/link.h"
 
 namespace Splash
@@ -68,7 +69,7 @@ class RootObject : public BaseObject
      * \param name Object name
      * \return Return a shared_ptr to the object
      */
-    std::shared_ptr<BaseObject> createObject(const std::string& type, const std::string& name);
+    std::shared_ptr<GraphObject> createObject(const std::string& type, const std::string& name);
 
     /**
      * Delete the given object based given its name, and whether it is the last shared_ptr managing it
@@ -81,7 +82,7 @@ class RootObject : public BaseObject
      * \param name Object name
      * \return Return the object name
      */
-    std::shared_ptr<BaseObject> getObject(const std::string& name);
+    std::shared_ptr<GraphObject> getObject(const std::string& name);
 
     /**
      * Get the socket prefix
@@ -160,9 +161,9 @@ class RootObject : public BaseObject
     std::mutex _recurringTaskMutex{};
     std::map<std::string, std::function<void()>> _recurringTasks{};
 
-    mutable std::recursive_mutex _objectsMutex{};                            //!< Used in registration and unregistration of objects
-    std::atomic_bool _objectsCurrentlyUpdated{false};                        //!< Prevents modification of objects from multiple places at the same time
-    std::unordered_map<std::string, std::shared_ptr<BaseObject>> _objects{}; //!< Map of all the objects
+    mutable std::recursive_mutex _objectsMutex{};                             //!< Used in registration and unregistration of objects
+    std::atomic_bool _objectsCurrentlyUpdated{false};                         //!< Prevents modification of objects from multiple places at the same time
+    std::unordered_map<std::string, std::shared_ptr<GraphObject>> _objects{}; //!< Map of all the objects
 
     /**
      * \brief Wait for a BufferObject update. This does not prevent spurious wakeups.
@@ -221,6 +222,6 @@ class RootObject : public BaseObject
     Values sendMessageWithAnswer(const std::string& name, const std::string& attribute, const Values& message = {}, const unsigned long long timeout = 0ull);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_ROOT_OBJECT_H

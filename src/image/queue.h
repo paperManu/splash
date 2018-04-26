@@ -184,7 +184,7 @@ class QueueSurrogate : public Texture
      * \brief Get the current source created by the queue
      * \return Return the current source
      */
-    std::shared_ptr<BaseObject> getSource() const { return _source; }
+    std::shared_ptr<GraphObject> getSource() const { return _source; }
 
     /**
      * \brief Get spec of the texture
@@ -200,7 +200,7 @@ class QueueSurrogate : public Texture
   private:
     int _filterIndex{0};
     std::shared_ptr<Filter> _filter;
-    std::shared_ptr<BaseObject> _source;
+    std::shared_ptr<GraphObject> _source;
 
     /**
      * \brief Register new functors to modify attributes

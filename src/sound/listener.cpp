@@ -10,6 +10,7 @@ namespace Splash
 
 /*************/
 Listener::Listener()
+    : GraphObject(nullptr)
 {
     registerAttributes();
 }
@@ -104,7 +105,7 @@ int Listener::portAudioCallback(
 /*************/
 void Listener::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 }
 
-} // end of namespace
+} // namespace Splash

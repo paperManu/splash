@@ -113,10 +113,10 @@ class Geometry : public BufferObject
     bool hasBeenResized() { return _buffersResized; }
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * \brief Get the coordinates of the closest vertex to the given point

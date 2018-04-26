@@ -53,7 +53,7 @@ unordered_map<string, Values> VirtualProbe::getShaderUniforms() const
 }
 
 /*************/
-bool VirtualProbe::linkTo(const shared_ptr<BaseObject>& obj)
+bool VirtualProbe::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
     if (!obj || !Texture::linkTo(obj))
@@ -70,7 +70,7 @@ bool VirtualProbe::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void VirtualProbe::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
+void VirtualProbe::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())

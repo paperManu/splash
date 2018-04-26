@@ -36,6 +36,7 @@
 #include "./config.h"
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./sound/listener.h"
 #include "./utils/timer.h"
 
@@ -43,7 +44,7 @@ namespace Splash
 {
 
 /*************/
-class LtcClock : public BaseObject
+class LtcClock : public GraphObject
 {
   public:
     /**
@@ -86,6 +87,6 @@ class LtcClock : public BaseObject
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

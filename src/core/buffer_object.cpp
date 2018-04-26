@@ -10,7 +10,7 @@ namespace Splash
 /**************/
 void BufferObject::setNotUpdated()
 {
-    BaseObject::setNotUpdated();
+    GraphObject::setNotUpdated();
     _updatedBuffer = false;
 }
 

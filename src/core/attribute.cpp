@@ -1,6 +1,6 @@
 #include "./core/attribute.h"
 
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 #include "./utils/log.h"
 
 using namespace std;
@@ -148,7 +148,7 @@ bool AttributeFunctor::lock(const Values& v)
 }
 
 /*************/
-CallbackHandle AttributeFunctor::registerCallback(weak_ptr<BaseObject> caller, Callback cb)
+CallbackHandle AttributeFunctor::registerCallback(weak_ptr<GraphObject> caller, Callback cb)
 {
     lock_guard<mutex> lockCb(_callbackMutex);
     auto handle = CallbackHandle(caller, _name);

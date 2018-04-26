@@ -133,16 +133,16 @@ class Gui : public ControllerObject
     void mouseScroll(double xoffset, double yoffset);
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given BaseObject from this object
+     * \brief Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) final;
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
      * \brief Render this gui

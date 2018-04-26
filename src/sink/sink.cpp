@@ -11,7 +11,7 @@ namespace Splash
 
 /*************/
 Sink::Sink(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     _type = "sink";
     _renderingPriority = Priority::POST_CAMERA;
@@ -44,10 +44,10 @@ string Sink::getCaps() const
 }
 
 /*************/
-bool Sink::linkTo(const shared_ptr<BaseObject>& obj)
+bool Sink::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
-    if (!BaseObject::linkTo(obj))
+    if (!GraphObject::linkTo(obj))
         return false;
 
     auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
@@ -61,13 +61,13 @@ bool Sink::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void Sink::unlinkFrom(const shared_ptr<BaseObject>& obj)
+void Sink::unlinkFrom(const shared_ptr<GraphObject>& obj)
 {
     auto objAsTexture = dynamic_pointer_cast<Texture>(obj);
     if (objAsTexture)
         _inputTexture.reset();
 
-    BaseObject::unlinkFrom(obj);
+    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -161,7 +161,7 @@ void Sink::updatePbos(int width, int height, int bytes)
 /*************/
 void Sink::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("bufferCount",
         [&](const Values& args) {
