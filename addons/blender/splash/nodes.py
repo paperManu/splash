@@ -449,6 +449,7 @@ class SplashProbeNode(SplashBaseNode):
     def init(self, context):
         self.inputs.new('NodeSocketInt', 'Render width').default_value = 2048
         self.inputs.new('NodeSocketInt', 'Render height').default_value = 2048
+        self.inputs.new('NodeSocketString', 'Object').default_value = ""
         self.inputs.new('SplashLinkSocket', "Input link")
         self.outputs.new('SplashLinkSocket', "Output link")
 
