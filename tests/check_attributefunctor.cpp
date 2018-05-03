@@ -6,10 +6,10 @@ using namespace std;
 using namespace Splash;
 
 /*************/
-TEST_CASE("Testing AttributeFunctor")
+TEST_CASE("Testing Attribute")
 {
     int value = 0;
-    auto attr = AttributeFunctor("attribute",
+    auto attr = Attribute("attribute",
         [&](const Values& args) {
             value = args[0].as<int>();
             return true;

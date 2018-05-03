@@ -77,7 +77,7 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
         return setAttribute(attrib, args);
 
     auto object = getObject(name);
-    if (object && object->getAttributeSyncMethod(attrib) == AttributeFunctor::Sync::force_sync)
+    if (object && object->getAttributeSyncMethod(attrib) == Attribute::Sync::force_sync)
         async = false;
 
     if (async)

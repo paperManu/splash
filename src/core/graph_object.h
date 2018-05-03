@@ -95,7 +95,7 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \param attr Name of the attribute.
      * \return Returns a reference to the attribute.
      */
-    AttributeFunctor& operator[](const std::string& attr);
+    Attribute& operator[](const std::string& attr);
 
     /**
      * \brief Get the real type of this BaseObject, as a std::string.
@@ -247,7 +247,7 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \param cb Callback function
      * \return Return a callback handle
      */
-    CallbackHandle registerCallback(const std::string& attr, AttributeFunctor::Callback cb);
+    CallbackHandle registerCallback(const std::string& attr, Attribute::Callback cb);
 
     /**
      * Unregister a callback

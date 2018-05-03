@@ -124,7 +124,7 @@ class BaseObject
      * \param name Attribute name
      * \return Return the synchronization method
      */
-    AttributeFunctor::Sync getAttributeSyncMethod(const std::string& name);
+    Attribute::Sync getAttributeSyncMethod(const std::string& name);
 
     /**
      * Run the tasks waiting in the object's queue
@@ -133,7 +133,7 @@ class BaseObject
 
   protected:
     std::string _name{""};                                              //!< Object name
-    std::unordered_map<std::string, AttributeFunctor> _attribFunctions; //!< Map of all attributes
+    std::unordered_map<std::string, Attribute> _attribFunctions; //!< Map of all attributes
     bool _updatedParams{true};                                          //!< True if the parameters have been updated and the object needs to reflect these changes
 
     std::future<void> _asyncTask{};
@@ -155,7 +155,7 @@ class BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    AttributeFunctor& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
+    Attribute& addAttribute(const std::string& name, const std::function<bool(const Values&)>& set, const std::vector<char>& types = {});
 
     /**
      * \brief Add a new attribute to this object
@@ -165,7 +165,7 @@ class BaseObject
      * \param types Vector of char holding the expected parameters for the set function
      * \return Return a reference to the created attribute
      */
-    AttributeFunctor& addAttribute(
+    Attribute& addAttribute(
         const std::string& name, const std::function<bool(const Values&)>& set, const std::function<const Values()>& get, const std::vector<char>& types = {});
 
     /**
@@ -183,9 +183,9 @@ class BaseObject
 
     /**
      * \brief Set attribute synchronization method
-     * \param Method Synchronization method, can be any of the AttributeFunctor::Sync values
+     * \param Method Synchronization method, can be any of the Attribute::Sync values
      */
-    void setAttributeSyncMethod(const std::string& name, const AttributeFunctor::Sync& method);
+    void setAttributeSyncMethod(const std::string& name, const Attribute::Sync& method);
 
     /**
      * \brief Remove the specified attribute

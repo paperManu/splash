@@ -191,7 +191,7 @@ void Blender::registerAttributes()
         return true;
     });
     setAttributeDescription("blendingUpdated", "Message sent by the master Scene to notify that a new blending has been computed");
-    setAttributeSyncMethod("blendingUpdated", AttributeFunctor::Sync::force_sync);
+    setAttributeSyncMethod("blendingUpdated", Attribute::Sync::force_sync);
 }
 
 } // end of namespace

@@ -24,7 +24,7 @@ bool BaseObject::setAttribute(const string& attrib, const Values& args)
 
     if (attribNotPresent)
     {
-        auto result = _attribFunctions.emplace(attrib, AttributeFunctor(attrib));
+        auto result = _attribFunctions.emplace(attrib, Attribute(attrib));
         if (!result.second)
             return false;
 
@@ -175,13 +175,13 @@ Values BaseObject::getAttributesDescriptions()
 }
 
 /*************/
-AttributeFunctor::Sync BaseObject::getAttributeSyncMethod(const string& name)
+Attribute::Sync BaseObject::getAttributeSyncMethod(const string& name)
 {
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())
         return attr->second.getSyncMethod();
     else
-        return AttributeFunctor::Sync::no_sync;
+        return Attribute::Sync::no_sync;
 }
 
 /*************/
@@ -192,17 +192,17 @@ void BaseObject::runAsyncTask(const function<void(void)>& func)
 }
 
 /*************/
-AttributeFunctor& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
+Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const vector<char>& types)
 {
-    _attribFunctions[name] = AttributeFunctor(name, set, types);
+    _attribFunctions[name] = Attribute(name, set, nullptr, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
 }
 
 /*************/
-AttributeFunctor& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
+Attribute& BaseObject::addAttribute(const string& name, const function<bool(const Values&)>& set, const function<const Values()>& get, const vector<char>& types)
 {
-    _attribFunctions[name] = AttributeFunctor(name, set, get, types);
+    _attribFunctions[name] = Attribute(name, set, get, types);
     _attribFunctions[name].setObjectName(_name);
     return _attribFunctions[name];
 }
@@ -218,7 +218,7 @@ void BaseObject::setAttributeDescription(const string& name, const string& descr
 }
 
 /*************/
-void BaseObject::setAttributeSyncMethod(const string& name, const AttributeFunctor::Sync& method)
+void BaseObject::setAttributeSyncMethod(const string& name, const Attribute::Sync& method)
 {
     auto attr = _attribFunctions.find(name);
     if (attr != _attribFunctions.end())

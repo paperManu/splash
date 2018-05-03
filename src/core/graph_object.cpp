@@ -8,7 +8,7 @@ namespace Splash
 {
 
 /*************/
-AttributeFunctor& GraphObject::operator[](const string& attr)
+Attribute& GraphObject::operator[](const string& attr)
 {
     auto attribFunction = _attribFunctions.find(attr);
     return attribFunction->second;
@@ -139,7 +139,7 @@ bool GraphObject::setRenderingPriority(Priority priority)
 }
 
 /*************/
-CallbackHandle GraphObject::registerCallback(const string& attr, AttributeFunctor::Callback cb)
+CallbackHandle GraphObject::registerCallback(const string& attr, Attribute::Callback cb)
 {
     auto attribute = _attribFunctions.find(attr);
     if (attribute == _attribFunctions.end())

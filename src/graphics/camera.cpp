@@ -1605,7 +1605,7 @@ void Camera::registerAttributes()
     });
     setAttributeDescription("flashBG", "Switch background to light gray");
 
-    addAttribute("getReprojectionError", [&](const Values&) { return true; }, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
+    addAttribute("getReprojectionError", nullptr, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
 }
 
