@@ -104,6 +104,12 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
     inline std::string getType() const { return _type; }
 
     /**
+     * Get the object's root
+     * \return Return a pointer to the root
+     */
+    inline RootObject* getRoot() const { return _root; }
+
+    /**
      * Set the alias name for the object
      * \param alias Alias name
      */

@@ -3,47 +3,51 @@
 #include <json/json.h>
 
 #include "./controller/controller_blender.h"
+#include "./core/link.h"
+#include "./core/scene.h"
 #include "./graphics/camera.h"
 #include "./graphics/filter.h"
 #include "./graphics/geometry.h"
-#include "./image/image.h"
-#if HAVE_LINUX
-#include "./image/image_v4l2.h"
-#endif
-#if HAVE_GPHOTO
-#include "./image/image_gphoto.h"
-#endif
-#include "./image/image_ffmpeg.h"
-#if HAVE_OPENCV
-#include "./image/image_opencv.h"
-#endif
-#if HAVE_SHMDATA
-#include "./image/image_shmdata.h"
-#endif
-#include "./core/link.h"
-#include "./mesh/mesh.h"
-#include "./utils/log.h"
-#if HAVE_SHMDATA
-#include "./mesh/mesh_shmdata.h"
-#include "./sink/sink.h"
-#include "./sink/sink_shmdata.h"
-#include "./sink/sink_shmdata_encoded.h"
-#endif
 #include "./graphics/object.h"
-#if HAVE_PYTHON
-#include "./controller/controller_pythonembedded.h"
-#endif
-#include "./core/scene.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
-#include "./image/queue.h"
-#if HAVE_OSX
-#include "./graphics/texture_syphon.h"
-#endif
 #include "./graphics/virtual_probe.h"
 #include "./graphics/warp.h"
 #include "./graphics/window.h"
+#include "./image/image.h"
+#include "./image/image_ffmpeg.h"
+#include "./image/queue.h"
+#include "./mesh/mesh.h"
+#include "./sink/sink.h"
+#include "./utils/log.h"
 #include "./utils/timer.h"
+
+#if HAVE_LINUX
+#include "./image/image_v4l2.h"
+#endif
+
+#if HAVE_GPHOTO
+#include "./image/image_gphoto.h"
+#endif
+
+#if HAVE_SHMDATA
+#include "./image/image_shmdata.h"
+#include "./mesh/mesh_shmdata.h"
+#include "./sink/sink_shmdata.h"
+#include "./sink/sink_shmdata_encoded.h"
+#endif
+
+#if HAVE_PYTHON
+#include "./controller/controller_pythonembedded.h"
+#endif
+
+#if HAVE_OSX
+#include "./graphics/texture_syphon.h"
+#endif
+
+#if HAVE_OPENCV
+#include "./image/image_opencv.h"
+#endif
 
 using namespace std;
 
@@ -454,4 +458,4 @@ void Factory::registerObjects()
         "Window object, set to be shown on one or multiple physical outputs.");
 }
 
-} // end of namespace
+} // namespace Splash

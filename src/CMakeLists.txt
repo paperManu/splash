@@ -222,11 +222,13 @@ endif()
 if (PYTHONLIBS_FOUND)
     set_source_files_properties(
         controller/controller_pythonembedded.cpp
+        controller/python/python_sink.cpp
         PROPERTIES COMPILE_FLAGS -Wno-missing-field-initializers
     )
 
     target_sources(splash-${API_VERSION} PRIVATE
         controller/controller_pythonembedded.cpp
+        controller/python/python_sink.cpp
     )
 endif()
 
