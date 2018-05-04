@@ -64,6 +64,17 @@ void GuiGlobalView::render()
             revertCalibration();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Revert the selected camera to its previous calibration\n(Ctrl + Z while hovering the view)");
+        ImGui::SameLine();
+
+        if (ImGui::Button("Reset camera") && _camera)
+        {
+            auto cameraName = _camera->getName();
+            setObjectAttribute(cameraName, "eye", {2.0, 2.0, 2.0});
+            setObjectAttribute(cameraName, "target", {0.0, 0.0, 0.0});
+            setObjectAttribute(cameraName, "up", {0.0, 0.0, 1.0});
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset the camera to default values, useful when lost in 3D space");
 
         ImGui::Checkbox("Hide other cameras", &_hideCameras);
         if (ImGui::IsItemHovered())
