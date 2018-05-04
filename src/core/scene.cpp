@@ -394,6 +394,8 @@ void Scene::render()
 #ifdef PROFILE
                 PROFILEGL("texture upload unlock");
 #endif
+                if (glIsSync(_cameraDrawnFence) == GL_TRUE)
+                    glDeleteSync(_cameraDrawnFence);
                 _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
                 if (textureLock.owns_lock())
                     textureLock.unlock();
@@ -543,6 +545,8 @@ void Scene::textureUploadRun()
                 texture->update();
             }
 
+            if (glIsSync(_textureUploadFence) == GL_TRUE)
+                glDeleteSync(_textureUploadFence);
             _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             lockTexture.unlock();
 
