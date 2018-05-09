@@ -1530,7 +1530,7 @@ void World::registerAttributes()
                 return false;
 
             setAttribute("deleteObject", {objName});
-            setAttribute("addObject", {objType, objName});
+            setAttribute("addObject", {objType, objName, "", false});
             setAttribute("setAlias", {objName, objAlias});
             addTask([=]() {
                 for (const auto& t : targets)
