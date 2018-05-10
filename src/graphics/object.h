@@ -246,7 +246,7 @@ class Object : public GraphObject
     std::string _fill{"texture"};
     std::vector<std::string> _fillParameters{};
     int _sideness{0};
-    glm::dvec4 _color{0.0, 1.0, 0.0, 1.0};
+    glm::dvec4 _color{0.0, 0.0, 0.0, 1.0};
     float _normalExponent{0.0};
 
     // A copy of all the cameras' calibration points,

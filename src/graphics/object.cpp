@@ -109,12 +109,12 @@ void Object::activate()
     {
         shaderParameters.push_front(_fill);
         _shader->setAttribute("fill", shaderParameters);
-        _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
     }
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
+    _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
 
     if (_geometries.size() > 0)
     {
@@ -642,8 +642,11 @@ void Object::registerAttributes()
             _color = glm::dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
+        [&]() -> Values {
+            return {_color.r, _color.g, _color.b, _color.a};
+        },
         {'n', 'n', 'n', 'n'});
-    setAttributeDescription("color", "Set the object color, if the fill setting is set accordingly");
+    setAttributeDescription("color", "Set the object color, used for the \"color\" fill mode, or when no texture is linked to the object.");
 
     addAttribute("normalExponent",
         [&](const Values& args) {
@@ -655,4 +658,4 @@ void Object::registerAttributes()
     setAttributeDescription("normalExponent", "If set to anything but 0.0, set the exponent applied to the normal factor for blending computation");
 }
 
-} // end of namespace
+} // namespace Splash

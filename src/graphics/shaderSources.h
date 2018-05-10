@@ -1193,10 +1193,12 @@ struct ShaderSources
     const std::string FRAGMENT_SHADER_TEXTURE{R"(
         #define PI 3.14159265359
 
+    #ifdef TEX_1
     #ifdef TEXTURE_RECT
         uniform sampler2DRect _tex0;
     #else
         uniform sampler2D _tex0;
+    #endif
     #endif
 
     #ifdef TEX_2
@@ -1212,6 +1214,7 @@ struct ShaderSources
         uniform vec2 _cameraAttributes = vec2(0.05, 1.0); // blendWidth and brightness
         uniform vec4 _fovAndColorBalance = vec4(0.0, 0.0, 1.0, 1.0); // fovX and fovY, r/g and b/g
         uniform int _isColorLUT = 0;
+        uniform vec4 _color = vec4(0.0, 0.0, 0.0, 1.0);
         uniform vec3 _colorLUT[256];
         uniform mat3 _colorMixMatrix = mat3(1.0, 0.0, 0.0,
                                             0.0, 1.0, 0.0,
@@ -1240,10 +1243,14 @@ struct ShaderSources
 
             vec2 screenPos = vec2(position.x / position.w, position.y / position.w);
 
+        #ifdef TEX_1
         #ifdef TEXTURE_RECT
             vec4 color = texture(_tex0, texCoord * _tex0_size);
         #else
             vec4 color = texture(_tex0, texCoord);
+        #endif
+        #else
+            vec4 color = _color;
         #endif
 
         #ifdef TEX_2
