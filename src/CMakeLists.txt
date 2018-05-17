@@ -122,6 +122,7 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/name_registry.cpp
     core/root_object.cpp
     core/scene.cpp
+    core/tree.cpp
     controller/controller.cpp
     controller/controller_blender.cpp
     controller/controller_gui.cpp

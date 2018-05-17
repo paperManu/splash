@@ -123,8 +123,8 @@ struct Value
 
     template <class InputIt>
     Value(InputIt first, InputIt last)
-        : _values(std::make_unique<Values>())
-        , _type(Type::values)
+        : _type(Type::values)
+        , _values(std::make_unique<Values>())
     {
         auto it = first;
         while (it != last)

@@ -73,6 +73,7 @@ target_sources(unitTests PRIVATE
     check_resizablearray.cpp
     check_value.cpp
     check_upgrade_configuration.cpp
+    check_tree.cpp
 )
 add_dependencies(unitTests assets)
 target_link_libraries(unitTests splash-${API_VERSION})
