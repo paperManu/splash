@@ -460,7 +460,7 @@ void Scene::run()
     _mainWindow->releaseContext();
 
     signalBufferObjectUpdated();
-    _textureUploadFuture.get();
+    _textureUploadFuture.wait();
 
 #ifdef PROFILE
     ProfilerGL::get().processTimings();

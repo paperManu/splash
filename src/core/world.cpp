@@ -876,6 +876,9 @@ bool World::loadProject(const string& filename)
             return false;
 
         _projectFilename = filename;
+        // The configuration path is overriden with the project file path
+        _configurationPath = Utils::getPathFromFilePath(_projectFilename);
+        sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
 
         // Now, we apply the configuration depending on the current state
         // Meaning, we replace objects with the same name, create objects with non-existing name,
@@ -932,9 +935,6 @@ bool World::loadProject(const string& filename)
             auto configPath = Utils::getPathFromFilePath(_configFilename);
 
             addTask([=]() {
-                // Before anything, all objects have the right to know what the current path is
-                setAttribute("sendAll", {objectName, "configFilePath", configPath});
-
                 // Set their attributes
                 auto objMembers = obj.getMemberNames();
                 int idxAttr = 0;

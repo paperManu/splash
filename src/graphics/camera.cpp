@@ -1,7 +1,6 @@
 #include "./graphics/camera.h"
 
 #include <fstream>
-#include <future>
 #include <limits>
 
 #include <glm/ext.hpp>

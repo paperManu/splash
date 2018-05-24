@@ -50,6 +50,8 @@ void Image_V4L2::init()
 /*************/
 bool Image_V4L2::doCapture()
 {
+    lock_guard<mutex> lockStart(_startStopMutex);
+
     if (_capturing)
         return true;
 
@@ -65,10 +67,13 @@ bool Image_V4L2::doCapture()
     if (_capturing)
         _capturing = initializeCapture();
     if (_capturing)
-        _captureThread = thread([&]() {
-            _captureThreadRun = true;
+    {
+        _captureThreadRun = true;
+        _captureFuture = async(std::launch::async, [this]() {
             captureThreadFunc();
+            _capturing = false;
         });
+    }
 
     return _capturing;
 }
@@ -76,13 +81,14 @@ bool Image_V4L2::doCapture()
 /*************/
 void Image_V4L2::stopCapture()
 {
+    lock_guard<mutex> lockStop(_startStopMutex);
+
     if (!_capturing)
         return;
 
-    _capturing = false;
     _captureThreadRun = false;
-    if (_captureThread.joinable())
-        _captureThread.join();
+    if (_captureFuture.valid())
+        _captureFuture.wait();
 
     closeCaptureDevice();
 }
@@ -752,4 +758,4 @@ void Image_V4L2::registerAttributes()
     setAttributeDescription("pixelFormat", "Set the desired output format, either RGB or YUYV");
 }
 
-} // end of namespace
+} // namespace Splash
