@@ -53,9 +53,9 @@ void RootObject::disposeObject(const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
-    auto object = getObject(name);
-    if (object && object.unique())
-        _objects.erase(name);
+    auto objectIt = _objects.find(name);
+    if (objectIt != _objects.end() && objectIt->second.use_count() == 1)
+        _objects.erase(objectIt);
 }
 
 /*************/
