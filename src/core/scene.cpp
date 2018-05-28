@@ -66,7 +66,6 @@ Scene::Scene(const string& name, const string& socketPrefix)
 {
     Log::get() << Log::DEBUGGING << "Scene::Scene - Scene created successfully" << Log::endl;
 
-    _type = "scene";
     _isRunning = true;
     _name = name;
     _linkSocketPrefix = socketPrefix;
@@ -107,7 +106,7 @@ Scene::~Scene()
 }
 
 /*************/
-std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
+std::shared_ptr<GraphObject> Scene::addObject(const string& type, const string& name)
 {
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating object of type " << type << Log::endl;
 
@@ -118,8 +117,7 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
         return {};
 
     // Check whether an object of this name already exists
-    auto objectIt = _objects.find(name);
-    if (objectIt != _objects.end())
+    if (getObject(name))
     {
         Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - An object named " << name << " already exists" << Log::endl;
         return {};
@@ -133,7 +131,6 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
     {
         obj->setRemoteType(type); // Not all objects have remote types, but this doesn't harm
 
-        obj->setId(getId());
         obj->setName(name);
         _objects[name] = obj;
 
@@ -141,10 +138,10 @@ std::shared_ptr<BaseObject> Scene::add(const string& type, const string& name)
         if (_gui != nullptr)
         {
             if (obj->getType() == "object")
-                link(obj, dynamic_pointer_cast<BaseObject>(_gui));
+                link(obj, dynamic_pointer_cast<GraphObject>(_gui));
             else if (obj->getType() == "window" && !_guiLinkedToWindow)
             {
-                link(dynamic_pointer_cast<BaseObject>(_gui), obj);
+                link(dynamic_pointer_cast<GraphObject>(_gui), obj);
                 _guiLinkedToWindow = true;
             }
         }
@@ -163,14 +160,12 @@ void Scene::addGhost(const string& type, const string& name)
     Log::get() << Log::DEBUGGING << "Scene::" << __FUNCTION__ << " - Creating ghost object of type " << type << Log::endl;
 
     // Add the object for real ...
-    std::shared_ptr<BaseObject> obj = add(type, name);
+    auto obj = addObject(type, name);
     if (obj)
     {
         // And move it to _objects
         lock_guard<recursive_mutex> lockObjects(_objectsMutex);
         obj->setGhost(true);
-        _objects.erase(obj->getName());
-        _objects[obj->getName()] = obj;
     }
 }
 
@@ -178,12 +173,11 @@ void Scene::addGhost(const string& type, const string& name)
 Values Scene::getAttributeFromObject(const string& name, const string& attribute)
 {
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-    auto objectIt = _objects.find(name);
+    auto object = getObject(name);
 
     Values values;
-    if (objectIt != _objects.end())
+    if (object)
     {
-        auto& object = objectIt->second;
         object->getAttribute(attribute, values);
     }
     // Ask the World if it knows more about this object
@@ -264,29 +258,16 @@ Json::Value Scene::getConfigurationAsJson()
 /*************/
 bool Scene::link(const string& first, const string& second)
 {
-    std::shared_ptr<BaseObject> source(nullptr);
-    std::shared_ptr<BaseObject> sink(nullptr);
-
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
-    if (_objects.find(first) != _objects.end())
-        source = _objects[first];
-    else
-        return false;
-
-    if (_objects.find(second) != _objects.end())
-        sink = _objects[second];
-    else
-        return false;
-
-    return link(source, sink);
+    return link(getObject(first), getObject(second));
 }
 
 /*************/
-bool Scene::link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
+bool Scene::link(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second)
 {
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    if (!first || !second)
+        return false;
 
+    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
     bool result = second->linkTo(first);
 
     return result;
@@ -295,28 +276,14 @@ bool Scene::link(const std::shared_ptr<BaseObject>& first, const std::shared_ptr
 /*************/
 void Scene::unlink(const string& first, const string& second)
 {
-    std::shared_ptr<BaseObject> source(nullptr);
-    std::shared_ptr<BaseObject> sink(nullptr);
-
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
-
-    if (_objects.find(first) != _objects.end())
-        source = _objects[first];
-    else
-        return;
-
-    if (_objects.find(second) != _objects.end())
-        sink = _objects[second];
-    else
-        return;
-
-    unlink(source, sink);
+    unlink(getObject(first), getObject(second));
 }
 
 /*************/
-void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_ptr<BaseObject>& second)
+void Scene::unlink(const std::shared_ptr<GraphObject>& first, const std::shared_ptr<GraphObject>& second)
 {
-    lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+    if (!first || !second)
+        return;
 
     second->unlinkFrom(first);
 }
@@ -324,7 +291,7 @@ void Scene::unlink(const std::shared_ptr<BaseObject>& first, const std::shared_p
 /*************/
 void Scene::remove(const string& name)
 {
-    std::shared_ptr<BaseObject> obj;
+    std::shared_ptr<GraphObject> obj;
 
     lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
@@ -340,7 +307,7 @@ void Scene::render()
         PROFILEGL("Render loop")
 #endif
         // Create lists of objects to update and to render
-        map<Priority, vector<shared_ptr<BaseObject>>> objectList{};
+        map<GraphObject::Priority, vector<shared_ptr<GraphObject>>> objectList{};
         {
             lock_guard<recursive_mutex> lockObjects(_objectsMutex);
             for (auto& obj : _objects)
@@ -353,13 +320,13 @@ void Scene::render()
                     continue;
 
                 auto priority = obj.second->getRenderingPriority();
-                if (priority == Priority::NO_RENDER)
+                if (priority == GraphObject::Priority::NO_RENDER)
                     continue;
 
                 auto listIt = objectList.find(priority);
                 if (listIt == objectList.end())
                 {
-                    auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<BaseObject>>()));
+                    auto entry = objectList.emplace(std::make_pair(priority, vector<shared_ptr<GraphObject>>()));
                     if (entry.second == true)
                         listIt = entry.first;
                     else
@@ -371,14 +338,14 @@ void Scene::render()
         }
 
         // Update and render the objects
-        // See BaseObject::getRenderingPriority() for precision about priorities
+        // See GraphObject::getRenderingPriority() for precision about priorities
         bool firstTextureSync = true; // Sync with the texture upload the first time we need textures
         bool firstWindowSync = true;  // Sync with the texture upload the last time we need textures
         auto textureLock = unique_lock<Spinlock>(_textureMutex, defer_lock);
         for (auto& objPriority : objectList)
         {
             // If the objects needs some Textures, we need to sync
-            if (firstTextureSync && objPriority.first > Priority::BLENDING && objPriority.first < Priority::POST_CAMERA)
+            if (firstTextureSync && objPriority.first > GraphObject::Priority::BLENDING && objPriority.first < GraphObject::Priority::POST_CAMERA)
             {
 #ifdef PROFILE
                 PROFILEGL("texture upload lock");
@@ -405,14 +372,14 @@ void Scene::render()
                 obj->update();
 
                 auto objectCategory = obj->getCategory();
-                if (objectCategory == BaseObject::Category::MESH)
+                if (objectCategory == GraphObject::Category::MESH)
                     if (obj->wasUpdated())
                     {
                         // If a mesh has been updated, force blending update
                         addTask([=]() { dynamic_pointer_cast<Blender>(_blender)->forceUpdate(); });
                         obj->setNotUpdated();
                     }
-                if (objectCategory == BaseObject::Category::IMAGE || objectCategory == BaseObject::Category::TEXTURE)
+                if (objectCategory == GraphObject::Category::IMAGE || objectCategory == GraphObject::Category::TEXTURE)
                     if (obj->wasUpdated())
                         obj->setNotUpdated();
 
@@ -422,11 +389,13 @@ void Scene::render()
             if (objPriority.second.size() != 0)
                 Timer::get() >> objPriority.second[0]->getType();
 
-            if (firstWindowSync && objPriority.first >= Priority::POST_CAMERA)
+            if (firstWindowSync && objPriority.first >= GraphObject::Priority::POST_CAMERA)
             {
 #ifdef PROFILE
                 PROFILEGL("texture upload unlock");
 #endif
+                if (glIsSync(_cameraDrawnFence) == GL_TRUE)
+                    glDeleteSync(_cameraDrawnFence);
                 _cameraDrawnFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
                 if (textureLock.owns_lock())
                     textureLock.unlock();
@@ -491,7 +460,7 @@ void Scene::run()
     _mainWindow->releaseContext();
 
     signalBufferObjectUpdated();
-    _textureUploadFuture.get();
+    _textureUploadFuture.wait();
 
 #ifdef PROFILE
     ProfilerGL::get().processTimings();
@@ -576,6 +545,8 @@ void Scene::textureUploadRun()
                 texture->update();
             }
 
+            if (glIsSync(_textureUploadFence) == GL_TRUE)
+                glDeleteSync(_textureUploadFence);
             _textureUploadFence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             lockTexture.unlock();
 
@@ -621,13 +592,25 @@ void Scene::setAsMaster(const string& configFilePath)
     _dragndrop = make_shared<DragNDrop>(this);
 
     if (_keyboard)
-        _objects["keyboard"] = _keyboard;
+    {
+        _keyboard->setName("keyboard");
+        _objects[_keyboard->getName()] = _keyboard;
+    }
     if (_mouse)
+    {
+        _mouse->setName("keyboard");
         _objects["mouse"] = _mouse;
+    }
     if (_joystick)
-        _objects["joystick"] = _joystick;
+    {
+        _joystick->setName("joystick");
+        _objects[_joystick->getName()] = _joystick;
+    }
     if (_dragndrop)
-        _objects["dragndrop"] = _dragndrop;
+    {
+        _dragndrop->setName("dragndrop");
+        _objects[_dragndrop->getName()] = _dragndrop;
+    }
 
 #if HAVE_GPHOTO
     // Initialize the color calibration object
@@ -927,7 +910,7 @@ void Scene::registerAttributes()
 {
     RootObject::registerAttributes();
 
-    addAttribute("add",
+    addAttribute("addObject",
         [&](const Values& args) {
             addTask([=]() {
                 string type = args[0].as<string>();
@@ -935,7 +918,7 @@ void Scene::registerAttributes()
                 string sceneName = args.size() > 2 ? args[2].as<string>() : "";
 
                 if (sceneName == _name)
-                    add(type, name);
+                    addObject(type, name);
                 else if (_isMaster)
                     addGhost(type, name);
             });
@@ -943,7 +926,7 @@ void Scene::registerAttributes()
             return true;
         },
         {'s', 's'});
-    setAttributeDescription("add", "Add an object of the given name, type, and optionally the target scene");
+    setAttributeDescription("addObject", "Add an object of the given name, type, and optionally the target scene");
 
     addAttribute("config", [&](const Values&) {
         addTask([&]() -> void {
@@ -968,13 +951,13 @@ void Scene::registerAttributes()
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
 
                 auto objectName = args[0].as<string>();
-                auto objectIt = _objects.find(objectName);
-                if (objectIt == _objects.end())
+                auto object = getObject(objectName);
+                if (!object)
                     return;
 
                 for (auto& localObject : _objects)
-                    unlink(objectIt->second, localObject.second);
-                _objects.erase(objectIt);
+                    unlink(object, localObject.second);
+                _objects.erase(objectName);
             });
 
             return true;
@@ -1074,22 +1057,17 @@ void Scene::registerAttributes()
         {'s'});
     setAttributeDescription("remove", "Remove the object of the given name");
 
-    addAttribute("renameObject",
+    addAttribute("setAlias",
         [&](const Values& args) {
             auto name = args[0].as<string>();
-            auto newName = args[1].as<string>();
+            auto alias = args[1].as<string>();
 
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
 
-                auto objIt = _objects.find(name);
-                if (objIt != _objects.end())
-                {
-                    auto object = objIt->second;
-                    object->setName(newName);
-                    _objects[newName] = object;
-                    _objects.erase(objIt);
-                }
+                auto object = getObject(name);
+                if (object)
+                    object->setAlias(alias);
             });
 
             return true;
@@ -1231,4 +1209,4 @@ void Scene::registerAttributes()
     setAttributeDescription("runInBackground", "If set to 1, Splash will run in the background (useful for background processing)");
 }
 
-} // end of namespace
+} // namespace Splash

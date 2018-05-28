@@ -36,7 +36,7 @@ atomic_int Window::_swappableWindowsCount{0};
 
 /*************/
 Window::Window(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     _type = "window";
     _renderingPriority = Priority::WINDOW;
@@ -176,10 +176,10 @@ vector<string> Window::getPathDropped()
 }
 
 /*************/
-bool Window::linkTo(const shared_ptr<BaseObject>& obj)
+bool Window::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
-    if (!BaseObject::linkTo(obj))
+    if (!GraphObject::linkTo(obj))
         return false;
 
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
@@ -205,7 +205,7 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
         // Warps need to be duplicated in the master scene, to be available in the gui
         // So we create them asynchronously
         auto warpName = getName() + "_" + obj->getName() + "_warp";
-        scene->sendMessageToWorld("sendAllScenes", {"add", "warp", warpName, _root->getName()});
+        scene->sendMessageToWorld("sendAllScenes", {"addObject", "warp", warpName, _root->getName()});
         scene->sendMessageToWorld("sendAllScenes", {"link", obj->getName(), warpName});
         scene->sendMessageToWorld("sendAllScenes", {"link", warpName, _name});
 
@@ -225,7 +225,7 @@ bool Window::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
+void Window::unlinkFrom(const shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Texture>(obj).get() != nullptr)
     {
@@ -278,7 +278,7 @@ void Window::unlinkFrom(const shared_ptr<BaseObject>& obj)
         }
     }
 
-    return BaseObject::unlinkFrom(obj);
+    return GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -678,7 +678,7 @@ void Window::updateWindowShape()
 /*************/
 void Window::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("decorated",
         [&](const Values& args) {

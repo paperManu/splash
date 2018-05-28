@@ -13,6 +13,7 @@ namespace Splash
 
 /*************/
 LtcClock::LtcClock(bool masterClock, const string& deviceName)
+    : GraphObject(nullptr)
 {
     registerAttributes();
 

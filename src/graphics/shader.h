@@ -36,12 +36,13 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./graphics/texture.h"
 
 namespace Splash
 {
 
-class Shader : public BaseObject
+class Shader : public GraphObject
 {
   public:
     enum ProgramType
@@ -89,7 +90,7 @@ class Shader : public BaseObject
      * \brief Constructor
      * \param type Shader type
      */
-    Shader(ProgramType type = prgGraphic);
+    explicit Shader(ProgramType type = prgGraphic);
 
     /**
      * \brief Destructor
@@ -259,6 +260,6 @@ class Shader : public BaseObject
     void registerFeedbackAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_SHADER_H

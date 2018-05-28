@@ -1,6 +1,6 @@
 #include "./core/attribute.h"
 
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 #include "./utils/log.h"
 
 using namespace std;
@@ -19,17 +19,7 @@ CallbackHandle::~CallbackHandle()
 }
 
 /*************/
-AttributeFunctor::AttributeFunctor(const string& name, const function<bool(const Values&)>& setFunc, const vector<char>& types)
-    : _name(name)
-    , _setFunc(setFunc)
-    , _getFunc(function<const Values()>())
-    , _defaultSetAndGet(false)
-    , _valuesTypes(types)
-{
-}
-
-/*************/
-AttributeFunctor::AttributeFunctor(const string& name, const function<bool(const Values&)>& setFunc, const function<const Values()>& getFunc, const vector<char>& types)
+Attribute::Attribute(const string& name, const function<bool(const Values&)>& setFunc, const function<const Values()>& getFunc, const vector<char>& types)
     : _name(name)
     , _setFunc(setFunc)
     , _getFunc(getFunc)
@@ -39,7 +29,7 @@ AttributeFunctor::AttributeFunctor(const string& name, const function<bool(const
 }
 
 /*************/
-AttributeFunctor& AttributeFunctor::operator=(AttributeFunctor&& a)
+Attribute& Attribute::operator=(Attribute&& a)
 {
     if (this != &a)
     {
@@ -59,7 +49,7 @@ AttributeFunctor& AttributeFunctor::operator=(AttributeFunctor&& a)
 }
 
 /*************/
-bool AttributeFunctor::operator()(const Values& args)
+bool Attribute::operator()(const Values& args)
 {
     if (_isLocked)
         return false;
@@ -112,7 +102,7 @@ bool AttributeFunctor::operator()(const Values& args)
 }
 
 /*************/
-Values AttributeFunctor::operator()() const
+Values Attribute::operator()() const
 {
     if (!_getFunc && _defaultSetAndGet)
     {
@@ -128,7 +118,7 @@ Values AttributeFunctor::operator()() const
 }
 
 /*************/
-Values AttributeFunctor::getArgsTypes() const
+Values Attribute::getArgsTypes() const
 {
     Values types{};
     for (const auto& type : _valuesTypes)
@@ -137,7 +127,7 @@ Values AttributeFunctor::getArgsTypes() const
 }
 
 /*************/
-bool AttributeFunctor::lock(const Values& v)
+bool Attribute::lock(const Values& v)
 {
     if (v.size() != 0)
         if (!operator()(v))
@@ -148,7 +138,7 @@ bool AttributeFunctor::lock(const Values& v)
 }
 
 /*************/
-CallbackHandle AttributeFunctor::registerCallback(weak_ptr<BaseObject> caller, Callback cb)
+CallbackHandle Attribute::registerCallback(weak_ptr<GraphObject> caller, Callback cb)
 {
     lock_guard<mutex> lockCb(_callbackMutex);
     auto handle = CallbackHandle(caller, _name);
@@ -157,7 +147,7 @@ CallbackHandle AttributeFunctor::registerCallback(weak_ptr<BaseObject> caller, C
 }
 
 /*************/
-bool AttributeFunctor::unregisterCallback(const CallbackHandle& handle)
+bool Attribute::unregisterCallback(const CallbackHandle& handle)
 {
     lock_guard<mutex> lockCb(_callbackMutex);
     auto callback = _callbacks.find(handle.getId());

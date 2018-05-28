@@ -100,16 +100,16 @@ class Filter : public Texture
     GLuint getTexId() const { return _fbo->getColorTexture()->getTexId(); }
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) override;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
-     * \brief Try to unlink the given BaseObject from this object
+     * \brief Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) override;
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) override;
 
     /**
      * Set whether to keep the input image ratio

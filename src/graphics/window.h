@@ -39,6 +39,7 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./graphics/object.h"
 #include "./graphics/texture.h"
 #include "./graphics/texture_image.h"
@@ -48,7 +49,7 @@ namespace Splash
 
 /*************/
 //! Window class, holding the GL context
-class Window : public BaseObject
+class Window : public GraphObject
 {
   public:
     /**
@@ -138,16 +139,16 @@ class Window : public BaseObject
     bool isWindow(GLFWwindow* w) const { return (w == _window->get() ? true : false); }
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj) final;
+    bool linkTo(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
-     * \brief Try to unlink the given BaseObject from this object
+     * \brief Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj) final;
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj) final;
 
     /**
      * \brief Render this window to screen

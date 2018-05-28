@@ -17,9 +17,6 @@ Mesh::Mesh(RootObject* root)
 {
     init();
     _renderingPriority = Priority::MEDIA;
-
-    if (root && root->getType() == "world")
-        _worldObject = true;
 }
 
 /*************/

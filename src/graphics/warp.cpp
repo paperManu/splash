@@ -69,7 +69,7 @@ unordered_map<string, Values> Warp::getShaderUniforms() const
 }
 
 /*************/
-bool Warp::linkTo(const std::shared_ptr<BaseObject>& obj)
+bool Warp::linkTo(const std::shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
     if (!obj || !Texture::linkTo(obj))
@@ -98,7 +98,7 @@ void Warp::unbind()
 }
 
 /*************/
-void Warp::unlinkFrom(const std::shared_ptr<BaseObject>& obj)
+void Warp::unlinkFrom(const std::shared_ptr<GraphObject>& obj)
 {
     if (dynamic_pointer_cast<Camera>(obj).get() != nullptr)
     {

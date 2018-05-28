@@ -92,7 +92,7 @@ RgbValue Texture_Image::getMeanValue() const
 }
 
 /*************/
-bool Texture_Image::linkTo(const std::shared_ptr<BaseObject>& obj)
+bool Texture_Image::linkTo(const std::shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
     if (!Texture::linkTo(obj))

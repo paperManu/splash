@@ -27,6 +27,9 @@
 
 #include <atomic>
 #include <deque>
+#include <future>
+#include <mutex>
+
 #include <linux/videodev2.h>
 
 #include "./config.h"
@@ -104,11 +107,12 @@ class Image_V4L2 : public Image
     bool _captureThreadRun{false}; //!< Set to false to stop the capture thread
     bool _startCapturing{false};
     bool _stopCapturing{false};
+    std::mutex _startStopMutex{};
     std::atomic_bool _automaticResizing{false};
 
     ImageBufferSpec _spec{};
 
-    std::thread _captureThread{};
+    std::future<void> _captureFuture{};
 
     /**
      * Capture thread function
@@ -197,6 +201,6 @@ class Image_V4L2 : public Image
     void registerAttributes();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_IMAGE_V4L2_H

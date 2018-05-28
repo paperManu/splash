@@ -1,56 +1,69 @@
 {
    "description" : "splashProject",
-   "image" : {
-      "file" : [ "/home/manu/src/splash/data/color_map.png" ],
-      "flip" : [ 0 ],
-      "flop" : [ 0 ],
-      "pattern" : [ 0 ],
-      "priorityShift" : [ 0 ],
-      "srgb" : [ 1 ],
-      "type" : "image"
-   },
    "links" : [
       [ "mesh", "object" ],
       [ "image", "object" ],
       [ "object_image_filter", "object" ],
-      [ "cam1", "win1_cam1_warp" ],
+      [ "object", "__camera_link" ],
       [ "object", "gui" ],
-      [ "image", "object_image_filter" ],
-      [ "gui", "win1" ],
-      [ "cam1", "win1" ],
-      [ "win1_cam1_warp", "win1" ],
-      [ "object", "cam1" ]
+      [ "image", "object_image_filter" ]
    ],
-   "mesh" : {
-      "file" : [ "/home/manu/src/splash/data/cubes.obj" ],
-      "priorityShift" : [ 0 ],
-      "type" : "mesh"
+   "objects" : {
+      "image" : {
+         "alias" : [ "image" ],
+         "file" : [ "../data/color_map.png" ],
+         "flip" : [ 0 ],
+         "flop" : [ 0 ],
+         "pattern" : [ 0 ],
+         "priorityShift" : [ 0 ],
+         "srgb" : [ 1 ],
+         "type" : "image"
+      },
+      "mesh" : {
+         "alias" : [ "mesh" ],
+         "file" : [ "../data/cubes.obj" ],
+         "priorityShift" : [ 0 ],
+         "type" : "mesh"
+      },
+      "object" : {
+         "alias" : [ "object" ],
+         "fill" : [ "texture" ],
+         "normalExponent" : [ 0 ],
+         "position" : [ 0, 0, 0 ],
+         "priorityShift" : [ 0 ],
+         "rotation" : [ 0, 0, 0 ],
+         "scale" : [ 1, 1, 1 ],
+         "sideness" : [ 0 ],
+         "type" : "object"
+      },
+      "object_image_filter" : {
+         "alias" : [ "object_image_filter" ],
+         "blackLevel" : [ 0 ],
+         "blackLevelAuto" : [ 0, 1 ],
+         "brightness" : [ 1 ],
+         "colorCurveAnchors" : [ 0 ],
+         "colorTemperature" : [ 6500 ],
+         "contrast" : [ 1 ],
+         "fileFilterSource" : [ "" ],
+         "filterSource" : [ "" ],
+         "invertChannels" : [ 0 ],
+         "keepRatio" : [ 0 ],
+         "priorityShift" : [ 0 ],
+         "saturation" : [ 1 ],
+         "size" : [ 4096, 4096 ],
+         "sizeOverride" : [ -1, -1 ],
+         "type" : "filter"
+      },
+      "probe" : {
+         "alias" : [ "probe" ],
+         "position" : [ 0, 0, 0 ],
+         "priorityShift" : [ 0 ],
+         "projection" : [ "equirectangular" ],
+         "rotation" : [ 0, 90, 0 ],
+         "size" : [ 2048, 2048 ],
+         "sphericalFov" : [ 180 ],
+         "type" : "virtual_probe"
+      }
    },
-   "object" : {
-      "fill" : [ "texture" ],
-      "normalExponent" : [ 0 ],
-      "position" : [ 0, 0, 0 ],
-      "priorityShift" : [ 0 ],
-      "rotation" : [ 0, 0, 0 ],
-      "scale" : [ 1, 1, 1 ],
-      "sideness" : [ 0 ],
-      "type" : "object"
-   },
-   "object_image_filter" : {
-      "blackLevel" : [ 0 ],
-      "blackLevelAuto" : [ 0, 0.019999999552965164 ],
-      "brightness" : [ 1 ],
-      "colorCurveAnchors" : [ 0 ],
-      "colorTemperature" : [ 6500 ],
-      "contrast" : [ 1 ],
-      "fileFilterSource" : [ "" ],
-      "filterSource" : [ "" ],
-      "invertChannels" : [ 0 ],
-      "keepRatio" : [ 0 ],
-      "pixelFormat" : [ "RGBA" ],
-      "priorityShift" : [ 0 ],
-      "saturation" : [ 1 ],
-      "sizeOverride" : [ -1, -1 ],
-      "type" : "filter"
-   }
+   "version" : "0.7.17"
 }

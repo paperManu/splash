@@ -113,8 +113,10 @@ target_sources(splash-${API_VERSION} PRIVATE
     core/base_object.cpp
     core/buffer_object.cpp
     core/factory.cpp
+    core/graph_object.cpp
     core/imagebuffer.cpp
     core/link.cpp
+    core/name_registry.cpp
     core/root_object.cpp
     core/scene.cpp
     controller/controller.cpp
@@ -220,11 +222,13 @@ endif()
 if (PYTHONLIBS_FOUND)
     set_source_files_properties(
         controller/controller_pythonembedded.cpp
+        controller/python/python_sink.cpp
         PROPERTIES COMPILE_FLAGS -Wno-missing-field-initializers
     )
 
     target_sources(splash-${API_VERSION} PRIVATE
         controller/controller_pythonembedded.cpp
+        controller/python/python_sink.cpp
     )
 endif()
 

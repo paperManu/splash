@@ -856,7 +856,7 @@ RgbValue ColorCalibrator::equalizeWhiteBalancesMaximizeMinLum()
 /*************/
 void ColorCalibrator::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    ControllerObject::registerAttributes();
 
     addAttribute("colorSamples",
         [&](const Values& args) {

@@ -3,18 +3,18 @@
 
 #include <doctest.h>
 
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 #include "./splash.h"
 
 using namespace std;
 using namespace Splash;
 
 /*************/
-class BaseObjectMock : public BaseObject
+class GraphObjectMock : public GraphObject
 {
   public:
-    BaseObjectMock(RootObject* root)
-        : BaseObject(root)
+    GraphObjectMock(RootObject* root)
+        : GraphObject(root)
     {
         registerAttributes();
     }
@@ -53,9 +53,9 @@ class BaseObjectMock : public BaseObject
 };
 
 /*************/
-TEST_CASE("Testing BaseObject class")
+TEST_CASE("Testing GraphObject class")
 {
-    auto object = make_unique<BaseObjectMock>(nullptr);
+    auto object = make_unique<GraphObjectMock>(nullptr);
 
     int integer_value = 42;
     float float_value = 3.1415;
@@ -89,9 +89,9 @@ TEST_CASE("Testing BaseObject class")
 }
 
 /*************/
-TEST_CASE("Testing BaseObject attribute registering")
+TEST_CASE("Testing GraphObject attribute registering")
 {
-    auto object = make_shared<BaseObjectMock>(nullptr);
+    auto object = make_shared<GraphObjectMock>(nullptr);
     auto someString = string("What are you waiting for? Christmas?");
     auto otherString = string("Show me the money!");
 

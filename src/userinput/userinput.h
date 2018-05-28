@@ -32,6 +32,7 @@
 
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./graphics/window.h"
 #include "./utils/timer.h"
 
@@ -40,7 +41,7 @@ using namespace std;
 namespace Splash
 {
 
-class UserInput : public BaseObject
+class UserInput : public GraphObject
 {
   public:
     struct State
@@ -71,7 +72,7 @@ class UserInput : public BaseObject
      * \brief Constructor
      * \param root Root object
      */
-    UserInput(RootObject* root);
+    explicit UserInput(RootObject* root);
 
     /**
      * \brief Destructor

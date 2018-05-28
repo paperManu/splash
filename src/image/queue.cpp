@@ -439,7 +439,7 @@ void QueueSurrogate::registerAttributes()
                 _root->disposeObject(_name + "_source");
             }
 
-            auto object = shared_ptr<BaseObject>();
+            auto object = shared_ptr<GraphObject>();
 
             if (type.find("image") != string::npos)
             {

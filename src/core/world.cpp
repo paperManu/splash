@@ -185,8 +185,7 @@ void World::addToWorld(const string& type, const string& name)
     auto realName = name;
     if (object.get() != nullptr)
     {
-        object->setId(getId());
-        object->setName(name); // The real name is not necessarily the one we set (see Queues)
+        object->setName(name);
         _objects[name] = object;
     }
 }
@@ -247,7 +246,7 @@ void World::applyConfig()
                 if (!objects[objectName].isMember("type"))
                     continue;
 
-                setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first});
+                setAttribute("addObject", {objects[objectName]["type"].asString(), objectName, scene.first, false});
             }
 
             // Set some default directories
@@ -593,10 +592,10 @@ void World::saveConfig()
                         for (const auto& a : scene["objects"][m].getMemberNames())
                             objects[m][a] = scene["objects"][m][a];
 
-                        const auto& obj = _objects.find(m);
-                        if (obj != _objects.end())
+                        const auto& obj = getObject(m);
+                        if (obj)
                         {
-                            Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                            Json::Value worldObjValue = obj->getConfigurationAsJson();
                             auto attributes = worldObjValue.getMemberNames();
                             for (const auto& a : attributes)
                                 objects[m][a] = worldObjValue[a];
@@ -678,10 +677,10 @@ void World::saveProject()
                     root["objects"][member][attr] = config["objects"][member][attr];
 
                 // Check for configuration of this object held in the World context
-                const auto& obj = _objects.find(member);
-                if (obj != _objects.end())
+                const auto& obj = getObject(member);
+                if (obj)
                 {
-                    Json::Value worldObjValue = obj->second->getConfigurationAsJson();
+                    Json::Value worldObjValue = obj->getConfigurationAsJson();
                     for (const auto& attr : worldObjValue.getMemberNames())
                         root["objects"][member][attr] = worldObjValue[attr];
                 }
@@ -717,7 +716,6 @@ void World::init()
     // If set to run as a child process, we do not initialize anything
     if (!_runAsChild)
     {
-        _type = "world";
         _name = "world";
 
         _that = this;
@@ -878,6 +876,9 @@ bool World::loadProject(const string& filename)
             return false;
 
         _projectFilename = filename;
+        // The configuration path is overriden with the project file path
+        _configurationPath = Utils::getPathFromFilePath(_projectFilename);
+        sendMessage(SPLASH_ALL_PEERS, "configurationPath", {_configurationPath});
 
         // Now, we apply the configuration depending on the current state
         // Meaning, we replace objects with the same name, create objects with non-existing name,
@@ -901,7 +902,7 @@ bool World::loadProject(const string& filename)
         {
             if (!partialConfig["objects"][objectName].isMember("type"))
                 continue;
-            setAttribute("addObject", {partialConfig["objects"][objectName]["type"].asString(), objectName});
+            setAttribute("addObject", {partialConfig["objects"][objectName]["type"].asString(), objectName, "", false});
         }
 
         // Handle the links
@@ -934,9 +935,6 @@ bool World::loadProject(const string& filename)
             auto configPath = Utils::getPathFromFilePath(_configFilename);
 
             addTask([=]() {
-                // Before anything, all objects have the right to know what the current path is
-                setAttribute("sendAll", {objectName, "configFilePath", configPath});
-
                 // Set their attributes
                 auto objMembers = obj.getMemberNames();
                 int idxAttr = 0;
@@ -1117,8 +1115,10 @@ void World::parseArguments(int argc, char** argv)
             // The Python script will be added once the loop runs
             addTask([=]() {
                 Log::get() << Log::MESSAGE << "World::parseArguments - Adding Python script from command line argument: " << pythonScriptPath << Log::endl;
-                auto pythonObjectName = "_pythonArgScript";
-                sendMessage(SPLASH_ALL_PEERS, "add", {"python", pythonObjectName, _masterSceneName});
+                auto pythonObjectName = string("_pythonArgScript");
+                if (!_nameRegistry.registerName(pythonObjectName))
+                    pythonObjectName = _nameRegistry.generateName("_pythonArgScript");
+                sendMessage(SPLASH_ALL_PEERS, "addObject", {"python", pythonObjectName, _masterSceneName});
                 sendMessage(pythonObjectName, "setSavable", {false});
                 sendMessage(pythonObjectName, "args", {pythonArgs});
                 sendMessage(pythonObjectName, "file", {pythonScriptPath});
@@ -1215,8 +1215,9 @@ void World::parseArguments(int argc, char** argv)
 /*************/
 void World::setAttribute(const string& name, const string& attrib, const Values& args)
 {
-    if (_objects.find(name) != _objects.end())
-        _objects[name]->setAttribute(attrib, args);
+    auto object = getObject(name);
+    if (object)
+        object->setAttribute(attrib, args);
 }
 
 /*************/
@@ -1228,25 +1229,29 @@ void World::registerAttributes()
         [&](const Values& args) {
             addTask([=]() {
                 auto type = args[0].as<string>();
-                auto name = args.size() < 2 ? type + "_" + to_string(getId()) : args[1].as<string>();
+                auto name = args.size() < 2 ? "" : args[1].as<string>();
                 auto scene = args.size() < 3 ? "" : args[2].as<string>();
+                auto checkName = args.size() < 4 ? true : args[3].as<bool>();
 
                 lock_guard<recursive_mutex> lockObjects(_objectsMutex);
+
+                if (checkName && (name.empty() || !_nameRegistry.registerName(name)))
+                    name = _nameRegistry.generateName(type);
 
                 if (scene.empty())
                 {
                     for (auto& s : _scenes)
                     {
-                        sendMessage(s.first, "add", {type, name, s.first});
+                        sendMessage(s.first, "addObject", {type, name, s.first});
                         addToWorld(type, name);
                         sendMessageWithAnswer(s.first, "sync");
                     }
                 }
                 else
                 {
-                    sendMessage(scene, "add", {type, name, scene});
+                    sendMessage(scene, "addObject", {type, name, scene});
                     if (scene != _masterSceneName)
-                        sendMessage(_masterSceneName, "add", {type, name, scene});
+                        sendMessage(_masterSceneName, "addObject", {type, name, scene});
                     addToWorld(type, name);
                     sendMessageWithAnswer(scene, "sync");
                 }
@@ -1274,6 +1279,7 @@ void World::registerAttributes()
                 auto objectName = args[0].as<string>();
 
                 // Delete the object here
+                _nameRegistry.unregisterName(objectName);
                 auto objectIt = _objects.find(objectName);
                 if (objectIt != _objects.end())
                     _objects.erase(objectIt);
@@ -1343,10 +1349,9 @@ void World::registerAttributes()
                 auto objectName = args[0].as<string>();
                 auto attrName = args[1].as<string>();
 
-                auto objectIt = _objects.find(objectName);
-                if (objectIt != _objects.end())
+                auto object = getObject(objectName);
+                if (object)
                 {
-                    auto& object = objectIt->second;
                     Values values{};
                     object->getAttribute(attrName, values);
 
@@ -1372,11 +1377,10 @@ void World::registerAttributes()
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
 
-                auto objectIt = _objects.find(objectName);
+                auto object = getObject(objectName);
                 // If the object exists locally
-                if (objectIt != _objects.end())
+                if (object)
                 {
-                    auto& object = objectIt->second;
                     Values values{"getAttributeDescription"};
                     values.push_back(object->getAttributeDescription(attrName));
                     sendMessage(SPLASH_ALL_PEERS, "answerMessage", values);
@@ -1492,27 +1496,21 @@ void World::registerAttributes()
     });
     setAttributeDescription("quit", "Ask the world to quit");
 
-    addAttribute("renameObject",
+    addAttribute("setAlias",
         [&](const Values& args) {
             auto name = args[0].as<string>();
-            auto newName = args[1].as<string>();
+            auto alias = args[1].as<string>();
 
             addTask([=]() {
                 lock_guard<recursive_mutex> lock(_objectsMutex);
 
-                // Update the name in the World
-                auto objIt = _objects.find(name);
-                if (objIt != _objects.end())
-                {
-                    auto object = objIt->second;
-                    object->setName(newName);
-                    _objects[newName] = object;
-                    _objects.erase(objIt);
-                }
+                // Update the alias in the World
+                auto object = getObject(name);
+                if (object)
+                    object->setAlias(alias);
 
                 // Update the name in the Scenes
-                for (const auto& scene : _scenes)
-                    sendMessage(scene.first, "renameObject", {name, newName});
+                setAttribute("sendAll", {name, "alias", alias});
             });
 
             return true;
@@ -1523,15 +1521,17 @@ void World::registerAttributes()
         [&](const Values& args) {
             auto objName = args[0].as<string>();
             auto objType = args[1].as<string>();
+            auto objAlias = args[2].as<string>();
             vector<string> targets;
-            for (uint32_t i = 2; i < args.size(); ++i)
+            for (uint32_t i = 3; i < args.size(); ++i)
                 targets.push_back(args[i].as<string>());
 
             if (!_factory->isCreatable(objType))
                 return false;
 
             setAttribute("deleteObject", {objName});
-            setAttribute("addObject", {objType, objName});
+            setAttribute("addObject", {objType, objName, "", false});
+            setAttribute("setAlias", {objName, objAlias});
             addTask([=]() {
                 for (const auto& t : targets)
                     setAttribute("sendAllScenes", {"link", objName, t});
@@ -1539,7 +1539,8 @@ void World::registerAttributes()
             return true;
         },
         {'s', 's'});
-    setAttributeDescription("replaceObject", "Replace the given object by an object of the given type, and links the new object to the objects given by the following parameters");
+    setAttributeDescription("replaceObject",
+        "Replace the given object by an object of the given type, with the given alias, and links the new object to the objects given by the following parameters");
 
     addAttribute("save", [&](const Values& args) {
         if (args.size() != 0)

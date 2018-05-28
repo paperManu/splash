@@ -18,7 +18,7 @@ void GuiFilters::render()
         for (auto& filterObj : filterList)
         {
             auto filterName = filterObj->getName();
-            if (ImGui::TreeNode(filterName.c_str()))
+            if (ImGui::TreeNode(filterObj->getAlias().c_str()))
             {
                 ImGui::Text("Parameters:");
                 auto attributes = filterObj->getAttributes(true);

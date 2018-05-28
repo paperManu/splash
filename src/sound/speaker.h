@@ -35,14 +35,14 @@
 
 #include "./config.h"
 #include "./core/attribute.h"
-#include "./core/base_object.h"
+#include "./core/graph_object.h"
 #include "./sound/sound_engine.h"
 
 namespace Splash
 {
 
 /*************/
-class Speaker : public BaseObject
+class Speaker : public GraphObject
 {
   public:
     /**

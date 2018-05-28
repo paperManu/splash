@@ -1,6 +1,26 @@
 Splash release notes
 ===================
 
+Splash 0.7.18 (2018-05-28)
+--------------------------
+New features:
+- Added an alias to objects, which is modifiable by the user and displayed in the GUI
+
+Improvements:
+- Object color is used when no texture is linked to it
+- Added a \"Reset camera\" button
+- Separated PythonEmbedded and PythonSink (SPLASH-424)
+- Cleaned up Attributes
+
+Bugs fixed:
+- Fixed V4l2 freezing randomly at startup, and projects not updating configuration path
+- Fixed issue in replaceObject
+- Fixed a leak of glFences (SPLASH-412)
+- Fixed issue with Probe node in Blender addon
+- Fixed memory leak in image_ffmpeg
+- Fixed an issue with name registry and multiple Scenes
+- Fixed configuration file upgrade check
+
 Splash 0.7.16 (2018-04-19)
 --------------------------
 Improvements:

@@ -48,7 +48,7 @@ class GuiMeshes : public GuiWidget
     float _newMediaStart{0.f};
     float _newMediaStop{0.f};
 
-    std::list<std::shared_ptr<BaseObject>> getSceneMeshes();
+    std::list<std::shared_ptr<GraphObject>> getSceneMeshes();
     void replaceMesh(const std::string& previousMedia, const std::string& type);
 };
 

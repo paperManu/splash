@@ -86,28 +86,25 @@ void GuiControl::render()
 
         // Node configuration
         ImGui::Text("Objects configuration");
+        auto objectNames = getObjectNames();
+        auto objectAliases = getObjectAliases();
         // Select the object the control
+        vector<const char*> items;
+        int index = 0;
+        string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
+        for (auto& name : objectNames)
         {
-            vector<string> objectNames = getObjectNames();
-            vector<const char*> items;
-
-            int index = 0;
-            string clickedNode = dynamic_pointer_cast<GuiNodeView>(_nodeView)->getClickedNode(); // Used to set the object selected for configuration
-            for (auto& name : objectNames)
-            {
-                items.push_back(name.c_str());
-                // If the object name is the same as the item selected in the node view, we change the targetIndex
-                if (name == clickedNode)
-                    _targetIndex = index;
-                index++;
-            }
-            ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
+            items.push_back(objectAliases[name].c_str());
+            // If the object name is the same as the item selected in the node view, we change the targetIndex
+            if (name == clickedNode)
+                _targetIndex = index;
+            index++;
         }
+        ImGui::Combo("Selected object", &_targetIndex, items.data(), items.size());
 
         // Initialize the target
         if (_targetIndex >= 0)
         {
-            vector<string> objectNames = getObjectNames();
             if (objectNames.size() <= static_cast<uint32_t>(_targetIndex))
                 return;
             _targetObjectName = objectNames[_targetIndex];
@@ -122,10 +119,10 @@ void GuiControl::render()
             ImGui::Separator();
             ImGui::Spacing();
 
-            string newName = _targetObjectName;
+            string newName = objectAliases[_targetObjectName];
             newName.resize(256);
             if (ImGui::InputText("Rename", const_cast<char*>(newName.c_str()), newName.size(), ImGuiInputTextFlags_EnterReturnsTrue))
-                setWorldAttribute("renameObject", {_targetObjectName, newName});
+                setWorldAttribute("setAlias", {_targetObjectName, newName});
 
             ImGui::Spacing();
             ImGui::Separator();

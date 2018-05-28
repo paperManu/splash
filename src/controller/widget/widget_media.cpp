@@ -15,7 +15,7 @@ namespace Splash
 GuiMedia::GuiMedia(Scene* scene, const string& name)
     : GuiWidget(scene, name)
 {
-    auto types = getTypesFromCategory(BaseObject::Category::IMAGE);
+    auto types = getTypesFromCategory(GraphObject::Category::IMAGE);
     for (const auto& type : types)
         _mediaTypes[getShortDescription(type)] = type;
 
@@ -36,7 +36,8 @@ void GuiMedia::render()
         for (auto& media : mediaList)
         {
             auto mediaName = media->getName();
-            if (ImGui::TreeNode(mediaName.c_str()))
+            auto mediaAlias = getObjectAlias(mediaName);
+            if (ImGui::TreeNode(mediaAlias.c_str()))
             {
                 ImGui::Text("Change media type: ");
                 ImGui::SameLine();
@@ -49,7 +50,7 @@ void GuiMedia::render()
                     mediaTypes.push_back(type.first.c_str());
 
                 if (ImGui::Combo("##mediaType", &_mediaTypeIndex[mediaName], mediaTypes.data(), mediaTypes.size()))
-                    replaceMedia(mediaName, mediaTypes[_mediaTypeIndex[mediaName]]);
+                    replaceMedia(mediaName, mediaAlias, mediaTypes[_mediaTypeIndex[mediaName]]);
 
                 ImGui::Text("Current media type: %s", _mediaTypesReversed[media->getRemoteType()].c_str());
 
@@ -223,14 +224,14 @@ void GuiMedia::render()
                         ImGui::SameLine();
                         if (ImGui::Button("..."))
                         {
-                            _fileSelectorTarget = mediaName;
+                            _fileSelectorTarget = mediaAlias;
                         }
-                        if (_fileSelectorTarget == mediaName)
+                        if (_fileSelectorTarget == mediaAlias)
                         {
                             static string path = _root->getMediaPath();
                             bool cancelled;
                             vector<string> extensions{{"bmp"}, {"jpg"}, {"png"}, {"tga"}, {"tif"}, {"avi"}, {"mov"}, {"mp4"}};
-                            if (SplashImGui::FileSelector(mediaName, path, cancelled, extensions))
+                            if (SplashImGui::FileSelector(mediaAlias, path, cancelled, extensions))
                             {
                                 if (!cancelled)
                                     _newMedia[1] = path;
@@ -314,10 +315,10 @@ void GuiMedia::render()
 }
 
 /*************/
-void GuiMedia::replaceMedia(const string& previousMedia, const string& type)
+void GuiMedia::replaceMedia(const string& previousMedia, const string& alias, const string& type)
 {
     // We get the list of all objects linked to previousMedia
-    auto targetObjects = list<weak_ptr<BaseObject>>();
+    auto targetObjects = list<weak_ptr<GraphObject>>();
     auto objects = getObjectsOfType("");
     for (auto& object : objects)
     {
@@ -332,6 +333,7 @@ void GuiMedia::replaceMedia(const string& previousMedia, const string& type)
     Values msg;
     msg.push_back(previousMedia);
     msg.push_back(_mediaTypes[type]);
+    msg.push_back(alias);
     for (const auto& weakObject : targetObjects)
     {
         if (weakObject.expired())
@@ -351,9 +353,9 @@ int GuiMedia::updateWindowFlags()
 }
 
 /*************/
-list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
+list<shared_ptr<GraphObject>> GuiMedia::getSceneMedia()
 {
-    auto mediaList = list<shared_ptr<BaseObject>>();
+    auto mediaList = list<shared_ptr<GraphObject>>();
     auto mediaTypes = list<string>({"image", "queue", "texture"});
 
     for (auto& type : mediaTypes)
@@ -368,9 +370,9 @@ list<shared_ptr<BaseObject>> GuiMedia::getSceneMedia()
 }
 
 /*************/
-list<shared_ptr<BaseObject>> GuiMedia::getFiltersForImage(const shared_ptr<BaseObject>& image)
+list<shared_ptr<GraphObject>> GuiMedia::getFiltersForImage(const shared_ptr<GraphObject>& image)
 {
-    auto filterList = list<shared_ptr<BaseObject>>();
+    auto filterList = list<shared_ptr<GraphObject>>();
     auto allFilters = getObjectsOfType("filter");
     for (auto& obj : allFilters)
     {

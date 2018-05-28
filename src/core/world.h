@@ -41,6 +41,7 @@
 #if HAVE_PORTAUDIO
 #include "./sound/ltcclock.h"
 #endif
+#include "./core/name_registry.h"
 #include "./core/root_object.h"
 
 namespace Splash
@@ -106,13 +107,12 @@ class World : public RootObject
     bool _runAsChild{false}; //!< If true, runs as a child process
     std::string _childSceneName{"scene"};
 
+    NameRegistry _nameRegistry{};       //!< Object name registry
     std::map<std::string, int> _scenes; //!< Map holding the PID of the Scene processes
     std::string _masterSceneName{""};   //!< Name of the master Scene
     std::string _displayServer{"0"};    //!< Display server.
     std::string _forcedDisplay{""};     //!< Set to force an output display
     bool _reloadingConfig{false};       // TODO: workaround to allow for correct reloading when an inner scene was used
-
-    std::atomic_int _nextId{0};
 
     std::string _configFilename;  //!< Configuration file path
     std::string _projectFilename; //!< Project configuration file path
@@ -170,12 +170,6 @@ class World : public RootObject
      * (in fact, all objects not related to projector calibration)
      */
     void saveProject();
-
-    /**
-     * \brief Get the next available id
-     * \return Return an available id
-     */
-    int getId() { return _nextId.fetch_add(1); }
 
     /**
      * \brief Get the list of objects by their type

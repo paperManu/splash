@@ -15,19 +15,16 @@ RootObject::RootObject()
 }
 
 /*************/
-RootObject::~RootObject()
-{
-}
+RootObject::~RootObject() {}
 
 /*************/
-shared_ptr<BaseObject> RootObject::createObject(const string& type, const string& name)
+shared_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
-    auto objectIt = _objects.find(name);
-    if (objectIt != _objects.end())
+    auto object = getObject(name);
+    if (object)
     {
-        auto object = objectIt->second;
         auto objectType = object->getType();
         if (objectType != type)
         {
@@ -38,15 +35,17 @@ shared_ptr<BaseObject> RootObject::createObject(const string& type, const string
 
         return object;
     }
+    else
+    {
+        auto object = _factory->create(type);
+        if (!object)
+            return {nullptr};
 
-    auto object = _factory->create(type);
-    if (!object)
-        return {nullptr};
-
-    object->setName(name);
-    object->setSavable(false);
-    _objects[name] = object;
-    return object;
+        object->setName(name);
+        object->setSavable(false);
+        _objects[name] = object;
+        return object;
+    }
 }
 
 /*************/
@@ -54,13 +53,13 @@ void RootObject::disposeObject(const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
-    auto objectIt = _objects.find(name);
-    if (objectIt != _objects.end() && objectIt->second.unique())
-        _objects.erase(objectIt);
+    auto object = getObject(name);
+    if (object && object.unique())
+        _objects.erase(name);
 }
 
 /*************/
-shared_ptr<BaseObject> RootObject::getObject(const string& name)
+shared_ptr<GraphObject> RootObject::getObject(const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
@@ -77,22 +76,22 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
     if (name == _name || name == SPLASH_ALL_PEERS)
         return setAttribute(attrib, args);
 
-    auto objectIt = _objects.find(name);
-    if (objectIt != _objects.end() && objectIt->second->getAttributeSyncMethod(attrib) == AttributeFunctor::Sync::force_sync)
+    auto object = getObject(name);
+    if (object && object->getAttributeSyncMethod(attrib) == Attribute::Sync::force_sync)
         async = false;
 
     if (async)
     {
         addTask([=]() {
-            auto objectIt = _objects.find(name);
-            if (objectIt != _objects.end())
-                objectIt->second->setAttribute(attrib, args);
+            auto object = getObject(name);
+            if (object)
+                object->setAttribute(attrib, args);
         });
     }
     else
     {
-        if (objectIt != _objects.end())
-            return objectIt->second->setAttribute(attrib, args);
+        if (object)
+            return object->setAttribute(attrib, args);
         else
             return false;
     }
@@ -103,12 +102,12 @@ bool RootObject::set(const string& name, const string& attrib, const Values& arg
 /*************/
 void RootObject::setFromSerializedObject(const string& name, shared_ptr<SerializedObject> obj)
 {
-    auto objectIt = _objects.find(name);
-    if (objectIt != _objects.end())
+    auto object = getObject(name);
+    if (object)
     {
-        auto object = dynamic_pointer_cast<BufferObject>(objectIt->second);
-        if (object)
-            object->setSerializedObject(move(obj));
+        auto objectAsBuffer = dynamic_pointer_cast<BufferObject>(object);
+        if (objectAsBuffer)
+            objectAsBuffer->setSerializedObject(move(obj));
     }
     else
     {
@@ -243,4 +242,4 @@ Values RootObject::sendMessageWithAnswer(const string& name, const string& attri
         return {};
 }
 
-} // end of namespace
+} // namespace Splash

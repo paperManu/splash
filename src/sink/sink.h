@@ -31,16 +31,16 @@
 
 #include "./config.h"
 
-#include "./core/base_object.h"
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./core/resizable_array.h"
 #include "./graphics/texture.h"
 
 namespace Splash
 {
 
-class Sink : public BaseObject
+class Sink : public GraphObject
 {
   public:
     /**
@@ -66,16 +66,16 @@ class Sink : public BaseObject
     std::string getCaps() const;
 
     /**
-     * Try to link the given BaseObject to this object
+     * Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    bool linkTo(const std::shared_ptr<GraphObject>& obj);
 
     /**
-     * Try to unlink the given BaseObject from this object
+     * Try to unlink the given GraphObject from this object
      * \param obj Shared pointer to the (supposed) child object
      */
-    void unlinkFrom(const std::shared_ptr<BaseObject>& obj);
+    void unlinkFrom(const std::shared_ptr<GraphObject>& obj);
 
     /**
      * Update the inner buffer of the sink
@@ -124,6 +124,6 @@ class Sink : public BaseObject
     void updatePbos(int width, int height, int bytes);
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif

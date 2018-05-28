@@ -23,7 +23,7 @@ namespace Splash
 
 /*************/
 Object::Object(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     init();
 }
@@ -109,12 +109,12 @@ void Object::activate()
     {
         shaderParameters.push_front(_fill);
         _shader->setAttribute("fill", shaderParameters);
-        _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
     }
 
     // Set some uniforms
     _shader->setAttribute("sideness", {_sideness});
     _shader->setAttribute("uniform", {"_normalExp", _normalExponent});
+    _shader->setAttribute("uniform", {"_color", _color.r, _color.g, _color.b, _color.a});
 
     if (_geometries.size() > 0)
     {
@@ -213,10 +213,10 @@ int Object::getVerticesNumber() const
 }
 
 /*************/
-bool Object::linkTo(const shared_ptr<BaseObject>& obj)
+bool Object::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
-    if (!BaseObject::linkTo(obj))
+    if (!GraphObject::linkTo(obj))
         return false;
 
     if (obj->getType().find("texture") != string::npos)
@@ -272,7 +272,7 @@ bool Object::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
+void Object::unlinkFrom(const shared_ptr<GraphObject>& obj)
 {
     auto type = obj->getType();
     if (type.find("texture") != string::npos)
@@ -332,7 +332,7 @@ void Object::unlinkFrom(const shared_ptr<BaseObject>& obj)
         removeTexture(tex);
     }
 
-    BaseObject::unlinkFrom(obj);
+    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -565,7 +565,7 @@ void Object::setViewProjectionMatrix(const glm::dmat4& mv, const glm::dmat4& mp)
 /*************/
 void Object::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("activateVertexBlending",
         [&](const Values& args) {
@@ -642,8 +642,11 @@ void Object::registerAttributes()
             _color = glm::dvec4(args[0].as<float>(), args[1].as<float>(), args[2].as<float>(), args[3].as<float>());
             return true;
         },
+        [&]() -> Values {
+            return {_color.r, _color.g, _color.b, _color.a};
+        },
         {'n', 'n', 'n', 'n'});
-    setAttributeDescription("color", "Set the object color, if the fill setting is set accordingly");
+    setAttributeDescription("color", "Set the object color, used for the \"color\" fill mode, or when no texture is linked to the object.");
 
     addAttribute("normalExponent",
         [&](const Values& args) {
@@ -655,4 +658,4 @@ void Object::registerAttributes()
     setAttributeDescription("normalExponent", "If set to anything but 0.0, set the exponent applied to the normal factor for blending computation");
 }
 
-} // end of namespace
+} // namespace Splash

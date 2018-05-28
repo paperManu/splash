@@ -19,7 +19,7 @@
 
 /*
  * @attribute.h
- * AttributeFunctor class, used to add attributes to class through setter and getter functions.
+ * Attribute class, used to add attributes to class through setter and getter functions.
  */
 
 #ifndef SPLASH_ATTRIBUTE_H
@@ -39,7 +39,7 @@
 namespace Splash
 {
 
-class BaseObject;
+class GraphObject;
 
 /*************/
 // Handle to a callback for an attribute modification
@@ -52,7 +52,7 @@ class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
     {
     }
 
-    CallbackHandle(const std::weak_ptr<BaseObject>& owner, const std::string& attr)
+    CallbackHandle(const std::weak_ptr<GraphObject>& owner, const std::string& attr)
         : _callbackId(_nextCallbackId.fetch_add(1))
         , _isValid(true)
         , _owner(owner)
@@ -78,12 +78,12 @@ class CallbackHandle : public std::enable_shared_from_this<CallbackHandle>
 
     uint32_t _callbackId{0};
     bool _isValid{false};
-    std::weak_ptr<BaseObject> _owner;
+    std::weak_ptr<GraphObject> _owner;
     std::string _attribute{""};
 };
 
 /*************/
-class AttributeFunctor
+class Attribute
 {
   public:
     using Callback = std::function<void(const std::string&, const std::string&)>;
@@ -98,31 +98,23 @@ class AttributeFunctor
     /**
      * \brief Default constructor.
      */
-    AttributeFunctor() = default;
-    AttributeFunctor(const std::string& name)
+    Attribute() = default;
+    explicit Attribute(const std::string& name)
         : _name(name){};
 
     /**
      * \brief Constructor.
      * \param name Name of the attribute.
-     * \param setFunc Setter function.
+     * \param setFunc Setter function. Can be nullptr
+     * \param getFunc Getter function. Can be nullptr
      * \param types Vector of char defining the parameters types the setter function expects.
      */
-    AttributeFunctor(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::vector<char>& types = {});
+    Attribute(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<const Values()>& getFunc = nullptr, const std::vector<char>& types = {});
 
-    /**
-     * \brief Constructor.
-     * \param name Name of the attribute.
-     * \param setFunc Setter function.
-     * \param getFunc Getter function.
-     * \param types Vector of char defining the parameters types the setter function expects.
-     */
-    AttributeFunctor(const std::string& name, const std::function<bool(const Values&)>& setFunc, const std::function<const Values()>& getFunc, const std::vector<char>& types = {});
-
-    AttributeFunctor(const AttributeFunctor&) = delete;
-    AttributeFunctor& operator=(const AttributeFunctor&) = delete;
-    AttributeFunctor(AttributeFunctor&& a) { operator=(std::move(a)); }
-    AttributeFunctor& operator=(AttributeFunctor&& a);
+    Attribute(const Attribute&) = delete;
+    Attribute& operator=(const Attribute&) = delete;
+    Attribute(Attribute&& a) { operator=(std::move(a)); }
+    Attribute& operator=(Attribute&& a);
 
     /**
      * \brief Parenthesis operator which calls the setter function if defined, otherwise calls a default setter function which only stores the arguments if the have the right type.
@@ -196,7 +188,7 @@ class AttributeFunctor
      * \param cb Callback function
      * \return Return a callback handle
      */
-    CallbackHandle registerCallback(std::weak_ptr<BaseObject> caller, Callback cb);
+    CallbackHandle registerCallback(std::weak_ptr<GraphObject> caller, Callback cb);
 
     /**
      * Unregister a callback

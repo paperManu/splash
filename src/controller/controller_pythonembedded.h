@@ -33,11 +33,10 @@
 
 #include <Python.h>
 
-#include "./core/attribute.h"
 #include "./controller.h"
+#include "./core/attribute.h"
 #include "./core/coretypes.h"
 #include "./graphics/filter.h"
-#include "./sink/sink.h"
 
 namespace Splash
 {
@@ -46,16 +45,24 @@ namespace Splash
 class PythonEmbedded : public ControllerObject
 {
   public:
+    static PyObject* SplashError;
+
     /**
      * \brief Constructor
      * \param root Root object
      */
-    PythonEmbedded(RootObject* root);
+    explicit PythonEmbedded(RootObject* root);
 
     /**
      * \brief Destructor
      */
     ~PythonEmbedded() final;
+
+    /**
+     * Inside a Python method, get the PythonEmbedded instance
+     * \return Return the instance
+     */
+    static PythonEmbedded* getInstance();
 
     /**
      * \brief Set the path to the source Python file
@@ -91,6 +98,9 @@ class PythonEmbedded : public ControllerObject
     std::mutex _attributeCallbackMutex{};
     std::map<uint32_t, CallbackHandle> _attributeCallbackHandles{};
 
+    static std::atomic_int _pythonInstances;        //!< Number of Python scripts running
+    static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
+
     /**
      * \brief Python interpreter main loop
      */
@@ -124,21 +134,17 @@ class PythonEmbedded : public ControllerObject
      */
     void registerAttributes();
 
-  private:
-    static std::atomic_int _pythonInstances;        //!< Number of Python scripts running
-    static PyThreadState* _pythonGlobalThreadState; //!< Global Python thread state, shared by all PythonEmbedded instances
-
     // Python objects and methods
     static PyMethodDef SplashMethods[];
     static PyModuleDef SplashModule;
-    static PyObject* SplashError;
 
     static PyObject* pythonInitSplash();
-    static PythonEmbedded* getSplashInstance();
     static PyObject* pythonGetInterpreterName(PyObject* self, PyObject* args);
     static PyObject* pythonGetLogs(PyObject* self, PyObject* args);
     static PyObject* pythonGetTimings(PyObject* self, PyObject* args);
     static PyObject* pythonGetMasterClock(PyObject* self, PyObject* args);
+    static PyObject* pythonGetObjectAlias(PyObject* self, PyObject* args, PyObject* kwds);
+    static PyObject* pythonGetObjectAliases(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectList(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectTypes(PyObject* self, PyObject* args);
     static PyObject* pythonGetObjectDescription(PyObject* self, PyObject* args, PyObject* kwds);
@@ -156,47 +162,8 @@ class PythonEmbedded : public ControllerObject
     static PyObject* pythonAddCustomAttribute(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonRegisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds);
     static PyObject* pythonUnregisterAttributeCallback(PyObject* self, PyObject* args, PyObject* kwds);
-
-    // Sink wrapper-specific stuff
-  public:
-    static std::atomic_int sinkIndex;
-    typedef struct
-    {
-        bool initialized{false};
-        PyObject_HEAD std::string sourceName{""};
-        uint32_t width{512};
-        uint32_t height{512};
-        bool keepRatio{false};
-        uint32_t framerate{30};
-        std::string sinkName{""};
-        std::string filterName{""};
-        std::shared_ptr<Splash::Sink> sink{nullptr};
-        bool linked{false};
-        bool opened{false};
-        PyObject* lastBuffer{nullptr};
-    } pythonSinkObject;
-
-    // Sink wrapper methods. They are in this class to be able to access the Splash capsule
-    static void pythonSinkDealloc(pythonSinkObject* self);
-    static PyObject* pythonSinkNew(PyTypeObject* type, PyObject* args, PyObject* kwds);
-    static int pythonSinkInit(pythonSinkObject* self, PyObject* args, PyObject* kwds);
-    static PyObject* pythonSinkLink(pythonSinkObject* self, PyObject* args, PyObject* kwds);
-    static PyObject* pythonSinkUnlink(pythonSinkObject* self);
-    static PyObject* pythonSinkGrab(pythonSinkObject* self);
-    static PyObject* pythonSinkSetSize(pythonSinkObject* self, PyObject* args, PyObject* kwds);
-    static PyObject* pythonSinkGetSize(pythonSinkObject* self);
-    static PyObject* pythonSinkKeepRatio(pythonSinkObject* self, PyObject* args, PyObject* kwds);
-    static PyObject* pythonSinkSetFramerate(pythonSinkObject* self, PyObject* args, PyObject* kwds);
-    static PyObject* pythonSinkOpen(pythonSinkObject* self);
-    static PyObject* pythonSinkClose(pythonSinkObject* self);
-    static PyObject* pythonSinkGetCaps(pythonSinkObject* self);
-
-    static PyMethodDef SinkMethods[];
-
-  private:
-    static PyTypeObject pythonSinkType;
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_PYTHON_EMBEDDED_H

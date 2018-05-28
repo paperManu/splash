@@ -64,6 +64,17 @@ void GuiGlobalView::render()
             revertCalibration();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Revert the selected camera to its previous calibration\n(Ctrl + Z while hovering the view)");
+        ImGui::SameLine();
+
+        if (ImGui::Button("Reset camera") && _camera)
+        {
+            auto cameraName = _camera->getName();
+            setObjectAttribute(cameraName, "eye", {2.0, 2.0, 2.0});
+            setObjectAttribute(cameraName, "target", {0.0, 0.0, 0.0});
+            setObjectAttribute(cameraName, "up", {0.0, 0.0, 1.0});
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset the camera to default values, useful when lost in 3D space");
 
         ImGui::Checkbox("Hide other cameras", &_hideCameras);
         if (ImGui::IsItemHovered())
@@ -149,7 +160,7 @@ void GuiGlobalView::render()
             }
 
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("%s", camera->getName().c_str());
+                ImGui::SetTooltip("%s", camera->getAlias().c_str());
         }
         ImGui::EndChild();
 
@@ -171,7 +182,7 @@ void GuiGlobalView::render()
 
             Values reprojectionError;
             _camera->getAttribute("getReprojectionError", reprojectionError);
-            ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getName().c_str(), reprojectionError[0].as<float>());
+            ImGui::Text("Current camera: %s - Reprojection error: %f", _camera->getAlias().c_str(), reprojectionError[0].as<float>());
 
             ImGui::Image((void*)(intptr_t)_camera->getTexture()->getTexId(), ImVec2(w, h), ImVec2(0, 1), ImVec2(1, 0));
             if (ImGui::IsItemHoveredRect())

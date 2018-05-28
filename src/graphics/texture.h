@@ -32,15 +32,15 @@
 
 #include "config.h"
 
-#include "./core/base_object.h"
 #include "./core/attribute.h"
 #include "./core/coretypes.h"
+#include "./core/graph_object.h"
 #include "./core/imagebuffer.h"
 
 namespace Splash
 {
 
-class Texture : public BaseObject
+class Texture : public GraphObject
 {
   public:
     /**
@@ -94,10 +94,10 @@ class Texture : public BaseObject
     virtual std::string getPrefix() const { return "_tex"; }
 
     /**
-     * \brief Try to link the given BaseObject to this object
+     * \brief Try to link the given GraphObject to this object
      * \param obj Shared pointer to the (wannabe) child object
      */
-    virtual bool linkTo(const std::shared_ptr<BaseObject>& obj);
+    virtual bool linkTo(const std::shared_ptr<GraphObject>& obj);
 
     /**
      * \brief Lock the texture for read / write operations
@@ -141,6 +141,6 @@ class Texture : public BaseObject
     void init();
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_TEXTURE_H

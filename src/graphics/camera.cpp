@@ -1,7 +1,6 @@
 #include "./graphics/camera.h"
 
 #include <fstream>
-#include <future>
 #include <limits>
 
 #include <glm/ext.hpp>
@@ -68,7 +67,7 @@ namespace Splash
 
 /*************/
 Camera::Camera(RootObject* root)
-    : BaseObject(root)
+    : GraphObject(root)
 {
     _type = "camera";
     _renderingPriority = Priority::CAMERA;
@@ -381,10 +380,10 @@ void Camera::drawModelOnce(const std::string& modelName, const glm::dmat4& rtMat
 }
 
 /*************/
-bool Camera::linkTo(const shared_ptr<BaseObject>& obj)
+bool Camera::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
-    if (!BaseObject::linkTo(obj))
+    if (!GraphObject::linkTo(obj))
         return false;
 
     if (dynamic_pointer_cast<Object>(obj).get() != nullptr)
@@ -400,7 +399,7 @@ bool Camera::linkTo(const shared_ptr<BaseObject>& obj)
 }
 
 /*************/
-void Camera::unlinkFrom(const shared_ptr<BaseObject>& obj)
+void Camera::unlinkFrom(const shared_ptr<GraphObject>& obj)
 {
     auto objIterator = find_if(_objects.begin(), _objects.end(), [&](const std::weak_ptr<Object> o) {
         if (o.expired())
@@ -414,7 +413,7 @@ void Camera::unlinkFrom(const shared_ptr<BaseObject>& obj)
     if (objIterator != _objects.end())
         _objects.erase(objIterator);
 
-    BaseObject::unlinkFrom(obj);
+    GraphObject::unlinkFrom(obj);
 }
 
 /*************/
@@ -1057,7 +1056,7 @@ void Camera::sendCalibrationPointsToObjects()
 /*************/
 void Camera::registerAttributes()
 {
-    BaseObject::registerAttributes();
+    GraphObject::registerAttributes();
 
     addAttribute("eye",
         [&](const Values& args) {
@@ -1605,7 +1604,7 @@ void Camera::registerAttributes()
     });
     setAttributeDescription("flashBG", "Switch background to light gray");
 
-    addAttribute("getReprojectionError", [&](const Values&) { return true; }, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
+    addAttribute("getReprojectionError", nullptr, [&]() -> Values { return {_calibrationReprojectionError}; }, {});
     setAttributeDescription("getReprojectionError", "Get the reprojection error for the current calibration");
 }
 

@@ -33,7 +33,7 @@ Texture_Syphon::~Texture_Syphon()
 }
 
 /**************/
-bool Texture_Syphon::linkTo(const shared_ptr<BaseObject>& obj)
+bool Texture_Syphon::linkTo(const shared_ptr<GraphObject>& obj)
 {
     // Mandatory before trying to link
     return Texture::linkTo(obj);

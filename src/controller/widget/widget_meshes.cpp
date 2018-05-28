@@ -15,7 +15,7 @@ namespace Splash
 GuiMeshes::GuiMeshes(Scene* scene, const string& name)
     : GuiWidget(scene, name)
 {
-    auto types = getTypesFromCategory(BaseObject::Category::MESH);
+    auto types = getTypesFromCategory(GraphObject::Category::MESH);
     for (auto& type : types)
         _meshType[getShortDescription(type)] = type;
 
@@ -32,7 +32,7 @@ void GuiMeshes::render()
         for (auto& mesh : meshList)
         {
             auto meshName = mesh->getName();
-            if (ImGui::TreeNode(meshName.c_str()))
+            if (ImGui::TreeNode(mesh->getAlias().c_str()))
             {
                 ImGui::Text("Change mesh type: ");
                 ImGui::SameLine();
@@ -63,7 +63,7 @@ void GuiMeshes::render()
 void GuiMeshes::replaceMesh(const string& previousMedia, const string& type)
 {
     // We get the list of all objects linked to previousMedia
-    auto targetObjects = list<weak_ptr<BaseObject>>();
+    auto targetObjects = list<weak_ptr<GraphObject>>();
     auto objects = getObjectsOfType("");
     for (auto& object : objects)
     {
@@ -97,9 +97,9 @@ int GuiMeshes::updateWindowFlags()
 }
 
 /*************/
-list<shared_ptr<BaseObject>> GuiMeshes::getSceneMeshes()
+list<shared_ptr<GraphObject>> GuiMeshes::getSceneMeshes()
 {
-    auto meshList = list<shared_ptr<BaseObject>>();
+    auto meshList = list<shared_ptr<GraphObject>>();
     auto meshTypes = list<string>({"mesh"});
 
     for (auto& type : meshTypes)
