@@ -472,7 +472,7 @@ bool Image_V4L2::openCaptureDevice(const std::string& devicePath)
     _outputWidth = _v4l2Format.fmt.pix.width;
     _outputHeight = _v4l2Format.fmt.pix.height;
 
-    Log::get() << Log::WARNING << "Image_V4L2::" << __FUNCTION__ << " - Capture format set to: " << _outputWidth << "x" << _outputHeight << " for format "
+    Log::get() << Log::MESSAGE << "Image_V4L2::" << __FUNCTION__ << " - Capture format set to: " << _outputWidth << "x" << _outputHeight << " for format "
                << string(reinterpret_cast<char*>(&_outputPixelFormat), 4) << Log::endl;
 
     switch (_outputPixelFormat)
@@ -681,6 +681,9 @@ void Image_V4L2::registerAttributes()
             }
             catch (...)
             {
+                Log::get() << Log::WARNING << "Image_V4L2~~device"
+                           << " - Invalid V4L2 device path: " << path << Log::endl;
+                return false;
             }
 
             auto isCapturing = _capturing;
@@ -707,7 +710,12 @@ void Image_V4L2::registerAttributes()
 
     addAttribute("index",
         [&](const Values& args) {
+            auto isCapturing = _capturing;
+            if (isCapturing)
+                stopCapture();
             _v4l2Index = std::max(args[0].as<int>(), 0);
+            if (isCapturing)
+                doCapture();
             return true;
         },
         [&]() -> Values { return {_v4l2Index}; },
@@ -727,6 +735,8 @@ void Image_V4L2::registerAttributes()
             auto format = args[0].as<string>();
             if (format == "RGB")
                 _outputPixelFormat = V4L2_PIX_FMT_RGB24;
+            else if (format == "BGR")
+                _outputPixelFormat = V4L2_PIX_FMT_BGR24;
             else if (format == "YUYV")
                 _outputPixelFormat = V4L2_PIX_FMT_YUYV;
             else
@@ -746,6 +756,9 @@ void Image_V4L2::registerAttributes()
                 break;
             case V4L2_PIX_FMT_RGB24:
                 format = "RGB";
+                break;
+            case V4L2_PIX_FMT_BGR24:
+                format = "BGR";
                 break;
             case V4L2_PIX_FMT_YUYV:
                 format = "YUYV";
