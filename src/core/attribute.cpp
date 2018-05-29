@@ -19,7 +19,7 @@ CallbackHandle::~CallbackHandle()
 }
 
 /*************/
-Attribute::Attribute(const string& name, const function<bool(const Values&)>& setFunc, const function<const Values()>& getFunc, const vector<char>& types)
+Attribute::Attribute(const string& name, const function<bool(const Values&)>& setFunc, const function<Values()>& getFunc, const vector<char>& types)
     : _name(name)
     , _setFunc(setFunc)
     , _getFunc(getFunc)
@@ -98,7 +98,7 @@ bool Attribute::operator()(const Values& args)
         }
     }
 
-    return _setFunc(forward<const Values&>(args));
+    return _setFunc(args);
 }
 
 /*************/

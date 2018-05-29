@@ -83,16 +83,16 @@ Json::Value BaseObject::getValuesAsJson(const Values& values, bool asObject) con
             {
             default:
                 continue;
-            case Value::i:
+            case Value::integer:
                 jsValue[v.getName()] = v.as<int>();
                 break;
-            case Value::f:
+            case Value::real:
                 jsValue[v.getName()] = v.as<float>();
                 break;
-            case Value::s:
+            case Value::string:
                 jsValue[v.getName()] = v.as<string>();
                 break;
-            case Value::v:
+            case Value::values:
             {
                 auto vv = v.as<Values>();
                 // If the first value is named, we treat it as a Json object
@@ -113,16 +113,16 @@ Json::Value BaseObject::getValuesAsJson(const Values& values, bool asObject) con
             {
             default:
                 continue;
-            case Value::i:
+            case Value::integer:
                 jsValue.append(v.as<int>());
                 break;
-            case Value::f:
+            case Value::real:
                 jsValue.append(v.as<float>());
                 break;
-            case Value::s:
+            case Value::string:
                 jsValue.append(v.as<string>());
                 break;
-            case Value::v:
+            case Value::values:
             {
                 auto vv = v.as<Values>();
                 // If the first value is named, we treat it as a Json object

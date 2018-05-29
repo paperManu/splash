@@ -264,7 +264,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             ImGui::PopID();
 
             int precision = 0;
-            if (attribute[0].getType() == Value::Type::f)
+            if (attribute[0].getType() == Value::Type::real)
                 precision = 3;
 
             switch (attribute.size())
@@ -274,7 +274,7 @@ void GuiWidget::drawAttributes(const string& objName, const unordered_map<string
             case 1:
             {
                 float tmp = attribute[0].as<float>();
-                float step = attribute[0].getType() == Value::Type::f ? 0.01 * tmp : 1.f;
+                float step = attribute[0].getType() == Value::Type::real ? 0.01 * tmp : 1.f;
                 if (ImGui::InputFloat(attrName.c_str(), &tmp, step, step, precision, ImGuiInputTextFlags_EnterReturnsTrue))
                     setObjectAttribute(objName, attrName, {tmp});
                 break;

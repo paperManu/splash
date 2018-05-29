@@ -600,7 +600,7 @@ void Shader::updateUniforms()
             int size = uniform.values.size();
             int type = uniform.values[0].getType();
 
-            if (type == Value::Type::i)
+            if (type == Value::Type::integer)
             {
                 if (size == 1)
                     glUniform1i(uniform.glIndex, uniform.values[0].as<int>());
@@ -611,7 +611,7 @@ void Shader::updateUniforms()
                 else if (size == 4)
                     glUniform4i(uniform.glIndex, uniform.values[0].as<int>(), uniform.values[1].as<int>(), uniform.values[2].as<int>(), uniform.values[3].as<int>());
             }
-            else if (type == Value::Type::f)
+            else if (type == Value::Type::real)
             {
                 if (size == 1)
                     glUniform1f(uniform.glIndex, uniform.values[0].as<float>());
@@ -636,10 +636,10 @@ void Shader::updateUniforms()
                     glUniformMatrix4fv(uniform.glIndex, 1, GL_FALSE, m.data());
                 }
             }
-            else if (type == Value::Type::v && uniform.values[0].as<Values>().size() > 0)
+            else if (type == Value::Type::values && uniform.values[0].as<Values>().size() > 0)
             {
                 type = uniform.values[0].as<Values>()[0].getType();
-                if (type == Value::Type::i)
+                if (type == Value::Type::integer)
                 {
                     vector<int> data;
                     if (uniform.type == "buffer")
@@ -672,7 +672,7 @@ void Shader::updateUniforms()
                             glUniform4iv(uniform.glIndex, data.size() / 4, data.data());
                     }
                 }
-                else if (type == Value::Type::f)
+                else if (type == Value::Type::real)
                 {
                     vector<float> data;
                     if (uniform.type == "buffer")
@@ -736,7 +736,7 @@ void Shader::registerAttributes()
 
         string uniformName = args[0].as<string>();
         Values uniformArgs;
-        if (args[1].getType() != Value::Type::v)
+        if (args[1].getType() != Value::Type::values)
         {
             for (uint32_t i = 1; i < args.size(); ++i)
                 uniformArgs.push_back(args[i]);

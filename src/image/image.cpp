@@ -297,6 +297,8 @@ void Image::updateMediaInfo()
     mediaInfo.push_back(Value(spec.format, "format"));
     mediaInfo.push_back(Value(_srgb, "srgb"));
     updateMoreMediaInfo(mediaInfo);
+
+    lock_guard<mutex> lock(_mediaInfoMutex);
     std::swap(_mediaInfo, mediaInfo);
 }
 
@@ -438,10 +440,14 @@ void Image::registerAttributes()
 
     addAttribute("mediaInfo",
         [&](const Values& args) {
+            lock_guard<mutex> lock(_mediaInfoMutex);
             _mediaInfo = args;
             return true;
         },
-        [&]() -> Values { return _mediaInfo; },
+        [&]() -> Values {
+            lock_guard<mutex> lock(_mediaInfoMutex);
+            return _mediaInfo;
+        },
         {});
     setAttributeParameter("mediaInfo", false, true);
     setAttributeDescription("mediaInfo", "Media information (size, duration, etc.)");

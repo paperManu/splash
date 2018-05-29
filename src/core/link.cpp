@@ -278,11 +278,11 @@ bool Link::sendMessage(const string& name, const string& attribute, const Values
                     memcpy(msg.data(), valueName.c_str(), sizeof(valueName) + 1);
                     _socketMessageOut->send(msg, ZMQ_SNDMORE);
 
-                    if (valueType == Value::Type::v)
+                    if (valueType == Value::Type::values)
                         sendMessage(v.as<Values>());
                     else
                     {
-                        int valueSize = (valueType == Value::Type::s) ? v.size() + 1 : v.size();
+                        int valueSize = (valueType == Value::Type::string) ? v.size() + 1 : v.size();
                         void* value = v.data();
                         msg.rebuild(valueSize);
                         memcpy(msg.data(), value, valueSize);
@@ -361,18 +361,18 @@ void Link::handleInputMessages()
                 _socketMessageIn->recv(&msg);
                 string valueName(static_cast<char*>(msg.data()));
 
-                if (valueType == Value::Type::v)
+                if (valueType == Value::Type::values)
                 {
                     values.push_back(recvMessage());
                 }
                 else
                 {
                     _socketMessageIn->recv(&msg);
-                    if (valueType == Value::Type::i)
+                    if (valueType == Value::Type::integer)
                         values.push_back(*(int64_t*)msg.data());
-                    else if (valueType == Value::Type::f)
+                    else if (valueType == Value::Type::real)
                         values.push_back(*(double*)msg.data());
-                    else if (valueType == Value::Type::s)
+                    else if (valueType == Value::Type::string)
                         values.push_back(string((char*)msg.data()));
                 }
 
