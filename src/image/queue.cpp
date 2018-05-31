@@ -381,7 +381,7 @@ QueueSurrogate::QueueSurrogate(RootObject* root)
     : Texture(root)
     , _filter(make_shared<Filter>(root))
 {
-    _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)));
+    _filter = dynamic_pointer_cast<Filter>(_root->createObject("filter", "queueFilter_" + _name + to_string(_filterIndex++)).lock());
     _filter->_savable = false;
 
     registerAttributes();
@@ -443,7 +443,7 @@ void QueueSurrogate::registerAttributes()
 
             if (type.find("image") != string::npos)
             {
-                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source"));
+                auto image = dynamic_pointer_cast<Image>(_root->createObject("image", _name + "_source").lock());
                 image->zero();
                 image->setRemoteType(type);
                 object = image;

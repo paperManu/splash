@@ -73,22 +73,6 @@ void GraphObject::unlinkFrom(const shared_ptr<GraphObject>& obj)
 }
 
 /*************/
-const vector<shared_ptr<GraphObject>> GraphObject::getLinkedObjects()
-{
-    vector<shared_ptr<GraphObject>> objects;
-    for (auto& o : _linkedObjects)
-    {
-        auto obj = o.lock();
-        if (!obj)
-            continue;
-
-        objects.push_back(obj);
-    }
-
-    return objects;
-}
-
-/*************/
 Json::Value GraphObject::getConfigurationAsJson() const
 {
     Json::Value root;

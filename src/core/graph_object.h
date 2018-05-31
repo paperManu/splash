@@ -161,7 +161,7 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
      * \brief Return a vector of the linked objects
      * \return Returns a vector of the linked objects
      */
-    const std::vector<std::shared_ptr<GraphObject>> getLinkedObjects();
+    const std::vector<std::weak_ptr<GraphObject>> getLinkedObjects() { return _linkedObjects; }
 
     /**
      * \brief Get the savability for this object
@@ -284,7 +284,7 @@ class GraphObject : public BaseObject, public std::enable_shared_from_this<Graph
     bool _isConnectedToRemote{false}; //!< True if the object gets data from a World object
 
     RootObject* _root;                                      //!< Root object, Scene or World
-    std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Children of this object
+    std::vector<std::weak_ptr<GraphObject>> _linkedObjects; //!< Linked objects
 
     /**
      * Inform that the given object is a parent

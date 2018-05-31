@@ -241,12 +241,16 @@ Json::Value Scene::getConfigurationAsJson()
             continue;
 
         auto linkedObjects = obj.second->getLinkedObjects();
-        for (auto& linkedObj : linkedObjects)
+        for (auto& weakLinkedObject : linkedObjects)
         {
-            if (!linkedObj->getSavable() || obj.second->isGhost())
+            auto linkedObject = weakLinkedObject.lock();
+            if (!linkedObject)
                 continue;
 
-            links.push_back(Values({linkedObj->getName(), obj.second->getName()}));
+            if (!linkedObject->getSavable() || obj.second->isGhost())
+                continue;
+
+            links.push_back(Values({linkedObject->getName(), obj.second->getName()}));
         }
     }
 

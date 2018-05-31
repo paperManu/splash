@@ -18,7 +18,7 @@ RootObject::RootObject()
 RootObject::~RootObject() {}
 
 /*************/
-shared_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
+weak_ptr<GraphObject> RootObject::createObject(const string& type, const string& name)
 {
     lock_guard<recursive_mutex> registerLock(_objectsMutex);
 
@@ -30,7 +30,7 @@ shared_ptr<GraphObject> RootObject::createObject(const string& type, const strin
         {
             Log::get() << Log::WARNING << "RootObject::" << __FUNCTION__ << " - Object with name " << name << " already exists, but with a different type (" << objectType
                        << " instead of " << type << ")" << Log::endl;
-            return {nullptr};
+            return {};
         }
 
         return object;
@@ -39,7 +39,7 @@ shared_ptr<GraphObject> RootObject::createObject(const string& type, const strin
     {
         auto object = _factory->create(type);
         if (!object)
-            return {nullptr};
+            return {};
 
         object->setName(name);
         object->setSavable(false);
@@ -51,11 +51,12 @@ shared_ptr<GraphObject> RootObject::createObject(const string& type, const strin
 /*************/
 void RootObject::disposeObject(const string& name)
 {
-    lock_guard<recursive_mutex> registerLock(_objectsMutex);
-
-    auto objectIt = _objects.find(name);
-    if (objectIt != _objects.end() && objectIt->second.use_count() == 1)
-        _objects.erase(objectIt);
+    addTask([=]() {
+        lock_guard<recursive_mutex> registerLock(_objectsMutex);
+        auto objectIt = _objects.find(name);
+        if (objectIt != _objects.end() && objectIt->second.use_count() == 1)
+            _objects.erase(objectIt);
+    });
 }
 
 /*************/

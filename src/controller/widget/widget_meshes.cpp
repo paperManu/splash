@@ -69,10 +69,17 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& type)
     {
         if (!object->getSavable())
             continue;
+
         auto linkedObjects = object->getLinkedObjects();
-        for (auto& linked : linkedObjects)
-            if (linked->getName() == previousMedia)
+        for (auto& weakLinkedObject : linkedObjects)
+        {
+            auto linkedObject = weakLinkedObject.lock();
+            if (!linkedObject)
+                continue;
+
+            if (linkedObject->getName() == previousMedia)
                 targetObjects.push_back(object);
+        }
     }
 
     Values msg;

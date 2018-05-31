@@ -69,7 +69,7 @@ class RootObject : public BaseObject
      * \param name Object name
      * \return Return a shared_ptr to the object
      */
-    std::shared_ptr<GraphObject> createObject(const std::string& type, const std::string& name);
+    std::weak_ptr<GraphObject> createObject(const std::string& type, const std::string& name);
 
     /**
      * Delete the given object based given its name, and whether it is the last shared_ptr managing it
