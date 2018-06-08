@@ -2,9 +2,9 @@
 
 #include <algorithm>
 
+#include "./core/world.h"
 #include "./utils/log.h"
 #include "./utils/timer.h"
-#include "./core/world.h"
 
 #define DISTANT_NAME_SUFFIX "_source"
 
@@ -307,7 +307,7 @@ void Queue::registerAttributes()
             {
                 auto src = it.as<Values>();
 
-                if (src.size() >= 5) // We need at least type, name, start and stop for each input
+                if (src.size() == 6) // We need at least type, name, start and stop for each input
                 {
                     Source source;
                     source.type = src[0].as<string>();
@@ -318,6 +318,10 @@ void Queue::registerAttributes()
                     source.args = src[5].as<Values>();
 
                     _playlist.push_back(source);
+                }
+                else
+                {
+                    Log::get() << Log::WARNING << "Queue~~playlist - Wrong number of arguments given for one of the sources" << Log::endl;
                 }
             }
 
