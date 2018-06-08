@@ -675,9 +675,12 @@ void Image_V4L2::registerAttributes()
             auto path = args[0].as<string>();
             auto index = -1;
 
+            if (path.find("/dev/video") == string::npos)
+                Log::get() << Log::WARNING << "Image_V4L2~~device" << " - V4L2 device path should start with /dev/video" << path << Log::endl;
+
             try
             {
-                index = stoi(path);
+                index = stoi(path.substr(10));
             }
             catch (...)
             {
