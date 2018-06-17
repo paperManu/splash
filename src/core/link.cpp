@@ -51,7 +51,7 @@ Link::~Link()
         _socketMessageOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
         _socketBufferOut->setsockopt(ZMQ_LINGER, &lingerValue, sizeof(lingerValue));
     }
-    catch (zmq::error_t e)
+    catch (zmq::error_t &e)
     {
         Log::get() << Log::ERROR << "Link::" << __FUNCTION__ << " - Error while closing socket: " << e.what() << Log::endl;
     }
