@@ -671,8 +671,8 @@ void Image_FFmpeg::videoDisplayLoop()
             //
             float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
 
-            int64_t clockAsMs;
-            bool clockIsPaused{false};
+            int64_t clockAsMs = 0;
+            bool clockIsPaused = false;
             bool useClock = _useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused);
             if (useClock)
             {

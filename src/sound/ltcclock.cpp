@@ -99,10 +99,10 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
                 clock.frame = stime.frame * 120 / _maximumFramePerSec;
 
                 _clock = clock;
-            }
 
-            if (_masterClock)
-                Timer::get().setMasterClock(_clock);
+                if (_masterClock)
+                    Timer::get().setMasterClock(_clock);
+            }
         }
 
         ltc_decoder_free(ltcDecoder);
@@ -125,9 +125,4 @@ Timer::Point LtcClock::getClock()
     return _clock;
 }
 
-/*************/
-void LtcClock::registerAttributes()
-{
-}
-
-} // end of namespace
+} // namespace Splash

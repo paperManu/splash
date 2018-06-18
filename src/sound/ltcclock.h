@@ -84,7 +84,7 @@ class LtcClock : public GraphObject
     /**
      * \brief Register new functors to modify attributes
      */
-    void registerAttributes();
+    void registerAttributes() {}
 };
 
 } // namespace Splash

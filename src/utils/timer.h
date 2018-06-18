@@ -25,11 +25,7 @@
 #ifndef SPLASH_TIMER_H
 #define SPLASH_TIMER_H
 
-#include <atomic>
 #include <chrono>
-#include <ctime>
-#include <iostream>
-#include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -330,8 +326,7 @@ class Timer
 
         if (_looseClock && paused)
         {
-            time =
-                time + std::chrono::duration_cast<T>(std::chrono::steady_clock::now().time_since_epoch()).count() - std::chrono::duration_cast<T>(_lastMasterClockUpdate).count();
+            time += std::chrono::duration_cast<T>(std::chrono::steady_clock::now().time_since_epoch() - lastMasterClockUpdate).count();
             paused = false;
         }
 
@@ -366,6 +361,6 @@ class Timer
     bool _clockSet{false};
 };
 
-} // end of namespace
+} // namespace Splash
 
 #endif // SPLASH_TIMER_H
