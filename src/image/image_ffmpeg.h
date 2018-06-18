@@ -88,7 +88,7 @@ class Image_FFmpeg : public Image
     struct TimedFrame
     {
         std::unique_ptr<ImageBuffer> frame{};
-        int64_t timing{0ull}; // in us
+        uint64_t timing{0ull}; // in us
     };
     std::deque<TimedFrame> _timedFrames;
 
@@ -110,8 +110,8 @@ class Image_FFmpeg : public Image
     float _shiftTime{0};
     float _seekTime{0};
     bool _paused{false};
-    float _trimStart{0.f}; //!< Start trimming time
-    float _trimEnd{0.f};   //!< End trimming time
+    uint64_t _trimStart{0ull}; //!< Start trimming time
+    uint64_t _trimEnd{0ull};   //!< End trimming time
 
     std::mutex _clockMutex;
     bool _useClock{false};
@@ -171,13 +171,13 @@ class Image_FFmpeg : public Image
      * \brief Seek in the video
      * \param seconds Desired position
      */
-    void seek(float seconds);
+    void seek(float seconds, bool clearQueues = true);
 
     /**
      * Seek asynchronously
      * \param seconds Desired position
      */
-    void seek_async(float seconds);
+    void seek_async(float seconds, bool clearQueues = true);
 
     /**
      * Set the audio output

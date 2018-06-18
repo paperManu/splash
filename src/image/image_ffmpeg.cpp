@@ -11,8 +11,8 @@
 #include <hap.h>
 
 #include "./utils/cgutils.h"
-#include "./utils/osutils.h"
 #include "./utils/log.h"
+#include "./utils/osutils.h"
 #include "./utils/timer.h"
 
 using namespace std;
@@ -456,7 +456,6 @@ void Image_FFmpeg::readLoop()
                     lock_guard<mutex> lockFrames(_videoQueueMutex);
                     if (hasFrame)
                     {
-
                         // Add the frame size to the history
                         _framesSize.push_back(img->getSize());
 
@@ -531,7 +530,7 @@ void Image_FFmpeg::readLoop()
         // This prevents looping to happen before the queue has been consumed
         lock_guard<mutex> lockEnd(_videoEndMutex);
         // Seek to the beginning, or whatever time is set in _trimStart
-        seek(_trimStart);
+        seek(static_cast<float>(_trimStart) / 1e6, false);
     } while (_loopOnVideo && _continueRead);
 
     av_frame_free(&rgbFrame);
@@ -592,7 +591,7 @@ void Image_FFmpeg::audioLoop()
 #endif
 
 /*************/
-void Image_FFmpeg::seek(float seconds)
+void Image_FFmpeg::seek(float seconds, bool clearQueues)
 {
     if (!_avContext)
         return;
@@ -621,19 +620,23 @@ void Image_FFmpeg::seek(float seconds)
         // As seeking will no necessarily go to the desired timestamp, but to the closest i-frame,
         // we will set _startTime at the next frame in the videoDisplayLoop
         _startTime = -1;
-        _timedFrames.clear();
+
+        if (clearQueues)
+        {
+            _timedFrames.clear();
 #if HAVE_PORTAUDIO
-        if (_speaker)
-            _speaker->clearQueue();
+            if (_speaker)
+                _speaker->clearQueue();
 #endif
+        }
     }
 }
 
 /*************/
-void Image_FFmpeg::seek_async(float seconds)
+void Image_FFmpeg::seek_async(float seconds, bool clearQueues)
 {
     _seekFuture = async(launch::async, [=]() {
-        seek(seconds);
+        seek(seconds, clearQueues);
         _timeJump = false;
     });
 }
@@ -650,6 +653,11 @@ void Image_FFmpeg::videoDisplayLoop()
             std::swap(localQueue, _timedFrames);
             _framesSize.clear();
         }
+        else
+        {
+            this_thread::sleep_for(chrono::milliseconds(1));
+            continue;
+        }
 
         // This sets the start time after a seek
         if (!localQueue.empty() && _startTime == -1)
@@ -658,7 +666,6 @@ void Image_FFmpeg::videoDisplayLoop()
         lock_guard<mutex> lockEnd(_videoEndMutex);
         while (!localQueue.empty() && _continueRead)
         {
-
             // If seek, clear the local queue as the frames should not be shown
             if (_startTime == -1)
             {
@@ -669,8 +676,6 @@ void Image_FFmpeg::videoDisplayLoop()
             //
             // Get the current master and local clocks
             //
-            float seekTiming = _intraOnly ? 1.f : 3.f; // Maximum diff for seek to happen when synced to a master clock
-
             int64_t clockAsMs = 0;
             bool clockIsPaused = false;
             bool useClock = _useClock && Timer::get().getMasterClock<chrono::milliseconds>(clockAsMs, clockIsPaused);
@@ -709,35 +714,45 @@ void Image_FFmpeg::videoDisplayLoop()
                 }
 
                 // If the frame is beyond the trimming end, seek to the trimming start
-                if (_trimEnd > _trimStart && (timedFrame.timing / 1e6 > _trimEnd || timedFrame.timing / 1e6 < _trimStart))
+                if (_trimEnd > _trimStart)
                 {
-                    if (!_timeJump)
+                    if (timedFrame.timing < _trimStart)
                     {
-                        _timeJump = true;
+                        auto expectedValue = false;
                         localQueue.clear();
-                        seek_async(_trimStart);
+                        if (_timeJump.compare_exchange_strong(expectedValue, true, std::memory_order_acquire))
+                            seek_async(static_cast<float>(_trimStart) / 1e6);
+                        continue;
                     }
-                    continue;
+                    else if (timedFrame.timing > _trimEnd)
+                    {
+                        auto expectedValue = false;
+                        localQueue.clear();
+                        if (_timeJump.compare_exchange_strong(expectedValue, true, std::memory_order_acquire))
+                            seek_async(getMediaDuration());
+                        continue;
+                    }
                 }
 
                 // Compute the difference between next frame and the current clock
                 int64_t waitTime = timedFrame.timing - _currentTime;
 
                 // If the gap is too big, we seek through the video
-                if (abs(waitTime / 1e6) > seekTiming)
+                if (abs(waitTime / 1e6) > (_intraOnly ? 1.f : 3.f)) // Maximum gap duration depending on encoding type (arbitrary values)
                 {
-                    if (!_timeJump) // We do not want more than one jump at a time...
+                    auto expectedValue = false;
+                    if (_timeJump.compare_exchange_strong(expectedValue, true, std::memory_order_acquire))
                     {
-                        _timeJump = true;
                         _elapsedTime = _currentTime / 1e6;
                         localQueue.clear();
                         seek_async(_elapsedTime);
                     }
+
                     continue;
                 }
 
-                // Otherwise, wait for the right time to display the frame
-                if (waitTime > 2e3) // we don't wait if the frame is due for the next few ms
+                // Wait for the right time to display the frame
+                if (waitTime > 0)
                     this_thread::sleep_for(chrono::microseconds(waitTime));
 
                 _elapsedTime = timedFrame.timing;
@@ -847,8 +862,8 @@ void Image_FFmpeg::registerAttributes()
 
     addAttribute("trim",
         [&](const Values& args) {
-            float start = args[0].as<float>();
-            float end = args[1].as<float>();
+            auto start = args[0].as<double>();
+            auto end = args[1].as<double>();
 
             if (start > end)
                 return false;
@@ -860,13 +875,13 @@ void Image_FFmpeg::registerAttributes()
             if (end > mediaDuration)
                 end = mediaDuration;
 
-            _trimStart = start;
-            _trimEnd = end;
+            _trimStart = static_cast<int64_t>(start * 1e6);
+            _trimEnd = static_cast<int64_t>(end * 1e6);
 
             return true;
         },
         [&]() -> Values {
-            return {_trimStart, _trimEnd};
+            return {static_cast<double>(_trimStart) / 1e6, static_cast<double>(_trimEnd / 1e6)};
         },
         {'n', 'n'});
     setAttributeParameter("trim", true, true);
@@ -904,4 +919,4 @@ void Image_FFmpeg::registerAttributes()
         {'n'});
 }
 
-} // end of namespace
+} // namespace Splash
