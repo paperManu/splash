@@ -28,6 +28,10 @@ Image_GPhoto::~Image_GPhoto()
     for (auto& camera : _cameras)
         releaseCamera(camera);
 
+    gp_context_unref(_gpContext);
+    gp_port_info_list_free(_gpPorts);
+    gp_abilities_list_free(_gpCams);
+
 #ifdef DEBUG
     Log::get() << Log::DEBUGGING << "Image_GPhoto::~Image_GPhoto - Destructor" << Log::endl;
 #endif
@@ -128,7 +132,7 @@ bool Image_GPhoto::capture()
         return false;
     }
 
-    GPhotoCamera camera = _cameras[_selectedCameraIndex];
+    GPhotoCamera& camera = _cameras[_selectedCameraIndex];
 
     CameraFilePath filePath{};
     int res;
@@ -142,8 +146,15 @@ bool Image_GPhoto::capture()
             {
                 gp_file_new_from_fd(&destination, handle);
                 if (gp_camera_file_get(camera.cam, filePath.folder, filePath.name, GP_FILE_TYPE_NORMAL, destination, _gpContext) == GP_OK)
+                {
                     Log::get() << Log::DEBUGGING << "Image_GPhoto::" << __FUNCTION__ << " - Sucessfully downloaded file " << string(filePath.folder) << "/" << string(filePath.name)
                                << Log::endl;
+                }
+                else
+                {
+                    Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to download file " << string(filePath.folder) << "/" << string(filePath.name)
+                               << Log::endl;
+                }
                 close(handle);
             }
 
@@ -163,6 +174,8 @@ bool Image_GPhoto::capture()
             Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Unable to delete file /tmp/" << filePath.name << Log::endl;
     }
 
+    this_thread::sleep_for(chrono::milliseconds(1000));
+
     if (res != GP_OK)
         return false;
     else
@@ -180,10 +193,13 @@ bool Image_GPhoto::doSetProperty(const string& name, const string& value)
         return false;
     }
 
-    GPhotoCamera* camera = &(_cameras[_selectedCameraIndex]);
+    GPhotoCamera& camera = _cameras[_selectedCameraIndex];
+    CameraWidget* cameraConfig;
+    gp_camera_get_config(camera.cam, &cameraConfig, _gpContext);
+    OnScopeExit { gp_widget_free(cameraConfig); };
 
     CameraWidget* widget;
-    if (gp_widget_get_child_by_name(camera->configuration, name.c_str(), &widget) == GP_OK)
+    if (gp_widget_get_child_by_name(cameraConfig, name.c_str(), &widget) == GP_OK)
     {
         if (gp_widget_set_value(widget, value.c_str()) != GP_OK)
         {
@@ -191,12 +207,13 @@ bool Image_GPhoto::doSetProperty(const string& name, const string& value)
             return false;
         }
 
-        if (gp_camera_set_config(camera->cam, camera->configuration, _gpContext) != GP_OK)
+        if (gp_camera_set_config(camera.cam, cameraConfig, _gpContext) != GP_OK)
         {
             Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Setting parameter " << name << " is not supported for this camera" << Log::endl;
             return false;
         }
 
+        Log::get() << Log::MESSAGE << "Image_GPhoto::" << __FUNCTION__ << " - Parameter " << name << " set to " << value << Log::endl;
         return true;
     }
     else
@@ -218,10 +235,13 @@ bool Image_GPhoto::doGetProperty(const string& name, string& value)
         return false;
     }
 
-    GPhotoCamera* camera = &(_cameras[_selectedCameraIndex]);
+    GPhotoCamera& camera = _cameras[_selectedCameraIndex];
+    CameraWidget* cameraConfig;
+    gp_camera_get_config(camera.cam, &cameraConfig, _gpContext);
+    OnScopeExit { gp_widget_free(cameraConfig); };
 
     CameraWidget* widget;
-    if (gp_widget_get_child_by_name(camera->configuration, name.c_str(), &widget) == GP_OK)
+    if (gp_widget_get_child_by_name(cameraConfig, name.c_str(), &widget) == GP_OK)
     {
         const char* cvalue = nullptr;
         gp_widget_get_value(widget, &cvalue);
@@ -326,8 +346,6 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
         if (gp_camera_init(camera.cam, _gpContext) != GP_OK)
             return false;
 
-        gp_camera_get_config(camera.cam, &camera.configuration, _gpContext);
-
         // Get the available shutterspeeds
         initCameraProperty(camera, "shutterspeed", camera.shutterspeeds);
         initCameraProperty(camera, "aperture", camera.apertures);
@@ -346,8 +364,11 @@ bool Image_GPhoto::initCamera(GPhotoCamera& camera)
 void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, const string& property, vector<string>& values)
 {
     values.clear();
+    CameraWidget* cameraConfig;
+    gp_camera_get_config(camera.cam, &cameraConfig, _gpContext);
+
     CameraWidget* widget;
-    if (gp_widget_get_child_by_name(camera.configuration, property.c_str(), &widget) == GP_OK)
+    if (gp_widget_get_child_by_name(cameraConfig, property.c_str(), &widget) == GP_OK)
     {
         const char* value = nullptr;
         int propCount = gp_widget_count_choices(widget);
@@ -361,6 +382,8 @@ void Image_GPhoto::initCameraProperty(GPhotoCamera& camera, const string& proper
     {
         Log::get() << Log::WARNING << "Image_GPhoto::" << __FUNCTION__ << " - Property " << property << " is not available for camera " << camera.model << Log::endl;
     }
+
+    gp_widget_free(cameraConfig);
 }
 
 /*************/
@@ -371,17 +394,24 @@ void Image_GPhoto::releaseCamera(GPhotoCamera& camera)
     gp_camera_exit(camera.cam, _gpContext);
     if (camera.cam != nullptr)
         gp_camera_unref(camera.cam);
-    if (camera.configuration != nullptr)
-        gp_widget_unref(camera.configuration);
 
     camera.cam = nullptr;
-    camera.configuration = nullptr;
 }
 
 /*************/
 void Image_GPhoto::registerAttributes()
 {
     Image::registerAttributes();
+
+    addAttribute("cooldown",
+        [&](const Values& args) {
+            _cooldownTime = args[0].as<int>();
+            return true;
+        },
+        [&]() -> Values { return {_cooldownTime}; },
+        {'n'});
+    setAttributeDescription("cooldown", "Cooldown after a capture, some cameras need some rest before changing parameters");
+    setAttributeParameter("cooldown", true, true);
 
     addAttribute("aperture",
         [&](const Values& args) { return doSetProperty("aperture", args[0].as<string>()); },
@@ -392,8 +422,9 @@ void Image_GPhoto::registerAttributes()
             else
                 return {};
         },
-        {'n'});
+        {});
     setAttributeDescription("aperture", "Set the aperture of the lens");
+    setAttributeParameter("aperture", true, true);
 
     addAttribute("isospeed",
         [&](const Values& args) { return doSetProperty("iso", args[0].as<string>()); },
@@ -404,8 +435,9 @@ void Image_GPhoto::registerAttributes()
             else
                 return {};
         },
-        {'n'});
+        {});
     setAttributeDescription("isospeed", "Set the ISO value of the camera");
+    setAttributeParameter("isospeed", true, true);
 
     addAttribute("shutterspeed",
         [&](const Values& args) {
@@ -418,8 +450,9 @@ void Image_GPhoto::registerAttributes()
             float duration = getFloatFromShutterspeedString(value);
             return {duration};
         },
-        {'n'});
+        {});
     setAttributeDescription("shutterspeed", "Set the camera shutter speed");
+    setAttributeParameter("shutterspeed", true, true);
 
     // Actions
     addAttribute("capture", [&](const Values&) {
@@ -447,4 +480,4 @@ void Image_GPhoto::registerAttributes()
     setAttributeDescription("ready", "Ask whether the camera is ready to shoot");
 }
 
-} // end of namespace
+} // namespace Splash

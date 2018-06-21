@@ -602,7 +602,7 @@ void Scene::setAsMaster(const string& configFilePath)
     }
     if (_mouse)
     {
-        _mouse->setName("keyboard");
+        _mouse->setName("mouse");
         _objects["mouse"] = _mouse;
     }
     if (_joystick)

@@ -26,7 +26,6 @@ include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
-include_directories(../external/piccante/include)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 

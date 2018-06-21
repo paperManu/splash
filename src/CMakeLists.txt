@@ -56,7 +56,6 @@ include_directories(../external/hap/source)
 include_directories(../external/imgui)
 include_directories(../external/jsoncpp)
 include_directories(../external/libltc/src)
-include_directories(../external/piccante/include)
 include_directories(../external/stb)
 include_directories(../external/syphon/build/Release/Syphon.framework/Headers)
 
@@ -179,7 +178,7 @@ else()
     )
 endif()
 
-if (GPHOTO_FOUND)
+if (GPHOTO_FOUND AND OPENCV_FOUND)
     set_source_files_properties(
         controller/colorcalibrator.cpp 
         PROPERTIES COMPILE_FLAGS "-Wno-maybe-uninitialized -Wno-unused-result -Wno-int-in-bool-context -Wno-sign-compare -Wno-ignored-attributes -Wno-deprecated-declarations -Wno-delete-non-virtual-dtor -Wno-unused-parameter -Wno-strict-aliasing -Wno-format -Wno-unused-but-set-variable -Wno-misleading-indentation -Wno-switch"

@@ -1,4 +1,4 @@
-image: ubuntu:16.04
+image: ubuntu:17.10
 
 variables:
   DOCKER_DRIVER: overlay
@@ -9,7 +9,7 @@ stages:
 
 before_script:
   - apt update -qq
-  - apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev python
+  - DEBIAN_FRONTEND=noninteractive apt install -y curl wget build-essential git-core zip cmake automake libtool libxcb-shm0-dev libxrandr-dev libxi-dev libgsl0-dev libatlas3-base libgphoto2-dev libxinerama-dev libxcursor-dev python3-dev portaudio19-dev yasm libgl1-mesa-dev libopencv-dev python
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
@@ -18,9 +18,9 @@ before_script:
 #
 # Tests
 #
-test:16.04:
+test:17.10:
   stage: test
-  image: ubuntu:16.04
+  image: ubuntu:17.10
   script: 
     - make -j$(nproc)
     - make test
@@ -39,7 +39,7 @@ test:archlinux:
     - archlinux
   before_script:
     - pacman -Syyu --noconfirm
-    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa glm gsl libgphoto2 python3 portaudio zip zlib
+    - pacman -Sy --noconfirm git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcursor mesa glm gsl libgphoto2 opencv python3 portaudio zip zlib
     - git submodule update --init
     - ./make_deps.sh
     - rm -rf build && mkdir build && cd build

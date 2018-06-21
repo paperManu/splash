@@ -68,7 +68,6 @@ A few more libraries are used as submodules in the git repository:
 - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
 - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
 - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
-- [Piccante](https://github.com/banterle/piccante) to create HDR images,
 - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
 - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,

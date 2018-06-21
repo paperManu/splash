@@ -28,9 +28,8 @@
 #include <string>
 #include <vector>
 
-#define PIC_DISABLE_OPENGL
-#define PIC_DISABLE_QT
-#include <piccante.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
 
 #include "cgUtils.h"
 #include "log.h"
@@ -46,8 +45,8 @@ struct Parameters
     bool silent {false};
     bool outputImages {false};
 
-    std::shared_ptr<pic::Image> image;
-    std::shared_ptr<pic::Image> mask;
+    cv::Mat3f image{};
+    cv::Mat1b mask{};
 };
 
 /*************/
@@ -87,7 +86,7 @@ Parameters parseArgs(int argc, char** argv)
         {
             ++i;
             params.filename = string(argv[i]);
-            params.image = std::make_shared<pic::Image>(params.filename);
+            params.image = cv::imread(params.filename);
         }
         else if ((string(argv[i]) == "-s" || string(argv[i]) == "--subdiv")&& i < argc - 1)
         {
@@ -105,8 +104,7 @@ Parameters parseArgs(int argc, char** argv)
             }
             else
             {
-                params.mask = std::make_shared<pic::Image>(filename);
-                params.mask->Write("test.tga");
+                params.mask = cv::imread(filename, cv::IMREAD_GRAYSCALE);
             }
         }
         else if (string(argv[i]) == "-b" || string(argv[i]) == "--batch")
@@ -131,14 +129,14 @@ Parameters parseArgs(int argc, char** argv)
         params.valid = false;
         Log::get() << Log::WARNING << "Please specify a HDR file to process." << Log::endl;
     }
-    if (params.image == nullptr || !params.image->isValid())
+    if (params.image.total() == 0)
     {
         params.valid = false;
         Log::get() << Log::WARNING << "Could not open file " << params.filename << ". Exiting." << Log::endl;
     }
-    if (params.mask != nullptr)
+    if (params.mask.total() != 0)
     {
-        if (params.mask->width != params.image->width || params.mask->height != params.image->height)
+        if (params.mask.cols != params.image.cols || params.mask.rows != params.image.rows)
         {
             params.valid = false;
             Log::get() << Log::WARNING << "Could not open file " << params.filename << ". Exiting." << Log::endl;
@@ -154,15 +152,15 @@ double getStdDev(Parameters& params, int x = 0, int y = 0, int w = 0, int h = 0)
     using std::cout;
     using std::endl;
 
-    if (!params.image->isValid())
+    if (params.image.total() != 0)
         return 0.0;
 
     bool withMask = false;
-    if (params.mask != nullptr)
+    if (params.mask.total() != 0)
         withMask = true;
 
-    int width = w == 0 ? params.image->width : std::min(w, params.image->width);
-    int height = h == 0 ? params.image->height : std::min(h, params.image->height);
+    int width = w == 0 ? params.image.cols : std::min(w, params.image.cols);
+    int height = h == 0 ? params.image.rows : std::min(h, params.image.rows);
 
     pic::BBox roi = pic::BBox(x, x+width, y, y+height);
     double totalPixels = 0.0;
@@ -174,15 +172,15 @@ double getStdDev(Parameters& params, int x = 0, int y = 0, int w = 0, int h = 0)
         {
             if (withMask)
             {
-                unsigned char* maskPixel = params.mask->dataUC;
-                if (maskPixel[(y*params.mask->width + x)*params.mask->channels] < 128)
+                unsigned char* maskPixel = params.mask.ptr();
+                if (maskPixel[(y * params.mask.cols + x) * params.mask.channels] < 128)
                 {
                     continue;
                 }
             }
             totalPixels++;
 
-            float* pixel = (*params.image)(x, y);
+            float* pixel = params.image(y, x);
             RgbValue rgb(pixel[0], pixel[1], pixel[2]);
             meanValue += rgb.luminance();
 
@@ -196,12 +194,12 @@ double getStdDev(Parameters& params, int x = 0, int y = 0, int w = 0, int h = 0)
         {
             if (withMask)
             {
-                unsigned char* maskPixel = params.mask->dataUC;
-                if (maskPixel[(y*params.mask->width + x)*params.mask->channels] < 128)
+                unsigned char* maskPixel = params.mask.ptr();
+                if (maskPixel[(y * params.mask.cols + x) * params.mask.channels] < 128)
                     continue;
             }
 
-            float* pixel = (*params.image)(x, y);
+            float* pixel = image(y, x);
             RgbValue rgb(pixel[0], pixel[1], pixel[2]);
             double lum = rgb.luminance();
             stdDev += std::pow(lum - meanValue, 2.0);
@@ -219,12 +217,12 @@ std::vector<std::vector<double>> applyMultilevel(std::function<double(Parameters
 
     for (unsigned int l = 0; l <= params.subdivisions; ++l)
     {
-        int blockWidth = params.image->width / std::pow(2.0, l);
-        int blockHeight = params.image->height / std::pow(2.0, l);
-        
+        int blockWidth = params.image.cols / std::pow(2.0, l);
+        int blockHeight = params.image.rows / std::pow(2.0, l);
+
         std::vector<double> subdivResults;
-        for (int y = 0; y < params.image->height; y += blockHeight)
-            for (int x = 0; x < params.image->width; x += blockWidth)
+        for (int y = 0; y < params.image.rows; y += blockHeight)
+            for (int x = 0; x < params.image.cols; x += blockWidth)
             {
                 double result = filter(params, x, y, blockWidth, blockHeight);
                 subdivResults.push_back(result);

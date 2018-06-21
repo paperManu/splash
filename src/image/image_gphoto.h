@@ -75,7 +75,6 @@ class Image_GPhoto : public Image
         std::string model;
         std::string port;
         GpCamera* cam{nullptr};
-        CameraWidget* configuration{nullptr};
 
         bool canTether{false};
         bool canConfig{false};
@@ -93,6 +92,8 @@ class Image_GPhoto : public Image
 
     std::vector<GPhotoCamera> _cameras;
     int _selectedCameraIndex{-1};
+
+    int _cooldownTime{1000}; // Some cameras have a hard time changing parameters after a capture
 
     /**
      * Detect connected cameras

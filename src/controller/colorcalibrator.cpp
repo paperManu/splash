@@ -5,7 +5,6 @@
 
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
-#include <piccante.hpp>
 
 #define GLM_FORCE_SSE2
 #include <glm/ext.hpp>
@@ -14,6 +13,8 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/simd_mat4.hpp>
 #include <glm/gtx/simd_vec4.hpp>
+
+#include <opencv2/highgui.hpp>
 
 #include "./image/image_gphoto.h"
 #include "./utils/log.h"
@@ -43,13 +44,6 @@ ColorCalibrator::ColorCalibrator(RootObject* root)
 }
 
 /*************/
-ColorCalibrator::~ColorCalibrator()
-{
-    if (_calibrationThread.joinable())
-        _calibrationThread.join();
-}
-
-/*************/
 void ColorCalibrator::update()
 {
     if (!_calibrationMutex.try_lock())
@@ -58,7 +52,10 @@ void ColorCalibrator::update()
         return;
     }
 
-    _calibrationThread = thread([&]() {
+    if (_calibrationThread.valid())
+        _calibrationThread.wait();
+
+    _calibrationThread = async(launch::async, [&]() {
         // Initialize camera
         _gcamera = make_shared<Image_GPhoto>(_root, "");
         // Prepare for freeing the camera when leaving scope
@@ -113,7 +110,7 @@ void ColorCalibrator::update()
         //
         // Compute the camera response function
         //
-        if (_crf == nullptr)
+        if (_crf.total() == 0)
             captureHDR(9, 0.33);
 
         for (auto& params : _calibrationParams)
@@ -123,27 +120,36 @@ void ColorCalibrator::update()
         // Find the location of each projection
         //
         _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
-        shared_ptr<pic::Image> hdr;
+        cv::Mat hdr;
         for (auto& params : _calibrationParams)
         {
             // Activate the target projector
             setObjectAttribute(params.camName, "clearColor", {1.0, 1.0, 1.0, 1.0});
             hdr = captureHDR(1);
-            if (nullptr == hdr)
+            if (hdr.total() == 0)
                 return;
 
             // Activate all the other ones
             for (auto& otherCam : cameras)
                 setObjectAttribute(otherCam->getName(), "clearColor", {1.0, 1.0, 1.0, 1.0});
             setObjectAttribute(params.camName, "clearColor", {0.0, 0.0, 0.0, 1.0});
-            shared_ptr<pic::Image> othersHdr = captureHDR(1);
-            if (nullptr == othersHdr)
+            cv::Mat othersHdr = captureHDR(1);
+            if (othersHdr.total() == 0)
                 return;
 
-            shared_ptr<pic::Image> diffHdr = make_shared<pic::Image>();
-            *diffHdr = *hdr;
-            *diffHdr -= (*othersHdr * _displayDetectionThreshold);
-            diffHdr->clamp(0.f, numeric_limits<float>::max());
+            if (hdr.rows != othersHdr.rows || hdr.cols != othersHdr.cols)
+                return;
+
+            cv::Mat diffHdr = hdr.clone();
+            for (uint32_t y = 0; y < diffHdr.rows; ++y)
+                for (uint32_t x = 0; x < diffHdr.cols; ++x)
+                {
+                    auto pixelValue = diffHdr.at<cv::Vec3f>(y, x) - othersHdr.at<cv::Vec3f>(y, x) * _displayDetectionThreshold;
+                    diffHdr.at<cv::Vec3f>(y, x)[0] = max(0.f, pixelValue[0]);
+                    diffHdr.at<cv::Vec3f>(y, x)[1] = max(0.f, pixelValue[1]);
+                    diffHdr.at<cv::Vec3f>(y, x)[2] = max(0.f, pixelValue[2]);
+                }
+
             params.maskROI = getMaskROI(diffHdr);
             for (auto& otherCam : cameras)
                 setObjectAttribute(otherCam->getName(), "clearColor", {0.0, 0.0, 0.0, 1.0});
@@ -151,8 +157,6 @@ void ColorCalibrator::update()
             // Save the camera center for later use
             params.whitePoint = getMeanValue(hdr, params.maskROI);
         }
-
-        return;
 
         //
         // Find color curves for each Camera
@@ -180,7 +184,7 @@ void ColorCalibrator::update()
                     _gcamera->setAttribute("shutterspeed", {mediumExposureTime});
 
                     hdr = captureHDR(_imagePerHDR, _hdrStep);
-                    if (nullptr == hdr)
+                    if (hdr.total() == 0)
                         return;
                     vector<float> values = getMeanValue(hdr, params.maskROI);
                     params.curves[c].push_back(Point(x, values));
@@ -334,7 +338,10 @@ void ColorCalibrator::updateCRF()
         return;
     }
 
-    _calibrationThread = thread([&]() {
+    if (_calibrationThread.valid())
+        _calibrationThread.wait();
+
+    _calibrationThread = async(launch::async, [&]() {
         // Initialize camera
         _gcamera = make_shared<Image_GPhoto>(_root, "");
         OnScopeExit
@@ -355,13 +362,12 @@ void ColorCalibrator::updateCRF()
         findCorrectExposure();
 
         // Compute the camera response function
-        _crf.reset();
         captureHDR(9, 0.33);
     });
 }
 
 /*************/
-shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double step)
+cv::Mat3f ColorCalibrator::captureHDR(unsigned int nbrLDR, double step, bool computeResponseOnly)
 {
     // Capture LDR images
     // Get the current shutterspeed
@@ -374,15 +380,15 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     for (int steps = nbrLDR / 2; steps > 0; --steps)
         nextSpeed /= pow(2.0, step);
 
-    vector<pic::Image> ldr(nbrLDR);
-    vector<float> actualShutterSpeeds(nbrLDR);
+    vector<cv::Mat> ldr(nbrLDR);
+    vector<float> expositionDurations(nbrLDR);
     for (unsigned int i = 0; i < nbrLDR; ++i)
     {
         _gcamera->setAttribute("shutterspeed", {nextSpeed});
         // We get the actual shutterspeed
         _gcamera->getAttribute("shutterspeed", res);
         nextSpeed = res[0].as<float>();
-        actualShutterSpeeds[i] = nextSpeed;
+        expositionDurations[i] = nextSpeed;
 
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Capturing LDRI with a " << nextSpeed << "sec exposure time" << Log::endl;
 
@@ -399,8 +405,7 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
         _gcamera->update();
         _gcamera->write(filename);
 
-        ldr[i].Read(filename, pic::LT_NOR_GAMMA);
-        ldr[i].Write(filename);
+        ldr[i] = cv::imread(filename);
     }
 
     // Reset the shutterspeed
@@ -409,36 +414,33 @@ shared_ptr<pic::Image> ColorCalibrator::captureHDR(unsigned int nbrLDR, double s
     // Check that all is well
     bool isValid = true;
     for (auto& image : ldr)
-        isValid |= image.isValid();
+        isValid |= image.total() != 0;
 
     if (!isValid)
         return {};
 
-    vector<pic::Image*> stack;
-    for (auto& image : ldr)
-        stack.push_back(&image);
-
     // Estimate camera response function, if needed
-    if (_crf == nullptr)
+    if (_crf.total() == 0 || computeResponseOnly)
     {
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Generating camera response function" << Log::endl;
-        _crf = make_shared<pic::CameraResponseFunction>();
-        _crf->DebevecMalik(stack, actualShutterSpeeds.data(), pic::CRF_DEB97, 200);
+        cv::Ptr<cv::CalibrateDebevec> calibrate = cv::createCalibrateDebevec();
+        calibrate->process(ldr, _crf, expositionDurations);
     }
 
-    for (unsigned int i = 0; i < nbrLDR; ++i)
-        stack[i]->exposure = actualShutterSpeeds[i];
+    cv::Mat3f hdr;
+    cv::Ptr<cv::MergeDebevec> mergeDebevec = cv::createMergeDebevec();
+    mergeDebevec->process(ldr, hdr, expositionDurations, _crf);
 
-    // Assemble the images into a single HDRI
-    pic::FilterAssembleHDR assembleHDR(pic::CRF_GAUSS, pic::LIN_ICFR, &_crf->icrf);
-    pic::Image* temporaryHDR = assembleHDR.ProcessP(stack, nullptr);
+    for (uint32_t y = 0; y < hdr.rows; ++y)
+        for (uint32_t x = 0; x < hdr.cols; ++x)
+        {
+            auto pixelValue = hdr.at<cv::Vec3f>(y, x);
+            pixelValue[0] = max(0.f, pixelValue[0]);
+            pixelValue[1] = max(0.f, pixelValue[1]);
+            pixelValue[2] = max(0.f, pixelValue[2]);
+        }
 
-    shared_ptr<pic::Image> hdr = make_shared<pic::Image>();
-    hdr->Assign(temporaryHDR);
-    delete temporaryHDR;
-
-    hdr->clamp(0.f, numeric_limits<float>::max());
-    hdr->Write("/tmp/splash_hdr.hdr");
+    cv::imwrite("/tmp/splash_hdr.hdr", hdr);
     Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - HDRI computed" << Log::endl;
 
     return hdr;
@@ -560,20 +562,15 @@ float ColorCalibrator::findCorrectExposure()
         auto meanValue = static_cast<float>(sum) / static_cast<float>(total);
         Log::get() << Log::MESSAGE << "ColorCalibrator::" << __FUNCTION__ << " - Mean value over all channels: " << meanValue << Log::endl;
 
-        if (meanValue < 100.f)
-        {
-            float speed = res[0].as<float>() * std::max(1.5f, 100.f / meanValue);
-            _gcamera->setAttribute("shutterspeed", {speed});
-        }
-        else if (meanValue > 160.f)
-        {
-            float speed = res[0].as<float>() / std::max(1.5f, 160.f / meanValue);
-            _gcamera->setAttribute("shutterspeed", {speed});
-        }
-        else
-        {
+        if (meanValue >= 100.f && meanValue <= 160.f)
             break;
-        }
+
+        float speed = 1.f;
+        if (meanValue < 100.f)
+            speed = res[0].as<float>() * std::max(1.5f, (100.f / meanValue));
+        else
+            speed = res[0].as<float>() / std::max(1.5f, (160.f / meanValue));
+        _gcamera->setAttribute("shutterspeed", {speed});
     }
     if (res.size() == 0)
         return 0.f;
@@ -582,16 +579,16 @@ float ColorCalibrator::findCorrectExposure()
 }
 
 /*************/
-double computeMoment(shared_ptr<pic::Image> image, int i, int j, double minTargetLum = 0.0, double maxTargetLum = 0.0)
+double computeMoment(const cv::Mat3f& image, int i, int j, double minTargetLum = 0.0, double maxTargetLum = 0.0)
 {
     double moment = 0.0;
 
-    for (int y = 0; y < image->height; ++y)
-        for (int x = 0; x < image->width; ++x)
+    for (int y = 0; y < image.rows; ++y)
+        for (int x = 0; x < image.cols; ++x)
         {
-            float* pixel = (*image)(x, y);
+            auto& pixel = image(y, x);
             double linlum = 0.f;
-            for (int c = 0; c < image->channels; ++c)
+            for (int c = 0; c < 3; ++c)
                 linlum += pixel[c];
             if (minTargetLum == 0.0)
                 moment += pow(x, i) * pow(y, j) * linlum;
@@ -605,19 +602,19 @@ double computeMoment(shared_ptr<pic::Image> image, int i, int j, double minTarge
 }
 
 /*************/
-vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
+vector<int> ColorCalibrator::getMaxRegionROI(const cv::Mat3f& image)
 {
-    if (image == nullptr || !image->isValid())
+    if (image.total() == 0)
         return vector<int>();
 
     vector<int> coords;
 
     // Find the maximum value
     float maxLinearLuminance = numeric_limits<float>::min();
-    for (int y = 0; y < image->height; ++y)
-        for (int x = 0; x < image->width; ++x)
+    for (int y = 0; y < image.rows; ++y)
+        for (int x = 0; x < image.cols; ++x)
         {
-            float* pixel = (*image)(x, y);
+            const auto& pixel = image(y, x);
             float linlum = pixel[0] + pixel[1] + pixel[2];
             if (linlum > maxLinearLuminance)
                 maxLinearLuminance = linlum;
@@ -626,7 +623,7 @@ vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
     // Compute the binary moments of all pixels brighter than maxLinearLuminance
     vector<double> moments(3, 0.0);
     double iteration = 0.0;
-    while (moments[0] < _minimumROIArea * image->width * image->height)
+    while (moments[0] < _minimumROIArea * image.total())
     {
         double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 2);
         double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
@@ -645,17 +642,17 @@ vector<int> ColorCalibrator::getMaxRegionROI(shared_ptr<pic::Image> image)
 }
 
 /*************/
-vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
+vector<bool> ColorCalibrator::getMaskROI(const cv::Mat3f& image)
 {
-    if (image == nullptr || !image->isValid())
+    if (image.total() == 0)
         return vector<bool>();
 
     // Find the maximum value
     float maxLinearLuminance = numeric_limits<float>::min();
-    for (int y = 0; y < image->height; ++y)
-        for (int x = 0; x < image->width; ++x)
+    for (int y = 0; y < image.rows; ++y)
+        for (int x = 0; x < image.cols; ++x)
         {
-            float* pixel = (*image)(x, y);
+            auto& pixel = image(y, x);
             float linlum = pixel[0] + pixel[1] + pixel[2];
             if (linlum > maxLinearLuminance)
                 maxLinearLuminance = linlum;
@@ -666,24 +663,24 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
     unsigned long meanX, meanY;
     double totalPixelMask = 0;
     double iteration = 0.0;
-    while (totalPixelMask < _minimumROIArea * image->width * image->height)
+    while (totalPixelMask < _minimumROIArea * image.total())
     {
         totalPixelMask = 0;
         meanX = 0;
         meanY = 0;
-        mask = vector<bool>(image->height * image->width, false);
+        mask = vector<bool>(image.total(), false);
 
         double minTargetLuminance = maxLinearLuminance / pow(2.0, iteration + 4);
         // double maxTargetLuminance = maxLinearLuminance / pow(2.0, iteration);
 
-        for (int y = 0; y < image->height; ++y)
-            for (int x = 0; x < image->width; ++x)
+        for (int y = 0; y < image.rows; ++y)
+            for (int x = 0; x < image.cols; ++x)
             {
-                float* pixel = (*image)(x, y);
+                auto& pixel = image(y, x);
                 float linlum = pixel[0] + pixel[1] + pixel[2];
                 if (linlum > minTargetLuminance && linlum < maxLinearLuminance)
                 {
-                    mask[y * image->width + x] = true;
+                    mask[y * image.cols + x] = true;
                     meanX += x;
                     meanY += y;
                     totalPixelMask++;
@@ -703,41 +700,44 @@ vector<bool> ColorCalibrator::getMaskROI(shared_ptr<pic::Image> image)
 }
 
 /*************/
-vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector<int> coords, int boxSize)
+vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<int> coords, int boxSize)
 {
-    vector<float> meanMaxValue(image->channels, numeric_limits<float>::min());
+    cv::Scalar meanMaxValue;
 
     if (coords.size() >= 2)
     {
-        pic::BBox box(coords[0] - boxSize / 2, coords[0] + boxSize / 2, coords[1] - boxSize / 2, coords[1] + boxSize / 2);
+        cv::Mat1b mask = cv::Mat1b::zeros(image.rows, image.cols);
+        for (uint32_t y = coords[1] - boxSize / 2; y < coords[1] + boxSize / 2; ++y)
+            for (uint32_t x = coords[0] - boxSize / 2; y < coords[0] + boxSize / 2; ++x)
+                mask(y, x) = 255;
 
-        image->getMeanVal(&box, meanMaxValue.data());
+        meanMaxValue = cv::mean(image, mask);
     }
     else
     {
-        image->getMeanVal(nullptr, meanMaxValue.data());
+        meanMaxValue = cv::mean(image);
     }
 
-    return meanMaxValue;
+    return {static_cast<float>(meanMaxValue[0]), static_cast<float>(meanMaxValue[1]), static_cast<float>(meanMaxValue[2])};
 }
 
 /*************/
-vector<float> ColorCalibrator::getMeanValue(shared_ptr<pic::Image> image, vector<bool> mask)
+vector<float> ColorCalibrator::getMeanValue(const cv::Mat3f& image, vector<bool> mask)
 {
     vector<float> meanValue(3, 0.f);
     unsigned int nbrPixels = 0;
 
-    if (mask.size() != image->width * image->height)
+    if (mask.size() != image.total())
         return vector<float>(3, 0.f);
 
-    for (int y = 0; y < image->height; ++y)
-        for (int x = 0; x < image->width; ++x)
+    for (int y = 0; y < image.rows; ++y)
+        for (int x = 0; x < image.cols; ++x)
         {
-            if (true == mask[y * image->width + x])
+            if (true == mask[y * image.cols + x])
             {
-                meanValue[0] += (*image)(x, y)[0];
-                meanValue[1] += (*image)(x, y)[1];
-                meanValue[2] += (*image)(x, y)[2];
+                meanValue[0] += image(y, x)[0];
+                meanValue[1] += image(y, x)[1];
+                meanValue[2] += image(y, x)[2];
                 nbrPixels++;
             }
         }
