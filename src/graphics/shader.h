@@ -200,6 +200,8 @@ class Shader : public GraphObject
     struct Uniform
     {
         std::string type{""};
+        uint32_t elementSize{1};
+        uint32_t arraySize{0};
         Values values{};
         GLint glIndex{-1};
         GLuint glBuffer{0};

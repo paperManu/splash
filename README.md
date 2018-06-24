@@ -55,7 +55,7 @@ Installation
 Splash relies on a few libraries to get the job done. These libraries are:
 
 - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
-- [libshmdata](http://code.sat.qc.ca/redmine/projects/libshmdata) to read video flows from a shared memory,
+- [libshmdata](http://gitlab.com/sat-metalab/shmdata) to read video flows from a shared memory,
 - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
 - [portaudio](http://portaudio.com/) to read and output audio,
 - [Python](https://python.org) for scripting capabilities,

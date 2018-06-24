@@ -78,6 +78,7 @@ void Object::activate()
     Values shaderParameters{};
     for (uint32_t i = 0; i < _textures.size(); ++i)
         shaderParameters.push_back("TEX_" + to_string(i + 1));
+    shaderParameters.push_back("TEXCOUNT " + to_string(_textures.size()));
 
     for (auto& p : _fillParameters)
         shaderParameters.push_back(p);

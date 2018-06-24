@@ -1429,8 +1429,9 @@ void Camera::registerAttributes()
         [&](const Values& args) {
             if (args[0].as<Values>().size() != 768)
                 return false;
+
             for (auto& v : args[0].as<Values>())
-                if (v.getType() != Value::Type::real)
+                if (v.getTypeAsChar() != 'n')
                     return false;
 
             _colorLUT = args[0].as<Values>();
