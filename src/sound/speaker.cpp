@@ -75,7 +75,7 @@ void Speaker::initResources()
 
 /*************/
 int Speaker::portAudioCallback(
-    const void* /*in*/, void* out, uint64_t framesPerBuffer, const PaStreamCallbackTimeInfo* /*timeInfo*/, PaStreamCallbackFlags /*statusFlags*/, void* userData)
+    const void* /*in*/, void* out, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* /*timeInfo*/, PaStreamCallbackFlags /*statusFlags*/, void* userData)
 {
     auto that = static_cast<Speaker*>(userData);
     uint8_t* output = (uint8_t*)out;
