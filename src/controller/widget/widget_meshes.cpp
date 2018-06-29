@@ -32,6 +32,7 @@ void GuiMeshes::render()
         for (auto& mesh : meshList)
         {
             auto meshName = mesh->getName();
+            auto meshAlias = getObjectAlias(meshName);
             if (ImGui::TreeNode(mesh->getAlias().c_str()))
             {
                 ImGui::Text("Change mesh type: ");
@@ -44,8 +45,8 @@ void GuiMeshes::render()
                 for (auto& type : _meshType)
                     meshTypes.push_back(type.first.c_str());
 
-                if (ImGui::Combo("", &_meshTypeIndex[meshName], meshTypes.data(), meshTypes.size()))
-                    replaceMesh(meshName, meshTypes[_meshTypeIndex[meshName]]);
+                if (ImGui::Combo("##meshType", &_meshTypeIndex[meshName], meshTypes.data(), meshTypes.size()))
+                    replaceMesh(meshName, meshAlias, meshTypes[_meshTypeIndex[meshName]]);
 
                 ImGui::Text("Current mesh type: %s", _meshTypeReversed[mesh->getRemoteType()].c_str());
 
@@ -60,7 +61,7 @@ void GuiMeshes::render()
 }
 
 /*************/
-void GuiMeshes::replaceMesh(const string& previousMedia, const string& type)
+void GuiMeshes::replaceMesh(const string& previousMedia, const string& alias, const string& type)
 {
     // We get the list of all objects linked to previousMedia
     auto targetObjects = list<weak_ptr<GraphObject>>();
@@ -74,10 +75,7 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& type)
         for (auto& weakLinkedObject : linkedObjects)
         {
             auto linkedObject = weakLinkedObject.lock();
-            if (!linkedObject)
-                continue;
-
-            if (linkedObject->getName() == previousMedia)
+            if (linkedObject && linkedObject->getName() == previousMedia)
                 targetObjects.push_back(object);
         }
     }
@@ -85,6 +83,7 @@ void GuiMeshes::replaceMesh(const string& previousMedia, const string& type)
     Values msg;
     msg.push_back(previousMedia);
     msg.push_back(_meshType[type]);
+    msg.push_back(alias);
     for (const auto& weakObject : targetObjects)
     {
         if (weakObject.expired())
