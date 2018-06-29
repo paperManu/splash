@@ -469,7 +469,7 @@ void Shader::parseUniforms(const std::string& src)
 
             _uniforms[name].type = type;
             _uniforms[name].glIndex = glGetUniformLocation(_program, name.c_str());
-            _uniforms[name].elementSize = type.compare("mat") >= 0 ? elementSize * elementSize : elementSize;
+            _uniforms[name].elementSize = type.find("mat") != string::npos ? elementSize * elementSize : elementSize;
             _uniforms[name].arraySize = arraySize;
             _uniformsDocumentation[name] = documentation;
 
@@ -529,7 +529,7 @@ void Shader::parseUniforms(const std::string& src)
             {
                 _uniforms[name].values = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             }
-            else if (type.compare("sampler") >= 0)
+            else if (type.find("sampler") != string::npos)
             {
                 _uniforms[name].values = {};
             }
@@ -641,7 +641,7 @@ void Shader::updateUniforms()
             }
             else
             {
-                if (type == "int" || type.compare("ivec") >= 0)
+                if (type == "int" || type.find("ivec") != string::npos)
                 {
                     vector<int> data;
                     for (auto& v : uniform.values)
@@ -671,7 +671,7 @@ void Shader::updateUniforms()
                             glUniform4iv(uniform.glIndex, data.size() / 4, data.data());
                     }
                 }
-                else if (type == "float" || type.compare("vec") >= 0)
+                else if (type == "float" || type.find("vec") != string::npos)
                 {
                     vector<float> data;
                     for (auto& v : uniform.values)

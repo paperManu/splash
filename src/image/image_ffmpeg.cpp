@@ -354,10 +354,9 @@ void Image_FFmpeg::readLoop()
     _videoTimeBase = (double)videoStream->time_base.num / (double)videoStream->time_base.den;
 
     // This implements looping
-    do
+    _startTime = Timer::getTime();
+    while (_continueRead)
     {
-        _startTime = Timer::getTime();
-
         auto shouldContinueLoop = [&]() -> bool {
             lock_guard<mutex> lock(_videoSeekMutex);
             return _continueRead && av_read_frame(_avContext, &packet) >= 0;
@@ -529,9 +528,13 @@ void Image_FFmpeg::readLoop()
 
         // This prevents looping to happen before the queue has been consumed
         lock_guard<mutex> lockEnd(_videoEndMutex);
-        // Seek to the beginning, or whatever time is set in _trimStart
-        seek(static_cast<float>(_trimStart) / 1e6, false);
-    } while (_loopOnVideo && _continueRead);
+
+        // If we loop, seek to the beginning, or whatever time is set in _trimStart
+        if (_loopOnVideo)
+            seek(static_cast<float>(_trimStart) / 1e6, false);
+        else
+            this_thread::sleep_for(chrono::milliseconds(50));
+    }
 
     av_frame_free(&rgbFrame);
     av_frame_free(&frame);
