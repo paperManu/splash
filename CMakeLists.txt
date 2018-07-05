@@ -40,9 +40,20 @@ set(API_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
 set(PACKAGE_VERSION ${PROJECT_VERSION})
 
 #
+# Build options
+#
+set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
+set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
+set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
+set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
+
+#
 # Find the various libraries
 #
-set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+if (NOT USE_SYSTEM_LIBS)
+  set(ENV{PKG_CONFIG_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/external/third_parties/lib/pkgconfig:$ENV{PKG_CONFIG_PATH}")
+endif()
+
 find_package(PkgConfig REQUIRED)
 
 # Mandatory dependencies
@@ -96,11 +107,11 @@ elseif(APPLE)
     set(HAVE_OSX 1)
 endif()
 
-if (DEBUG_OPENGL EQUAL 1)
+if (DEBUG_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUGGL")
 endif()
 
-if (PROFILE_OPENGL EQUAL 1)
+if (PROFILE_OPENGL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DPROFILE")
 endif()
 
@@ -112,7 +123,6 @@ if (DATAPATH_SDK_PATH)
         set(HAVE_DATAPATH 0)
     endif()
 else()
-    set(DATAPATH_SDK_PATH "")
     set(HAVE_DATAPATH 0)
 endif()
 
@@ -192,6 +202,7 @@ function(info_cfg_text
     set(_config_msg "${_config_msg}\n\n  ${_text}" PARENT_SCOPE)
 endfunction()
 
+info_cfg_option(USE_SYSTEM_LIBS)
 info_cfg_option(GPHOTO_VERSION)
 info_cfg_option(FFMPEG_libavformat_VERSION)
 info_cfg_option(FFMPEG_libavcodec_VERSION)

@@ -52,30 +52,37 @@ Installation
 ------------
 
 ### Dependencies
-Splash relies on a few libraries to get the job done. These libraries are:
+Splash relies on a few libraries to get the job done. The mandatory libraries are:
 
-- [OpenGL](http://opengl.org), which should be installed by the graphic driver,
-- [libshmdata](http://gitlab.com/sat-metalab/shmdata) to read video flows from a shared memory,
-- [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
-- [portaudio](http://portaudio.com/) to read and output audio,
-- [Python](https://python.org) for scripting capabilities,
-- [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
+- External dependencies:
+  - [OpenGL](http://opengl.org), which should be installed by the graphic driver,
+  - [GSL](http://gnu.org/software/gsl) (GNU Scientific Library) to compute calibration,
+- External dependencies bundled as submodules:
+  - [FFmpeg](http://ffmpeg.org/) to read video files,
+  - [GLFW](http://glfw.org) to handle the GL context creation,
+  - [GLM](http://glm.g-truc.net) to ease matrix manipulation,
+  - [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
+  - [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
+  - [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
+- Dependencies built at compile-time from submodules:
+  - [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
+  - [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
+  - [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
+  - [stb_image](https://github.com/nothings/stb) to read images.
 
-A few more libraries are used as submodules in the git repository:
+Some other libraries are optional:
 
-- [FFmpeg](http://ffmpeg.org/) to read video files,
-- [GLFW](http://glfw.org) to handle the GL context creation,
-- [GLM](http://glm.g-truc.net) to ease matrix manipulation,
-- [ImGui](https://github.com/ocornut/imgui) to draw the GUI,
-- [doctest](https://github.com/onqtam/doctest/) to do some unit testing,
-- [Snappy](https://code.google.com/p/snappy/) to handle Hap codec decompression,
-- [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
-- [JsonCpp](http://jsoncpp.sourceforge.net) to load and save the configuration,
-- [stb_image](https://github.com/nothings/stb) to read images.
-- [ZMQ](http://zeromq.org) to communicate between the various process involved in a Splash session,
-- [cppzmq](https://github.com/zeromq/cppzmq.git) for its C++ bindings of ZMQ
+- External dependencies:
+  - [libshmdata](http://gitlab.com/sat-metalab/shmdata) to read video flows from a shared memory,
+  - [portaudio](http://portaudio.com/) to read and output audio,
+  - [Python](https://python.org) for scripting capabilities,
+  - [GPhoto](http://gphoto.sourceforge.net/) to use a camera for color calibration.
+- Dependencies built at compile-time from submodules:
+  - [libltc](http://x42.github.io/libltc/) to read timecodes from an audio input,
 
 Also, the [Roboto](https://www.fontsquirrel.com/fonts/roboto) font is used and distributed under the Apache license.
+
+By default Splash is built and linked against the libraries included as submodules, but it is possible to force it to use the libraries installed on the system. This is described in the next section.
 
 ### Compilation and installation
 
@@ -93,10 +100,14 @@ The packages necessary to compile Splash are the following:
 - Ubuntu and derivatives:
 
 ```bash
-sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev
-sudo apt install mesa-common-dev libglm-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev
-sudo apt install libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev
-sudo apt install python3-numpy
+sudo apt install build-essential git-core cmake libxrandr-dev libxi-dev \
+    mesa-common-dev libgsl0-dev libatlas3-base libgphoto2-dev libz-dev \
+    libxinerama-dev libxcursor-dev python3-dev yasm portaudio19-dev \
+    python3-numpy libopencv-dev
+
+# Non mandatory libraries needed to link against system libraries only
+sudo apt install libglfw3-dev libglm-dev libavcodec-dev libavformat-dev \
+    libavutil-dev libswscale-dev libsnappy-dev libzmq3-dev libzmqpp-dev
 ```
 
 - Archlinux (not well maintained, please signal any issue):
@@ -106,15 +117,26 @@ pacman -Sy git cmake make gcc yasm pkgconfig libxi libxinerama libxrandr libxcur
 pacman -Sy mesa glm gsl libgphoto2 python3 portaudio zip zlib
 ```
 
-Once everything is installed, you can go on with building Splash:
+Once everything is installed, you can go on with building Splash. To build and link it against the bundled libraries:
 
 ```bash
-git clone git://github.com/paperManu/splash
+git clone https://gitlab.com/sat-metalab/splash
 cd splash
 git submodule update --init
 ./make_deps.sh
 mkdir -p build && cd build
 cmake ..
+make && sudo make install
+```
+
+Otherwise, to build Splash and link it against the system libraries:
+
+```bash
+git clone https://gitlab.com/sat-metalab/splash
+cd splash
+git submodule update --init
+mkdir -p build && cd build
+cmake -DUSE_SYSTEM_LIBS=ON ..
 make && sudo make install
 ```
 

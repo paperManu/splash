@@ -7,8 +7,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/simd_mat4.hpp>
-#include <glm/gtx/simd_vec4.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
 #include "./core/scene.h"
