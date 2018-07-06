@@ -265,7 +265,7 @@ float Image_GPhoto::getFloatFromShutterspeedString(const string& speed)
         {
             num = stof(speed);
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {
             num = 1.f;
         }

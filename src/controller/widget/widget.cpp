@@ -21,7 +21,7 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 

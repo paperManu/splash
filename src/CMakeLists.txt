@@ -226,7 +226,7 @@ if (PYTHONLIBS_FOUND)
     set_source_files_properties(
         controller/controller_pythonembedded.cpp
         controller/python/python_sink.cpp
-        PROPERTIES COMPILE_FLAGS -Wno-missing-field-initializers
+	PROPERTIES COMPILE_FLAGS "-Wno-missing-field-initializers -Wno-cast-function-type"
     )
 
     target_sources(splash-${API_VERSION} PRIVATE

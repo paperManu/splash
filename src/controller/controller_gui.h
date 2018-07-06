@@ -40,7 +40,7 @@
 
 #include "./config.h"
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 #include "./controller/widget/widget.h"

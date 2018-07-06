@@ -25,7 +25,7 @@
 #include "./utils/osutils.h"
 #include "./utils/timer.h"
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
 #include "./controller/colorcalibrator.h"
 #endif
 
@@ -616,7 +616,7 @@ void Scene::setAsMaster(const string& configFilePath)
         _objects[_dragndrop->getName()] = _dragndrop;
     }
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     // Initialize the color calibration object
     _colorCalibrator = make_shared<ColorCalibrator>(this);
     _colorCalibrator->setName("colorCalibrator");
@@ -1170,7 +1170,7 @@ void Scene::registerAttributes()
         {'n'});
     setAttributeDescription("wireframe", "Show all meshes as wireframes if set to 1");
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     addAttribute("calibrateColor", [&](const Values&) {
         auto calibrator = dynamic_pointer_cast<ColorCalibrator>(_colorCalibrator);
         if (calibrator)

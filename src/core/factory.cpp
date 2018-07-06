@@ -26,7 +26,7 @@
 #include "./image/image_v4l2.h"
 #endif
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
 #include "./image/image_gphoto.h"
 #endif
 
@@ -296,7 +296,7 @@ void Factory::registerObjects()
         "Image object reading frames from a video file.",
         true);
 
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     _objectBook["image_gphoto"] = Page(
         [&](RootObject* root) {
             shared_ptr<GraphObject> object;
