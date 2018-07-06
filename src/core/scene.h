@@ -230,7 +230,7 @@ class Scene : public RootObject
     std::shared_ptr<GraphObject> _blender{nullptr};
 
 // Objects in charge of calibration
-#if HAVE_GPHOTO
+#if HAVE_GPHOTO and HAVE_OPENCV
     std::shared_ptr<GraphObject> _colorCalibrator{nullptr};
 #endif
 
