@@ -13,7 +13,7 @@ before_script:
   - git submodule update --init
   - ./make_deps.sh
   - rm -rf build && mkdir build && cd build
-  - cmake -DCMAKE_INSTALL_PREFIX=/usr ..
+  - cmake -DBUILD_GENERIC_ARCH=ON -DCMAKE_INSTALL_PREFIX=/usr ..
 
 #
 # Tests

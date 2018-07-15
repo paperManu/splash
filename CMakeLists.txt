@@ -42,10 +42,11 @@ set(PACKAGE_VERSION ${PROJECT_VERSION})
 #
 # Build options
 #
-set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
+set(BUILD_GENERIC_ARCH OFF CACHE BOOL "Enable building without architecture-specitif optimization")
+set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
 set(DEBUG_OPENGL OFF CACHE BOOL "Enable OpenGL debugging")
 set(PROFILE_OPENGL OFF CACHE BOOL "Enable OpenGL profiling")
-set(DATAPATH_SDK_PATH "" CACHE PATH "Path to the Datapath SDK")
+set(USE_SYSTEM_LIBS OFF CACHE BOOL "Enable using system libraries instead of bundle ones")
 
 #
 # Find the various libraries
@@ -127,6 +128,15 @@ else()
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.cmake" "${CMAKE_CURRENT_SOURCE_DIR}/src/config.h")
+
+#
+# Generic compilation flags
+#
+include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+if(COMPILER_SUPPORTS_MARCH_NATIVE AND NOT BUILD_GENERIC_ARCH)
+    add_definitions(-march=native)
+endif()
 
 #
 # Sources
