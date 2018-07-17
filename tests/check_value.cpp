@@ -2,7 +2,8 @@
 #include <random>
 #include <vector>
 
-#include "./splash.h"
+#include "./core/serializer.h"
+#include "./core/value.h"
 
 using namespace std;
 using namespace Splash;
@@ -86,4 +87,96 @@ TEST_CASE("Testing Values comparison")
     CHECK(valueString == "Le train de tes injures roule sur le rail de mon indifférence");
     CHECK(values != valueInt);
     CHECK(valueString != valueFloat);
+}
+
+/*************/
+TEST_CASE("Testing Value serialization")
+{
+    string testString({"One to rule them all"});
+
+    CHECK(Serial::getSize(Value(42)) == sizeof(Value::Type) + sizeof(int64_t));
+    CHECK(Serial::getSize(Value(2.71828f)) == sizeof(Value::Type) + sizeof(double));
+    CHECK(Serial::getSize(Value(testString)) == sizeof(Value::Type) + sizeof(size_t) + testString.size() * sizeof(char));
+    CHECK(Serial::getSize(Value(Values({3.14159f, 42, testString}))) ==
+          sizeof(Value::Type) + sizeof(size_t) + sizeof(Value::Type) * 3 + sizeof(double) + sizeof(int64_t) + sizeof(size_t) + sizeof(char) * testString.size());
+
+    {
+        vector<uint8_t> buffer;
+        Serial::serialize(Value(42), buffer);
+        auto bufferPtr = buffer.data();
+        CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::integer);
+        bufferPtr += sizeof(Value::Type);
+        CHECK(*reinterpret_cast<int64_t*>(bufferPtr) == 42);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        Serial::serialize(Value(3.14159), buffer);
+        auto bufferPtr = buffer.data();
+        CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::real);
+        bufferPtr += sizeof(Value::Type);
+        CHECK(*reinterpret_cast<double*>(bufferPtr) == 3.14159);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        Serial::serialize(Value(testString), buffer);
+        auto bufferPtr = buffer.data();
+        CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::string);
+        bufferPtr += sizeof(Value::Type);
+        auto stringLength = *reinterpret_cast<size_t*>(bufferPtr);
+        CHECK(stringLength == testString.size());
+        bufferPtr += sizeof(size_t);
+        CHECK(string(reinterpret_cast<char*>(bufferPtr), stringLength) == testString);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = Value(Values({42, 3.14159}));
+        Serial::serialize(data, buffer);
+        auto bufferPtr = buffer.data();
+        CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::values);
+        bufferPtr += sizeof(Value::Type);
+        CHECK(*reinterpret_cast<size_t*>(bufferPtr) == data.size());
+        bufferPtr += sizeof(size_t);
+        CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::integer);
+        bufferPtr += sizeof(Value::Type);
+        CHECK(*reinterpret_cast<int64_t*>(bufferPtr) == data.as<Values>()[0].as<int64_t>());
+        bufferPtr += sizeof(int64_t);
+        CHECK(*reinterpret_cast<Value::Type*>(bufferPtr) == Value::Type::real);
+        bufferPtr += sizeof(Value::Type);
+        CHECK(*reinterpret_cast<double*>(bufferPtr) == data.as<Values>()[1].as<double>());
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = Value(42);
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<Value>(buffer);
+        CHECK(data == outData);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = Value(3.14159);
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<Value>(buffer);
+        CHECK(data == outData);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = Value(testString);
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<Value>(buffer);
+        CHECK(data == outData);
+    }
+
+    {
+        vector<uint8_t> buffer;
+        auto data = Value(Values({42, 2.71828, testString}));
+        Serial::serialize(data, buffer);
+        auto outData = Serial::deserialize<Value>(buffer);
+        CHECK(data == outData);
+    }
 }

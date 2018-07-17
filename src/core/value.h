@@ -29,6 +29,8 @@
 #include <memory>
 #include <string>
 
+#include "./core/serializer.h"
+
 namespace Splash
 {
 
@@ -39,7 +41,7 @@ using Values = std::deque<Value>;
 struct Value
 {
   public:
-    enum Type
+    enum Type : uint8_t
     {
         integer = 0, // integer
         real,        // float
@@ -229,7 +231,7 @@ struct Value
         }
     }
 
-    void* data()
+    void* data() const
     {
         switch (_type)
         {
@@ -291,6 +293,89 @@ struct Value
     std::string _string{""};
     std::unique_ptr<Values> _values{nullptr};
 };
+
+// Specialisation of serialization for Splash::Value
+namespace Serial
+{
+
+namespace detail
+{
+
+template <class T>
+struct getSizeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
+{
+    static size_t value(const Value& obj)
+    {
+        size_t acc = sizeof(Value::Type);
+        auto objType = obj.getType();
+
+        if (objType == Value::Type::values)
+            return acc + getSize(obj.as<Values>());
+        else if (objType == Value::Type::string)
+            return acc + getSize(obj.as<std::string>());
+        else
+            return acc + obj.size();
+    }
+};
+
+template <class T>
+struct serializeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
+{
+    static void apply(const Value& obj, std::vector<uint8_t>::iterator& it)
+    {
+        auto objType = obj.getType();
+        serializer(static_cast<typename std::underlying_type<Value::Type>::type>(objType), it);
+
+        if (objType == Value::Type::values)
+        {
+            serializer(obj.as<Values>(), it);
+        }
+        else if (objType == Value::Type::string)
+        {
+            serializer(obj.as<std::string>(), it);
+        }
+        else
+        {
+            auto ptr = reinterpret_cast<uint8_t*>(obj.data());
+            std::copy(ptr, ptr + obj.size(), it);
+            it += obj.size();
+        }
+    }
+};
+
+template <class T>
+struct deserializeHelper<T, typename std::enable_if<std::is_same<T, Value>::value>::type>
+{
+    static Value apply(std::vector<uint8_t>::const_iterator& it)
+    {
+        T obj;
+        Value::Type type;
+        std::copy(it, it + sizeof(Value::Type), reinterpret_cast<char*>(&type));
+        it += sizeof(Value::Type);
+
+        switch (type)
+        {
+        case Value::Type::integer:
+            obj = Value(deserializer<int64_t>(it));
+            break;
+        case Value::Type::real:
+            obj = Value(deserializer<double>(it));
+            break;
+        case Value::Type::string:
+            obj = Value(deserializer<std::string>(it));
+            break;
+        case Value::Type::values:
+            obj = Value(deserializer<Values>(it));
+            break;
+        }
+
+        return obj;
+    }
+};
+
+} // namespace detail
+
+} // namespace Serial
 
 } // namespace Splash
 
