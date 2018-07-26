@@ -56,11 +56,14 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
                 }
             }
 
+            // Always set the pause status, even when no frame has been received
             _clock.paused = paused;
+            Timer::get().setMasterClockPaused(paused);
 
             ltc_decoder_write(ltcDecoder, (ltcsnd_sample_t*)inputBuffer.data(), inputBuffer.size(), total);
             total += inputBuffer.size();
 
+            // Try reading a new LTC frame
             while (ltc_decoder_read(ltcDecoder, &ltcFrame))
             {
                 _ready = true;
@@ -69,6 +72,7 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
                 ltc_frame_to_time(&stime, &ltcFrame.ltc, LTC_TC_CLOCK);
 
                 Timer::Point clock;
+                clock.paused = paused;
                 clock.years = stime.years;
                 clock.months = stime.months;
                 clock.days = stime.days;
@@ -103,6 +107,7 @@ LtcClock::LtcClock(bool masterClock, const string& deviceName)
                 if (_masterClock)
                     Timer::get().setMasterClock(_clock);
             }
+
         }
 
         ltc_decoder_free(ltcDecoder);

@@ -276,6 +276,16 @@ class Timer
     }
 
     /**
+     * Set master clock pause status
+     * \param paused True if paused
+     */
+    void setMasterClockPaused(bool paused)
+    {
+        std::lock_guard<Spinlock> lockClock(_clockMutex);
+        _clock.paused = paused;
+    }
+
+    /**
      * \brief Get the master clock time
      * \param clock Master clock value
      * \return Return true if the master clock is set
